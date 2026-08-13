@@ -1,0 +1,23 @@
+name: AWS OIDC Trust Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+
+jobs:
+  verify-aws-identity:
+    name: Verify AWS identity
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        with:
+          role-to-assume: arn:aws:iam::487757851499:role/OpsLensGitHubDeployRole
+          aws-region: us-east-1
+          allowed-account-ids: 487757851499
+
+      - name: Verify caller identity
+        run: aws sts get-caller-identity
