@@ -5,6 +5,11 @@ locals {
 }
 
 resource "aws_s3_bucket" "terraform_state" {
+  # checkov:skip=CKV2_AWS_62: Terraform state changes do not require event-driven notifications; no consumer exists for these events.
+  # checkov:skip=CKV_AWS_18: Server access logging would require additional logging infrastructure; access auditing will be evaluated when a concrete audit requirement is introduced.
+  # checkov:skip=CKV_AWS_144: Cross-region replication is not required for the single-region dev environment; S3 Versioning is the current recovery control.
+  # checkov:skip=CKV_AWS_145: SSE-S3 is the accepted Phase 0 encryption decision; there is no current customer-managed KMS key requirement.
+
   bucket = local.state_bucket_name
 
   lifecycle {
@@ -21,6 +26,25 @@ resource "aws_s3_bucket_versioning" "terraform_state" {
 
   versioning_configuration {
     status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "terraform_state" {
+  bucket = aws_s3_bucket.terraform_state.id
+
+  depends_on = [
+    aws_s3_bucket_versioning.terraform_state,
+  ]
+
+  rule {
+    id     = "expire-old-state-versions"
+    status = "Enabled"
+
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = 90
+    }
   }
 }
 
