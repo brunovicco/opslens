@@ -49,3 +49,19 @@ Repository  = brunovicco/opslens
 ```
 
 Additional tags should be introduced only when they serve an operational, security, governance, or cost-management purpose.
+
+## Terraform state
+
+Terraform state is stored remotely in Amazon S3.
+
+The state backend provides:
+
+- S3 Versioning for recovery;
+- SSE-S3 encryption;
+- S3 Block Public Access;
+- native S3 state locking;
+- no persistent AWS credentials in Terraform configuration.
+
+The bootstrap configuration is located in `infra/bootstrap/`.
+
+See [ADR-0001](../docs/adr/0001-terraform-state-strategy.md) for the architectural decision and trade-offs.
