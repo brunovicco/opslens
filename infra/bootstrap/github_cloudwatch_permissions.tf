@@ -34,6 +34,60 @@ data "aws_iam_policy_document" "github_actions_cloudwatch_logs" {
   }
 
   statement {
+    sid     = "TagOnCreateDevPlatformLogGroup"
+    effect  = "Allow"
+    actions = ["logs:TagResource"]
+
+    # CloudWatch Logs evaluates TagResource as a dependent permission
+    # when CreateLogGroup includes tags. The resource does not yet exist,
+    # so this create-time permission is constrained by the exact requested tags.
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Project"
+      values   = ["opslens"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Environment"
+      values   = ["dev"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/ManagedBy"
+      values   = ["terraform"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Repository"
+      values   = ["brunovicco/opslens"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Purpose"
+      values   = ["platform-observability"]
+    }
+
+    condition {
+      test     = "ForAllValues:StringEquals"
+      variable = "aws:TagKeys"
+
+      values = [
+        "Project",
+        "Environment",
+        "ManagedBy",
+        "Repository",
+        "Purpose",
+      ]
+    }
+  }
+
+  statement {
     sid    = "TagDevPlatformLogGroup"
     effect = "Allow"
 
