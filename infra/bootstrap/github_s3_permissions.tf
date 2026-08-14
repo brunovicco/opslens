@@ -42,6 +42,15 @@ data "aws_iam_policy_document" "github_actions_s3_data_lake" {
       "s3:TagResource",
       "s3:UntagResource",
       "s3:ListTagsForResource",
+
+      # Required by aws_s3_bucket read-after-create and refresh.
+      "s3:GetBucketCORS",
+      "s3:GetBucketWebsite",
+      "s3:GetAccelerateConfiguration",
+      "s3:GetBucketRequestPayment",
+      "s3:GetBucketLogging",
+      "s3:GetReplicationConfiguration",
+      "s3:GetBucketObjectLockConfiguration",
     ]
 
     resources = [
