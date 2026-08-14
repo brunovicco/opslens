@@ -35,3 +35,7 @@ __pycache__/
 build/
 dist/
 tmp/
+.tmp
+
+# Local temporary artifacts
+.tmp/
