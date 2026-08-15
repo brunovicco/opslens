@@ -48,13 +48,25 @@ class EpssSilverTransformer:
                 self._consume_metadata(reader)
                 self._validate_header(reader)
 
+                seen_cves: set[str] = set()
+
                 for line_number, row in enumerate(reader, start=3):
-                    emitted_count += 1
-                    yield self._build_record(
-                        snapshot=snapshot,
+                    record = self._build_record(
                         row=row,
                         line_number=line_number,
+                        snapshot=snapshot,
                     )
+
+                    if record.cve in seen_cves:
+                        raise InvalidEpssSilverSourceError(
+                            f"EPSS source contains duplicate CVE {record.cve!r} "
+                            f"at source line {line_number}."
+                        )
+
+                    seen_cves.add(record.cve)
+                    emitted_count += 1
+
+                    yield record
 
         except InvalidEpssSilverSourceError:
             raise

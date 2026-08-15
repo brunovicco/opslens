@@ -158,3 +158,20 @@ def test_rejects_invalid_gzip_payload() -> None:
 
     with pytest.raises(InvalidEpssSilverSourceError, match="gzip CSV"):
         list(transformer.iter_records(snapshot))
+
+
+def test_rejects_duplicate_cve_rows() -> None:
+    """Reject EPSS snapshots containing duplicate CVE identifiers."""
+    snapshot = _build_snapshot(
+        rows=(
+            "CVE-2026-12345,0.100000,0.200000",
+            "CVE-2026-12345,0.300000,0.400000",
+        ),
+    )
+    transformer = EpssSilverTransformer()
+
+    with pytest.raises(
+        InvalidEpssSilverSourceError,
+        match=r"duplicate CVE 'CVE-2026-12345'.*source line 4",
+    ):
+        list(transformer.iter_records(snapshot))
