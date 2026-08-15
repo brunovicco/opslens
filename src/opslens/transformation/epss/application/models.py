@@ -1,6 +1,14 @@
 """Application models for EPSS Silver serialization."""
 
 from dataclasses import dataclass
+from enum import StrEnum
+
+
+class SilverRepositoryWriteStatus(StrEnum):
+    """Represent the outcome of an idempotent Silver artifact write."""
+
+    CREATED = "created"
+    ALREADY_EXISTS = "already_exists"
 
 
 @dataclass(frozen=True, slots=True)
