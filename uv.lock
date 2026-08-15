@@ -148,10 +148,12 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "boto3-stubs", extra = ["boto3", "s3"] },
-    { name = "pyarrow" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "ruff" },
+]
+epss-silver-runtime = [
+    { name = "pyarrow" },
 ]
 
 [package.metadata]
@@ -163,11 +165,11 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "boto3-stubs", extras = ["boto3", "s3"], specifier = ">=1.43.72" },
-    { name = "pyarrow", specifier = "==25.0.*" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "ruff" },
 ]
+epss-silver-runtime = [{ name = "pyarrow", specifier = "==25.0.*" }]
 
 [[package]]
 name = "packaging"

@@ -63,7 +63,7 @@ def export_runtime_dependencies() -> None:
             "uv",
             "export",
             "--locked",
-            "--no-dev",
+            "--no-default-groups",
             "--no-emit-project",
             "--format",
             "requirements.txt",

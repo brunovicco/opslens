@@ -14,7 +14,16 @@ dev = [
     "pyright",
     "ruff",
     "boto3-stubs[boto3,s3]>=1.43.72",
+]
+
+epss-silver-runtime = [
     "pyarrow==25.0.*",
+]
+
+[tool.uv]
+default-groups = [
+    "dev",
+    "epss-silver-runtime",
 ]
 
 [tool.pytest.ini_options]
