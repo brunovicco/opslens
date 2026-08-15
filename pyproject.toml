@@ -3,13 +3,17 @@ name = "opslens"
 version = "0.1.0"
 description = "Operational intelligence platform for software delivery and cloud operations."
 requires-python = ">=3.13,<3.15"
-dependencies = []
+dependencies = [
+    "aws-lambda-powertools[tracer]>=3.34.0",
+    "boto3>=1.43.72",
+]
 
 [dependency-groups]
 dev = [
     "pytest",
     "pyright",
     "ruff",
+    "boto3-stubs[boto3,s3]>=1.43.72",
 ]
 
 [tool.pytest.ini_options]
