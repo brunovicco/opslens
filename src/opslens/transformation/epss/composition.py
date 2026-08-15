@@ -1,11 +1,15 @@
 """Composition root for the EPSS Silver transformation application."""
 
+from dataclasses import dataclass
 from typing import Literal, Protocol, cast
 
 from boto3.session import Session
 
 from opslens.ingestion.epss.domain.parser import EpssSnapshotParser
 from opslens.shared.observability.ports import OperationalTelemetry
+from opslens.transformation.epss.adapters.inbound.s3_event import (
+    S3ObjectCreatedEventParser,
+)
 from opslens.transformation.epss.adapters.outbound.parquet import (
     PyArrowSilverEpssRecordWriter,
 )
@@ -48,6 +52,44 @@ class _S3ClientFactory(Protocol):
     ) -> S3SilverTransformationClient:
         """Create the S3 client required by EPSS Silver transformation."""
         ...
+
+
+@dataclass(frozen=True, slots=True)
+class EpssSilverRuntimeDependencies:
+    """Group dependencies required by the Silver Lambda runtime."""
+
+    service: EpssSilverTransformationService
+    event_parser: S3ObjectCreatedEventParser
+
+
+def build_runtime_dependencies(
+    telemetry: OperationalTelemetry,
+) -> EpssSilverRuntimeDependencies:
+    """Build all dependencies required by the Silver Lambda runtime.
+
+    Args:
+        telemetry: Operational observability implementation.
+
+    Returns:
+        Fully composed transformation service and S3 event parser.
+    """
+    settings = EpssSilverTransformationSettings.from_environment()
+    s3_client = _build_s3_client()
+
+    service = build_transformation_service(
+        settings=settings,
+        telemetry=telemetry,
+        s3_client=s3_client,
+    )
+
+    event_parser = S3ObjectCreatedEventParser(
+        expected_bucket=settings.data_bucket,
+    )
+
+    return EpssSilverRuntimeDependencies(
+        service=service,
+        event_parser=event_parser,
+    )
 
 
 def build_transformation_service(
@@ -93,25 +135,10 @@ def build_transformation_service(
 def build_runtime_transformation_service(
     telemetry: OperationalTelemetry,
 ) -> EpssSilverTransformationService:
-    """Build the production service from environment and AWS SDK configuration.
-
-    AWS credentials and Region are resolved through the standard AWS SDK
-    credential and configuration provider chains.
-
-    Args:
-        telemetry: Operational observability implementation.
-
-    Returns:
-        Fully composed EPSS Silver transformation service.
-    """
-    settings = EpssSilverTransformationSettings.from_environment()
-    s3_client = _build_s3_client()
-
-    return build_transformation_service(
-        settings=settings,
+    """Build the production service from environment and AWS SDK configuration."""
+    return build_runtime_dependencies(
         telemetry=telemetry,
-        s3_client=s3_client,
-    )
+    ).service
 
 
 def _build_s3_client() -> S3SilverTransformationClient:
