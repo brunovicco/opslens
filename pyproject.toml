@@ -14,6 +14,7 @@ dev = [
     "pyright",
     "ruff",
     "boto3-stubs[boto3,s3]>=1.43.72",
+    "pyarrow==25.0.*",
 ]
 
 [tool.pytest.ini_options]
@@ -53,3 +54,9 @@ include = [
 pythonVersion = "3.13"
 typeCheckingMode = "strict"
 reportMissingTypeStubs = false
+
+executionEnvironments = [
+    { root = "src/opslens/transformation/epss/adapters/outbound", reportUnknownArgumentType = "none", reportUnknownMemberType = "none", reportUnknownParameterType = "none", reportUnknownVariableType = "none" },
+    { root = "tests/unit/transformation/epss/adapters/outbound", reportUnknownArgumentType = "none", reportUnknownMemberType = "none", reportUnknownParameterType = "none", reportUnknownVariableType = "none" },
+    { root = "." },
+]
