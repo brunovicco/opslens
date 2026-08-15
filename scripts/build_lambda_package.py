@@ -16,7 +16,15 @@ REQUIREMENTS_FILE = BUILD_DIR / "requirements.txt"
 DIST_DIR = PROJECT_ROOT / "dist"
 ARTIFACT_PATH = DIST_DIR / "opslens-epss-ingestion.zip"
 
-SOURCE_PACKAGE = PROJECT_ROOT / "src" / "opslens"
+SOURCE_ROOT = PROJECT_ROOT / "src" / "opslens"
+
+RUNTIME_SOURCE_PATHS = (
+    Path("__init__.py"),
+    Path("ingestion/__init__.py"),
+    Path("ingestion/epss"),
+    Path("shared/__init__.py"),
+    Path("shared/observability"),
+)
 
 PYTHON_VERSION = "3.13"
 PYTHON_PLATFORM = "x86_64-manylinux2014"
@@ -87,18 +95,34 @@ def install_runtime_dependencies() -> None:
 
 
 def copy_application_source() -> None:
-    """Copy the OpsLens application package into the Lambda staging directory."""
-    destination = PACKAGE_DIR / "opslens"
+    """Copy only EPSS ingestion runtime source into the Lambda package."""
+    destination_root = PACKAGE_DIR / "opslens"
 
-    shutil.copytree(
-        SOURCE_PACKAGE,
-        destination,
-        ignore=shutil.ignore_patterns(
-            "__pycache__",
-            "*.pyc",
-            "*.pyo",
-        ),
-    )
+    for relative_path in RUNTIME_SOURCE_PATHS:
+        source = SOURCE_ROOT / relative_path
+        destination = destination_root / relative_path
+
+        destination.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        if source.is_dir():
+            shutil.copytree(
+                source,
+                destination,
+                ignore=shutil.ignore_patterns(
+                    "__pycache__",
+                    "*.pyc",
+                    "*.pyo",
+                ),
+            )
+            continue
+
+        shutil.copy2(
+            source,
+            destination,
+        )
 
 
 def normalized_permissions(path: Path) -> int:
