@@ -7,6 +7,7 @@ resource "aws_scheduler_schedule_group" "epss" {
 }
 
 resource "aws_scheduler_schedule" "epss_daily" {
+    # checkov:skip=CKV_AWS_297:The Scheduler payload contains no sensitive data; AWS-owned encryption is sufficient for the current dev workload.
   name        = "opslens-dev-epss-daily"
   group_name  = aws_scheduler_schedule_group.epss.name
   description = "Daily ingestion of the FIRST EPSS snapshot into the OpsLens Bronze data lake."

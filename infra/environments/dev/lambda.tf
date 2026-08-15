@@ -3,6 +3,11 @@ locals {
 }
 
 resource "aws_lambda_function" "epss_ingestion" {
+  # checkov:skip=CKV_AWS_173:Lambda environment contains only non-secret configuration; a customer-managed KMS key is not justified for the dev EPSS ingestion workload.
+  # checkov:skip=CKV_AWS_116:EventBridge Scheduler already provides bounded retries and ingestion is idempotent; a Lambda DLQ will be introduced with a concrete failure-recovery workflow.
+  # checkov:skip=CKV_AWS_272:Lambda code signing is deferred until the project introduces an artifact signing and release trust workflow.
+  # checkov:skip=CKV_AWS_117:The function requires outbound access to the public FIRST EPSS endpoint and no private VPC resources; placing it in a VPC would add NAT/network complexity without a security requirement.
+
   function_name = local.epss_lambda_function_name
   description   = "Ingest FIRST EPSS snapshots into the OpsLens Bronze data lake."
 
@@ -16,8 +21,9 @@ resource "aws_lambda_function" "epss_ingestion" {
   filename         = local.epss_lambda_artifact_path
   source_code_hash = filebase64sha256(local.epss_lambda_artifact_path)
 
-  memory_size = 512
-  timeout     = 60
+  memory_size                    = 512
+  timeout                        = 60
+  reserved_concurrent_executions = 1
 
   environment {
     variables = {
