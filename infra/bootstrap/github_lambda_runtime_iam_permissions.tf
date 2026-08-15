@@ -3,24 +3,32 @@ locals {
   dev_epss_lambda_execution_role_arn = (
     "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.dev_epss_lambda_execution_role_name}"
   )
+
+  dev_epss_silver_lambda_execution_role_name = "OpsLensEpssSilverLambdaRole"
+  dev_epss_silver_lambda_execution_role_arn = (
+    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.dev_epss_silver_lambda_execution_role_name}"
+  )
+
+  dev_lambda_execution_role_arns = [
+    local.dev_epss_lambda_execution_role_arn,
+    local.dev_epss_silver_lambda_execution_role_arn,
+  ]
 }
 
 data "aws_iam_policy_document" "github_actions_lambda_runtime_iam" {
   statement {
-    sid    = "CreateEpssLambdaExecutionRole"
+    sid    = "CreateLambdaExecutionRoles"
     effect = "Allow"
 
     actions = [
       "iam:CreateRole",
     ]
 
-    resources = [
-      local.dev_epss_lambda_execution_role_arn,
-    ]
+    resources = local.dev_lambda_execution_role_arns
   }
 
   statement {
-    sid    = "ManageEpssLambdaExecutionRole"
+    sid    = "ManageLambdaExecutionRoles"
     effect = "Allow"
 
     actions = [
@@ -36,13 +44,11 @@ data "aws_iam_policy_document" "github_actions_lambda_runtime_iam" {
       "iam:UpdateAssumeRolePolicy",
     ]
 
-    resources = [
-      local.dev_epss_lambda_execution_role_arn,
-    ]
+    resources = local.dev_lambda_execution_role_arns
   }
 
   statement {
-    sid    = "ManageEpssLambdaExecutionRoleInlinePolicy"
+    sid    = "ManageLambdaExecutionRoleInlinePolicies"
     effect = "Allow"
 
     actions = [
@@ -50,9 +56,7 @@ data "aws_iam_policy_document" "github_actions_lambda_runtime_iam" {
       "iam:PutRolePolicy",
     ]
 
-    resources = [
-      local.dev_epss_lambda_execution_role_arn,
-    ]
+    resources = local.dev_lambda_execution_role_arns
   }
 }
 
