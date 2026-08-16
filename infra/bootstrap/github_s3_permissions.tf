@@ -63,6 +63,20 @@ data "aws_iam_policy_document" "github_actions_s3_data_lake" {
   }
 
   statement {
+    sid    = "ManageOpsLensDevDataBucketNotifications"
+    effect = "Allow"
+
+    actions = [
+      "s3:GetBucketNotification",
+      "s3:PutBucketNotification",
+    ]
+
+    resources = [
+      local.dev_data_bucket_arn,
+    ]
+  }
+
+  statement {
     sid    = "ManageOpsLensDevDeploymentArtifacts"
     effect = "Allow"
 
