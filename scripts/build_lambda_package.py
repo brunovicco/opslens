@@ -47,13 +47,22 @@ def run_command(command: list[str]) -> None:
 
 def prepare_directories() -> None:
     """Create clean build and distribution directories."""
-    shutil.rmtree(BUILD_DIR, ignore_errors=True)
+    if BUILD_DIR.exists():
+        shutil.rmtree(BUILD_DIR)
 
     BUILD_DIR.mkdir(parents=True)
     PACKAGE_DIR.mkdir()
     DIST_DIR.mkdir(parents=True, exist_ok=True)
 
     ARTIFACT_PATH.unlink(missing_ok=True)
+
+
+def remove_unneeded_runtime_scripts() -> None:
+    """Remove dependency CLI scripts that are not required by Lambda."""
+    scripts_dir = PACKAGE_DIR / "bin"
+
+    if scripts_dir.exists():
+        shutil.rmtree(scripts_dir)
 
 
 def export_runtime_dependencies() -> None:
@@ -189,6 +198,7 @@ def main() -> None:
     prepare_directories()
     export_runtime_dependencies()
     install_runtime_dependencies()
+    remove_unneeded_runtime_scripts()
     copy_application_source()
     write_deterministic_zip()
 
