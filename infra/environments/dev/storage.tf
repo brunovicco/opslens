@@ -76,6 +76,23 @@ resource "aws_s3_bucket_lifecycle_configuration" "data" {
       days_after_initiation = 7
     }
   }
+
+  rule {
+    id     = "cleanup-athena-query-results"
+    status = "Enabled"
+
+    filter {
+      prefix = "athena-results/"
+    }
+
+    expiration {
+      days = 7
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+  }
 }
 
 output "data_bucket_name" {
