@@ -51,6 +51,10 @@ def prepare_directories() -> None:
         shutil.rmtree(BUILD_DIR)
 
     BUILD_DIR.mkdir(parents=True)
+    PACKAGE_DIR.mkdir()
+    DIST_DIR.mkdir(parents=True, exist_ok=True)
+
+    ARTIFACT_PATH.unlink(missing_ok=True)
 
 
 def remove_unneeded_runtime_scripts() -> None:
