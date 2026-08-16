@@ -74,6 +74,39 @@ data "aws_iam_policy_document" "github_actions_epss_lambda" {
   }
 
   statement {
+    sid    = "AddS3InvokePermissionToEpssSilverLambda"
+    effect = "Allow"
+
+    actions = [
+      "lambda:AddPermission",
+    ]
+
+    resources = [
+      local.dev_epss_silver_lambda_function_arn,
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "lambda:Principal"
+      values   = ["s3.amazonaws.com"]
+    }
+  }
+
+  statement {
+    sid    = "ManageEpssSilverLambdaResourcePolicy"
+    effect = "Allow"
+
+    actions = [
+      "lambda:GetPolicy",
+      "lambda:RemovePermission",
+    ]
+
+    resources = [
+      local.dev_epss_silver_lambda_function_arn,
+    ]
+  }
+
+  statement {
     sid    = "ManageEpssLambdaFunctions"
     effect = "Allow"
 
