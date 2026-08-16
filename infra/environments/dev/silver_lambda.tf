@@ -1,13 +1,13 @@
 locals {
-  epss_silver_artifact_sha256 = "ae34fac433d3a7eb36bee109b4f8d718ec233159bc1018da780ce46420cfcff3"
+  epss_silver_artifact_sha256 = "11ca2b6a7dda648438865c7f7b60aabd56870bc1324cc85b02ad5eb89c649fad"
 
-  epss_silver_artifact_sha256_base64 = "rjT6xDPTp+s2vuEJtPjXGOwjMVm8EBjaeAzkZCDPz/M="
+  epss_silver_artifact_sha256_base64 = "Ecoran3aZIQ4hlx/e2CqvVaHC8EyTMhbAq1euJxkn60="
 
   epss_silver_artifact_key = (
     "lambda/epss-silver/${local.epss_silver_artifact_sha256}.zip"
   )
 
-  epss_silver_artifact_version = "I00XM60IPlsdZFsaynhSTww1_ol9fh9G"
+  epss_silver_artifact_version = "4TMrvu1rjevPIxCGvyt2D0ankZjSFYVm"
 }
 
 resource "aws_lambda_function" "epss_silver" {
