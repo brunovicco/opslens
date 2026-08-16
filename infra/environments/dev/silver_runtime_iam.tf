@@ -54,6 +54,19 @@ data "aws_iam_policy_document" "epss_silver_lambda_runtime" {
   }
 
   statement {
+    sid    = "SendSilverFailureRecords"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    resources = [
+      aws_sqs_queue.epss_silver_failures.arn,
+    ]
+  }
+
+  statement {
     sid    = "WriteEpssSilverSnapshots"
     effect = "Allow"
 
