@@ -220,6 +220,49 @@ ATHENA_PARQUET_CROSSCHECK_GATE=PASS
 This cross-check demonstrates that the Athena result is equivalent to an
 independent evaluation of the Silver Parquet artifact.
 
+## Raw Bronze source cross-check
+
+The Athena result was also independently compared directly with the raw
+FIRST EPSS Bronze snapshot, removing the Silver transformation as an
+intermediate dependency of the correctness check.
+
+Source artifact:
+
+```text
+bronze/epss/snapshot_date=2026-08-16/epss_scores.csv.gz
+```
+
+Source metadata:
+
+```text
+#model_version:v2026.06.15,score_date:2026-08-16T12:03:43Z
+```
+
+The raw CSV was independently:
+
+1. decompressed;
+2. parsed from the FIRST source format;
+3. filtered using `epss > 0.7`;
+4. sorted by `epss DESC, cve ASC`;
+5. compared row by row with the Athena result.
+
+Validation result:
+
+```text
+BRONZE_FILTERED_ROW_COUNT=2457
+ATHENA_ROW_COUNT=2457
+
+SameRowCount=PASS
+SameCves=PASS
+SameEpss=PASS
+SamePercentiles=PASS
+
+ATHENA_BRONZE_SOURCE_CROSSCHECK_GATE=PASS
+```
+
+This demonstrates that the Athena analytical result is equivalent to the
+filtered raw FIRST EPSS source, independently of the Silver transformation.
+
 ## Query cost evidence
 
 Athena reported:
