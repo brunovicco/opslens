@@ -12,7 +12,7 @@ locals {
 
 resource "aws_lambda_function" "epss_silver" {
   # checkov:skip=CKV_AWS_173: Lambda environment contains only non-secret S3 configuration; a customer-managed KMS key is not justified for the dev EPSS Silver workload.
-  # checkov:skip=CKV_AWS_116: The function is intentionally deployed without an event source in this increment; asynchronous failure handling will be designed together with the S3 trigger and recovery workflow.
+  # checkov:skip=CKV_AWS_116:Asynchronous failures use a Lambda OnFailure SQS destination with enriched invocation records instead of a traditional Lambda DLQ.
   # checkov:skip=CKV_AWS_272: Lambda code signing is deferred until the project introduces an artifact signing and release trust workflow.
   # checkov:skip=CKV_AWS_117: The function accesses AWS S3 APIs and no private VPC resources; placing it in a VPC would add networking complexity without a current requirement.
   # checkov:skip=CKV_AWS_115: Reserved concurrency cannot be configured while the dev account regional Lambda concurrency quota is 10; AWS previously rejected a reservation of 1 because it would reduce unreserved concurrency below the account minimum.

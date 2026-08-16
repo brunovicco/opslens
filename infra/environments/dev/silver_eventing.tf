@@ -7,3 +7,20 @@ resource "aws_lambda_permission" "epss_silver_from_s3" {
   source_arn     = aws_s3_bucket.data.arn
   source_account = data.aws_caller_identity.current.account_id
 }
+
+resource "aws_lambda_function_event_invoke_config" "epss_silver" {
+  function_name = aws_lambda_function.epss_silver.function_name
+
+  maximum_event_age_in_seconds = 3600
+  maximum_retry_attempts       = 2
+
+  destination_config {
+    on_failure {
+      destination = aws_sqs_queue.epss_silver_failures.arn
+    }
+  }
+
+  depends_on = [
+    aws_iam_role_policy.epss_silver_lambda_runtime,
+  ]
+}
