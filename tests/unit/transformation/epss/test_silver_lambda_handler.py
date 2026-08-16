@@ -136,6 +136,70 @@ def _record(
     }
 
 
+def _test_event(
+    *,
+    bucket: str = BUCKET,
+) -> dict[str, object]:
+    """Build one deterministic Amazon S3 test notification."""
+    return {
+        "Service": "Amazon S3",
+        "Event": "s3:TestEvent",
+        "Time": "2026-08-15T22:00:00.000Z",
+        "Bucket": bucket,
+        "RequestId": "TESTREQUEST123",
+        "HostId": "test-host-id",
+    }
+
+
+def test_accepts_s3_test_event_without_transforming() -> None:
+    """Accept an S3 test event without invoking Bronze transformation."""
+    service = FakeTransformationService(
+        statuses={},
+    )
+    telemetry = FakeTelemetry()
+
+    result = execute_transformation_event(
+        event=_test_event(),
+        event_parser=S3ObjectCreatedEventParser(
+            expected_bucket=BUCKET,
+        ),
+        use_case=service,
+        telemetry=telemetry,
+        request_id="lambda-request-123",
+    )
+
+    assert result == {
+        "processed_records": 0,
+        "created_records": 0,
+        "already_exists_records": 0,
+        "records": [],
+    }
+
+    assert service.calls == []
+
+    assert (
+        "EpssSilverS3TestEvent",
+        1.0,
+        "Count",
+    ) in telemetry.metrics
+
+    assert (
+        "EpssSilverTransformationInvocation",
+        1.0,
+        "Count",
+    ) not in telemetry.metrics
+
+    assert (
+        "EpssSilverTransformationSuccess",
+        1.0,
+        "Count",
+    ) not in telemetry.metrics
+
+    assert telemetry.exception_events == []
+
+    assert "Accepted S3 test event" in telemetry.info_events
+
+
 def test_processes_all_records_and_returns_aggregated_result() -> None:
     """Process all records in order and aggregate created/idempotent outcomes."""
     first_key = "bronze/epss/snapshot_date=2026-08-14/epss_scores.csv.gz"

@@ -13,7 +13,9 @@ BUCKET = "opslens-test-data"
 def _record(
     *,
     bucket: str = BUCKET,
-    key: str = ("bronze/epss/snapshot_date%3D2026-08-15/epss_scores.csv.gz"),
+    key: str = (
+        "bronze/epss/snapshot_date%3D2026-08-15/epss_scores.csv.gz"
+    ),
     event_version: str = "2.1",
     event_source: str = "aws:s3",
     event_name: str = "ObjectCreated:Put",
@@ -36,6 +38,22 @@ def _record(
     }
 
 
+def _test_event(
+    *,
+    bucket: str = BUCKET,
+    service: str = "Amazon S3",
+) -> dict[str, object]:
+    """Build one deterministic Amazon S3 test notification."""
+    return {
+        "Service": service,
+        "Event": "s3:TestEvent",
+        "Time": "2026-08-15T22:00:00.000Z",
+        "Bucket": bucket,
+        "RequestId": "TESTREQUEST123",
+        "HostId": "test-host-id",
+    }
+
+
 def test_parses_and_decodes_bronze_object_created_record() -> None:
     """Parse one valid S3 ObjectCreated event and URL-decode its key."""
     parser = S3ObjectCreatedEventParser(
@@ -55,7 +73,9 @@ def test_parses_and_decodes_bronze_object_created_record() -> None:
     record = records[0]
 
     assert record.bucket == BUCKET
-    assert record.key == ("bronze/epss/snapshot_date=2026-08-15/epss_scores.csv.gz")
+    assert record.key == (
+        "bronze/epss/snapshot_date=2026-08-15/epss_scores.csv.gz"
+    )
     assert record.event_name == "ObjectCreated:Put"
     assert record.sequencer == "0055AED6DCD90281E5"
 
@@ -70,11 +90,19 @@ def test_preserves_multiple_record_order() -> None:
         {
             "Records": [
                 _record(
-                    key=("bronze/epss/snapshot_date%3D2026-08-14/epss_scores.csv.gz"),
+                    key=(
+                        "bronze/epss/"
+                        "snapshot_date%3D2026-08-14/"
+                        "epss_scores.csv.gz"
+                    ),
                     sequencer="01",
                 ),
                 _record(
-                    key=("bronze/epss/snapshot_date%3D2026-08-15/epss_scores.csv.gz"),
+                    key=(
+                        "bronze/epss/"
+                        "snapshot_date%3D2026-08-15/"
+                        "epss_scores.csv.gz"
+                    ),
                     sequencer="02",
                 ),
             ],
@@ -102,6 +130,38 @@ def test_accepts_newer_minor_event_version() -> None:
     )
 
     assert len(records) == 1
+
+
+def test_parses_s3_test_event_from_expected_bucket() -> None:
+    """Parse the special S3 test notification from the configured bucket."""
+    parser = S3ObjectCreatedEventParser(
+        expected_bucket=BUCKET,
+    )
+
+    test_event = parser.parse_test_event(
+        _test_event(),
+    )
+
+    assert test_event is not None
+    assert test_event.bucket == BUCKET
+    assert test_event.request_id == "TESTREQUEST123"
+
+
+def test_rejects_s3_test_event_from_unexpected_bucket() -> None:
+    """Reject an S3 test notification from any other bucket."""
+    parser = S3ObjectCreatedEventParser(
+        expected_bucket=BUCKET,
+    )
+
+    with pytest.raises(
+        InvalidS3ObjectCreatedEventError,
+        match="configured data bucket",
+    ):
+        parser.parse_test_event(
+            _test_event(
+                bucket="other-bucket",
+            )
+        )
 
 
 @pytest.mark.parametrize(
@@ -190,7 +250,13 @@ def test_rejects_object_outside_bronze_prefix() -> None:
         parser.parse(
             {
                 "Records": [
-                    _record(key=("silver/epss/snapshot_date%3D2026-08-15/part-00000.parquet")),
+                    _record(
+                        key=(
+                            "silver/epss/"
+                            "snapshot_date%3D2026-08-15/"
+                            "part-00000.parquet"
+                        )
+                    ),
                 ],
             }
         )

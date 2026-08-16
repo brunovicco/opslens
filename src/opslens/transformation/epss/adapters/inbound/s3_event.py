@@ -11,6 +11,14 @@ class InvalidS3ObjectCreatedEventError(ValueError):
 
 
 @dataclass(frozen=True, slots=True)
+class S3TestEvent:
+    """Represent one validated Amazon S3 test notification."""
+
+    bucket: str
+    request_id: str
+
+
+@dataclass(frozen=True, slots=True)
 class S3ObjectCreatedRecord:
     """Represent one validated S3 ObjectCreated notification record."""
 
@@ -27,6 +35,8 @@ class S3ObjectCreatedEventParser:
     MINIMUM_EVENT_MINOR_VERSION = 1
     EXPECTED_EVENT_SOURCE = "aws:s3"
     EXPECTED_EVENT_NAME_PREFIX = "ObjectCreated:"
+    EXPECTED_TEST_EVENT = "s3:TestEvent"
+    EXPECTED_TEST_EVENT_SERVICE = "Amazon S3"
     BRONZE_PREFIX = "bronze/epss/"
 
     def __init__(
@@ -45,6 +55,61 @@ class S3ObjectCreatedEventParser:
             raise ValueError("Expected S3 bucket name cannot be empty.")
 
         self._expected_bucket = normalized_bucket
+
+    def parse_test_event(
+        self,
+        event: Mapping[str, object],
+    ) -> S3TestEvent | None:
+        """Parse an Amazon S3 test notification when present.
+
+        Args:
+            event: Raw Lambda event payload.
+
+        Returns:
+            Validated S3 test event, or None when the payload is not an
+            S3 test notification.
+
+        Raises:
+            InvalidS3ObjectCreatedEventError: If an S3 test notification
+                violates the expected source or bucket contract.
+        """
+        event_name = event.get("Event")
+
+        if event_name != self.EXPECTED_TEST_EVENT:
+            return None
+
+        service = self._require_string(
+            event.get("Service"),
+            path="Service",
+        )
+
+        if service != self.EXPECTED_TEST_EVENT_SERVICE:
+            raise InvalidS3ObjectCreatedEventError(
+                "Service must be "
+                f"{self.EXPECTED_TEST_EVENT_SERVICE!r} for an S3 test event, "
+                f"received {service!r}."
+            )
+
+        bucket = self._require_string(
+            event.get("Bucket"),
+            path="Bucket",
+        )
+
+        if bucket != self._expected_bucket:
+            raise InvalidS3ObjectCreatedEventError(
+                "S3 test event Bucket does not match the configured data bucket: "
+                f"expected {self._expected_bucket!r}, received {bucket!r}."
+            )
+
+        request_id = self._require_string(
+            event.get("RequestId"),
+            path="RequestId",
+        )
+
+        return S3TestEvent(
+            bucket=bucket,
+            request_id=request_id,
+        )
 
     def parse(
         self,
@@ -120,7 +185,8 @@ class S3ObjectCreatedEventParser:
 
         if not event_name.startswith(self.EXPECTED_EVENT_NAME_PREFIX):
             raise InvalidS3ObjectCreatedEventError(
-                f"{path}.eventName must describe an ObjectCreated event, received {event_name!r}."
+                f"{path}.eventName must describe an ObjectCreated event, "
+                f"received {event_name!r}."
             )
 
         s3_data = self._require_mapping(
@@ -198,16 +264,26 @@ class S3ObjectCreatedEventParser:
         """Validate S3 notification major and minimum minor versions."""
         parts = version.split(".", maxsplit=1)
 
-        if len(parts) != 2 or not parts[0].isdigit() or not parts[1].isdigit():
+        if (
+            len(parts) != 2
+            or not parts[0].isdigit()
+            or not parts[1].isdigit()
+        ):
             raise InvalidS3ObjectCreatedEventError(
-                f"{path} must use major.minor numeric format, received {version!r}."
+                f"{path} must use major.minor numeric format, "
+                f"received {version!r}."
             )
 
         major = int(parts[0])
         minor = int(parts[1])
 
-        if major != self.EXPECTED_EVENT_MAJOR_VERSION or minor < self.MINIMUM_EVENT_MINOR_VERSION:
-            raise InvalidS3ObjectCreatedEventError(f"{path} is unsupported: {version!r}.")
+        if (
+            major != self.EXPECTED_EVENT_MAJOR_VERSION
+            or minor < self.MINIMUM_EVENT_MINOR_VERSION
+        ):
+            raise InvalidS3ObjectCreatedEventError(
+                f"{path} is unsupported: {version!r}."
+            )
 
     @staticmethod
     def _require_mapping(
@@ -217,12 +293,16 @@ class S3ObjectCreatedEventParser:
     ) -> Mapping[str, object]:
         """Return a string-keyed mapping or raise an event-contract error."""
         if not isinstance(value, Mapping):
-            raise InvalidS3ObjectCreatedEventError(f"{path} must be an object.")
+            raise InvalidS3ObjectCreatedEventError(
+                f"{path} must be an object."
+            )
 
         mapping = cast(Mapping[object, object], value)
 
         if not all(isinstance(key, str) for key in mapping):
-            raise InvalidS3ObjectCreatedEventError(f"{path} must contain only string keys.")
+            raise InvalidS3ObjectCreatedEventError(
+                f"{path} must contain only string keys."
+            )
 
         return cast(Mapping[str, object], mapping)
 
@@ -234,6 +314,8 @@ class S3ObjectCreatedEventParser:
     ) -> str:
         """Return a non-empty string or raise an event-contract error."""
         if not isinstance(value, str) or not value:
-            raise InvalidS3ObjectCreatedEventError(f"{path} must be a non-empty string.")
+            raise InvalidS3ObjectCreatedEventError(
+                f"{path} must be a non-empty string."
+            )
 
         return value

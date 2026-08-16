@@ -124,28 +124,54 @@ def execute_transformation_event(
         request_id: AWS Lambda invocation identifier.
 
     Returns:
-        Serialized results for every successfully transformed record.
+        Serialized results for every successfully transformed record, or an
+        empty successful response for a validated Amazon S3 test event.
 
     Raises:
         Exception: Propagates any event or transformation failure.
     """
-    telemetry.metric(
-        name="EpssSilverTransformationInvocation",
-        value=1.0,
-        unit="Count",
-    )
-
-    telemetry.info(
-        "Starting EPSS Silver transformation invocation",
-        fields={
-            "request_id": request_id,
-        },
-    )
-
     current_record_index: int | None = None
     current_bronze_key: str | None = None
 
     try:
+        test_event = event_parser.parse_test_event(event)
+
+        if test_event is not None:
+            telemetry.metric(
+                name="EpssSilverS3TestEvent",
+                value=1.0,
+                unit="Count",
+            )
+
+            telemetry.info(
+                "Accepted S3 test event",
+                fields={
+                    "request_id": request_id,
+                    "s3_request_id": test_event.request_id,
+                    "bucket": test_event.bucket,
+                },
+            )
+
+            return {
+                "processed_records": 0,
+                "created_records": 0,
+                "already_exists_records": 0,
+                "records": [],
+            }
+
+        telemetry.metric(
+            name="EpssSilverTransformationInvocation",
+            value=1.0,
+            unit="Count",
+        )
+
+        telemetry.info(
+            "Starting EPSS Silver transformation invocation",
+            fields={
+                "request_id": request_id,
+            },
+        )
+
         records = event_parser.parse(event)
 
         telemetry.metric(
