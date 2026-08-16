@@ -1,6 +1,9 @@
 locals {
   dev_data_bucket_name = "opslens-dev-data-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
   dev_data_bucket_arn  = "arn:aws:s3:::${local.dev_data_bucket_name}"
+
+  dev_artifacts_bucket_name = "opslens-dev-artifacts-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
+  dev_artifacts_bucket_arn  = "arn:aws:s3:::${local.dev_artifacts_bucket_name}"
 }
 
 data "aws_iam_policy_document" "github_actions_s3_data_lake" {
@@ -55,6 +58,36 @@ data "aws_iam_policy_document" "github_actions_s3_data_lake" {
 
     resources = [
       local.dev_data_bucket_arn,
+      local.dev_artifacts_bucket_arn,
+    ]
+  }
+
+  statement {
+    sid    = "ManageOpsLensDevDataBucketNotifications"
+    effect = "Allow"
+
+    actions = [
+      "s3:GetBucketNotification",
+      "s3:PutBucketNotification",
+    ]
+
+    resources = [
+      local.dev_data_bucket_arn,
+    ]
+  }
+
+  statement {
+    sid    = "ManageOpsLensDevDeploymentArtifacts"
+    effect = "Allow"
+
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:GetObjectVersion",
+    ]
+
+    resources = [
+      "${local.dev_artifacts_bucket_arn}/lambda/*",
     ]
   }
 }

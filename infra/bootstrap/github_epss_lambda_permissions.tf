@@ -1,9 +1,19 @@
 locals {
-  dev_epss_lambda_function_name = "opslens-dev-epss-ingestion"
+  dev_epss_lambda_function_name        = "opslens-dev-epss-ingestion"
+  dev_epss_silver_lambda_function_name = "opslens-dev-epss-silver"
 
   dev_epss_lambda_function_arn = (
     "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${local.dev_epss_lambda_function_name}"
   )
+
+  dev_epss_silver_lambda_function_arn = (
+    "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${local.dev_epss_silver_lambda_function_name}"
+  )
+
+  dev_epss_lambda_function_arns = [
+    local.dev_epss_lambda_function_arn,
+    local.dev_epss_silver_lambda_function_arn,
+  ]
 }
 
 data "aws_iam_policy_document" "github_actions_epss_lambda" {
@@ -64,7 +74,40 @@ data "aws_iam_policy_document" "github_actions_epss_lambda" {
   }
 
   statement {
-    sid    = "ManageEpssLambdaFunction"
+    sid    = "AddS3InvokePermissionToEpssSilverLambda"
+    effect = "Allow"
+
+    actions = [
+      "lambda:AddPermission",
+    ]
+
+    resources = [
+      local.dev_epss_silver_lambda_function_arn,
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "lambda:Principal"
+      values   = ["s3.amazonaws.com"]
+    }
+  }
+
+  statement {
+    sid    = "ManageEpssSilverLambdaResourcePolicy"
+    effect = "Allow"
+
+    actions = [
+      "lambda:GetPolicy",
+      "lambda:RemovePermission",
+    ]
+
+    resources = [
+      local.dev_epss_silver_lambda_function_arn,
+    ]
+  }
+
+  statement {
+    sid    = "ManageEpssLambdaFunctions"
     effect = "Allow"
 
     actions = [
@@ -83,13 +126,67 @@ data "aws_iam_policy_document" "github_actions_epss_lambda" {
       "lambda:UpdateFunctionConfiguration",
     ]
 
-    resources = [
-      local.dev_epss_lambda_function_arn,
-    ]
+    resources = local.dev_epss_lambda_function_arns
   }
 
   statement {
-    sid    = "PassEpssLambdaExecutionRole"
+    sid    = "CreateEpssSilverLambdaFunction"
+    effect = "Allow"
+
+    actions = [
+      "lambda:CreateFunction",
+    ]
+
+    resources = [
+      local.dev_epss_silver_lambda_function_arn,
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Project"
+      values   = ["opslens"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Environment"
+      values   = ["dev"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/ManagedBy"
+      values   = ["terraform"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Repository"
+      values   = ["brunovicco/opslens"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Purpose"
+      values   = ["epss-silver"]
+    }
+
+    condition {
+      test     = "ForAllValues:StringEquals"
+      variable = "aws:TagKeys"
+
+      values = [
+        "Project",
+        "Environment",
+        "ManagedBy",
+        "Repository",
+        "Purpose",
+      ]
+    }
+  }
+
+  statement {
+    sid    = "PassEpssLambdaExecutionRoles"
     effect = "Allow"
 
     actions = [
@@ -98,6 +195,7 @@ data "aws_iam_policy_document" "github_actions_epss_lambda" {
 
     resources = [
       local.dev_epss_lambda_execution_role_arn,
+      local.dev_epss_silver_lambda_execution_role_arn,
     ]
 
     condition {

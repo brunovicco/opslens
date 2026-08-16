@@ -1,0 +1,42 @@
+resource "aws_lambda_permission" "epss_silver_from_s3" {
+  statement_id  = "AllowS3InvokeEpssSilver"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.epss_silver.function_name
+  principal     = "s3.amazonaws.com"
+
+  source_arn     = aws_s3_bucket.data.arn
+  source_account = data.aws_caller_identity.current.account_id
+}
+
+resource "aws_lambda_function_event_invoke_config" "epss_silver" {
+  function_name = aws_lambda_function.epss_silver.function_name
+
+  maximum_event_age_in_seconds = 3600
+  maximum_retry_attempts       = 2
+
+  destination_config {
+    on_failure {
+      destination = aws_sqs_queue.epss_silver_failures.arn
+    }
+  }
+
+  depends_on = [
+    aws_iam_role_policy.epss_silver_lambda_runtime,
+  ]
+}
+
+resource "aws_s3_bucket_notification" "epss_silver" {
+  bucket = aws_s3_bucket.data.id
+
+  lambda_function {
+    id = "epss-silver-bronze-object-created"
+
+    lambda_function_arn = aws_lambda_function.epss_silver.arn
+    events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = "bronze/epss/"
+  }
+
+  depends_on = [
+    aws_lambda_permission.epss_silver_from_s3,
+  ]
+}
