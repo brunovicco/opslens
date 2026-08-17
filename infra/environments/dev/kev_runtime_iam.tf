@@ -53,6 +53,19 @@ data "aws_iam_policy_document" "kev_lambda_runtime" {
   }
 
   statement {
+    sid    = "SendKevFailureRecords"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    resources = [
+      aws_sqs_queue.kev_ingestion_failures.arn,
+    ]
+  }
+
+  statement {
     sid    = "WriteLambdaLogs"
     effect = "Allow"
 
