@@ -28,7 +28,7 @@ resource "aws_lambda_function" "kev_ingestion" {
   environment {
     variables = {
       KEV_SOURCE_URL = (
-        "https://www.cisa.gov/sites/default/files/feeds/__opslens_intentional_failure__.json"
+        "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
       )
 
       KEV_BRONZE_BUCKET        = aws_s3_bucket.data.bucket
