@@ -9,9 +9,15 @@ locals {
     "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.dev_epss_silver_lambda_execution_role_name}"
   )
 
+  dev_kev_lambda_execution_role_name = "OpsLensKevIngestionLambdaRole"
+  dev_kev_lambda_execution_role_arn = (
+    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.dev_kev_lambda_execution_role_name}"
+  )
+
   dev_lambda_execution_role_arns = [
     local.dev_epss_lambda_execution_role_arn,
     local.dev_epss_silver_lambda_execution_role_arn,
+    local.dev_kev_lambda_execution_role_arn,
   ]
 }
 
