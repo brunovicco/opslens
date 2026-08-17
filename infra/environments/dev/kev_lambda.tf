@@ -4,10 +4,10 @@ locals {
 
 resource "aws_lambda_function" "kev_ingestion" {
   # checkov:skip=CKV_AWS_173: Lambda environment contains only non-secret configuration; a customer-managed KMS key is not justified for the dev KEV ingestion workload.
-  # checkov:skip=CKV_AWS_116: Phase 2.1E1 validates the Lambda synchronously before introducing the asynchronous SQS failure destination with the scheduler.
+  # checkov:skip=CKV_AWS_116: Asynchronous failures use a Lambda OnFailure SQS destination with enriched invocation records instead of a traditional Lambda DLQ.
   # checkov:skip=CKV_AWS_272: Lambda code signing is deferred until the project introduces an artifact signing and release trust workflow.
   # checkov:skip=CKV_AWS_117: The function requires outbound access to the public CISA KEV endpoint and no private VPC resources; placing it in a VPC would add NAT/network complexity without a security requirement.
-  # checkov:skip=CKV_AWS_115: Reserved concurrency is not configured because the dev account regional Lambda concurrency quota does not currently support the existing workload isolation pattern; invocation is manually controlled in this increment.
+  # checkov:skip=CKV_AWS_115: Reserved concurrency is not configured because the dev account regional Lambda concurrency quota does not currently support the existing workload isolation pattern; the daily Scheduler invocation is bounded and ingestion is idempotent.
 
   function_name = local.kev_lambda_function_name
   description   = "Ingest CISA Known Exploited Vulnerabilities catalog snapshots into the OpsLens Bronze data lake."
