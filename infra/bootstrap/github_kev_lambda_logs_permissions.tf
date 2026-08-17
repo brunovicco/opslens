@@ -12,9 +12,13 @@ locals {
 
 data "aws_iam_policy_document" "github_actions_kev_lambda_logs" {
   statement {
-    sid     = "CreateKevLambdaLogGroup"
-    effect  = "Allow"
-    actions = ["logs:CreateLogGroup"]
+    sid    = "CreateKevLambdaLogGroup"
+    effect = "Allow"
+
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:TagLogGroup",
+    ]
 
     resources = [
       local.dev_kev_lambda_log_group_iam_arn,
