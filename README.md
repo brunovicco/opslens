@@ -1,20 +1,52 @@
+<div align="center">
+
+🇺🇸 **English** &nbsp;|&nbsp; 🇧🇷 [Português](README.pt-br.md)
+
 # OpsLens
 
-Agentic Cloud & Software Supply Chain Intelligence on AWS.
+### Agentic Cloud & Software Supply Chain Intelligence on AWS
 
-OpsLens is an open-source software supply chain intelligence platform designed to answer:
+**Threat Intelligence · Software Supply Chain · Deterministic Evidence · AWS Serverless · Security Automation**
+
+</div>
+
+OpsLens is an open-source software supply chain intelligence platform built on AWS.
+
+It is designed to answer:
 
 > Given the software I actually use, which vulnerabilities represent material risk, why, and what should I do about them?
 
+The project intentionally builds deterministic evidence, correlation, security boundaries, observability, and failure recovery before adding generative or agentic reasoning.
+
 ## Status
 
-**Phase 0 — AWS Foundation: complete.**
-**Phase 1 — EPSS Vertical Slice: complete.**
-**Next:** Phase 2 — Threat Intelligence Data Lake.
+| Phase | Scope | Status |
+| --- | --- | --- |
+| Phase 0 | AWS Foundation | ✅ Complete |
+| Phase 1 | EPSS Vertical Slice | ✅ Complete |
+| Phase 2.1 | CISA KEV Bronze Ingestion | 🟡 Final runtime validation |
+| Phase 2.2 | CISA KEV Silver + Analytics | ⏭️ Next |
 
-Phase 0 established the AWS identity, infrastructure, CI/CD, security, and observability foundation.
+Phase 2.1 currently has:
 
-Phase 1 delivered the first real end-to-end intelligence path using FIRST EPSS:
+- real CISA KEV ingestion;
+- immutable raw Bronze storage;
+- schema and source-contract validation;
+- SHA-256 provenance;
+- conditional S3 writes for idempotency;
+- Lambda asynchronous retries;
+- SQS OnFailure recovery;
+- dedicated least-privilege runtime roles;
+- daily EventBridge Scheduler at `23:30 UTC`;
+- Terraform-managed infrastructure with canonical no-change convergence.
+
+The remaining Phase 2.1 gate is the first naturally scheduled KEV execution.
+
+## Current architecture
+
+OpsLens currently has two threat-intelligence paths.
+
+### FIRST EPSS
 
 ```text
 FIRST EPSS
@@ -23,7 +55,7 @@ FIRST EPSS
 EventBridge Scheduler
     |
     v
-Ingestion Lambda
+EPSS Ingestion Lambda
     |
     v
 S3 Bronze
@@ -32,86 +64,109 @@ S3 Bronze
 S3 ObjectCreated
     |
     v
-Silver Lambda
+EPSS Silver Lambda
     |
     v
 S3 Silver / Parquet
     |
     v
-Glue Data Catalog
+AWS Glue Data Catalog
     |
     v
-Athena
+Amazon Athena
 ```
 
-The first supported structured question is now implemented and validated:
+### CISA KEV
 
-> Which CVEs have EPSS greater than 0.7 for a specific snapshot?
+```text
+CISA KEV JSON
+    |
+    v
+EventBridge Scheduler
+    |
+    v
+KEV Ingestion Lambda
+    |
+    +--> source validation
+    |
+    +--> SHA-256 provenance
+    |
+    +--> conditional S3 PutObject
+    |
+    v
+S3 Bronze
+    |
+    +--> success: immutable raw evidence
+    |
+    +--> duplicate: already_exists
+    |
+    +--> exhausted async failure: SQS OnFailure
+```
 
-For snapshot `2026-08-16`, the validated answer contains `2457` CVEs.
+KEV Silver transformation and analytics are intentionally deferred to Phase 2.2.
 
 ## Core principles
 
 - Deterministic evidence and correlation first; generative reasoning second.
+- Agents reason. Code verifies evidence.
 - Not every question is a RAG problem.
-- Never execute third-party repository code.
+- Never execute third-party repository code during analysis.
 - Repository risk and runtime exposure are separate concepts.
-- IAM least privilege, cost controls, failure recovery, and observability are architectural requirements.
-- AWS services are added only when they solve a concrete OpsLens requirement.
 - Raw source evidence is preserved before transformation.
-- Derived analytical results must be reproducible and cross-checkable against source data.
+- Derived analytical results must remain reproducible.
+- Duplicate delivery is expected and must be safe.
+- IAM least privilege is an architectural requirement.
+- Deployment identities and runtime identities remain separate.
+- Cost controls, observability, and failure recovery are part of the design.
+- AWS services are introduced only when they solve a concrete requirement.
 
 ## AWS foundation
 
-The deployment currently uses one real environment:
+Current environment:
 
-- Environment: `dev`
-- Primary workload Region: `us-east-1`
-- Infrastructure as Code: Terraform
-- Human bootstrap access: AWS IAM Identity Center
-- CI/CD identity: GitHub Actions OIDC
-- Remote Terraform state: Amazon S3
-- Runtime observability: CloudWatch Logs, CloudWatch Metrics, X-Ray
-- Structured analytics: AWS Glue Data Catalog and Amazon Athena
+```text
+Environment:             dev
+Primary workload Region: us-east-1
+Infrastructure as Code:  Terraform
+Human access:            AWS IAM Identity Center
+CI/CD identity:          GitHub Actions OIDC
+Terraform state:         Amazon S3
+Observability:           CloudWatch + X-Ray
+Analytics:               AWS Glue + Amazon Athena
+```
 
-GitHub Actions does not store persistent AWS access keys.
+GitHub Actions stores no persistent AWS access keys.
 
-The deployment role is assumed through OIDC, and its trust policy is restricted to the repository's `main` branch subject.
+The GitHub deployment role is assumed through OIDC and its trust relationship is constrained to the repository deployment boundary.
 
-Deployment permissions and runtime permissions are kept separate.
+## Data lake
 
-## Current data path
+### EPSS Bronze
 
-### Bronze
-
-The ingestion Lambda downloads the daily FIRST EPSS dataset and preserves the original compressed source artifact.
-
-Canonical key:
+Canonical object:
 
 ```text
 bronze/epss/snapshot_date=YYYY-MM-DD/epss_scores.csv.gz
 ```
 
-Bronze properties:
+Properties:
 
-- source bytes preserved;
-- deterministic object key;
-- source metadata preserved;
-- SHA-256 recorded;
-- S3 versioning enabled;
-- conditional object creation prevents duplicate snapshot writes.
+- original compressed FIRST artifact preserved;
+- deterministic key;
+- SHA-256 provenance;
+- source metadata;
+- S3 versioning;
+- conditional writes.
 
-### Silver
+### EPSS Silver
 
-An S3 `ObjectCreated` event triggers the Silver transformation Lambda.
-
-Canonical key:
+Canonical object:
 
 ```text
 silver/epss/snapshot_date=YYYY-MM-DD/part-00000.parquet
 ```
 
-Silver schema:
+Schema:
 
 ```text
 cve             string
@@ -129,47 +184,36 @@ Partition:
 snapshot_date string
 ```
 
-The transformation is deterministic and rejects invalid or duplicate CVE records.
+Silver is deterministic and serialized as Parquet.
 
-### Analytics
+### CISA KEV Bronze
 
-Silver Parquet data is cataloged through AWS Glue:
-
-```text
-database: opslens_dev
-table:    epss_scores
-```
-
-Athena uses injected partition projection for `snapshot_date`.
-
-Queries therefore provide an explicit snapshot date, which makes the analytical evidence temporally reproducible and avoids daily Glue partition registration.
-
-Athena workgroup:
+Canonical object:
 
 ```text
-opslens-dev
+bronze/kev/snapshot_date=YYYY-MM-DD/known_exploited_vulnerabilities.json
 ```
 
-The workgroup enforces:
+`snapshot_date` represents the UTC date on which OpsLens observed the source. It is intentionally distinct from the CISA catalog `dateReleased` and vulnerability-level `dateAdded`.
 
-- configured result location;
-- SSE-S3 result encryption;
-- expected bucket owner;
-- CloudWatch metrics;
-- a 10 MiB per-query scan cutoff.
+The Bronze ingestion validates HTTP success, bounded response size, UTF-8 JSON, the top-level object contract, `catalogVersion`, `dateReleased`, `count`, `vulnerabilities`, and `count == len(vulnerabilities)`.
 
-## Phase 1 validation
+Unknown source fields remain allowed, and the exact source bytes are preserved.
+
+## Validated EPSS analytical path
 
 Validated snapshot:
 
 ```text
-snapshot_date:   2026-08-16
-model_version:   v2026.06.15
-source rows:     360399
-EPSS > 0.7:      2457
+snapshot_date: 2026-08-16
+model_version: v2026.06.15
+source rows:   360399
+EPSS > 0.7:    2457
 ```
 
-Validated query:
+Supported structured question:
+
+> Which CVEs have EPSS greater than 0.7 for a specific snapshot?
 
 ```sql
 SELECT
@@ -182,63 +226,56 @@ WHERE snapshot_date = '2026-08-16'
 ORDER BY epss DESC, cve;
 ```
 
-Measured Athena execution:
+Measured execution:
 
 ```text
-query execution id:  cd0f145b-59e4-435f-9e42-7c836c56bbef
-engine:              Athena engine version 3
-data scanned:        6084428 bytes
-total execution:     1501 ms
-estimated query cost: USD 0.00005000
+Athena engine:          version 3
+data scanned:           6084428 bytes
+total execution:        1501 ms
+estimated query cost:   USD 0.00005000
 ```
 
-Correctness gates:
+The result was independently cross-checked against both Silver Parquet and the raw FIRST Bronze source.
+
+## Validated CISA KEV ingestion
+
+Validated Bronze snapshot:
 
 ```text
-BRONZE_TO_SILVER_DATA_GATE=PASS
-NO_SILVER_RECURSION_GATE=PASS
-ATHENA_PARQUET_CROSSCHECK_GATE=PASS
-ATHENA_BRONZE_SOURCE_CROSSCHECK_GATE=PASS
-ATHENA_QUERY_COST_GATE=PASS
+snapshot_date: 2026-08-17
+catalogVersion: 2026.08.14
+records:        1665
+source bytes:   1583171
+SHA-256:        52a5fe9ab6c3379298707559b5df54fb50daac45d27ea74e85d45f9632b59a79
 ```
 
-The Athena result was independently cross-checked against:
+A repeated ingestion produced `status: already_exists` without creating an additional S3 object version.
 
-1. the Silver Parquet dataset;
-2. the raw FIRST Bronze source.
+## Failure recovery
 
-Both comparisons returned the same `2457` CVEs with matching EPSS and percentile values.
+EPSS Silver and CISA KEV ingestion use bounded Lambda asynchronous processing with `maximum event age = 3600`, `retry attempts = 2`, and source-specific SQS OnFailure destinations.
 
-## Idempotency and failure recovery
+A controlled KEV source failure validated three execution attempts, `KevSourceUnavailableError`, `RetriesExhausted`, an enriched SQS destination record, and successful recovery after restoring the canonical source.
 
-Repeated delivery is expected and supported.
+## Scheduling
 
-For the same Bronze snapshot:
+CISA KEV ingestion is scheduled through EventBridge Scheduler:
 
 ```text
-first ingestion     -> created
-later ingestion     -> already_exists
-duplicate S3 event  -> safe Silver conditional write
+group:           opslens-dev-kev
+schedule:        opslens-dev-kev-daily
+expression:      cron(30 23 * * ? *)
+timezone:        UTC
+flexible window: OFF
 ```
 
-Silver asynchronous processing uses:
+Scheduler delivery retries are bounded to 3600 seconds and 2 retries.
 
-```text
-maximum event age: 3600 seconds
-retry attempts:    2
-OnFailure:         SQS Standard
-```
+The Scheduler execution role can perform only `lambda:InvokeFunction` against `opslens-dev-kev-ingestion`.
 
-A real intentional failure validated:
-
-- three Lambda invocation attempts;
-- structured error context;
-- successful OnFailure delivery to SQS;
-- no destination delivery failure.
+Scheduler delivery retries and Lambda asynchronous processing retries are separate failure boundaries.
 
 ## Security boundaries
-
-The current implementation keeps responsibilities separated:
 
 ```text
 Human bootstrap
@@ -256,18 +293,26 @@ OpsLensGitHubDeployRole
     v
 Terraform-managed infrastructure
 
-Runtime roles
+Runtime identities
     |
-    +-- ingestion: write EPSS Bronze
-    |
-    +-- Silver: read EPSS Bronze
-                write EPSS Silver
-                send failure record to exact SQS queue
+    +-- EPSS ingestion role
+    +-- EPSS Silver role
+    +-- EPSS Scheduler role
+    +-- KEV ingestion role
+    +-- KEV Scheduler role
 ```
 
-The GitHub deployment role does not serve as a runtime query identity.
+The KEV Scheduler role is protected by `scheduler.amazonaws.com`, exact `aws:SourceAccount`, and exact KEV schedule-group `aws:SourceArn`. It has no S3, SQS, Glue, Athena, or general Lambda privileges.
 
-No unrestricted Athena data-plane runtime identity has been introduced.
+## Observability
+
+The runtime uses AWS Lambda Powertools, structured CloudWatch Logs, custom CloudWatch Metrics, AWS Lambda platform metrics, AWS Scheduler metrics, and AWS X-Ray.
+
+## Cost discipline
+
+The architecture avoids services that do not yet solve a demonstrated requirement. There is no Glue crawler for EPSS, no Step Functions in current ingestion paths, no DynamoDB idempotency store, no Iceberg requirement yet, no Scheduler DLQ for KEV at this stage, and no KEV Silver or Athena resources before the Bronze contract is proven.
+
+Athena uses a 10 MiB bytes-scanned cutoff in the development workgroup.
 
 ## Repository structure
 
@@ -287,87 +332,37 @@ No unrestricted Athena data-plane runtime identity has been introduced.
 │   └── opslens/
 ├── tests/
 ├── README.md
+├── README.pt-br.md
 ├── pyproject.toml
 └── uv.lock
 ```
 
+## Quality gates
+
+The repository uses Ruff, Google-style docstrings, strict Pyright, Pytest, Terraform fmt and validate, TFLint, Checkov, GitHub Actions, canonical Terraform plans before apply, and post-deployment no-change plans.
+
 ## Documentation
 
-Architecture:
-
 - [`docs/architecture.md`](docs/architecture.md)
-
-Architecture Decision Records:
-
 - [`docs/adr/README.md`](docs/adr/README.md)
-
-Operational and validation labs:
-
 - [`docs/labs/phase-0-iam-oidc-failure.md`](docs/labs/phase-0-iam-oidc-failure.md)
 - [`docs/labs/phase-0-cloudwatch-authorization-failure.md`](docs/labs/phase-0-cloudwatch-authorization-failure.md)
 - [`docs/labs/phase-1-epss-athena-query.md`](docs/labs/phase-1-epss-athena-query.md)
-
-Documentation index:
-
+- [`docs/labs/phase-2-kev-async-failure-recovery.md`](docs/labs/phase-2-kev-async-failure-recovery.md)
 - [`docs/README.md`](docs/README.md)
 
-## Quality gates
+## Roadmap
 
-The repository uses:
+```text
+Phase 2.1  CISA KEV Bronze ingestion
+Phase 2.2  CISA KEV Silver + Glue + Athena
+Phase 2.x  NVD / CVE
+Phase 2.x  GitHub Security Advisories
+Phase 2.x  historical EPSS
+```
 
-- Ruff formatting and linting
-- Google-style docstrings
-- strict Pyright
-- Pytest
-- Terraform fmt and validate
-- TFLint
-- Checkov
+The proven EPSS architecture is reused where appropriate, but it is not treated as a mandatory template for every source.
 
-Python domain and application layers remain independent from AWS SDK concerns where appropriate.
+## License
 
-## Phase 0 evidence
-
-Phase 0 demonstrated:
-
-- remote Terraform state;
-- GitHub OIDC authentication without persistent AWS keys;
-- branch-constrained IAM trust;
-- least-privilege authorization troubleshooting;
-- real Terraform deployment from GitHub Actions;
-- CloudTrail correlation for federation events;
-- Terraform static/security gates;
-- CloudWatch operational evidence.
-
-## Phase 1 evidence
-
-Phase 1 demonstrated:
-
-- real FIRST EPSS ingestion;
-- immutable Bronze evidence;
-- deterministic Silver transformation;
-- Parquet serialization;
-- event-driven Bronze -> Silver processing;
-- idempotent repeated delivery;
-- failure retries and SQS OnFailure recovery;
-- Glue catalog integration;
-- Athena structured analytics;
-- partition pruning through explicit snapshot selection;
-- bytes-scanned and approximate query cost measurement;
-- independent Athena-to-Parquet cross-check;
-- independent Athena-to-source cross-check;
-- reproducible query documentation.
-
-## Next milestone
-
-Phase 2 expands the intelligence lake beyond EPSS.
-
-Planned sources:
-
-- CISA KEV
-- NVD/CVE
-- GitHub Security Advisories
-- EPSS history
-
-The target is deterministic structured correlation across vulnerability identity, exploitation evidence, severity, probability, advisories, affected packages, and known fixes.
-
-Architecture decisions for Phase 2 will be made source by source instead of assuming every dataset needs the same ingestion pattern.
+Apache License 2.0.
