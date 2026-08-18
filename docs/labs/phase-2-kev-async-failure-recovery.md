@@ -126,3 +126,63 @@ FAILURE_CONTEXT_GATE=PASS
 RESTORE_GATE=PASS
 TERRAFORM_CONVERGENCE_GATE=PASS
 ```
+
+## Natural Scheduler execution validation
+
+After the Scheduler infrastructure was deployed, the first natural daily
+execution was observed at the configured `23:30 UTC` schedule.
+
+Scheduler metrics:
+
+```text
+InvocationAttemptCount:    1
+TargetErrorCount:          no datapoint
+TargetErrorThrottledCount: no datapoint
+InvocationDroppedCount:    no datapoint
+```
+
+Lambda execution:
+
+```text
+start:      2026-08-17T23:30:21Z
+request_id: 846a8399-78f7-4f68-b6f4-6915a6546211
+HTTP:       200
+status:     already_exists
+```
+
+The source had changed since the original Bronze observation:
+
+```text
+original Bronze:
+catalogVersion: 2026.08.14
+records:        1665
+bytes:          1583171
+
+scheduled source observation:
+catalogVersion: 2026.08.17
+records:        1666
+bytes:          1584918
+```
+
+The conditional Bronze write correctly rejected replacement of the canonical
+daily snapshot.
+
+Post-execution S3 state:
+
+```text
+VersionCount:              1
+canonical catalogVersion:  2026.08.14
+canonical record_count:    1665
+```
+
+The KEV asynchronous failure queue remained empty.
+
+Final gates:
+
+```text
+NATURAL_SCHEDULER_INVOCATION_GATE=PASS
+SCHEDULER_DELIVERY_GATE=PASS
+DAILY_SNAPSHOT_IMMUTABILITY_GATE=PASS
+NO_FAILURE_DESTINATION_GATE=PASS
+PHASE_2_1_GATE=PASS
+```

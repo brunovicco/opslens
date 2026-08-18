@@ -24,12 +24,12 @@ O projeto constrói primeiro evidência determinística, correlação, limites d
 |---|---|---|
 | Phase 0 | AWS Foundation | ✅ Concluída |
 | Phase 1 | EPSS Vertical Slice | ✅ Concluída |
-| Phase 2.1 | CISA KEV Bronze Ingestion | 🟡 Validação final de runtime |
+| Phase 2.1 | CISA KEV Bronze Ingestion | ✅ Concluída |
 | Phase 2.2 | CISA KEV Silver + Analytics | ⏭️ Próxima |
 
 A Phase 2.1 já possui ingestão real do CISA KEV, armazenamento Bronze imutável, validação do contrato da fonte, proveniência SHA-256, idempotência por escrita condicional no S3, retries assíncronos da Lambda, recuperação OnFailure via SQS, roles dedicadas e least privilege, EventBridge Scheduler diário às `23:30 UTC` e infraestrutura Terraform convergida para `No changes`.
 
-O último gate da Phase 2.1 é observar a primeira execução natural originada pelo Scheduler.
+A Phase 2.1 está concluída. O agendamento diário do KEV foi validado através de uma execução natural originada pelo Scheduler.
 
 ## Arquitetura atual
 
@@ -283,3 +283,47 @@ A arquitetura comprovada do EPSS é reutilizada quando fizer sentido, mas não �
 ## Licença
 
 Apache License 2.0.
+## Semântica do snapshot diário do KEV
+
+O contrato Bronze da Phase 2.1 preserva uma observação imutável por
+`snapshot_date` UTC.
+
+A primeira escrita bem-sucedida do dia se torna a evidência Bronze canônica:
+
+```text
+primeira observação bem-sucedida
+        |
+        v
+PutObject condicional
+If-None-Match: "*"
+        |
+        v
+objeto canônico imutável
+```
+
+Uma atualização posterior da CISA observada na mesma data UTC resolve para a
+mesma chave e produz o resultado esperado `already_exists`.
+
+A validação agendada de `2026-08-17` demonstrou diretamente esse comportamento:
+
+```text
+observação às 03:52 UTC
+catalogVersion: 2026.08.14
+records:        1665
+
+observação às 23:30 UTC
+catalogVersion: 2026.08.17
+records:        1666
+
+Bronze canônico após as duas observações
+catalogVersion: 2026.08.14
+records:        1665
+versões S3:     1
+```
+
+Portanto, `snapshot_date` significa **a data UTC em que o OpsLens preservou
+pela primeira vez a fonte com sucesso**, e não necessariamente a última revisão
+publicada pela CISA naquele dia.
+
+Capturar revisões intradiárias da fonte está intencionalmente fora do contrato
+da Phase 2.1.

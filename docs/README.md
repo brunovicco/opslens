@@ -45,6 +45,6 @@ Phase 2:
 ```text
 Phase 0 — AWS Foundation:              COMPLETE
 Phase 1 — EPSS Vertical Slice:         COMPLETE
-Phase 2.1 — CISA KEV Bronze:           FINAL RUNTIME VALIDATION
+Phase 2.1 — CISA KEV Bronze:           COMPLETE
 Phase 2.2 — CISA KEV Silver/Analytics: NEXT
 ```

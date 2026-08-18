@@ -24,7 +24,7 @@ The project intentionally builds deterministic evidence, correlation, security b
 | --- | --- | --- |
 | Phase 0 | AWS Foundation | ✅ Complete |
 | Phase 1 | EPSS Vertical Slice | ✅ Complete |
-| Phase 2.1 | CISA KEV Bronze Ingestion | 🟡 Final runtime validation |
+| Phase 2.1 | CISA KEV Bronze Ingestion | ✅ Complete |
 | Phase 2.2 | CISA KEV Silver + Analytics | ⏭️ Next |
 
 Phase 2.1 currently has:
@@ -40,7 +40,7 @@ Phase 2.1 currently has:
 - daily EventBridge Scheduler at `23:30 UTC`;
 - Terraform-managed infrastructure with canonical no-change convergence.
 
-The remaining Phase 2.1 gate is the first naturally scheduled KEV execution.
+Phase 2.1 is complete. The daily KEV schedule has been validated through a naturally scheduled execution.
 
 ## Current architecture
 
@@ -366,3 +366,47 @@ The proven EPSS architecture is reused where appropriate, but it is not treated 
 ## License
 
 Apache License 2.0.
+## KEV daily snapshot semantics
+
+The Phase 2.1 KEV Bronze contract preserves one immutable observation per UTC
+`snapshot_date`.
+
+The first successful write for a date becomes the canonical Bronze evidence:
+
+```text
+first successful observation
+        |
+        v
+conditional PutObject
+If-None-Match: "*"
+        |
+        v
+canonical immutable object
+```
+
+Any later CISA update observed during the same UTC date resolves to the same
+object key and produces the expected `already_exists` result.
+
+The scheduled validation on `2026-08-17` demonstrated this behavior directly:
+
+```text
+03:52 UTC observation
+catalogVersion: 2026.08.14
+records:        1665
+
+23:30 UTC observation
+catalogVersion: 2026.08.17
+records:        1666
+
+canonical Bronze after both observations
+catalogVersion: 2026.08.14
+records:        1665
+S3 versions:    1
+```
+
+Therefore, `snapshot_date` means **the UTC date on which OpsLens first
+successfully preserved the source**, not necessarily the final CISA revision
+published during that date.
+
+Capturing intraday source revisions is intentionally outside the Phase 2.1
+contract.
