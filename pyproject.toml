@@ -67,5 +67,7 @@ reportMissingTypeStubs = false
 executionEnvironments = [
     { root = "src/opslens/transformation/epss/adapters/outbound", reportUnknownArgumentType = "none", reportUnknownMemberType = "none", reportUnknownParameterType = "none", reportUnknownVariableType = "none" },
     { root = "tests/unit/transformation/epss/adapters/outbound", reportUnknownArgumentType = "none", reportUnknownMemberType = "none", reportUnknownParameterType = "none", reportUnknownVariableType = "none" },
+    { root = "src/opslens/transformation/kev/adapters/outbound", reportUnknownArgumentType = "none", reportUnknownMemberType = "none", reportUnknownParameterType = "none", reportUnknownVariableType = "none" },
+    { root = "tests/unit/transformation/kev/adapters/outbound", reportUnknownArgumentType = "none", reportUnknownMemberType = "none", reportUnknownParameterType = "none", reportUnknownVariableType = "none" },
     { root = "." },
 ]
