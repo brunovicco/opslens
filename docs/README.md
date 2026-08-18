@@ -22,6 +22,7 @@ It is not a speculative future-state architecture document.
 - [`0001 — Terraform state strategy`](adr/0001-terraform-state-strategy.md)
 - [`0002 — GitHub Actions OIDC deployment identity`](adr/0002-github-actions-oidc.md)
 - [`0003 — AWS regional strategy`](adr/0003-aws-region-strategy.md)
+- [`0004 — NVD ingestion and vulnerability versioning strategy`](adr/0004-nvd-ingestion-and-versioning-strategy.md)
 
 See [`adr/README.md`](adr/README.md) for the ADR index.
 
@@ -41,6 +42,7 @@ Phase 2:
 - [`phase-2-kev-async-failure-recovery.md`](labs/phase-2-kev-async-failure-recovery.md)
 - [`phase-2-kev-silver-runtime.md`](labs/phase-2-kev-silver-runtime.md)
 - [`phase-2-kev-athena-query.md`](labs/phase-2-kev-athena-query.md)
+- [`phase-2-nvd-source-contract.md`](labs/phase-2-nvd-source-contract.md)
 
 ## Current milestone
 
@@ -49,5 +51,6 @@ Phase 0 — AWS Foundation:              COMPLETE
 Phase 1 — EPSS Vertical Slice:         COMPLETE
 Phase 2.1 — CISA KEV Bronze:           COMPLETE
 Phase 2.2 — CISA KEV Silver/Analytics: COMPLETE
-Phase 2.3 — NVD/CVE:                   NEXT
+Phase 2.3A — NVD Source Contract:      COMPLETE
+Phase 2.3B — NVD Bootstrap Bronze:     NEXT
 ```
