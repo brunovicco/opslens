@@ -3,7 +3,6 @@
 import gzip
 import hashlib
 import json
-from datetime import UTC, datetime
 from typing import cast
 
 import pytest
@@ -77,14 +76,6 @@ def _manifest() -> NvdBootstrapManifest:
         keys=keys,
         feed_version_id="feed-version-123",
         meta_version_id="meta-version-456",
-        retrieved_at=datetime(
-            2026,
-            8,
-            18,
-            22,
-            0,
-            tzinfo=UTC,
-        ),
     )
 
 
@@ -106,7 +97,6 @@ def test_manifest_preserves_exact_stored_object_hashes() -> None:
         keys=keys,
         feed_version_id="feed-version",
         meta_version_id="meta-version",
-        retrieved_at=datetime.now(UTC),
     )
 
     assert manifest.feed_object.sha256 == (artifact.bronze_object_sha256)
@@ -123,7 +113,6 @@ def test_manifest_preserves_source_sha256_separately() -> None:
         keys=keys,
         feed_version_id="feed-version",
         meta_version_id="meta-version",
-        retrieved_at=datetime.now(UTC),
     )
 
     assert manifest.source_sha256 == (identity.meta.source_sha256)
@@ -153,19 +142,6 @@ def test_manifest_serializer_marks_complete_evidence() -> None:
     assert document["source_interface"] == ("json-2.0-yearly-feed")
 
 
-def test_manifest_serializer_normalizes_timestamps_to_utc() -> None:
-    """Serialize source and retrieval timestamps in canonical UTC."""
-    serialized = NvdBootstrapManifestSerializer().serialize(_manifest())
-
-    document = cast(
-        dict[str, object],
-        json.loads(serialized),
-    )
-
-    assert document["source_last_modified_at"] == ("2026-08-18T07:00:12Z")
-    assert document["retrieved_at"] == ("2026-08-18T22:00:00Z")
-
-
 def test_manifest_rejects_artifact_identity_mismatch() -> None:
     """Reject completion evidence assembled from different META sources."""
     artifact, _, keys = _build_source()
@@ -193,7 +169,6 @@ def test_manifest_rejects_artifact_identity_mismatch() -> None:
             keys=keys,
             feed_version_id="feed-version",
             meta_version_id="meta-version",
-            retrieved_at=datetime.now(UTC),
         )
 
 
@@ -211,7 +186,6 @@ def test_manifest_rejects_missing_feed_version_id() -> None:
             keys=keys,
             feed_version_id="",
             meta_version_id="meta-version",
-            retrieved_at=datetime.now(UTC),
         )
 
 
@@ -229,29 +203,43 @@ def test_manifest_rejects_missing_meta_version_id() -> None:
             keys=keys,
             feed_version_id="feed-version",
             meta_version_id="",
-            retrieved_at=datetime.now(UTC),
         )
 
 
-def test_manifest_rejects_naive_retrieval_timestamp() -> None:
-    """Reject completion evidence without timezone-aware retrieval time."""
+def test_manifest_rebuild_produces_identical_completion_bytes() -> None:
+    """Produce stable completion evidence when the same source is retried."""
     artifact, identity, keys = _build_source()
+    factory = NvdBootstrapManifestFactory()
+    serializer = NvdBootstrapManifestSerializer()
 
-    with pytest.raises(
-        ValueError,
-        match="retrieved_at must be timezone-aware",
-    ):
-        NvdBootstrapManifestFactory().build(
-            artifact=artifact,
-            identity=identity,
-            keys=keys,
-            feed_version_id="feed-version",
-            meta_version_id="meta-version",
-            retrieved_at=datetime(  # noqa: DTZ001 - intentionally naive for validation test
-                2026,
-                8,
-                18,
-                22,
-                0,
-            ),
-        )
+    first = factory.build(
+        artifact=artifact,
+        identity=identity,
+        keys=keys,
+        feed_version_id="feed-version-123",
+        meta_version_id="meta-version-456",
+    )
+
+    second = factory.build(
+        artifact=artifact,
+        identity=identity,
+        keys=keys,
+        feed_version_id="feed-version-123",
+        meta_version_id="meta-version-456",
+    )
+
+    assert serializer.serialize(first) == serializer.serialize(second)
+
+
+def test_manifest_serializer_normalizes_source_timestamp_to_utc() -> None:
+    """Serialize the stable NVD source timestamp in canonical UTC."""
+    serialized = NvdBootstrapManifestSerializer().serialize(_manifest())
+
+    document = cast(
+        dict[str, object],
+        json.loads(serialized),
+    )
+
+    assert document["source_last_modified_at"] == ("2026-08-18T07:00:12Z")
+
+    assert "retrieved_at" not in document

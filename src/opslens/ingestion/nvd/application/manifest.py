@@ -70,7 +70,6 @@ class NvdBootstrapManifest:
     feed_revision: str
     source_last_modified_at: datetime
     source_sha256: str
-    retrieved_at: datetime
     uncompressed_size_bytes: int
     zip_size_bytes: int
     gzip_size_bytes: int
@@ -90,9 +89,6 @@ class NvdBootstrapManifest:
 
         if self.source_last_modified_at.tzinfo is None:
             raise ValueError("NVD Bootstrap source timestamp must be timezone-aware.")
-
-        if self.retrieved_at.tzinfo is None:
-            raise ValueError("NVD Bootstrap retrieved_at must be timezone-aware.")
 
         if not _SHA256_PATTERN.fullmatch(self.source_sha256):
             raise ValueError(
@@ -121,7 +117,6 @@ class NvdBootstrapManifestFactory:
         keys: NvdBootstrapObjectKeys,
         feed_version_id: str,
         meta_version_id: str,
-        retrieved_at: datetime,
     ) -> NvdBootstrapManifest:
         """Build the completion manifest for one persisted source revision.
 
@@ -131,7 +126,6 @@ class NvdBootstrapManifestFactory:
             keys: Deterministic Bronze keys for the revision.
             feed_version_id: Exact S3 VersionId of the gzip object.
             meta_version_id: Exact S3 VersionId of the META object.
-            retrieved_at: Time OpsLens completed observing the source revision.
 
         Returns:
             Validated COMPLETE bootstrap manifest.
@@ -141,9 +135,6 @@ class NvdBootstrapManifestFactory:
         """
         if artifact.meta != identity.meta:
             raise ValueError("NVD Bootstrap artifact META does not match source identity.")
-
-        if retrieved_at.tzinfo is None:
-            raise ValueError("NVD Bootstrap retrieved_at must be timezone-aware.")
 
         meta_object_sha256 = hashlib.sha256(identity.meta.raw_bytes).hexdigest()
 
@@ -166,7 +157,6 @@ class NvdBootstrapManifestFactory:
             feed_revision=identity.feed_revision,
             source_last_modified_at=identity.meta.last_modified_at,
             source_sha256=identity.meta.source_sha256,
-            retrieved_at=retrieved_at,
             uncompressed_size_bytes=(identity.meta.uncompressed_size_bytes),
             zip_size_bytes=identity.meta.zip_size_bytes,
             gzip_size_bytes=identity.meta.gzip_size_bytes,
@@ -201,7 +191,6 @@ class NvdBootstrapManifestSerializer:
                 "size_bytes": manifest.meta_object.size_bytes,
                 "version_id": manifest.meta_object.version_id,
             },
-            "retrieved_at": self._format_utc(manifest.retrieved_at),
             "source": manifest.SOURCE,
             "source_interface": manifest.SOURCE_INTERFACE,
             "source_last_modified_at": self._format_utc(manifest.source_last_modified_at),
