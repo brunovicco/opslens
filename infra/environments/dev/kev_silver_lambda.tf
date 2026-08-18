@@ -18,7 +18,7 @@ locals {
 
 resource "aws_lambda_function" "kev_silver" {
   # checkov:skip=CKV_AWS_173: Lambda environment contains only non-secret S3 configuration; a customer-managed KMS key is not justified for the dev KEV Silver workload.
-  # checkov:skip=CKV_AWS_116: Asynchronous failures will use a Lambda OnFailure SQS destination rather than a traditional Lambda DLQ; event wiring is intentionally introduced after the isolated runtime gate.
+  # checkov:skip=CKV_AWS_116: Asynchronous failures use an explicit Lambda OnFailure SQS destination configured through aws_lambda_function_event_invoke_config rather than dead_letter_config.
   # checkov:skip=CKV_AWS_272: Lambda code signing is deferred until the project introduces an artifact signing and release trust workflow.
   # checkov:skip=CKV_AWS_117: The function accesses AWS S3 APIs and no private VPC resources; placing it in a VPC would add networking complexity without a current requirement.
   # checkov:skip=CKV_AWS_115: Reserved concurrency cannot be configured while the dev account regional Lambda concurrency quota does not support the existing workload isolation pattern; KEV Silver is low-volume and idempotent.
@@ -73,4 +73,17 @@ resource "aws_lambda_function" "kev_silver" {
 output "kev_silver_lambda_function_arn" {
   description = "ARN of the KEV Silver transformation Lambda function."
   value       = aws_lambda_function.kev_silver.arn
+}
+
+resource "aws_lambda_function_event_invoke_config" "kev_silver" {
+  function_name = aws_lambda_function.kev_silver.function_name
+
+  maximum_event_age_in_seconds = 3600
+  maximum_retry_attempts       = 2
+
+  destination_config {
+    on_failure {
+      destination = aws_sqs_queue.kev_silver_failures.arn
+    }
+  }
 }
