@@ -25,22 +25,25 @@ The project intentionally builds deterministic evidence, correlation, security b
 | Phase 0 | AWS Foundation | ✅ Complete |
 | Phase 1 | EPSS Vertical Slice | ✅ Complete |
 | Phase 2.1 | CISA KEV Bronze Ingestion | ✅ Complete |
-| Phase 2.2 | CISA KEV Silver + Analytics | ⏭️ Next |
+| Phase 2.2 | CISA KEV Silver + Analytics | 🚧 In progress |
 
-Phase 2.1 currently has:
+Phase 2.2 currently has the KEV Bronze-to-Silver runtime fully operationalized:
 
-- real CISA KEV ingestion;
-- immutable raw Bronze storage;
-- schema and source-contract validation;
-- SHA-256 provenance;
-- conditional S3 writes for idempotency;
-- Lambda asynchronous retries;
+- exact S3 `VersionId` reads for Bronze evidence;
+- transport and provenance verification before transformation;
+- deterministic normalization into a typed Silver contract;
+- Parquet serialization with explicit schema and metadata;
+- conditional Silver writes with `If-None-Match: *`;
+- idempotent replay with no additional S3 object version;
+- S3 `ObjectCreated:Put` event wiring for KEV Bronze;
+- bounded Lambda asynchronous retries;
 - SQS OnFailure recovery;
-- dedicated least-privilege runtime roles;
-- daily EventBridge Scheduler at `23:30 UTC`;
-- Terraform-managed infrastructure with canonical no-change convergence.
+- dedicated least-privilege KEV Silver runtime role;
+- CloudWatch Logs, custom metrics, and X-Ray tracing;
+- deliberate fail-closed evidence-mismatch validation;
+- Terraform convergence validated with `No changes`.
 
-Phase 2.1 is complete. The daily KEV schedule has been validated through a naturally scheduled execution.
+The next Phase 2.2 increment is the deterministic Glue/Athena analytical layer for CISA KEV.
 
 ## Current architecture
 
@@ -88,22 +91,36 @@ EventBridge Scheduler
 KEV Ingestion Lambda
     |
     +--> source validation
-    |
     +--> SHA-256 provenance
-    |
     +--> conditional S3 PutObject
     |
     v
 S3 Bronze
     |
-    +--> success: immutable raw evidence
+    v
+S3 ObjectCreated:Put
     |
-    +--> duplicate: already_exists
+    v
+KEV Silver Lambda
     |
+    +--> exact VersionId read
+    +--> event / S3 evidence verification
+    +--> deterministic normalization
+    +--> typed Parquet serialization
+    +--> conditional Silver PutObject
+    |
+    v
+S3 Silver / Parquet
+    |
+    +--> duplicate delivery: already_exists
     +--> exhausted async failure: SQS OnFailure
+    |
+    v
+AWS Glue + Athena
+(next Phase 2.2 increment)
 ```
 
-KEV Silver transformation and analytics are intentionally deferred to Phase 2.2.
+The S3 notification is scoped to the KEV Bronze prefix and canonical filename. KEV Silver writes to a separate `silver/kev/` prefix, avoiding recursive invocation.
 
 ## Core principles
 
@@ -200,6 +217,51 @@ The Bronze ingestion validates HTTP success, bounded response size, UTF-8 JSON, 
 
 Unknown source fields remain allowed, and the exact source bytes are preserved.
 
+### CISA KEV Silver
+
+Canonical object:
+
+```text
+silver/kev/snapshot_date=YYYY-MM-DD/part-00000.parquet
+```
+
+Physical Parquet columns:
+
+```text
+cve
+vendor_project
+product
+vulnerability_name
+date_added
+short_description
+required_action
+due_date
+known_ransomware_campaign_use
+notes
+cwes
+catalog_version
+catalog_date_released
+source
+source_sha256
+retrieved_at
+```
+
+Partition:
+
+```text
+snapshot_date string
+```
+
+The Silver transformation:
+
+- reads the exact Bronze object version referenced by the S3 event;
+- cross-checks `VersionId`, ETag, size, and Bronze provenance metadata;
+- fails closed on transport or provenance mismatches;
+- rejects duplicate CVEs and unsupported ransomware values;
+- preserves deterministic source ordering;
+- writes Parquet with an explicit Arrow schema;
+- uses conditional persistence so duplicate delivery cannot create a second Silver version.
+
 ## Validated EPSS analytical path
 
 Validated snapshot:
@@ -237,25 +299,51 @@ estimated query cost:   USD 0.00005000
 
 The result was independently cross-checked against both Silver Parquet and the raw FIRST Bronze source.
 
-## Validated CISA KEV ingestion
+## Validated CISA KEV pipeline
 
 Validated Bronze snapshot:
 
 ```text
-snapshot_date: 2026-08-17
+snapshot_date:  2026-08-17
 catalogVersion: 2026.08.14
-records:        1665
-source bytes:   1583171
-SHA-256:        52a5fe9ab6c3379298707559b5df54fb50daac45d27ea74e85d45f9632b59a79
+records:         1665
+source bytes:    1583171
+SHA-256:         52a5fe9ab6c3379298707559b5df54fb50daac45d27ea74e85d45f9632b59a79
 ```
 
-A repeated ingestion produced `status: already_exists` without creating an additional S3 object version.
+Validated Silver artifact:
+
+```text
+key:             silver/kev/snapshot_date=2026-08-17/part-00000.parquet
+rows:            1665
+columns:         16
+size:            257331 bytes
+schema version:  1
+Known ransomware:   349
+Unknown ransomware: 1316
+empty CWE lists:     171
+```
+
+The Silver object was independently downloaded and inspected with PyArrow.
+
+A replay of the exact same Bronze event returned `already_exists`, while the versioned S3 object remained at one version with the same `VersionId`.
 
 ## Failure recovery
 
-EPSS Silver and CISA KEV ingestion use bounded Lambda asynchronous processing with `maximum event age = 3600`, `retry attempts = 2`, and source-specific SQS OnFailure destinations.
+EPSS Silver, CISA KEV ingestion, and CISA KEV Silver use bounded Lambda asynchronous processing with `maximum event age = 3600`, `retry attempts = 2`, and source-specific SQS OnFailure destinations.
 
-A controlled KEV source failure validated three execution attempts, `KevSourceUnavailableError`, `RetriesExhausted`, an enriched SQS destination record, and successful recovery after restoring the canonical source.
+A controlled KEV ingestion source failure validated three execution attempts, `KevSourceUnavailableError`, `RetriesExhausted`, an enriched SQS destination record, and successful recovery after restoring the canonical source.
+
+A separate controlled KEV Silver failure supplied a parser-valid event with an intentionally incorrect ETag. The runtime:
+
+- read the exact Bronze `VersionId`;
+- detected the event/S3 evidence mismatch;
+- raised `KevBronzeEvidenceMismatchError`;
+- retried until `approximateInvokeCount = 3`;
+- produced an SQS OnFailure record with `condition = RetriesExhausted`;
+- created no additional Silver object version.
+
+This validates the fail-closed rule: S3 event metadata is treated as evidence to verify, not as trusted authority.
 
 ## Scheduling
 
@@ -299,20 +387,56 @@ Runtime identities
     +-- EPSS Silver role
     +-- EPSS Scheduler role
     +-- KEV ingestion role
+    +-- KEV Silver role
     +-- KEV Scheduler role
 ```
 
-The KEV Scheduler role is protected by `scheduler.amazonaws.com`, exact `aws:SourceAccount`, and exact KEV schedule-group `aws:SourceArn`. It has no S3, SQS, Glue, Athena, or general Lambda privileges.
+The KEV Silver role is intentionally narrow:
+
+```text
+s3:GetObjectVersion -> bronze/kev/*
+s3:PutObject        -> silver/kev/*
+sqs:SendMessage     -> KEV Silver failure queue
+CloudWatch Logs     -> KEV Silver log group
+X-Ray telemetry     -> tracing APIs
+```
+
+It does not receive generic `s3:GetObject`, `s3:ListBucket`, delete permissions, or broad SQS access.
+
+S3 is allowed to invoke the KEV Silver Lambda only from the expected data bucket and AWS account.
 
 ## Observability
 
 The runtime uses AWS Lambda Powertools, structured CloudWatch Logs, custom CloudWatch Metrics, AWS Lambda platform metrics, AWS Scheduler metrics, and AWS X-Ray.
 
+The first real KEV Silver transformation observed:
+
+```text
+configured memory:  1024 MB
+max memory used:     176 MB
+duration:             795.365 ms
+billed duration:      2112 ms
+rows transformed:     1665
+```
+
+A warm idempotent replay observed a maximum of 194 MB used. Right-sizing is intentionally deferred until additional natural runtime evidence is available.
+
 ## Cost discipline
 
-The architecture avoids services that do not yet solve a demonstrated requirement. There is no Glue crawler for EPSS, no Step Functions in current ingestion paths, no DynamoDB idempotency store, no Iceberg requirement yet, no Scheduler DLQ for KEV at this stage, and no KEV Silver or Athena resources before the Bronze contract is proven.
+The architecture avoids services that do not yet solve a demonstrated requirement.
+
+Current examples:
+
+- no Glue crawler for EPSS;
+- no Step Functions in current ingestion/transformation paths;
+- no DynamoDB idempotency store;
+- no Iceberg requirement yet;
+- no Scheduler DLQ for KEV at this stage;
+- KEV Glue/Athena resources are introduced only after the Bronze-to-Silver runtime is proven.
 
 Athena uses a 10 MiB bytes-scanned cutoff in the development workgroup.
+
+The controlled three-attempt KEV Silver failure lab consumed approximately `2.283 GB-s` of Lambda compute before free-tier effects, demonstrating that the current dev workload remains negligible relative to the project cost target.
 
 ## Repository structure
 
@@ -349,13 +473,15 @@ The repository uses Ruff, Google-style docstrings, strict Pyright, Pytest, Terra
 - [`docs/labs/phase-0-cloudwatch-authorization-failure.md`](docs/labs/phase-0-cloudwatch-authorization-failure.md)
 - [`docs/labs/phase-1-epss-athena-query.md`](docs/labs/phase-1-epss-athena-query.md)
 - [`docs/labs/phase-2-kev-async-failure-recovery.md`](docs/labs/phase-2-kev-async-failure-recovery.md)
+- [`docs/labs/phase-2-kev-silver-runtime.md`](docs/labs/phase-2-kev-silver-runtime.md)
 - [`docs/README.md`](docs/README.md)
 
 ## Roadmap
 
 ```text
-Phase 2.1  CISA KEV Bronze ingestion
-Phase 2.2  CISA KEV Silver + Glue + Athena
+Phase 2.1  CISA KEV Bronze ingestion                         COMPLETE
+Phase 2.2  CISA KEV Silver runtime                          COMPLETE
+Phase 2.2  CISA KEV Glue + Athena                           NEXT
 Phase 2.x  NVD / CVE
 Phase 2.x  GitHub Security Advisories
 Phase 2.x  historical EPSS
@@ -363,13 +489,9 @@ Phase 2.x  historical EPSS
 
 The proven EPSS architecture is reused where appropriate, but it is not treated as a mandatory template for every source.
 
-## License
-
-Apache License 2.0.
 ## KEV daily snapshot semantics
 
-The Phase 2.1 KEV Bronze contract preserves one immutable observation per UTC
-`snapshot_date`.
+The Phase 2.1 KEV Bronze contract preserves one immutable observation per UTC `snapshot_date`.
 
 The first successful write for a date becomes the canonical Bronze evidence:
 
@@ -384,8 +506,7 @@ If-None-Match: "*"
 canonical immutable object
 ```
 
-Any later CISA update observed during the same UTC date resolves to the same
-object key and produces the expected `already_exists` result.
+Any later CISA update observed during the same UTC date resolves to the same object key and produces the expected `already_exists` result.
 
 The scheduled validation on `2026-08-17` demonstrated this behavior directly:
 
@@ -404,9 +525,10 @@ records:        1665
 S3 versions:    1
 ```
 
-Therefore, `snapshot_date` means **the UTC date on which OpsLens first
-successfully preserved the source**, not necessarily the final CISA revision
-published during that date.
+Therefore, `snapshot_date` means **the UTC date on which OpsLens first successfully preserved the source**, not necessarily the final CISA revision published during that date.
 
-Capturing intraday source revisions is intentionally outside the Phase 2.1
-contract.
+Capturing intraday source revisions is intentionally outside the Phase 2.1 contract.
+
+## License
+
+Apache License 2.0.
