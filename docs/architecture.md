@@ -106,8 +106,13 @@ KEV Silver Lambda
 S3 Silver / Parquet
 silver/kev/snapshot_date=YYYY-MM-DD/part-00000.parquet
     |
-    +--> duplicate delivery: already_exists
-    +--> exhausted async failure: SQS OnFailure
+    v
+AWS Glue Data Catalog
+opslens_dev.kev_entries
+    |
+    v
+Amazon Athena
+opslens-dev
 ```
 
 The KEV Silver dataset is implemented and validated in S3. Glue/Athena registration for KEV is the next Phase 2 increment.
@@ -190,7 +195,7 @@ Current status:
 
 ```text
 FIRST EPSS                 IMPLEMENTED through Athena
-CISA KEV                   IMPLEMENTED through Silver; Glue/Athena next
+CISA KEV                   IMPLEMENTED through Athena
 NVD / CVE                  NOT STARTED
 GitHub Security Advisories NOT STARTED
 EPSS historical expansion  PENDING PHASE 2 WORK
