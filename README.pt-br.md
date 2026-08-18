@@ -25,25 +25,25 @@ O projeto constrói primeiro evidência determinística, correlação, limites d
 | Phase 0 | AWS Foundation | ✅ Concluída |
 | Phase 1 | EPSS Vertical Slice | ✅ Concluída |
 | Phase 2.1 | CISA KEV Bronze Ingestion | ✅ Concluída |
-| Phase 2.2 | CISA KEV Silver + Analytics | 🚧 Em andamento |
+| Phase 2.2 | CISA KEV Silver + Analytics | ✅ Concluída |
+| Phase 2.3 | NVD / CVE | ▶️ Próxima |
 
-A Phase 2.2 já possui o runtime Bronze-to-Silver do KEV completamente operacionalizado:
+A Phase 2.2 agora fornece o caminho completo de evidência CISA KEV:
 
-- leitura do Bronze pelo `VersionId` exato do S3;
-- verificação de transporte e proveniência antes da transformação;
-- normalização determinística para um contrato Silver tipado;
-- serialização Parquet com schema e metadados explícitos;
-- escrita Silver condicional com `If-None-Match: *`;
-- replay idempotente sem criação de nova versão no S3;
-- wiring `ObjectCreated:Put` do S3 para o Bronze KEV;
-- retries assíncronos limitados da Lambda;
-- recuperação OnFailure via SQS;
-- role dedicada e least privilege para o KEV Silver;
-- CloudWatch Logs, métricas customizadas e tracing X-Ray;
-- validação deliberada de falha fail-closed por divergência de evidência;
-- convergência Terraform validada com `No changes`.
+- evidência Bronze imutável da fonte;
+- processamento Bronze-to-Silver pela versão exata do S3;
+- normalização determinística;
+- persistência Silver Parquet tipada;
+- processamento event-driven idempotente;
+- recuperação assíncrona de falhas com limites explícitos;
+- registro no AWS Glue Data Catalog;
+- partition projection `snapshot_date` do tipo `injected`;
+- consultas determinísticas no Amazon Athena;
+- cross-check independente entre Parquet e Athena;
+- enforcement explícito da dimensão temporal;
+- evidência medida de scan e latência no Athena.
 
-O próximo incremento da Phase 2.2 é a camada analítica determinística do CISA KEV com Glue/Athena.
+O próximo vertical slice principal da Phase 2 é a ingestão e normalização NVD/CVE.
 
 ## Arquitetura atual
 
@@ -114,8 +114,12 @@ S3 Silver / Parquet
     +--> falha assíncrona esgotada: SQS OnFailure
     |
     v
-AWS Glue + Athena
-(próximo incremento da Phase 2.2)
+AWS Glue Data Catalog
+opslens_dev.kev_entries
+    |
+    v
+Amazon Athena
+opslens-dev
 ```
 
 A notification do S3 está restrita ao prefixo Bronze do KEV e ao nome de arquivo canônico. O KEV Silver grava em `silver/kev/`, evitando invocação recursiva.
@@ -314,6 +318,49 @@ O objeto Silver foi baixado e inspecionado independentemente com PyArrow.
 
 Um replay do mesmo evento Bronze retornou `already_exists`, enquanto o objeto versionado do S3 permaneceu com uma única versão e o mesmo `VersionId`.
 
+## Caminho analítico CISA KEV validado
+
+Snapshot validado:
+
+```text
+snapshot_date: 2026-08-17
+rows:          1665
+table:         opslens_dev.kev_entries
+workgroup:     opslens-dev
+```
+
+Pergunta estruturada suportada:
+
+> A CVE X estava presente no catálogo CISA KEV em um snapshot específico?
+
+A CVE de validação foi selecionada diretamente do artefato Silver Parquet persistido, e não de memória:
+
+```text
+CVE-2002-0367
+vendor_project: Microsoft
+product: Windows
+date_added: 2022-03-03
+due_date: 2022-03-24
+catalog_version: 2026.08.14
+source: cisa-kev
+source_sha256: 52a5fe9ab6c3379298707559b5df54fb50daac45d27ea74e85d45f9632b59a79
+```
+
+O Athena retornou a mesma evidência do artefato Parquet persistido.
+
+Execuções observadas no Athena:
+
+| Validação | Dados escaneados | Tempo total |
+| --- | ---: | ---: |
+| Contagem de registros | 0 bytes | 744 ms |
+| Membership da CVE | 24.911 bytes | 621 ms |
+| Arrays CWE vazios | 3.002 bytes | 842 ms |
+| Compatibilidade de timestamps | 13.826 bytes | 945 ms |
+
+A consulta de contagem retornou `1665`, a validação de CWE retornou `171` arrays vazios e os campos `catalog_date_released` e `retrieved_at` foram lidos com sucesso pelo Athena engine version 3.
+
+A tabela Glue usa partition projection `injected` para `snapshot_date`. Uma consulta que omitiu intencionalmente `snapshot_date` falhou com `CONSTRAINT_VIOLATION`, exigindo evidência temporal explícita em vez de tratar implicitamente uma versão não informada como "mais recente".
+
 ## Recuperação de falhas
 
 EPSS Silver, ingestão CISA KEV e CISA KEV Silver usam processamento assíncrono limitado da Lambda com `maximum event age = 3600`, `retry attempts = 2` e destinations SQS OnFailure específicas.
@@ -413,12 +460,12 @@ A arquitetura evita serviços que ainda não resolvem um requisito demonstrado.
 
 Exemplos atuais:
 
-- nenhum Glue crawler para EPSS;
+- nenhum Glue crawler para EPSS ou CISA KEV;
 - nenhum Step Functions nos caminhos atuais de ingestão/transformação;
 - nenhum DynamoDB para idempotência;
 - nenhum requisito de Iceberg neste estágio;
 - nenhum Scheduler DLQ para KEV neste estágio;
-- os recursos Glue/Athena do KEV entram somente depois da comprovação do runtime Bronze-to-Silver.
+- os recursos Glue/Athena do KEV foram introduzidos somente depois da comprovação do runtime Bronze-to-Silver.
 
 O workgroup de desenvolvimento do Athena utiliza cutoff de 10 MiB por query.
 
@@ -460,6 +507,7 @@ O repositório utiliza Ruff, Google-style docstrings, Pyright strict, Pytest, Te
 - [`docs/labs/phase-1-epss-athena-query.md`](docs/labs/phase-1-epss-athena-query.md)
 - [`docs/labs/phase-2-kev-async-failure-recovery.md`](docs/labs/phase-2-kev-async-failure-recovery.md)
 - [`docs/labs/phase-2-kev-silver-runtime.md`](docs/labs/phase-2-kev-silver-runtime.md)
+- [`docs/labs/phase-2-kev-athena-query.md`](docs/labs/phase-2-kev-athena-query.md)
 - [`docs/README.md`](docs/README.md)
 
 ## Roadmap
@@ -467,10 +515,10 @@ O repositório utiliza Ruff, Google-style docstrings, Pyright strict, Pytest, Te
 ```text
 Phase 2.1  CISA KEV Bronze ingestion                         CONCLUÍDA
 Phase 2.2  CISA KEV Silver runtime                          CONCLUÍDO
-Phase 2.2  CISA KEV Glue + Athena                           PRÓXIMO
-Phase 2.x  NVD / CVE
-Phase 2.x  GitHub Security Advisories
-Phase 2.x  histórico EPSS
+Phase 2.2  CISA KEV Glue + Athena                           CONCLUÍDO
+Phase 2.3  NVD / CVE                                        PRÓXIMO
+Phase 2.4  GitHub Security Advisories                       NÃO INICIADO
+Phase 2.5  histórico EPSS                                   NÃO INICIADO
 ```
 
 A arquitetura comprovada do EPSS é reutilizada quando fizer sentido, mas não é tratada como template obrigatório para toda fonte.

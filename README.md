@@ -25,25 +25,25 @@ The project intentionally builds deterministic evidence, correlation, security b
 | Phase 0 | AWS Foundation | ✅ Complete |
 | Phase 1 | EPSS Vertical Slice | ✅ Complete |
 | Phase 2.1 | CISA KEV Bronze Ingestion | ✅ Complete |
-| Phase 2.2 | CISA KEV Silver + Analytics | 🚧 In progress |
+| Phase 2.2 | CISA KEV Silver + Analytics | ✅ Complete |
+| Phase 2.3 | NVD / CVE | ▶️ Next |
 
-Phase 2.2 currently has the KEV Bronze-to-Silver runtime fully operationalized:
+Phase 2.2 now provides the complete CISA KEV evidence path:
 
-- exact S3 `VersionId` reads for Bronze evidence;
-- transport and provenance verification before transformation;
-- deterministic normalization into a typed Silver contract;
-- Parquet serialization with explicit schema and metadata;
-- conditional Silver writes with `If-None-Match: *`;
-- idempotent replay with no additional S3 object version;
-- S3 `ObjectCreated:Put` event wiring for KEV Bronze;
-- bounded Lambda asynchronous retries;
-- SQS OnFailure recovery;
-- dedicated least-privilege KEV Silver runtime role;
-- CloudWatch Logs, custom metrics, and X-Ray tracing;
-- deliberate fail-closed evidence-mismatch validation;
-- Terraform convergence validated with `No changes`.
+- immutable Bronze source evidence;
+- exact-version Bronze-to-Silver processing;
+- deterministic normalization;
+- typed Parquet Silver persistence;
+- idempotent event-driven processing;
+- bounded asynchronous failure recovery;
+- AWS Glue Data Catalog registration;
+- injected `snapshot_date` partition projection;
+- deterministic Amazon Athena queries;
+- independent Parquet-to-Athena evidence cross-checks;
+- explicit temporal-query enforcement;
+- measured Athena scan and latency evidence.
 
-The next Phase 2.2 increment is the deterministic Glue/Athena analytical layer for CISA KEV.
+The next Phase 2 major vertical slice is NVD/CVE ingestion and normalization.
 
 ## Current architecture
 
@@ -116,8 +116,12 @@ S3 Silver / Parquet
     +--> exhausted async failure: SQS OnFailure
     |
     v
-AWS Glue + Athena
-(next Phase 2.2 increment)
+AWS Glue Data Catalog
+opslens_dev.kev_entries
+    |
+    v
+Amazon Athena
+opslens-dev
 ```
 
 The S3 notification is scoped to the KEV Bronze prefix and canonical filename. KEV Silver writes to a separate `silver/kev/` prefix, avoiding recursive invocation.
@@ -328,6 +332,49 @@ The Silver object was independently downloaded and inspected with PyArrow.
 
 A replay of the exact same Bronze event returned `already_exists`, while the versioned S3 object remained at one version with the same `VersionId`.
 
+## Validated CISA KEV analytical path
+
+Validated snapshot:
+
+```text
+snapshot_date: 2026-08-17
+rows:          1665
+table:         opslens_dev.kev_entries
+workgroup:     opslens-dev
+```
+
+Supported structured question:
+
+> Was CVE X present in CISA KEV for a specific snapshot?
+
+The validation CVE was selected directly from the persisted Silver Parquet artifact rather than from memory:
+
+```text
+CVE-2002-0367
+vendor_project: Microsoft
+product: Windows
+date_added: 2022-03-03
+due_date: 2022-03-24
+catalog_version: 2026.08.14
+source: cisa-kev
+source_sha256: 52a5fe9ab6c3379298707559b5df54fb50daac45d27ea74e85d45f9632b59a79
+```
+
+Athena returned the same evidence as the persisted Parquet artifact.
+
+Observed Athena executions:
+
+| Validation | Data scanned | Total execution |
+| --- | ---: | ---: |
+| Record count | 0 bytes | 744 ms |
+| CVE membership | 24,911 bytes | 621 ms |
+| Empty CWE arrays | 3,002 bytes | 842 ms |
+| Timestamp compatibility | 13,826 bytes | 945 ms |
+
+The record-count query returned `1665`, the CWE validation returned `171` empty arrays, and both `catalog_date_released` and `retrieved_at` were read successfully through Athena engine version 3.
+
+The Glue table uses injected partition projection for `snapshot_date`. A query that intentionally omitted `snapshot_date` failed with `CONSTRAINT_VIOLATION`, enforcing explicit temporal evidence instead of implicitly treating an unspecified dataset version as "latest".
+
 ## Failure recovery
 
 EPSS Silver, CISA KEV ingestion, and CISA KEV Silver use bounded Lambda asynchronous processing with `maximum event age = 3600`, `retry attempts = 2`, and source-specific SQS OnFailure destinations.
@@ -427,12 +474,12 @@ The architecture avoids services that do not yet solve a demonstrated requiremen
 
 Current examples:
 
-- no Glue crawler for EPSS;
+- no Glue crawler for EPSS or CISA KEV;
 - no Step Functions in current ingestion/transformation paths;
 - no DynamoDB idempotency store;
 - no Iceberg requirement yet;
 - no Scheduler DLQ for KEV at this stage;
-- KEV Glue/Athena resources are introduced only after the Bronze-to-Silver runtime is proven.
+- KEV Glue/Athena resources were introduced only after the Bronze-to-Silver runtime was proven.
 
 Athena uses a 10 MiB bytes-scanned cutoff in the development workgroup.
 
@@ -474,6 +521,7 @@ The repository uses Ruff, Google-style docstrings, strict Pyright, Pytest, Terra
 - [`docs/labs/phase-1-epss-athena-query.md`](docs/labs/phase-1-epss-athena-query.md)
 - [`docs/labs/phase-2-kev-async-failure-recovery.md`](docs/labs/phase-2-kev-async-failure-recovery.md)
 - [`docs/labs/phase-2-kev-silver-runtime.md`](docs/labs/phase-2-kev-silver-runtime.md)
+- [`docs/labs/phase-2-kev-athena-query.md`](docs/labs/phase-2-kev-athena-query.md)
 - [`docs/README.md`](docs/README.md)
 
 ## Roadmap
@@ -481,10 +529,10 @@ The repository uses Ruff, Google-style docstrings, strict Pyright, Pytest, Terra
 ```text
 Phase 2.1  CISA KEV Bronze ingestion                         COMPLETE
 Phase 2.2  CISA KEV Silver runtime                          COMPLETE
-Phase 2.2  CISA KEV Glue + Athena                           NEXT
-Phase 2.x  NVD / CVE
-Phase 2.x  GitHub Security Advisories
-Phase 2.x  historical EPSS
+Phase 2.2  CISA KEV Glue + Athena                           COMPLETE
+Phase 2.3  NVD / CVE                                        NEXT
+Phase 2.4  GitHub Security Advisories                       NOT STARTED
+Phase 2.5  historical EPSS                                  NOT STARTED
 ```
 
 The proven EPSS architecture is reused where appropriate, but it is not treated as a mandatory template for every source.
