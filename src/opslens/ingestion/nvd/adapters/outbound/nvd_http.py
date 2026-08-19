@@ -75,7 +75,9 @@ class NvdHttpYearlyFeedSource:
         return self._fetch_bounded(
             url=self._build_gzip_url(feed_year),
             max_bytes=self._max_feed_bytes,
-            accept="application/octet-stream",
+            # NVD serves yearly GZ feeds as application/x-gzip.
+            # Artifact integrity is verified independently against META.
+            accept="*/*",
             artifact_kind="gzip",
             span_name="nvd.http.fetch_gzip",
         )

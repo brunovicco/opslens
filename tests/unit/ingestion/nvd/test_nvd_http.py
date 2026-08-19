@@ -163,7 +163,7 @@ def test_fetch_gzip_returns_exact_bounded_payload(
         """Return a deterministic gzip response."""
         assert request.full_url == ("https://example.test/nvd/nvdcve-2.0-2026.json.gz")
         assert timeout == 15.0
-        assert request.get_header("Accept") == ("application/octet-stream")
+        assert request.get_header("Accept") == "*/*"
 
         return response
 
