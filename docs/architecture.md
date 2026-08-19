@@ -1,6 +1,6 @@
 # OpsLens Architecture
 
-_Last updated: 2026-08-18_
+_Last updated: 2026-08-19_
 
 ## Overview
 
@@ -14,6 +14,7 @@ The implemented architecture currently covers:
 - deterministic EPSS Silver transformation;
 - Parquet, AWS Glue Data Catalog, and Amazon Athena for EPSS;
 - CISA KEV Bronze ingestion;
+- NVD CVE JSON 2.0 Bootstrap Bronze ingestion;
 - deterministic CISA KEV Silver transformation and Parquet persistence;
 - exact S3 object-version evidence verification for KEV Silver;
 - idempotent conditional writes for Bronze and Silver;
@@ -196,7 +197,7 @@ Current status:
 ```text
 FIRST EPSS                 IMPLEMENTED through Athena
 CISA KEV                   IMPLEMENTED through Athena
-NVD / CVE                  NOT STARTED
+NVD / CVE                  BOOTSTRAP BRONZE IMPLEMENTED
 GitHub Security Advisories NOT STARTED
 EPSS historical expansion  PENDING PHASE 2 WORK
 ```
@@ -228,6 +229,106 @@ Athena
 ```
 
 Not every source is required to use the same schedule, Lambda shape, transformation engine, retry pattern, or partition model.
+
+---
+
+## NVD CVE Bootstrap Bronze
+
+Phase 2.3B implements immutable Bronze bootstrap ingestion for NVD CVE JSON 2.0 yearly feeds.
+
+The runtime path is:
+
+```text
+NVD yearly-feed META
+    |
+    v
+NVD Bootstrap Lambda
+    |
+    +--> bounded META fetch
+    +--> META contract validation
+    |
+    v
+NVD yearly-feed GZ
+    |
+    +--> bounded gzip fetch
+    +--> compressed-size verification
+    +--> streaming decompression
+    +--> uncompressed-size verification
+    +--> source SHA-256 verification
+    |
+    v
+deterministic feed revision
+    |
+    v
+conditional S3 PutObject
+    |
+    +--> exact yearly-feed gzip
+    +--> exact META bytes
+    |
+    v
+completion manifest written last
+```
+
+Canonical Bronze layout:
+
+```text
+bronze/nvd/cve/bootstrap/
+    feed_year=YYYY/
+        feed_revision=<source-revision>/
+            nvdcve-2.0-YYYY.json.gz
+            nvdcve-2.0-YYYY.meta
+            manifest.json
+```
+
+The feed revision combines the normalized NVD source modification timestamp with the source SHA-256.
+
+The completion manifest binds the logical ingestion result to the exact immutable S3 `VersionId` values of the feed and META objects.
+
+Bronze writes use:
+
+```text
+PutObject If-None-Match: *
+```
+
+A `412 PreconditionFailed` is treated as a possible duplicate, not automatically as success. The runtime reads the existing object metadata and verifies expected size and cryptographic evidence before returning `already_exists`.
+
+The validated 2026 feed revision is:
+
+```text
+feed year:           2026
+source modified:     2026-08-18T07:00:12Z
+source SHA-256:      10fb32c20bd6187fe43fa047d74772256f5b37c18029b17c5379a1f4e18f5d4f
+gzip bytes:          23938173
+uncompressed bytes:  282112001
+```
+
+The first real AWS ingestion created exactly three object versions. A same-source replay returned `already_exists` for all three objects while preserving the same `VersionId` values and creating no additional S3 object versions.
+
+The first real deployment also exposed an HTTP content-negotiation incompatibility: the NVD gzip endpoint returned HTTP `406` for `Accept: application/octet-stream`. The adapter was corrected to use `Accept: */*`; integrity remains independently enforced through gzip, size, and SHA-256 verification.
+
+Validated Lambda configuration:
+
+```text
+function:  opslens-dev-nvd-bootstrap-ingestion
+runtime:   python3.13
+memory:    1024 MB
+timeout:   180 seconds
+X-Ray:     Active
+```
+
+Current NVD scope intentionally stops at Bootstrap Bronze.
+
+Not yet implemented:
+
+```text
+incremental CVE API 2.0 ingestion
+watermark advancement
+NVD Silver transformation
+NVD Glue tables
+NVD Athena queries
+```
+
+The next increment is Phase 2.3C — Incremental CVE API 2.0 + Watermark.
 
 ---
 
@@ -577,8 +678,16 @@ S3 data bucket
 |   |   +-- snapshot_date=YYYY-MM-DD/
 |   |       +-- epss_scores.csv.gz
 |   +-- kev/
-|       +-- snapshot_date=YYYY-MM-DD/
-|           +-- known_exploited_vulnerabilities.json
+|   |   +-- snapshot_date=YYYY-MM-DD/
+|   |       +-- known_exploited_vulnerabilities.json
+|   +-- nvd/
+|       +-- cve/
+|           +-- bootstrap/
+|               +-- feed_year=YYYY/
+|                   +-- feed_revision=<source-revision>/
+|                       +-- nvdcve-2.0-YYYY.json.gz
+|                       +-- nvdcve-2.0-YYYY.meta
+|                       +-- manifest.json
 |
 +-- silver/
 |   +-- epss/
@@ -622,6 +731,30 @@ Silver Lambda role
 
 Scheduler execution role
     -> exact Lambda InvokeFunction
+```
+
+### NVD Bootstrap runtime role
+
+The NVD Bootstrap runtime role is source-scoped:
+
+```text
+s3:GetObject -> bronze/nvd/cve/bootstrap/*
+s3:PutObject -> bronze/nvd/cve/bootstrap/*
+CloudWatch Logs
+X-Ray telemetry
+```
+
+`s3:GetObject` is required to verify an existing object after a conditional-write collision.
+
+It does not receive:
+
+```text
+s3:ListBucket
+s3:DeleteObject
+s3:*
+Glue permissions
+Athena permissions
+Scheduler permissions
 ```
 
 ### KEV Silver runtime role
