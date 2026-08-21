@@ -13,7 +13,7 @@ docs/
 
 [`architecture.md`](architecture.md) describes the architecture implemented today.
 
-It covers AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze, EventBridge Scheduler, runtime IAM separation, idempotency, observability, asynchronous failure recovery, and current architectural constraints.
+It covers AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze and incremental CVE API Bronze contracts, EventBridge Scheduler, runtime IAM separation, idempotency, observability, asynchronous failure recovery, and current architectural constraints.
 
 It is not a speculative future-state architecture document.
 
@@ -44,6 +44,7 @@ Phase 2:
 - [`phase-2-kev-athena-query.md`](labs/phase-2-kev-athena-query.md)
 - [`phase-2-nvd-source-contract.md`](labs/phase-2-nvd-source-contract.md)
 - [`phase-2-nvd-bootstrap-bronze.md`](labs/phase-2-nvd-bootstrap-bronze.md)
+- [`phase-2-nvd-incremental-contract.md`](labs/phase-2-nvd-incremental-contract.md)
 
 ## Current milestone
 
@@ -54,5 +55,6 @@ Phase 2.1 — CISA KEV Bronze:           COMPLETE
 Phase 2.2 — CISA KEV Silver/Analytics: COMPLETE
 Phase 2.3A — NVD Source Contract:      COMPLETE
 Phase 2.3B — NVD Bootstrap Bronze:     COMPLETE
-Phase 2.3C — NVD Incremental API:      NEXT
+Phase 2.3C — NVD Incremental API:      COMPLETE
+Phase 2.3D — NVD Versioned Silver:     NEXT
 ```
