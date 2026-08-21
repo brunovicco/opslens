@@ -317,3 +317,39 @@ def test_cvss_domain_model_rejects_non_finite_score() -> None:
             impact_score=None,
             metric_json="{}",
         )
+
+
+def test_v2_base_severity_is_optional() -> None:
+    """Accept a schema-valid CVSS v2 metric without baseSeverity."""
+    source: dict[str, object] = {
+        "metrics": {
+            "cvssMetricV2": [
+                {
+                    "source": "nvd@nist.gov",
+                    "type": "Primary",
+                    "cvssData": {
+                        "version": "2.0",
+                        "vectorString": "AV:N/AC:L/Au:N/C:C/I:C/A:C",
+                        "baseScore": 10.0,
+                    },
+                }
+            ]
+        }
+    }
+
+    metric = NvdCvssMetricsTransformer().transform(source).metrics[0]
+
+    assert metric.base_severity is None
+
+
+def test_empty_known_cvss_family_is_valid() -> None:
+    """Accept a known CVSS family with no observations."""
+    source: dict[str, object] = {
+        "metrics": {
+            "cvssMetricV31": [],
+        }
+    }
+
+    result = NvdCvssMetricsTransformer().transform(source)
+
+    assert result.metrics == ()

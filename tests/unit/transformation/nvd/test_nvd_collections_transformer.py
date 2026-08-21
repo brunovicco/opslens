@@ -242,16 +242,14 @@ def test_missing_references_fails_closed() -> None:
         NvdCveCollectionsTransformer().transform(source)
 
 
-def test_empty_references_fails_closed() -> None:
-    """Reject an empty required references collection."""
+def test_empty_references_are_valid() -> None:
+    """Accept the required references field with zero items."""
     source = _source_cve()
     source["references"] = []
 
-    with pytest.raises(
-        InvalidNvdCveCollectionsError,
-        match="references cannot be empty",
-    ):
-        NvdCveCollectionsTransformer().transform(source)
+    collections = NvdCveCollectionsTransformer().transform(source)
+
+    assert collections.references == ()
 
 
 def test_reference_tags_are_optional() -> None:
@@ -284,3 +282,45 @@ def test_malformed_reference_fails_closed() -> None:
         match="url",
     ):
         NvdCveCollectionsTransformer().transform(source)
+
+
+def test_reference_source_is_optional() -> None:
+    """Accept an NVD reference containing only its required URL."""
+    source = _source_cve()
+    source["references"] = [
+        {
+            "url": "https://example.com/advisory",
+        }
+    ]
+
+    collections = NvdCveCollectionsTransformer().transform(source)
+
+    assert collections.references[0].source is None
+
+
+def test_empty_weakness_description_array_is_valid() -> None:
+    """Accept the schema-defined empty weakness description collection."""
+    source = _source_cve()
+    source["weaknesses"] = [
+        {
+            "source": "nvd@nist.gov",
+            "type": "Primary",
+            "description": [],
+        }
+    ]
+
+    collections = NvdCveCollectionsTransformer().transform(source)
+
+    assert collections.weaknesses[0].descriptions == ()
+    assert collections.cwe_ids == ()
+
+
+def test_cve_tag_members_are_optional() -> None:
+    """Accept a schema-valid CVE tag object without optional members."""
+    source = _source_cve()
+    source["cveTags"] = [{}]
+
+    collections = NvdCveCollectionsTransformer().transform(source)
+
+    assert collections.cve_tags[0].source_identifier is None
+    assert collections.cve_tags[0].tags == ()

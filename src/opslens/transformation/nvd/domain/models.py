@@ -190,16 +190,13 @@ class NvdLocalizedText:
 class NvdCveTag:
     """Preserve one source-qualified NVD CVE tag group."""
 
-    source_identifier: str
+    source_identifier: str | None
     tags: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        """Validate CVE-tag invariants while preserving source order."""
-        if not self.source_identifier or not self.source_identifier.strip():
-            raise ValueError("NVD CVE tag sourceIdentifier cannot be empty.")
-
-        if not self.tags:
-            raise ValueError("NVD CVE tag group must contain at least one tag.")
+        """Validate CVE-tag values when supplied."""
+        if self.source_identifier is not None and not self.source_identifier.strip():
+            raise ValueError("NVD CVE tag sourceIdentifier cannot be empty when present.")
 
         for tag in self.tags:
             if not tag or not tag.strip():
@@ -215,15 +212,12 @@ class NvdWeakness:
     descriptions: tuple[NvdLocalizedText, ...]
 
     def __post_init__(self) -> None:
-        """Validate NVD weakness invariants."""
+        """Validate NVD weakness scalar invariants."""
         if not self.source or not self.source.strip():
             raise ValueError("NVD weakness source cannot be empty.")
 
         if not self.type or not self.type.strip():
             raise ValueError("NVD weakness type cannot be empty.")
-
-        if not self.descriptions:
-            raise ValueError("NVD weakness must contain at least one description.")
 
 
 @dataclass(frozen=True, slots=True)
@@ -231,7 +225,7 @@ class NvdReference:
     """Preserve one NVD vulnerability reference."""
 
     url: str
-    source: str
+    source: str | None
     tags: tuple[str, ...]
 
     def __post_init__(self) -> None:
@@ -239,8 +233,8 @@ class NvdReference:
         if not self.url or not self.url.strip():
             raise ValueError("NVD reference URL cannot be empty.")
 
-        if not self.source or not self.source.strip():
-            raise ValueError("NVD reference source cannot be empty.")
+        if self.source is not None and not self.source.strip():
+            raise ValueError("NVD reference source cannot be empty when present.")
 
         for tag in self.tags:
             if not tag or not tag.strip():
@@ -260,9 +254,6 @@ class NvdCveCollections:
         """Validate collection-level NVD invariants."""
         if not self.descriptions:
             raise ValueError("NVD CVE must contain at least one description.")
-
-        if not self.references:
-            raise ValueError("NVD CVE must contain at least one reference.")
 
     @property
     def cwe_ids(self) -> tuple[str, ...]:
@@ -307,7 +298,7 @@ class NvdCvssMetric:
     metric_type: NvdCvssMetricType
     vector_string: str
     base_score: float
-    base_severity: str
+    base_severity: str | None
     exploitability_score: float | None
     impact_score: float | None
     metric_json: str
@@ -333,10 +324,13 @@ class NvdCvssMetric:
         if not self.vector_string or not self.vector_string.strip():
             raise ValueError("NVD CVSS vectorString cannot be empty.")
 
-        if not self.base_severity or not self.base_severity.strip():
+        if self.base_severity is not None and not self.base_severity.strip():
             raise ValueError("NVD CVSS baseSeverity cannot be empty.")
 
-        self._validate_score(self.base_score, "baseScore")
+        self._validate_score(
+            self.base_score,
+            "baseScore",
+        )
 
         if self.exploitability_score is not None:
             self._validate_score(
@@ -351,20 +345,29 @@ class NvdCvssMetric:
             )
 
         try:
-            parsed = cast(object, json.loads(self.metric_json))
+            parsed = cast(
+                object,
+                json.loads(self.metric_json),
+            )
         except json.JSONDecodeError as exc:
             raise ValueError("NVD CVSS metric_json must contain valid JSON.") from exc
 
         if not isinstance(parsed, dict):
             raise ValueError("NVD CVSS metric_json must contain a JSON object.")
 
-        metric_object = cast(dict[str, object], parsed)
+        metric_object = cast(
+            dict[str, object],
+            parsed,
+        )
 
         if canonicalize_json_object(metric_object).decode("utf-8") != self.metric_json:
             raise ValueError("NVD CVSS metric_json must use Canonical JSON v1.")
 
     @staticmethod
-    def _validate_score(value: float, field_name: str) -> None:
+    def _validate_score(
+        value: float,
+        field_name: str,
+    ) -> None:
         """Require one finite bounded CVSS score."""
         if not math.isfinite(value):
             raise ValueError(f"NVD CVSS {field_name} must be finite.")

@@ -75,12 +75,11 @@ class NvdCvssMetricsTransformer:
 
         normalized: list[NvdCvssMetric] = []
 
-        # Fixed family ordering makes the Silver representation deterministic.
         for source_key, spec in self._FAMILY_SPECS.items():
             if source_key not in source_metrics:
                 continue
 
-            family_metrics = self._required_non_empty_array(
+            family_metrics = self._required_array(
                 source_metrics[source_key],
                 source_key=source_key,
             )
@@ -118,6 +117,7 @@ class NvdCvssMetricsTransformer:
     ) -> NvdCvssMetric:
         """Normalize one known-family CVSS metric observation."""
         context = f"{source_key}[{index}]"
+
         metric = self._object(
             value,
             context=context,
@@ -146,7 +146,7 @@ class NvdCvssMetricsTransformer:
                 context=f"{context}.cvssData",
             )
         else:
-            base_severity = self._required_text(
+            base_severity = self._optional_text(
                 metric,
                 "baseSeverity",
                 context=context,
@@ -211,24 +211,25 @@ class NvdCvssMetricsTransformer:
         if not isinstance(value, dict):
             raise InvalidNvdCvssMetricsError(f"NVD {context} must be an object.")
 
-        return cast(dict[str, object], value)
+        return cast(
+            dict[str, object],
+            value,
+        )
 
     @staticmethod
-    def _required_non_empty_array(
+    def _required_array(
         value: object,
         *,
         source_key: str,
     ) -> list[object]:
-        """Require a present CVSS family to contain observations."""
+        """Require a present known CVSS family to be an array."""
         if not isinstance(value, list):
             raise InvalidNvdCvssMetricsError(f"NVD metrics.{source_key} must be an array.")
 
-        items = cast(list[object], value)
-
-        if not items:
-            raise InvalidNvdCvssMetricsError(f"NVD metrics.{source_key} cannot be empty.")
-
-        return items
+        return cast(
+            list[object],
+            value,
+        )
 
     @staticmethod
     def _required_text(
@@ -239,6 +240,27 @@ class NvdCvssMetricsTransformer:
     ) -> str:
         """Read one required non-empty string."""
         value = record.get(field_name)
+
+        if not isinstance(value, str):
+            raise InvalidNvdCvssMetricsError(f"NVD {context}.{field_name} must be a string.")
+
+        if not value.strip():
+            raise InvalidNvdCvssMetricsError(f"NVD {context}.{field_name} cannot be empty.")
+
+        return value
+
+    @staticmethod
+    def _optional_text(
+        record: dict[str, object],
+        field_name: str,
+        *,
+        context: str,
+    ) -> str | None:
+        """Read one optional non-empty string."""
+        if field_name not in record:
+            return None
+
+        value = record[field_name]
 
         if not isinstance(value, str):
             raise InvalidNvdCvssMetricsError(f"NVD {context}.{field_name} must be a string.")

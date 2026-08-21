@@ -70,6 +70,7 @@ class NvdCveCollectionsTransformer:
                 self._required_array(
                     source_cve,
                     "references",
+                    allow_empty=True,
                 )
             )
         )
@@ -131,12 +132,12 @@ class NvdCveCollectionsTransformer:
             record,
             "tags",
             context=context,
-            required=True,
+            required=False,
         )
 
         try:
             return NvdCveTag(
-                source_identifier=self._required_text(
+                source_identifier=self._optional_text(
                     record,
                     "sourceIdentifier",
                     context=context,
@@ -169,6 +170,7 @@ class NvdCveCollectionsTransformer:
                     record,
                     "description",
                     context=context,
+                    allow_empty=True,
                 )
             )
         )
@@ -217,7 +219,7 @@ class NvdCveCollectionsTransformer:
                     "url",
                     context=context,
                 ),
-                source=self._required_text(
+                source=self._optional_text(
                     record,
                     "source",
                     context=context,
@@ -237,7 +239,10 @@ class NvdCveCollectionsTransformer:
         if not isinstance(value, dict):
             raise InvalidNvdCveCollectionsError(f"NVD {context} must be an object.")
 
-        return cast(dict[str, object], value)
+        return cast(
+            dict[str, object],
+            value,
+        )
 
     @staticmethod
     def _required_text(
@@ -258,13 +263,35 @@ class NvdCveCollectionsTransformer:
         return value
 
     @staticmethod
+    def _optional_text(
+        record: dict[str, object],
+        field_name: str,
+        *,
+        context: str,
+    ) -> str | None:
+        """Read one optional non-empty source string."""
+        if field_name not in record:
+            return None
+
+        value = record[field_name]
+
+        if not isinstance(value, str):
+            raise InvalidNvdCveCollectionsError(f"NVD {context}.{field_name} must be a string.")
+
+        if not value.strip():
+            raise InvalidNvdCveCollectionsError(f"NVD {context}.{field_name} cannot be empty.")
+
+        return value
+
+    @staticmethod
     def _required_array(
         record: dict[str, object],
         field_name: str,
         *,
         context: str = "CVE",
+        allow_empty: bool = False,
     ) -> list[object]:
-        """Read one required non-empty JSON array."""
+        """Read one required JSON array."""
         if field_name not in record:
             raise InvalidNvdCveCollectionsError(
                 f"NVD {context} is missing required field {field_name!r}."
@@ -275,9 +302,12 @@ class NvdCveCollectionsTransformer:
         if not isinstance(value, list):
             raise InvalidNvdCveCollectionsError(f"NVD {context}.{field_name} must be an array.")
 
-        items = cast(list[object], value)
+        items = cast(
+            list[object],
+            value,
+        )
 
-        if not items:
+        if not allow_empty and not items:
             raise InvalidNvdCveCollectionsError(f"NVD {context}.{field_name} cannot be empty.")
 
         return items
@@ -298,7 +328,10 @@ class NvdCveCollectionsTransformer:
                 f"NVD CVE.{field_name} must be an array when present."
             )
 
-        return cast(list[object], value)
+        return cast(
+            list[object],
+            value,
+        )
 
     @staticmethod
     def _string_array(
@@ -322,7 +355,10 @@ class NvdCveCollectionsTransformer:
         if not isinstance(value, list):
             raise InvalidNvdCveCollectionsError(f"NVD {context}.{field_name} must be an array.")
 
-        items = cast(list[object], value)
+        items = cast(
+            list[object],
+            value,
+        )
 
         if required and not items:
             raise InvalidNvdCveCollectionsError(f"NVD {context}.{field_name} cannot be empty.")
