@@ -1,10 +1,14 @@
 """Amazon S3 adapter for immutable NVD incremental Bronze pages."""
 
+import hashlib
 from collections.abc import Mapping
 from typing import Protocol, TypedDict, cast
 
 from botocore.exceptions import ClientError
 
+from opslens.ingestion.nvd.application.incremental_manifest import (
+    NvdIncrementalManifest,
+)
 from opslens.ingestion.nvd.application.models import (
     NvdBronzeWriteResult,
     NvdBronzeWriteStatus,
@@ -360,3 +364,39 @@ class S3NvdIncrementalBronzeRepository:
         status_code = metadata.get("HTTPStatusCode")
 
         return status_code if isinstance(status_code, int) else None
+
+    def create_manifest(
+        self,
+        *,
+        manifest: NvdIncrementalManifest,
+        payload: bytes,
+        object_key: str,
+    ) -> NvdBronzeWriteResult:
+        """Create or verify one deterministic COMPLETE manifest."""
+        if not payload:
+            raise NvdIncrementalBronzeEvidenceError(
+                "NVD incremental manifest payload cannot be empty."
+            )
+
+        object_sha256 = hashlib.sha256(payload).hexdigest()
+
+        metadata = {
+            "source": manifest.SOURCE,
+            "source_interface": (manifest.SOURCE_INTERFACE),
+            "artifact_kind": "manifest",
+            "update_id": manifest.update_id,
+            "window_start_at": (manifest.canonical_window_start_at),
+            "window_end_at": (manifest.canonical_window_end_at),
+            "total_results": str(manifest.total_results),
+            "page_count": str(manifest.page_count),
+            "manifest_version": (manifest.MANIFEST_VERSION),
+            "completion_status": (manifest.COMPLETION_STATUS),
+            "object_sha256": object_sha256,
+        }
+
+        return self._create_if_absent(
+            object_key=object_key,
+            body=payload,
+            content_type=self.PAGE_CONTENT_TYPE,
+            metadata=metadata,
+        )

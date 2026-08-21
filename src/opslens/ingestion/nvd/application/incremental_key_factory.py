@@ -41,3 +41,11 @@ class NvdIncrementalKeyFactory:
             f"page_start={start_index:06d}/"
             "response.json"
         )
+
+    def build_manifest_key(
+        self,
+        *,
+        window: NvdIncrementalWindow,
+    ) -> str:
+        """Build the COMPLETE manifest key for one update window."""
+        return f"{self._prefix}/update_id={window.update_id}/manifest.json"
