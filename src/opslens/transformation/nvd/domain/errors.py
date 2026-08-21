@@ -7,3 +7,7 @@ class InvalidNvdObservedCveVersionError(ValueError):
 
 class InvalidNvdCveCoreRecordError(ValueError):
     """Raised when an NVD CVE violates the Silver core-record contract."""
+
+
+class InvalidNvdCveCollectionsError(ValueError):
+    """Raised when NVD collection fields violate the Silver contract."""

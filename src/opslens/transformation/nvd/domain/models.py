@@ -16,6 +16,7 @@ from opslens.transformation.nvd.domain.errors import (
 )
 
 _CVE_PATTERN = re.compile(r"^CVE-[0-9]{4}-[0-9]{4,}$")
+_CWE_PATTERN = re.compile(r"^CWE-[0-9]+$")
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -165,3 +166,114 @@ class NvdCveCoreRecord:
     def is_rejected(self) -> bool:
         """Return whether this observed CVE version is explicitly rejected."""
         return self.vuln_status is NvdVulnerabilityStatus.REJECTED
+
+
+@dataclass(frozen=True, slots=True)
+class NvdLocalizedText:
+    """Preserve one localized textual value from NVD."""
+
+    lang: str
+    value: str
+
+    def __post_init__(self) -> None:
+        """Validate localized-text invariants without rewriting source text."""
+        if not self.lang or not self.lang.strip():
+            raise ValueError("NVD localized-text language cannot be empty.")
+
+        if not self.value or not self.value.strip():
+            raise ValueError("NVD localized-text value cannot be empty.")
+
+
+@dataclass(frozen=True, slots=True)
+class NvdCveTag:
+    """Preserve one source-qualified NVD CVE tag group."""
+
+    source_identifier: str
+    tags: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        """Validate CVE-tag invariants while preserving source order."""
+        if not self.source_identifier or not self.source_identifier.strip():
+            raise ValueError("NVD CVE tag sourceIdentifier cannot be empty.")
+
+        if not self.tags:
+            raise ValueError("NVD CVE tag group must contain at least one tag.")
+
+        for tag in self.tags:
+            if not tag or not tag.strip():
+                raise ValueError("NVD CVE tags cannot contain empty values.")
+
+
+@dataclass(frozen=True, slots=True)
+class NvdWeakness:
+    """Preserve one source-qualified NVD weakness observation."""
+
+    source: str
+    type: str
+    descriptions: tuple[NvdLocalizedText, ...]
+
+    def __post_init__(self) -> None:
+        """Validate NVD weakness invariants."""
+        if not self.source or not self.source.strip():
+            raise ValueError("NVD weakness source cannot be empty.")
+
+        if not self.type or not self.type.strip():
+            raise ValueError("NVD weakness type cannot be empty.")
+
+        if not self.descriptions:
+            raise ValueError("NVD weakness must contain at least one description.")
+
+
+@dataclass(frozen=True, slots=True)
+class NvdReference:
+    """Preserve one NVD vulnerability reference."""
+
+    url: str
+    source: str
+    tags: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        """Validate reference invariants without dereferencing the URL."""
+        if not self.url or not self.url.strip():
+            raise ValueError("NVD reference URL cannot be empty.")
+
+        if not self.source or not self.source.strip():
+            raise ValueError("NVD reference source cannot be empty.")
+
+        for tag in self.tags:
+            if not tag or not tag.strip():
+                raise ValueError("NVD reference tags cannot contain empty values.")
+
+
+@dataclass(frozen=True, slots=True)
+class NvdCveCollections:
+    """Represent normalized non-CVSS collection fields for one NVD CVE."""
+
+    descriptions: tuple[NvdLocalizedText, ...]
+    cve_tags: tuple[NvdCveTag, ...]
+    weaknesses: tuple[NvdWeakness, ...]
+    references: tuple[NvdReference, ...]
+
+    def __post_init__(self) -> None:
+        """Validate collection-level NVD invariants."""
+        if not self.descriptions:
+            raise ValueError("NVD CVE must contain at least one description.")
+
+        if not self.references:
+            raise ValueError("NVD CVE must contain at least one reference.")
+
+    @property
+    def cwe_ids(self) -> tuple[str, ...]:
+        """Return stable unique canonical CWE identifiers in source order."""
+        result: list[str] = []
+        seen: set[str] = set()
+
+        for weakness in self.weaknesses:
+            for description in weakness.descriptions:
+                value = description.value
+
+                if _CWE_PATTERN.fullmatch(value) is not None and value not in seen:
+                    seen.add(value)
+                    result.append(value)
+
+        return tuple(result)
