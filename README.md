@@ -26,7 +26,7 @@ The project intentionally builds deterministic evidence, correlation, security b
 | Phase 1 | EPSS Vertical Slice | ✅ Complete |
 | Phase 2.1 | CISA KEV Bronze Ingestion | ✅ Complete |
 | Phase 2.2 | CISA KEV Silver + Analytics | ✅ Complete |
-| Phase 2.3 | NVD / CVE | ▶️ Next |
+| Phase 2.3 | NVD / CVE | 🚧 In progress |
 
 Phase 2.2 now provides the complete CISA KEV evidence path:
 
@@ -43,7 +43,7 @@ Phase 2.2 now provides the complete CISA KEV evidence path:
 - explicit temporal-query enforcement;
 - measured Athena scan and latency evidence.
 
-The next Phase 2 major vertical slice is NVD/CVE ingestion and normalization.
+Phase 2.3 now has the NVD source contract, immutable yearly-feed Bootstrap Bronze, and the incremental CVE API Bronze contract. The next increment is the versioned NVD Silver contract.
 
 ## Current architecture
 
@@ -530,7 +530,7 @@ The repository uses Ruff, Google-style docstrings, strict Pyright, Pytest, Terra
 Phase 2.1  CISA KEV Bronze ingestion                         COMPLETE
 Phase 2.2  CISA KEV Silver runtime                          COMPLETE
 Phase 2.2  CISA KEV Glue + Athena                           COMPLETE
-Phase 2.3  NVD / CVE                                        NEXT
+Phase 2.3  NVD / CVE                                        IN PROGRESS — 2.3A/2.3B/2.3C complete; 2.3D next
 Phase 2.4  GitHub Security Advisories                       NOT STARTED
 Phase 2.5  historical EPSS                                  NOT STARTED
 ```

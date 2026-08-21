@@ -1,6 +1,6 @@
 # OpsLens Architecture
 
-_Last updated: 2026-08-19_
+_Last updated: 2026-08-21_
 
 ## Overview
 
@@ -15,6 +15,7 @@ The implemented architecture currently covers:
 - Parquet, AWS Glue Data Catalog, and Amazon Athena for EPSS;
 - CISA KEV Bronze ingestion;
 - NVD CVE JSON 2.0 Bootstrap Bronze ingestion;
+- deterministic incremental NVD CVE API 2.0 Bronze contract;
 - deterministic CISA KEV Silver transformation and Parquet persistence;
 - exact S3 object-version evidence verification for KEV Silver;
 - idempotent conditional writes for Bronze and Silver;
@@ -116,7 +117,7 @@ Amazon Athena
 opslens-dev
 ```
 
-The KEV Silver dataset is implemented and validated in S3. Glue/Athena registration for KEV is the next Phase 2 increment.
+The KEV Silver dataset and its Glue/Athena analytical path are implemented and validated.
 
 ---
 
@@ -197,7 +198,7 @@ Current status:
 ```text
 FIRST EPSS                 IMPLEMENTED through Athena
 CISA KEV                   IMPLEMENTED through Athena
-NVD / CVE                  BOOTSTRAP BRONZE IMPLEMENTED
+NVD / CVE                  BOOTSTRAP + INCREMENTAL BRONZE CONTRACT IMPLEMENTED
 GitHub Security Advisories NOT STARTED
 EPSS historical expansion  PENDING PHASE 2 WORK
 ```
@@ -316,19 +317,90 @@ timeout:   180 seconds
 X-Ray:     Active
 ```
 
-Current NVD scope intentionally stops at Bootstrap Bronze.
+Phase 2.3C adds the deterministic incremental CVE API 2.0 Bronze contract.
+
+The logical application path is:
+
+```text
+committed boundary T0
+    |
+    v
+closed lastModified window [T0, T1]
+    |
+    v
+NVD CVE API 2.0 pages
+    |
+    +--> bounded HTTP retrieval
+    +--> polite request pacing
+    +--> bounded retry for transient failures
+    |
+    v
+complete pagination validation
+    |
+    +--> stable totalResults
+    +--> contiguous startIndex
+    +--> duplicate-CVE rejection
+    +--> complete terminal coverage
+    |
+    v
+immutable Bronze response pages
+    |
+    v
+COMPLETE manifest written last
+    |
+    v
+Bronze-complete watermark candidate
+    |
+    X
+authoritative watermark is not advanced yet
+```
+
+Canonical incremental Bronze layout:
+
+```text
+bronze/nvd/cve/updates/
+    update_id=<deterministic-window-identity>/
+        page_start=000000/
+            response.json
+        page_start=002000/
+            response.json
+        ...
+        manifest.json
+```
+
+The logical `update_id` is derived only from the normalized closed
+last-modified window. Runtime timestamps, Lambda invocation identifiers,
+ETags, and persistence outcomes do not participate in logical identity.
+
+Each response page preserves the exact API bytes and SHA-256 evidence.
+Bronze persistence uses conditional S3 object creation. A replay collision
+is valid only after the existing object size, content type, provenance
+metadata, SHA-256, and exact S3 `VersionId` have been verified.
+
+The COMPLETE manifest binds the run to every persisted page key, SHA-256,
+byte size, source pagination evidence, and exact S3 `VersionId`. It is
+written only after all validated pages have been created or verified.
+
+Phase 2.3C deliberately separates Bronze completion from authoritative
+watermark commitment. The resulting candidate is `bronze_complete` and
+proposes `T1`, but committed state must remain at `T0` until deterministic
+Silver processing succeeds.
+
+No new Lambda, EventBridge Scheduler, Terraform runtime, Glue table, or
+Athena resource is introduced by Phase 2.3C. Runtime deployment remains
+deferred to the later NVD runtime increment.
 
 Not yet implemented:
 
 ```text
-incremental CVE API 2.0 ingestion
-watermark advancement
-NVD Silver transformation
+NVD versioned Silver contract
+authoritative watermark promotion after Silver success
+incremental AWS runtime deployment
 NVD Glue tables
 NVD Athena queries
 ```
 
-The next increment is Phase 2.3C — Incremental CVE API 2.0 + Watermark.
+The next increment is Phase 2.3D — Versioned Silver Contract.
 
 ---
 

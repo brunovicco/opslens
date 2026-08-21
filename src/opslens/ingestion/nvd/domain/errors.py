@@ -7,3 +7,11 @@ class InvalidNvdFeedMetaError(ValueError):
 
 class InvalidNvdFeedArtifactError(ValueError):
     """Raised when an NVD gzip feed violates the Bronze integrity contract."""
+
+
+class InvalidNvdCveApiPageError(ValueError):
+    """Raised when an NVD CVE API response violates the page contract."""
+
+
+class InvalidNvdCveApiPaginationError(ValueError):
+    """Raised when NVD CVE API pages form an inconsistent run."""
