@@ -10,36 +10,13 @@ from opslens.transformation.nvd.domain.errors import (
 )
 
 
-def canonicalize_nvd_cve(source_cve: dict[str, object]) -> bytes:
-    """Return deterministic UTF-8 JSON bytes for one NVD CVE object.
-
-    Canonical JSON v1 uses:
-
-    - UTF-8 encoding;
-    - lexicographically sorted object keys;
-    - source array order;
-    - no insignificant whitespace;
-    - native JSON scalar types only;
-    - finite numeric values only.
-
-    Unknown or additive NVD fields are intentionally preserved because the
-    version identity covers the complete observed source CVE object.
-
-    Args:
-        source_cve: Parsed NVD CVE JSON object.
-
-    Returns:
-        Deterministic canonical JSON bytes.
-
-    Raises:
-        InvalidNvdObservedCveVersionError: If the value cannot be represented
-            by the Canonical JSON v1 contract.
-    """
-    _validate_json_value(source_cve, path="$")
+def canonicalize_json_object(value: dict[str, object]) -> bytes:
+    """Return deterministic Canonical JSON v1 bytes for one JSON object."""
+    _validate_json_value(value, path="$")
 
     try:
         canonical_text = json.dumps(
-            source_cve,
+            value,
             ensure_ascii=False,
             allow_nan=False,
             sort_keys=True,
@@ -47,10 +24,15 @@ def canonicalize_nvd_cve(source_cve: dict[str, object]) -> bytes:
         )
     except (TypeError, ValueError) as exc:
         raise InvalidNvdObservedCveVersionError(
-            "NVD CVE content cannot be serialized as Canonical JSON v1."
+            "JSON object cannot be serialized as Canonical JSON v1."
         ) from exc
 
     return canonical_text.encode("utf-8")
+
+
+def canonicalize_nvd_cve(source_cve: dict[str, object]) -> bytes:
+    """Return deterministic Canonical JSON v1 bytes for one NVD CVE."""
+    return canonicalize_json_object(source_cve)
 
 
 def sha256_hex(payload: bytes) -> str:

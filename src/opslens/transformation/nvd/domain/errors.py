@@ -11,3 +11,7 @@ class InvalidNvdCveCoreRecordError(ValueError):
 
 class InvalidNvdCveCollectionsError(ValueError):
     """Raised when NVD collection fields violate the Silver contract."""
+
+
+class InvalidNvdCvssMetricsError(ValueError):
+    """Raised when a known NVD CVSS metric violates the Silver contract."""

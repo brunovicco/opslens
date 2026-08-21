@@ -1,6 +1,7 @@
 """Domain models for versioned NVD CVE Silver identity."""
 
 import json
+import math
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -8,6 +9,7 @@ from enum import StrEnum
 from typing import Self, cast
 
 from opslens.transformation.nvd.domain.canonicalization import (
+    canonicalize_json_object,
     canonicalize_nvd_cve,
     sha256_hex,
 )
@@ -277,3 +279,103 @@ class NvdCveCollections:
                     result.append(value)
 
         return tuple(result)
+
+
+class NvdCvssFamily(StrEnum):
+    """Represent CVSS families understood by Silver schema v1."""
+
+    V2 = "V2"
+    V30 = "V30"
+    V31 = "V31"
+    V40 = "V40"
+
+
+class NvdCvssMetricType(StrEnum):
+    """Represent the NVD metric-source classification."""
+
+    PRIMARY = "Primary"
+    SECONDARY = "Secondary"
+
+
+@dataclass(frozen=True, slots=True)
+class NvdCvssMetric:
+    """Preserve one complete CVSS assessment observed by NVD."""
+
+    family: NvdCvssFamily
+    version: str
+    source: str
+    metric_type: NvdCvssMetricType
+    vector_string: str
+    base_score: float
+    base_severity: str
+    exploitability_score: float | None
+    impact_score: float | None
+    metric_json: str
+
+    def __post_init__(self) -> None:
+        """Validate normalized CVSS metric invariants."""
+        expected_versions = {
+            NvdCvssFamily.V2: "2.0",
+            NvdCvssFamily.V30: "3.0",
+            NvdCvssFamily.V31: "3.1",
+            NvdCvssFamily.V40: "4.0",
+        }
+
+        if self.version != expected_versions[self.family]:
+            raise ValueError(
+                f"CVSS family {self.family.value} requires version "
+                f"{expected_versions[self.family]!r}."
+            )
+
+        if not self.source or not self.source.strip():
+            raise ValueError("NVD CVSS source cannot be empty.")
+
+        if not self.vector_string or not self.vector_string.strip():
+            raise ValueError("NVD CVSS vectorString cannot be empty.")
+
+        if not self.base_severity or not self.base_severity.strip():
+            raise ValueError("NVD CVSS baseSeverity cannot be empty.")
+
+        self._validate_score(self.base_score, "baseScore")
+
+        if self.exploitability_score is not None:
+            self._validate_score(
+                self.exploitability_score,
+                "exploitabilityScore",
+            )
+
+        if self.impact_score is not None:
+            self._validate_score(
+                self.impact_score,
+                "impactScore",
+            )
+
+        try:
+            parsed = cast(object, json.loads(self.metric_json))
+        except json.JSONDecodeError as exc:
+            raise ValueError("NVD CVSS metric_json must contain valid JSON.") from exc
+
+        if not isinstance(parsed, dict):
+            raise ValueError("NVD CVSS metric_json must contain a JSON object.")
+
+        metric_object = cast(dict[str, object], parsed)
+
+        if canonicalize_json_object(metric_object).decode("utf-8") != self.metric_json:
+            raise ValueError("NVD CVSS metric_json must use Canonical JSON v1.")
+
+    @staticmethod
+    def _validate_score(value: float, field_name: str) -> None:
+        """Require one finite bounded CVSS score."""
+        if not math.isfinite(value):
+            raise ValueError(f"NVD CVSS {field_name} must be finite.")
+
+        if value < 0.0 or value > 10.0:
+            raise ValueError(f"NVD CVSS {field_name} must be between 0.0 and 10.0.")
+
+
+@dataclass(frozen=True, slots=True)
+class NvdCvssMetrics:
+    """Represent all CVSS assessments from one observed NVD CVE."""
+
+    metrics: tuple[NvdCvssMetric, ...]
+    unsupported_cvss_families: tuple[str, ...]
