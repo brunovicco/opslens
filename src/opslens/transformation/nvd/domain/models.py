@@ -3,6 +3,8 @@
 import json
 import re
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Self, cast
 
 from opslens.transformation.nvd.domain.canonicalization import (
@@ -15,6 +17,18 @@ from opslens.transformation.nvd.domain.errors import (
 
 _CVE_PATTERN = re.compile(r"^CVE-[0-9]{4}-[0-9]{4,}$")
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+
+
+class NvdVulnerabilityStatus(StrEnum):
+    """Represent the bounded NVD vulnerability-status vocabulary."""
+
+    UNDERGOING_ANALYSIS = "UndergoingAnalysis"
+    MODIFIED = "Modified"
+    AWAITING_ANALYSIS = "AwaitingAnalysis"
+    REJECTED = "Rejected"
+    RECEIVED = "Received"
+    ANALYZED = "Analyzed"
+    DEFERRED = "Deferred"
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,3 +132,36 @@ class ObservedCveVersion:
             )
 
         return cast(dict[str, object], parsed)
+
+
+@dataclass(frozen=True, slots=True)
+class NvdCveCoreRecord:
+    """Represent normalized scalar fields for one observed NVD CVE version."""
+
+    observed_version: ObservedCveVersion
+    source_identifier: str
+    published_at: datetime
+    last_modified_at: datetime
+    vuln_status: NvdVulnerabilityStatus
+
+    def __post_init__(self) -> None:
+        """Validate invariants required by every normalized NVD CVE core record."""
+        if not self.source_identifier or not self.source_identifier.strip():
+            raise ValueError("NVD sourceIdentifier must be non-empty.")
+
+        if self.published_at.tzinfo is None:
+            raise ValueError("NVD published timestamp must be timezone-aware.")
+
+        if self.last_modified_at.tzinfo is None:
+            raise ValueError("NVD lastModified timestamp must be timezone-aware.")
+
+        if self.published_at.utcoffset() != UTC.utcoffset(self.published_at):
+            raise ValueError("NVD published timestamp must be normalized to UTC.")
+
+        if self.last_modified_at.utcoffset() != UTC.utcoffset(self.last_modified_at):
+            raise ValueError("NVD lastModified timestamp must be normalized to UTC.")
+
+    @property
+    def is_rejected(self) -> bool:
+        """Return whether this observed CVE version is explicitly rejected."""
+        return self.vuln_status is NvdVulnerabilityStatus.REJECTED
