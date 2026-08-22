@@ -10,8 +10,8 @@ from opslens.transformation.nvd.domain.errors import (
 )
 
 
-def canonicalize_json_object(value: dict[str, object]) -> bytes:
-    """Return deterministic Canonical JSON v1 bytes for one JSON object."""
+def canonicalize_json_value(value: object) -> bytes:
+    """Return deterministic Canonical JSON v1 bytes for one JSON value."""
     _validate_json_value(value, path="$")
 
     try:
@@ -24,10 +24,15 @@ def canonicalize_json_object(value: dict[str, object]) -> bytes:
         )
     except (TypeError, ValueError) as exc:
         raise InvalidNvdObservedCveVersionError(
-            "JSON object cannot be serialized as Canonical JSON v1."
+            "JSON value cannot be serialized as Canonical JSON v1."
         ) from exc
 
     return canonical_text.encode("utf-8")
+
+
+def canonicalize_json_object(value: dict[str, object]) -> bytes:
+    """Return deterministic Canonical JSON v1 bytes for one JSON object."""
+    return canonicalize_json_value(value)
 
 
 def canonicalize_nvd_cve(source_cve: dict[str, object]) -> bytes:

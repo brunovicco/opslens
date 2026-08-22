@@ -15,3 +15,7 @@ class InvalidNvdCveCollectionsError(ValueError):
 
 class InvalidNvdCvssMetricsError(ValueError):
     """Raised when a known NVD CVSS metric violates the Silver contract."""
+
+
+class InvalidNvdCpeConfigurationsError(ValueError):
+    """Raised when NVD CPE configurations violate the Silver contract."""

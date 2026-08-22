@@ -10,6 +10,7 @@ from typing import Self, cast
 
 from opslens.transformation.nvd.domain.canonicalization import (
     canonicalize_json_object,
+    canonicalize_json_value,
     canonicalize_nvd_cve,
     sha256_hex,
 )
@@ -382,3 +383,43 @@ class NvdCvssMetrics:
 
     metrics: tuple[NvdCvssMetric, ...]
     unsupported_cvss_families: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class NvdCpeConfigurations:
+    """Preserve validated NVD applicability configurations as canonical JSON."""
+
+    configurations_json: str
+    configuration_count: int
+
+    def __post_init__(self) -> None:
+        """Validate stored configuration evidence and its canonical encoding."""
+        if type(self.configuration_count) is not int:
+            raise ValueError("NVD configuration_count must be an integer.")
+
+        if self.configuration_count < 0:
+            raise ValueError("NVD configuration_count cannot be negative.")
+
+        try:
+            parsed = cast(
+                object,
+                json.loads(self.configurations_json),
+            )
+        except json.JSONDecodeError as exc:
+            raise ValueError("NVD configurations_json must contain valid JSON.") from exc
+
+        if not isinstance(parsed, list):
+            raise ValueError("NVD configurations_json must contain a JSON array.")
+
+        configurations = cast(
+            list[object],
+            parsed,
+        )
+
+        if len(configurations) != self.configuration_count:
+            raise ValueError("NVD configuration_count does not match configurations_json.")
+
+        expected = canonicalize_json_value(configurations).decode("utf-8")
+
+        if expected != self.configurations_json:
+            raise ValueError("NVD configurations_json must use Canonical JSON v1.")
