@@ -16,6 +16,8 @@ The implemented architecture currently covers:
 - CISA KEV Bronze ingestion;
 - NVD CVE JSON 2.0 Bootstrap Bronze ingestion;
 - deterministic incremental NVD CVE API 2.0 Bronze contract;
+- frozen NVD versioned Silver application/domain/serialization contract;
+- deterministic NVD Silver COMPLETE and watermark-promotion eligibility proof;
 - deterministic CISA KEV Silver transformation and Parquet persistence;
 - exact S3 object-version evidence verification for KEV Silver;
 - idempotent conditional writes for Bronze and Silver;
@@ -198,7 +200,7 @@ Current status:
 ```text
 FIRST EPSS                 IMPLEMENTED through Athena
 CISA KEV                   IMPLEMENTED through Athena
-NVD / CVE                  BOOTSTRAP + INCREMENTAL BRONZE CONTRACT IMPLEMENTED
+NVD / CVE                  BRONZE + VERSIONED SILVER CONTRACT IMPLEMENTED
 GitHub Security Advisories NOT STARTED
 EPSS historical expansion  PENDING PHASE 2 WORK
 ```
@@ -390,17 +392,98 @@ No new Lambda, EventBridge Scheduler, Terraform runtime, Glue table, or
 Athena resource is introduced by Phase 2.3C. Runtime deployment remains
 deferred to the later NVD runtime increment.
 
+Phase 2.3D freezes the NVD versioned Silver application/domain/serialization
+contract without introducing an NVD Silver AWS runtime.
+
+The contract separates three identities:
+
+```text
+cve_id
+    vulnerability identity
+
+observed_cve_version_id
+    exact source-CVE content identity
+
+observation_id
+    exact immutable Bronze occurrence identity
+```
+
+The entire original NVD `cve` object participates in deterministic content
+identity. Historical modifications, rejection, and unrejection therefore
+create new observed versions instead of overwriting history by `cve_id` or
+`lastModified`.
+
+The Silver v1 contract preserves:
+
+```text
+core CVE fields
+localized descriptions and CVE tags
+weakness/CWE evidence
+references
+all supported CVSS v2/v3.0/v3.1/v4 observations
+canonical full metric JSON
+canonical CPE configuration trees
+exact versioned Bronze provenance
+```
+
+Known malformed metric/configuration structures fail closed. Unknown future
+CVSS metric families are not silently interpreted; immutable Bronze retains
+the source and Silver COMPLETE records deterministic warnings.
+
+The physical contract is explicit:
+
+```text
+dataset:           nvd_cve_versions
+schema_version:    1
+Parquet format:    1.0
+data page version: 1.0
+compression:       snappy
+row group size:    5000
+```
+
+Silver completion binds the logical normalized record set to deterministic
+Parquet bytes, SHA-256, size, row count, and the exact persisted Silver
+`VersionId`. The COMPLETE manifest is deterministic and contains no
+execution-time timestamp.
+
+Incremental cardinality is verified against exact Bronze evidence:
+
+```text
+Silver row_count == verified Bronze total_results
+```
+
+A valid zero-result incremental window is explicitly supported:
+
+```text
+Bronze total_results = 0
+Silver row_count     = 0
+```
+
+The watermark authority states remain distinct:
+
+```text
+bronze_complete
+    !=
+silver_complete / promotion eligible
+    !=
+authoritative watermark committed
+```
+
+Phase 2.3D proves promotion eligibility but does not mutate authoritative
+watermark state.
+
 Not yet implemented:
 
 ```text
-NVD versioned Silver contract
-authoritative watermark promotion after Silver success
+NVD Silver AWS runtime
+authoritative watermark persistence
 incremental AWS runtime deployment
 NVD Glue tables
 NVD Athena queries
 ```
 
-The next increment is Phase 2.3D — Versioned Silver Contract.
+The next NVD increment operationalizes the frozen Silver contract and
+authoritative watermark boundary without collapsing those state transitions.
 
 ---
 
