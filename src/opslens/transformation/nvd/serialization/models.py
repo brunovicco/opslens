@@ -155,3 +155,46 @@ class NvdSilverRecordV1:
     cvss: NvdCvssMetrics
     configurations: NvdCpeConfigurations
     provenance: NvdSilverProvenanceV1
+
+
+@dataclass(frozen=True, slots=True)
+class NvdSilverParquetArtifactV1:
+    """Represent one deterministic NVD Silver Parquet artifact."""
+
+    parquet_bytes: bytes
+    parquet_sha256: str
+    row_count: int
+    size_bytes: int
+    schema_version: int
+    source_kind: NvdSilverSourceKind
+    source_batch_id: str
+
+    def __post_init__(self) -> None:
+        """Validate serialized Parquet artifact invariants."""
+        from hashlib import sha256
+
+        if not self.parquet_bytes:
+            raise ValueError("NVD Silver parquet_bytes cannot be empty.")
+
+        if not self.parquet_bytes.startswith(b"PAR1") or not self.parquet_bytes.endswith(b"PAR1"):
+            raise ValueError("NVD Silver parquet_bytes must use Parquet framing.")
+
+        if type(self.row_count) is not int or self.row_count <= 0:
+            raise ValueError("NVD Silver Parquet row_count must be positive.")
+
+        if type(self.size_bytes) is not int:
+            raise ValueError("NVD Silver Parquet size_bytes must be an integer.")
+
+        if self.size_bytes != len(self.parquet_bytes):
+            raise ValueError("NVD Silver Parquet size_bytes does not match payload.")
+
+        if self.schema_version != 1:
+            raise ValueError("NVD Silver Parquet artifact requires schema version 1.")
+
+        if not self.source_batch_id.strip():
+            raise ValueError("NVD Silver Parquet source_batch_id cannot be empty.")
+
+        expected_sha256 = sha256(self.parquet_bytes).hexdigest()
+
+        if self.parquet_sha256 != expected_sha256:
+            raise ValueError("NVD Silver Parquet SHA-256 does not match payload.")
