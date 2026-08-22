@@ -62,9 +62,9 @@ def test_rejected_status_is_preserved_explicitly() -> None:
 @pytest.mark.parametrize(
     "status",
     [
-        "UndergoingAnalysis",
+        "Undergoing Analysis",
         "Modified",
-        "AwaitingAnalysis",
+        "Awaiting Analysis",
         "Rejected",
         "Received",
         "Analyzed",

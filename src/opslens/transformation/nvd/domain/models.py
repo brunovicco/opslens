@@ -26,9 +26,9 @@ _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 class NvdVulnerabilityStatus(StrEnum):
     """Represent the bounded NVD vulnerability-status vocabulary."""
 
-    UNDERGOING_ANALYSIS = "UndergoingAnalysis"
+    UNDERGOING_ANALYSIS = "Undergoing Analysis"
     MODIFIED = "Modified"
-    AWAITING_ANALYSIS = "AwaitingAnalysis"
+    AWAITING_ANALYSIS = "Awaiting Analysis"
     REJECTED = "Rejected"
     RECEIVED = "Received"
     ANALYZED = "Analyzed"
