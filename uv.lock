@@ -158,6 +158,9 @@ epss-silver-runtime = [
 kev-silver-runtime = [
     { name = "pyarrow" },
 ]
+nvd-silver-runtime = [
+    { name = "pyarrow" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -174,6 +177,7 @@ dev = [
 ]
 epss-silver-runtime = [{ name = "pyarrow", specifier = "==25.0.*" }]
 kev-silver-runtime = [{ name = "pyarrow", specifier = "==25.0.*" }]
+nvd-silver-runtime = [{ name = "pyarrow", specifier = "==25.0.*" }]
 
 [[package]]
 name = "packaging"

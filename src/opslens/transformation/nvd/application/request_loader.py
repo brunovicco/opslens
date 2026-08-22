@@ -4,6 +4,9 @@ import json
 from dataclasses import dataclass
 from typing import cast
 
+from opslens.ingestion.nvd.domain.api_page import (
+    MAX_RESULTS_PER_PAGE,
+)
 from opslens.transformation.nvd.application.models import (
     NvdSilverTransformRequestV1,
 )
@@ -20,6 +23,13 @@ from opslens.transformation.nvd.serialization.models import (
 
 class NvdSilverRequestLoadError(RuntimeError):
     """Raised when an untrusted Bronze manifest cannot be loaded safely."""
+
+
+NVD_SILVER_VALIDATED_MAX_INCREMENTAL_RESULTS = 45_447
+
+NVD_SILVER_VALIDATED_MAX_INCREMENTAL_PAGES = (
+    NVD_SILVER_VALIDATED_MAX_INCREMENTAL_RESULTS + MAX_RESULTS_PER_PAGE - 1
+) // MAX_RESULTS_PER_PAGE
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,7 +162,7 @@ class NvdSilverTransformRequestLoaderV1:
         cls,
         document: dict[str, object],
     ) -> tuple[NvdBronzeObjectCoordinateV1, ...]:
-        """Read page coordinates from one incremental manifest."""
+        """Preflight one incremental manifest before discovering page reads."""
         pages_value = document.get("pages")
 
         if not isinstance(pages_value, list):
@@ -170,7 +180,7 @@ class NvdSilverTransformRequestLoaderV1:
                 "NVD incremental Bronze manifest pages cannot be empty."
             )
 
-        coordinates: list[NvdBronzeObjectCoordinateV1] = []
+        typed_pages: list[dict[str, object]] = []
 
         for index, page_value in enumerate(pages):
             if not isinstance(page_value, dict):
@@ -178,19 +188,155 @@ class NvdSilverTransformRequestLoaderV1:
                     f"NVD incremental manifest pages[{index}] must be an object."
                 )
 
-            page = cast(
-                dict[str, object],
-                page_value,
-            )
-
-            coordinates.append(
-                cls._coordinate_from_object(
-                    page,
-                    context=f"pages[{index}]",
+            typed_pages.append(
+                cast(
+                    dict[str, object],
+                    page_value,
                 )
             )
 
-        return tuple(coordinates)
+        cls._validate_incremental_preflight(
+            document=document,
+            pages=typed_pages,
+        )
+
+        return tuple(
+            cls._coordinate_from_object(
+                page,
+                context=f"pages[{index}]",
+            )
+            for index, page in enumerate(typed_pages)
+        )
+
+    @classmethod
+    def _validate_incremental_preflight(
+        cls,
+        *,
+        document: dict[str, object],
+        pages: list[dict[str, object]],
+    ) -> None:
+        """Bound untrusted incremental fanout before any page object read."""
+        total_results = cls._required_non_negative_integer(
+            document,
+            field_name="total_results",
+            context="manifest",
+        )
+        page_count = cls._required_non_negative_integer(
+            document,
+            field_name="page_count",
+            context="manifest",
+        )
+
+        if page_count != len(pages):
+            raise NvdSilverRequestLoadError(
+                "NVD incremental Bronze manifest page_count does not match the page inventory."
+            )
+
+        if total_results > NVD_SILVER_VALIDATED_MAX_INCREMENTAL_RESULTS:
+            raise NvdSilverRequestLoadError(
+                "NVD incremental Bronze manifest total_results "
+                "exceeds the validated NVD Silver runtime bound."
+            )
+
+        if page_count > NVD_SILVER_VALIDATED_MAX_INCREMENTAL_PAGES:
+            raise NvdSilverRequestLoadError(
+                "NVD incremental Bronze manifest page_count "
+                "exceeds the validated NVD Silver page-read bound."
+            )
+
+        expected_start_index = 0
+
+        for index, page in enumerate(pages):
+            context = f"pages[{index}]"
+
+            start_index = cls._required_non_negative_integer(
+                page,
+                field_name="start_index",
+                context=context,
+            )
+            results_per_page = cls._required_non_negative_integer(
+                page,
+                field_name="results_per_page",
+                context=context,
+            )
+            page_total_results = cls._required_non_negative_integer(
+                page,
+                field_name="total_results",
+                context=context,
+            )
+
+            if results_per_page > MAX_RESULTS_PER_PAGE:
+                raise NvdSilverRequestLoadError(
+                    f"NVD incremental Bronze {context}.results_per_page "
+                    f"must not exceed {MAX_RESULTS_PER_PAGE}."
+                )
+
+            if page_total_results != total_results:
+                raise NvdSilverRequestLoadError(
+                    f"NVD incremental Bronze {context}.total_results "
+                    "does not match manifest total_results."
+                )
+
+            if start_index != expected_start_index:
+                raise NvdSilverRequestLoadError(
+                    "NVD incremental Bronze manifest pages are not contiguous."
+                )
+
+            if total_results > 0 and results_per_page == 0:
+                raise NvdSilverRequestLoadError(
+                    "NVD incremental non-empty manifest cannot contain an empty page."
+                )
+
+            expected_start_index += results_per_page
+
+        if expected_start_index != total_results:
+            raise NvdSilverRequestLoadError(
+                "NVD incremental Bronze manifest page inventory does not reach total_results."
+            )
+
+        if total_results == 0:
+            if len(pages) != 1:
+                raise NvdSilverRequestLoadError(
+                    "NVD incremental empty result must contain exactly one page."
+                )
+
+            page = pages[0]
+
+            start_index = cls._required_non_negative_integer(
+                page,
+                field_name="start_index",
+                context="pages[0]",
+            )
+            results_per_page = cls._required_non_negative_integer(
+                page,
+                field_name="results_per_page",
+                context="pages[0]",
+            )
+
+            if start_index != 0 or results_per_page != 0:
+                raise NvdSilverRequestLoadError("NVD incremental empty result page is invalid.")
+
+    @staticmethod
+    def _required_non_negative_integer(
+        document: dict[str, object],
+        *,
+        field_name: str,
+        context: str,
+    ) -> int:
+        """Read one required non-negative integer from untrusted JSON."""
+        value = document.get(field_name)
+
+        if type(value) is not int:
+            raise NvdSilverRequestLoadError(
+                f"NVD incremental Bronze {context}.{field_name} must be an integer."
+            )
+
+        if value < 0:
+            raise NvdSilverRequestLoadError(
+                f"NVD incremental Bronze {context}.{field_name} must not be negative."
+            )
+
+        return value
 
     @classmethod
     def _stored_object_coordinate(

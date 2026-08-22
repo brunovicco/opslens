@@ -12,6 +12,10 @@ class NvdS3ObjectEvidenceMismatchError(ValueError):
     """Raised when S3 response evidence disagrees with the requested version."""
 
 
+NVD_SILVER_MAX_MANIFEST_BYTES = 1 * 1024 * 1024
+NVD_SILVER_MAX_SOURCE_OBJECT_BYTES = 128 * 1024 * 1024
+
+
 class S3ObjectBody(Protocol):
     """Define the readable S3 response-body capability used by this adapter."""
 
@@ -55,6 +59,8 @@ class S3VersionedNvdBronzeObjectReader:
         client: S3GetObjectVersionClient,
         bucket_name: str,
         telemetry: OperationalTelemetry,
+        max_manifest_bytes: int = NVD_SILVER_MAX_MANIFEST_BYTES,
+        max_source_object_bytes: int = NVD_SILVER_MAX_SOURCE_OBJECT_BYTES,
     ) -> None:
         """Initialize the repository with explicit infrastructure dependencies."""
         normalized_bucket = bucket_name.strip()
@@ -62,9 +68,19 @@ class S3VersionedNvdBronzeObjectReader:
         if not normalized_bucket:
             raise ValueError("S3 NVD Bronze bucket name cannot be empty.")
 
+        if type(max_manifest_bytes) is not int or max_manifest_bytes <= 0:
+            raise ValueError("NVD Silver maximum Bronze manifest size must be a positive integer.")
+
+        if type(max_source_object_bytes) is not int or max_source_object_bytes <= 0:
+            raise ValueError(
+                "NVD Silver maximum Bronze source-object size must be a positive integer."
+            )
+
         self._client = client
         self._bucket_name = normalized_bucket
         self._telemetry = telemetry
+        self._max_manifest_bytes = max_manifest_bytes
+        self._max_source_object_bytes = max_source_object_bytes
 
     def get(
         self,
@@ -108,7 +124,17 @@ class S3VersionedNvdBronzeObjectReader:
                         "Versioned S3 GetObject response is missing Body."
                     )
 
+                max_object_bytes = self._max_object_bytes_for_key(
+                    normalized_key,
+                )
+
                 try:
+                    self._validate_pre_read_response(
+                        requested_version_id=normalized_version_id,
+                        response=response,
+                        max_object_bytes=max_object_bytes,
+                    )
+
                     payload = body.read()
                 finally:
                     body.close()
@@ -162,6 +188,49 @@ class S3VersionedNvdBronzeObjectReader:
         )
 
         return result
+
+    def _max_object_bytes_for_key(
+        self,
+        key: str,
+    ) -> int:
+        """Return the bounded read envelope for one Bronze object."""
+        if key.endswith("/manifest.json"):
+            return self._max_manifest_bytes
+
+        return self._max_source_object_bytes
+
+    @staticmethod
+    def _validate_pre_read_response(
+        *,
+        requested_version_id: str,
+        response: S3GetObjectVersionResponse,
+        max_object_bytes: int,
+    ) -> None:
+        """Validate exact S3 metadata before materializing object bytes."""
+        response_version_id = response.get("VersionId")
+
+        if not isinstance(response_version_id, str) or not response_version_id:
+            raise NvdS3ObjectEvidenceMismatchError(
+                "Versioned S3 GetObject response VersionId must be non-empty."
+            )
+
+        if response_version_id != requested_version_id:
+            raise NvdS3ObjectEvidenceMismatchError(
+                "S3 response VersionId does not match the requested NVD Bronze version."
+            )
+
+        content_length = response.get("ContentLength")
+
+        if type(content_length) is not int or content_length <= 0:
+            raise NvdS3ObjectEvidenceMismatchError(
+                "Versioned S3 GetObject response ContentLength must be positive."
+            )
+
+        if content_length > max_object_bytes:
+            raise NvdS3ObjectEvidenceMismatchError(
+                "Versioned S3 GetObject response ContentLength "
+                "exceeds the configured NVD Bronze object size limit."
+            )
 
     @staticmethod
     def _verify_response(

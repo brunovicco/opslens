@@ -120,16 +120,24 @@ def test_loads_incremental_pages_in_manifest_order() -> None:
 
     manifest_bytes = _json_bytes(
         {
+            "page_count": 2,
             "pages": [
                 {
                     "key": first_key,
+                    "results_per_page": 2000,
+                    "start_index": 0,
+                    "total_results": 4000,
                     "version_id": "page-v1",
                 },
                 {
                     "key": second_key,
+                    "results_per_page": 2000,
+                    "start_index": 2000,
+                    "total_results": 4000,
                     "version_id": "page-v2",
                 },
-            ]
+            ],
+            "total_results": 4000,
         }
     )
 
@@ -213,16 +221,24 @@ def test_rejects_duplicate_incremental_object_keys_before_page_reads() -> None:
 
     manifest_bytes = _json_bytes(
         {
+            "page_count": 2,
             "pages": [
                 {
                     "key": page_key,
+                    "results_per_page": 1,
+                    "start_index": 0,
+                    "total_results": 2,
                     "version_id": "page-v1",
                 },
                 {
                     "key": page_key,
+                    "results_per_page": 1,
+                    "start_index": 1,
+                    "total_results": 2,
                     "version_id": "page-v2",
                 },
-            ]
+            ],
+            "total_results": 2,
         }
     )
 
