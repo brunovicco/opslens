@@ -93,7 +93,6 @@ def map_nvd_silver_record_v1(
         "bootstrap_feed_revision": provenance.bootstrap_feed_revision,
         "incremental_update_id": provenance.incremental_update_id,
         "incremental_page_start": provenance.incremental_page_start,
-        "retrieved_at": provenance.retrieved_at,
         "source_identifier": core.source_identifier,
         "published_at": core.published_at,
         "last_modified_at": core.last_modified_at,

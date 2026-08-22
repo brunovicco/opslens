@@ -79,14 +79,6 @@ def _provenance() -> NvdSilverProvenanceV1:
         bootstrap_feed_revision=None,
         incremental_update_id="update-20260821T120000Z",
         incremental_page_start=0,
-        retrieved_at=datetime(
-            2026,
-            8,
-            21,
-            12,
-            1,
-            tzinfo=UTC,
-        ),
     )
 
 
@@ -209,7 +201,6 @@ def test_incremental_provenance_requires_page_coordinates() -> None:
             bootstrap_feed_revision=None,
             incremental_update_id=valid.incremental_update_id,
             incremental_page_start=None,
-            retrieved_at=valid.retrieved_at,
         )
 
 
@@ -240,14 +231,6 @@ def test_bootstrap_provenance_rejects_incremental_coordinates() -> None:
             bootstrap_feed_revision="revision-1",
             incremental_update_id="must-not-exist",
             incremental_page_start=None,
-            retrieved_at=datetime(
-                2026,
-                8,
-                21,
-                0,
-                1,
-                tzinfo=UTC,
-            ),
         )
 
 
@@ -275,5 +258,4 @@ def test_provenance_requires_lowercase_sha256() -> None:
             bootstrap_feed_revision=None,
             incremental_update_id=valid.incremental_update_id,
             incremental_page_start=valid.incremental_page_start,
-            retrieved_at=valid.retrieved_at,
         )

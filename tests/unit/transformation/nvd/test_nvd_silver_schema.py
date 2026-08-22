@@ -44,7 +44,6 @@ def test_schema_field_order_is_explicit() -> None:
         "bootstrap_feed_revision",
         "incremental_update_id",
         "incremental_page_start",
-        "retrieved_at",
         "source_identifier",
         "published_at",
         "last_modified_at",
@@ -70,7 +69,6 @@ def test_schema_uses_utc_microsecond_timestamps() -> None:
 
     for field_name in (
         "source_observed_at",
-        "retrieved_at",
         "published_at",
         "last_modified_at",
     ):

@@ -123,14 +123,6 @@ def _record(
         bootstrap_feed_revision=None,
         incremental_update_id=source_batch_id,
         incremental_page_start=0,
-        retrieved_at=datetime(
-            2026,
-            8,
-            21,
-            12,
-            1,
-            tzinfo=UTC,
-        ),
     )
 
     return NvdSilverRecordV1(

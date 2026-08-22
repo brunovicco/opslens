@@ -46,8 +46,6 @@ class NvdSilverProvenanceV1:
     incremental_update_id: str | None
     incremental_page_start: int | None
 
-    retrieved_at: datetime
-
     def __post_init__(self) -> None:
         """Validate serialization-level provenance shape."""
         for field_name in (
@@ -84,10 +82,6 @@ class NvdSilverProvenanceV1:
         self._require_utc(
             self.source_observed_at,
             "source_observed_at",
-        )
-        self._require_utc(
-            self.retrieved_at,
-            "retrieved_at",
         )
 
         if self.source_kind is NvdSilverSourceKind.BOOTSTRAP:

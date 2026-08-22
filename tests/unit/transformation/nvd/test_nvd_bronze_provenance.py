@@ -407,14 +407,6 @@ def test_incremental_provenance_binds_exact_page() -> None:
         evidence=evidence,
         bronze_object_key=evidence.objects[0].key,
         record_index=3,
-        retrieved_at=datetime(
-            2026,
-            8,
-            21,
-            13,
-            0,
-            tzinfo=UTC,
-        ),
     )
 
     assert provenance.observation_id
@@ -453,12 +445,6 @@ def test_bootstrap_provenance_binds_only_feed_object() -> None:
             evidence=evidence,
             bronze_object_key=meta.key,
             record_index=0,
-            retrieved_at=datetime(
-                2026,
-                8,
-                21,
-                tzinfo=UTC,
-            ),
         )
 
 
@@ -479,14 +465,6 @@ def test_bootstrap_provenance_uses_exact_feed_and_source_time() -> None:
         evidence=evidence,
         bronze_object_key=feed.key,
         record_index=42,
-        retrieved_at=datetime(
-            2026,
-            8,
-            21,
-            1,
-            0,
-            tzinfo=UTC,
-        ),
     )
 
     assert provenance.bootstrap_feed_year == 2026

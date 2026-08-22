@@ -194,11 +194,6 @@ NVD_CVE_VERSIONS_SCHEMA_V1 = pa.schema(
             nullable=True,
         ),
         pa.field(
-            "retrieved_at",
-            _UTC_TIMESTAMP,
-            nullable=False,
-        ),
-        pa.field(
             "source_identifier",
             pa.string(),
             nullable=False,

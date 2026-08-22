@@ -715,7 +715,6 @@ class NvdSilverProvenanceFactoryV1:
         evidence: VerifiedNvdBronzeEvidenceV1,
         bronze_object_key: str,
         record_index: int,
-        retrieved_at: datetime,
     ) -> NvdSilverProvenanceV1:
         """Bind one Silver observation to an exact verified Bronze object."""
         reference = evidence.object_by_key(bronze_object_key)
@@ -760,10 +759,6 @@ class NvdSilverProvenanceFactoryV1:
             incremental_update_id = evidence.incremental_update_id
             incremental_page_start = reference.page_start
 
-        retrieved_at_utc = self._require_aware_utc(
-            retrieved_at,
-        )
-
         observation_id = self.build_observation_id(
             evidence=evidence,
             reference=reference,
@@ -786,7 +781,6 @@ class NvdSilverProvenanceFactoryV1:
             bootstrap_feed_revision=bootstrap_feed_revision,
             incremental_update_id=incremental_update_id,
             incremental_page_start=incremental_page_start,
-            retrieved_at=retrieved_at_utc,
         )
 
     @staticmethod
@@ -821,13 +815,3 @@ class NvdSilverProvenanceFactoryV1:
         ).encode()
 
         return sha256(payload).hexdigest()
-
-    @staticmethod
-    def _require_aware_utc(
-        value: datetime,
-    ) -> datetime:
-        """Require a timezone-aware timestamp and normalize it to UTC."""
-        if value.tzinfo is None or value.utcoffset() is None:
-            raise InvalidNvdBronzeEvidenceError("NVD Silver retrieved_at must be timezone-aware.")
-
-        return value.astimezone(UTC)
