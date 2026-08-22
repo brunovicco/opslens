@@ -24,11 +24,9 @@ class NvdLogicalRecordSetHasherV1:
         records: tuple[NvdSilverRecordV1, ...],
     ) -> str:
         """Return a deterministic SHA-256 over canonical logical rows."""
-        if not records:
-            raise ValueError("NVD logical record-set hashing requires records.")
-
-        self._validate_batch(records)
-        self._validate_unique_observations(records)
+        if records:
+            self._validate_batch(records)
+            self._validate_unique_observations(records)
 
         ordered = tuple(
             sorted(

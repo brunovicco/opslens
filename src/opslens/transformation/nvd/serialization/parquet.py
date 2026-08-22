@@ -1,4 +1,4 @@
-# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Deterministic PyArrow Parquet serialization for NVD Silver v1."""
 
 from collections.abc import Iterable
@@ -10,6 +10,7 @@ import pyarrow.parquet as pq
 from opslens.transformation.nvd.serialization.models import (
     NvdSilverParquetArtifactV1,
     NvdSilverRecordV1,
+    NvdSilverSourceKind,
 )
 from opslens.transformation.nvd.serialization.row_mapper import (
     map_nvd_silver_record_v1,
@@ -65,6 +66,49 @@ class NvdSilverParquetSerializerV1:
             schema=NVD_CVE_VERSIONS_SCHEMA_V1,
         )
 
+        return self._serialize_table(
+            table=table,
+            row_count=len(ordered),
+            source_kind=source_kind,
+            source_batch_id=source_batch_id,
+        )
+
+    def serialize_empty(
+        self,
+        *,
+        source_kind: NvdSilverSourceKind,
+        source_batch_id: str,
+    ) -> NvdSilverParquetArtifactV1:
+        """Serialize one explicitly identified zero-result incremental batch."""
+        if source_kind is not NvdSilverSourceKind.INCREMENTAL:
+            raise ValueError(
+                "Empty NVD Silver Parquet is valid only for incremental source batches."
+            )
+
+        if not source_batch_id.strip():
+            raise ValueError("Empty NVD Silver Parquet requires source_batch_id.")
+
+        table = pa.Table.from_pylist(
+            [],
+            schema=NVD_CVE_VERSIONS_SCHEMA_V1,
+        )
+
+        return self._serialize_table(
+            table=table,
+            row_count=0,
+            source_kind=source_kind,
+            source_batch_id=source_batch_id,
+        )
+
+    @staticmethod
+    def _serialize_table(
+        *,
+        table: pa.Table,
+        row_count: int,
+        source_kind: NvdSilverSourceKind,
+        source_batch_id: str,
+    ) -> NvdSilverParquetArtifactV1:
+        """Serialize one Arrow table with the frozen NVD writer contract."""
         sink = pa.BufferOutputStream()
 
         pq.write_table(
@@ -90,7 +134,7 @@ class NvdSilverParquetSerializerV1:
         return NvdSilverParquetArtifactV1(
             parquet_bytes=parquet_bytes,
             parquet_sha256=parquet_sha256,
-            row_count=len(ordered),
+            row_count=row_count,
             size_bytes=len(parquet_bytes),
             schema_version=NVD_CVE_VERSIONS_SCHEMA_VERSION,
             source_kind=source_kind,

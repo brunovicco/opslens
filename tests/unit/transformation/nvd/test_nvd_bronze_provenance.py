@@ -186,6 +186,7 @@ def test_incremental_exact_evidence_verifies() -> None:
     assert evidence.source_kind is NvdSilverSourceKind.INCREMENTAL
     assert evidence.manifest_sha256 == sha256(manifest_bytes).hexdigest()
     assert len(evidence.objects) == 1
+    assert evidence.incremental_total_results == 1
     assert evidence.objects[0].role is NvdBronzeObjectRole.PAGE
 
 
@@ -336,6 +337,7 @@ def test_bootstrap_exact_feed_and_meta_verify() -> None:
 
     assert evidence.source_kind is NvdSilverSourceKind.BOOTSTRAP
     assert evidence.bootstrap_feed_year == 2026
+    assert evidence.incremental_total_results is None
     assert len(evidence.objects) == 2
     assert evidence.objects[0].role is NvdBronzeObjectRole.FEED
     assert evidence.objects[1].role is NvdBronzeObjectRole.META

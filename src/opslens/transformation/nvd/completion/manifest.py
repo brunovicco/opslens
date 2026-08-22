@@ -57,8 +57,8 @@ class NvdSilverStoredObjectV1:
         if type(self.size_bytes) is not int or self.size_bytes <= 0:
             raise ValueError("NVD Silver object size must be positive.")
 
-        if type(self.row_count) is not int or self.row_count <= 0:
-            raise ValueError("NVD Silver object row_count must be positive.")
+        if type(self.row_count) is not int or self.row_count < 0:
+            raise ValueError("NVD Silver object row_count must be non-negative.")
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,8 +138,10 @@ class NvdSilverCompletionManifestFactoryV1:
         NvdSilverObjectKeysV1,
     ]:
         """Bind exact Bronze evidence to exact persisted Silver output."""
-        if not records:
-            raise ValueError("NVD Silver completion requires records.")
+        self._validate_record_count(
+            evidence=evidence,
+            records=records,
+        )
 
         if parquet_artifact.source_kind is not evidence.source_kind:
             raise ValueError("NVD Silver artifact source_kind does not match Bronze.")
@@ -159,7 +161,15 @@ class NvdSilverCompletionManifestFactoryV1:
                 record=record,
             )
 
-        expected_parquet = NvdSilverParquetSerializerV1().serialize(records)
+        parquet_serializer = NvdSilverParquetSerializerV1()
+
+        if records:
+            expected_parquet = parquet_serializer.serialize(records)
+        else:
+            expected_parquet = parquet_serializer.serialize_empty(
+                source_kind=evidence.source_kind,
+                source_batch_id=evidence.source_batch_id,
+            )
 
         if parquet_artifact.parquet_bytes != expected_parquet.parquet_bytes:
             raise ValueError(
@@ -195,6 +205,29 @@ class NvdSilverCompletionManifestFactoryV1:
         )
 
         return manifest, keys
+
+    @staticmethod
+    def _validate_record_count(
+        *,
+        evidence: VerifiedNvdBronzeEvidenceV1,
+        records: tuple[NvdSilverRecordV1, ...],
+    ) -> None:
+        """Require Silver cardinality to match verified Bronze evidence."""
+        if evidence.source_kind is NvdSilverSourceKind.INCREMENTAL:
+            expected = evidence.incremental_total_results
+
+            if type(expected) is not int or expected < 0:
+                raise ValueError("Verified incremental Bronze evidence lacks valid total_results.")
+
+            if len(records) != expected:
+                raise ValueError(
+                    "NVD Silver record count does not match verified Bronze total_results."
+                )
+
+            return
+
+        if not records:
+            raise ValueError("NVD bootstrap Silver completion requires records.")
 
     @staticmethod
     def _validate_record_provenance(
@@ -319,6 +352,7 @@ class NvdSilverCompletionManifestSerializerV1:
                 raise ValueError("Incremental completion evidence lacks window.")
 
             source_coordinates = {
+                "total_results": evidence.incremental_total_results,
                 "update_id": evidence.incremental_update_id,
                 "window_end_at": self._format_utc(window_end),
                 "window_start_at": self._format_utc(window_start),

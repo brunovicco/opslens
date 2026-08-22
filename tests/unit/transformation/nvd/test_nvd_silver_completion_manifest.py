@@ -47,7 +47,10 @@ from opslens.transformation.nvd.serialization.parquet import (
 )
 
 
-def _incremental_evidence() -> VerifiedNvdBronzeEvidenceV1:
+def _incremental_evidence(
+    *,
+    total_results: int = 1,
+) -> VerifiedNvdBronzeEvidenceV1:
     """Build verified incremental evidence for completion tests."""
     update_id = "a" * 64
 
@@ -73,6 +76,7 @@ def _incremental_evidence() -> VerifiedNvdBronzeEvidenceV1:
         bootstrap_feed_revision=None,
         bootstrap_source_observed_at=None,
         incremental_update_id=update_id,
+        incremental_total_results=total_results,
         incremental_window_start_at=datetime(
             2026,
             8,
@@ -137,6 +141,7 @@ def _bootstrap_evidence() -> VerifiedNvdBronzeEvidenceV1:
             tzinfo=UTC,
         ),
         incremental_update_id=None,
+        incremental_total_results=None,
         incremental_window_start_at=None,
         incremental_window_end_at=None,
     )
@@ -596,4 +601,136 @@ def test_completion_rejects_parquet_from_different_record_set() -> None:
             records=(expected_record,),
             parquet_artifact=wrong_parquet,
             silver_object_version_id="silver-version-1",
+        )
+
+
+def test_empty_incremental_batch_can_complete() -> None:
+    """Treat a verified zero-result incremental window as Silver success."""
+    evidence = _incremental_evidence(
+        total_results=0,
+    )
+
+    records: tuple[NvdSilverRecordV1, ...] = ()
+
+    parquet = NvdSilverParquetSerializerV1().serialize_empty(
+        source_kind=evidence.source_kind,
+        source_batch_id=evidence.source_batch_id,
+    )
+
+    manifest, keys = NvdSilverCompletionManifestFactoryV1().build(
+        evidence=evidence,
+        records=records,
+        parquet_artifact=parquet,
+        silver_object_version_id="silver-empty-version-1",
+    )
+
+    assert manifest.silver_object.row_count == 0
+    assert manifest.logical_record_set_sha256 == (NvdLogicalRecordSetHasherV1().digest(()))
+
+    artifact = NvdSilverCompletionManifestSerializerV1().serialize(
+        manifest=manifest,
+        manifest_key=keys.manifest_key,
+    )
+
+    document = json.loads(artifact.manifest_bytes)
+
+    assert document["completion_status"] == "complete"
+    assert document["silver_object"]["row_count"] == 0
+    assert document["source_coordinates"]["total_results"] == 0
+
+
+def test_empty_logical_record_set_hash_is_deterministic() -> None:
+    """Give the empty logical record set one stable v1 identity."""
+    hasher = NvdLogicalRecordSetHasherV1()
+
+    first = hasher.digest(())
+    replay = hasher.digest(())
+
+    assert first == replay
+    assert len(first) == 64
+
+
+def test_empty_incremental_completion_replays_identically() -> None:
+    """Keep zero-result COMPLETE evidence byte deterministic."""
+    evidence = _incremental_evidence(
+        total_results=0,
+    )
+
+    parquet = NvdSilverParquetSerializerV1().serialize_empty(
+        source_kind=evidence.source_kind,
+        source_batch_id=evidence.source_batch_id,
+    )
+
+    factory = NvdSilverCompletionManifestFactoryV1()
+
+    first_manifest, first_keys = factory.build(
+        evidence=evidence,
+        records=(),
+        parquet_artifact=parquet,
+        silver_object_version_id="silver-empty-version-1",
+    )
+
+    replay_manifest, replay_keys = factory.build(
+        evidence=evidence,
+        records=(),
+        parquet_artifact=parquet,
+        silver_object_version_id="silver-empty-version-1",
+    )
+
+    serializer = NvdSilverCompletionManifestSerializerV1()
+
+    first = serializer.serialize(
+        manifest=first_manifest,
+        manifest_key=first_keys.manifest_key,
+    )
+    replay = serializer.serialize(
+        manifest=replay_manifest,
+        manifest_key=replay_keys.manifest_key,
+    )
+
+    assert first.manifest_bytes == replay.manifest_bytes
+    assert first.manifest_sha256 == replay.manifest_sha256
+
+
+def test_incremental_record_count_must_match_bronze_total_results() -> None:
+    """Prevent silent record loss before Silver COMPLETE."""
+    evidence = _incremental_evidence(
+        total_results=1,
+    )
+
+    empty_parquet = NvdSilverParquetSerializerV1().serialize_empty(
+        source_kind=evidence.source_kind,
+        source_batch_id=evidence.source_batch_id,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="total_results",
+    ):
+        NvdSilverCompletionManifestFactoryV1().build(
+            evidence=evidence,
+            records=(),
+            parquet_artifact=empty_parquet,
+            silver_object_version_id="silver-empty-version-1",
+        )
+
+
+def test_bootstrap_empty_completion_fails_closed() -> None:
+    """Require actual records for yearly-feed bootstrap completion."""
+    evidence = _bootstrap_evidence()
+
+    incremental_empty = NvdSilverParquetSerializerV1().serialize_empty(
+        source_kind=NvdSilverSourceKind.INCREMENTAL,
+        source_batch_id="a" * 64,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="bootstrap Silver completion requires records",
+    ):
+        NvdSilverCompletionManifestFactoryV1().build(
+            evidence=evidence,
+            records=(),
+            parquet_artifact=incremental_empty,
+            silver_object_version_id="silver-empty-version-1",
         )

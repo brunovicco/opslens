@@ -173,8 +173,8 @@ class NvdSilverParquetArtifactV1:
         if not self.parquet_bytes.startswith(b"PAR1") or not self.parquet_bytes.endswith(b"PAR1"):
             raise ValueError("NVD Silver parquet_bytes must use Parquet framing.")
 
-        if type(self.row_count) is not int or self.row_count <= 0:
-            raise ValueError("NVD Silver Parquet row_count must be positive.")
+        if type(self.row_count) is not int or self.row_count < 0:
+            raise ValueError("NVD Silver Parquet row_count must be non-negative.")
 
         if type(self.size_bytes) is not int:
             raise ValueError("NVD Silver Parquet size_bytes must be an integer.")

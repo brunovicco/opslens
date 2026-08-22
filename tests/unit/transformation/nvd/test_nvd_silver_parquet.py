@@ -322,3 +322,49 @@ def test_artifact_exposes_exact_payload_hash_and_size() -> None:
     assert artifact.parquet_sha256 == sha256(artifact.parquet_bytes).hexdigest()
     assert artifact.row_count == 1
     assert artifact.schema_version == 1
+
+
+def test_explicit_empty_incremental_parquet_is_valid() -> None:
+    """Represent a proven zero-result incremental batch with schema v1."""
+    artifact = NvdSilverParquetSerializerV1().serialize_empty(
+        source_kind=NvdSilverSourceKind.INCREMENTAL,
+        source_batch_id="a" * 64,
+    )
+
+    assert artifact.row_count == 0
+    assert artifact.parquet_bytes.startswith(b"PAR1")
+    assert artifact.parquet_bytes.endswith(b"PAR1")
+
+    table = pq.read_table(pa.BufferReader(artifact.parquet_bytes))
+
+    assert table.num_rows == 0
+    assert table.schema == NVD_CVE_VERSIONS_SCHEMA_V1
+
+
+def test_explicit_empty_incremental_parquet_replays_identically() -> None:
+    """Keep zero-result physical evidence byte deterministic."""
+    serializer = NvdSilverParquetSerializerV1()
+
+    first = serializer.serialize_empty(
+        source_kind=NvdSilverSourceKind.INCREMENTAL,
+        source_batch_id="a" * 64,
+    )
+    replay = serializer.serialize_empty(
+        source_kind=NvdSilverSourceKind.INCREMENTAL,
+        source_batch_id="a" * 64,
+    )
+
+    assert first.parquet_bytes == replay.parquet_bytes
+    assert first.parquet_sha256 == replay.parquet_sha256
+
+
+def test_explicit_empty_bootstrap_parquet_fails_closed() -> None:
+    """Do not generalize incremental zero-result semantics to bootstrap."""
+    with pytest.raises(
+        ValueError,
+        match="only for incremental",
+    ):
+        NvdSilverParquetSerializerV1().serialize_empty(
+            source_kind=NvdSilverSourceKind.BOOTSTRAP,
+            source_batch_id="bootstrap-batch",
+        )

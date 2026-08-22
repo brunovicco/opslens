@@ -261,6 +261,7 @@ class NvdBronzeEvidenceVerifierV1:
             bootstrap_feed_revision=None,
             bootstrap_source_observed_at=None,
             incremental_update_id=update_id,
+            incremental_total_results=total_results,
             incremental_window_start_at=window.start_at,
             incremental_window_end_at=window.end_at,
         )
@@ -375,6 +376,7 @@ class NvdBronzeEvidenceVerifierV1:
             bootstrap_feed_revision=feed_revision,
             bootstrap_source_observed_at=source_observed_at,
             incremental_update_id=None,
+            incremental_total_results=None,
             incremental_window_start_at=None,
             incremental_window_end_at=None,
         )

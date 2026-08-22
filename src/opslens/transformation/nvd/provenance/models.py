@@ -100,6 +100,7 @@ class VerifiedNvdBronzeEvidenceV1:
     bootstrap_source_observed_at: datetime | None
 
     incremental_update_id: str | None
+    incremental_total_results: int | None
     incremental_window_start_at: datetime | None
     incremental_window_end_at: datetime | None
 
@@ -149,6 +150,9 @@ class VerifiedNvdBronzeEvidenceV1:
         if self.incremental_update_id is not None:
             raise ValueError("Bootstrap evidence cannot contain update_id.")
 
+        if self.incremental_total_results is not None:
+            raise ValueError("Bootstrap evidence cannot contain incremental total_results.")
+
         if self.incremental_window_start_at is not None:
             raise ValueError("Bootstrap evidence cannot contain incremental window.")
 
@@ -170,6 +174,9 @@ class VerifiedNvdBronzeEvidenceV1:
 
         if self.source_batch_id != self.incremental_update_id:
             raise ValueError("Incremental source_batch_id must equal update_id.")
+
+        if type(self.incremental_total_results) is not int or self.incremental_total_results < 0:
+            raise ValueError("Verified incremental evidence requires non-negative total_results.")
 
         if self.incremental_window_start_at is None:
             raise ValueError("Verified incremental evidence requires window start.")
