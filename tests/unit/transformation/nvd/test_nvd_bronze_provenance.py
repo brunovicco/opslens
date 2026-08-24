@@ -107,6 +107,120 @@ def _incremental_fixture() -> tuple[
     )
 
 
+def _two_page_incremental_fixture(
+    *,
+    first_attempt_id: str | None,
+    second_attempt_id: str | None,
+) -> tuple[
+    str,
+    bytes,
+    tuple[NvdBronzeObjectPayloadV1, ...],
+]:
+    """Build one two-page incremental COMPLETE with selectable layouts."""
+    window = NvdIncrementalWindow(
+        start_at=datetime(
+            2026,
+            8,
+            20,
+            tzinfo=UTC,
+        ),
+        end_at=datetime(
+            2026,
+            8,
+            21,
+            tzinfo=UTC,
+        ),
+    )
+
+    update_id = window.update_id
+    base = f"bronze/nvd/cve/updates/update_id={update_id}"
+    manifest_key = f"{base}/manifest.json"
+
+    def page_key(
+        *,
+        start_index: int,
+        attempt_id: str | None,
+    ) -> str:
+        if attempt_id is None:
+            return (
+                f"{base}/"
+                f"page_start={start_index:06d}/response.json"
+            )
+
+        return (
+            f"{base}/"
+            f"attempt_id={attempt_id}/"
+            f"page_start={start_index:06d}/response.json"
+        )
+
+    first_key = page_key(
+        start_index=0,
+        attempt_id=first_attempt_id,
+    )
+    second_key = page_key(
+        start_index=1,
+        attempt_id=second_attempt_id,
+    )
+
+    first_bytes = b'{"startIndex":0,"resultsPerPage":1,"totalResults":2}\n'
+    second_bytes = b'{"startIndex":1,"resultsPerPage":1,"totalResults":2}\n'
+
+    document: dict[str, object] = {
+        "completion_status": "complete",
+        "manifest_version": "1",
+        "page_count": 2,
+        "pages": [
+            {
+                "key": first_key,
+                "results_per_page": 1,
+                "sha256": sha256(first_bytes).hexdigest(),
+                "size_bytes": len(first_bytes),
+                "source_timestamp": "2026-08-21T12:00:00.000",
+                "start_index": 0,
+                "total_results": 2,
+                "version_id": "page-version-1",
+            },
+            {
+                "key": second_key,
+                "results_per_page": 1,
+                "sha256": sha256(second_bytes).hexdigest(),
+                "size_bytes": len(second_bytes),
+                "source_timestamp": "2026-08-21T12:00:01.000",
+                "start_index": 1,
+                "total_results": 2,
+                "version_id": "page-version-2",
+            },
+        ],
+        "source": "nvd-cve",
+        "source_format": "NVD_CVE",
+        "source_interface": "cve-api-2.0",
+        "source_version": "2.0",
+        "total_results": 2,
+        "update_id": update_id,
+        "window_end_at": window.canonical_end_at,
+        "window_start_at": window.canonical_start_at,
+    }
+
+    payloads = (
+        NvdBronzeObjectPayloadV1(
+            key=first_key,
+            version_id="page-version-1",
+            raw_bytes=first_bytes,
+        ),
+        NvdBronzeObjectPayloadV1(
+            key=second_key,
+            version_id="page-version-2",
+            raw_bytes=second_bytes,
+        ),
+    )
+
+    return (
+        manifest_key,
+        _canonical(document),
+        payloads,
+    )
+
+
 def _bootstrap_fixture() -> tuple[
     str,
     bytes,
@@ -188,6 +302,94 @@ def test_incremental_exact_evidence_verifies() -> None:
     assert len(evidence.objects) == 1
     assert evidence.incremental_total_results == 1
     assert evidence.objects[0].role is NvdBronzeObjectRole.PAGE
+
+
+def test_attempt_scoped_incremental_exact_evidence_verifies() -> None:
+    """Accept one COMPLETE whose pages belong to one physical attempt."""
+    attempt_id = "a" * 64
+
+    manifest_key, manifest_bytes, payloads = (
+        _two_page_incremental_fixture(
+            first_attempt_id=attempt_id,
+            second_attempt_id=attempt_id,
+        )
+    )
+
+    evidence = NvdBronzeEvidenceVerifierV1().verify_incremental(
+        manifest_key=manifest_key,
+        manifest_version_id="manifest-version-1",
+        manifest_bytes=manifest_bytes,
+        object_payloads=payloads,
+    )
+
+    assert len(evidence.objects) == 2
+    assert all(
+        f"/attempt_id={attempt_id}/" in reference.key
+        for reference in evidence.objects
+    )
+
+
+def test_incremental_complete_cannot_mix_page_layouts() -> None:
+    """Reject COMPLETE evidence mixing legacy and attempt-scoped pages."""
+    manifest_key, manifest_bytes, payloads = (
+        _two_page_incremental_fixture(
+            first_attempt_id=None,
+            second_attempt_id="a" * 64,
+        )
+    )
+
+    with pytest.raises(
+        InvalidNvdBronzeEvidenceError,
+        match="cannot mix",
+    ):
+        NvdBronzeEvidenceVerifierV1().verify_incremental(
+            manifest_key=manifest_key,
+            manifest_version_id="manifest-version-1",
+            manifest_bytes=manifest_bytes,
+            object_payloads=payloads,
+        )
+
+
+def test_incremental_complete_cannot_mix_attempt_ids() -> None:
+    """Reject COMPLETE evidence composed from different physical attempts."""
+    manifest_key, manifest_bytes, payloads = (
+        _two_page_incremental_fixture(
+            first_attempt_id="a" * 64,
+            second_attempt_id="b" * 64,
+        )
+    )
+
+    with pytest.raises(
+        InvalidNvdBronzeEvidenceError,
+        match="one physical attempt_id",
+    ):
+        NvdBronzeEvidenceVerifierV1().verify_incremental(
+            manifest_key=manifest_key,
+            manifest_version_id="manifest-version-1",
+            manifest_bytes=manifest_bytes,
+            object_payloads=payloads,
+        )
+
+
+def test_incremental_attempt_id_must_be_lowercase_sha256() -> None:
+    """Reject attempt-scoped coordinates with invalid physical identity."""
+    manifest_key, manifest_bytes, payloads = (
+        _two_page_incremental_fixture(
+            first_attempt_id="A" * 64,
+            second_attempt_id="A" * 64,
+        )
+    )
+
+    with pytest.raises(
+        InvalidNvdBronzeEvidenceError,
+        match="invalid attempt_id",
+    ):
+        NvdBronzeEvidenceVerifierV1().verify_incremental(
+            manifest_key=manifest_key,
+            manifest_version_id="manifest-version-1",
+            manifest_bytes=manifest_bytes,
+            object_payloads=payloads,
+        )
 
 
 def test_noncanonical_incremental_manifest_fails_closed() -> None:

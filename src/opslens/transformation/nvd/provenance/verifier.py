@@ -131,6 +131,8 @@ class NvdBronzeEvidenceVerifierV1:
 
         references: list[NvdBronzeObjectReferenceV1] = []
         expected_start = 0
+        page_layout: str | None = None
+        physical_attempt_id: str | None = None
 
         for index, page_value in enumerate(page_values):
             page = self._object(
@@ -169,15 +171,64 @@ class NvdBronzeEvidenceVerifierV1:
                     "NVD incremental non-empty result contains an empty page."
                 )
 
-            expected_key = f"{manifest_base}/page_start={page_start:06d}/response.json"
             page_key = self._required_string(
                 page,
                 "key",
             )
 
-            if page_key != expected_key:
+            legacy_key = (
+                f"{manifest_base}/"
+                f"page_start={page_start:06d}/response.json"
+            )
+
+            attempt_prefix = f"{manifest_base}/attempt_id="
+            attempt_suffix = (
+                f"/page_start={page_start:06d}/response.json"
+            )
+
+            current_layout: str
+            current_attempt_id: str | None
+
+            if page_key == legacy_key:
+                current_layout = "legacy"
+                current_attempt_id = None
+            elif (
+                page_key.startswith(attempt_prefix)
+                and page_key.endswith(attempt_suffix)
+            ):
+                candidate_attempt_id = page_key[
+                    len(attempt_prefix) : -len(attempt_suffix)
+                ]
+
+                if not self._is_sha256(candidate_attempt_id):
+                    raise InvalidNvdBronzeEvidenceError(
+                        "NVD incremental attempt-scoped page key "
+                        "contains an invalid attempt_id."
+                    )
+
+                current_layout = "attempt"
+                current_attempt_id = candidate_attempt_id
+            else:
                 raise InvalidNvdBronzeEvidenceError(
-                    "NVD incremental page key does not match the deterministic page coordinate."
+                    "NVD incremental page key does not match an "
+                    "authorized page coordinate."
+                )
+
+            if page_layout is None:
+                page_layout = current_layout
+                physical_attempt_id = current_attempt_id
+            elif current_layout != page_layout:
+                raise InvalidNvdBronzeEvidenceError(
+                    "NVD incremental COMPLETE manifest cannot mix "
+                    "legacy and attempt-scoped page layouts."
+                )
+            elif (
+                current_layout == "attempt"
+                and current_attempt_id != physical_attempt_id
+            ):
+                raise InvalidNvdBronzeEvidenceError(
+                    "NVD incremental COMPLETE manifest must use "
+                    "one physical attempt_id."
                 )
 
             reference = NvdBronzeObjectReferenceV1(
