@@ -1,9 +1,17 @@
 """Application service orchestrating NVD incremental Bronze ingestion."""
 
+from opslens.ingestion.nvd.application.incremental_attempt import (
+    NvdIncrementalAttemptIdFactory,
+)
+from opslens.ingestion.nvd.application.incremental_complete import (
+    NvdIncrementalCanonicalManifestAlreadyExistsError,
+    NvdPersistedIncrementalManifest,
+)
 from opslens.ingestion.nvd.application.incremental_key_factory import (
     NvdIncrementalKeyFactory,
 )
 from opslens.ingestion.nvd.application.incremental_manifest import (
+    NvdIncrementalManifest,
     NvdIncrementalManifestFactory,
     NvdIncrementalManifestSerializer,
 )
@@ -13,9 +21,11 @@ from opslens.ingestion.nvd.application.incremental_models import (
 from opslens.ingestion.nvd.application.incremental_ports import (
     NvdCveApiSource,
     NvdIncrementalBronzeRepository,
+    NvdIncrementalCompleteManifestReader,
 )
 from opslens.ingestion.nvd.application.models import (
     NvdBronzeWriteResult,
+    NvdBronzeWriteStatus,
 )
 from opslens.ingestion.nvd.application.watermark import (
     NvdWatermarkCandidateFactory,
@@ -34,14 +44,16 @@ from opslens.ingestion.nvd.domain.incremental import (
 
 
 class IngestNvdIncrementalWindow:
-    """Orchestrate one deterministic NVD CVE API Bronze update run."""
+    """Orchestrate one replay-safe NVD CVE API Bronze update run."""
 
     def __init__(
         self,
         *,
         source: NvdCveApiSource,
         repository: NvdIncrementalBronzeRepository,
+        complete_reader: NvdIncrementalCompleteManifestReader,
         page_parser: NvdCveApiPageParser,
+        attempt_id_factory: NvdIncrementalAttemptIdFactory,
         key_factory: NvdIncrementalKeyFactory,
         manifest_factory: NvdIncrementalManifestFactory,
         manifest_serializer: NvdIncrementalManifestSerializer,
@@ -50,7 +62,9 @@ class IngestNvdIncrementalWindow:
         """Initialize the use case through explicit dependency injection."""
         self._source = source
         self._repository = repository
+        self._complete_reader = complete_reader
         self._page_parser = page_parser
+        self._attempt_id_factory = attempt_id_factory
         self._key_factory = key_factory
         self._manifest_factory = manifest_factory
         self._manifest_serializer = manifest_serializer
@@ -61,29 +75,103 @@ class IngestNvdIncrementalWindow:
         *,
         window: NvdIncrementalWindow,
     ) -> NvdIncrementalIngestionResult:
-        """Fetch, validate, persist, and complete one incremental Bronze run.
+        """Fetch, isolate, persist, and complete one incremental Bronze run.
 
-        All source pages are fetched and the complete pagination contract is
-        validated before any Bronze object is written. The completion manifest
-        is persisted only after every page has been created or verified.
+        The logical ``update_id`` identifies only the requested time window.
+        Exact source-response bytes define a physical ``attempt_id`` used to
+        isolate page objects from repeated observations of the same window.
 
-        The returned watermark candidate is advisory state only. This service
-        does not advance the authoritative committed watermark.
+        All source pages are fetched and validated before persistence.
+
+        The canonical COMPLETE manifest remains scoped only by ``update_id``.
+        If another physical attempt already created that manifest, this attempt
+        loads and returns the winning persisted COMPLETE evidence instead of
+        comparing the winner with the losing attempt's bytes.
+
+        The returned watermark candidate remains advisory state only.
 
         Args:
             window: Deterministic closed NVD last-modified query window.
 
         Returns:
-            Exact persistence and Bronze-completion evidence.
+            Exact winning Bronze-completion evidence.
         """
-        pagination = self._fetch_complete_pagination(window=window)
+        pagination = self._fetch_complete_pagination(
+            window=window
+        )
 
+        attempt_id = self._attempt_id_factory.build(
+            window=window,
+            pagination=pagination,
+        )
+
+        page_keys, page_writes = self._persist_attempt_pages(
+            window=window,
+            pagination=pagination,
+            attempt_id=attempt_id,
+        )
+
+        manifest = self._manifest_factory.build(
+            window=window,
+            pagination=pagination,
+            page_keys=page_keys,
+            page_writes=page_writes,
+        )
+
+        manifest_payload = self._manifest_serializer.serialize(
+            manifest
+        )
+
+        manifest_key = self._key_factory.build_manifest_key(
+            window=window
+        )
+
+        try:
+            manifest_write = self._repository.create_manifest(
+                manifest=manifest,
+                payload=manifest_payload,
+                object_key=manifest_key,
+            )
+        except NvdIncrementalCanonicalManifestAlreadyExistsError:
+            persisted = self._complete_reader.load_existing(
+                window=window,
+                object_key=manifest_key,
+            )
+
+            return self._result_from_existing_complete(
+                window=window,
+                manifest_key=manifest_key,
+                persisted=persisted,
+            )
+
+        return self._build_result(
+            window=window,
+            manifest=manifest,
+            manifest_payload=manifest_payload,
+            manifest_key=manifest_key,
+            manifest_write=manifest_write,
+            page_keys=page_keys,
+            page_writes=page_writes,
+        )
+
+    def _persist_attempt_pages(
+        self,
+        *,
+        window: NvdIncrementalWindow,
+        pagination: NvdCveApiPagination,
+        attempt_id: str,
+    ) -> tuple[
+        tuple[str, ...],
+        tuple[NvdBronzeWriteResult, ...],
+    ]:
+        """Persist exact pages below one physical-attempt identity."""
         page_keys: list[str] = []
         page_writes: list[NvdBronzeWriteResult] = []
 
         for page in pagination.pages:
-            page_key = self._key_factory.build_page_key(
+            page_key = self._key_factory.build_attempt_page_key(
                 window=window,
+                attempt_id=attempt_id,
                 start_index=page.start_index,
             )
 
@@ -93,26 +181,69 @@ class IngestNvdIncrementalWindow:
                 object_key=page_key,
             )
 
-            page_keys.append(page_key)
-            page_writes.append(page_write)
+            page_keys.append(
+                page_key
+            )
+            page_writes.append(
+                page_write
+            )
 
-        manifest = self._manifest_factory.build(
+        return (
+            tuple(page_keys),
+            tuple(page_writes),
+        )
+
+    def _result_from_existing_complete(
+        self,
+        *,
+        window: NvdIncrementalWindow,
+        manifest_key: str,
+        persisted: NvdPersistedIncrementalManifest,
+    ) -> NvdIncrementalIngestionResult:
+        """Return the canonical winning COMPLETE instead of losing attempt data."""
+        manifest = persisted.manifest
+
+        page_keys = tuple(
+            page.key
+            for page in manifest.pages
+        )
+
+        page_writes = tuple(
+            NvdBronzeWriteResult(
+                status=NvdBronzeWriteStatus.ALREADY_EXISTS,
+                version_id=page.version_id,
+            )
+            for page in manifest.pages
+        )
+
+        manifest_write = NvdBronzeWriteResult(
+            status=NvdBronzeWriteStatus.ALREADY_EXISTS,
+            version_id=persisted.version_id,
+            etag=persisted.etag,
+        )
+
+        return self._build_result(
             window=window,
-            pagination=pagination,
-            page_writes=tuple(page_writes),
-            key_factory=self._key_factory,
-        )
-
-        manifest_payload = self._manifest_serializer.serialize(manifest)
-
-        manifest_key = self._key_factory.build_manifest_key(window=window)
-
-        manifest_write = self._repository.create_manifest(
             manifest=manifest,
-            payload=manifest_payload,
-            object_key=manifest_key,
+            manifest_payload=persisted.payload,
+            manifest_key=manifest_key,
+            manifest_write=manifest_write,
+            page_keys=page_keys,
+            page_writes=page_writes,
         )
 
+    def _build_result(
+        self,
+        *,
+        window: NvdIncrementalWindow,
+        manifest: NvdIncrementalManifest,
+        manifest_payload: bytes,
+        manifest_key: str,
+        manifest_write: NvdBronzeWriteResult,
+        page_keys: tuple[str, ...],
+        page_writes: tuple[NvdBronzeWriteResult, ...],
+    ) -> NvdIncrementalIngestionResult:
+        """Build exact externally visible evidence from the selected COMPLETE."""
         candidate = self._candidate_factory.build(
             window=window,
             manifest=manifest,
@@ -126,9 +257,9 @@ class IngestNvdIncrementalWindow:
             update_id=window.update_id,
             window_start_at=window.start_at,
             window_end_at=window.end_at,
-            total_results=pagination.total_results,
-            page_keys=tuple(page_keys),
-            page_writes=tuple(page_writes),
+            total_results=manifest.total_results,
+            page_keys=page_keys,
+            page_writes=page_writes,
             manifest_key=manifest_key,
             manifest_write=manifest_write,
             candidate=candidate,
@@ -150,11 +281,14 @@ class IngestNvdIncrementalWindow:
                 start_index=requested_start_index,
             )
 
-            page = self._page_parser.parse(payload)
+            page = self._page_parser.parse(
+                payload
+            )
 
             if page.start_index != requested_start_index:
                 raise InvalidNvdCveApiPaginationError(
-                    "NVD CVE API response startIndex does not match the requested page offset."
+                    "NVD CVE API response startIndex does not match "
+                    "the requested page offset."
                 )
 
             if expected_total_results is None:
@@ -164,11 +298,15 @@ class IngestNvdIncrementalWindow:
                     "NVD CVE API totalResults changed between pages."
                 )
 
-            pages.append(page)
+            pages.append(
+                page
+            )
 
             if page.total_results == 0 or page.is_final_page:
                 break
 
             requested_start_index = page.next_start_index
 
-        return NvdCveApiPagination(pages=tuple(pages))
+        return NvdCveApiPagination(
+            pages=tuple(pages)
+        )

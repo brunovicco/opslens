@@ -136,13 +136,29 @@ def _writes() -> tuple[
     )
 
 
+def _page_keys() -> tuple[str, ...]:
+    """Build exact attempt-scoped persisted page keys in source order."""
+    window = _window()
+    factory = NvdIncrementalKeyFactory()
+    attempt_id = "a" * 64
+
+    return tuple(
+        factory.build_attempt_page_key(
+            window=window,
+            attempt_id=attempt_id,
+            start_index=page.start_index,
+        )
+        for page in _pagination().pages
+    )
+
+
 def _manifest():
     """Build one valid COMPLETE incremental manifest."""
     return NvdIncrementalManifestFactory().build(
         window=_window(),
         pagination=_pagination(),
+        page_keys=_page_keys(),
         page_writes=_writes(),
-        key_factory=NvdIncrementalKeyFactory(),
     )
 
 
@@ -164,8 +180,8 @@ def test_manifest_binds_exact_page_hashes_and_sizes() -> None:
     manifest = NvdIncrementalManifestFactory().build(
         window=_window(),
         pagination=pagination,
+        page_keys=_page_keys(),
         page_writes=_writes(),
-        key_factory=(NvdIncrementalKeyFactory()),
     )
 
     assert tuple(page.sha256 for page in manifest.pages) == tuple(
@@ -177,18 +193,20 @@ def test_manifest_binds_exact_page_hashes_and_sizes() -> None:
     )
 
 
-def test_manifest_binds_deterministic_page_keys() -> None:
-    """Bind pages under the exact logical update identity."""
+def test_manifest_binds_exact_persisted_page_keys() -> None:
+    """Bind COMPLETE evidence to the exact physical page keys supplied."""
     window = _window()
     manifest = _manifest()
     factory = NvdIncrementalKeyFactory()
 
-    assert tuple(page.key for page in manifest.pages) == tuple(
-        factory.build_page_key(
-            window=window,
-            start_index=page.start_index,
-        )
-        for page in _pagination().pages
+    assert tuple(
+        page.key
+        for page in manifest.pages
+    ) == _page_keys()
+
+    assert all(
+        "/attempt_id=" in page.key
+        for page in manifest.pages
     )
 
     assert factory.build_manifest_key(window=window) == (
@@ -241,15 +259,15 @@ def test_manifest_rebuild_is_retry_stable() -> None:
     first = factory.build(
         window=_window(),
         pagination=_pagination(),
+        page_keys=_page_keys(),
         page_writes=first_writes,
-        key_factory=NvdIncrementalKeyFactory(),
     )
 
     replay = factory.build(
         window=_window(),
         pagination=_pagination(),
+        page_keys=_page_keys(),
         page_writes=replay_writes,
-        key_factory=NvdIncrementalKeyFactory(),
     )
 
     assert serializer.serialize(first) == serializer.serialize(replay)
@@ -278,8 +296,8 @@ def test_manifest_rejects_missing_page_persistence_result() -> None:
         NvdIncrementalManifestFactory().build(
             window=_window(),
             pagination=_pagination(),
+            page_keys=_page_keys(),
             page_writes=_writes()[:2],
-            key_factory=NvdIncrementalKeyFactory(),
         )
 
 
@@ -294,16 +312,25 @@ def test_manifest_supports_explicit_empty_result_page() -> None:
 
     pagination = NvdCveApiPagination(pages=(page,))
 
+    window = _window()
+    key_factory = NvdIncrementalKeyFactory()
+
     manifest = NvdIncrementalManifestFactory().build(
-        window=_window(),
+        window=window,
         pagination=pagination,
-        page_writes=(
-            NvdBronzeWriteResult(
-                status=(NvdBronzeWriteStatus.CREATED),
-                version_id=("empty-page-version"),
+        page_keys=(
+            key_factory.build_attempt_page_key(
+                window=window,
+                attempt_id="a" * 64,
+                start_index=0,
             ),
         ),
-        key_factory=(NvdIncrementalKeyFactory()),
+        page_writes=(
+            NvdBronzeWriteResult(
+                status=NvdBronzeWriteStatus.CREATED,
+                version_id="empty-page-version",
+            ),
+        ),
     )
 
     assert manifest.total_results == 0

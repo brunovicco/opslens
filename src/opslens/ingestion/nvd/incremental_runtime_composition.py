@@ -15,6 +15,16 @@ from opslens.ingestion.nvd.adapters.outbound.s3_incremental_bronze import (
     S3NvdIncrementalBronzeClient,
     S3NvdIncrementalBronzeRepository,
 )
+from opslens.ingestion.nvd.adapters.outbound.s3_incremental_complete import (
+    S3NvdIncrementalCompleteManifestClient,
+    S3NvdIncrementalCompleteManifestReader,
+)
+from opslens.ingestion.nvd.application.incremental_attempt import (
+    NvdIncrementalAttemptIdFactory,
+)
+from opslens.ingestion.nvd.application.incremental_complete import (
+    NvdIncrementalManifestParser,
+)
 from opslens.ingestion.nvd.application.incremental_key_factory import (
     NvdIncrementalKeyFactory,
 )
@@ -86,10 +96,22 @@ def build_incremental_runtime_use_case(
         telemetry=telemetry,
     )
 
+    complete_reader = S3NvdIncrementalCompleteManifestReader(
+        client=cast(
+            S3NvdIncrementalCompleteManifestClient,
+            bronze_s3_client,
+        ),
+        bucket_name=settings.bucket_name,
+        parser=NvdIncrementalManifestParser(),
+        telemetry=telemetry,
+    )
+
     ingestor = IngestNvdIncrementalWindow(
         source=source,
         repository=bronze_repository,
+        complete_reader=complete_reader,
         page_parser=NvdCveApiPageParser(),
+        attempt_id_factory=NvdIncrementalAttemptIdFactory(),
         key_factory=NvdIncrementalKeyFactory(
             prefix=settings.bronze_prefix,
         ),
@@ -117,7 +139,9 @@ def build_incremental_runtime_from_environment(
         Session(),
     )
 
-    s3_client = client_factory.client("s3")
+    s3_client = client_factory.client(
+        "s3"
+    )
 
     return build_incremental_runtime_use_case(
         settings=settings,

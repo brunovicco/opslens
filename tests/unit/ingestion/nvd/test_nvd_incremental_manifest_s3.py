@@ -9,11 +9,9 @@ from contextlib import (
 )
 from datetime import UTC, datetime
 
-import pytest
 from botocore.exceptions import ClientError
 
 from opslens.ingestion.nvd.adapters.outbound.s3_incremental_bronze import (
-    NvdIncrementalBronzeEvidenceError,
     S3NvdIncrementalBronzeRepository,
 )
 from opslens.ingestion.nvd.application.incremental_key_factory import (
@@ -126,27 +124,6 @@ class FakeS3Client:
         """Return existing manifest evidence."""
         return self.head_response
 
-
-def _client_error() -> ClientError:
-    """Build one deterministic S3 412 response."""
-    return ClientError(
-        error_response={
-            "Error": {
-                "Code": "PreconditionFailed",
-                "Message": "test error",
-            },
-            "ResponseMetadata": {
-                "RequestId": "test-request-id",
-                "HostId": "test-host-id",
-                "HTTPStatusCode": 412,
-                "HTTPHeaders": {},
-                "RetryAttempts": 0,
-            },
-        },
-        operation_name="PutObject",
-    )
-
-
 def _window() -> NvdIncrementalWindow:
     """Build one deterministic update window."""
     return NvdIncrementalWindow(
@@ -207,13 +184,19 @@ def _manifest() -> tuple[
     manifest = NvdIncrementalManifestFactory().build(
         window=window,
         pagination=pagination,
+        page_keys=(
+            key_factory.build_attempt_page_key(
+                window=window,
+                attempt_id="a" * 64,
+                start_index=page.start_index,
+            ),
+        ),
         page_writes=(
             NvdBronzeWriteResult(
-                status=(NvdBronzeWriteStatus.CREATED),
+                status=NvdBronzeWriteStatus.CREATED,
                 version_id="page-version-123",
             ),
         ),
-        key_factory=key_factory,
     )
 
     payload = NvdIncrementalManifestSerializer().serialize(manifest)
@@ -275,72 +258,3 @@ def test_create_manifest_uses_conditional_exact_write() -> None:
         manifest,
         payload,
     )
-
-
-def test_manifest_replay_requires_exact_existing_evidence() -> None:
-    """Resolve 412 only when the existing manifest is identical."""
-    manifest, payload, key = _manifest()
-
-    metadata = _expected_metadata(
-        manifest,
-        payload,
-    )
-
-    client = FakeS3Client(
-        put_error=_client_error(),
-        head_response={
-            "VersionId": "manifest-version-123",
-            "ETag": '"manifest-etag"',
-            "ContentLength": len(payload),
-            "ContentType": "application/json",
-            "Metadata": metadata,
-        },
-    )
-
-    result = S3NvdIncrementalBronzeRepository(
-        client=client,
-        bucket_name="opslens-test-data",
-        telemetry=FakeTelemetry(),
-    ).create_manifest(
-        manifest=manifest,
-        payload=payload,
-        object_key=key,
-    )
-
-    assert result.status is NvdBronzeWriteStatus.ALREADY_EXISTS
-    assert result.version_id == "manifest-version-123"
-
-
-def test_manifest_replay_fails_on_different_hash() -> None:
-    """Reject a 412 collision with different manifest bytes."""
-    manifest, payload, key = _manifest()
-
-    metadata = _expected_metadata(
-        manifest,
-        payload,
-    )
-    metadata["object_sha256"] = "0" * 64
-
-    client = FakeS3Client(
-        put_error=_client_error(),
-        head_response={
-            "VersionId": "manifest-version-123",
-            "ContentLength": len(payload),
-            "ContentType": "application/json",
-            "Metadata": metadata,
-        },
-    )
-
-    with pytest.raises(
-        NvdIncrementalBronzeEvidenceError,
-        match="object_sha256",
-    ):
-        S3NvdIncrementalBronzeRepository(
-            client=client,
-            bucket_name="opslens-test-data",
-            telemetry=FakeTelemetry(),
-        ).create_manifest(
-            manifest=manifest,
-            payload=payload,
-            object_key=key,
-        )

@@ -21,6 +21,10 @@ class NvdIncrementalManifestParseError(ValueError):
     """Raised when incremental COMPLETE manifest bytes are invalid."""
 
 
+class NvdIncrementalCanonicalManifestAlreadyExistsError(RuntimeError):
+    """Raised when another canonical COMPLETE manifest already exists."""
+
+
 @dataclass(frozen=True, slots=True)
 class NvdPersistedIncrementalManifest:
     """Represent one exact persisted incremental COMPLETE manifest."""

@@ -52,7 +52,7 @@ class NvdIncrementalBronzeRepository(Protocol):
         payload: bytes,
         object_key: str,
     ) -> NvdBronzeWriteResult:
-        """Create or verify one COMPLETE manifest."""
+        """Create canonical COMPLETE or report that another winner exists."""
         ...
 
 
