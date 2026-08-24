@@ -51,6 +51,9 @@ jobs:
       - name: Build NVD Bootstrap Lambda package
         run: uv run python scripts/build_nvd_lambda_package.py
 
+      - name: Build NVD Incremental Lambda package
+        run: uv run python scripts/build_nvd_incremental_lambda_package.py
+
       - name: Check Terraform formatting
         run: terraform fmt -check -recursive infra
 
