@@ -2,6 +2,9 @@
 
 from typing import Protocol
 
+from opslens.ingestion.nvd.application.incremental_complete import (
+    NvdPersistedIncrementalManifest,
+)
 from opslens.ingestion.nvd.application.incremental_manifest import (
     NvdIncrementalManifest,
 )
@@ -50,4 +53,18 @@ class NvdIncrementalBronzeRepository(Protocol):
         object_key: str,
     ) -> NvdBronzeWriteResult:
         """Create or verify one COMPLETE manifest."""
+        ...
+
+
+class NvdIncrementalCompleteManifestReader(Protocol):
+    """Port for exact-key lookup of canonical Bronze COMPLETE evidence."""
+
+
+    def load_existing(
+        self,
+        *,
+        window: NvdIncrementalWindow,
+        object_key: str,
+    ) -> NvdPersistedIncrementalManifest:
+        """Load canonical COMPLETE evidence whose existence is already known."""
         ...
