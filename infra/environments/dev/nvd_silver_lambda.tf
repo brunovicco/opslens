@@ -1,10 +1,10 @@
 locals {
   nvd_silver_artifact_sha256 = (
-    "6df133d8d25a258e235fbecddff0a4350e2bee6dbff94f690192dce391338572"
+    "185c2d609575de8cf230e1bc1cc4d73917caca39e9136a7486bffe9ef05e486e"
   )
 
   nvd_silver_artifact_sha256_base64 = (
-    "bfEz2NJaJY4jX77N3/CkNQ4r7m2/+U9pAZLc45EzhXI="
+    "GFwtYJV13ozyMOG8HMTXORfKyjnpE2p0hr/+nvBeSG4="
   )
 
   nvd_silver_artifact_key = (
@@ -12,7 +12,7 @@ locals {
   )
 
   nvd_silver_artifact_version = (
-    "Rz2UfCP9_ekteOftRDRServNclGJ5xi2"
+    "bbGNEJvJcfSKiW5fzDUwUnwR6ZOtf.A_"
   )
 }
 
