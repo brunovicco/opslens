@@ -98,7 +98,7 @@ resource "aws_s3_bucket_notification" "epss_silver" {
 
     lambda_function_arn = aws_lambda_function.nvd_promotion.arn
     events              = ["s3:ObjectCreated:Put"]
-    filter_prefix       = "silver/nvd/cve/schema_version=1/source_kind=incremental/"
+    filter_prefix       = "silver/nvd/cve/schema_version%3D1/source_kind%3Dincremental/"
     filter_suffix       = "manifest.json"
   }
 
