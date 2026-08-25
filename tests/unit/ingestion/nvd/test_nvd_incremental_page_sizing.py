@@ -3,7 +3,6 @@
 from collections.abc import Generator, Mapping
 from contextlib import contextmanager
 from datetime import UTC, datetime
-from types import TracebackType
 from urllib.parse import parse_qs, urlparse
 from urllib.request import Request
 
@@ -79,7 +78,7 @@ class FakeHttpResponse:
         self,
         exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
-        traceback: TracebackType | None,
+        traceback: object | None,
     ) -> None:
         """Exit the response context."""
         return None
