@@ -120,7 +120,12 @@ def test_explicit_results_per_page_is_sent_to_nvd(
         results_per_page=500,
     )
 
-    assert source.fetch_page(window=_window(), start_index=0) == b'{"ok":true}'
+    payload = source.fetch_page(
+        window=_window(),
+        start_index=0,
+    )
+
+    assert payload == b'{"ok":true}'
     assert observed_query["resultsPerPage"] == ["500"]
     assert observed_query["startIndex"] == ["0"]
 
