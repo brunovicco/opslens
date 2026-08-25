@@ -77,6 +77,7 @@ resource "aws_iam_role_policy" "nvd_incremental_scheduler_runtime" {
 }
 
 resource "aws_scheduler_schedule" "nvd_incremental_hourly" {
+  #checkov:skip=CKV_AWS_297:Target input contains only non-sensitive schedule metadata; AWS-owned key encryption is sufficient for dev and a dedicated CMK is not justified.
   name       = local.nvd_incremental_scheduler_name
   group_name = aws_scheduler_schedule_group.nvd_incremental.name
 
