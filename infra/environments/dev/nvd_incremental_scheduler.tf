@@ -1,6 +1,37 @@
 locals {
   nvd_incremental_scheduler_group_name = "opslens-dev-nvd-incremental"
   nvd_incremental_scheduler_name       = "opslens-dev-nvd-incremental-hourly"
+
+  # EventBridge Scheduler replaces context attributes in the raw target input.
+  # Terraform jsonencode intentionally escapes angle brackets, so restore only
+  # those two characters after JSON serialization to keep the Scheduler token
+  # recognizable while preserving structured JSON generation.
+  nvd_incremental_scheduler_input = replace(
+    replace(
+      jsonencode({
+        schema_version = "1"
+        target_end_at  = "<aws.scheduler.scheduled-time>"
+      }),
+      "\\u003c",
+      "<",
+    ),
+    "\\u003e",
+    ">",
+  )
+}
+
+check "nvd_incremental_scheduler_context_attribute" {
+  assert {
+    condition = (
+      strcontains(
+        local.nvd_incremental_scheduler_input,
+        "<aws.scheduler.scheduled-time>",
+      ) &&
+      !strcontains(local.nvd_incremental_scheduler_input, "\\u003c") &&
+      !strcontains(local.nvd_incremental_scheduler_input, "\\u003e")
+    )
+    error_message = "NVD incremental Scheduler input must preserve the literal scheduled-time context attribute."
+  }
 }
 
 resource "aws_scheduler_schedule_group" "nvd_incremental" {
@@ -96,10 +127,7 @@ resource "aws_scheduler_schedule" "nvd_incremental_hourly" {
     arn      = aws_lambda_function.nvd_incremental.arn
     role_arn = aws_iam_role.nvd_incremental_scheduler_execution.arn
 
-    input = jsonencode({
-      schema_version = "1"
-      target_end_at  = "<aws.scheduler.scheduled-time>"
-    })
+    input = local.nvd_incremental_scheduler_input
 
     retry_policy {
       maximum_event_age_in_seconds = 3600
