@@ -4,6 +4,8 @@ import os
 from dataclasses import dataclass
 from typing import ClassVar
 
+from opslens.ingestion.nvd.domain.api_page import MAX_RESULTS_PER_PAGE
+
 
 class NvdIncrementalRuntimeConfigurationError(RuntimeError):
     """Raised when NVD incremental runtime configuration is invalid."""
@@ -24,6 +26,7 @@ class NvdIncrementalRuntimeSettingsV1:
     DEFAULT_CVE_API_MAX_RESPONSE_BYTES: ClassVar[int] = 16 * 1024 * 1024
     DEFAULT_CVE_API_MINIMUM_INTERVAL_SECONDS: ClassVar[float] = 6.0
     DEFAULT_CVE_API_MAX_ATTEMPTS: ClassVar[int] = 3
+    DEFAULT_CVE_API_RESULTS_PER_PAGE: ClassVar[int] = 500
 
     bucket_name: str
     watermark_key: str
@@ -33,6 +36,7 @@ class NvdIncrementalRuntimeSettingsV1:
     cve_api_max_response_bytes: int
     cve_api_minimum_interval_seconds: float
     cve_api_max_attempts: int
+    cve_api_results_per_page: int = DEFAULT_CVE_API_RESULTS_PER_PAGE
 
     def __post_init__(self) -> None:
         """Validate incremental runtime configuration."""
@@ -87,6 +91,16 @@ class NvdIncrementalRuntimeSettingsV1:
                 "must be a positive integer."
             )
 
+        if (
+            type(self.cve_api_results_per_page) is not int
+            or self.cve_api_results_per_page <= 0
+            or self.cve_api_results_per_page > MAX_RESULTS_PER_PAGE
+        ):
+            raise ValueError(
+                "NVD incremental runtime CVE API results per page must be "
+                f"between 1 and {MAX_RESULTS_PER_PAGE}."
+            )
+
         object.__setattr__(self, "bucket_name", bucket_name)
         object.__setattr__(self, "watermark_key", watermark_key)
         object.__setattr__(self, "bronze_prefix", bronze_prefix)
@@ -94,7 +108,7 @@ class NvdIncrementalRuntimeSettingsV1:
 
     @classmethod
     def from_environment(cls) -> "NvdIncrementalRuntimeSettingsV1":
-        """Build validated incremental runtime settings from environment."""
+        """Build validated incremental NVD runtime settings from environment."""
         bucket_name = os.getenv(
             "NVD_DATA_BUCKET",
             "",
@@ -137,6 +151,10 @@ class NvdIncrementalRuntimeSettingsV1:
                 cve_api_max_attempts=cls._positive_integer(
                     environment_name="NVD_CVE_API_MAX_ATTEMPTS",
                     default=cls.DEFAULT_CVE_API_MAX_ATTEMPTS,
+                ),
+                cve_api_results_per_page=cls._positive_integer(
+                    environment_name="NVD_CVE_API_RESULTS_PER_PAGE",
+                    default=cls.DEFAULT_CVE_API_RESULTS_PER_PAGE,
                 ),
             )
         except ValueError as exc:
