@@ -1,7 +1,7 @@
 """Tests for bounded NVD incremental API page sizing."""
 
-from collections.abc import Mapping
-from contextlib import AbstractContextManager, nullcontext
+from collections.abc import Generator, Mapping
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from types import TracebackType
 from urllib.parse import parse_qs, urlparse
@@ -47,12 +47,13 @@ class FakeTelemetry:
     ) -> None:
         """Accept metric telemetry."""
 
+    @contextmanager
     def span(
         self,
         name: str,
-    ) -> AbstractContextManager[object]:
+    ) -> Generator[object]:
         """Provide an inert tracing span."""
-        return nullcontext()
+        yield object()
 
 
 class FakeHttpResponse:
