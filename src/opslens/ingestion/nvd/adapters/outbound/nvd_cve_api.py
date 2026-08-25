@@ -6,6 +6,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+from opslens.ingestion.nvd.domain.api_page import MAX_RESULTS_PER_PAGE
 from opslens.ingestion.nvd.domain.incremental import (
     NvdIncrementalWindow,
 )
@@ -45,6 +46,7 @@ class NvdHttpCveApiSource:
         minimum_interval_seconds: float,
         max_attempts: int,
         telemetry: OperationalTelemetry,
+        results_per_page: int | None = None,
         sleep_fn: Callable[[float], None] = time.sleep,
         monotonic_fn: Callable[[], float] = time.monotonic,
     ) -> None:
@@ -57,6 +59,8 @@ class NvdHttpCveApiSource:
             minimum_interval_seconds: Minimum start-to-start request interval.
             max_attempts: Maximum attempts for one logical page request.
             telemetry: Operational telemetry implementation.
+            results_per_page: Optional explicit NVD page-size request. When
+                omitted, the upstream API default is used.
             sleep_fn: Injectable sleeping function for pacing.
             monotonic_fn: Injectable monotonic clock for pacing.
         """
@@ -77,12 +81,23 @@ class NvdHttpCveApiSource:
         if type(max_attempts) is not int or max_attempts <= 0:
             raise ValueError("NVD CVE API max attempts must be a positive integer.")
 
+        if results_per_page is not None and (
+            type(results_per_page) is not int
+            or results_per_page <= 0
+            or results_per_page > MAX_RESULTS_PER_PAGE
+        ):
+            raise ValueError(
+                "NVD CVE API results_per_page must be an integer between "
+                f"1 and {MAX_RESULTS_PER_PAGE}."
+            )
+
         self._base_url = normalized_base_url
         self._timeout_seconds = timeout_seconds
         self._max_response_bytes = max_response_bytes
         self._minimum_interval_seconds = minimum_interval_seconds
         self._max_attempts = max_attempts
         self._telemetry = telemetry
+        self._results_per_page = results_per_page
         self._sleep = sleep_fn
         self._monotonic = monotonic_fn
         self._last_request_started_at: float | None = None
@@ -95,9 +110,10 @@ class NvdHttpCveApiSource:
     ) -> bytes:
         """Fetch one exact incremental NVD CVE API response page.
 
-        The adapter deliberately omits ``resultsPerPage`` so that the
-        NVD-optimized API default is used. The returned page envelope remains
-        responsible for declaring the actual ``resultsPerPage``.
+        The configured ``resultsPerPage`` bound is sent when present so that
+        one upstream response remains below the local defensive byte cap. The
+        returned page envelope remains responsible for declaring the actual
+        ``resultsPerPage`` used for pagination.
 
         Args:
             window: Deterministic last-modified query window.
@@ -144,6 +160,7 @@ class NvdHttpCveApiSource:
                 fields={
                     "attempt": attempt,
                     "max_attempts": self._max_attempts,
+                    "results_per_page": self._results_per_page,
                     "start_index": start_index,
                     "window_start_at": (window.canonical_start_at),
                     "window_end_at": (window.canonical_end_at),
@@ -312,21 +329,34 @@ class NvdHttpCveApiSource:
         start_index: int,
     ) -> str:
         """Build one deterministic last-modified API page URL."""
-        query = urlencode(
+        query_items: list[tuple[str, str]] = [
             (
+                "lastModStartDate",
+                window.canonical_start_at,
+            ),
+            (
+                "lastModEndDate",
+                window.canonical_end_at,
+            ),
+        ]
+
+        if self._results_per_page is not None:
+            query_items.append(
                 (
-                    "lastModStartDate",
-                    window.canonical_start_at,
-                ),
-                (
-                    "lastModEndDate",
-                    window.canonical_end_at,
-                ),
-                (
-                    "startIndex",
-                    str(start_index),
-                ),
+                    "resultsPerPage",
+                    str(self._results_per_page),
+                )
             )
+
+        query_items.append(
+            (
+                "startIndex",
+                str(start_index),
+            )
+        )
+
+        query = urlencode(
+            tuple(query_items)
         )
 
         return f"{self._base_url}?{query}"
