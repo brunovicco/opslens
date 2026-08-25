@@ -1,6 +1,13 @@
 locals {
   nvd_incremental_scheduler_group_name = "opslens-dev-nvd-incremental"
-  nvd_incremental_scheduler_name       = "opslens-dev-nvd-incremental-hourly"
+
+  # Retain the deployed schedule name to avoid replacing the AWS resource.
+  # The operational cadence is every two hours, aligned with NVD guidance.
+  nvd_incremental_scheduler_name = "opslens-dev-nvd-incremental-hourly"
+
+  # Odd UTC hours keep the next run at least two hours after the successful
+  # 2026-08-25T23:25:00Z authority commit while preserving minute 25.
+  nvd_incremental_scheduler_expression = "cron(25 1/2 * * ? *)"
 
   nvd_incremental_scheduler_lambda_arn = (
     "arn:aws:lambda:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:function:${local.nvd_incremental_lambda_function_name}"
@@ -35,6 +42,15 @@ check "nvd_incremental_scheduler_context_attribute" {
       !strcontains(local.nvd_incremental_scheduler_input, "\\u003e")
     )
     error_message = "NVD incremental Scheduler input must preserve the literal scheduled-time context attribute."
+  }
+}
+
+check "nvd_incremental_scheduler_cadence" {
+  assert {
+    condition = (
+      local.nvd_incremental_scheduler_expression == "cron(25 1/2 * * ? *)"
+    )
+    error_message = "NVD incremental Scheduler must run no more frequently than every two hours."
   }
 }
 
@@ -118,11 +134,11 @@ resource "aws_scheduler_schedule" "nvd_incremental_hourly" {
   name       = local.nvd_incremental_scheduler_name
   group_name = aws_scheduler_schedule_group.nvd_incremental.name
 
-  description = "Invoke the OpsLens NVD incremental ingestion runtime hourly."
+  description = "Invoke the OpsLens NVD incremental ingestion runtime every two hours."
 
   state = "ENABLED"
 
-  schedule_expression          = "cron(25 * * * ? *)"
+  schedule_expression          = local.nvd_incremental_scheduler_expression
   schedule_expression_timezone = "UTC"
 
   flexible_time_window {
