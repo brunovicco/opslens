@@ -88,6 +88,7 @@ def build_incremental_runtime_use_case(
         ),
         max_attempts=settings.cve_api_max_attempts,
         telemetry=telemetry,
+        results_per_page=settings.cve_api_results_per_page,
     )
 
     bronze_repository = S3NvdIncrementalBronzeRepository(
