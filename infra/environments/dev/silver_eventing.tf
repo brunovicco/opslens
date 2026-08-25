@@ -28,6 +28,16 @@ resource "aws_lambda_permission" "nvd_silver_from_s3" {
   source_account = data.aws_caller_identity.current.account_id
 }
 
+resource "aws_lambda_permission" "nvd_promotion_from_s3" {
+  statement_id  = "AllowS3InvokeNvdPromotion"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.nvd_promotion.function_name
+  principal     = "s3.amazonaws.com"
+
+  source_arn     = aws_s3_bucket.data.arn
+  source_account = data.aws_caller_identity.current.account_id
+}
+
 resource "aws_lambda_function_event_invoke_config" "epss_silver" {
   function_name = aws_lambda_function.epss_silver.function_name
 
@@ -83,9 +93,19 @@ resource "aws_s3_bucket_notification" "epss_silver" {
     filter_suffix       = "manifest.json"
   }
 
+  lambda_function {
+    id = "nvd-promotion-silver-complete-created"
+
+    lambda_function_arn = aws_lambda_function.nvd_promotion.arn
+    events              = ["s3:ObjectCreated:Put"]
+    filter_prefix       = "silver/nvd/cve/schema_version=1/source_kind=incremental/"
+    filter_suffix       = "manifest.json"
+  }
+
   depends_on = [
     aws_lambda_permission.epss_silver_from_s3,
     aws_lambda_permission.kev_silver_from_s3,
     aws_lambda_permission.nvd_silver_from_s3,
+    aws_lambda_permission.nvd_promotion_from_s3,
   ]
 }
