@@ -83,7 +83,7 @@ resource "aws_scheduler_schedule" "nvd_incremental_hourly" {
 
   description = "Invoke the OpsLens NVD incremental ingestion runtime hourly."
 
-  state = "DISABLED"
+  state = "ENABLED"
 
   schedule_expression          = "cron(25 * * * ? *)"
   schedule_expression_timezone = "UTC"
