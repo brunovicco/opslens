@@ -2,6 +2,10 @@ locals {
   nvd_incremental_scheduler_group_name = "opslens-dev-nvd-incremental"
   nvd_incremental_scheduler_name       = "opslens-dev-nvd-incremental-hourly"
 
+  nvd_incremental_scheduler_lambda_arn = (
+    "arn:aws:lambda:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:function:${local.nvd_incremental_lambda_function_name}"
+  )
+
   # EventBridge Scheduler replaces context attributes in the raw target input.
   # Terraform jsonencode intentionally escapes angle brackets, so restore only
   # those two characters after JSON serialization to keep the Scheduler token
@@ -94,8 +98,10 @@ data "aws_iam_policy_document" "nvd_incremental_scheduler_runtime" {
       "lambda:InvokeFunction",
     ]
 
+    # Build the stable identity ARN from immutable naming inputs so a Lambda
+    # code/environment update does not make this policy unknown at plan time.
     resources = [
-      aws_lambda_function.nvd_incremental.arn,
+      local.nvd_incremental_scheduler_lambda_arn,
     ]
   }
 }
