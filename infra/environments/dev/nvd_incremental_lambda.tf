@@ -6,10 +6,10 @@ locals {
 
 resource "aws_lambda_function" "nvd_incremental" {
   # checkov:skip=CKV_AWS_173: Lambda environment contains only non-secret NVD runtime configuration; a customer-managed KMS key is not justified.
-  # checkov:skip=CKV_AWS_116: This phase uses explicit synchronous manual invocation; failures are returned directly to the caller before asynchronous scheduling is introduced.
+  # checkov:skip=CKV_AWS_116: EventBridge Scheduler owns bounded retries for this target; failures remain observable through structured logs and metrics.
   # checkov:skip=CKV_AWS_272: Lambda code signing is deferred until the project introduces an artifact signing and release trust workflow.
   # checkov:skip=CKV_AWS_117: The function requires outbound access to the public NVD endpoint and no private VPC resources; a VPC would add unnecessary NAT/network complexity.
-  # checkov:skip=CKV_AWS_115: Reserved concurrency is deferred until scheduled operation; the current phase uses controlled synchronous manual invocation.
+  # checkov:skip=CKV_AWS_115: One bounded Scheduler target plus retry policy constrains expected concurrency; reserved concurrency is deferred until contention is observed.
 
   function_name = local.nvd_incremental_lambda_function_name
 
@@ -56,6 +56,8 @@ resource "aws_lambda_function" "nvd_incremental" {
       NVD_CVE_API_TIMEOUT_SECONDS = "30"
 
       NVD_CVE_API_MAX_RESPONSE_BYTES = "16777216"
+
+      NVD_CVE_API_RESULTS_PER_PAGE = "500"
 
       NVD_CVE_API_MINIMUM_INTERVAL_SECONDS = "6"
 
