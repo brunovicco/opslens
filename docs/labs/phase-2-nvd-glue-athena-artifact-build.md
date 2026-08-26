@@ -136,6 +136,26 @@ VersionId=rmQLrC.FQamigSqqAsYt1gOKuMyCjdle
 
 The temporary operator-supplied artifact variables and example tfvars file were removed after exact upload proof, so routine Terraform plan/apply cannot silently select a different current object through an external variable override.
 
+## Bootstrap deployment authority — COMPLETE
+
+After repository formatting was corrected, the bootstrap plan was regenerated from the current branch and reviewed before apply.
+
+The reviewed plan contained only the expected deployment-authority changes:
+
+```text
+Plan: 2 to add, 1 to change, 0 to destroy.
+```
+
+The existing `OpsLensAnalyticsDevAccess` policy was updated in place to add management of the exact Glue table `opslens_dev.nvd_cve_versions`. A dedicated `OpsLensGitHubNvdAnalyticsProjectorDeploy` policy was created and attached to `OpsLensGitHubDeployRole` for the projector's exact Lambda, execution role, SQS failure queue, and log group resources.
+
+The exact saved bootstrap plan was then applied successfully:
+
+```text
+Apply complete! Resources: 2 added, 1 changed, 0 destroyed.
+```
+
+No bootstrap resource was destroyed. The deployment role now has the bounded authority required for the permanent NVD analytics runtime deployment.
+
 ## Deployment sequence
 
 The planned order is:
@@ -144,8 +164,8 @@ The planned order is:
 1. deterministic local build proof                         COMPLETE
 2. exact versioned S3 artifact upload                      COMPLETE
 3. pin artifact SHA-256/base64/VersionId                  COMPLETE
-4. bootstrap Terraform plan/apply for deployment IAM      NEXT
-5. dev Terraform plan
+4. bootstrap Terraform plan/apply for deployment IAM      COMPLETE
+5. dev Terraform plan                                     NEXT
 6. dev Terraform apply
 7. exact deployed Lambda configuration verification
 ```
