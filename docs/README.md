@@ -54,6 +54,7 @@ Phase 2:
 - [`phase-2-nvd-glue-athena-symlink-proof.md`](labs/phase-2-nvd-glue-athena-symlink-proof.md)
 - [`phase-2-nvd-glue-athena-projection-design.md`](labs/phase-2-nvd-glue-athena-projection-design.md)
 - [`phase-2-nvd-glue-athena-projection-proof.md`](labs/phase-2-nvd-glue-athena-projection-proof.md)
+- [`phase-2-nvd-glue-athena-direct-parquet-proof.md`](labs/phase-2-nvd-glue-athena-direct-parquet-proof.md)
 
 ## Current milestone
 
