@@ -64,6 +64,31 @@ artifact_s3_key
 
 A mismatch blocks upload and Terraform deployment.
 
+### Local determinism proof — COMPLETE
+
+Two consecutive builds from commit `c2b41f3` produced byte-identical deployment evidence:
+
+```text
+artifact_s3_key=lambda/nvd-analytics-projector/6ae0bf3909744d6bb5e61390885fc469c18b93ef383bd4c2380fdc874de159cf.zip
+sha256=6ae0bf3909744d6bb5e61390885fc469c18b93ef383bd4c2380fdc874de159cf
+sha256_base64=auC/OQl0TWu15hOQiF/EacGLk+84O9TCOA/ch03hWc8=
+files=3515
+compressed_bytes=67502125
+uncompressed_bytes=184846905
+compressed_mib=64.38
+uncompressed_mib=176.28
+unzipped_limit_percent=70.51
+requires_s3_upload=true
+```
+
+The selected determinism fields produced an empty `diff`, and an independent local `shasum -a 256` over `dist/opslens-nvd-analytics-projector.zip` returned the same SHA-256:
+
+```text
+6ae0bf3909744d6bb5e61390885fc469c18b93ef383bd4c2380fdc874de159cf
+```
+
+`git status --short` remained empty after both builds because local build artifacts are ignored. The deterministic-build gate is therefore complete. Upload remains blocked until this proof is recorded; it may now proceed using the exact content-addressed key above.
+
 ## Upload authority
 
 The artifact bucket is the existing versioned deployment-artifacts bucket. The upload must use the exact content-addressed key reported by the builder.
@@ -99,8 +124,8 @@ No `terraform plan` or `terraform apply` is authorized until the immutable artif
 The planned order is:
 
 ```text
-1. deterministic local build proof
-2. exact versioned S3 artifact upload
+1. deterministic local build proof          COMPLETE
+2. exact versioned S3 artifact upload       NEXT
 3. pin artifact SHA-256/base64/VersionId
 4. bootstrap Terraform plan/apply for new deployment permissions
 5. dev Terraform plan
