@@ -58,6 +58,7 @@ Phase 2:
 - [`phase-2-nvd-glue-athena-incremental-cleanup-proof.md`](labs/phase-2-nvd-glue-athena-incremental-cleanup-proof.md)
 - [`phase-2-nvd-glue-athena-bootstrap-projection-proof.md`](labs/phase-2-nvd-glue-athena-bootstrap-projection-proof.md)
 - [`phase-2-nvd-glue-athena-bootstrap-athena-proof.md`](labs/phase-2-nvd-glue-athena-bootstrap-athena-proof.md)
+- [`phase-2-nvd-glue-athena-bootstrap-cleanup-proof.md`](labs/phase-2-nvd-glue-athena-bootstrap-cleanup-proof.md)
 
 ## Current milestone
 
