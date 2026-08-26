@@ -1,7 +1,0 @@
-# Phase 2.3G.4E/4G operator template only.
-# Do not commit a populated copy. Phase 2.3G.4G will replace the temporary
-# required variables with exact immutable artifact pins after build/upload proof.
-
-nvd_analytics_projector_artifact_sha256        = "<64-char-lowercase-sha256>"
-nvd_analytics_projector_artifact_sha256_base64 = "<44-char-base64-sha256>"
-nvd_analytics_projector_artifact_version       = "<exact-s3-version-id>"
