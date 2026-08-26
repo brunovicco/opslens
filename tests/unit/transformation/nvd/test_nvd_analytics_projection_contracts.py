@@ -166,7 +166,7 @@ def test_incremental_request_rejects_naive_committed_boundary() -> None:
     with pytest.raises(ValueError, match="timezone-aware"):
         NvdIncrementalAnalyticsProjectionRequestV1(
             update_id=valid.update_id,
-            committed_through_at=datetime(2026, 8, 25, 23, 25),
+            committed_through_at=datetime(2026, 8, 25, 23, 25),  # noqa: DTZ001
             silver_manifest=valid.silver_manifest,
             silver_parquet=valid.silver_parquet,
             row_count=valid.row_count,
