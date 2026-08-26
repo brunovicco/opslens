@@ -6,9 +6,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import ClassVar
 
-from opslens.ingestion.nvd.application.incremental_key_factory import (
-    NvdIncrementalKeyFactory,
-)
 from opslens.ingestion.nvd.application.models import (
     NvdBronzeWriteResult,
 )
@@ -176,52 +173,71 @@ class NvdIncrementalManifest:
 
 
 class NvdIncrementalManifestFactory:
-    """Build COMPLETE evidence from validated pages and S3 provenance."""
+    """Build COMPLETE evidence from exact persisted page provenance."""
 
     def build(
         self,
         *,
         window: NvdIncrementalWindow,
         pagination: NvdCveApiPagination,
+        page_keys: tuple[str, ...],
         page_writes: tuple[NvdBronzeWriteResult, ...],
-        key_factory: NvdIncrementalKeyFactory,
     ) -> NvdIncrementalManifest:
         """Build one deterministic incremental COMPLETE manifest.
+
+        The service provides the exact page keys actually used for persistence.
+        This keeps the manifest bound to physical evidence instead of
+        independently reconstructing page paths.
 
         Args:
             window: Deterministic logical update window.
             pagination: Fully validated source page sequence.
-            page_writes: Exact S3 persistence results in page order.
-            key_factory: Deterministic incremental Bronze key factory.
+            page_keys: Exact persisted page keys in source order.
+            page_writes: Exact S3 persistence results in source order.
 
         Returns:
             Validated COMPLETE manifest.
 
         Raises:
-            ValueError: If persisted page evidence is incomplete.
+            ValueError: If persisted page evidence is incomplete or ambiguous.
         """
-        if len(page_writes) != len(pagination.pages):
+        page_count = len(
+            pagination.pages
+        )
+
+        if len(page_keys) != page_count:
+            raise ValueError(
+                "NVD incremental page keys do not match "
+                "the validated page inventory."
+            )
+
+        if len(page_writes) != page_count:
             raise ValueError(
                 "NVD incremental page persistence results do not "
                 "match the validated page inventory."
             )
 
+        if len(set(page_keys)) != len(page_keys):
+            raise ValueError(
+                "NVD incremental page keys must be unique."
+            )
+
         stored_pages = tuple(
             NvdIncrementalStoredPage(
-                key=key_factory.build_page_key(
-                    window=window,
-                    start_index=page.start_index,
-                ),
+                key=page_key,
                 version_id=write.version_id,
-                size_bytes=len(page.raw_bytes),
+                size_bytes=len(
+                    page.raw_bytes
+                ),
                 sha256=page.sha256,
                 start_index=page.start_index,
                 results_per_page=page.results_per_page,
                 total_results=page.total_results,
                 source_timestamp=page.source_timestamp,
             )
-            for page, write in zip(
+            for page, page_key, write in zip(
                 pagination.pages,
+                page_keys,
                 page_writes,
                 strict=True,
             )

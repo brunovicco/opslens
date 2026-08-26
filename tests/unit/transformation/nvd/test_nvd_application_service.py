@@ -120,8 +120,14 @@ def test_prepares_incremental_batch_end_to_end() -> None:
     )
 
     update_id = window.update_id
+    attempt_id = "a" * 64
 
-    page_key = f"bronze/nvd/cve/updates/update_id={update_id}/page_start=000000/response.json"
+    page_key = (
+        "bronze/nvd/cve/updates/"
+        f"update_id={update_id}/"
+        f"attempt_id={attempt_id}/"
+        "page_start=000000/response.json"
+    )
     manifest_key = f"bronze/nvd/cve/updates/update_id={update_id}/manifest.json"
 
     page_bytes = json.dumps(

@@ -11,11 +11,11 @@ docs/
 
 ## Architecture
 
-[`architecture.md`](architecture.md) describes the architecture implemented today.
+[`architecture.md`](architecture.md) contains the accumulated architecture baseline through the NVD versioned Silver contract.
 
-It covers AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze, incremental CVE API Bronze, the frozen NVD versioned Silver contract and promotion-eligibility proof, EventBridge Scheduler, runtime IAM separation, idempotency, observability, asynchronous failure recovery, and current architectural constraints.
+The deployed Phase 2.3E/2.3F NVD runtime architecture and its real AWS evidence are captured in [`phase-2-nvd-authoritative-runtime-closeout.md`](labs/phase-2-nvd-authoritative-runtime-closeout.md). Together they document the currently implemented architecture without introducing speculative future-state components.
 
-It is not a speculative future-state architecture document.
+The current implementation includes AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze, incremental CVE API Bronze, versioned NVD Silver, deployed Incremental/Silver/Promotion runtimes, the authoritative watermark boundary, EventBridge Scheduler, runtime IAM separation, idempotency, observability, and bounded failure recovery.
 
 ## Architecture Decision Records
 
@@ -46,16 +46,21 @@ Phase 2:
 - [`phase-2-nvd-bootstrap-bronze.md`](labs/phase-2-nvd-bootstrap-bronze.md)
 - [`phase-2-nvd-incremental-contract.md`](labs/phase-2-nvd-incremental-contract.md)
 - [`phase-2-nvd-versioned-silver-contract.md`](labs/phase-2-nvd-versioned-silver-contract.md)
+- [`phase-2-nvd-silver-workload-proof.md`](labs/phase-2-nvd-silver-workload-proof.md)
+- [`phase-2-nvd-authoritative-runtime-closeout.md`](labs/phase-2-nvd-authoritative-runtime-closeout.md)
 
 ## Current milestone
 
 ```text
-Phase 0 — AWS Foundation:              COMPLETE
-Phase 1 — EPSS Vertical Slice:         COMPLETE
-Phase 2.1 — CISA KEV Bronze:           COMPLETE
-Phase 2.2 — CISA KEV Silver/Analytics: COMPLETE
-Phase 2.3A — NVD Source Contract:      COMPLETE
-Phase 2.3B — NVD Bootstrap Bronze:     COMPLETE
-Phase 2.3C — NVD Incremental API:      COMPLETE
-Phase 2.3D — NVD Versioned Silver:     COMPLETE
+Phase 0 — AWS Foundation:                    COMPLETE
+Phase 1 — EPSS Vertical Slice:               COMPLETE
+Phase 2.1 — CISA KEV Bronze:                 COMPLETE
+Phase 2.2 — CISA KEV Silver/Analytics:       COMPLETE
+Phase 2.3A — NVD Source Contract:            COMPLETE
+Phase 2.3B — NVD Bootstrap Bronze:           COMPLETE
+Phase 2.3C — NVD Incremental API Contract:   COMPLETE
+Phase 2.3D — NVD Versioned Silver Contract:  COMPLETE
+Phase 2.3E — NVD Silver AWS Runtime:         COMPLETE
+Phase 2.3F — NVD Authoritative Watermark:    COMPLETE
+Phase 2.3G — NVD Glue/Athena Analytics:      NEXT
 ```

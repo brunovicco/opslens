@@ -5,6 +5,12 @@ from datetime import UTC, datetime
 
 import pytest
 
+from opslens.ingestion.nvd.application.incremental_attempt import (
+    NvdIncrementalAttemptIdFactory,
+)
+from opslens.ingestion.nvd.application.incremental_complete import (
+    NvdPersistedIncrementalManifest,
+)
 from opslens.ingestion.nvd.application.incremental_key_factory import (
     NvdIncrementalKeyFactory,
 )
@@ -242,6 +248,21 @@ class FakeRepository:
         )
 
 
+class FailIfCalledCompleteReader:
+    """Reject unexpected canonical-winner reads in ordinary service tests."""
+
+    def load_existing(
+        self,
+        *,
+        window: NvdIncrementalWindow,
+        object_key: str,
+    ) -> NvdPersistedIncrementalManifest:
+        """Fail when a test unexpectedly enters canonical-winner resolution."""
+        raise AssertionError(
+            "Canonical COMPLETE reader was not expected in this test."
+        )
+
+
 def _use_case(
     *,
     source: FakeSource,
@@ -251,7 +272,9 @@ def _use_case(
     return IngestNvdIncrementalWindow(
         source=source,
         repository=repository,
+        complete_reader=FailIfCalledCompleteReader(),
         page_parser=NvdCveApiPageParser(),
+        attempt_id_factory=NvdIncrementalAttemptIdFactory(),
         key_factory=NvdIncrementalKeyFactory(),
         manifest_factory=(NvdIncrementalManifestFactory()),
         manifest_serializer=(NvdIncrementalManifestSerializer()),

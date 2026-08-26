@@ -96,13 +96,19 @@ def _manifest_evidence() -> tuple[
     manifest = NvdIncrementalManifestFactory().build(
         window=window,
         pagination=pagination,
-        page_writes=(
-            NvdBronzeWriteResult(
-                status=(NvdBronzeWriteStatus.CREATED),
-                version_id=("page-version-123"),
+        page_keys=(
+            key_factory.build_attempt_page_key(
+                window=window,
+                attempt_id="a" * 64,
+                start_index=page.start_index,
             ),
         ),
-        key_factory=key_factory,
+        page_writes=(
+            NvdBronzeWriteResult(
+                status=NvdBronzeWriteStatus.CREATED,
+                version_id="page-version-123",
+            ),
+        ),
     )
 
     payload = NvdIncrementalManifestSerializer().serialize(manifest)

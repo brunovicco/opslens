@@ -1,8 +1,12 @@
 """Deterministic S3 key generation for NVD incremental Bronze pages."""
 
+import re
+
 from opslens.ingestion.nvd.domain.incremental import (
     NvdIncrementalWindow,
 )
+
+_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 
 class NvdIncrementalKeyFactory:
@@ -49,3 +53,35 @@ class NvdIncrementalKeyFactory:
     ) -> str:
         """Build the COMPLETE manifest key for one update window."""
         return f"{self._prefix}/update_id={window.update_id}/manifest.json"
+
+    def build_attempt_page_key(
+        self,
+        *,
+        window: NvdIncrementalWindow,
+        attempt_id: str,
+        start_index: int,
+    ) -> str:
+        """Build an immutable page key scoped to one physical source attempt."""
+        if not _SHA256_PATTERN.fullmatch(attempt_id):
+            raise ValueError(
+                "NVD incremental attempt id must contain exactly "
+                "64 lowercase hexadecimal characters."
+            )
+
+        if type(start_index) is not int:
+            raise ValueError(
+                "NVD incremental page start index must be an integer."
+            )
+
+        if start_index < 0:
+            raise ValueError(
+                "NVD incremental page start index must not be negative."
+            )
+
+        return (
+            f"{self._prefix}/"
+            f"update_id={window.update_id}/"
+            f"attempt_id={attempt_id}/"
+            f"page_start={start_index:06d}/"
+            "response.json"
+        )

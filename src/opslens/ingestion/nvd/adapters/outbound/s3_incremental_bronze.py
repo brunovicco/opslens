@@ -6,6 +6,9 @@ from typing import Protocol, TypedDict, cast
 
 from botocore.exceptions import ClientError
 
+from opslens.ingestion.nvd.application.incremental_complete import (
+    NvdIncrementalCanonicalManifestAlreadyExistsError,
+)
 from opslens.ingestion.nvd.application.incremental_manifest import (
     NvdIncrementalManifest,
 )
@@ -372,31 +375,160 @@ class S3NvdIncrementalBronzeRepository:
         payload: bytes,
         object_key: str,
     ) -> NvdBronzeWriteResult:
-        """Create or verify one deterministic COMPLETE manifest."""
+        """Conditionally create the canonical COMPLETE manifest.
+
+        A 412 response is not resolved against the current attempt bytes.
+        The canonical key represents the logical update window and may already
+        have been completed by another physical source observation. The
+        application service must load and validate that winning COMPLETE
+        manifest through the exact-key COMPLETE reader.
+
+        Args:
+            manifest: COMPLETE evidence produced by the current attempt.
+            payload: Canonical manifest bytes.
+            object_key: Canonical manifest key for the logical update window.
+
+        Returns:
+            Exact S3 persistence evidence when this attempt creates the
+            canonical COMPLETE manifest.
+
+        Raises:
+            NvdIncrementalCanonicalManifestAlreadyExistsError: If another
+                canonical COMPLETE manifest already exists.
+            NvdIncrementalBronzeEvidenceError: If required local evidence is
+                invalid.
+            ClientError: For S3 failures other than the expected 412 race.
+        """
+        if not object_key:
+            raise ValueError(
+                "NVD incremental manifest object key cannot be empty."
+            )
+
         if not payload:
             raise NvdIncrementalBronzeEvidenceError(
                 "NVD incremental manifest payload cannot be empty."
             )
 
-        object_sha256 = hashlib.sha256(payload).hexdigest()
+        object_sha256 = hashlib.sha256(
+            payload
+        ).hexdigest()
 
         metadata = {
             "source": manifest.SOURCE,
-            "source_interface": (manifest.SOURCE_INTERFACE),
+            "source_interface": manifest.SOURCE_INTERFACE,
             "artifact_kind": "manifest",
             "update_id": manifest.update_id,
-            "window_start_at": (manifest.canonical_window_start_at),
-            "window_end_at": (manifest.canonical_window_end_at),
-            "total_results": str(manifest.total_results),
-            "page_count": str(manifest.page_count),
-            "manifest_version": (manifest.MANIFEST_VERSION),
-            "completion_status": (manifest.COMPLETION_STATUS),
+            "window_start_at": manifest.canonical_window_start_at,
+            "window_end_at": manifest.canonical_window_end_at,
+            "total_results": str(
+                manifest.total_results
+            ),
+            "page_count": str(
+                manifest.page_count
+            ),
+            "manifest_version": manifest.MANIFEST_VERSION,
+            "completion_status": manifest.COMPLETION_STATUS,
             "object_sha256": object_sha256,
         }
 
-        return self._create_if_absent(
-            object_key=object_key,
-            body=payload,
-            content_type=self.PAGE_CONTENT_TYPE,
-            metadata=metadata,
+        self._telemetry.info(
+            "Persisting canonical NVD incremental COMPLETE manifest",
+            fields={
+                "bucket": self._bucket_name,
+                "object_key": object_key,
+                "update_id": manifest.update_id,
+                "payload_size_bytes": len(
+                    payload
+                ),
+            },
+        )
+
+        try:
+            with self._telemetry.span(
+                "nvd.incremental.s3.put_complete_manifest"
+            ):
+                response = self._client.put_object(
+                    Bucket=self._bucket_name,
+                    Key=object_key,
+                    Body=payload,
+                    ContentType=self.PAGE_CONTENT_TYPE,
+                    Metadata=metadata,
+                    IfNoneMatch="*",
+                )
+
+        except ClientError as exc:
+            status_code = self._extract_http_status(
+                exc
+            )
+
+            if status_code == 412:
+                self._telemetry.metric(
+                    name=(
+                        "NvdIncrementalCanonicalManifestAlreadyExists"
+                    ),
+                    value=1.0,
+                    unit="Count",
+                )
+                self._telemetry.info(
+                    "Canonical NVD incremental COMPLETE manifest "
+                    "already exists",
+                    fields={
+                        "bucket": self._bucket_name,
+                        "object_key": object_key,
+                        "update_id": manifest.update_id,
+                    },
+                )
+
+                raise (
+                    NvdIncrementalCanonicalManifestAlreadyExistsError(
+                        "Canonical NVD incremental COMPLETE manifest "
+                        "already exists."
+                    )
+                ) from exc
+
+            self._record_failure(
+                object_key=object_key,
+                http_status=status_code,
+            )
+            raise
+
+        version_id = self._require_version_id(
+            response.get(
+                "VersionId"
+            )
+        )
+        etag = self._optional_string(
+            response.get(
+                "ETag"
+            )
+        )
+
+        self._telemetry.metric(
+            name="NvdIncrementalBronzeCreated",
+            value=1.0,
+            unit="Count",
+        )
+        self._telemetry.metric(
+            name="NvdIncrementalBronzePayloadBytes",
+            value=float(
+                len(payload)
+            ),
+            unit="Bytes",
+        )
+        self._telemetry.info(
+            "Canonical NVD incremental COMPLETE manifest created",
+            fields={
+                "bucket": self._bucket_name,
+                "object_key": object_key,
+                "version_id": version_id,
+                "etag": etag,
+                "update_id": manifest.update_id,
+                "object_sha256": object_sha256,
+            },
+        )
+
+        return NvdBronzeWriteResult(
+            status=NvdBronzeWriteStatus.CREATED,
+            version_id=version_id,
+            etag=etag,
         )
