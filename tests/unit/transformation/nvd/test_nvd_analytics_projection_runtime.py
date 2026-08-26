@@ -7,7 +7,6 @@ from hashlib import sha256
 from typing import cast
 
 import pytest
-from botocore.exceptions import ClientError
 
 from opslens.transformation.nvd.adapters.inbound.analytics_projection_invocation import (
     NvdAnalyticsBootstrapSeedInvocationV1,
@@ -47,6 +46,7 @@ from opslens.transformation.nvd.application.analytics_projection_service import 
     NvdAnalyticsProjectionReplayRequiredError,
     NvdAnalyticsProjectionResultV1,
     NvdAnalyticsProjectionServiceV1,
+    NvdAnalyticsProjectionStatus,
 )
 
 BUCKET = "opslens-test-data"
@@ -304,17 +304,14 @@ def _bootstrap_request() -> NvdBootstrapAnalyticsProjectionRequestV1:
 def _result(
     request: NvdAnalyticsProjectionRequestV1,
     *,
-    status: str = "projected",
+    status: NvdAnalyticsProjectionStatus = "projected",
 ) -> NvdAnalyticsProjectionResultV1:
     """Build one verified projection result for Lambda dispatch tests."""
     destination = NvdAnalyticsProjectionKeyFactoryV1().build(
         request
     )
     return NvdAnalyticsProjectionResultV1(
-        status=cast(
-            "Literal['projected', 'already_projected']",
-            status,
-        ),
+        status=status,
         request=request,
         destination=destination,
         projected_object=NvdAnalyticsExactObjectRefV1(
