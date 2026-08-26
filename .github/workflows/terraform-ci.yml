@@ -10,6 +10,7 @@ on:
       - "scripts/build_lambda_package.py"
       - "scripts/build_kev_lambda_package.py"
       - "scripts/build_nvd_lambda_package.py"
+      - "scripts/build_nvd_analytics_projector_lambda_package.py"
       - "pyproject.toml"
       - "uv.lock"
   workflow_dispatch:
@@ -53,6 +54,9 @@ jobs:
 
       - name: Build NVD Incremental Lambda package
         run: uv run python scripts/build_nvd_incremental_lambda_package.py
+
+      - name: Build NVD Analytics Projector Lambda package
+        run: uv run python scripts/build_nvd_analytics_projector_lambda_package.py
 
       - name: Check Terraform formatting
         run: terraform fmt -check -recursive infra
