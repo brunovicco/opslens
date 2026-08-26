@@ -61,6 +61,7 @@ Phase 2:
 - [`phase-2-nvd-glue-athena-bootstrap-cleanup-proof.md`](labs/phase-2-nvd-glue-athena-bootstrap-cleanup-proof.md)
 - [`phase-2-nvd-glue-athena-permanent-path-design.md`](labs/phase-2-nvd-glue-athena-permanent-path-design.md)
 - [`phase-2-nvd-glue-athena-runtime-terraform.md`](labs/phase-2-nvd-glue-athena-runtime-terraform.md)
+- [`phase-2-nvd-glue-athena-permanent-catalog.md`](labs/phase-2-nvd-glue-athena-permanent-catalog.md)
 
 ## Current milestone
 
