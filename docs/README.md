@@ -17,8 +17,6 @@ The deployed Phase 2.3E/2.3F NVD runtime architecture and its real AWS evidence 
 
 The current implementation includes AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze, incremental CVE API Bronze, versioned NVD Silver, deployed Incremental/Silver/Promotion runtimes, the authoritative watermark boundary, EventBridge Scheduler, runtime IAM separation, idempotency, observability, and bounded failure recovery.
 
-Phase 2.3G is now validating the Glue/Athena compatibility boundary for the immutable NVD Silver layout. The current design spike is documented in [`phase-2-nvd-glue-athena-design.md`](labs/phase-2-nvd-glue-athena-design.md).
-
 ## Architecture Decision Records
 
 - [`0001 — Terraform state strategy`](adr/0001-terraform-state-strategy.md)
@@ -51,6 +49,7 @@ Phase 2:
 - [`phase-2-nvd-silver-workload-proof.md`](labs/phase-2-nvd-silver-workload-proof.md)
 - [`phase-2-nvd-authoritative-runtime-closeout.md`](labs/phase-2-nvd-authoritative-runtime-closeout.md)
 - [`phase-2-nvd-glue-athena-design.md`](labs/phase-2-nvd-glue-athena-design.md)
+- [`phase-2-nvd-glue-athena-source-evidence.md`](labs/phase-2-nvd-glue-athena-source-evidence.md)
 
 ## Current milestone
 
@@ -65,5 +64,5 @@ Phase 2.3C — NVD Incremental API Contract:   COMPLETE
 Phase 2.3D — NVD Versioned Silver Contract:  COMPLETE
 Phase 2.3E — NVD Silver AWS Runtime:         COMPLETE
 Phase 2.3F — NVD Authoritative Watermark:    COMPLETE
-Phase 2.3G — NVD Glue/Athena Analytics:      IN PROGRESS — addressability spike
+Phase 2.3G — NVD Glue/Athena Analytics:      IN PROGRESS
 ```
