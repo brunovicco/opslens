@@ -14,10 +14,10 @@ from opslens.ingestion.nvd.application.authoritative_watermark import (
     NvdWatermarkSilverPromotionCommitV1,
 )
 from opslens.transformation.nvd.application.analytics_projection_evidence_loader import (
-    InvalidNvdAnalyticsProjectionEvidenceError,
     NVD_ANALYTICS_INCREMENTAL_WATERMARK_KEY,
     NVD_ANALYTICS_MAX_SILVER_COMPLETE_BYTES,
     NVD_ANALYTICS_MAX_WATERMARK_BYTES,
+    InvalidNvdAnalyticsProjectionEvidenceError,
     NvdAnalyticsProjectionEvidenceLoaderV1,
     NvdAnalyticsProjectionNotEligibleError,
 )
