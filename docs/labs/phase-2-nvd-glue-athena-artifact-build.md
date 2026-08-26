@@ -87,47 +87,64 @@ The selected determinism fields produced an empty `diff`, and an independent loc
 6ae0bf3909744d6bb5e61390885fc469c18b93ef383bd4c2380fdc874de159cf
 ```
 
-`git status --short` remained empty after both builds because local build artifacts are ignored. The deterministic-build gate is therefore complete. Upload remains blocked until this proof is recorded; it may now proceed using the exact content-addressed key above.
+`git status --short` remained empty after both builds because local build artifacts are ignored. The deterministic-build gate is therefore complete.
 
 ## Upload authority
 
 The artifact bucket is the existing versioned deployment-artifacts bucket. The upload must use the exact content-addressed key reported by the builder.
 
-After upload, record at minimum:
+Terraform must reference the exact S3 `VersionId`; an unversioned current-object reference is not acceptable.
+
+### Exact versioned S3 upload proof — COMPLETE
+
+Bucket versioning was verified as enabled before upload. The content-addressed object did not exist before the write (`HeadObject` returned `404 Not Found`), so this upload created the first immutable version at that key.
+
+Exact persisted coordinates:
 
 ```text
-bucket
-key
-VersionId
-ETag
-ContentLength
-sha256
-sha256_base64
+bucket=opslens-dev-artifacts-487757851499-us-east-1
+key=lambda/nvd-analytics-projector/6ae0bf3909744d6bb5e61390885fc469c18b93ef383bd4c2380fdc874de159cf.zip
+VersionId=rmQLrC.FQamigSqqAsYt1gOKuMyCjdle
+ETag="4dc8f4f37a2dd295c01774946c1ddfd6"
+ContentLength=67502125
+ContentType=application/zip
+ServerSideEncryption=AES256
+ChecksumSHA256=auC/OQl0TWu15hOQiF/EacGLk+84O9TCOA/ch03hWc8=
+metadata.sha256=6ae0bf3909744d6bb5e61390885fc469c18b93ef383bd4c2380fdc874de159cf
 ```
 
-Terraform must reference the exact S3 `VersionId`; an unversioned current-object reference is not acceptable.
+An exact-version `GetObject` using that VersionId returned the same checksum, content length, ETag, encryption mode, content type, and metadata. The downloaded exact version was independently checked with `shasum -a 256`, which returned the same SHA-256, and `cmp` against the local deterministic artifact returned `0`.
+
+Therefore the immutable artifact identity is proven end to end:
+
+```text
+local deterministic ZIP
+  == SHA-256 6ae0bf3909744d6bb5e61390885fc469c18b93ef383bd4c2380fdc874de159cf
+  == exact S3 VersionId rmQLrC.FQamigSqqAsYt1gOKuMyCjdle
+  == exact downloaded bytes
+```
 
 ## Terraform pinning gate
 
-The projector Terraform currently requires three explicit artifact inputs:
+The exact artifact identity is now pinned directly in repository-controlled Terraform locals:
 
 ```text
-nvd_analytics_projector_artifact_sha256
-nvd_analytics_projector_artifact_sha256_base64
-nvd_analytics_projector_artifact_version
+sha256=6ae0bf3909744d6bb5e61390885fc469c18b93ef383bd4c2380fdc874de159cf
+sha256_base64=auC/OQl0TWu15hOQiF/EacGLk+84O9TCOA/ch03hWc8=
+VersionId=rmQLrC.FQamigSqqAsYt1gOKuMyCjdle
 ```
 
-No `terraform plan` or `terraform apply` is authorized until the immutable artifact has been uploaded and these coordinates are pinned in repository-controlled Terraform configuration.
+The temporary operator-supplied artifact variables and example tfvars file were removed after exact upload proof, so routine Terraform plan/apply cannot silently select a different current object through an external variable override.
 
 ## Deployment sequence
 
 The planned order is:
 
 ```text
-1. deterministic local build proof          COMPLETE
-2. exact versioned S3 artifact upload       NEXT
-3. pin artifact SHA-256/base64/VersionId
-4. bootstrap Terraform plan/apply for new deployment permissions
+1. deterministic local build proof                         COMPLETE
+2. exact versioned S3 artifact upload                      COMPLETE
+3. pin artifact SHA-256/base64/VersionId                  COMPLETE
+4. bootstrap Terraform plan/apply for deployment IAM      NEXT
 5. dev Terraform plan
 6. dev Terraform apply
 7. exact deployed Lambda configuration verification
