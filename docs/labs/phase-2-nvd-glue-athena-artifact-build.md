@@ -156,6 +156,31 @@ Apply complete! Resources: 2 added, 1 changed, 0 destroyed.
 
 No bootstrap resource was destroyed. The deployment role now has the bounded authority required for the permanent NVD analytics runtime deployment.
 
+## Dev runtime deployment — COMPLETE, verification pending
+
+The reviewed dev plan contained only the selected permanent analytics runtime resources:
+
+```text
+Plan: 8 to add, 1 to change, 0 to destroy.
+```
+
+The plan created the projector CloudWatch log group, Glue `nvd_cve_versions` table, Lambda execution role and inline runtime policy, Lambda function, asynchronous invoke configuration, S3 invoke permission, and SQS OnFailure queue. The existing single data-bucket notification resource was updated in place only to add the NVD watermark trigger while preserving the existing notifications.
+
+The exact saved dev plan was then applied successfully:
+
+```text
+Apply complete! Resources: 8 added, 1 changed, 0 destroyed.
+```
+
+Terraform outputs now expose:
+
+```text
+nvd_analytics_projector_lambda_execution_role_arn=arn:aws:iam::487757851499:role/OpsLensNvdAnalyticsProjectorLambdaRole
+nvd_analytics_projector_lambda_function_arn=arn:aws:lambda:us-east-1:487757851499:function:opslens-dev-nvd-analytics-projector
+```
+
+No dev resource was destroyed. Phase 2.3G.4G remains open until the deployed AWS configuration is independently read back and cross-checked against the pinned immutable artifact and selected runtime contract.
+
 ## Deployment sequence
 
 The planned order is:
@@ -165,9 +190,9 @@ The planned order is:
 2. exact versioned S3 artifact upload                      COMPLETE
 3. pin artifact SHA-256/base64/VersionId                  COMPLETE
 4. bootstrap Terraform plan/apply for deployment IAM      COMPLETE
-5. dev Terraform plan                                     NEXT
-6. dev Terraform apply
-7. exact deployed Lambda configuration verification
+5. dev Terraform plan                                     COMPLETE
+6. dev Terraform apply                                    COMPLETE
+7. exact deployed AWS configuration verification          NEXT
 ```
 
 This sequence preserves the repository invariant that code, deployment authority, and the exact immutable runtime artifact are all independently verifiable.
