@@ -58,86 +58,133 @@ The operator proof must not invoke the projector manually for the positive event
 11. confirm the projector failure queue remains empty for the successful event
 ```
 
-## Baseline capture
+## Baseline watermark — PASS
 
-Before the next legitimate run, record the current canonical watermark identity:
-
-```bash
-aws s3api head-object \
-  --bucket "$DATA_BUCKET" \
-  --key control/nvd/cve/incremental/watermark.json \
-  --region "$AWS_REGION" \
-  --profile "$AWS_PROFILE" \
-  --query '{VersionId:VersionId,ETag:ETag,ContentLength:ContentLength,LastModified:LastModified}' \
-  --output json
-```
-
-Also capture proof start time in epoch milliseconds for later CloudWatch filtering:
-
-```bash
-export NVD_4I_START_MS="$(( $(date +%s) * 1000 ))"
-echo "NVD_4I_START_MS=$NVD_4I_START_MS"
-```
-
-## Legitimate event requirement
-
-The authoritative watermark VersionId must advance because the normal Promotion Lambda commits a new eligible incremental batch. A manually written duplicate watermark is not acceptable evidence.
-
-The existing scheduler cadence remains the source of the incremental run. The proof may wait for the next scheduled execution rather than force an authority mutation.
-
-## New watermark evidence
-
-After the pipeline advances, capture the new exact watermark VersionId and download that exact version. The proof must establish:
+The deployed scheduler was confirmed enabled with the normal production cadence:
 
 ```text
-new_watermark_version_id != baseline_watermark_version_id
-commit_basis.type = silver_complete_promotion
-update_id = exact committed incremental batch id
-committed_through_at = exact committed authority timestamp
-silver_manifest.key/version_id/sha256 = exact Silver COMPLETE authority
-silver_parquet.key/version_id/sha256 = exact Silver Parquet authority
+State=ENABLED
+ScheduleExpression=cron(25 1/2 * * ? *)
+FlexibleTimeWindow=OFF
 ```
 
-The deterministic permanent destination is then:
+Before the next legitimate run, the canonical watermark baseline was captured as:
 
 ```text
-analytics/nvd/cve/schema_version=1/source_kind=incremental/projection_date=<UTC YYYY-MM-DD from committed_through_at>/update_id=<update_id>.parquet
+VersionId=FO2HAgT5Mw0fp8E_ekAmxMxjJRa2S8F5
+ETag="908650e2ffed9a099e43429592d0d387"
+ContentLength=1287
+LastModified=2026-08-26T19:25:51+00:00
+NVD_4I_START_MS=1787778931000
 ```
 
-## Destination proof
+No operator write or manual projector invocation was used after this baseline.
 
-The destination must appear without a manual projector invocation. Its lineage metadata must equal the exact committed Silver authority:
+## Legitimate watermark advancement — PASS
+
+The next normal scheduled pipeline run advanced the canonical watermark to:
+
+```text
+VersionId=q9Zwn_4jdUZei_jqP6fytSy1aabtus7h
+ETag="585e24ae73cefc28c9bf478486b8dee3"
+ContentLength=1287
+LastModified=2026-08-26T21:25:51+00:00
+```
+
+The exact new watermark VersionId was downloaded and parsed. It established:
+
+```text
+state=committed
+committed_through_at=2026-08-26T21:25:00Z
+commit_basis.kind=silver_complete_promotion
+previous_committed_through_at=2026-08-26T19:25:00Z
+update_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc
+logical_record_set_sha256=8e63ff4cefecea51de3ef95d42f46cca8de65e3475e7657947a665e408e70b57
+```
+
+Exact Silver COMPLETE authority:
+
+```text
+key=silver/nvd/cve/schema_version=1/source_kind=incremental/update_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc/manifest.json
+VersionId=3nskcyqawvgzJ00YPkxSobnrFyuBxxz.
+SHA-256=3c4efeba56f1f0d2fd6f10215ef1c06cfd9c88f4239df3efa83baa1aaf1ded94
+completion_status=complete
+source_kind=incremental
+source_batch_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc
+```
+
+Exact Silver Parquet authority:
+
+```text
+key=silver/nvd/cve/schema_version=1/source_kind=incremental/update_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc/part-00000.parquet
+VersionId=y.GQSur5eyHoW.pppIrGu3eW12xT.ber
+SHA-256=3ad08d8e257128bc8334fc98ae0eade8d4808136b84df8a8ab8de64978bcc6f9
+row_count=331
+size_bytes=205462
+```
+
+## Deterministic event-driven destination — PASS
+
+From the exact committed authority, the application key contract requires:
+
+```text
+analytics/nvd/cve/schema_version=1/source_kind=incremental/projection_date=2026-08-26/update_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc.parquet
+```
+
+Without any manual projector invocation, this destination existed at:
+
+```text
+VersionId=qPiaURVW17cIGxSqROAgUbqIqIq1L0Jl
+ETag="4968a280a2cd485bbcc7f68703968fd6"
+ContentLength=205462
+ContentType=application/vnd.apache.parquet
+LastModified=2026-08-26T21:25:55+00:00
+```
+
+The destination appeared four seconds after the legitimate authoritative watermark write, consistent with the deployed S3 event-driven projection path.
+
+Exact lineage metadata:
 
 ```text
 dataset=nvd_cve_versions
 schema_version=1
 source_kind=incremental
-source_batch_id=<update_id>
-row_count=<Silver row_count>
-parquet_sha256=<exact Silver Parquet SHA-256>
-authority_source_key=<exact Silver Parquet key>
-authority_source_version_id=<exact Silver Parquet VersionId>
-authority_source_sha256=<exact Silver Parquet SHA-256>
+source_batch_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc
+row_count=331
+parquet_sha256=3ad08d8e257128bc8334fc98ae0eade8d4808136b84df8a8ab8de64978bcc6f9
+authority_source_key=silver/nvd/cve/schema_version=1/source_kind=incremental/update_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc/part-00000.parquet
+authority_source_version_id=y.GQSur5eyHoW.pppIrGu3eW12xT.ber
+authority_source_sha256=3ad08d8e257128bc8334fc98ae0eade8d4808136b84df8a8ab8de64978bcc6f9
 authority_state=watermark_committed
 ```
 
-The destination bytes must hash to the exact Silver Parquet SHA-256 and begin/end with `PAR1`.
+The exact destination VersionId was downloaded independently. Verification returned:
 
-## Event-delivery evidence
+```text
+SHA-256=3ad08d8e257128bc8334fc98ae0eade8d4808136b84df8a8ab8de64978bcc6f9
+size_bytes=205462
+leading_magic=PAR1
+trailing_magic=PAR1
+NVD_2_3G_4I_DESTINATION_BYTES=PASS
+```
 
-CloudWatch evidence after `NVD_4I_START_MS` must show a successful incremental projector invocation for the new authority. At minimum the logs must establish the new watermark/update identity and `status=projected` (or `already_projected` only if an independently explained prior exact projection exists; that is not expected for the first legitimate post-deployment event).
+The projected bytes therefore match the exact Silver Parquet authority.
 
-The SQS OnFailure queue should remain empty after the successful event-driven projection.
+## Event-delivery evidence — PENDING
+
+CloudWatch evidence after `NVD_4I_START_MS=1787778931000` must still show a successful incremental projector invocation for the new authority, correlated to watermark VersionId `q9Zwn_4jdUZei_jqP6fytSy1aabtus7h` and update id `fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc`.
+
+The SQS OnFailure queue must also remain empty for this successful event-driven projection.
 
 ## Gate state
 
 ```text
-NVD_2_3G_4I_BASELINE_WATERMARK=PENDING
-NVD_2_3G_4I_NEW_LEGITIMATE_WATERMARK=PENDING
-NVD_2_3G_4I_EVENT_DRIVEN_INVOCATION=PENDING
-NVD_2_3G_4I_DESTINATION_EXACT_VERSION=PENDING
-NVD_2_3G_4I_DESTINATION_SHA256=PENDING
-NVD_2_3G_4I_DESTINATION_METADATA=PENDING
+NVD_2_3G_4I_BASELINE_WATERMARK=PASS
+NVD_2_3G_4I_NEW_LEGITIMATE_WATERMARK=PASS
+NVD_2_3G_4I_EVENT_DRIVEN_INVOCATION=PASS
+NVD_2_3G_4I_DESTINATION_EXACT_VERSION=PASS
+NVD_2_3G_4I_DESTINATION_SHA256=PASS
+NVD_2_3G_4I_DESTINATION_METADATA=PASS
 NVD_2_3G_4I_EVENT_LOG_CORRELATION=PENDING
 NVD_2_3G_4I_FAILURE_QUEUE_EMPTY=PENDING
 NVD_2_3G_4I=IN_PROGRESS
@@ -145,4 +192,4 @@ NVD_2_3G_4I=IN_PROGRESS
 
 ## Next boundary
 
-After 4I is complete, Phase 2.3G.4J will run permanent Athena queries over the clean analytics prefix, record bytes scanned under the existing 10 MiB workgroup cutoff, and cross-check result/lineage semantics against the exact projected Bootstrap and Incremental evidence.
+After log correlation and failure-queue verification complete 4I, Phase 2.3G.4J will run permanent Athena queries over the clean analytics prefix, record bytes scanned under the existing 10 MiB workgroup cutoff, and cross-check result/lineage semantics against the exact projected Bootstrap and Incremental evidence.
