@@ -2,7 +2,9 @@
 
 ## Status
 
-IN PROGRESS — ordinary-Parquet Athena addressability and bounded scan behavior have been proven for the exact-version Bootstrap analytics projection. Exact PyArrow-to-Athena result cross-check and cleanup remain pending.
+COMPLETE — ordinary-Parquet Athena addressability, bounded scan behavior, and exact PyArrow-to-Athena result equivalence have been proven for the exact-version Bootstrap analytics projection under the unchanged 10 MiB workgroup cutoff.
+
+Cleanup remains pending.
 
 ## Purpose
 
@@ -101,7 +103,7 @@ TotalExecutionTimeInMillis: 1418
 QueryQueueTimeInMillis: 105
 ```
 
-Local PyArrow reference prepared from the exact projected VersionId:
+Exact local PyArrow reference:
 
 ```text
 row_count: 48293
@@ -110,7 +112,16 @@ min_last_modified_at: 2026-01-03 04:15:50.813000+00:00
 max_last_modified_at: 2026-08-22 06:16:17.510000+00:00
 ```
 
-The Athena query result file exists locally and still requires exact result cross-check before the cardinality gate is closed.
+The Athena result matched the local PyArrow reference after UTC timestamp normalization.
+
+Formal cardinality gates:
+
+```text
+NVD_2_3G_BOOTSTRAP_ROW_COUNT_GATE=PASS
+NVD_2_3G_BOOTSTRAP_DISTINCT_CVE_GATE=PASS
+NVD_2_3G_BOOTSTRAP_MIN_TIMESTAMP_GATE=PASS
+NVD_2_3G_BOOTSTRAP_MAX_TIMESTAMP_GATE=PASS
+```
 
 ## Deterministic nested-field query
 
@@ -155,9 +166,21 @@ TotalExecutionTimeInMillis: 1088
 QueryQueueTimeInMillis: 65
 ```
 
-The query completed below the unchanged 10 MiB workgroup cutoff. Exact returned-field comparison with the local PyArrow observation remains pending.
+The returned observation identity and nested `cwe_ids` / `cvss_metrics` values matched the exact local PyArrow observation.
 
-## Cost-boundary result so far
+Formal nested-field gates:
+
+```text
+NVD_2_3G_BOOTSTRAP_OBSERVATION_GATE=PASS
+NVD_2_3G_BOOTSTRAP_CVE_GATE=PASS
+NVD_2_3G_BOOTSTRAP_STATUS_GATE=PASS
+NVD_2_3G_BOOTSTRAP_CWE_GATE=PASS
+NVD_2_3G_BOOTSTRAP_CVSS_FAMILY_GATE=PASS
+NVD_2_3G_BOOTSTRAP_CVSS_VERSION_GATE=PASS
+NVD_2_3G_BOOTSTRAP_CVSS_SCORE_GATE=PASS
+```
+
+## Cost-boundary result
 
 The physical Bootstrap Parquet is 36,240,684 bytes, larger than the 10,485,760-byte workgroup cutoff, yet both bounded columnar data queries completed successfully:
 
@@ -171,25 +194,58 @@ This proves that physical object size alone does not determine query rejection. 
 
 This proof does not claim that every Bootstrap query is safe under the cutoff.
 
-## Current gate state
+## Final proof gates
 
 ```text
 NVD_2_3G_BOOTSTRAP_DIRECT_TABLE_ABSENT_GATE=PASS
 NVD_2_3G_BOOTSTRAP_DIRECT_CREATE_GATE=PASS
 NVD_2_3G_BOOTSTRAP_CARDINALITY_EXECUTION_GATE=PASS
 NVD_2_3G_BOOTSTRAP_COMPLEX_EXECUTION_GATE=PASS
+NVD_2_3G_BOOTSTRAP_ROW_COUNT_GATE=PASS
+NVD_2_3G_BOOTSTRAP_DISTINCT_CVE_GATE=PASS
+NVD_2_3G_BOOTSTRAP_MIN_TIMESTAMP_GATE=PASS
+NVD_2_3G_BOOTSTRAP_MAX_TIMESTAMP_GATE=PASS
+NVD_2_3G_BOOTSTRAP_OBSERVATION_GATE=PASS
+NVD_2_3G_BOOTSTRAP_CVE_GATE=PASS
+NVD_2_3G_BOOTSTRAP_STATUS_GATE=PASS
+NVD_2_3G_BOOTSTRAP_CWE_GATE=PASS
+NVD_2_3G_BOOTSTRAP_CVSS_FAMILY_GATE=PASS
+NVD_2_3G_BOOTSTRAP_CVSS_VERSION_GATE=PASS
+NVD_2_3G_BOOTSTRAP_CVSS_SCORE_GATE=PASS
+NVD_2_3G_BOOTSTRAP_COMPLEX_TYPE_GATE=PASS
+NVD_2_3G_BOOTSTRAP_PARQUET_CROSSCHECK_GATE=PASS
 NVD_2_3G_BOOTSTRAP_SCAN_LIMIT_GATE=PASS
-
-NVD_2_3G_BOOTSTRAP_ROW_COUNT_GATE=PENDING
-NVD_2_3G_BOOTSTRAP_DISTINCT_CVE_GATE=PENDING
-NVD_2_3G_BOOTSTRAP_OBSERVATION_GATE=PENDING
-NVD_2_3G_BOOTSTRAP_COMPLEX_TYPE_GATE=PENDING
-NVD_2_3G_BOOTSTRAP_PARQUET_CROSSCHECK_GATE=PENDING
-Cleanup gates: PENDING
+NVD_2_3G_BOOTSTRAP_ATHENA_PROOF_GATE=PASS
 ```
+
+## Architectural result
+
+The Bootstrap proof now demonstrates:
+
+```text
+exact verified Bootstrap Silver COMPLETE + Parquet
+    -> exact-version analytics projection
+    -> immutable projected VersionId
+    -> identical SHA-256 and lineage metadata
+    -> ordinary Athena Parquet table
+    -> 48,293-row exact PyArrow/Athena equivalence
+    -> nested-type exact equivalence
+    -> bounded scans below unchanged 10 MiB cutoff
+```
+
+This validates the same permanent projection model for both incremental authority and the one-time Bootstrap seed path.
 
 ## Next proof step
 
-Read the already-produced Athena result files, compare cardinality and deterministic nested fields against exact local PyArrow values, then record cleanup of the temporary Glue/Athena table and exact temporary Bootstrap projection VersionId.
+Record exact cleanup of the temporary Bootstrap Athena table and exact temporary projected VersionId:
 
-Permanent Terraform/Lambda/Glue infrastructure remains deferred until Bootstrap validation and cleanup are complete and the permanent AWS path is designed and proven.
+```text
+DROP temporary table
+    -> verify Glue EntityNotFound
+    -> re-read exact projected VersionId before deletion
+    -> delete exact projected VersionId
+    -> verify exact-version HeadObject returns 404
+    -> verify current-key HeadObject returns 404
+```
+
+After cleanup, the next phase is the permanent analytics path design and implementation. Permanent Terraform/Lambda/Glue infrastructure remains deferred until that path is reviewed and proven.
