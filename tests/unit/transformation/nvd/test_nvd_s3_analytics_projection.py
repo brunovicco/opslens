@@ -116,9 +116,15 @@ class FakeS3Client:
         copy_error: ClientError | None = None,
     ) -> None:
         """Initialize fake S3 responses."""
-        self.copy_response = copy_response if copy_response is not None else {}
-        self.head_response = head_response if head_response is not None else {}
-        self.get_response = get_response if get_response is not None else {}
+        self.copy_response: Mapping[str, object] = (
+            copy_response if copy_response is not None else {}
+        )
+        self.head_response: Mapping[str, object] = (
+            head_response if head_response is not None else {}
+        )
+        self.get_response: Mapping[str, object] = (
+            get_response if get_response is not None else {}
+        )
         self.copy_error = copy_error
         self.copy_requests: list[dict[str, object]] = []
         self.head_requests: list[dict[str, str]] = []
