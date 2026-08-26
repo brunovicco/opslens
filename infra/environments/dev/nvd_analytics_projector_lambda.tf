@@ -1,52 +1,15 @@
-variable "nvd_analytics_projector_artifact_sha256" {
-  description = "Lowercase SHA-256 hex digest of the immutable NVD analytics projector deployment package."
-  type        = string
-  nullable    = false
-
-  validation {
-    condition = can(
-      regex(
-        "^[0-9a-f]{64}$",
-        var.nvd_analytics_projector_artifact_sha256,
-      )
-    )
-    error_message = "nvd_analytics_projector_artifact_sha256 must be a lowercase SHA-256 hex digest."
-  }
-}
-
-variable "nvd_analytics_projector_artifact_sha256_base64" {
-  description = "Base64-encoded SHA-256 digest of the immutable NVD analytics projector deployment package."
-  type        = string
-  nullable    = false
-
-  validation {
-    condition = can(
-      regex(
-        "^[A-Za-z0-9+/]{43}=$",
-        var.nvd_analytics_projector_artifact_sha256_base64,
-      )
-    )
-    error_message = "nvd_analytics_projector_artifact_sha256_base64 must encode one SHA-256 digest."
-  }
-}
-
-variable "nvd_analytics_projector_artifact_version" {
-  description = "Exact S3 VersionId of the immutable NVD analytics projector deployment package."
-  type        = string
-  nullable    = false
-
-  validation {
-    condition = (
-      length(var.nvd_analytics_projector_artifact_version) > 0 &&
-      trimspace(var.nvd_analytics_projector_artifact_version) == var.nvd_analytics_projector_artifact_version
-    )
-    error_message = "nvd_analytics_projector_artifact_version must be exact and non-empty."
-  }
-}
-
 locals {
+  nvd_analytics_projector_artifact_sha256 = (
+    "6ae0bf3909744d6bb5e61390885fc469c18b93ef383bd4c2380fdc874de159cf"
+  )
+  nvd_analytics_projector_artifact_sha256_base64 = (
+    "auC/OQl0TWu15hOQiF/EacGLk+84O9TCOA/ch03hWc8="
+  )
+  nvd_analytics_projector_artifact_version = (
+    "rmQLrC.FQamigSqqAsYt1gOKuMyCjdle"
+  )
   nvd_analytics_projector_artifact_key = (
-    "lambda/nvd-analytics-projector/${var.nvd_analytics_projector_artifact_sha256}.zip"
+    "lambda/nvd-analytics-projector/${local.nvd_analytics_projector_artifact_sha256}.zip"
   )
 }
 
@@ -74,9 +37,9 @@ resource "aws_lambda_function" "nvd_analytics_projector" {
 
   s3_bucket         = aws_s3_bucket.deployment_artifacts.bucket
   s3_key            = local.nvd_analytics_projector_artifact_key
-  s3_object_version = var.nvd_analytics_projector_artifact_version
+  s3_object_version = local.nvd_analytics_projector_artifact_version
 
-  source_code_hash = var.nvd_analytics_projector_artifact_sha256_base64
+  source_code_hash = local.nvd_analytics_projector_artifact_sha256_base64
 
   memory_size = 1024
   timeout     = 120
