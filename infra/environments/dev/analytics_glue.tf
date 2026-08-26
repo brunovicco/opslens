@@ -228,17 +228,17 @@ resource "aws_glue_catalog_table" "nvd_cve_versions" {
   table_type = "EXTERNAL_TABLE"
 
   parameters = {
-    EXTERNAL                                           = "TRUE"
-    classification                                     = "parquet"
-    "parquet.compression"                              = "SNAPPY"
-    "projection.enabled"                               = "true"
-    "projection.source_kind_partition.type"            = "enum"
-    "projection.source_kind_partition.values"          = "bootstrap,incremental"
-    "projection.projection_date.type"                  = "date"
-    "projection.projection_date.range"                 = "2026-01-01,NOW"
-    "projection.projection_date.format"                = "yyyy-MM-dd"
-    "projection.projection_date.interval"              = "1"
-    "projection.projection_date.interval.unit"         = "DAYS"
+    EXTERNAL                                   = "TRUE"
+    classification                             = "parquet"
+    "parquet.compression"                      = "SNAPPY"
+    "projection.enabled"                       = "true"
+    "projection.source_kind_partition.type"    = "enum"
+    "projection.source_kind_partition.values"  = "bootstrap,incremental"
+    "projection.projection_date.type"          = "date"
+    "projection.projection_date.range"         = "2026-01-01,NOW"
+    "projection.projection_date.format"        = "yyyy-MM-dd"
+    "projection.projection_date.interval"      = "1"
+    "projection.projection_date.interval.unit" = "DAYS"
 
     "storage.location.template" = (
       "s3://${aws_s3_bucket.data.id}/analytics/nvd/cve/schema_version=1/source_kind=$${source_kind_partition}/projection_date=$${projection_date}/"
