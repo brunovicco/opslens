@@ -47,6 +47,34 @@ projection_date       -> date(2026-01-01,NOW), yyyy-MM-dd, 1 DAY
 
 The table uses the explicit 32-column NVD Silver v1 schema and ordinary Parquet input/serde configuration. No crawler or runtime Glue partition writes are involved.
 
+## Permanent workgroup and catalog read-back — PASS
+
+The deployed `opslens-dev` Athena workgroup was re-read before executing any 4J data query:
+
+```text
+State=ENABLED
+EnforceWorkGroupConfiguration=true
+BytesScannedCutoffPerQuery=10485760
+OutputLocation=s3://opslens-dev-data-487757851499-us-east-1/athena-results/
+Encryption=SSE_S3
+```
+
+The permanent Glue table was also re-read from AWS:
+
+```text
+Name=nvd_cve_versions
+TableType=EXTERNAL_TABLE
+Location=s3://opslens-dev-data-487757851499-us-east-1/analytics/nvd/cve/schema_version=1/
+ColumnCount=32
+PartitionKeys=[source_kind_partition,projection_date]
+projection.enabled=true
+projection.source_kind_partition.values=bootstrap,incremental
+projection.projection_date.range=2026-01-01,NOW
+storage.location.template=s3://opslens-dev-data-487757851499-us-east-1/analytics/nvd/cve/schema_version=1/source_kind=${source_kind_partition}/projection_date=${projection_date}/
+```
+
+This establishes the exact permanent analytical surface under test and confirms that the cost guardrail remained unchanged.
+
 ## Cost boundary
 
 The permanent workgroup remains:
@@ -93,6 +121,51 @@ physical_bytes=205462
 authority_state=watermark_committed
 ```
 
+The exact local files were re-hashed immediately before deriving reference values:
+
+```text
+Bootstrap SHA-256=4ea6e3ae1d73908d8fb4f953dcf181802bf111001bcdb7f3695e4773fe854541
+Incremental SHA-256=3ad08d8e257128bc8334fc98ae0eade8d4808136b84df8a8ab8de64978bcc6f9
+```
+
+## Exact local Parquet reference — PASS
+
+PyArrow derived the following exact values from the permanent projected bytes before Athena Query A was executed.
+
+Bootstrap:
+
+```text
+row_count=48293
+distinct_cves=48293
+min_last_modified_at=2026-01-03 04:15:50.813000+00:00
+max_last_modified_at=2026-08-22 06:16:17.510000+00:00
+source_kind=bootstrap
+source_batch_id=feed_year=2026/feed_revision=20260822T070013Z-f10b8dc5388f72172740b476be73ca9e24ab6834aa502ff9cbb3a733973d6d68
+```
+
+Incremental:
+
+```text
+row_count=331
+distinct_cves=331
+min_last_modified_at=2026-08-26 19:25:08.083000+00:00
+max_last_modified_at=2026-08-26 21:16:41.873000+00:00
+source_kind=incremental
+source_batch_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc
+```
+
+The deterministic Incremental sample selected locally by minimum `observation_id` is:
+
+```text
+observation_id=0010b63dd03980e09202e28f657964880be24a67ed6e9d9939e1d1c260aa01e7
+cve_id=CVE-2026-79129
+source_kind=incremental
+source_batch_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc
+incremental_update_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc
+vuln_status=Undergoing Analysis
+last_modified_at=2026-08-26 20:18:09.873000+00:00
+```
+
 ## Proof strategy
 
 The proof is intentionally partition-bounded and evidence-driven:
@@ -112,27 +185,62 @@ The proof is intentionally partition-bounded and evidence-driven:
 
 Partition predicates are mandatory. Unbounded `SELECT *`, whole-table scans, and any attempt to relax the workgroup cutoff are outside this proof.
 
-## Query A — partition-bounded cardinality and lineage
+## Query A — partition-bounded cardinality and lineage — PASS
 
-The first data query will aggregate each exact authority independently using partition projection and exact source-batch predicates.
-
-Expected Bootstrap cardinality:
+QueryExecutionId:
 
 ```text
+34cafd33-2c29-4de2-a557-a61105db08e6
+```
+
+Execution evidence:
+
+```text
+State=SUCCEEDED
+DataScannedInBytes=536071
+EngineExecutionTimeInMillis=1208
+TotalExecutionTimeInMillis=1373
+QueryQueueTimeInMillis=97
+```
+
+The query used both projected partition predicates and exact `source_batch_id` predicates for Bootstrap and Incremental.
+
+Athena returned:
+
+```text
+incremental
+row_count=331
+distinct_cves=331
+source_kind=incremental
+source_batch_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc
+min_last_modified_at=2026-08-26 19:25:08.083
+max_last_modified_at=2026-08-26 21:16:41.873
+
+bootstrap
 row_count=48293
 distinct_cves=48293
 source_kind=bootstrap
+source_batch_id=feed_year=2026/feed_revision=20260822T070013Z-f10b8dc5388f72172740b476be73ca9e24ab6834aa502ff9cbb3a733973d6d68
+min_last_modified_at=2026-01-03 04:15:50.813
+max_last_modified_at=2026-08-22 06:16:17.510
 ```
 
-Expected Incremental cardinality:
+After UTC normalization of the Athena timestamp representation, every Query A value equals the exact PyArrow reference derived before execution.
+
+The query scanned only:
 
 ```text
-row_count=331
-source_kind=incremental
-source_batch_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc
+536071 / 10485760 bytes
 ```
 
-`min(last_modified_at)` / `max(last_modified_at)` and incremental distinct-CVE cardinality must be derived first from the exact permanent Parquet files and then compared with Athena rather than guessed.
+which is approximately 5.1% of the workgroup cutoff and is well below the enforced guardrail despite the 36,240,684-byte Bootstrap physical object.
+
+Formal Query A gates:
+
+```text
+NVD_2_3G_4J_CARDINALITY_QUERY=PASS
+NVD_2_3G_4J_CARDINALITY_EQUIVALENCE=PASS
+```
 
 ## Query B — deterministic Bootstrap nested-field equivalence
 
@@ -152,19 +260,19 @@ The permanent-table query must include both partition predicates and this exact 
 
 ## Query C — deterministic Incremental observation equivalence
 
-One deterministic observation from the exact `qPiaURVW17cIGxSqROAgUbqIqIq1L0Jl` Parquet must be selected locally first. Athena must then return the same:
+The exact local deterministic Incremental observation for this proof is now fixed as:
 
 ```text
-observation_id
-cve_id
-source_kind
-source_batch_id
-incremental_update_id
-vuln_status
-last_modified_at
+observation_id=0010b63dd03980e09202e28f657964880be24a67ed6e9d9939e1d1c260aa01e7
+cve_id=CVE-2026-79129
+source_kind=incremental
+source_batch_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc
+incremental_update_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc
+vuln_status=Undergoing Analysis
+last_modified_at=2026-08-26 20:18:09.873000+00:00
 ```
 
-using exact partition and source-batch predicates.
+Athena must return these exact values using both permanent projected partition predicates and the exact source-batch predicate.
 
 ## Evidence to retain per Athena query
 
@@ -185,11 +293,11 @@ The query result S3 objects are ordinary Athena output artifacts and are not par
 ## Gate state
 
 ```text
-NVD_2_3G_4J_WORKGROUP_CUTOFF=PENDING
-NVD_2_3G_4J_PERMANENT_GLUE_TABLE=PENDING
-NVD_2_3G_4J_LOCAL_REFERENCE=PENDING
-NVD_2_3G_4J_CARDINALITY_QUERY=PENDING
-NVD_2_3G_4J_CARDINALITY_EQUIVALENCE=PENDING
+NVD_2_3G_4J_WORKGROUP_CUTOFF=PASS
+NVD_2_3G_4J_PERMANENT_GLUE_TABLE=PASS
+NVD_2_3G_4J_LOCAL_REFERENCE=PASS
+NVD_2_3G_4J_CARDINALITY_QUERY=PASS
+NVD_2_3G_4J_CARDINALITY_EQUIVALENCE=PASS
 NVD_2_3G_4J_BOOTSTRAP_NESTED_QUERY=PENDING
 NVD_2_3G_4J_BOOTSTRAP_NESTED_EQUIVALENCE=PENDING
 NVD_2_3G_4J_INCREMENTAL_OBSERVATION_QUERY=PENDING
@@ -200,4 +308,4 @@ NVD_2_3G_4J=IN_PROGRESS
 
 ## Next boundary
 
-After 4J is complete, Phase 2.3G.4K will close failure/replay/observability evidence for the permanent analytics path and prepare Phase 2.3G for final review/merge. 4J does not authorize GHSA ingestion or Phase 3 work.
+Complete Query B and Query C against the permanent table, then aggregate all three query scan measurements against the unchanged 10 MiB cutoff. After 4J is complete, Phase 2.3G.4K will close failure/replay/observability evidence for the permanent analytics path and prepare Phase 2.3G for final review/merge. 4J does not authorize GHSA ingestion or Phase 3 work.
