@@ -1,5 +1,6 @@
 """Tests for the permanent NVD analytics projection inbound boundary."""
 
+from typing import cast
 from urllib.parse import quote_plus
 
 import pytest
@@ -94,14 +95,10 @@ def test_parse_incremental_rejects_wrong_watermark_key() -> None:
 def test_parse_incremental_requires_version_id() -> None:
     """Reject S3 events that cannot pin the exact watermark object version."""
     event = _s3_event()
-    records = event["Records"]
-    assert isinstance(records, list)
-    record = records[0]
-    assert isinstance(record, dict)
-    s3_data = record["s3"]
-    assert isinstance(s3_data, dict)
-    object_data = s3_data["object"]
-    assert isinstance(object_data, dict)
+    records = cast(list[object], event["Records"])
+    record = cast(dict[str, object], records[0])
+    s3_data = cast(dict[str, object], record["s3"])
+    object_data = cast(dict[str, object], s3_data["object"])
     object_data.pop("versionId")
 
     with pytest.raises(
