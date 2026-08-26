@@ -209,7 +209,7 @@ class S3NvdAnalyticsProjectionRepositoryV1:
         projected = self._verify_exact_destination(
             request=request,
             destination=destination,
-            destination_version_id=cast(str, destination_version),
+            destination_version_id=destination_version,
         )
 
         self._telemetry.metric(
@@ -274,7 +274,7 @@ class S3NvdAnalyticsProjectionRepositoryV1:
         return self._verify_exact_destination(
             request=request,
             destination=destination,
-            destination_version_id=cast(str, version_id),
+            destination_version_id=version_id,
         )
 
     def _verify_exact_destination(
@@ -363,7 +363,7 @@ class S3NvdAnalyticsProjectionRepositoryV1:
                     fields=fields,
                 )
 
-            exact_length = cast(int, content_length)
+            exact_length = content_length
             payload = body.read(exact_length + 1)
 
             if len(payload) != exact_length:
