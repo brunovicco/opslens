@@ -1,9 +1,9 @@
 locals {
-  dev_analytics_glue_database_name    = "opslens_dev"
-  dev_analytics_glue_epss_table_name  = "epss_scores"
-  dev_analytics_glue_kev_table_name   = "kev_entries"
-  dev_analytics_glue_nvd_table_name   = "nvd_cve_versions"
-  dev_analytics_athena_workgroup      = "opslens-dev"
+  dev_analytics_glue_database_name   = "opslens_dev"
+  dev_analytics_glue_epss_table_name = "epss_scores"
+  dev_analytics_glue_kev_table_name  = "kev_entries"
+  dev_analytics_glue_nvd_table_name  = "nvd_cve_versions"
+  dev_analytics_athena_workgroup     = "opslens-dev"
 
   dev_analytics_glue_catalog_arn = (
     "arn:aws:glue:${var.aws_region}:${data.aws_caller_identity.current.account_id}:catalog"
