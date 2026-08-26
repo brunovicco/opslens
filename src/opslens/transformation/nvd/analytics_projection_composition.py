@@ -9,13 +9,13 @@ from opslens.shared.observability.ports import OperationalTelemetry
 from opslens.transformation.nvd.adapters.outbound.analytics_projection_repository import (
     NvdAnalyticsProjectionRepositoryBindingV1,
 )
+from opslens.transformation.nvd.adapters.outbound.s3_analytics_evidence import (
+    S3NvdAnalyticsEvidenceClient,
+    S3NvdAnalyticsEvidenceReaderV1,
+)
 from opslens.transformation.nvd.adapters.outbound.s3_analytics_projection import (
     S3NvdAnalyticsProjectionClient,
     S3NvdAnalyticsProjectionRepositoryV1,
-)
-from opslens.transformation.nvd.adapters.outbound.s3_promotion_evidence import (
-    S3NvdPromotionEvidenceClient,
-    S3NvdPromotionEvidenceReaderV1,
 )
 from opslens.transformation.nvd.analytics_projection_config import (
     NvdAnalyticsProjectionRuntimeSettingsV1,
@@ -50,11 +50,11 @@ def compose_analytics_projection_runtime_dependencies(
     *,
     settings: NvdAnalyticsProjectionRuntimeSettingsV1,
     telemetry: OperationalTelemetry,
-    evidence_s3_client: S3NvdPromotionEvidenceClient,
+    evidence_s3_client: S3NvdAnalyticsEvidenceClient,
     projection_s3_client: S3NvdAnalyticsProjectionClient,
 ) -> NvdAnalyticsProjectionRuntimeDependencies:
     """Compose the analytics runtime from explicit infrastructure boundaries."""
-    exact_reader = S3NvdPromotionEvidenceReaderV1(
+    exact_reader = S3NvdAnalyticsEvidenceReaderV1(
         client=evidence_s3_client,
         bucket_name=settings.data_bucket,
         telemetry=telemetry,
@@ -97,7 +97,7 @@ def build_analytics_projection_runtime_dependencies(
         settings=settings,
         telemetry=telemetry,
         evidence_s3_client=cast(
-            S3NvdPromotionEvidenceClient,
+            S3NvdAnalyticsEvidenceClient,
             s3_client,
         ),
         projection_s3_client=cast(
