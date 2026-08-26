@@ -2,7 +2,7 @@
 
 from collections.abc import Mapping
 from hashlib import sha256
-from typing import Protocol, TypedDict, cast
+from typing import NoReturn, Protocol, TypedDict, cast
 
 from botocore.exceptions import ClientError
 
@@ -186,9 +186,6 @@ class S3NvdAnalyticsProjectionRepositoryV1:
                 error=exc,
                 fields=fields,
             )
-            raise AssertionError(
-                "Unreachable after analytics CopyObject error handling."
-            ) from exc
 
         copy_source_version = response.get(
             "CopySourceVersionId"
@@ -449,7 +446,7 @@ class S3NvdAnalyticsProjectionRepositoryV1:
         *,
         error: ClientError,
         fields: Mapping[str, object],
-    ) -> None:
+    ) -> NoReturn:
         """Classify S3 conditional-copy failures without guessing success."""
         status_code = self._extract_http_status(error)
         error_fields = {
@@ -496,7 +493,7 @@ class S3NvdAnalyticsProjectionRepositoryV1:
         message: str,
         *,
         fields: Mapping[str, object],
-    ) -> None:
+    ) -> NoReturn:
         """Emit fail-closed evidence telemetry and raise the boundary error."""
         self._telemetry.metric(
             name="NvdAnalyticsProjectionEvidenceMismatch",
@@ -517,7 +514,7 @@ class S3NvdAnalyticsProjectionRepositoryV1:
         error: ClientError,
         message: str,
         fields: Mapping[str, object],
-    ) -> None:
+    ) -> NoReturn:
         """Map one unclassified S3 provider failure at the adapter boundary."""
         self._telemetry.metric(
             name="NvdAnalyticsProjectionFailure",
