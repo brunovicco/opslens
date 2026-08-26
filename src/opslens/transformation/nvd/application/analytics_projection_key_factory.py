@@ -75,13 +75,8 @@ class NvdAnalyticsProjectionKeyFactoryV1:
             NvdIncrementalAnalyticsProjectionRequestV1,
         ):
             filename = f"update_id={request.update_id}.parquet"
-        elif isinstance(
-            request,
-            NvdBootstrapAnalyticsProjectionRequestV1,
-        ):
-            filename = f"feed_revision={request.feed_revision}.parquet"
         else:
-            raise TypeError("Unsupported NVD analytics projection request type.")
+            filename = f"feed_revision={request.feed_revision}.parquet"
 
         return NvdAnalyticsProjectionKeyV1(
             object_key=f"{base}/{filename}",
