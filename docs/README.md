@@ -50,6 +50,7 @@ Phase 2:
 - [`phase-2-nvd-authoritative-runtime-closeout.md`](labs/phase-2-nvd-authoritative-runtime-closeout.md)
 - [`phase-2-nvd-glue-athena-design.md`](labs/phase-2-nvd-glue-athena-design.md)
 - [`phase-2-nvd-glue-athena-source-evidence.md`](labs/phase-2-nvd-glue-athena-source-evidence.md)
+- [`phase-2-nvd-glue-athena-bootstrap-evidence.md`](labs/phase-2-nvd-glue-athena-bootstrap-evidence.md)
 
 ## Current milestone
 
