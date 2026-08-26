@@ -1,12 +1,12 @@
 # Phase 2.3G.4I — Permanent NVD Incremental Event Proof
 
-Status: **IN PROGRESS**
+Status: **COMPLETE**
 
 ## Objective
 
 Prove the permanent incremental analytics path end to end from one legitimate authoritative watermark `s3:ObjectCreated:Put` event emitted by the normal OpsLens NVD pipeline.
 
-The proof must preserve the authority chain:
+The proof preserves the authority chain:
 
 ```text
 incremental Bronze COMPLETE
@@ -18,7 +18,7 @@ incremental Bronze COMPLETE
     -> deterministic permanent incremental analytics object
 ```
 
-No operator may write, copy, replace, or otherwise synthesize the authoritative watermark for this proof. The event must result from the normal Incremental -> Silver -> Promotion pipeline.
+No operator wrote, copied, replaced, or synthesized the authoritative watermark, and no manual analytics-projector invocation was used for the positive event-driven path.
 
 ## Trigger contract
 
@@ -32,31 +32,13 @@ suffix=watermark.json
 lambda=opslens-dev-nvd-analytics-projector
 ```
 
-The inbound parser still requires the exact canonical object key:
+The inbound parser additionally requires the exact canonical object key:
 
 ```text
 control/nvd/cve/incremental/watermark.json
 ```
 
-and requires the S3 event record to carry the exact watermark `VersionId`.
-
-## Proof strategy
-
-The operator proof must not invoke the projector manually for the positive event-driven path.
-
-```text
-1. capture the current watermark exact VersionId as the baseline
-2. capture a wall-clock proof start time
-3. allow the normal scheduled NVD incremental pipeline to run
-4. wait until the canonical watermark has a different VersionId
-5. download and parse that exact new watermark VersionId
-6. require silver_complete_promotion authority and capture its exact update_id / Silver references
-7. derive the deterministic analytics destination from committed_through_at + update_id
-8. verify that destination exists without a manual projector invocation
-9. verify exact destination VersionId, SHA-256, size, Parquet magic, and lineage metadata against the new watermark authority
-10. inspect projector logs after the proof start time for an incremental success tied to the new watermark VersionId/update_id
-11. confirm the projector failure queue remains empty for the successful event
-```
+and the S3 event record must carry the exact watermark `VersionId`.
 
 ## Baseline watermark — PASS
 
@@ -77,8 +59,6 @@ ContentLength=1287
 LastModified=2026-08-26T19:25:51+00:00
 NVD_4I_START_MS=1787778931000
 ```
-
-No operator write or manual projector invocation was used after this baseline.
 
 ## Legitimate watermark advancement — PASS
 
@@ -141,7 +121,7 @@ ContentType=application/vnd.apache.parquet
 LastModified=2026-08-26T21:25:55+00:00
 ```
 
-The destination appeared four seconds after the legitimate authoritative watermark write, consistent with the deployed S3 event-driven projection path.
+The destination appeared four seconds after the legitimate authoritative watermark write.
 
 Exact lineage metadata:
 
@@ -168,13 +148,70 @@ trailing_magic=PAR1
 NVD_2_3G_4I_DESTINATION_BYTES=PASS
 ```
 
-The projected bytes therefore match the exact Silver Parquet authority.
+## Event-delivery log correlation — PASS
 
-## Event-delivery evidence — PENDING
+CloudWatch logs after `NVD_4I_START_MS` contain eight records matching the new watermark VersionId or update id. They establish one correlated event-driven invocation:
 
-CloudWatch evidence after `NVD_4I_START_MS=1787778931000` must still show a successful incremental projector invocation for the new authority, correlated to watermark VersionId `q9Zwn_4jdUZei_jqP6fytSy1aabtus7h` and update id `fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc`.
+```text
+request_id=ea83a1dd-7284-4e27-82b8-729e5d6e94f3
+xray_trace_id=1-6a8f59d3-7bba274262b6bc8d3bd9849a
+cold_start=true
+```
 
-The SQS OnFailure queue must also remain empty for this successful event-driven projection.
+The first application record at `2026-08-26 21:25:54.293Z` states:
+
+```text
+message=Starting permanent NVD analytics projection
+trigger_kind=incremental_watermark
+watermark_key=control/nvd/cve/incremental/watermark.json
+watermark_version_id=q9Zwn_4jdUZei_jqP6fytSy1aabtus7h
+event_object_size_bytes=1287
+```
+
+The same X-Ray trace then read the exact watermark VersionId and exact Silver COMPLETE VersionId, copied the exact Silver Parquet VersionId, and verified the projected destination.
+
+The completion record at `2026-08-26 21:25:54.562Z` states:
+
+```text
+message=Permanent NVD analytics projection completed
+request_id=ea83a1dd-7284-4e27-82b8-729e5d6e94f3
+status=projected
+source_kind=incremental
+source_batch_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc
+authority_state=watermark_committed
+projection_date=2026-08-26
+row_count=331
+destination_version_id=qPiaURVW17cIGxSqROAgUbqIqIq1L0Jl
+destination_sha256=3ad08d8e257128bc8334fc98ae0eade8d4808136b84df8a8ab8de64978bcc6f9
+```
+
+The automated correlation assertion found the same request id in trigger and completion evidence:
+
+```text
+correlated_request_ids=['ea83a1dd-7284-4e27-82b8-729e5d6e94f3']
+NVD_2_3G_4I_EVENT_LOG_CORRELATION=PASS
+```
+
+This closes the proof that the permanent object was created by the S3-triggered projector execution rather than by an operator-side action.
+
+## Failure queue — PASS
+
+The configured OnFailure queue was read after the successful event-driven projection:
+
+```text
+https://sqs.us-east-1.amazonaws.com/487757851499/opslens-dev-nvd-analytics-projector-failures
+```
+
+Observed queue counters:
+
+```text
+ApproximateNumberOfMessages=0
+ApproximateNumberOfMessagesNotVisible=0
+ApproximateNumberOfMessagesDelayed=0
+NVD_2_3G_4I_FAILURE_QUEUE_EMPTY=PASS
+```
+
+No asynchronous failure was routed to the failure destination for the successful projection.
 
 ## Gate state
 
@@ -185,11 +222,31 @@ NVD_2_3G_4I_EVENT_DRIVEN_INVOCATION=PASS
 NVD_2_3G_4I_DESTINATION_EXACT_VERSION=PASS
 NVD_2_3G_4I_DESTINATION_SHA256=PASS
 NVD_2_3G_4I_DESTINATION_METADATA=PASS
-NVD_2_3G_4I_EVENT_LOG_CORRELATION=PENDING
-NVD_2_3G_4I_FAILURE_QUEUE_EMPTY=PENDING
-NVD_2_3G_4I=IN_PROGRESS
+NVD_2_3G_4I_EVENT_LOG_CORRELATION=PASS
+NVD_2_3G_4I_FAILURE_QUEUE_EMPTY=PASS
+NVD_2_3G_4I=COMPLETE
 ```
+
+## Conclusion
+
+The permanent incremental path now proves, in real AWS execution:
+
+```text
+scheduled Incremental ingestion
+    -> exact Silver COMPLETE
+    -> Promotion commits exact authoritative watermark VersionId
+    -> native S3 ObjectCreated:Put delivery
+    -> strict projector trigger parsing
+    -> exact watermark + Silver evidence reads
+    -> exact-VersionId Silver Parquet CopyObject
+    -> deterministic analytics destination
+    -> exact destination VersionId/SHA/lineage verification
+    -> correlated CloudWatch/X-Ray success
+    -> empty OnFailure queue
+```
+
+The authority chain remained one-way. Analytics did not mutate the watermark, discover sources by prefix, or create Glue partitions.
 
 ## Next boundary
 
-After log correlation and failure-queue verification complete 4I, Phase 2.3G.4J will run permanent Athena queries over the clean analytics prefix, record bytes scanned under the existing 10 MiB workgroup cutoff, and cross-check result/lineage semantics against the exact projected Bootstrap and Incremental evidence.
+Phase 2.3G.4J will run permanent Athena queries over the clean analytics namespace, record per-query bytes scanned under the unchanged 10 MiB workgroup cutoff, and cross-check result and lineage semantics against the exact permanent Bootstrap and Incremental projections.
