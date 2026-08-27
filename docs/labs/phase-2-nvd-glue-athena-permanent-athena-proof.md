@@ -1,6 +1,6 @@
 # Phase 2.3G.4J — Permanent NVD Athena Query / Cost / Lineage Proof
 
-Status: **IN PROGRESS**
+Status: **COMPLETE**
 
 ## Objective
 
@@ -89,7 +89,7 @@ with enforced configuration and:
 bytes_scanned_cutoff_per_query=10485760
 ```
 
-Every data query in this proof must independently complete below this unchanged 10 MiB cutoff. A query that reaches the cutoff is a failed proof; the cutoff must not be raised to make a query pass.
+Every data query in this proof must independently complete below this unchanged 10 MiB cutoff. The cutoff was not relaxed for any query.
 
 ## Exact permanent evidence under test
 
@@ -106,7 +106,7 @@ physical_bytes=36240684
 authority_state=bootstrap_verified_seed
 ```
 
-The physical object is larger than the workgroup cutoff. The earlier spike proved that bounded columnar queries can still remain below 10 MiB; 4J must re-prove that behavior against the permanent Glue table rather than the temporary spike table.
+The physical Bootstrap object is larger than the workgroup cutoff, so 4J specifically proves that partition-bounded and column-bounded Parquet queries stay within the existing analytical guardrail without changing source authority.
 
 ### Incremental projection
 
@@ -130,7 +130,7 @@ Incremental SHA-256=3ad08d8e257128bc8334fc98ae0eade8d4808136b84df8a8ab8de64978bc
 
 ## Exact local Parquet reference — PASS
 
-PyArrow derived the following exact values from the permanent projected bytes before Athena Query A was executed.
+PyArrow derived the following exact values from the permanent projected bytes before Athena execution.
 
 Bootstrap:
 
@@ -168,22 +168,22 @@ last_modified_at=2026-08-26 20:18:09.873000+00:00
 
 ## Proof strategy
 
-The proof is intentionally partition-bounded and evidence-driven:
+The proof remained partition-bounded and evidence-driven:
 
 ```text
 1. re-read workgroup cutoff and permanent Glue table configuration
 2. establish local exact-Parquet reference values for Bootstrap and Incremental
-3. run one partition-bounded cardinality/lineage query for both authorities
+3. run a partition-bounded cardinality/lineage query for both authorities
 4. require result equivalence and record DataScannedInBytes
-5. run one deterministic nested-field Bootstrap query already proven against the same exact bytes
-6. require nested result equivalence and record DataScannedInBytes
-7. run one deterministic Incremental observation query against the exact event-driven projected batch
-8. require result equivalence and record DataScannedInBytes
-9. prove every query stayed below 10,485,760 bytes
-10. record QueryExecutionIds, engine/queue/total timings, and result evidence
+5. run a deterministic nested-field Bootstrap query
+6. diagnose nested cardinality rather than masking it with DISTINCT
+7. require exact nested metric equivalence including source/type semantics
+8. run a deterministic Incremental observation query
+9. prove every executed query stayed below 10,485,760 bytes
+10. retain QueryExecutionIds, timings, scan measurements, and result evidence
 ```
 
-Partition predicates are mandatory. Unbounded `SELECT *`, whole-table scans, and any attempt to relax the workgroup cutoff are outside this proof.
+Partition predicates were mandatory. No unbounded `SELECT *`, whole-table scan, or cutoff relaxation was used.
 
 ## Query A — partition-bounded cardinality and lineage — PASS
 
@@ -203,9 +203,7 @@ TotalExecutionTimeInMillis=1373
 QueryQueueTimeInMillis=97
 ```
 
-The query used both projected partition predicates and exact `source_batch_id` predicates for Bootstrap and Incremental.
-
-Athena returned:
+Athena returned exact Bootstrap and Incremental cardinality/lineage values:
 
 ```text
 incremental
@@ -225,15 +223,7 @@ min_last_modified_at=2026-01-03 04:15:50.813
 max_last_modified_at=2026-08-22 06:16:17.510
 ```
 
-After UTC normalization of the Athena timestamp representation, every Query A value equals the exact PyArrow reference derived before execution.
-
-The query scanned only:
-
-```text
-536071 / 10485760 bytes
-```
-
-which is approximately 5.1% of the workgroup cutoff and is well below the enforced guardrail despite the 36,240,684-byte Bootstrap physical object.
+After UTC normalization of Athena timestamp formatting, every value equals the exact PyArrow reference.
 
 Formal Query A gates:
 
@@ -242,9 +232,20 @@ NVD_2_3G_4J_CARDINALITY_QUERY=PASS
 NVD_2_3G_4J_CARDINALITY_EQUIVALENCE=PASS
 ```
 
-## Query B — deterministic Bootstrap nested-field equivalence
+## Query B — deterministic Bootstrap nested-field equivalence — PASS
 
-Because the permanent Bootstrap destination is byte-identical to the exact projection used in the earlier ordinary-Parquet proof, the deterministic observation remains:
+Initial Query B:
+
+```text
+QueryExecutionId=090e5eb0-eb74-4eeb-a950-d76683005c09
+State=SUCCEEDED
+DataScannedInBytes=3928022
+EngineExecutionTimeInMillis=1049
+TotalExecutionTimeInMillis=1196
+QueryQueueTimeInMillis=58
+```
+
+The deterministic Bootstrap observation was:
 
 ```text
 observation_id=b7bfa3f25e6cf5cce896e797804c39880ed6e2b72036468214b562eb19af454d
@@ -256,11 +257,101 @@ cvss_version=3.1
 cvss_base_score=6.2
 ```
 
-The permanent-table query must include both partition predicates and this exact observation id. The result must equal the known exact-Parquet reference, and `DataScannedInBytes` must remain below the workgroup cutoff.
+The first query returned two rows that appeared identical because its projection omitted the distinguishing CVSS metric fields. The proof did not use `DISTINCT` to hide this cardinality. Instead, the exact Bootstrap Parquet bytes were inspected directly.
 
-## Query C — deterministic Incremental observation equivalence
+PyArrow proved that the observation contains exactly two legitimate V31/3.1 metrics with equal numerical/vector values but different provenance semantics:
 
-The exact local deterministic Incremental observation for this proof is now fixed as:
+```text
+metric 1
+family=V31
+version=3.1
+source=nvd@nist.gov
+type=Primary
+vector_string=CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+base_score=6.2
+base_severity=MEDIUM
+exploitability_score=2.5
+impact_score=3.6
+
+metric 2
+family=V31
+version=3.1
+source=134c704f-9b21-4f2e-91b3-4a467353bcc0
+type=Secondary
+vector_string=CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+base_score=6.2
+base_severity=MEDIUM
+exploitability_score=2.5
+impact_score=3.6
+```
+
+A diagnostic exact-projection Query B2 then exposed `source`, `type`, `vector_string`, severity, exploitability, and impact fields instead of collapsing the two metrics conceptually.
+
+Query B2:
+
+```text
+QueryExecutionId=f15eae38-9bfa-4dab-8f46-ad77c6db5a5b
+State=SUCCEEDED
+DataScannedInBytes=3928022
+EngineExecutionTimeInMillis=1377
+TotalExecutionTimeInMillis=1677
+QueryQueueTimeInMillis=171
+```
+
+Athena returned exactly two rows:
+
+```text
+Secondary metric
+source=134c704f-9b21-4f2e-91b3-4a467353bcc0
+type=Secondary
+family=V31
+version=3.1
+vector_string=CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+base_score=6.2
+base_severity=MEDIUM
+exploitability_score=2.5
+impact_score=3.6
+
+Primary metric
+source=nvd@nist.gov
+type=Primary
+family=V31
+version=3.1
+vector_string=CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+base_score=6.2
+base_severity=MEDIUM
+exploitability_score=2.5
+impact_score=3.6
+```
+
+This matches the exact PyArrow cardinality and field values. The apparent duplicate in the original Query B is therefore valid source semantics, not accidental duplication in the permanent analytics projection.
+
+Formal Bootstrap nested gates:
+
+```text
+NVD_2_3G_4J_BOOTSTRAP_NESTED_QUERY=PASS
+NVD_2_3G_4J_BOOTSTRAP_NESTED_EQUIVALENCE=PASS
+```
+
+## Query C — deterministic Incremental observation equivalence — PASS
+
+QueryExecutionId:
+
+```text
+2fb0c702-cafe-4920-b28b-10f60ceb55f3
+```
+
+Execution evidence:
+
+```text
+State=SUCCEEDED
+DataScannedInBytes=43880
+EngineExecutionTimeInMillis=560
+TotalExecutionTimeInMillis=831
+QueryQueueTimeInMillis=99
+```
+
+Athena returned:
 
 ```text
 observation_id=0010b63dd03980e09202e28f657964880be24a67ed6e9d9939e1d1c260aa01e7
@@ -269,28 +360,58 @@ source_kind=incremental
 source_batch_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc
 incremental_update_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc
 vuln_status=Undergoing Analysis
-last_modified_at=2026-08-26 20:18:09.873000+00:00
+last_modified_at=2026-08-26 20:18:09.873
 ```
 
-Athena must return these exact values using both permanent projected partition predicates and the exact source-batch predicate.
+After timestamp normalization, every value equals the exact local Parquet reference.
 
-## Evidence to retain per Athena query
-
-For every executed query, retain:
+Formal Incremental observation gates:
 
 ```text
-QueryExecutionId
-State
-DataScannedInBytes
-EngineExecutionTimeInMillis
-TotalExecutionTimeInMillis
-QueryQueueTimeInMillis
-Result rows
+NVD_2_3G_4J_INCREMENTAL_OBSERVATION_QUERY=PASS
+NVD_2_3G_4J_INCREMENTAL_OBSERVATION_EQUIVALENCE=PASS
 ```
 
-The query result S3 objects are ordinary Athena output artifacts and are not part of NVD source authority.
+## Scan-limit aggregation — PASS
 
-## Gate state
+Every data query executed as part of the permanent proof stayed below the unchanged 10 MiB workgroup cutoff:
+
+```text
+Query A:  536071  / 10485760 bytes = PASS
+Query B:  3928022 / 10485760 bytes = PASS
+Query B2: 3928022 / 10485760 bytes = PASS
+Query C:  43880   / 10485760 bytes = PASS
+```
+
+The largest query consumed approximately 37.5% of the enforced cutoff. The 36,240,684-byte Bootstrap physical Parquet object therefore remained queryable through bounded columnar access without increasing the workgroup limit.
+
+Formal cost gate:
+
+```text
+NVD_2_3G_4J_SCAN_LIMIT=PASS
+```
+
+## Lineage conclusion
+
+The permanent analytical path preserves the intended authority chain:
+
+```text
+Bootstrap verified seed
+    -> exact-version Silver Parquet
+    -> exact-version analytics projection
+    -> projected Glue partition
+    -> bounded Athena result
+
+Incremental committed watermark
+    -> exact-version Silver Parquet
+    -> exact-version analytics projection
+    -> projected Glue partition
+    -> bounded Athena result
+```
+
+Athena is a downstream analytical surface only. Query result objects under `athena-results/` do not become NVD source authority and do not alter the authoritative watermark, Silver evidence, or analytics projection metadata.
+
+## Final gate state
 
 ```text
 NVD_2_3G_4J_WORKGROUP_CUTOFF=PASS
@@ -298,14 +419,16 @@ NVD_2_3G_4J_PERMANENT_GLUE_TABLE=PASS
 NVD_2_3G_4J_LOCAL_REFERENCE=PASS
 NVD_2_3G_4J_CARDINALITY_QUERY=PASS
 NVD_2_3G_4J_CARDINALITY_EQUIVALENCE=PASS
-NVD_2_3G_4J_BOOTSTRAP_NESTED_QUERY=PENDING
-NVD_2_3G_4J_BOOTSTRAP_NESTED_EQUIVALENCE=PENDING
-NVD_2_3G_4J_INCREMENTAL_OBSERVATION_QUERY=PENDING
-NVD_2_3G_4J_INCREMENTAL_OBSERVATION_EQUIVALENCE=PENDING
-NVD_2_3G_4J_SCAN_LIMIT=PENDING
-NVD_2_3G_4J=IN_PROGRESS
+NVD_2_3G_4J_BOOTSTRAP_NESTED_QUERY=PASS
+NVD_2_3G_4J_BOOTSTRAP_NESTED_EQUIVALENCE=PASS
+NVD_2_3G_4J_INCREMENTAL_OBSERVATION_QUERY=PASS
+NVD_2_3G_4J_INCREMENTAL_OBSERVATION_EQUIVALENCE=PASS
+NVD_2_3G_4J_SCAN_LIMIT=PASS
+NVD_2_3G_4J=COMPLETE
 ```
 
 ## Next boundary
 
-Complete Query B and Query C against the permanent table, then aggregate all three query scan measurements against the unchanged 10 MiB cutoff. After 4J is complete, Phase 2.3G.4K will close failure/replay/observability evidence for the permanent analytics path and prepare Phase 2.3G for final review/merge. 4J does not authorize GHSA ingestion or Phase 3 work.
+Phase 2.3G.4K may now close failure, replay, and observability evidence for the permanent analytics path and prepare Phase 2.3G for final review/merge.
+
+4J does not authorize GHSA ingestion or Phase 3 work.
