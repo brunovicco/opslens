@@ -5,15 +5,16 @@ This directory contains the public technical documentation for OpsLens.
 ```text
 docs/
 ├── architecture.md
+├── architecture.pt-br.md
 ├── adr/
 └── labs/
 ```
 
 ## Architecture
 
-[`architecture.md`](architecture.md) contains the accumulated architecture baseline through the NVD versioned Silver contract.
+[`architecture.md`](architecture.md) contains the accumulated English architecture baseline through the complete NVD Bronze, Silver, authoritative watermark, permanent analytics projection, Glue, and Athena path. [`architecture.pt-br.md`](architecture.pt-br.md) provides the equivalent Portuguese architecture document.
 
-The deployed Phase 2.3E/2.3F NVD runtime architecture and its real AWS evidence are captured in [`phase-2-nvd-authoritative-runtime-closeout.md`](labs/phase-2-nvd-authoritative-runtime-closeout.md). Together they document the currently implemented architecture without introducing speculative future-state components.
+The deployed Phase 2.3E/2.3F NVD runtime architecture and its real AWS evidence are captured in [`phase-2-nvd-authoritative-runtime-closeout.md`](labs/phase-2-nvd-authoritative-runtime-closeout.md). The Phase 2.3G permanent analytics implementation and evidence are captured by the NVD Glue/Athena lab series below.
 
 The current implementation includes AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze, incremental CVE API Bronze, versioned NVD Silver, deployed Incremental/Silver/Promotion runtimes, the authoritative watermark boundary, EventBridge Scheduler, runtime IAM separation, idempotency, observability, bounded failure recovery, and the permanent NVD Glue/Athena analytics projection path.
 
@@ -68,6 +69,10 @@ Phase 2:
 - [`phase-2-nvd-glue-athena-permanent-athena-proof.md`](labs/phase-2-nvd-glue-athena-permanent-athena-proof.md)
 - [`phase-2-nvd-glue-athena-failure-replay-observability-proof.md`](labs/phase-2-nvd-glue-athena-failure-replay-observability-proof.md)
 
+Cross-phase infrastructure closeout:
+
+- [`legacy-lambda-artifact-lifecycle-migration.md`](labs/legacy-lambda-artifact-lifecycle-migration.md) — migration of the remaining local-file Lambda deployment artifacts to immutable content-addressed S3 pins.
+
 ## Current milestone
 
 ```text
@@ -82,4 +87,6 @@ Phase 2.3D — NVD Versioned Silver Contract:  COMPLETE
 Phase 2.3E — NVD Silver AWS Runtime:         COMPLETE
 Phase 2.3F — NVD Authoritative Watermark:    COMPLETE
 Phase 2.3G — NVD Glue/Athena Analytics:      COMPLETE
+
+Legacy Lambda artifact lifecycle migration: IN PROGRESS
 ```
