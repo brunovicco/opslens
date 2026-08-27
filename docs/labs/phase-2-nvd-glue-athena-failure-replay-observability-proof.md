@@ -79,6 +79,34 @@ destination_sha256=3ad08d8e257128bc8334fc98ae0eade8d4808136b84df8a8ab8de64978bcc
 
 A successful replay must leave the current destination VersionId unchanged.
 
+## Observed replay proof — PASS
+
+The deployed runtime was synchronously invoked with the exact already-authorized 4I S3 event coordinates. All replay gates passed:
+
+```text
+NVD_2_3G_4K_FAILURE_QUEUE_BASELINE=PASS
+NVD_2_3G_4K_REPLAY_BASELINE=PASS
+NVD_2_3G_4K_REPLAY_RESULT=PASS
+NVD_2_3G_4K_REPLAY_VERSION_STABLE=PASS
+NVD_2_3G_4K_REPLAY_OBSERVABILITY=PASS
+```
+
+Observed completion telemetry:
+
+```text
+request_id=60b0b3a0-1656-4f68-b0e4-29d862bfd2b6
+status=already_projected
+source_kind=incremental
+source_batch_id=fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc
+projection_date=2026-08-26
+row_count=331
+destination_version_id=qPiaURVW17cIGxSqROAgUbqIqIq1L0Jl
+destination_sha256=3ad08d8e257128bc8334fc98ae0eade8d4808136b84df8a8ab8de64978bcc6f9
+xray_trace_id=1-6a8f81eb-648ea14f0a7a5a73733fd7c4
+```
+
+The destination VersionId remained unchanged after replay. The runtime therefore treated the existing deterministic object as a replay only after exact current-object verification; it did not create a replacement version.
+
 ## Controlled fail-closed probe
 
 The failure probe is intentionally rejected at the inbound parser before runtime dependency construction. It uses an asynchronous Lambda invocation with a syntactically JSON payload that contains an otherwise valid Bootstrap coordinate plus one extra field.
@@ -96,6 +124,57 @@ Therefore the extra probe field must cause `InvalidNvdAnalyticsProjectionInvocat
 The controlled probe must use `InvocationType=Event` so the deployed Lambda asynchronous retry policy and OnFailure destination are exercised. With `maximum_retry_attempts=2`, the expected runtime behavior is one initial failed attempt plus up to two retries before the event is delivered to the configured SQS OnFailure destination.
 
 The proof must not relax retry settings or change the failure destination.
+
+## Observed asynchronous failure delivery — PASS
+
+The queue was re-read immediately before the controlled probe and remained empty:
+
+```text
+ApproximateNumberOfMessages=0
+ApproximateNumberOfMessagesNotVisible=0
+ApproximateNumberOfMessagesDelayed=0
+```
+
+Probe identifier:
+
+```text
+nvd-4k-invalid-e452b86441fd44f38ff8691886dd871a
+```
+
+The intentionally invalid `bootstrap_seed` payload was accepted by Lambda asynchronously with:
+
+```text
+StatusCode=202
+NVD_2_3G_4K_INVALID_INVOCATION_ACCEPTED_ASYNC=PASS
+```
+
+After provider-managed retries, the configured SQS OnFailure destination received the matching event. Exact retained evidence:
+
+```text
+MessageId=0fd52397-308d-4349-9b69-912d56c22fff
+requestContext.requestId=d0c1cd4f-504c-4a2c-96e9-01e1bb638547
+requestContext.condition=RetriesExhausted
+requestContext.approximateInvokeCount=3
+responseContext.executedVersion=$LATEST
+responseContext.functionError=Unhandled
+responsePayload.errorType=InvalidNvdAnalyticsProjectionInvocationError
+```
+
+The final error message was:
+
+```text
+NVD analytics bootstrap_seed must contain exactly mode, silver_complete_key, and silver_complete_version_id.
+```
+
+The OnFailure `requestPayload` retained the unique probe id and exact Bootstrap coordinates, proving that the received message corresponds to this controlled test rather than an unrelated runtime failure.
+
+Formal async-destination gate:
+
+```text
+NVD_2_3G_4K_ASYNC_ON_FAILURE=PASS
+```
+
+Operational note: while polling before the OnFailure message existed, AWS CLI returned no message payload and the local helper attempted to decode an empty file, producing `JSONDecodeError`. This was a polling-script issue only; Lambda eventually delivered the correlated OnFailure message and the retained provider evidence above is valid.
 
 ## Failure evidence to retain
 
@@ -125,15 +204,15 @@ NvdAnalyticsProjectionInvalidInvocation
 NvdAnalyticsProjectionFailure
 ```
 
-The replay proof must retain start/completion logs with the same request id and `status=already_projected`.
+The replay proof retained start/completion telemetry with the same request id and `status=already_projected`.
 
-The controlled invalid invocation must retain at least the final `NVD analytics projection invocation rejected` record corresponding to the OnFailure delivery context. If the retry attempts are visible in the same query window, retain them as additional evidence rather than treating their exact count as a correctness dependency.
+The controlled invalid invocation must still retain the final `NVD analytics projection invocation rejected` record corresponding to `request_id=d0c1cd4f-504c-4a2c-96e9-01e1bb638547`. The negative-path log gate is intentionally separate from the already-proven SQS OnFailure delivery.
 
 4I already proved event-driven success correlation through one Lambda request id and X-Ray trace. 4K complements that positive path with replay and negative-path evidence; it does not need to manufacture a new successful authority event.
 
 ## Queue cleanup
 
-Before the controlled failure probe, the OnFailure queue must be confirmed empty.
+Before the controlled failure probe, the OnFailure queue was confirmed empty.
 
 After receiving and validating the controlled failure message, delete only that exact received message by its receipt handle. Then re-read the queue attributes until the visible, not-visible, and delayed counts return to zero.
 
@@ -156,14 +235,14 @@ The current authoritative watermark may legitimately advance because its schedul
 ## Gate state
 
 ```text
-NVD_2_3G_4K_REPLAY_BASELINE=PENDING
-NVD_2_3G_4K_REPLAY_RESULT=PENDING
-NVD_2_3G_4K_REPLAY_VERSION_STABLE=PENDING
-NVD_2_3G_4K_REPLAY_OBSERVABILITY=PENDING
-NVD_2_3G_4K_FAILURE_QUEUE_BASELINE=PENDING
-NVD_2_3G_4K_INVALID_INVOCATION_ACCEPTED_ASYNC=PENDING
+NVD_2_3G_4K_REPLAY_BASELINE=PASS
+NVD_2_3G_4K_REPLAY_RESULT=PASS
+NVD_2_3G_4K_REPLAY_VERSION_STABLE=PASS
+NVD_2_3G_4K_REPLAY_OBSERVABILITY=PASS
+NVD_2_3G_4K_FAILURE_QUEUE_BASELINE=PASS
+NVD_2_3G_4K_INVALID_INVOCATION_ACCEPTED_ASYNC=PASS
 NVD_2_3G_4K_INVALID_INVOCATION_FAIL_CLOSED=PENDING
-NVD_2_3G_4K_ASYNC_ON_FAILURE=PENDING
+NVD_2_3G_4K_ASYNC_ON_FAILURE=PASS
 NVD_2_3G_4K_FAILURE_OBSERVABILITY=PENDING
 NVD_2_3G_4K_QUEUE_CLEANUP=PENDING
 NVD_2_3G_4K_AUTHORITY_INVARIANTS=PENDING
