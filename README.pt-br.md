@@ -4,7 +4,7 @@
 
 # OpsLens
 
-### Inteligência de Cloud e Software Supply Chain na AWS
+### Inteligência Agentic de Cloud e Software Supply Chain na AWS
 
 **Threat Intelligence · Software Supply Chain · Evidência Determinística · AWS Serverless · Automação de Segurança**
 
@@ -16,7 +16,9 @@ Ela foi projetada para responder:
 
 > Considerando o software que eu realmente utilizo, quais vulnerabilidades representam risco material, por quê e o que devo fazer a respeito?
 
-O projeto constrói primeiro evidência determinística, correlação, limites de segurança, observabilidade e recuperação de falhas. Raciocínio generativo e agentic entram depois dessas fundações.
+O projeto constrói primeiro evidência determinística, proveniência, correlação, limites de least privilege, observabilidade, recuperação de falhas e controles de custo. Raciocínio generativo e agentic entram depois dessas fundações.
+
+> **Agents reason. Code verifies evidence.**
 
 ## Status
 
@@ -26,26 +28,16 @@ O projeto constrói primeiro evidência determinística, correlação, limites d
 | Phase 1 | EPSS Vertical Slice | ✅ Concluída |
 | Phase 2.1 | CISA KEV Bronze Ingestion | ✅ Concluída |
 | Phase 2.2 | CISA KEV Silver + Analytics | ✅ Concluída |
-| Phase 2.3 | NVD / CVE | 🚧 Em andamento |
+| Phase 2.3A–2.3G | NVD / CVE Bronze, Silver, Watermark, Glue + Athena | ✅ Concluída |
+| Phase 2.4 | GitHub Security Advisories | ⏳ Não iniciada |
+| Phase 2.5 | Expansão histórica do EPSS | ⏳ Não iniciada |
+| Phase 3 | Raciocínio com IA / capacidades agentic | ⏳ Não iniciada |
 
-A Phase 2.2 agora fornece o caminho completo de evidência CISA KEV:
-
-- evidência Bronze imutável da fonte;
-- processamento Bronze-to-Silver pela versão exata do S3;
-- normalização determinística;
-- persistência Silver Parquet tipada;
-- processamento event-driven idempotente;
-- recuperação assíncrona de falhas com limites explícitos;
-- registro no AWS Glue Data Catalog;
-- partition projection `snapshot_date` do tipo `injected`;
-- consultas determinísticas no Amazon Athena;
-- cross-check independente entre Parquet e Athena;
-- enforcement explícito da dimensão temporal;
-- evidência medida de scan e latência no Athena.
-
-A Phase 2.3 agora possui o contrato da fonte NVD, o Bootstrap Bronze imutável dos yearly feeds e o contrato Bronze incremental da CVE API. O próximo incremento é o contrato Silver versionado do NVD.
+O marco atual fecha o caminho determinístico completo de evidência do NVD: ingestão imutável da fonte, Silver versionado, promoção do watermark autoritativo, projeção analítica permanente, AWS Glue e consultas Athena com custo limitado.
 
 ## Arquitetura atual
+
+O OpsLens possui hoje três caminhos implementados de threat intelligence.
 
 ### FIRST EPSS
 
@@ -60,6 +52,7 @@ EPSS Ingestion Lambda
     |
     v
 S3 Bronze
+bronze/epss/snapshot_date=YYYY-MM-DD/epss_scores.csv.gz
     |
     v
 S3 ObjectCreated
@@ -69,9 +62,11 @@ EPSS Silver Lambda
     |
     v
 S3 Silver / Parquet
+silver/epss/snapshot_date=YYYY-MM-DD/part-00000.parquet
     |
     v
 AWS Glue Data Catalog
+opslens_dev.epss_scores
     |
     v
 Amazon Athena
@@ -88,12 +83,14 @@ EventBridge Scheduler
     v
 KEV Ingestion Lambda
     |
-    +--> validação da fonte
+    +--> fetch HTTP limitado
+    +--> validação do contrato da fonte
     +--> proveniência SHA-256
-    +--> PutObject condicional
+    +--> S3 PutObject condicional
     |
     v
 S3 Bronze
+bronze/kev/snapshot_date=YYYY-MM-DD/known_exploited_vulnerabilities.json
     |
     v
 S3 ObjectCreated:Put
@@ -101,17 +98,15 @@ S3 ObjectCreated:Put
     v
 KEV Silver Lambda
     |
-    +--> leitura pelo VersionId exato
-    +--> verificação evento / evidência S3
+    +--> leitura por VersionId exato
+    +--> verificação evento/S3
     +--> normalização determinística
     +--> serialização Parquet tipada
     +--> PutObject Silver condicional
     |
     v
 S3 Silver / Parquet
-    |
-    +--> entrega duplicada: already_exists
-    +--> falha assíncrona esgotada: SQS OnFailure
+silver/kev/snapshot_date=YYYY-MM-DD/part-00000.parquet
     |
     v
 AWS Glue Data Catalog
@@ -119,25 +114,78 @@ opslens_dev.kev_entries
     |
     v
 Amazon Athena
-opslens-dev
 ```
 
-A notification do S3 está restrita ao prefixo Bronze do KEV e ao nome de arquivo canônico. O KEV Silver grava em `silver/kev/`, evitando invocação recursiva.
+### NVD CVE
+
+```text
+NVD yearly feeds                  NVD CVE API 2.0
+       |                                  |
+       v                                  v
+Bootstrap ingestion                Incremental ingestion
+       |                                  |
+       +-------------> S3 Bronze <--------+
+                       evidência imutável
+                              |
+                              v
+                     NVD Silver runtime
+                              |
+                              v
+                Silver versionado / Parquet
+                              |
+                              v
+                  evidência Silver COMPLETE
+                              |
+                              v
+                elegibilidade para promoção
+                              |
+                              v
+                  watermark autoritativo
+                              |
+                              v
+            NVD Analytics Projector Lambda
+                              |
+                              v
+               namespace analítico limpo
+                              |
+                              v
+                   AWS Glue Data Catalog
+                 opslens_dev.nvd_cve_versions
+                              |
+                              v
+                       Amazon Athena
+```
+
+O boundary de autoridade do NVD é explícito:
+
+```text
+bronze_complete
+    !=
+silver_complete
+    !=
+watermark_committed
+    -> analytics_eligible
+    -> analytics_projected
+```
+
+Analytics é estritamente downstream. O projector analítico não pode avançar o watermark, alterar a autoridade Silver, listar o bucket, deletar objetos nem escrever partições no Glue.
 
 ## Princípios
 
 - Evidência e correlação determinísticas primeiro; raciocínio generativo depois.
 - Agents reason. Code verifies evidence.
-- Nem toda pergunta é um problema de RAG.
-- Código de repositórios de terceiros não é executado durante análise.
-- Risco de repositório e exposição em runtime são conceitos diferentes.
-- A evidência bruta da fonte é preservada antes de transformações.
-- Resultados derivados precisam ser reproduzíveis.
+- A evidência bruta da fonte é preservada antes da transformação.
+- VersionIds exatos do S3 fazem parte do modelo de evidência.
+- Resultados analíticos derivados precisam permanecer reproduzíveis.
 - Entrega duplicada é esperada e deve ser segura.
+- Falhar fechado em divergências de evidência, proveniência, schema ou autoridade.
+- Risco de repositório e exposição em runtime são conceitos diferentes.
+- Código de repositórios de terceiros nunca é executado durante análise.
 - IAM least privilege é requisito arquitetural.
 - Identidades de deployment e runtime permanecem separadas.
-- Custo, observabilidade e recuperação de falhas fazem parte do desenho.
-- Serviços AWS entram apenas quando resolvem um requisito concreto.
+- Custo, observabilidade e recuperação de falhas são preocupações arquiteturais.
+- Serviços AWS entram somente quando resolvem um requisito concreto.
+- Planejamento em linguagem natural nunca recebe autoridade SQL irrestrita.
 
 ## Fundação AWS
 
@@ -152,109 +200,83 @@ Observability:           CloudWatch + X-Ray
 Analytics:               AWS Glue + Amazon Athena
 ```
 
-O GitHub Actions não armazena access keys persistentes da AWS.
+O GitHub Actions não armazena access keys persistentes da AWS. A identidade de deployment é separada das identidades de runtime de ingestão, transformação, scheduler, promotion e analytics.
 
-A role de deployment do GitHub é assumida via OIDC e sua relação de confiança é restrita ao boundary de deployment do repositório.
+## Destaques da implementação NVD
 
-## Data lake
+### Bronze imutável
 
-### EPSS Bronze
-
-```text
-bronze/epss/snapshot_date=YYYY-MM-DD/epss_scores.csv.gz
-```
-
-Propriedades:
-
-- artefato comprimido original do FIRST preservado;
-- chave determinística;
-- proveniência SHA-256;
-- metadados da fonte;
-- versionamento S3;
-- escritas condicionais.
-
-### EPSS Silver
+Os yearly feeds do Bootstrap preservam os bytes exatos do gzip e META do NVD sob revisões determinísticas da fonte:
 
 ```text
-silver/epss/snapshot_date=YYYY-MM-DD/part-00000.parquet
+bronze/nvd/cve/bootstrap/
+  feed_year=YYYY/
+    feed_revision=<source-revision>/
+      nvdcve-2.0-YYYY.json.gz
+      nvdcve-2.0-YYYY.meta
+      manifest.json
 ```
 
-Schema:
+As execuções incrementais da CVE API preservam páginas exatas da resposta e um manifest COMPLETE sob uma identidade determinística de update:
 
 ```text
-cve             string
-epss            double
-percentile      double
-model_version   string
-score_timestamp timestamp
-source          string
-source_sha256   string
+bronze/nvd/cve/updates/
+  update_id=<deterministic-window-identity>/
+    page_start=000000/response.json
+    page_start=000500/response.json
+    ...
+    manifest.json
 ```
 
-Partição:
+### Silver versionado
+
+O contrato Silver do NVD separa:
 
 ```text
-snapshot_date string
+cve_id                  identidade da vulnerabilidade
+observed_cve_version_id identidade do conteúdo exato da CVE na fonte
+observation_id          identidade da ocorrência Bronze imutável
 ```
 
-O Silver é determinístico e serializado em Parquet.
+O dataset Silver v1 preserva campos centrais da CVE, descrições, tags, evidência CWE, referências, observações CVSS suportadas, JSON canônico das métricas, árvores de configuração CPE e proveniência Bronze exata.
 
-### CISA KEV Bronze
+Contrato físico:
 
 ```text
-bronze/kev/snapshot_date=YYYY-MM-DD/known_exploited_vulnerabilities.json
+dataset:           nvd_cve_versions
+schema_version:    1
+Parquet format:    1.0
+data page version: 1.0
+compression:       snappy
+row group size:    5000
 ```
 
-`snapshot_date` representa a data UTC em que o OpsLens observou a fonte e é diferente de `dateReleased` do catálogo e `dateAdded` no nível da vulnerabilidade.
+### Watermark autoritativo
 
-A ingestão valida sucesso HTTP, limite de tamanho, JSON UTF-8, contrato do objeto de topo, `catalogVersion`, `dateReleased`, `count`, `vulnerabilities` e `count == len(vulnerabilities)`.
+Concluir Bronze incremental não avança a autoridade. Um novo boundary comprometido só é publicado depois da verificação da evidência Silver COMPLETE exata e do sucesso da promoção.
 
-Campos adicionais desconhecidos da fonte continuam permitidos, e os bytes exatos da fonte são preservados.
+Isso impede que uma janela incremental parcialmente transformada ou não verificável se torne autoritativa.
 
-### CISA KEV Silver
+### Projeção analítica permanente
+
+O analytics projector consome autoridade committed exata e executa uma cópia S3 condicional por versão para um namespace append-only e limpo:
 
 ```text
-silver/kev/snapshot_date=YYYY-MM-DD/part-00000.parquet
+analytics/nvd/cve/schema_version=1/
+  source_kind=<bootstrap|incremental>/
+  projection_date=YYYY-MM-DD/
+    <deterministic-batch-file>.parquet
 ```
 
-Colunas físicas do Parquet:
+A semântica de replay é estrita: `If-None-Match: *` só pode resultar em `already_projected` depois que o objeto de destino existente é verificado novamente contra VersionId, SHA-256, tamanho, metadata e assinatura Parquet da fonte autoritativa.
 
-```text
-cve
-vendor_project
-product
-vulnerability_name
-date_added
-short_description
-required_action
-due_date
-known_ransomware_campaign_use
-notes
-cwes
-catalog_version
-catalog_date_released
-source
-source_sha256
-retrieved_at
-```
+O runtime não possui `s3:ListBucket`, permissões de delete, `PutObject` no watermark nem autoridade de mutação de partições no Glue.
 
-Partição:
+## Evidências validadas
 
-```text
-snapshot_date string
-```
+### EPSS
 
-A transformação Silver:
-
-- lê a versão exata do objeto Bronze referenciada pelo evento S3;
-- cruza `VersionId`, ETag, tamanho e metadados de proveniência do Bronze;
-- falha de forma fechada em divergências de transporte ou proveniência;
-- rejeita CVEs duplicadas e valores de ransomware não suportados;
-- preserva a ordem determinística da fonte;
-- grava Parquet com schema Arrow explícito;
-- usa persistência condicional para impedir que uma entrega duplicada crie uma segunda versão Silver.
-
-## Caminho analítico EPSS validado
+Snapshot validado:
 
 ```text
 snapshot_date: 2026-08-16
@@ -263,196 +285,111 @@ source rows:   360399
 EPSS > 0.7:    2457
 ```
 
-Pergunta estruturada suportada:
-
-> Quais CVEs possuem EPSS maior que 0,7 em um snapshot específico?
-
-```sql
-SELECT
-    cve,
-    epss,
-    percentile
-FROM epss_scores
-WHERE snapshot_date = '2026-08-16'
-  AND epss > 0.7
-ORDER BY epss DESC, cve;
-```
-
-Execução medida:
+Execução observada no Athena:
 
 ```text
-Athena engine:          version 3
-data scanned:           6084428 bytes
-total execution:        1501 ms
-estimated query cost:   USD 0.00005000
+data scanned:    6084428 bytes
+total execution: 1501 ms
 ```
 
-O resultado foi validado independentemente contra o Parquet Silver e contra a fonte FIRST Bronze original.
+O resultado foi validado independentemente contra o Parquet Silver e contra a fonte FIRST original.
 
-## Pipeline CISA KEV validado
+### CISA KEV
 
-Snapshot Bronze validado:
+Snapshot validado:
 
 ```text
 snapshot_date:  2026-08-17
 catalogVersion: 2026.08.14
-records:         1665
-source bytes:    1583171
-SHA-256:         52a5fe9ab6c3379298707559b5df54fb50daac45d27ea74e85d45f9632b59a79
+records:        1665
+source bytes:   1583171
+SHA-256:        52a5fe9ab6c3379298707559b5df54fb50daac45d27ea74e85d45f9632b59a79
 ```
 
 Artefato Silver validado:
 
 ```text
-key:             silver/kev/snapshot_date=2026-08-17/part-00000.parquet
-rows:            1665
-columns:         16
-size:            257331 bytes
-schema version:  1
-Known ransomware:   349
-Unknown ransomware: 1316
-listas CWE vazias:   171
+rows:           1665
+columns:        16
+size:           257331 bytes
+schema version: 1
 ```
 
-O objeto Silver foi baixado e inspecionado independentemente com PyArrow.
+### Projeção NVD Bootstrap
 
-Um replay do mesmo evento Bronze retornou `already_exists`, enquanto o objeto versionado do S3 permaneceu com uma única versão e o mesmo `VersionId`.
-
-## Caminho analítico CISA KEV validado
-
-Snapshot validado:
+Projeção permanente Bootstrap validada:
 
 ```text
-snapshot_date: 2026-08-17
-rows:          1665
-table:         opslens_dev.kev_entries
-workgroup:     opslens-dev
+rows:                  48293
+destination VersionId: NzP5XmGl6yeMoQvmMv4JgCmixd_5N.ba
+SHA-256:               4ea6e3ae1d73908d8fb4f953dcf181802bf111001bcdb7f3695e4773fe854541
+replay:                already_projected com VersionId inalterado
 ```
 
-Pergunta estruturada suportada:
+### Projeção NVD Incremental
 
-> A CVE X estava presente no catálogo CISA KEV em um snapshot específico?
-
-A CVE de validação foi selecionada diretamente do artefato Silver Parquet persistido, e não de memória:
+Projeção incremental event-driven validada:
 
 ```text
-CVE-2002-0367
-vendor_project: Microsoft
-product: Windows
-date_added: 2022-03-03
-due_date: 2022-03-24
-catalog_version: 2026.08.14
-source: cisa-kev
-source_sha256: 52a5fe9ab6c3379298707559b5df54fb50daac45d27ea74e85d45f9632b59a79
+committed_through_at:   2026-08-26T21:25:00Z
+update_id:              fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc
+rows:                   331
+destination VersionId:  qPiaURVW17cIGxSqROAgUbqIqIq1L0Jl
+SHA-256:                3ad08d8e257128bc8334fc98ae0eade8d4808136b84df8a8ab8de64978bcc6f9
 ```
 
-O Athena retornou a mesma evidência do artefato Parquet persistido.
+### Prova NVD no Athena
 
-Execuções observadas no Athena:
+As queries permanentes do Athena reproduziram a evidência local exata do Parquet e permaneceram abaixo do cutoff do workgroup dev de `10.485.760` bytes:
 
-| Validação | Dados escaneados | Tempo total |
-| --- | ---: | ---: |
-| Contagem de registros | 0 bytes | 744 ms |
-| Membership da CVE | 24.911 bytes | 621 ms |
-| Arrays CWE vazios | 3.002 bytes | 842 ms |
-| Compatibilidade de timestamps | 13.826 bytes | 945 ms |
+| Query | Objetivo | Dados escaneados |
+| --- | --- | ---: |
+| A | Cardinalidade / lineage Bootstrap + Incremental | 536.071 bytes |
+| B | Amostra nested CVSS do Bootstrap | 3.928.022 bytes |
+| B2 | Equivalência exata de source/type CVSS | 3.928.022 bytes |
+| C | Observação Incremental determinística | 43.880 bytes |
 
-A consulta de contagem retornou `1665`, a validação de CWE retornou `171` arrays vazios e os campos `catalog_date_released` e `retrieved_at` foram lidos com sucesso pelo Athena engine version 3.
+A amostra CVSS do Bootstrap continha corretamente duas observações V3.1 distintas com o mesmo vetor numérico: evidência NVD `Primary` e CNA `Secondary`. A amostra Incremental reproduziu exatamente observation, batch, status e timestamp esperados.
 
-A tabela Glue usa partition projection `injected` para `snapshot_date`. Uma consulta que omitiu intencionalmente `snapshot_date` falhou com `CONSTRAINT_VIOLATION`, exigindo evidência temporal explícita em vez de tratar implicitamente uma versão não informada como "mais recente".
+## Recuperação de falhas e observabilidade
 
-## Recuperação de falhas
+Os boundaries de runtime usam logs estruturados no CloudWatch, métricas CloudWatch, AWS X-Ray, retries assíncronos limitados e filas SQS OnFailure específicas por fonte.
 
-EPSS Silver, ingestão CISA KEV e CISA KEV Silver usam processamento assíncrono limitado da Lambda com `maximum event age = 3600`, `retry attempts = 2` e destinations SQS OnFailure específicas.
-
-Uma falha controlada da ingestão KEV validou três tentativas, `KevSourceUnavailableError`, `RetriesExhausted`, registro SQS enriquecido e recuperação após a restauração da fonte canônica.
-
-Um segundo laboratório controlado, específico do KEV Silver, enviou um evento válido para o parser com ETag propositalmente incorreto. O runtime:
-
-- leu o `VersionId` Bronze exato;
-- detectou a divergência entre o evento e a evidência retornada pelo S3;
-- lançou `KevBronzeEvidenceMismatchError`;
-- repetiu até `approximateInvokeCount = 3`;
-- produziu registro SQS OnFailure com `condition = RetriesExhausted`;
-- não criou nenhuma versão adicional do objeto Silver.
-
-Isso valida a regra fail-closed: metadados do evento S3 são tratados como evidência a verificar, e não como autoridade confiável.
-
-## Agendamento
-
-A ingestão CISA KEV é executada por EventBridge Scheduler:
+O runtime analítico do NVD foi validado com:
 
 ```text
-group:           opslens-dev-kev
-schedule:        opslens-dev-kev-daily
-expression:      cron(30 23 * * ? *)
-timezone:        UTC
-flexible window: OFF
+replay status:               already_projected
+replay destination version:  inalterado
+invalid async invocation:    aceita com StatusCode 202
+retry condition:             RetriesExhausted
+approximate invoke count:    3
+function error:              Unhandled
+error type:                  InvalidNvdAnalyticsProjectionInvocationError
+failure queue após cleanup:  0 / 0 / 0
 ```
 
-Os retries de entrega do Scheduler são limitados a 3600 segundos e 2 tentativas.
-
-A execution role do Scheduler pode executar somente `lambda:InvokeFunction` na função `opslens-dev-kev-ingestion`.
-
-Retries do Scheduler e retries do processamento assíncrono da Lambda são boundaries de falha diferentes.
+A invocação inválida foi rejeitada antes da execução da projeção, provando fail-closed no boundary de entrada.
 
 ## Limites de segurança
 
 ```text
-Human bootstrap
-    |
-    v
-AWS IAM Identity Center
+Administração humana
+    -> AWS IAM Identity Center
 
 GitHub Actions
-    |
-   OIDC
-    |
-    v
-OpsLensGitHubDeployRole
-    |
-    v
-Infraestrutura gerenciada por Terraform
+    -> OIDC
+    -> OpsLensGitHubDeployRole
+    -> deployment gerenciado por Terraform
 
-Runtime identities
-    |
-    +-- EPSS ingestion role
-    +-- EPSS Silver role
-    +-- EPSS Scheduler role
-    +-- KEV ingestion role
-    +-- KEV Silver role
-    +-- KEV Scheduler role
+Identidades de runtime
+    -> roles de ingestão específicas por fonte
+    -> roles Silver específicas por fonte
+    -> roles de execução de Scheduler
+    -> role de NVD promotion
+    -> role do NVD analytics projector
 ```
 
-A role do KEV Silver é intencionalmente restrita:
-
-```text
-s3:GetObjectVersion -> bronze/kev/*
-s3:PutObject        -> silver/kev/*
-sqs:SendMessage     -> fila de falhas KEV Silver
-CloudWatch Logs     -> log group KEV Silver
-X-Ray telemetry     -> APIs de tracing
-```
-
-Ela não possui `s3:GetObject` genérico, `s3:ListBucket`, permissões de delete ou acesso amplo ao SQS.
-
-O S3 pode invocar a Lambda KEV Silver somente a partir do data bucket e da conta AWS esperados.
-
-## Observabilidade
-
-O runtime utiliza AWS Lambda Powertools, logs estruturados no CloudWatch, custom CloudWatch Metrics, métricas da Lambda, métricas do Scheduler e AWS X-Ray.
-
-A primeira transformação KEV Silver real observou:
-
-```text
-configured memory:  1024 MB
-max memory used:     176 MB
-duration:             795.365 ms
-billed duration:      2112 ms
-rows transformed:     1665
-```
-
-Um replay idempotente warm observou máximo de 194 MB. O right-sizing permanece deliberadamente adiado até existir mais evidência de execuções naturais.
+O NVD analytics projector é deliberadamente mais restrito que o caminho upstream de autoridade. Ele pode ler evidência committed exata e criar objetos analíticos determinísticos, mas não pode alterar o watermark autoritativo nem o estado Silver.
 
 ## Disciplina de custos
 
@@ -460,16 +397,32 @@ A arquitetura evita serviços que ainda não resolvem um requisito demonstrado.
 
 Exemplos atuais:
 
-- nenhum Glue crawler para EPSS ou CISA KEV;
-- nenhum Step Functions nos caminhos atuais de ingestão/transformação;
+- nenhum Glue crawler para EPSS, KEV ou NVD;
+- nenhum requisito de Step Functions no data plane atual;
 - nenhum DynamoDB para idempotência;
 - nenhum requisito de Iceberg neste estágio;
-- nenhum Scheduler DLQ para KEV neste estágio;
-- os recursos Glue/Athena do KEV foram introduzidos somente depois da comprovação do runtime Bronze-to-Silver.
+- nenhum caminho irrestrito de text-to-SQL;
+- o workgroup de desenvolvimento do Athena aplica cutoff de 10 MiB por query.
 
-O workgroup de desenvolvimento do Athena utiliza cutoff de 10 MiB por query.
+## Quality gates
 
-O laboratório controlado de falha do KEV Silver, com três tentativas, consumiu aproximadamente `2.283 GB-s` de compute Lambda antes dos efeitos do free tier, mantendo o workload de desenvolvimento desprezível frente ao target de custo do projeto.
+O repositório utiliza:
+
+```text
+Ruff
+Pyright strict
+Pytest
+Terraform fmt / validate
+TFLint
+Checkov
+GitHub Actions
+Terraform plan canônico antes de apply
+verificações de convergência após deployment
+```
+
+O closeout da Phase 2.3G passou Ruff, Pyright strict, a suíte completa de Pytest, Terraform CI, convergência do Bootstrap Terraform e convergência dos recursos da Phase 2.3G.
+
+Permanece uma exceção de convergência preexistente no ambiente dev para hashes de artefatos Lambda legados de EPSS / KEV / NVD Bootstrap. Esses boundaries legados de lifecycle de artefato são acompanhados separadamente do milestone concluído de analytics do NVD.
 
 ## Estrutura do repositório
 
@@ -480,7 +433,8 @@ O laboratório controlado de falha do KEV Silver, com três tentativas, consumiu
 │   ├── adr/
 │   ├── labs/
 │   ├── README.md
-│   └── architecture.md
+│   ├── architecture.md
+│   └── architecture.pt-br.md
 ├── infra/
 │   ├── bootstrap/
 │   └── environments/dev/
@@ -494,74 +448,27 @@ O laboratório controlado de falha do KEV Silver, com três tentativas, consumiu
 └── uv.lock
 ```
 
-## Quality gates
-
-O repositório utiliza Ruff, Google-style docstrings, Pyright strict, Pytest, Terraform fmt e validate, TFLint, Checkov, GitHub Actions, plans Terraform canônicos antes de apply e plans `No changes` após deployment.
-
 ## Documentação
 
-- [`docs/architecture.md`](docs/architecture.md)
-- [`docs/adr/README.md`](docs/adr/README.md)
-- [`docs/labs/phase-0-iam-oidc-failure.md`](docs/labs/phase-0-iam-oidc-failure.md)
-- [`docs/labs/phase-0-cloudwatch-authorization-failure.md`](docs/labs/phase-0-cloudwatch-authorization-failure.md)
-- [`docs/labs/phase-1-epss-athena-query.md`](docs/labs/phase-1-epss-athena-query.md)
-- [`docs/labs/phase-2-kev-async-failure-recovery.md`](docs/labs/phase-2-kev-async-failure-recovery.md)
-- [`docs/labs/phase-2-kev-silver-runtime.md`](docs/labs/phase-2-kev-silver-runtime.md)
-- [`docs/labs/phase-2-kev-athena-query.md`](docs/labs/phase-2-kev-athena-query.md)
-- [`docs/README.md`](docs/README.md)
+- [Arquitetura — Português](docs/architecture.pt-br.md)
+- [Architecture — English](docs/architecture.md)
+- [Índice de ADRs](docs/adr/README.md)
+- [Índice de labs / evidências](docs/README.md)
 
 ## Roadmap
 
 ```text
-Phase 2.1  CISA KEV Bronze ingestion                         CONCLUÍDA
-Phase 2.2  CISA KEV Silver runtime                          CONCLUÍDO
-Phase 2.2  CISA KEV Glue + Athena                           CONCLUÍDO
-Phase 2.3  NVD / CVE                                        EM ANDAMENTO — 2.3A/2.3B/2.3C concluídos; 2.3D próximo
-Phase 2.4  GitHub Security Advisories                       NÃO INICIADO
-Phase 2.5  histórico EPSS                                   NÃO INICIADO
+Phase 0    AWS Foundation                                      COMPLETE
+Phase 1    EPSS Vertical Slice                                 COMPLETE
+Phase 2.1  CISA KEV Bronze ingestion                          COMPLETE
+Phase 2.2  CISA KEV Silver + Glue + Athena                    COMPLETE
+Phase 2.3  NVD / CVE Bronze + Silver + Watermark + Analytics  COMPLETE
+Phase 2.4  GitHub Security Advisories                          NOT STARTED
+Phase 2.5  Historical EPSS                                     NOT STARTED
+Phase 3    AI reasoning / agentic capabilities                 NOT STARTED
 ```
 
-A arquitetura comprovada do EPSS é reutilizada quando fizer sentido, mas não é tratada como template obrigatório para toda fonte.
-
-## Semântica do snapshot diário do KEV
-
-O contrato Bronze da Phase 2.1 preserva uma observação imutável por `snapshot_date` UTC.
-
-A primeira escrita bem-sucedida do dia se torna a evidência Bronze canônica:
-
-```text
-primeira observação bem-sucedida
-        |
-        v
-PutObject condicional
-If-None-Match: "*"
-        |
-        v
-objeto canônico imutável
-```
-
-Uma atualização posterior da CISA observada na mesma data UTC resolve para a mesma chave e produz o resultado esperado `already_exists`.
-
-A validação agendada de `2026-08-17` demonstrou diretamente esse comportamento:
-
-```text
-observação às 03:52 UTC
-catalogVersion: 2026.08.14
-records:        1665
-
-observação às 23:30 UTC
-catalogVersion: 2026.08.17
-records:        1666
-
-Bronze canônico após as duas observações
-catalogVersion: 2026.08.14
-records:        1665
-versões S3:     1
-```
-
-Portanto, `snapshot_date` significa **a data UTC em que o OpsLens preservou pela primeira vez a fonte com sucesso**, e não necessariamente a última revisão publicada pela CISA naquele dia.
-
-Capturar revisões intradiárias da fonte está intencionalmente fora do contrato da Phase 2.1.
+Os padrões comprovados são reutilizados quando apropriado, mas nenhuma fonte é forçada a seguir um desenho genérico de ingestão quando suas semânticas são diferentes.
 
 ## Licença
 
