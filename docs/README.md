@@ -18,7 +18,7 @@ The deployed Phase 2.3E/2.3F NVD runtime architecture and its real AWS evidence 
 
 The current implementation includes AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze, incremental CVE API Bronze, versioned NVD Silver, deployed Incremental/Silver/Promotion runtimes, the authoritative watermark boundary, EventBridge Scheduler, runtime IAM separation, idempotency, observability, bounded failure recovery, the permanent NVD Glue/Athena analytics projection path, and immutable content-addressed deployment artifacts for all deployed Lambda runtimes.
 
-Phase 2.4A completed the GitHub Security Advisory source/synchronization contract. Phase 2.4B is now freezing deterministic versioned advisory, collections, and one-to-many package/range/fix Silver semantics before any GHSA AWS runtime is created.
+Phase 2.4A completed the GitHub Security Advisory source/synchronization contract. Phase 2.4B is complete and freezes deterministic GHSA observed-content identity, reviewed-only core fields, collections, one-to-many package/range/fix evidence, nested Arrow schema v1, logical record-set hashing, and deterministic Parquet v1 serialization. No GHSA AWS runtime has yet been introduced.
 
 ## Architecture Decision Records
 
@@ -27,6 +27,7 @@ Phase 2.4A completed the GitHub Security Advisory source/synchronization contrac
 - [`0003 — AWS regional strategy`](adr/0003-aws-region-strategy.md)
 - [`0004 — NVD ingestion and vulnerability versioning strategy`](adr/0004-nvd-ingestion-and-versioning-strategy.md)
 - [`0005 — GHSA source and synchronization strategy`](adr/0005-ghsa-source-and-synchronization-strategy.md) — Accepted from the completed Phase 2.4A source-contract and bounded live-workload evidence.
+- [`0006 — GHSA Silver content versioning and physical shape`](adr/0006-ghsa-silver-content-versioning-and-physical-shape.md) — Accepted from the completed Phase 2.4B logical/Arrow/Parquet contract and explicit content-vs-physical-observation provenance boundary.
 
 See [`adr/README.md`](adr/README.md) for the ADR index.
 
@@ -74,7 +75,7 @@ Phase 2:
 - [`phase-2-ghsa-documentation-reconciliation.md`](labs/phase-2-ghsa-documentation-reconciliation.md) — Phase 2.4-0 reconciliation of public documentation against the post-PR #28 `main` checkpoint before GHSA implementation.
 - [`phase-2-ghsa-source-contract.md`](labs/phase-2-ghsa-source-contract.md) — completed Phase 2.4A source contract and workload-spike decision record.
 - [`phase-2-ghsa-live-rest-probe.md`](labs/phase-2-ghsa-live-rest-probe.md) — authenticated live evidence for cursor pagination, rate limits, published/modified bounded windows, payload sizes, timings, and advisory/package multiplicity.
-- [`phase-2-ghsa-advisory-silver-contract.md`](labs/phase-2-ghsa-advisory-silver-contract.md) — active Phase 2.4B contract for observed advisory identity, reviewed-only core fields, structured collections, CVSS/CWE, and one-to-many package/range/fix evidence.
+- [`phase-2-ghsa-advisory-silver-contract.md`](labs/phase-2-ghsa-advisory-silver-contract.md) — completed Phase 2.4B contract for exact advisory content versions, structured collections, one-to-many package/range/fix evidence, nested Arrow schema v1, logical hashing, and deterministic Parquet serialization.
 
 Cross-phase infrastructure closeout:
 
@@ -97,12 +98,13 @@ Phase 2.3G — NVD Glue/Athena Analytics:      COMPLETE
 Legacy Lambda artifact lifecycle migration: COMPLETE
 Phase 2.4-0 — Documentation reconciliation:  COMPLETE
 Phase 2.4A — GHSA Source Contract:           COMPLETE
-Phase 2.4B — GHSA Advisory/Silver Contract:  IN PROGRESS
+Phase 2.4B — GHSA Advisory/Silver Contract:  COMPLETE
+Phase 2.4C — GHSA Bronze:                    NEXT
 Phase 2.5 — Historical EPSS expansion:       NOT STARTED
 Phase 3 — Vulnerability Correlation Engine:  NOT STARTED
 ```
 
-Phase 2.4B has completed and locally validated its first logical slice for observed-advisory identity and core scalar normalization. The second slice now defines identifiers/references/CWE/CVSS and source-ordered vulnerability/package/range/fix evidence and awaits focused local validation before Arrow/Parquet v1 is frozen.
+Phase 2.4B is frozen. `observed_advisory_version_id` is exact advisory content identity and remains distinct from the future Bronze `sync_id` and physical `attempt_id`. Exact Bronze occurrence provenance and Bronze-to-Silver completion proof are intentionally owned by Phase 2.4C/2.4D rather than embedded into the content-version identifier.
 
 No GHSA AWS runtime has been introduced.
 
