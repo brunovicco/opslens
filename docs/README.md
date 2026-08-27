@@ -16,7 +16,7 @@ docs/
 
 The deployed Phase 2.3E/2.3F NVD runtime architecture and its real AWS evidence are captured in [`phase-2-nvd-authoritative-runtime-closeout.md`](labs/phase-2-nvd-authoritative-runtime-closeout.md). The Phase 2.3G permanent analytics implementation and evidence are captured by the NVD Glue/Athena lab series below.
 
-The current implementation includes AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze, incremental CVE API Bronze, versioned NVD Silver, deployed Incremental/Silver/Promotion runtimes, the authoritative watermark boundary, EventBridge Scheduler, runtime IAM separation, idempotency, observability, bounded failure recovery, and the permanent NVD Glue/Athena analytics projection path.
+The current implementation includes AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze, incremental CVE API Bronze, versioned NVD Silver, deployed Incremental/Silver/Promotion runtimes, the authoritative watermark boundary, EventBridge Scheduler, runtime IAM separation, idempotency, observability, bounded failure recovery, the permanent NVD Glue/Athena analytics projection path, and immutable content-addressed deployment artifacts for all deployed Lambda runtimes.
 
 ## Architecture Decision Records
 
@@ -71,7 +71,7 @@ Phase 2:
 
 Cross-phase infrastructure closeout:
 
-- [`legacy-lambda-artifact-lifecycle-migration.md`](labs/legacy-lambda-artifact-lifecycle-migration.md) — migration of the remaining local-file Lambda deployment artifacts to immutable content-addressed S3 pins.
+- [`legacy-lambda-artifact-lifecycle-migration.md`](labs/legacy-lambda-artifact-lifecycle-migration.md) — completed migration of the remaining local-file Lambda deployment artifacts to immutable content-addressed S3 pins, including exact S3 VersionId provenance and full dev convergence proof.
 
 ## Current milestone
 
@@ -88,5 +88,5 @@ Phase 2.3E — NVD Silver AWS Runtime:         COMPLETE
 Phase 2.3F — NVD Authoritative Watermark:    COMPLETE
 Phase 2.3G — NVD Glue/Athena Analytics:      COMPLETE
 
-Legacy Lambda artifact lifecycle migration: IN PROGRESS
+Legacy Lambda artifact lifecycle migration: COMPLETE
 ```
