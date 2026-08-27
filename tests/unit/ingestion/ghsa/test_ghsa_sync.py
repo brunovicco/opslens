@@ -57,13 +57,15 @@ def test_sync_identity_binds_mode_and_source_contract() -> None:
 
 def test_rejects_naive_timestamps() -> None:
     """Require explicit timezone evidence for every synchronization boundary."""
+    naive_start = datetime(2026, 8, 26, 0, 0, 0)  # noqa: DTZ001 - intentional invalid input
+
     with pytest.raises(
         InvalidGhsaSyncWindowError,
         match="timezone-aware",
     ):
         GhsaSyncWindow(
             mode=GhsaSyncMode.MODIFIED,
-            start_at=datetime(2026, 8, 26, 0, 0, 0),
+            start_at=naive_start,
             end_at=datetime(2026, 8, 27, 0, 0, 0, tzinfo=UTC),
         )
 
