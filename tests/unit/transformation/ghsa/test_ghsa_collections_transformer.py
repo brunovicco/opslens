@@ -1,6 +1,7 @@
 """Tests for deterministic GHSA advisory collection normalization."""
 
 import json
+from typing import cast
 
 import pytest
 
@@ -47,6 +48,18 @@ def _source_collections() -> dict[str, object]:
     }
 
 
+def _object_list(value: object) -> list[object]:
+    """Narrow one JSON-like test value to a mutable object list."""
+    assert isinstance(value, list)
+    return cast(list[object], value)
+
+
+def _object_dict(value: object) -> dict[str, object]:
+    """Narrow one JSON-like test value to a string-keyed object mapping."""
+    assert isinstance(value, dict)
+    return cast(dict[str, object], value)
+
+
 def test_normalizes_identifiers_references_cwes_and_cvss() -> None:
     """Preserve ordered collections and known CVSS families."""
     result = GhsaAdvisoryCollectionsTransformer().transform(_source_collections())
@@ -82,8 +95,7 @@ def test_nullable_cve_does_not_require_cve_identifier() -> None:
 def test_additional_identifier_types_are_preserved() -> None:
     """Preserve additive identifier types instead of inventing an enum."""
     source = _source_collections()
-    identifiers = source["identifiers"]
-    assert isinstance(identifiers, list)
+    identifiers = _object_list(source["identifiers"])
     identifiers.append({"type": "FUTURE", "value": "vendor-123"})
 
     result = GhsaAdvisoryCollectionsTransformer().transform(source)
@@ -137,8 +149,7 @@ def test_malformed_cwe_fails_closed() -> None:
 def test_unknown_cvss_family_is_preserved_in_canonical_source_json() -> None:
     """Keep additive CVSS source evidence without pretending to understand it."""
     source = _source_collections()
-    severities = source["cvss_severities"]
-    assert isinstance(severities, dict)
+    severities = _object_dict(source["cvss_severities"])
     severities["cvss_future"] = {
         "vector_string": "FUTURE:1/example",
         "score": 5.0,
@@ -154,10 +165,8 @@ def test_unknown_cvss_family_is_preserved_in_canonical_source_json() -> None:
 def test_malformed_known_cvss_score_fails_closed() -> None:
     """Reject malformed structures for CVSS families the contract understands."""
     source = _source_collections()
-    severities = source["cvss_severities"]
-    assert isinstance(severities, dict)
-    cvss_v3 = severities["cvss_v3"]
-    assert isinstance(cvss_v3, dict)
+    severities = _object_dict(source["cvss_severities"])
+    cvss_v3 = _object_dict(severities["cvss_v3"])
     cvss_v3["score"] = True
 
     with pytest.raises(
