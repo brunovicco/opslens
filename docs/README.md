@@ -26,7 +26,7 @@ Phase 2.4A is currently validating the GitHub Security Advisory source and synch
 - [`0002 — GitHub Actions OIDC deployment identity`](adr/0002-github-actions-oidc.md)
 - [`0003 — AWS regional strategy`](adr/0003-aws-region-strategy.md)
 - [`0004 — NVD ingestion and vulnerability versioning strategy`](adr/0004-nvd-ingestion-and-versioning-strategy.md)
-- [`0005 — GHSA source and synchronization strategy`](adr/0005-ghsa-source-and-synchronization-strategy.md) — Proposed while the bounded live REST workload probe remains open.
+- [`0005 — GHSA source and synchronization strategy`](adr/0005-ghsa-source-and-synchronization-strategy.md) — Proposed while the remaining Phase 2.4A live workload measurements are open.
 
 See [`adr/README.md`](adr/README.md) for the ADR index.
 
@@ -72,7 +72,8 @@ Phase 2:
 - [`phase-2-nvd-glue-athena-permanent-athena-proof.md`](labs/phase-2-nvd-glue-athena-permanent-athena-proof.md)
 - [`phase-2-nvd-glue-athena-failure-replay-observability-proof.md`](labs/phase-2-nvd-glue-athena-failure-replay-observability-proof.md)
 - [`phase-2-ghsa-documentation-reconciliation.md`](labs/phase-2-ghsa-documentation-reconciliation.md) — Phase 2.4-0 reconciliation of public documentation against the post-PR #28 `main` checkpoint before GHSA implementation.
-- [`phase-2-ghsa-source-contract.md`](labs/phase-2-ghsa-source-contract.md) — Phase 2.4A source-contract and workload-spike evidence; currently in progress pending a bounded live REST probe.
+- [`phase-2-ghsa-source-contract.md`](labs/phase-2-ghsa-source-contract.md) — Phase 2.4A source-contract and workload-spike design; currently in progress.
+- [`phase-2-ghsa-live-rest-probe.md`](labs/phase-2-ghsa-live-rest-probe.md) — first authenticated live REST evidence for pagination, rate-limit headers, exact payload bytes, modified-window behavior, and advisory/package multiplicity.
 
 Cross-phase infrastructure closeout:
 
@@ -99,4 +100,6 @@ Phase 2.5 — Historical EPSS expansion:       NOT STARTED
 Phase 3 — Vulnerability Correlation Engine:  NOT STARTED
 ```
 
-Phase 2 remains open. Phase 2.4A must complete its bounded live REST workload evidence before GHSA runtime implementation begins. Historical EPSS expansion follows later before Phase 2 can be closed or any Phase 3 work begins.
+Phase 2.4A has now passed the live pagination and recent modified-window probes. Request timing and a bounded historical `published` bootstrap-window measurement remain open before ADR-0005 can be accepted and Phase 2.4A can close.
+
+Phase 2 remains open. Historical EPSS expansion follows later before Phase 2 can be closed or any Phase 3 work begins.
