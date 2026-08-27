@@ -18,12 +18,15 @@ The deployed Phase 2.3E/2.3F NVD runtime architecture and its real AWS evidence 
 
 The current implementation includes AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze, incremental CVE API Bronze, versioned NVD Silver, deployed Incremental/Silver/Promotion runtimes, the authoritative watermark boundary, EventBridge Scheduler, runtime IAM separation, idempotency, observability, bounded failure recovery, the permanent NVD Glue/Athena analytics projection path, and immutable content-addressed deployment artifacts for all deployed Lambda runtimes.
 
+Phase 2.4A has completed the GitHub Security Advisory source and synchronization contract before any GHSA AWS runtime is created.
+
 ## Architecture Decision Records
 
 - [`0001 — Terraform state strategy`](adr/0001-terraform-state-strategy.md)
 - [`0002 — GitHub Actions OIDC deployment identity`](adr/0002-github-actions-oidc.md)
 - [`0003 — AWS regional strategy`](adr/0003-aws-region-strategy.md)
 - [`0004 — NVD ingestion and vulnerability versioning strategy`](adr/0004-nvd-ingestion-and-versioning-strategy.md)
+- [`0005 — GHSA source and synchronization strategy`](adr/0005-ghsa-source-and-synchronization-strategy.md) — Accepted from the completed Phase 2.4A source-contract and bounded live-workload evidence.
 
 See [`adr/README.md`](adr/README.md) for the ADR index.
 
@@ -69,6 +72,8 @@ Phase 2:
 - [`phase-2-nvd-glue-athena-permanent-athena-proof.md`](labs/phase-2-nvd-glue-athena-permanent-athena-proof.md)
 - [`phase-2-nvd-glue-athena-failure-replay-observability-proof.md`](labs/phase-2-nvd-glue-athena-failure-replay-observability-proof.md)
 - [`phase-2-ghsa-documentation-reconciliation.md`](labs/phase-2-ghsa-documentation-reconciliation.md) — Phase 2.4-0 reconciliation of public documentation against the post-PR #28 `main` checkpoint before GHSA implementation.
+- [`phase-2-ghsa-source-contract.md`](labs/phase-2-ghsa-source-contract.md) — completed Phase 2.4A source contract and workload-spike decision record.
+- [`phase-2-ghsa-live-rest-probe.md`](labs/phase-2-ghsa-live-rest-probe.md) — authenticated live evidence for cursor pagination, rate limits, published/modified bounded windows, payload sizes, timings, and advisory/package multiplicity.
 
 Cross-phase infrastructure closeout:
 
@@ -90,9 +95,14 @@ Phase 2.3F — NVD Authoritative Watermark:    COMPLETE
 Phase 2.3G — NVD Glue/Athena Analytics:      COMPLETE
 Legacy Lambda artifact lifecycle migration: COMPLETE
 Phase 2.4-0 — Documentation reconciliation:  COMPLETE
-Phase 2.4A — GHSA Source Contract:           NEXT
+Phase 2.4A — GHSA Source Contract:           COMPLETE
+Phase 2.4B — GHSA Advisory/Silver Contract:  NEXT
 Phase 2.5 — Historical EPSS expansion:       NOT STARTED
 Phase 3 — Vulnerability Correlation Engine:  NOT STARTED
 ```
 
-Phase 2 remains open. GHSA source-contract work is the next gate; historical EPSS expansion follows before Phase 2 can be closed or any Phase 3 work begins.
+Phase 2.4A accepted the versioned reviewed GHSA REST source, authenticated production requirement, exact cursor pagination, calendar-month published bootstrap default, bounded closed modified-time synchronization, GHSA-first identity with optional CVE aliases, one-to-many package evidence, nullable structured patched-version evidence, and logical-versus-physical observation identity.
+
+No GHSA AWS runtime was introduced by Phase 2.4A.
+
+Phase 2 remains open. Phase 2.4B is the next GHSA gate; historical EPSS expansion follows later before Phase 2 can be closed or any Phase 3 work begins.
