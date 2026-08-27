@@ -1,5 +1,16 @@
 locals {
-  kev_lambda_artifact_path = "${path.module}/../../../dist/opslens-kev-ingestion.zip"
+  kev_lambda_artifact_sha256 = (
+    "8c443677bfe292b6d8b99520b473e7318836dfad65e4a014c1b86cfce3044ef6"
+  )
+  kev_lambda_artifact_sha256_base64 = (
+    "jEQ2d7/ikrbYuZUgtHPnMYg2361l5KAUwbhs/OMETvY="
+  )
+  kev_lambda_artifact_version = (
+    "uF7iiWwWgv6l7XeDyeC6LwU4rUXvB_GY"
+  )
+  kev_lambda_artifact_key = (
+    "lambda/kev-ingestion/${local.kev_lambda_artifact_sha256}.zip"
+  )
 }
 
 resource "aws_lambda_function" "kev_ingestion" {
@@ -19,8 +30,11 @@ resource "aws_lambda_function" "kev_ingestion" {
 
   handler = "opslens.ingestion.kev.lambda_handler.lambda_handler"
 
-  filename         = local.kev_lambda_artifact_path
-  source_code_hash = filebase64sha256(local.kev_lambda_artifact_path)
+  s3_bucket         = aws_s3_bucket.deployment_artifacts.bucket
+  s3_key            = local.kev_lambda_artifact_key
+  s3_object_version = local.kev_lambda_artifact_version
+
+  source_code_hash = local.kev_lambda_artifact_sha256_base64
 
   memory_size = 512
   timeout     = 60

@@ -18,10 +18,33 @@ ARTIFACT_PATH = DIST_DIR / "opslens-nvd-bootstrap-ingestion.zip"
 
 SOURCE_ROOT = PROJECT_ROOT / "src" / "opslens"
 
+# Keep the Bootstrap deployment boundary explicit. The NVD package also contains
+# incremental-ingestion and watermark-promotion code, but those runtimes have
+# independent deployment artifacts and must not change the Bootstrap ZIP hash.
 RUNTIME_SOURCE_PATHS = (
     Path("__init__.py"),
     Path("ingestion/__init__.py"),
-    Path("ingestion/nvd"),
+    Path("ingestion/nvd/__init__.py"),
+    Path("ingestion/nvd/config.py"),
+    Path("ingestion/nvd/composition.py"),
+    Path("ingestion/nvd/lambda_handler.py"),
+    Path("ingestion/nvd/adapters/__init__.py"),
+    Path("ingestion/nvd/adapters/outbound/__init__.py"),
+    Path("ingestion/nvd/adapters/outbound/nvd_http.py"),
+    Path("ingestion/nvd/adapters/outbound/s3_bronze.py"),
+    Path("ingestion/nvd/application/__init__.py"),
+    Path("ingestion/nvd/application/key_factory.py"),
+    Path("ingestion/nvd/application/manifest.py"),
+    Path("ingestion/nvd/application/models.py"),
+    Path("ingestion/nvd/application/ports.py"),
+    Path("ingestion/nvd/application/service.py"),
+    Path("ingestion/nvd/domain/__init__.py"),
+    Path("ingestion/nvd/domain/errors.py"),
+    Path("ingestion/nvd/domain/feed_artifact.py"),
+    Path("ingestion/nvd/domain/feed_integrity.py"),
+    Path("ingestion/nvd/domain/meta_parser.py"),
+    Path("ingestion/nvd/domain/models.py"),
+    Path("ingestion/nvd/domain/source_identity.py"),
     Path("shared/__init__.py"),
     Path("shared/observability"),
 )
@@ -104,12 +127,17 @@ def install_runtime_dependencies() -> None:
 
 
 def copy_application_source() -> None:
-    """Copy only NVD ingestion runtime source into the Lambda package."""
+    """Copy only NVD Bootstrap runtime source into the Lambda package."""
     destination_root = PACKAGE_DIR / "opslens"
 
     for relative_path in RUNTIME_SOURCE_PATHS:
         source = SOURCE_ROOT / relative_path
         destination = destination_root / relative_path
+
+        if not source.exists():
+            raise FileNotFoundError(
+                f"Required NVD Bootstrap runtime source is missing: {relative_path}"
+            )
 
         destination.parent.mkdir(
             parents=True,
@@ -197,7 +225,7 @@ def artifact_sha256() -> str:
 
 
 def main() -> None:
-    """Build and report the NVD ingestion Lambda deployment artifact."""
+    """Build and report the NVD Bootstrap ingestion Lambda deployment artifact."""
     prepare_directories()
     export_runtime_dependencies()
     install_runtime_dependencies()
