@@ -2,7 +2,6 @@
 
 import json
 from datetime import UTC, datetime
-from typing import cast
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import pytest
@@ -215,7 +214,7 @@ def test_rejects_external_rel_next_url() -> None:
 
     with pytest.raises(
         InvalidGhsaApiPageError,
-        match="host must be api.github.com",
+        match=r"host must be api\.github\.com",
     ):
         GhsaAdvisoryApiPageParser().parse(
             payload,
@@ -312,7 +311,7 @@ def test_rejects_cross_page_duplicate_advisory_id() -> None:
         window=window,
     )
     second = parser.parse(
-        _payload(cast(dict[str, object], dict(common))),
+        _payload(dict(common)),
         request_url=next_url,
         link_header=None,
         window=window,
