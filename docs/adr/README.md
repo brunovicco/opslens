@@ -12,4 +12,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0002](0002-github-actions-oidc.md) | GitHub Actions OIDC deployment identity | Accepted |
 | [0003](0003-aws-region-strategy.md) | AWS regional strategy | Accepted |
 | [0004](0004-nvd-ingestion-and-versioning-strategy.md) | NVD ingestion and vulnerability versioning strategy | Accepted |
-| [0005](0005-ghsa-source-and-synchronization-strategy.md) | GitHub Security Advisory source and synchronization strategy | Proposed |
+| [0005](0005-ghsa-source-and-synchronization-strategy.md) | GitHub Security Advisory source and synchronization strategy | Accepted |

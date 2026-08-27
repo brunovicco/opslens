@@ -2,7 +2,7 @@
 
 _Date started: 2026-08-27_
 
-_Status: IN PROGRESS_
+_Status: COMPLETE_
 
 ## Purpose
 
@@ -18,7 +18,7 @@ Package/version applicability is not decided in Phase 2.4. GHSA source ranges an
 
 ## Repository baseline
 
-Phase 2.4A starts from:
+Phase 2.4A started from:
 
 ```text
 branch:
@@ -31,56 +31,18 @@ base PR:
 #29 — docs(phase-2): reconcile GHSA milestone baseline
 ```
 
-Phase 2.4-0 is complete.
+Phase 2.4-0 was complete before this gate began.
 
-## Scope
+## Selected authoritative runtime source
 
-This spike validates:
-
-```text
-GitHub Global Security Advisories REST API
-        ↓
-versioned public source contract
-        ↓
-reviewed-advisory scope
-        ↓
-pagination + rate-limit model
-        ↓
-real advisory semantics
-        ↓
-bootstrap / incremental synchronization model
-        ↓
-source identity + replay model
-        ↓
-Phase 2.4 Bronze / Silver design inputs
-```
-
-Out of scope:
-
-- Lambda implementation;
-- Terraform changes;
-- EventBridge Scheduler;
-- IAM or secret resources;
-- S3 Bronze objects;
-- Silver Parquet;
-- Glue or Athena;
-- package/version applicability evaluation;
-- repository dependency discovery;
-- Bedrock;
-- RAG;
-- MCP;
-- A2A;
-- agents.
-
-## Official source interface
-
-The selected runtime source interface is the GitHub REST API endpoint:
+OpsLens selects the versioned GitHub Global Security Advisories REST API:
 
 ```text
 GET https://api.github.com/advisories
+GET https://api.github.com/advisories/{ghsa_id}
 ```
 
-The contract pins the current GitHub REST API version explicitly:
+Pinned request contract:
 
 ```text
 Accept: application/vnd.github+json
@@ -88,130 +50,40 @@ X-GitHub-Api-Version: 2026-03-10
 User-Agent: OpsLens/<runtime>
 ```
 
-The API supports exact GHSA retrieval through:
-
-```text
-GET https://api.github.com/advisories/{ghsa_id}
-```
-
-The list endpoint supports, among other filters:
-
-```text
-type
-published
-updated
-modified
-ecosystem
-severity
-is_withdrawn
-before
-after
-direction
-per_page
-sort
-```
-
-`per_page` is bounded to a maximum of 100.
-
-`modified` means advisories that were either published or updated within the requested date/date-time expression. GitHub search date syntax supports ISO-8601 dates and optional time components, as well as comparison and range expressions.
-
-Result so far:
-
-```text
-GHSA_SOURCE_INTERFACE_GATE=PASS
-GHSA_API_VERSION_PIN_GATE=PASS
-```
-
-## Why the advisory-database repository is not the runtime interface
-
-GitHub also publishes `github/advisory-database`, where advisories are represented as OSV JSON files.
-
-That repository is valuable as public evidence and as a corpus for inspecting real advisory semantics, but it is not selected as the OpsLens runtime source contract because GitHub documents that:
-
-- the repository is a mirror of its primary advisory database;
-- repository organization may change incompatibly;
-- GitHub-specific `database_specific` values are primarily internal and may change without notice;
-- consuming systems should not rely on those internal values for vulnerability processing.
-
-OpsLens therefore separates:
-
-```text
-runtime source contract
-    -> versioned GitHub REST API
-
-public sample/evidence corpus
-    -> github/advisory-database mirror
-```
-
-Result:
-
-```text
-GHSA_RUNTIME_SOURCE_SELECTION_GATE=PASS
-```
-
-## Advisory scope
-
-GitHub divides global advisories into:
-
-```text
-reviewed
-unreviewed
-malware
-```
-
-Phase 2.4 selects:
+Phase 2.4 scope is:
 
 ```text
 type=reviewed
 ```
 
-Reasons:
-
-- reviewed advisories are curated by GitHub and mapped to supported package ecosystems;
-- unreviewed advisories are automatically published from NVD and would substantially overlap the NVD source OpsLens already ingests;
-- malware advisories represent a different problem category and are not standard vulnerability advisories.
-
-Phase 2.4 does not silently union these three source classes.
+The public `github/advisory-database` repository remains a useful evidence and sample corpus, but it is not the production runtime contract. GitHub documents it as a mirror of the primary advisory database and warns that repository organization and internal `database_specific` fields may change.
 
 Result:
 
 ```text
+GHSA_SOURCE_INTERFACE_GATE=PASS
+GHSA_API_VERSION_PIN_GATE=PASS
+GHSA_RUNTIME_SOURCE_SELECTION_GATE=PASS
 GHSA_REVIEWED_SCOPE_GATE=PASS
 ```
 
-## Authentication and rate-limit evidence
+## Authentication and rate-limit decision
 
-The global advisory endpoint can read public resources without authentication, and GitHub documents that fine-grained tokens require no endpoint-specific permissions.
-
-Current REST primary limits documented by GitHub are:
+GitHub documents public REST limits of:
 
 ```text
-unauthenticated public requests: 60 requests/hour
-authenticated user/token:        5,000 requests/hour
-GitHub App installation:         at least 5,000 requests/hour
+unauthenticated: 60 requests/hour
+authenticated:   5,000 requests/hour
 ```
 
-Secondary limits also apply. GitHub recommends authenticated requests, serial request behavior, pagination through the returned `Link` header, and bounded handling of `403` / `429` responses using `Retry-After` and rate-limit headers.
+The reviewed corpus observed during this spike implied at least 348 pages at `per_page=100` for an unfiltered full traversal. That makes unauthenticated bootstrap an unsuitable production mode.
 
-On 2026-08-27, the public GitHub Advisory Database UI reported:
+The live authenticated probes confirmed:
 
 ```text
-GitHub-reviewed advisories: 34,792
+x-ratelimit-limit:    5000
+x-ratelimit-resource: core
 ```
-
-At `per_page=100`, an unfiltered reviewed bootstrap therefore requires at least:
-
-```text
-ceil(34,792 / 100) = 348 list pages
-```
-
-At the unauthenticated primary budget of 60 requests/hour, the theoretical primary-rate floor alone is:
-
-```text
-348 / 60 = 5.8 hours
-```
-
-This is not a runtime estimate; it excludes response latency, safety pacing, retries, secondary limits, and any additional verification calls. It is enough to reject unauthenticated full bootstrap as the intended production mode.
 
 Decision:
 
@@ -219,9 +91,7 @@ Decision:
 production GHSA retrieval must be authenticated
 ```
 
-The exact credential mechanism — for example a fine-grained token versus GitHub App installation authentication — is intentionally deferred until the AWS runtime/security gate evaluates least privilege, rotation, secret storage, and operational ownership.
-
-No secret resource is created in Phase 2.4A.
+The exact credential mechanism remains deferred to the runtime/security design. Phase 2.4A does not create a PAT, GitHub App, Secrets Manager secret, IAM role, or other runtime credential resource.
 
 Result:
 
@@ -232,141 +102,52 @@ GHSA_CREDENTIAL_MECHANISM_GATE=DEFERRED_TO_RUNTIME_SECURITY_DESIGN
 
 ## Pagination contract
 
-GitHub REST pagination exposes continuation URLs in the HTTP `Link` header. OpsLens must follow the exact returned `rel="next"` URL rather than construct cursor values independently.
+The live source returned cursor pagination through an exact `Link` header:
 
-Initial production contract:
+```text
+Link: <...after=<opaque-cursor>...>; rel="next"
+```
+
+OpsLens must:
 
 ```text
 per_page=100
-requests processed serially
+process pages serially by default
 follow exact Link rel="next"
-no speculative concurrency
-bounded page count / response-size defenses
-rate-limit headers captured as operational evidence
+never synthesize or guess cursors
+capture pagination evidence
+use bounded page / byte defenses
 ```
 
-GitHub documents that pagination parameters can vary by endpoint, including cursor-based `before` / `after` forms. The GHSA endpoint exposes those cursors directly.
-
-A live REST response-header probe is still required before this gate closes to record the exact cursor/link behavior observed from `/advisories`.
+The live probe traversed 13 pages in one bounded month with 1,278 unique GHSA IDs and no duplicate GHSA IDs across pages.
 
 Result:
 
 ```text
 GHSA_PAGINATION_DOCUMENTATION_GATE=PASS
-GHSA_PAGINATION_LIVE_PROBE_GATE=PENDING
+GHSA_PAGINATION_LIVE_PROBE_GATE=PASS
 ```
-
-## Sorting and mutable pagination
-
-GitHub recommends stable pagination and warns generally against workflows where updated data can move between pages while a paginated traversal is in progress.
-
-OpsLens therefore does not choose an unbounded `sort=updated` traversal as its synchronization primitive.
-
-The synchronization model is based on bounded temporal filters and a deterministic sort inside each closed range.
-
-Candidate request shape:
-
-```text
-type=reviewed
-modified=<closed ISO-8601 range>
-sort=published
-direction=asc
-per_page=100
-```
-
-The exact range granularity and any safety overlap remain subject to the live workload probe before the strategy is accepted.
-
-## Bootstrap strategy
-
-The selected candidate bootstrap shape uses the same authoritative REST source as ongoing synchronization.
-
-It does not switch to Git clone for bulk population.
-
-Candidate flow:
-
-```text
-T0
- ↓
-historical reviewed advisories
-published-time windows
- ↓
-complete each bounded window
- ↓
-catch up modifications T0 -> T1
- ↓
-ongoing closed modified windows
-```
-
-Historical windows prevent one giant unbounded traversal and provide natural replay/recovery units.
-
-Calendar-month windows are the initial spike candidate, not yet a frozen production constant. The live probe must measure page counts and response sizes for representative quiet and busy intervals before window size is accepted.
-
-Result:
-
-```text
-GHSA_BOOTSTRAP_SOURCE_GATE=PASS
-GHSA_BOOTSTRAP_WINDOW_SIZE_GATE=PENDING_LIVE_PROBE
-```
-
-## Incremental synchronization semantics
-
-The REST API exposes:
-
-```text
-published_at
-updated_at
-```
-
-and a `modified` query filter that selects advisories published or updated within a requested range.
-
-Candidate incremental model:
-
-```text
-closed modified-time window
-    ↓
-reviewed advisories only
-    ↓
-complete pagination
-    ↓
-immutable Bronze observation
-    ↓
-deterministic Silver
-    ↓
-authoritative synchronization boundary
-```
-
-A source timestamp is metadata, not a content identity. If the same GHSA is observed with changed content, OpsLens must preserve the new observation rather than overwrite the previous one.
-
-The exact safety-overlap policy and watermark boundary are intentionally not frozen until the live REST probe validates date-time filtering and page stability with real responses.
 
 ## Advisory identity and aliases
 
-The primary logical advisory identity is:
+Primary advisory identity:
 
 ```text
 GHSA-xxxx-xxxx-xxxx
 ```
 
-CVE identity is an alias/equivalence relation, not the primary GHSA identity.
+CVE identifiers are optional aliases rather than the GHSA primary key.
 
-Real public evidence proves that a reviewed GHSA may have:
+Live evidence observed reviewed advisories without CVE identifiers.
 
-```text
-one CVE alias
-zero CVE aliases
-```
-
-Examples inspected from the official GitHub advisory-database mirror:
+Therefore:
 
 ```text
-GHSA-fm7p-gw32-828p
-aliases: CVE-2026-54705
-
-GHSA-pmwx-rm49-xv39
-aliases: []
+ghsa_id = required
+cve_id  = optional
 ```
 
-The Phase 2.4 contract must therefore support zero-or-more identifiers and must not assume `GHSA -> exactly one CVE`.
+The future model must not assume one GHSA maps to exactly one CVE.
 
 Result:
 
@@ -375,21 +156,20 @@ GHSA_IDENTITY_GATE=PASS
 GHSA_CVE_ALIAS_OPTIONALITY_GATE=PASS
 ```
 
-## Package and ecosystem semantics
+## Package and vulnerability-entry cardinality
 
-The REST response exposes advisory vulnerability entries containing:
+The REST source exposes vulnerability entries containing package, vulnerable-range, patched-version, and related evidence.
+
+Live observations proved one advisory can contain many vulnerability entries:
 
 ```text
-package.ecosystem
-package.name
-vulnerable_version_range
-first_patched_version
-vulnerable_functions
+initial reviewed page maximum: 12
+recent modified-day maximum:    36
 ```
 
-One advisory may contain multiple vulnerability entries and therefore potentially multiple affected package identities.
+Therefore advisory identity and vulnerability/package evidence must remain one-to-many in the future Silver contract. A single flattened advisory row cannot preserve the source faithfully.
 
-Phase 2.4 preserves source package identity as:
+Package identity remains source-scoped as:
 
 ```text
 ecosystem
@@ -397,76 +177,34 @@ ecosystem
 package name
 ```
 
-No cross-ecosystem normalization or installed-version matching is performed here.
+No cross-ecosystem package identity merging is performed in Phase 2.4.
 
-## Affected ranges
+## Affected ranges and fixed-version evidence
 
-`vulnerable_version_range` is structured source evidence but remains an opaque source expression in Phase 2.
+`vulnerable_version_range` is preserved as an exact source expression.
 
-Phase 2.4 must preserve the exact expression and provenance.
-
-It must not evaluate whether:
+Phase 2.4 does not evaluate:
 
 ```text
 installed_version ∈ vulnerable_version_range
 ```
 
-That evaluation belongs to Phase 3 and requires ecosystem-specific deterministic version semantics.
+That belongs to Phase 3 and requires deterministic ecosystem-specific version semantics.
+
+`first_patched_version` is structured fixed-version evidence when present and remains nullable. The live probes observed missing patched-version values, so absence must remain unavailable source evidence rather than being inferred from prose.
 
 Result:
 
 ```text
 GHSA_AFFECTED_RANGE_BOUNDARY_GATE=PASS
-```
-
-## Fixed-version evidence
-
-`first_patched_version` is structured GitHub REST evidence when present.
-
-It is nullable.
-
-Real OSV mirror samples demonstrate advisories with explicit fixed events, including:
-
-```text
-GHSA-fm7p-gw32-828p
-package: npm / mathlive
-fixed:   0.110.0
-
-GHSA-pmwx-rm49-xv39
-package: RubyGems / activerecord-tenanted
-fixed:   0.7.0
-```
-
-Phase 2.4 may normalize a structured patched-version value while preserving its source vulnerability-entry provenance.
-
-Absence of `first_patched_version` means structured fixed-version evidence is unavailable from that REST observation. OpsLens must not derive an authoritative fixed version from advisory prose.
-
-Result:
-
-```text
 GHSA_FIXED_VERSION_EVIDENCE_GATE=PASS
 ```
 
 ## Withdrawal semantics
 
-A withdrawn advisory remains source evidence and must not be deleted from historical state.
+A withdrawn advisory remains historical evidence.
 
-Real reviewed evidence:
-
-```text
-GHSA-9jx5-6pgf-crrp
-CVE-2023-25399
-withdrawn: 2024-05-14T20:15:44Z
-```
-
-The deterministic interpretation is:
-
-```text
-advisory exists in persisted source evidence: true
-withdrawn state: true
-```
-
-Withdrawal is therefore a temporal source state, not absence.
+The live reviewed collection page contained withdrawn advisories, confirming that withdrawal is a source state, not deletion.
 
 Result:
 
@@ -474,105 +212,139 @@ Result:
 GHSA_WITHDRAWAL_SEMANTICS_GATE=PASS
 ```
 
-## Source observation identity
+## Bootstrap workload proof
 
-The NVD implementation already proves a useful distinction:
+The selected default bootstrap planning unit is one calendar month expressed as an exact closed `published` time range.
+
+This is a planning default, not an assumption that every month will always fit a fixed page count. The actual logical synchronization identity is derived from the exact normalized start/end timestamps.
+
+Two representative monthly windows were measured.
+
+Recent month:
 
 ```text
-logical synchronization identity
-!=
-exact physical source observation identity
+published range: 2026-07-01T00:00:00Z .. 2026-07-31T23:59:59Z
+pages:           13
+items:           1278
+unique GHSA:     1278
+payload bytes:   8865112
+HTTP time sum:   19.102 s
 ```
 
-GHSA should preserve the same architectural distinction without copying NVD-specific fields blindly.
+Historical month:
 
-Candidate GHSA identities:
+```text
+published range: 2020-01-01T00:00:00Z .. 2020-01-31T23:59:59Z
+pages:           1
+items:           48
+unique GHSA:     48
+payload bytes:   221273
+HTTP time sum:   0.768 s
+```
+
+The recent month remained bounded under the probe's 25-page safety cap while covering materially higher volume than the historical sample.
+
+Decision:
+
+```text
+default bootstrap unit:
+calendar-month published window
+
+actual window identity:
+exact normalized closed timestamps
+
+future oversized window:
+fail closed against runtime safety limits and subdivide deterministically
+```
+
+The exact production page/byte caps and subdivision algorithm belong to the Bronze/runtime contract. Phase 2.4A does not freeze those implementation constants.
+
+Result:
+
+```text
+GHSA_BOOTSTRAP_SOURCE_GATE=PASS
+GHSA_BOOTSTRAP_WINDOW_SIZE_GATE=PASS
+```
+
+## Incremental synchronization workload proof
+
+A representative recent closed modified window was measured twice during the spike.
+
+```text
+modified range:
+2026-08-26T00:00:00Z .. 2026-08-26T23:59:59Z
+
+pages:         1
+items:         36
+unique GHSA:   36
+payload bytes: 219694
+HTTP time:     0.996 s
+payload SHA256:
+018aafe81dd5b3e681ef3566410ef1b94d0f2c129683688231aca50c2f409c9a
+```
+
+The payload SHA-256 matched the earlier probe of the same selected window while the source state remained unchanged during the observation period. This is evidence of repeatability for that observation, not a guarantee that GitHub will never revise the window's advisory content later.
+
+The accepted high-level incremental contract is:
+
+```text
+closed modified-time range
+        ↓
+type=reviewed
+sort=published
+direction=asc
+per_page=100
+        ↓
+follow exact Link rel="next"
+        ↓
+complete immutable source observation
+```
+
+The exact runtime overlap/delay policy and authoritative watermark mechanics remain explicit later-contract decisions. They must preserve replayability and must not treat source timestamps as content identity.
+
+Result:
+
+```text
+GHSA_MODIFIED_WINDOW_LIVE_GATE=PASS
+GHSA_LIVE_REQUEST_TIMING_GATE=PASS
+GHSA_LIVE_WORKLOAD_GATE=PASS
+```
+
+## Source observation identity
+
+Phase 2.4A accepts the architectural separation:
 
 ```text
 sync_id
-    deterministic identity of source type + API version + synchronization mode
-    + normalized closed temporal range + stable request contract
+    deterministic logical request identity
+    = source contract + API version + mode + exact normalized temporal range
 
 attempt_id
-    deterministic identity bound to exact ordered response pages
-    + page SHA-256 values + sizes + pagination order
+    exact physical observation identity
+    = ordered page evidence + exact response hashes/sizes + pagination evidence
 ```
 
-Individual advisory observation identity will be based on deterministic canonical advisory content in the Silver-contract gate, not solely on `updated_at`.
+A future advisory-version identity must be based on deterministic canonical advisory content rather than `updated_at` alone.
 
-The exact manifest shape belongs to the Bronze contract after Phase 2.4A closes.
+Exact manifest fields belong to the Bronze contract.
 
-## Failure semantics to carry forward
+## Failure semantics carried forward
 
-Transient source failures may be retried within a bounded policy:
+Transient source failures may be retried through a bounded policy:
 
 - network timeout;
 - temporary GitHub server failure;
 - documented rate limiting.
 
-Rate-limit behavior must honor:
+Rate-limit behavior must honor `Retry-After` and `x-ratelimit-*` semantics.
 
-```text
-Retry-After
-x-ratelimit-remaining
-x-ratelimit-reset
-```
+Deterministic evidence failures fail closed, including candidate cases such as malformed required GHSA identity, malformed JSON, cursor loops/repeated pages, duplicate GHSA identity where the selected request contract requires uniqueness, and configured page/byte-cap overflow.
 
-Deterministic evidence failures fail closed, including candidate cases such as:
+Additive unknown source fields remain preserved in Bronze and do not fail merely because GitHub evolves the response additively.
 
-- malformed required GHSA identifier;
-- malformed JSON;
-- duplicate GHSA identifier within one complete source observation where duplication violates the selected request contract;
-- pagination cursor loop or repeated page;
-- response beyond the configured byte cap;
-- malformed known vulnerability/package structure.
+OpsLens will not deliberately trigger GitHub throttling as a failure test.
 
-Additive unknown fields remain preserved in Bronze and do not fail merely because the source schema evolves additively.
-
-OpsLens will not deliberately trigger public GitHub throttling as a failure test.
-
-## Live REST workload probe — required to close Phase 2.4A
-
-The current research establishes the API contract and source semantics, but Phase 2.4A remains open until a real `/advisories` response is measured from a normal network environment.
-
-The probe must record at minimum:
-
-```text
-HTTP status
-content type
-exact response bytes
-ETag / Last-Modified when present
-Link header
-x-ratelimit-* headers
-page item count
-unique GHSA count
-request duration
-```
-
-It must also inspect representative returned advisories for:
-
-```text
-CVE present / absent
-withdrawn_at present / absent
-number of vulnerabilities per advisory
-first_patched_version present / absent
-multiple package vulnerability entries
-vulnerable_version_range values
-```
-
-Representative temporal requests must validate:
-
-```text
-published=<bounded historical range>
-modified=<closed recent range>
-per_page=100
-sort=published
-direction=asc
-```
-
-Only a small, respectful number of requests is required. The probe must not crawl all 34k+ advisories merely to close this contract gate.
-
-## Current Phase 2.4A gates
+## Final Phase 2.4A gates
 
 ```text
 GHSA_SOURCE_INTERFACE_GATE=PASS
@@ -582,23 +354,30 @@ GHSA_REVIEWED_SCOPE_GATE=PASS
 GHSA_AUTHENTICATED_RUNTIME_REQUIREMENT_GATE=PASS
 GHSA_CREDENTIAL_MECHANISM_GATE=DEFERRED_TO_RUNTIME_SECURITY_DESIGN
 GHSA_PAGINATION_DOCUMENTATION_GATE=PASS
-GHSA_PAGINATION_LIVE_PROBE_GATE=PENDING
+GHSA_PAGINATION_LIVE_PROBE_GATE=PASS
 GHSA_BOOTSTRAP_SOURCE_GATE=PASS
-GHSA_BOOTSTRAP_WINDOW_SIZE_GATE=PENDING_LIVE_PROBE
+GHSA_BOOTSTRAP_WINDOW_SIZE_GATE=PASS
 GHSA_IDENTITY_GATE=PASS
 GHSA_CVE_ALIAS_OPTIONALITY_GATE=PASS
 GHSA_AFFECTED_RANGE_BOUNDARY_GATE=PASS
 GHSA_FIXED_VERSION_EVIDENCE_GATE=PASS
 GHSA_WITHDRAWAL_SEMANTICS_GATE=PASS
-GHSA_LIVE_WORKLOAD_GATE=PENDING
-GHSA_2_4A_GATE=IN_PROGRESS
+GHSA_MODIFIED_WINDOW_LIVE_GATE=PASS
+GHSA_LIVE_REQUEST_TIMING_GATE=PASS
+GHSA_LIVE_PAYLOAD_SEMANTICS_GATE=PASS
+GHSA_LIVE_WORKLOAD_GATE=PASS
+GHSA_2_4A_GATE=PASS
 ```
 
-## Next step
+## Result
 
-Run the bounded live REST workload probe and commit its measured evidence before accepting ADR-0005 and closing Phase 2.4A.
+Phase 2.4A is complete.
 
-No AWS runtime should be created before that evidence gate passes.
+ADR-0005 is accepted from this evidence.
+
+No AWS resource, Terraform change, runtime IAM, secret, S3 object, Glue/Athena object, package-version matching logic, Bedrock capability, RAG path, MCP integration, A2A integration, or agent implementation was introduced by this gate.
+
+The next Phase 2.4 gate must begin from the accepted source/synchronization contract and preserve the deterministic boundary that package-version applicability belongs to Phase 3.
 
 ## Official references reviewed
 

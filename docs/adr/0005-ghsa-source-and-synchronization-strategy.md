@@ -1,24 +1,24 @@
 # ADR-0005: GitHub Security Advisory Source and Synchronization Strategy
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-08-27
 
 ## Context
 
 OpsLens Phase 2.4 introduces GitHub Security Advisories (GHSA) after the deterministic FIRST EPSS, CISA KEV, and NVD/CVE paths.
 
-The Phase 2.4 requirement is to add structured advisory/package evidence without prematurely implementing package-version applicability.
+The requirement is to add curated advisory/package evidence without prematurely implementing installed package-version applicability.
 
-The source must support, at minimum:
+The source contract must support:
 
 - stable advisory identity;
-- CVE aliases when present;
+- optional CVE aliases;
 - package ecosystem and package identity;
 - vulnerable version-range evidence;
 - structured first-patched-version evidence when available;
 - publication/update/withdrawal state;
-- deterministic replay and historical observations;
-- bounded retrieval and recoverable pagination.
+- bounded pagination and replay;
+- historical source observations.
 
 The project invariant remains:
 
@@ -26,44 +26,76 @@ The project invariant remains:
 
 No model may infer advisory identity, CVE equivalence, package applicability, vulnerable-version membership, patched-version values, synchronization completion, or authority state.
 
-## Evidence from Phase 2.4A so far
+## Evidence from Phase 2.4A
 
-GitHub documents a versioned Global Security Advisories REST endpoint:
+GitHub provides a versioned Global Security Advisories REST interface:
 
 ```text
 GET /advisories
 GET /advisories/{ghsa_id}
 ```
 
-The selected API contract pins:
+OpsLens pins:
 
 ```text
 Accept: application/vnd.github+json
 X-GitHub-Api-Version: 2026-03-10
 ```
 
-The list endpoint supports reviewed/unreviewed/malware advisory classes, date/date-time filtering over `published`, `updated`, and `modified`, cursor pagination, sorting, and a maximum `per_page` of 100.
+Phase 2.4 uses:
 
-GitHub's public Advisory Database reported 34,792 reviewed advisories on 2026-08-27. At 100 records per page, an unfiltered bootstrap requires at least 348 list requests.
+```text
+type=reviewed
+```
 
-GitHub documents a primary limit of 60 requests/hour for unauthenticated public access and 5,000 requests/hour for authenticated user/token requests. The source endpoint itself does not require advisory-specific fine-grained token permissions.
+The public `github/advisory-database` repository remains useful for evidence and sample inspection, but GitHub documents it as a mirror of its primary advisory database and warns that repository organization and internal `database_specific` values may change.
 
-Real reviewed advisory evidence inspected from GitHub's public advisory-database mirror proved that:
+The live authenticated probes confirmed:
 
-- a GHSA may have a CVE alias;
-- a GHSA may have no CVE alias;
-- an advisory may be withdrawn while remaining valid historical source evidence;
-- an affected package carries ecosystem/name and structured affected-range evidence;
-- a structured fixed/first-patched version may be available;
-- fixed-version evidence is not universal and must remain nullable.
+```text
+x-ratelimit-limit:    5000
+x-ratelimit-resource: core
+```
 
-The mirror repository is useful for source inspection, but GitHub documents it as a mirror of its primary advisory database and warns that repository organization and internal `database_specific` fields may change. It is therefore not selected as the production runtime interface.
+They also confirmed exact cursor pagination through `Link: ...; rel="next"`.
 
-## Proposed decision
+Representative live workload evidence:
+
+```text
+recent published month — 2026-07
+pages:       13
+items:       1278
+unique GHSA: 1278
+bytes:       8865112
+HTTP time:   19.102 s
+
+historical published month — 2020-01
+pages:       1
+items:       48
+unique GHSA: 48
+bytes:       221273
+HTTP time:   0.768 s
+
+recent modified day — 2026-08-26
+pages:       1
+items:       36
+unique GHSA: 36
+bytes:       219694
+HTTP time:   0.996 s
+```
+
+Live payloads also proved:
+
+- reviewed GHSAs can omit CVE identifiers;
+- withdrawn advisories remain present as source evidence;
+- one advisory can contain many vulnerability/package entries;
+- `first_patched_version` is not universal and must remain nullable.
+
+## Decision
 
 ### Authoritative runtime interface
 
-Use the versioned GitHub REST Global Security Advisories API as the OpsLens GHSA runtime source.
+Use the GitHub Global Security Advisories REST API as the OpsLens GHSA runtime source.
 
 ```text
 source:
@@ -76,37 +108,15 @@ advisory class:
 reviewed
 ```
 
-Do not use a Git clone of `github/advisory-database` as the runtime ingestion contract.
-
-The mirror may continue to be used as public evidence for tests, examples, and source-semantic research when read as data only.
-
-### Advisory class
-
-Ingest only:
-
-```text
-type=reviewed
-```
-
-Do not union `unreviewed` or `malware` into the same Phase 2.4 dataset.
-
-`unreviewed` advisories substantially overlap NVD-derived evidence already present in OpsLens. Malware advisories represent a different security-intelligence category rather than standard vulnerability advisories.
+Do not use a Git clone of `github/advisory-database` as the production ingestion contract.
 
 ### Authentication
 
 Production GHSA retrieval must be authenticated.
 
-The current full-bootstrap page count is already too large to treat the unauthenticated 60 requests/hour budget as a reasonable bounded production mode.
+The reviewed corpus size implies hundreds of pages for a full traversal, while GitHub's unauthenticated REST budget is too small for a reasonable production bootstrap.
 
-The exact credential mechanism is intentionally deferred until the runtime/security design evaluates:
-
-- least privilege;
-- rotation;
-- storage;
-- ownership;
-- operational recovery.
-
-Phase 2.4A creates no secret resource.
+The exact credential mechanism is deferred to the runtime/security design and must be evaluated for least privilege, rotation, storage, ownership, and recovery.
 
 ### Pagination
 
@@ -114,19 +124,27 @@ Use:
 
 ```text
 per_page=100
-serial requests
+serial requests by default
 exact Link rel="next" continuation URL
 ```
 
 Do not synthesize or guess pagination cursors.
 
-Rate-limit responses must honor GitHub's documented `Retry-After` and `x-ratelimit-*` semantics with bounded retry behavior.
+Runtime handling must honor documented rate-limit behavior including `Retry-After` and `x-ratelimit-*` headers.
 
 ### Bootstrap
 
-Use the same REST source for bootstrap and ongoing updates.
+Use the same versioned REST source for bootstrap and ongoing updates.
 
-Candidate bootstrap algorithm:
+Default bootstrap planning unit:
+
+```text
+one calendar-month published window
+```
+
+The actual logical identity is the exact normalized closed start/end range, not the word `month`.
+
+Accepted bootstrap shape:
 
 ```text
 establish T0
@@ -140,13 +158,15 @@ catch up modified advisories T0 -> T1
 ongoing modified windows
 ```
 
-The initial workload-spike candidate is calendar-month historical windows. The exact window size remains open until the live REST workload probe measures representative page counts and response sizes.
+A calendar month is a default planning unit, not an unlimited size guarantee. Runtime page/byte caps must fail closed, and an oversized month must be subdividable deterministically into smaller exact ranges.
+
+The exact production caps and subdivision algorithm belong to the Bronze/runtime contract.
 
 ### Incremental synchronization
 
-Use closed `modified` date-time windows because GitHub defines `modified` as advisories that were published or updated within the requested range.
+Use bounded closed `modified` time ranges.
 
-Candidate query shape:
+Accepted request shape:
 
 ```text
 type=reviewed
@@ -156,23 +176,23 @@ direction=asc
 per_page=100
 ```
 
-Do not use an unbounded `sort=updated` traversal as the synchronization authority because mutable ordering can move records between pages while a traversal is in progress.
+Do not use one unbounded mutable traversal as synchronization authority.
 
-The exact safety-overlap and watermark policy remain open until the live probe validates real date-time filtering and cursor behavior.
+The exact safety-overlap/delay policy and authoritative watermark mechanics remain later runtime-contract decisions. They must preserve replayability and must not treat source timestamps as content identity.
 
 ### Advisory identity
 
-Use GHSA ID as the source advisory identity.
+Use GHSA ID as the source advisory identity:
 
 ```text
 GHSA-xxxx-xxxx-xxxx
 ```
 
-CVE identifiers are aliases, not the GHSA primary key.
+CVE identifiers are optional aliases rather than the GHSA primary key.
 
-The model must support zero-or-more aliases and must not assume every GHSA maps to exactly one CVE.
+The model must not assume every GHSA maps to exactly one CVE.
 
-### Package identity
+### Package identity and cardinality
 
 Preserve source package identity as:
 
@@ -181,6 +201,8 @@ ecosystem
 +
 package name
 ```
+
+One advisory can carry multiple vulnerability/package entries. Advisory-level facts and vulnerability/package facts must therefore remain separate in the future Silver model.
 
 No cross-ecosystem package identity merging is introduced in Phase 2.4.
 
@@ -198,121 +220,88 @@ Preserve `first_patched_version` as structured source evidence when present.
 
 The value is nullable.
 
-Do not extract an authoritative fixed version from advisory prose when the structured field is absent.
+Do not derive an authoritative fixed version from advisory prose when the structured field is absent.
 
 ### Withdrawal
 
 Preserve `withdrawn_at` as a source state.
 
-A withdrawn advisory is historical evidence and must not be deleted or treated as if the GHSA never existed.
+A withdrawn advisory remains historical source evidence and must not be deleted or treated as if the GHSA never existed.
 
 ### Observation identity
 
 Separate logical synchronization identity from exact physical source observation identity.
 
-Candidate model:
-
 ```text
 sync_id
-    source contract + API version + mode + normalized temporal range
+    source contract + API version + mode + exact normalized temporal range
 
 attempt_id
-    exact ordered page bytes / hashes / sizes + pagination evidence
+    exact ordered page evidence + response hashes/sizes + pagination evidence
 ```
 
 Do not use `updated_at` as the sole content identity for an advisory version.
 
-The deterministic advisory-content identity and exact Bronze manifest schema will be finalized in later Phase 2.4 contract gates.
-
-## Why this ADR remains Proposed
-
-The authoritative interface, reviewed scope, authentication requirement, package/range boundary, fixed-version semantics, and high-level synchronization model are supported by current official documentation and real public advisory examples.
-
-However, Phase 2.4A is a workload spike as well as a documentation review.
-
-Before this ADR becomes Accepted, OpsLens must perform a bounded live request against `GET /advisories` and record:
-
-- exact response bytes and timing;
-- `Link` cursor behavior;
-- rate-limit headers;
-- response/header cache metadata when present;
-- item count and uniqueness;
-- representative `published` and `modified` range behavior;
-- representative window page counts/sizes.
-
-No AWS runtime should be implemented from this proposed ADR before that live evidence gate passes.
+The exact Bronze manifest and deterministic canonical advisory-version identity are later Phase 2.4 contract decisions.
 
 ## Alternatives considered
 
-### Advisory-database Git repository as the production source
+### Advisory-database Git repository as production source
 
-Not selected.
-
-The repository is a useful open evidence mirror but is not the versioned service contract. GitHub explicitly warns that repository organization and internal database-specific values may change.
+Not selected. It is a useful public mirror, but not the selected versioned service contract.
 
 ### Include unreviewed advisories
 
-Not selected for Phase 2.4.
-
-They are automatically published from NVD and would create substantial overlap with the NVD path already implemented by OpsLens without adding the curated package-advisory boundary that motivates GHSA.
+Not selected for Phase 2.4. They substantially overlap NVD-derived evidence already present in OpsLens.
 
 ### Include malware advisories
 
-Not selected for Phase 2.4.
-
-Malware is a distinct threat-intelligence category and should not be silently merged with standard vulnerability advisories.
+Not selected for Phase 2.4. Malware is a distinct threat-intelligence category and should not be silently merged into the standard advisory dataset.
 
 ### Unauthenticated production ingestion
 
-Not selected.
-
-The currently observed reviewed-advisory cardinality implies at least 348 unfiltered pages, while GitHub allows only 60 unauthenticated public REST requests per hour.
+Not selected. The measured and observed corpus size makes the 60 requests/hour unauthenticated budget unsuitable for bounded production bootstrap.
 
 ### One unbounded full-database poll
 
-Not selected.
+Not selected. Bounded temporal ranges provide clearer completion, replay, recovery, and evidence semantics.
 
-Bounded temporal windows provide clearer completion, replay, recovery, cost, and evidence semantics.
+### Evaluate vulnerable ranges during GHSA normalization
 
-### Evaluate version ranges during GHSA normalization
-
-Rejected.
-
-Source normalization must preserve affected-range evidence without deciding applicability. Ecosystem-specific package/version matching is Phase 3 deterministic correlation work.
+Rejected. Source normalization preserves evidence; package/version applicability is deterministic Phase 3 work.
 
 ### Derive fixed versions from prose
 
-Rejected.
-
-A structured `first_patched_version` is stronger source evidence. Free-text extraction would introduce an interpretation policy and is not authoritative normalization.
+Rejected. Structured `first_patched_version` is stronger source evidence, while prose extraction would introduce an interpretation policy.
 
 ## Consequences
 
 ### Positive
 
 - uses a versioned GitHub-supported API contract;
-- focuses Phase 2.4 on curated package advisory evidence;
-- avoids duplicating the existing NVD source class unnecessarily;
+- focuses Phase 2.4 on curated reviewed advisory/package evidence;
+- avoids unnecessarily duplicating the NVD source class;
 - preserves GHSA identity independently from optional CVE aliases;
-- preserves source version-range expressions without premature interpretation;
-- preserves structured first-patched-version evidence;
+- preserves one-to-many package/range/fix evidence;
+- preserves vulnerable-range expressions without premature interpretation;
+- preserves nullable structured first-patched-version evidence;
 - retains withdrawn advisory history;
-- provides bounded synchronization/recovery units;
-- keeps source observation identity separate from logical synchronization state;
-- avoids creating AWS or secret resources before the workload evidence is complete.
+- provides bounded bootstrap and incremental synchronization units;
+- separates logical synchronization identity from exact physical source observation identity;
+- avoids creating AWS resources before the source workload is understood.
 
 ### Trade-offs
 
-- authenticated production retrieval introduces a future credential lifecycle requirement;
-- bootstrap requires multiple bounded temporal windows;
-- current source changes can cause multiple historical observations of one GHSA;
-- consumers cannot treat every GHSA as CVE-backed;
-- range applicability remains unavailable until Phase 3;
-- the exact bootstrap window size and incremental safety overlap remain unresolved until the live probe completes.
+- authenticated production retrieval introduces a credential lifecycle requirement;
+- bootstrap spans multiple bounded temporal windows;
+- advisory updates can create multiple historical observations for one GHSA;
+- consumers cannot assume every GHSA is CVE-backed;
+- package/version applicability remains unavailable until Phase 3;
+- exact runtime page/byte caps, window subdivision, overlap, and watermark mechanics still require later deterministic contracts.
 
-## Proposed operational rule
+## Operational rule
 
-Until this ADR is accepted or superseded:
+Until superseded by another ADR:
 
 ```text
 runtime source:
@@ -325,19 +314,25 @@ scope:
 reviewed only
 
 authentication:
-required for production; mechanism deferred
+required for production; mechanism decided later
 
-bootstrap:
-bounded published-time windows + modified catch-up
+bootstrap default:
+calendar-month published windows
+
+bootstrap identity:
+exact normalized closed start/end range
 
 incremental:
-closed modified-time windows
+bounded closed modified-time ranges
 
 pagination:
 per_page=100 + exact Link continuation
 
 identity:
 GHSA primary; CVE aliases optional
+
+package evidence:
+one-to-many vulnerability/package entries
 
 ranges:
 preserve exact source expression
@@ -347,6 +342,9 @@ preserve structured first_patched_version when present
 
 withdrawal:
 preserve as historical source state
+
+source observation:
+logical sync_id != exact physical attempt_id
 
 package-version applicability:
 Phase 3 only
