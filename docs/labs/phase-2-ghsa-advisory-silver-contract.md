@@ -20,7 +20,7 @@ bootstrap:      bounded published-time windows
 incremental:    bounded modified-time windows
 ```
 
-Phase 2.4B now defines how one exact source advisory observation becomes versioned structured evidence.
+Phase 2.4B defines how one exact source advisory observation becomes versioned structured evidence.
 
 The invariant remains:
 
@@ -28,7 +28,7 @@ The invariant remains:
 
 No LLM participates in advisory identity, CVE alias validation, package/range normalization, patched-version evidence, CVSS/CWE normalization, Parquet serialization, or completion decisions.
 
-## Current increment — observed advisory identity and core fields
+## Increment 1 — observed advisory identity and core fields
 
 The first 2.4B increment implements:
 
@@ -61,25 +61,17 @@ observed_advisory_version_id
 
 Unknown additive fields participate in canonical source identity even before they receive dedicated normalized Silver columns.
 
-## Canonical GHSA identifier
-
-The observed-version contract uses GitHub's documented GHSA identifier alphabet and shape:
+The first increment was locally validated with:
 
 ```text
-GHSA-xxxx-xxxx-xxxx
+19 passed
+Ruff: all checks passed
+Pyright strict: 0 errors / 0 warnings / 0 informations
 ```
-
-The suffix uses the canonical GitHub advisory character set:
-
-```text
-23456789cfghjmpqrvwx
-```
-
-Malformed primary advisory identity fails closed.
 
 ## Core Silver fields
 
-The first normalized record preserves the documented scalar source fields:
+The normalized core record preserves:
 
 ```text
 ghsa_id
@@ -111,116 +103,210 @@ high
 critical
 ```
 
-Unknown values in known core semantics fail closed.
+## Increment 2 — identifiers, references, CWE, CVSS, and package evidence
 
-## CVE semantics
+The second logical increment adds deterministic structured normalization before any Arrow/Parquet decision.
 
-`cve_id` is optional.
+### Identifiers
 
-The live Phase 2.4A probes observed reviewed advisories without CVE identifiers, so the Silver contract must not require one CVE per GHSA.
+The source `identifiers[]` array is preserved in source order.
 
-When present, a CVE identifier must use canonical CVE syntax.
-
-The richer `identifiers` collection remains a later 2.4B increment. It will be preserved as source evidence and validated against the primary GHSA/CVE fields without replacing GHSA as the advisory key.
-
-## Temporal semantics
-
-GitHub REST timestamps are parsed as timezone-aware ISO-8601 values and normalized to UTC.
-
-Unlike the NVD contract, the GHSA transformer does not silently assume UTC for a timestamp that omits its offset. A naive timestamp fails closed because the GitHub source contract provides explicit timezone-bearing timestamps.
-
-`withdrawn_at` remains a nullable historical state:
+Known identifier types receive structural validation:
 
 ```text
-withdrawn_at = null
-    -> active observation
-
-withdrawn_at != null
-    -> withdrawn historical observation
+GHSA -> canonical GHSA syntax
+CVE  -> canonical CVE syntax
 ```
 
-Withdrawal never means that the persisted advisory did not exist.
+Unknown future identifier types remain structured evidence rather than being rejected merely because a new type was introduced.
 
-## Current code boundary
+Collection consistency requires the primary `ghsa_id` to appear in the identifier evidence. When scalar `cve_id` is present, that CVE must also appear in `identifiers[]`. Additional CVE identifiers are not collapsed because advisory-to-CVE aliasing must not be forced into a one-to-one model.
 
-Implemented in this increment:
+### References
+
+`references[]` is preserved as an ordered collection of non-empty source strings.
+
+OpsLens does not dereference those URLs during normalization.
+
+### CWE
+
+Each source CWE is preserved as:
 
 ```text
-src/opslens/transformation/ghsa/domain/canonicalization.py
-src/opslens/transformation/ghsa/domain/errors.py
-src/opslens/transformation/ghsa/domain/models.py
-src/opslens/transformation/ghsa/domain/transformer.py
+cwe_id
+name
 ```
 
-Unit coverage includes:
+Known CWE identifiers must use canonical `CWE-<number>` syntax.
+
+### CVSS
+
+GitHub API version `2026-03-10` deprecates the older top-level `cvss` property in favor of `cvss_severities` for advisory APIs.
+
+GHSA Silver therefore normalizes the current structured source contract:
 
 ```text
-object-key order independence
-same-content replay identity
-additive-field identity changes
-updated_at not used as sole identity
-withdrawal creates changed source version
-source-array order participates in identity
-invalid GHSA rejection
-non-finite JSON rejection
-noncanonical direct construction rejection
-reviewed core normalization
-nullable CVE
-withdrawal preservation
-reviewed-only source scope
-bounded severity vocabulary
-canonical CVE validation
-timezone requirement
-missing required-field rejection
+cvss_severities.cvss_v3
+cvss_severities.cvss_v4
 ```
 
-## Silver shape still to freeze
-
-The Phase 2.4A live evidence showed that one advisory can contain many vulnerability/package entries — up to 36 in the measured recent modified window.
-
-Therefore Phase 2.4B must not flatten package evidence into one arbitrary scalar set.
-
-The next contract increments must decide and prove the deterministic representation of:
+Known families preserve:
 
 ```text
-identifiers
-references
-CWEs
-CVSS v3 / v4 evidence
-GitHub EPSS fields, if retained as source evidence
-credits, if retained
-vulnerabilities[]
-    package.ecosystem
-    package.name
-    vulnerable_version_range
-    first_patched_version
-    vulnerable_functions
+vector_string
+score
 ```
 
-The package/range/fix representation must preserve one-to-many advisory semantics and remain queryable without evaluating package-version applicability.
+Scores must be finite and between 0 and 10. The vector prefix must match the declared family.
+
+The complete `cvss_severities` source object is also retained as Canonical JSON v1. This means future additive CVSS-family fields remain exact structured evidence even before OpsLens explicitly understands them.
+
+The deprecated top-level `cvss` field still participates in the complete observed-advisory content identity when returned by the source, but no new authoritative Silver field is based on that deprecated property.
+
+### GitHub EPSS
+
+GitHub currently returns an `epss` structure for some global advisories. Phase 2.4B does not select that mirror as the authoritative OpsLens EPSS dataset because FIRST EPSS already has its own source path and provenance model.
+
+The GitHub field remains preserved in the complete source advisory content identity. A dedicated duplicate EPSS Silver authority is not introduced here.
+
+### Credits
+
+GitHub `credits` remains preserved in the complete source advisory object and therefore in observed content identity. Credits are not required for the Phase 2 vulnerability/advisory query exit criteria and do not receive dedicated Silver columns in this increment.
+
+## One-to-many vulnerability/package evidence
+
+The Phase 2.4A live probe observed as many as 36 vulnerability entries in one advisory. Package evidence is therefore modeled as a source-ordered one-to-many collection.
+
+Each `vulnerabilities[]` occurrence preserves:
+
+```text
+source_index
+package.ecosystem
+package.name
+vulnerable_version_range
+first_patched_version          nullable
+vulnerable_functions[]
+canonical source-entry JSON
+source-entry SHA-256
+```
+
+The documented current ecosystem vocabulary is:
+
+```text
+rubygems
+npm
+pip
+maven
+nuget
+composer
+go
+rust
+erlang
+actions
+pub
+other
+swift
+```
+
+A source value outside that versioned contract fails closed. GitHub's explicit `other` value remains supported.
+
+### Vulnerability occurrence identity
+
+The exact source-array occurrence is identified as:
+
+```text
+<observed_advisory_version_id>
+/vulnerability:<source_index>
+@sha256:<canonical-entry-sha256>
+```
+
+Including `source_index` prevents two identical source entries from silently collapsing into one observation.
+
+The complete entry JSON also participates in identity, so an additive source field changes the exact entry version even before receiving a dedicated normalized field.
+
+A reviewed advisory with an empty `vulnerabilities[]` array remains valid evidence; advisory existence is not made conditional on package evidence.
 
 ## Explicit Phase boundary
 
-Phase 2.4 may preserve:
+Phase 2.4 preserves source package facts:
 
 ```text
 package ecosystem
 package name
 vulnerable version range expression
 first patched version when present
+vulnerable functions when present
 ```
 
-It must not decide:
+The exact `vulnerable_version_range` string is preserved without parsing or simplification.
+
+Phase 2.4 does not decide:
 
 ```text
 installed_version ∈ vulnerable_version_range
 ```
 
-That decision remains deterministic Phase 3 — Vulnerability Correlation Engine work.
+That decision remains deterministic **Phase 3 — Vulnerability Correlation Engine** work and will require ecosystem-specific version semantics.
+
+## Current code boundary
+
+Implemented so far:
+
+```text
+src/opslens/transformation/ghsa/domain/canonicalization.py
+src/opslens/transformation/ghsa/domain/errors.py
+src/opslens/transformation/ghsa/domain/models.py
+src/opslens/transformation/ghsa/domain/transformer.py
+src/opslens/transformation/ghsa/domain/collections_models.py
+src/opslens/transformation/ghsa/domain/collections_transformer.py
+src/opslens/transformation/ghsa/domain/vulnerability_models.py
+src/opslens/transformation/ghsa/domain/vulnerabilities_transformer.py
+```
+
+The second increment adds unit coverage for:
+
+```text
+identifier/CVE consistency
+future identifier preservation
+ordered references
+canonical CWE validation
+CVSS v3/v4 normalization
+future CVSS-family source preservation
+deprecated cvss independence
+one-to-many package entries
+nullable first_patched_version
+exact range preservation
+duplicate source occurrence identity
+additive entry evidence
+changed entry identity
+empty vulnerability arrays
+documented ecosystem vocabulary
+malformed package/function failure semantics
+```
+
+## Silver physical shape still to freeze
+
+Logical advisory and package evidence is now separated cleanly enough to select the physical Silver representation without flattening away source cardinality.
+
+The remaining 2.4B work must freeze and prove:
+
+```text
+final composed Silver record
+explicit Arrow schema v1
+nested/list physical representation
+row cardinality rule
+deterministic row ordering
+deterministic Parquet serialization
+logical record-set SHA-256
+source-to-Silver provenance fields
+Silver completion proof
+```
+
+Whether the physical dataset uses one advisory-version row with nested vulnerability entries or multiple related physical datasets must be decided from queryability, provenance, Athena cost, and replay semantics rather than convenience.
 
 ## AWS / IAM / cost boundary
 
-This increment creates no AWS resources and introduces no AWS runtime cost.
+This gate still creates no AWS resources and introduces no AWS runtime cost.
 
 Not implemented here:
 
@@ -247,8 +333,8 @@ GHSA_CORE_FIELDS_GATE=PASS
 GHSA_REVIEWED_SCOPE_SILVER_GATE=PASS
 GHSA_CVE_NULLABILITY_GATE=PASS
 GHSA_WITHDRAWAL_CORE_GATE=PASS
-GHSA_COLLECTIONS_CONTRACT_GATE=PENDING
-GHSA_VULNERABILITY_ENTRIES_GATE=PENDING
+GHSA_COLLECTIONS_CONTRACT_GATE=PASS_PENDING_LOCAL_VALIDATION
+GHSA_VULNERABILITY_ENTRIES_GATE=PASS_PENDING_LOCAL_VALIDATION
 GHSA_ARROW_SCHEMA_GATE=PENDING
 GHSA_PARQUET_DETERMINISM_GATE=PENDING
 GHSA_2_4B_GATE=IN_PROGRESS
@@ -256,11 +342,12 @@ GHSA_2_4B_GATE=IN_PROGRESS
 
 ## Next step
 
-Define and test the source collections and one-to-many vulnerability/package evidence before selecting the final Arrow/Parquet physical shape.
+Run the focused unit/Ruff/Pyright validation for the second logical increment. If green, freeze the composed logical Silver record and Arrow/Parquet v1 physical contract.
 
 Do not introduce GHSA AWS runtime resources until the Phase 2.4B Silver contract is frozen.
 
-## Official reference
+## Official references
 
 - GitHub REST API — Global security advisories: https://docs.github.com/en/rest/security-advisories/global-advisories
+- GitHub REST API breaking changes — `cvss` deprecation in favor of `cvss_severities`: https://docs.github.com/en/enterprise-cloud@latest/rest/about-the-rest-api/breaking-changes?apiVersion=2026-03-10
 - ADR-0005 — GHSA source and synchronization strategy: `docs/adr/0005-ghsa-source-and-synchronization-strategy.md`
