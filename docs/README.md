@@ -15,7 +15,7 @@ docs/
 
 The deployed Phase 2.3E/2.3F NVD runtime architecture and its real AWS evidence are captured in [`phase-2-nvd-authoritative-runtime-closeout.md`](labs/phase-2-nvd-authoritative-runtime-closeout.md). Together they document the currently implemented architecture without introducing speculative future-state components.
 
-The current implementation includes AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze, incremental CVE API Bronze, versioned NVD Silver, deployed Incremental/Silver/Promotion runtimes, the authoritative watermark boundary, EventBridge Scheduler, runtime IAM separation, idempotency, observability, and bounded failure recovery.
+The current implementation includes AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze, incremental CVE API Bronze, versioned NVD Silver, deployed Incremental/Silver/Promotion runtimes, the authoritative watermark boundary, EventBridge Scheduler, runtime IAM separation, idempotency, observability, bounded failure recovery, and the permanent NVD Glue/Athena analytics projection path.
 
 ## Architecture Decision Records
 
@@ -81,5 +81,5 @@ Phase 2.3C — NVD Incremental API Contract:   COMPLETE
 Phase 2.3D — NVD Versioned Silver Contract:  COMPLETE
 Phase 2.3E — NVD Silver AWS Runtime:         COMPLETE
 Phase 2.3F — NVD Authoritative Watermark:    COMPLETE
-Phase 2.3G — NVD Glue/Athena Analytics:      IN PROGRESS
+Phase 2.3G — NVD Glue/Athena Analytics:      COMPLETE
 ```
