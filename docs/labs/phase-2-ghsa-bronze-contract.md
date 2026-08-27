@@ -8,7 +8,7 @@ _Status: IN PROGRESS_
 
 Define deterministic GitHub Security Advisory Bronze request, response-page, cursor-pagination, physical observation, and persistence evidence contracts before any GHSA AWS runtime resource is created.
 
-Phase 2.4A froze the GitHub source contract. Phase 2.4B froze exact advisory content-version Silver semantics. Phase 2.4C now owns the physical source observation boundary.
+Phase 2.4A froze the GitHub source contract. Phase 2.4B froze exact advisory content-version Silver semantics. Phase 2.4C owns the physical source observation boundary.
 
 The invariant remains:
 
@@ -43,7 +43,7 @@ Phase 2.4B explicitly established:
 observed_advisory_version_id != sync_id != attempt_id
 ```
 
-Bronze must preserve the physical source evidence required to bind later Silver content back to the exact accepted source observation without changing content identity.
+Bronze preserves the physical source evidence required to bind later Silver content back to one exact accepted source observation without redefining advisory content identity.
 
 ## Architecture for this gate
 
@@ -62,14 +62,22 @@ allowlisted exact rel=next URL
         ↓
 GhsaAdvisoryPagination
         ↓
-future attempt_id + Bronze page objects + COMPLETE manifest
+GhsaAttemptIdFactory
+        ↓
+content-bound attempt_id
+        ↓
+deterministic Bronze page keys
+        ↓
+versioned persistence results
+        ↓
+GhsaCompleteManifest
 ```
 
-No S3, Lambda, EventBridge, Terraform, IAM, or secret resource is introduced in the first increment.
+No S3, Lambda, EventBridge, Terraform, IAM, or secret resource is introduced by the contract increments.
 
 ## Increment 1 — logical window, URL allowlist, and complete cursor chain
 
-The first implementation increment freezes only the deterministic source-navigation boundary.
+The first implementation increment froze the deterministic source-navigation boundary.
 
 ### Logical synchronization identity
 
@@ -102,37 +110,9 @@ source contract
 
 Runtime timestamps, Lambda request IDs, credentials, retries, and AWS metadata do not participate in `sync_id`.
 
-### First request URL
-
-The first URL is built deterministically for:
-
-```text
-https://api.github.com/advisories
-```
-
-with only the frozen query fields.
-
-Authentication is intentionally not placed in the URL. Production authentication remains mandatory from ADR-0005 and will be injected through the outbound HTTP adapter as an Authorization header supplied by a credential port.
-
-Tokens must never appear in:
-
-```text
-request URLs
-Bronze objects
-manifests
-logs
-exception messages
-sync_id
-attempt_id
-```
-
-The concrete AWS secret-storage mechanism remains a later runtime/security decision and will be evaluated before Terraform is introduced.
-
 ### Link header as untrusted navigation input
 
-OpsLens follows GitHub's exact `rel="next"` continuation URL, but does not follow it blindly.
-
-Every continuation URL must satisfy the outbound allowlist:
+OpsLens follows GitHub's exact `rel="next"` continuation URL, but every continuation remains inside the outbound allowlist:
 
 ```text
 scheme: https
@@ -143,58 +123,17 @@ userinfo: forbidden
 fragment: forbidden
 ```
 
-The URL must preserve exactly:
-
-```text
-type=reviewed
-published=<same exact range>
-  OR
-modified=<same exact range>
-sort=published
-direction=asc
-per_page=100
-```
-
-Only one opaque `after` or `before` cursor may be added. Unknown parameters, duplicate parameters, mixed published/modified filters, external hosts, alternate paths, and multiple cursors fail closed.
+The URL must preserve exactly the selected synchronization filter, `type=reviewed`, `sort=published`, `direction=asc`, and `per_page=100`. Only one opaque `after` or `before` cursor may be added.
 
 This is an SSRF/outbound-navigation boundary even though GitHub is the selected trusted source.
 
-### Minimum page validation
+### Minimum page and pagination validation
 
-Each exact response body must:
+Each exact response body must be non-empty UTF-8 JSON, top-level array, at most 8 MiB, at most 100 advisories, reviewed-only, within the selected source window, unique by GHSA within the page, and sorted by `published_at` ascending.
 
-```text
-be non-empty UTF-8 JSON
-have a top-level array
-remain <= 8 MiB
-contain <= 100 advisories
-contain unique GHSA IDs within the page
-contain type=reviewed for every item
-contain required published_at and updated_at UTC timestamps
-respect the selected published/modified window
-respect sort=published,direction=asc within the page
-```
+A complete pagination must start from the deterministic initial URL, follow each exact `rel=next` URL, avoid repeated request URLs and GHSA IDs, preserve cross-page published ordering, and end only when the final page has no `rel=next`.
 
-For a `published` window, every advisory must have `published_at` inside the exact closed range.
-
-For a `modified` window, at least one of `published_at` or `updated_at` must be inside the exact closed range, matching the accepted GitHub modified-filter semantics.
-
-The exact response bytes and SHA-256 are preserved in the validated page model.
-
-### Complete pagination proof
-
-A complete `GhsaAdvisoryPagination` must:
-
-```text
-start from the deterministic first request URL
-follow each exact rel=next URL byte-for-byte as the next request URL
-never repeat a request URL
-never repeat a GHSA ID across pages
-preserve non-decreasing published ordering across page boundaries
-end only when the final page has no rel=next
-```
-
-Initial safety caps are frozen at:
+Safety caps:
 
 ```text
 maximum page body:  8 MiB
@@ -202,48 +141,203 @@ maximum pages:      64
 maximum total body: 64 MiB
 ```
 
-The Phase 2.4A live workload measured a recent published month at 13 pages and about 8.9 MB, so these caps leave bounded headroom while still failing closed on unexpected source growth.
-
-An oversized logical range is not permission for an unbounded traversal. A later Bronze increment will define deterministic subdivision/recovery behavior.
-
-## Why NVD is reused by principle, not copied literally
-
-NVD and GHSA share the architectural principle:
+Local validation for Increment 1:
 
 ```text
-logical source window identity
+16 passed
+Ruff: all checks passed
+Pyright strict: 0 errors / 0 warnings / 0 informations
+```
+
+## Increment 2 — physical attempt identity and COMPLETE persistence evidence
+
+The second increment introduces no AWS resources. It freezes the deterministic shape that a future runtime must satisfy after it retrieves and persists a complete page sequence.
+
+### Physical attempt identity
+
+`GhsaAttemptIdFactory` binds the exact ordered observation:
+
+```text
+attempt_version
+sync_id
+page_count
+total_items
+total_bytes
+ordered pages[]:
+  request_url
+  next_url
+  sha256
+  size_bytes
+  item_count
+```
+
+The `attempt_id` is SHA-256 over canonical JSON for that document.
+
+Consequences:
+
+```text
+same logical sync + same exact pages + same cursor chain
+    -> same attempt_id
+
+same logical sync + changed response bytes
+    -> different attempt_id
+
+same logical sync + changed cursor navigation evidence
+    -> different attempt_id
+```
+
+`attempt_id` is not a runtime invocation ID and contains no timestamp, credential, Lambda request ID, S3 VersionId, retry counter, or AWS metadata.
+
+### Bronze key layout
+
+The frozen contract layout is:
+
+```text
+bronze/ghsa/advisories/
+  mode=<published|modified>/
+    sync_id=<logical-query-sha256>/
+      attempt_id=<physical-observation-sha256>/
+        page=<000001...>/response.json
+        manifest.json
+```
+
+The opaque GitHub cursor is intentionally not used as an S3 key component. Cursor evidence remains inside the attempt identity and manifest.
+
+This preserves the same architectural principle already proven in NVD:
+
+```text
+logical synchronization identity
     !=
-exact physical source observation identity
+exact physical observation identity
 ```
 
-NVD pagination is numeric and declares `totalResults`; GHSA pagination is cursor-based and completion is evidenced by the absence of a valid `rel=next` continuation.
+while adapting the page coordinate to cursor-based GitHub pagination.
 
-Therefore GHSA cannot reuse NVD's `startIndex/totalResults` completeness rules directly.
+### Versioned persistence proof
 
-GHSA needs its own exact cursor-chain proof while preserving the same fail-closed evidence philosophy.
-
-## Remaining Phase 2.4C work after Increment 1
-
-After local validation of this first increment, the next Bronze contract increment will freeze:
+`GhsaBronzeWriteResult` requires both:
 
 ```text
-attempt_id
-content-bound ordered page inventory
-Bronze S3 key layout
-page object metadata
-COMPLETE manifest schema
-manifest canonical serialization
-S3 VersionId provenance
-safe HTTP response metadata retention
-failure and retry semantics
-oversized-window deterministic subdivision
+exact object key
+exact S3 VersionId
 ```
 
-Only after those contracts are green should the phase evaluate and introduce the real AWS runtime, IAM, credential storage, scheduling, and observability resources.
+The COMPLETE manifest factory refuses completion when:
+
+```text
+page write count != validated page count
+persisted page key != deterministic Bronze key
+pagination belongs to another sync_id
+page inventory is incomplete
+```
+
+This means a future S3 adapter cannot report only a successful `PutObject`; it must return the exact VersionId created for the exact key.
+
+### COMPLETE manifest
+
+One manifest describes one exact physical attempt and preserves:
+
+```text
+source:            github-ghsa
+source_interface:  global-security-advisories-rest
+api_version:       2026-03-10
+advisory_type:     reviewed
+mode
+sync_id
+attempt_id
+closed window start/end
+page_count
+total_items
+total_bytes
+```
+
+Each stored page records:
+
+```text
+page_ordinal
+key
+version_id
+size_bytes
+sha256
+item_count
+request_url
+next_url
+first_ghsa_id
+last_ghsa_id
+```
+
+The manifest serializer uses deterministic canonical JSON ordering and a trailing newline.
+
+Authorization headers and tokens are not represented in the manifest, keys, `sync_id`, or `attempt_id`.
+
+### Empty windows
+
+A valid zero-result synchronization remains evidence:
+
+```text
+one exact response page containing []
+no rel=next
+total_items = 0
+COMPLETE manifest with one persisted page
+```
+
+An empty logical window is therefore not confused with a failed or missing ingestion attempt.
+
+## Provenance boundary with Silver
+
+Phase 2.4B freezes:
+
+```text
+observed_advisory_version_id
+    = exact canonical advisory content identity
+```
+
+Phase 2.4C now freezes:
+
+```text
+sync_id
+    = logical source-query identity
+
+attempt_id
+    = exact complete physical page/cursor observation identity
+```
+
+Later Bronze-to-Silver verification must be able to prove:
+
+```text
+Silver advisory content
+    came from
+exact page bytes
+    at exact S3 VersionId
+    inside exact COMPLETE attempt manifest
+```
+
+Repeated physical observations of identical advisory content may therefore have different `attempt_id` values while still producing the same `observed_advisory_version_id`.
+
+## Remaining Phase 2.4C work
+
+After local validation of Increment 2, the remaining Bronze/runtime gate must decide and prove:
+
+```text
+safe authenticated GitHub HTTP adapter
+credential source and rotation ownership
+bounded retry / Retry-After behavior
+safe response metadata retention
+S3 versioned page + manifest adapters
+failure/replay semantics
+oversized-window deterministic subdivision
+runtime composition
+Lambda artifact build
+least-privilege IAM
+Terraform
+real dev execution evidence
+```
+
+No watermark or Silver authority may advance from a partial attempt.
 
 ## AWS / IAM / cost boundary
 
-Current increment:
+Current contract work:
 
 ```text
 AWS resources added:  none
@@ -252,27 +346,28 @@ runtime cost added:   none
 secret resources:     none
 ```
 
-Future runtime must use authenticated GitHub retrieval, least-privilege AWS access, bounded HTTP behavior, immutable/versioned S3 evidence, and existing deterministic content-addressed Lambda deployment practices.
+The future runtime must use authenticated GitHub retrieval, least-privilege AWS access, bounded HTTP behavior, immutable/versioned S3 evidence, and the existing deterministic content-addressed Lambda deployment lifecycle.
 
 ## Current gates
 
 ```text
-GHSA_BRONZE_SYNC_WINDOW_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_BRONZE_REQUEST_URL_ALLOWLIST_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_BRONZE_PAGE_CONTRACT_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_BRONZE_CURSOR_COMPLETION_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_BRONZE_ATTEMPT_ID_GATE=PENDING
-GHSA_BRONZE_KEY_LAYOUT_GATE=PENDING
-GHSA_BRONZE_COMPLETE_MANIFEST_GATE=PENDING
+GHSA_BRONZE_SYNC_WINDOW_GATE=PASS
+GHSA_BRONZE_REQUEST_URL_ALLOWLIST_GATE=PASS
+GHSA_BRONZE_PAGE_CONTRACT_GATE=PASS
+GHSA_BRONZE_CURSOR_COMPLETION_GATE=PASS
+GHSA_BRONZE_ATTEMPT_ID_GATE=PASS_PENDING_LOCAL_VALIDATION
+GHSA_BRONZE_KEY_LAYOUT_GATE=PASS_PENDING_LOCAL_VALIDATION
+GHSA_BRONZE_COMPLETE_MANIFEST_GATE=PASS_PENDING_LOCAL_VALIDATION
 GHSA_BRONZE_CREDENTIAL_RUNTIME_GATE=PENDING
+GHSA_BRONZE_RUNTIME_GATE=PENDING
 GHSA_2_4C_GATE=IN_PROGRESS
 ```
 
 ## Next step
 
-Run focused unit tests, Ruff, and strict Pyright for the new GHSA ingestion domain contract.
+Run focused unit tests, Ruff, and strict Pyright for the new attempt/key/manifest increment.
 
-Do not add AWS resources until this source-navigation boundary is green.
+Do not introduce AWS resources until this physical evidence contract is green.
 
 ## References
 
