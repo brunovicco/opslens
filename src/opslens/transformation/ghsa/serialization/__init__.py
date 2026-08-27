@@ -1,0 +1,1 @@
+"""GHSA Silver serialization contracts."""
