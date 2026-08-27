@@ -37,18 +37,17 @@ def test_equivalent_offsets_share_the_same_sync_identity() -> None:
 
 def test_sync_identity_binds_mode_and_source_contract() -> None:
     """Keep bootstrap published windows distinct from modified synchronization."""
-    common = {
-        "start_at": datetime(2026, 7, 1, 0, 0, 0, tzinfo=UTC),
-        "end_at": datetime(2026, 7, 31, 23, 59, 59, tzinfo=UTC),
-    }
-
+    start_at = datetime(2026, 7, 1, 0, 0, 0, tzinfo=UTC)
+    end_at = datetime(2026, 7, 31, 23, 59, 59, tzinfo=UTC)
     published = GhsaSyncWindow(
         mode=GhsaSyncMode.PUBLISHED,
-        **common,
+        start_at=start_at,
+        end_at=end_at,
     )
     modified = GhsaSyncWindow(
         mode=GhsaSyncMode.MODIFIED,
-        **common,
+        start_at=start_at,
+        end_at=end_at,
     )
 
     assert published.sync_id != modified.sync_id
