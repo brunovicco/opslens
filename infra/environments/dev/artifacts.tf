@@ -69,16 +69,17 @@ resource "aws_s3_bucket_lifecycle_configuration" "deployment_artifacts" {
     }
   }
 
+  # Content-addressed Lambda keys are deployment provenance and may be pinned
+  # by exact S3 VersionId for longer than a fixed time window. Keep the current
+  # object at each immutable key indefinitely. Only superseded object versions
+  # are eligible for cleanup; write-once uploads prevent normal creation of
+  # noncurrent versions for content-addressed keys.
   rule {
-    id     = "cleanup-lambda-deployment-artifacts"
+    id     = "cleanup-noncurrent-lambda-deployment-artifacts"
     status = "Enabled"
 
     filter {
       prefix = "lambda/"
-    }
-
-    expiration {
-      days = 90
     }
 
     noncurrent_version_expiration {
