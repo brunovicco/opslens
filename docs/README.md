@@ -68,6 +68,7 @@ Phase 2:
 - [`phase-2-nvd-glue-athena-incremental-event-proof.md`](labs/phase-2-nvd-glue-athena-incremental-event-proof.md)
 - [`phase-2-nvd-glue-athena-permanent-athena-proof.md`](labs/phase-2-nvd-glue-athena-permanent-athena-proof.md)
 - [`phase-2-nvd-glue-athena-failure-replay-observability-proof.md`](labs/phase-2-nvd-glue-athena-failure-replay-observability-proof.md)
+- [`phase-2-ghsa-documentation-reconciliation.md`](labs/phase-2-ghsa-documentation-reconciliation.md) — Phase 2.4-0 reconciliation of public documentation against the post-PR #28 `main` checkpoint before GHSA implementation.
 
 Cross-phase infrastructure closeout:
 
@@ -87,6 +88,11 @@ Phase 2.3D — NVD Versioned Silver Contract:  COMPLETE
 Phase 2.3E — NVD Silver AWS Runtime:         COMPLETE
 Phase 2.3F — NVD Authoritative Watermark:    COMPLETE
 Phase 2.3G — NVD Glue/Athena Analytics:      COMPLETE
-
 Legacy Lambda artifact lifecycle migration: COMPLETE
+Phase 2.4-0 — Documentation reconciliation:  COMPLETE
+Phase 2.4A — GHSA Source Contract:           NEXT
+Phase 2.5 — Historical EPSS expansion:       NOT STARTED
+Phase 3 — Vulnerability Correlation Engine:  NOT STARTED
 ```
+
+Phase 2 remains open. GHSA source-contract work is the next gate; historical EPSS expansion follows before Phase 2 can be closed or any Phase 3 work begins.

@@ -280,18 +280,31 @@ A persistência usa criação condicional de objeto no S3. `412 PreconditionFail
 
 O runtime incremental avança por janelas fechadas de `lastModified` e preserva cada página exata retornada pela API.
 
+O modelo de identidade implementado separa a janela lógica de sincronização da observação física exata da fonte:
+
+```text
+update_id
+    identidade da janela incremental lógica
+
+attempt_id
+    identidade da observação física exata da fonte
+```
+
 Layout canônico:
 
 ```text
 bronze/nvd/cve/updates/
-    update_id=<deterministic-window-identity>/
-        page_start=000000/
-            response.json
-        page_start=000500/
-            response.json
-        ...
+    update_id=<logical-window-identity>/
+        attempt_id=<exact-physical-observation>/
+            page_start=000000/
+                response.json
+            page_start=000500/
+                response.json
+            ...
         manifest.json
 ```
+
+Essa distinção protege a semântica de replay quando a API do NVD retorna bytes exatos ou metadata de resposta diferentes para a mesma janela lógica.
 
 O contrato incremental valida:
 
@@ -608,35 +621,40 @@ Exemplos atuais:
 
 ## Modelo de artefato de deployment
 
-O analytics projector permanente do NVD usa artefato determinístico e content-addressed:
+Todos os runtimes Lambda atualmente implantados no OpsLens seguem o mesmo lifecycle imutável de artefato de deployment:
 
 ```text
-build do ZIP exato da Lambda
-    -> SHA-256
-    -> chave S3 imutável do artefato
+source tree
+    -> build determinístico do ZIP
+    -> identidade SHA-256
+    -> chave S3 content-addressed
     -> VersionId S3 exato
-    -> pin no Terraform
+    -> pin imutável no Terraform
+    -> readback do Lambda CodeSha256
 ```
 
-SHA-256 validado do artefato do projector:
+O NVD analytics projector permanente já utilizava esse modelo. O PR #28 concluiu a migração dos runtimes legados de ingestão EPSS, KEV e NVD Bootstrap e corrigiu o lifecycle do bucket de artefatos para manter duráveis os objetos Lambda content-addressed atuais.
+
+O closeout final do ambiente no PR #28 comprovou:
 
 ```text
-6ae0bf3909744d6bb5e61390885fc469c18b93ef383bd4c2380fdc874de159cf
+No changes. Your infrastructure matches the configuration.
+POST_APPLY_PLAN_RC=0
 ```
 
-Permanece uma exceção preexistente de convergência no ambiente dev para hashes de artefatos Lambda legados de EPSS, KEV e NVD Bootstrap. Essa dívida está fora do boundary concluído da Phase 2.3G e deve ser tratada em uma mudança separada de artifact lifecycle.
+Não existe drift global conhecido no Terraform `dev` decorrente do lifecycle legado de artefatos Lambda neste checkpoint.
 
 ---
 
 ## Status atual da implementação
 
 ```text
-FIRST EPSS                 IMPLEMENTED through Athena
-CISA KEV                   IMPLEMENTED through Athena
-NVD / CVE                  IMPLEMENTED through authoritative analytics + Athena
-GitHub Security Advisories NOT STARTED
-EPSS historical expansion  NOT STARTED
-Phase 3 AI reasoning       NOT STARTED
+FIRST EPSS                          IMPLEMENTED through Athena
+CISA KEV                            IMPLEMENTED through Athena
+NVD / CVE                           IMPLEMENTED through authoritative analytics + Athena
+GitHub Security Advisories          IN PROGRESS — Phase 2.4A next
+EPSS historical expansion           NOT STARTED
+Phase 3 Vulnerability Correlation   NOT STARTED
 ```
 
 Status detalhado do NVD:
@@ -651,4 +669,6 @@ Phase 2.3F — NVD Authoritative Watermark    COMPLETE
 Phase 2.3G — NVD Glue/Athena Analytics      COMPLETE
 ```
 
-Ingestão GHSA e Phase 3 permanecem intencionalmente fora do milestone NVD concluído.
+A Phase 2.4-0 reconcilia a documentação com o checkpoint de `main` posterior ao PR #28. A Phase 2.4A — GHSA Source Contract & Workload Spike é o próximo gate de implementação.
+
+A aplicabilidade de vulnerabilidade para package/version permanece um trabalho determinístico da Phase 3. A Phase 2 continua aberta até que os requisitos de GHSA e histórico EPSS sejam concluídos ou explicitamente adiados; Bedrock, RAG ou fases agentic não devem substituir esses milestones determinísticos restantes do data plane.
