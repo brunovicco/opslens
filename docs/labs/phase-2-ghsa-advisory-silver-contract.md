@@ -2,7 +2,9 @@
 
 _Date started: 2026-08-27_
 
-_Status: IN PROGRESS_
+_Date completed: 2026-08-27_
+
+_Status: COMPLETE_
 
 ## Purpose
 
@@ -18,9 +20,11 @@ identity:       GHSA-first
 pagination:     exact Link continuation
 bootstrap:      bounded published-time windows
 incremental:    bounded modified-time windows
+sync_id:        logical synchronization identity
+attempt_id:     exact physical source-observation identity
 ```
 
-Phase 2.4B defines how one exact source advisory becomes versioned structured evidence.
+Phase 2.4B freezes how one exact source advisory content version becomes deterministic structured Silver evidence.
 
 The invariant remains:
 
@@ -106,7 +110,7 @@ Pyright strict: 0 errors / 0 warnings / 0 informations
 
 ## Increment 3 — logical Silver record and physical schema v1
 
-The current increment composes the previously validated domain components into one logical record:
+The final increment composes the validated domain components into one logical record:
 
 ```text
 GhsaSilverRecordV1
@@ -119,7 +123,7 @@ All three components must describe the same exact `ObservedGhsaAdvisoryVersion`.
 
 ### Dataset shape
 
-The selected Silver v1 dataset is:
+The frozen Silver v1 dataset is:
 
 ```text
 dataset:           ghsa_advisory_versions
@@ -128,7 +132,7 @@ row identity:      observed_advisory_version_id
 physical grain:    one row per exact advisory content version
 ```
 
-One advisory version remains one physical row. One-to-many advisory facts use nested Arrow collections instead of multiplying advisory rows:
+One advisory version remains one physical row. One-to-many facts use nested Arrow collections instead of multiplying advisory rows:
 
 ```text
 identifiers            list<struct<type,value>>
@@ -140,7 +144,7 @@ vulnerabilities         list<struct<...>>
 
 The vulnerability struct preserves source occurrence identity, package identity, exact range expression, nullable first-patched version, vulnerable functions, and canonical source-entry evidence.
 
-This shape keeps advisory-level identity stable while retaining package multiplicity. Future analytical SQL can explode nested evidence deliberately rather than ingesting a prematurely flattened source model.
+Future analytical SQL may explode nested evidence deliberately. A package-oriented relation may be introduced later as a derived projection, but it must not replace the authoritative advisory-version dataset.
 
 ### Logical record-set identity
 
@@ -156,7 +160,7 @@ duplicate observed_advisory_version_id values fail closed
 nested package/range/fix changes alter the logical digest
 ```
 
-The logical hash uses a domain separator:
+The logical hash uses the domain separator:
 
 ```text
 opslens-ghsa-logical-record-set-v1
@@ -166,7 +170,7 @@ This separates logical data identity from a particular PyArrow/Parquet encoding.
 
 ### Parquet v1 writer contract
 
-The physical writer contract mirrors the already proven deterministic NVD settings:
+The physical writer contract is frozen as:
 
 ```text
 Parquet format version: 1.0
@@ -176,6 +180,7 @@ row group size:         5000
 compliant nested type:  enabled
 INT96 timestamps:       disabled
 Arrow schema metadata:  stored
+timestamps:             UTC / microseconds
 ```
 
 Rows are canonically sorted before table construction. Duplicate exact advisory content versions fail before serialization.
@@ -194,9 +199,9 @@ Input record order must not change Parquet bytes within the frozen writer/runtim
 
 ### Why nested instead of package-row flattening
 
-The Phase 2.4A live workload proved that one advisory may contain many package/range entries. Flattening at Silver ingestion would duplicate advisory text, timestamps, identifiers, CWE, references, and CVSS once per package occurrence and would make advisory-version identity depend on a derived relational expansion.
+The Phase 2.4A live workload proved that one advisory may contain many package/range entries. Flattening at Silver ingestion would duplicate advisory text, timestamps, identifiers, CWE, references, and CVSS once per package occurrence and make advisory-version identity depend on a derived relational expansion.
 
-Nested Arrow/Parquet instead preserves the source cardinality boundary directly:
+Nested Arrow/Parquet preserves the source cardinality boundary directly:
 
 ```text
 one observed advisory content version
@@ -204,23 +209,7 @@ one observed advisory content version
     -> zero or more nested vulnerability occurrences
 ```
 
-A later analytics projection may create a package-oriented relation if a concrete Athena workload proves that projection worthwhile. That projection must remain derived and must not replace the authoritative Silver advisory-version dataset.
-
-### Provenance boundary
-
-The v1 row grain in this increment is **advisory content version**, not physical REST retrieval occurrence.
-
-Phase 2.4A already established:
-
-```text
-sync_id != attempt_id
-```
-
-The exact Bronze manifest/object/version binding and physical observation coordinates remain Phase 2.4C/2.4D contract work. They must be added as verification/completion evidence without changing the meaning of the `observed_advisory_version_id` content key.
-
-No claim is made here that repeated physical observations of identical content are the same source occurrence; they are only the same advisory content version.
-
-## Explicit Phase boundary
+## Explicit Phase 3 boundary
 
 Phase 2.4 may preserve:
 
@@ -239,9 +228,62 @@ installed_version ∈ vulnerable_version_range
 
 That decision remains deterministic Phase 3 — Vulnerability Correlation Engine work.
 
+## Provenance and completion boundary
+
+Phase 2.4A established:
+
+```text
+sync_id != attempt_id
+```
+
+Phase 2.4B now explicitly freezes:
+
+```text
+observed_advisory_version_id != sync_id != attempt_id
+```
+
+The v1 Silver row represents exact advisory **content version**, not one physical REST retrieval occurrence.
+
+The same advisory content can legitimately be observed in multiple synchronization attempts. Re-observing identical content must not create another advisory content version merely because the request, page, retry, S3 object, or S3 VersionId differs.
+
+Later GHSA Bronze/runtime work must preserve exact physical occurrence provenance and bind every accepted physical occurrence back to its `observed_advisory_version_id`. That binding must not mutate or redefine the content-version identifier.
+
+The exact Bronze manifest/object/version fields and exact physical representation of occurrence-to-content provenance are deliberately deferred to Phase 2.4C/2.4D, where the real Bronze object and completion contracts exist.
+
+End-to-end Bronze-to-Silver completion is also a runtime concern because it requires evidence not present in a contract-only Silver gate:
+
+```text
+exact synchronization window
+exact attempt
+ordered pages
+Bronze object versions and hashes
+accepted source occurrence count
+Silver artifact identity
+successful persistence
+authority/watermark mutation rules
+```
+
+This deferral is an explicit architectural boundary, not an incomplete 2.4B contract. ADR-0006 records the decision.
+
+## Final local validation
+
+After Increment 3, the focused checkpoint was reported green:
+
+```text
+uv run pytest tests/unit/transformation/ghsa
+uv run ruff check src/opslens/transformation/ghsa tests/unit/transformation/ghsa
+uv run pyright
+```
+
+Result:
+
+```text
+PASS
+```
+
 ## AWS / IAM / cost boundary
 
-This increment creates no AWS resources and introduces no AWS runtime cost.
+Phase 2.4B creates no AWS resources and introduces no AWS runtime cost.
 
 Not implemented here:
 
@@ -260,7 +302,7 @@ watermark / authority mutation
 
 Credential design remains deferred to the GHSA runtime/security gate accepted by ADR-0005.
 
-## Current gates
+## Final gates
 
 ```text
 GHSA_OBSERVED_ADVISORY_IDENTITY_GATE=PASS
@@ -270,24 +312,26 @@ GHSA_CVE_NULLABILITY_GATE=PASS
 GHSA_WITHDRAWAL_CORE_GATE=PASS
 GHSA_COLLECTIONS_CONTRACT_GATE=PASS
 GHSA_VULNERABILITY_ENTRIES_GATE=PASS
-GHSA_LOGICAL_RECORD_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_ARROW_SCHEMA_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_LOGICAL_HASH_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_PARQUET_DETERMINISM_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_BRONZE_PROVENANCE_BINDING_GATE=PENDING_FUTURE_GATE
-GHSA_2_4B_GATE=IN_PROGRESS
+GHSA_LOGICAL_RECORD_GATE=PASS
+GHSA_ARROW_SCHEMA_GATE=PASS
+GHSA_LOGICAL_HASH_GATE=PASS
+GHSA_PARQUET_DETERMINISM_GATE=PASS
+GHSA_BRONZE_PROVENANCE_BINDING_GATE=DEFERRED_TO_2_4C_2_4D_BY_DESIGN
+GHSA_END_TO_END_COMPLETION_GATE=DEFERRED_TO_2_4C_2_4D_BY_DESIGN
+GHSA_2_4B_GATE=PASS
 ```
 
-## Next step
+## Exit decision
 
-Run focused GHSA tests, Ruff, and strict Pyright against the new logical/Arrow/Parquet increment.
+Phase 2.4B is frozen and complete.
 
-If green, record the evidence and decide whether Phase 2.4B can close with exact Bronze provenance explicitly deferred to Phase 2.4C, or whether an additional contract-only provenance shape is required before the Silver schema is declared frozen.
+The next milestone is **Phase 2.4C — GHSA Bronze**.
 
-Do not introduce GHSA AWS runtime resources until that decision is explicit.
+The first 2.4C step must define the deterministic Bronze request/page/manifest/object contract, physical observation identity, bounded failure behavior, and credential/runtime security boundary before any AWS resource is created.
 
 ## Official references
 
 - GitHub REST API — Global security advisories: https://docs.github.com/en/rest/security-advisories/global-advisories
 - GitHub REST API breaking changes — `cvss` deprecation in favor of `cvss_severities`: https://docs.github.com/en/enterprise-cloud@latest/rest/about-the-rest-api/breaking-changes?apiVersion=2026-03-10
-- ADR-0005 — GHSA source and synchronization strategy: `docs/adr/0005-ghsa-source-and-synchronization-strategy.md`
+- ADR-0005 — `docs/adr/0005-ghsa-source-and-synchronization-strategy.md`
+- ADR-0006 — `docs/adr/0006-ghsa-silver-content-versioning-and-physical-shape.md`
