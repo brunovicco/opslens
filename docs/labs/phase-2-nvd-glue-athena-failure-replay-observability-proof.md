@@ -1,6 +1,6 @@
 # Phase 2.3G.4K — Permanent NVD Analytics Failure / Replay / Observability Proof
 
-Status: **IN PROGRESS**
+Status: **COMPLETE**
 
 ## Objective
 
@@ -109,7 +109,7 @@ The destination VersionId remained unchanged after replay. The runtime therefore
 
 ## Controlled fail-closed probe
 
-The failure probe is intentionally rejected at the inbound parser before runtime dependency construction. It uses an asynchronous Lambda invocation with a syntactically JSON payload that contains an otherwise valid Bootstrap coordinate plus one extra field.
+The failure probe was intentionally rejected at the inbound parser before runtime dependency construction. It used an asynchronous Lambda invocation with a syntactically valid JSON payload that contained an otherwise valid Bootstrap coordinate plus one extra `probe_id` field.
 
 The parser requires exactly:
 
@@ -117,22 +117,6 @@ The parser requires exactly:
 mode
 silver_complete_key
 silver_complete_version_id
-```
-
-Therefore the extra probe field must cause `InvalidNvdAnalyticsProjectionInvocationError` before any authority object is loaded or any analytics object can be written.
-
-The controlled probe must use `InvocationType=Event` so the deployed Lambda asynchronous retry policy and OnFailure destination are exercised. With `maximum_retry_attempts=2`, the expected runtime behavior is one initial failed attempt plus up to two retries before the event is delivered to the configured SQS OnFailure destination.
-
-The proof must not relax retry settings or change the failure destination.
-
-## Observed asynchronous failure delivery — PASS
-
-The queue was re-read immediately before the controlled probe and remained empty:
-
-```text
-ApproximateNumberOfMessages=0
-ApproximateNumberOfMessagesNotVisible=0
-ApproximateNumberOfMessagesDelayed=0
 ```
 
 Probe identifier:
@@ -148,7 +132,7 @@ StatusCode=202
 NVD_2_3G_4K_INVALID_INVOCATION_ACCEPTED_ASYNC=PASS
 ```
 
-After provider-managed retries, the configured SQS OnFailure destination received the matching event. Exact retained evidence:
+After provider-managed retries, the configured SQS OnFailure destination received the matching event:
 
 ```text
 MessageId=0fd52397-308d-4349-9b69-912d56c22fff
@@ -166,7 +150,7 @@ The final error message was:
 NVD analytics bootstrap_seed must contain exactly mode, silver_complete_key, and silver_complete_version_id.
 ```
 
-The OnFailure `requestPayload` retained the unique probe id and exact Bootstrap coordinates, proving that the received message corresponds to this controlled test rather than an unrelated runtime failure.
+The OnFailure `requestPayload` retained the unique probe id and exact Bootstrap coordinates, proving that the message corresponded to the controlled test rather than an unrelated runtime failure.
 
 Formal async-destination gate:
 
@@ -174,63 +158,88 @@ Formal async-destination gate:
 NVD_2_3G_4K_ASYNC_ON_FAILURE=PASS
 ```
 
-Operational note: while polling before the OnFailure message existed, AWS CLI returned no message payload and the local helper attempted to decode an empty file, producing `JSONDecodeError`. This was a polling-script issue only; Lambda eventually delivered the correlated OnFailure message and the retained provider evidence above is valid.
+Operational note: while polling before the OnFailure message existed, AWS CLI returned no message payload and the local helper attempted to decode an empty file, producing `JSONDecodeError`. This was a local polling-script issue only; Lambda subsequently delivered the exact correlated OnFailure message.
 
-## Failure evidence to retain
+## Fail-closed and observability proof — PASS
 
-Retain:
-
-```text
-asynchronous invoke StatusCode
-probe start timestamp
-CloudWatch rejection records after the probe start
-OnFailure queue message body
-Lambda async destination request/response context
-request payload containing the unique probe id
-final response error evidence
-```
-
-The exact retry timing is provider-managed; the proof should poll rather than assume fixed retry intervals.
-
-## Observability gates
-
-The handler emits bounded telemetry for:
+CloudWatch was queried from the controlled probe start time and returned three rejection records for the exact final asynchronous request id:
 
 ```text
-NvdAnalyticsProjectionInvocation
-NvdAnalyticsProjectionSuccess
-NvdAnalyticsProjected / NvdAnalyticsAlreadyProjected
-NvdAnalyticsProjectionInvalidInvocation
-NvdAnalyticsProjectionFailure
+request_id=d0c1cd4f-504c-4a2c-96e9-01e1bb638547
+message=NVD analytics projection invocation rejected
+exception_name=InvalidNvdAnalyticsProjectionInvocationError
+xray_trace_id=1-6a8f8431-1bc07297442944da64cc7515
 ```
 
-The replay proof retained start/completion telemetry with the same request id and `status=already_projected`.
-
-The controlled invalid invocation must still retain the final `NVD analytics projection invocation rejected` record corresponding to `request_id=d0c1cd4f-504c-4a2c-96e9-01e1bb638547`. The negative-path log gate is intentionally separate from the already-proven SQS OnFailure delivery.
-
-4I already proved event-driven success correlation through one Lambda request id and X-Ray trace. 4K complements that positive path with replay and negative-path evidence; it does not need to manufacture a new successful authority event.
-
-## Queue cleanup
-
-Before the controlled failure probe, the OnFailure queue was confirmed empty.
-
-After receiving and validating the controlled failure message, delete only that exact received message by its receipt handle. Then re-read the queue attributes until the visible, not-visible, and delayed counts return to zero.
-
-Queue cleanup is operational evidence cleanup only. It does not change NVD authority.
-
-## Post-probe authority invariants
-
-After replay and failure probing:
+Observed rejection timestamps were approximately:
 
 ```text
-4I exact analytics destination VersionId remains qPiaURVW17cIGxSqROAgUbqIqIq1L0Jl
-4I exact analytics SHA-256 remains 3ad08d8e257128bc8334fc98ae0eade8d4808136b84df8a8ab8de64978bcc6f9
-Bootstrap exact analytics VersionId remains NzP5XmGl6yeMoQvmMv4JgCmixd_5N.ba
-Bootstrap exact analytics SHA-256 remains 4ea6e3ae1d73908d8fb4f953dcf181802bf111001bcdb7f3695e4773fe854541
-failure queue returns to empty after controlled evidence cleanup
+2026-08-27T00:26:28Z
+2026-08-27T00:27:28Z
+2026-08-27T00:29:15Z
 ```
 
-The current authoritative watermark may legitimately advance because its scheduler remains enabled. 4K therefore does not require the current watermark pointer to stay on the 4I VersionId; it requires the exact 4I evidence version and its exact downstream projection to remain verifiable.
+Each retained stack trace terminated at the strict inbound parser boundary:
+
+```text
+analytics_projection_lambda_handler.lambda_handler
+    -> NvdAnalyticsProjectionInvocationParserV1.parse
+    -> _parse_bootstrap_seed
+    -> InvalidNvdAnalyticsProjectionInvocationError
+```
+
+For that request id the proof found no `Starting permanent NVD analytics projection`, no `Permanent NVD analytics projection completed`, and no runtime dependency initialization failure record. The invalid invocation therefore did not cross the projection execution boundary or initialize the projection runtime.
+
+Formal gates:
+
+```text
+NVD_2_3G_4K_INVALID_INVOCATION_FAIL_CLOSED=PASS
+NVD_2_3G_4K_FAILURE_OBSERVABILITY=PASS
+```
+
+## Queue cleanup — PASS
+
+The OnFailure queue was empty before the controlled probe. After receiving and validating the exact controlled failure message, only that message was deleted using its receipt handle.
+
+The queue then returned:
+
+```text
+ApproximateNumberOfMessages=0
+ApproximateNumberOfMessagesNotVisible=0
+ApproximateNumberOfMessagesDelayed=0
+NVD_2_3G_4K_QUEUE_CLEANUP=PASS
+```
+
+Queue cleanup was operational evidence cleanup only and did not change NVD authority.
+
+## Post-probe authority invariants — PASS
+
+After replay, asynchronous retry exhaustion, SQS evidence capture, and cleanup, the exact permanent analytics evidence remained unchanged:
+
+```text
+Incremental analytics VersionId=qPiaURVW17cIGxSqROAgUbqIqIq1L0Jl
+Incremental ContentLength=205462
+Incremental SHA-256=3ad08d8e257128bc8334fc98ae0eade8d4808136b84df8a8ab8de64978bcc6f9
+
+Bootstrap analytics VersionId=NzP5XmGl6yeMoQvmMv4JgCmixd_5N.ba
+Bootstrap ContentLength=36240684
+Bootstrap SHA-256=4ea6e3ae1d73908d8fb4f953dcf181802bf111001bcdb7f3695e4773fe854541
+```
+
+The exact 4I authoritative watermark evidence also remained independently retrievable:
+
+```text
+VersionId=q9Zwn_4jdUZei_jqP6fytSy1aabtus7h
+ContentLength=1287
+```
+
+The current authoritative watermark pointer is allowed to advance through the still-enabled scheduler; 4K requires the exact 4I evidence version and its downstream projection to remain verifiable, which they do.
+
+Formal gate:
+
+```text
+NVD_2_3G_4K_AUTHORITY_INVARIANTS=PASS
+```
 
 ## Gate state
 
@@ -241,16 +250,16 @@ NVD_2_3G_4K_REPLAY_VERSION_STABLE=PASS
 NVD_2_3G_4K_REPLAY_OBSERVABILITY=PASS
 NVD_2_3G_4K_FAILURE_QUEUE_BASELINE=PASS
 NVD_2_3G_4K_INVALID_INVOCATION_ACCEPTED_ASYNC=PASS
-NVD_2_3G_4K_INVALID_INVOCATION_FAIL_CLOSED=PENDING
+NVD_2_3G_4K_INVALID_INVOCATION_FAIL_CLOSED=PASS
 NVD_2_3G_4K_ASYNC_ON_FAILURE=PASS
-NVD_2_3G_4K_FAILURE_OBSERVABILITY=PENDING
-NVD_2_3G_4K_QUEUE_CLEANUP=PENDING
-NVD_2_3G_4K_AUTHORITY_INVARIANTS=PENDING
-NVD_2_3G_4K=IN_PROGRESS
+NVD_2_3G_4K_FAILURE_OBSERVABILITY=PASS
+NVD_2_3G_4K_QUEUE_CLEANUP=PASS
+NVD_2_3G_4K_AUTHORITY_INVARIANTS=PASS
+NVD_2_3G_4K=COMPLETE
 ```
 
 ## Completion boundary
 
-4K is complete only when replay is verified without a new destination version, the controlled invalid invocation is proven fail-closed, asynchronous failure handling reaches the deployed SQS destination, the failure message is correlated and then cleaned up, bounded telemetry is retained, and exact pre-existing analytics evidence remains unchanged.
+4K is complete. Replay was verified without creating a new destination version; a controlled invalid asynchronous invocation was rejected before runtime construction; Lambda exhausted the configured retry budget and delivered the correlated event to SQS OnFailure; bounded CloudWatch/X-Ray evidence proved fail-closed behavior; the exact message was cleaned up; and pre-existing Bootstrap, Incremental, and exact watermark evidence remained unchanged.
 
-After 4K completion, Phase 2.3G can enter final review/merge preparation. No subsequent phase is implied automatically.
+The implementation and AWS evidence boundary of Phase 2.3G is therefore complete. The branch may now proceed to final repository review, quality gates, Terraform no-drift confirmation, and PR merge preparation. GHSA ingestion and Phase 3 are not implied by this closeout.
