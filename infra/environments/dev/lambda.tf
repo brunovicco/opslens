@@ -1,5 +1,16 @@
 locals {
-  epss_lambda_artifact_path = "${path.module}/../../../dist/opslens-epss-ingestion.zip"
+  epss_lambda_artifact_sha256 = (
+    "6eee3ca9297b4f393afed6d15c28de39a684c05b64bdbb02d8916edb2f04d348"
+  )
+  epss_lambda_artifact_sha256_base64 = (
+    "bu48qSl7Tzk6/tbRXCjeOaaEwFtkvbsC2JFu2y8E00g="
+  )
+  epss_lambda_artifact_version = (
+    "dlTZxO6udUaRhUQMT1YytkOKrETL.1EC"
+  )
+  epss_lambda_artifact_key = (
+    "lambda/epss-ingestion/${local.epss_lambda_artifact_sha256}.zip"
+  )
 }
 
 resource "aws_lambda_function" "epss_ingestion" {
@@ -19,8 +30,11 @@ resource "aws_lambda_function" "epss_ingestion" {
 
   handler = "opslens.ingestion.epss.lambda_handler.lambda_handler"
 
-  filename         = local.epss_lambda_artifact_path
-  source_code_hash = filebase64sha256(local.epss_lambda_artifact_path)
+  s3_bucket         = aws_s3_bucket.deployment_artifacts.bucket
+  s3_key            = local.epss_lambda_artifact_key
+  s3_object_version = local.epss_lambda_artifact_version
+
+  source_code_hash = local.epss_lambda_artifact_sha256_base64
 
   memory_size = 512
   timeout     = 60
