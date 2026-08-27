@@ -20,29 +20,15 @@ bootstrap:      bounded published-time windows
 incremental:    bounded modified-time windows
 ```
 
-Phase 2.4B defines how one exact source advisory observation becomes versioned structured evidence.
+Phase 2.4B defines how one exact source advisory becomes versioned structured evidence.
 
 The invariant remains:
 
 > **Agents reason. Code verifies evidence.**
 
-No LLM participates in advisory identity, CVE alias validation, package/range normalization, patched-version evidence, CVSS/CWE normalization, Parquet serialization, or completion decisions.
+No LLM participates in advisory identity, CVE alias validation, package/range normalization, patched-version evidence, CVSS/CWE normalization, logical hashing, Parquet serialization, or completion decisions.
 
 ## Increment 1 — observed advisory identity and core fields
-
-The first 2.4B increment implements:
-
-```text
-complete source advisory object
-        ↓
-Canonical JSON v1
-        ↓
-SHA-256
-        ↓
-ObservedGhsaAdvisoryVersion
-        ↓
-reviewed-only core normalization
-```
 
 The source advisory identity and observed content-version identity remain separate:
 
@@ -57,11 +43,11 @@ observed_advisory_version_id
     GHSA ID + source content SHA-256
 ```
 
-`updated_at` remains source metadata and is not trusted as the sole content identity.
+`updated_at` remains source metadata and is not trusted as the sole content identity. Unknown additive fields participate in canonical source identity even before they receive dedicated normalized Silver columns.
 
-Unknown additive fields participate in canonical source identity even before they receive dedicated normalized Silver columns.
+The normalized core preserves the reviewed-only scalar source contract, optional CVE alias, explicit UTC timestamps, and nullable withdrawal state.
 
-The first increment was locally validated with:
+Local evidence for this increment:
 
 ```text
 19 passed
@@ -69,120 +55,32 @@ Ruff: all checks passed
 Pyright strict: 0 errors / 0 warnings / 0 informations
 ```
 
-## Core Silver fields
+## Increment 2 — collections and package/range/fix evidence
 
-The normalized core record preserves:
-
-```text
-ghsa_id
-cve_id                         nullable
-url
-html_url
-repository_advisory_url        nullable
-summary
-description
-type
-severity
-source_code_location           nullable
-published_at
-updated_at
-github_reviewed_at             nullable
-nvd_published_at               nullable
-withdrawn_at                   nullable
-```
-
-Phase 2.4 scope is `type=reviewed`; `unreviewed` and `malware` fail the Silver scope boundary instead of being silently mixed into the curated dataset.
-
-The documented severity vocabulary is bounded to:
+The second increment preserves source-ordered one-to-many evidence:
 
 ```text
-unknown
-low
-medium
-high
-critical
+identifiers[]
+references[]
+cwes[]
+cvss_severities
+vulnerabilities[]
 ```
 
-## Increment 2 — identifiers, references, CWE, CVSS, and package evidence
+Identifiers preserve source order. GHSA and CVE values are consistency-checked against the scalar advisory fields, while additive future identifier types remain source evidence rather than being prematurely enum-bounded.
 
-The second logical increment adds deterministic structured normalization before any Arrow/Parquet decision.
+References remain ordered strings and are never dereferenced during normalization. CWE observations preserve canonical `CWE-n` identifiers and source names.
 
-### Identifiers
+Known `cvss_severities.cvss_v3` and `cvss_severities.cvss_v4` structures become typed metric evidence while the complete `cvss_severities` object is also preserved as Canonical JSON v1. The deprecated top-level `cvss` field is not promoted to a second Silver authority.
 
-The source `identifiers[]` array is preserved in source order.
+GitHub-provided EPSS remains part of the complete source advisory identity when present, but OpsLens does not create a competing authoritative EPSS dataset because FIRST EPSS already owns that evidence path.
 
-Known identifier types receive structural validation:
-
-```text
-GHSA -> canonical GHSA syntax
-CVE  -> canonical CVE syntax
-```
-
-Unknown future identifier types remain structured evidence rather than being rejected merely because a new type was introduced.
-
-Collection consistency requires the primary `ghsa_id` to appear in the identifier evidence. When scalar `cve_id` is present, that CVE must also appear in `identifiers[]`. Additional CVE identifiers are not collapsed because advisory-to-CVE aliasing must not be forced into a one-to-one model.
-
-### References
-
-`references[]` is preserved as an ordered collection of non-empty source strings.
-
-OpsLens does not dereference those URLs during normalization.
-
-### CWE
-
-Each source CWE is preserved as:
-
-```text
-cwe_id
-name
-```
-
-Known CWE identifiers must use canonical `CWE-<number>` syntax.
-
-### CVSS
-
-GitHub API version `2026-03-10` deprecates the older top-level `cvss` property in favor of `cvss_severities` for advisory APIs.
-
-GHSA Silver therefore normalizes the current structured source contract:
-
-```text
-cvss_severities.cvss_v3
-cvss_severities.cvss_v4
-```
-
-Known families preserve:
-
-```text
-vector_string
-score
-```
-
-Scores must be finite and between 0 and 10. The vector prefix must match the declared family.
-
-The complete `cvss_severities` source object is also retained as Canonical JSON v1. This means future additive CVSS-family fields remain exact structured evidence even before OpsLens explicitly understands them.
-
-The deprecated top-level `cvss` field still participates in the complete observed-advisory content identity when returned by the source, but no new authoritative Silver field is based on that deprecated property.
-
-### GitHub EPSS
-
-GitHub currently returns an `epss` structure for some global advisories. Phase 2.4B does not select that mirror as the authoritative OpsLens EPSS dataset because FIRST EPSS already has its own source path and provenance model.
-
-The GitHub field remains preserved in the complete source advisory content identity. A dedicated duplicate EPSS Silver authority is not introduced here.
-
-### Credits
-
-GitHub `credits` remains preserved in the complete source advisory object and therefore in observed content identity. Credits are not required for the Phase 2 vulnerability/advisory query exit criteria and do not receive dedicated Silver columns in this increment.
-
-## One-to-many vulnerability/package evidence
-
-The Phase 2.4A live probe observed as many as 36 vulnerability entries in one advisory. Package evidence is therefore modeled as a source-ordered one-to-many collection.
-
-Each `vulnerabilities[]` occurrence preserves:
+Each source `vulnerabilities[]` occurrence preserves:
 
 ```text
 source_index
-package.ecosystem
-package.name
+ecosystem
+package name
 vulnerable_version_range
 first_patched_version          nullable
 vulnerable_functions[]
@@ -190,123 +88,160 @@ canonical source-entry JSON
 source-entry SHA-256
 ```
 
-The documented current ecosystem vocabulary is:
+The exact occurrence identity is:
 
 ```text
-rubygems
-npm
-pip
-maven
-nuget
-composer
-go
-rust
-erlang
-actions
-pub
-other
-swift
+<observed_advisory_version_id>/vulnerability:<source_index>@sha256:<source_entry_sha256>
 ```
 
-A source value outside that versioned contract fails closed. GitHub's explicit `other` value remains supported.
+Identical duplicate source entries therefore remain distinct occurrences when they occupy different source indexes.
 
-### Vulnerability occurrence identity
-
-The exact source-array occurrence is identified as:
+Local evidence after strict-typing fixes:
 
 ```text
-<observed_advisory_version_id>
-/vulnerability:<source_index>
-@sha256:<canonical-entry-sha256>
+39 passed
+Ruff: all checks passed
+Pyright strict: 0 errors / 0 warnings / 0 informations
 ```
 
-Including `source_index` prevents two identical source entries from silently collapsing into one observation.
+## Increment 3 — logical Silver record and physical schema v1
 
-The complete entry JSON also participates in identity, so an additive source field changes the exact entry version even before receiving a dedicated normalized field.
+The current increment composes the previously validated domain components into one logical record:
 
-A reviewed advisory with an empty `vulnerabilities[]` array remains valid evidence; advisory existence is not made conditional on package evidence.
+```text
+GhsaSilverRecordV1
+├── core
+├── collections
+└── vulnerabilities
+```
+
+All three components must describe the same exact `ObservedGhsaAdvisoryVersion`. Cross-advisory or cross-CVE composition fails closed.
+
+### Dataset shape
+
+The selected Silver v1 dataset is:
+
+```text
+dataset:           ghsa_advisory_versions
+schema_version:    1
+row identity:      observed_advisory_version_id
+physical grain:    one row per exact advisory content version
+```
+
+One advisory version remains one physical row. One-to-many advisory facts use nested Arrow collections instead of multiplying advisory rows:
+
+```text
+identifiers            list<struct<type,value>>
+references             list<string>
+cwes                   list<struct<cwe_id,name>>
+cvss_metrics            list<struct<family,vector_string,score>>
+vulnerabilities         list<struct<...>>
+```
+
+The vulnerability struct preserves source occurrence identity, package identity, exact range expression, nullable first-patched version, vulnerable functions, and canonical source-entry evidence.
+
+This shape keeps advisory-level identity stable while retaining package multiplicity. Future analytical SQL can explode nested evidence deliberately rather than ingesting a prematurely flattened source model.
+
+### Logical record-set identity
+
+`GhsaLogicalRecordSetHasherV1` hashes canonical logical rows independently of Parquet bytes.
+
+The rules are:
+
+```text
+caller input order does not change the digest
+rows sort by ghsa_id + observed_advisory_version_id
+source-internal array order remains evidence and is not resorted
+duplicate observed_advisory_version_id values fail closed
+nested package/range/fix changes alter the logical digest
+```
+
+The logical hash uses a domain separator:
+
+```text
+opslens-ghsa-logical-record-set-v1
+```
+
+This separates logical data identity from a particular PyArrow/Parquet encoding.
+
+### Parquet v1 writer contract
+
+The physical writer contract mirrors the already proven deterministic NVD settings:
+
+```text
+Parquet format version: 1.0
+data page version:      1.0
+compression:            snappy
+row group size:         5000
+compliant nested type:  enabled
+INT96 timestamps:       disabled
+Arrow schema metadata:  stored
+```
+
+Rows are canonically sorted before table construction. Duplicate exact advisory content versions fail before serialization.
+
+The artifact model binds:
+
+```text
+Parquet bytes
+Parquet SHA-256
+size bytes
+row count
+schema version
+```
+
+Input record order must not change Parquet bytes within the frozen writer/runtime contract.
+
+### Why nested instead of package-row flattening
+
+The Phase 2.4A live workload proved that one advisory may contain many package/range entries. Flattening at Silver ingestion would duplicate advisory text, timestamps, identifiers, CWE, references, and CVSS once per package occurrence and would make advisory-version identity depend on a derived relational expansion.
+
+Nested Arrow/Parquet instead preserves the source cardinality boundary directly:
+
+```text
+one observed advisory content version
+    -> one Silver row
+    -> zero or more nested vulnerability occurrences
+```
+
+A later analytics projection may create a package-oriented relation if a concrete Athena workload proves that projection worthwhile. That projection must remain derived and must not replace the authoritative Silver advisory-version dataset.
+
+### Provenance boundary
+
+The v1 row grain in this increment is **advisory content version**, not physical REST retrieval occurrence.
+
+Phase 2.4A already established:
+
+```text
+sync_id != attempt_id
+```
+
+The exact Bronze manifest/object/version binding and physical observation coordinates remain Phase 2.4C/2.4D contract work. They must be added as verification/completion evidence without changing the meaning of the `observed_advisory_version_id` content key.
+
+No claim is made here that repeated physical observations of identical content are the same source occurrence; they are only the same advisory content version.
 
 ## Explicit Phase boundary
 
-Phase 2.4 preserves source package facts:
+Phase 2.4 may preserve:
 
 ```text
 package ecosystem
 package name
 vulnerable version range expression
 first patched version when present
-vulnerable functions when present
 ```
 
-The exact `vulnerable_version_range` string is preserved without parsing or simplification.
-
-Phase 2.4 does not decide:
+It must not decide:
 
 ```text
 installed_version ∈ vulnerable_version_range
 ```
 
-That decision remains deterministic **Phase 3 — Vulnerability Correlation Engine** work and will require ecosystem-specific version semantics.
-
-## Current code boundary
-
-Implemented so far:
-
-```text
-src/opslens/transformation/ghsa/domain/canonicalization.py
-src/opslens/transformation/ghsa/domain/errors.py
-src/opslens/transformation/ghsa/domain/models.py
-src/opslens/transformation/ghsa/domain/transformer.py
-src/opslens/transformation/ghsa/domain/collections_models.py
-src/opslens/transformation/ghsa/domain/collections_transformer.py
-src/opslens/transformation/ghsa/domain/vulnerability_models.py
-src/opslens/transformation/ghsa/domain/vulnerabilities_transformer.py
-```
-
-The second increment adds unit coverage for:
-
-```text
-identifier/CVE consistency
-future identifier preservation
-ordered references
-canonical CWE validation
-CVSS v3/v4 normalization
-future CVSS-family source preservation
-deprecated cvss independence
-one-to-many package entries
-nullable first_patched_version
-exact range preservation
-duplicate source occurrence identity
-additive entry evidence
-changed entry identity
-empty vulnerability arrays
-documented ecosystem vocabulary
-malformed package/function failure semantics
-```
-
-## Silver physical shape still to freeze
-
-Logical advisory and package evidence is now separated cleanly enough to select the physical Silver representation without flattening away source cardinality.
-
-The remaining 2.4B work must freeze and prove:
-
-```text
-final composed Silver record
-explicit Arrow schema v1
-nested/list physical representation
-row cardinality rule
-deterministic row ordering
-deterministic Parquet serialization
-logical record-set SHA-256
-source-to-Silver provenance fields
-Silver completion proof
-```
-
-Whether the physical dataset uses one advisory-version row with nested vulnerability entries or multiple related physical datasets must be decided from queryability, provenance, Athena cost, and replay semantics rather than convenience.
+That decision remains deterministic Phase 3 — Vulnerability Correlation Engine work.
 
 ## AWS / IAM / cost boundary
 
-This gate still creates no AWS resources and introduces no AWS runtime cost.
+This increment creates no AWS resources and introduces no AWS runtime cost.
 
 Not implemented here:
 
@@ -333,18 +268,23 @@ GHSA_CORE_FIELDS_GATE=PASS
 GHSA_REVIEWED_SCOPE_SILVER_GATE=PASS
 GHSA_CVE_NULLABILITY_GATE=PASS
 GHSA_WITHDRAWAL_CORE_GATE=PASS
-GHSA_COLLECTIONS_CONTRACT_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_VULNERABILITY_ENTRIES_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_ARROW_SCHEMA_GATE=PENDING
-GHSA_PARQUET_DETERMINISM_GATE=PENDING
+GHSA_COLLECTIONS_CONTRACT_GATE=PASS
+GHSA_VULNERABILITY_ENTRIES_GATE=PASS
+GHSA_LOGICAL_RECORD_GATE=PASS_PENDING_LOCAL_VALIDATION
+GHSA_ARROW_SCHEMA_GATE=PASS_PENDING_LOCAL_VALIDATION
+GHSA_LOGICAL_HASH_GATE=PASS_PENDING_LOCAL_VALIDATION
+GHSA_PARQUET_DETERMINISM_GATE=PASS_PENDING_LOCAL_VALIDATION
+GHSA_BRONZE_PROVENANCE_BINDING_GATE=PENDING_FUTURE_GATE
 GHSA_2_4B_GATE=IN_PROGRESS
 ```
 
 ## Next step
 
-Run the focused unit/Ruff/Pyright validation for the second logical increment. If green, freeze the composed logical Silver record and Arrow/Parquet v1 physical contract.
+Run focused GHSA tests, Ruff, and strict Pyright against the new logical/Arrow/Parquet increment.
 
-Do not introduce GHSA AWS runtime resources until the Phase 2.4B Silver contract is frozen.
+If green, record the evidence and decide whether Phase 2.4B can close with exact Bronze provenance explicitly deferred to Phase 2.4C, or whether an additional contract-only provenance shape is required before the Silver schema is declared frozen.
+
+Do not introduce GHSA AWS runtime resources until that decision is explicit.
 
 ## Official references
 
