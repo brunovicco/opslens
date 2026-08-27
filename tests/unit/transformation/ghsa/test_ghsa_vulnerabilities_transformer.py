@@ -2,6 +2,7 @@
 
 import json
 from copy import deepcopy
+from typing import cast
 
 import pytest
 
@@ -43,6 +44,18 @@ def _source_advisory() -> dict[str, object]:
     }
 
 
+def _object_list(value: object) -> list[object]:
+    """Narrow one JSON-like test value to a mutable object list."""
+    assert isinstance(value, list)
+    return cast(list[object], value)
+
+
+def _object_dict(value: object) -> dict[str, object]:
+    """Narrow one JSON-like test value to a string-keyed object mapping."""
+    assert isinstance(value, dict)
+    return cast(dict[str, object], value)
+
+
 def test_preserves_one_to_many_package_range_fix_evidence() -> None:
     """Keep every vulnerability entry and its exact source order."""
     result = GhsaVulnerabilitiesTransformer().transform(_source_advisory())
@@ -63,10 +76,8 @@ def test_preserves_one_to_many_package_range_fix_evidence() -> None:
 def test_range_expression_is_preserved_without_interpretation() -> None:
     """Keep the source expression byte-for-byte at the semantic string layer."""
     source = _source_advisory()
-    vulnerabilities = source["vulnerabilities"]
-    assert isinstance(vulnerabilities, list)
-    first = vulnerabilities[0]
-    assert isinstance(first, dict)
+    vulnerabilities = _object_list(source["vulnerabilities"])
+    first = _object_dict(vulnerabilities[0])
     first["vulnerable_version_range"] = ">= 1.0.0, != 1.1.5, < 2.0.0"
 
     result = GhsaVulnerabilitiesTransformer().transform(source)
@@ -84,8 +95,7 @@ def test_nullable_first_patched_version_is_preserved() -> None:
 def test_duplicate_source_entries_remain_distinct_occurrences() -> None:
     """Use source index so duplicate array occurrences do not collapse."""
     source = _source_advisory()
-    vulnerabilities = source["vulnerabilities"]
-    assert isinstance(vulnerabilities, list)
+    vulnerabilities = _object_list(source["vulnerabilities"])
     vulnerabilities[1] = deepcopy(vulnerabilities[0])
 
     result = GhsaVulnerabilitiesTransformer().transform(source)
@@ -97,10 +107,8 @@ def test_duplicate_source_entries_remain_distinct_occurrences() -> None:
 def test_entry_canonical_json_preserves_additive_source_fields() -> None:
     """Keep additive entry evidence even before it gains a dedicated column."""
     source = _source_advisory()
-    vulnerabilities = source["vulnerabilities"]
-    assert isinstance(vulnerabilities, list)
-    first = vulnerabilities[0]
-    assert isinstance(first, dict)
+    vulnerabilities = _object_list(source["vulnerabilities"])
+    first = _object_dict(vulnerabilities[0])
     first["future_source_field"] = {"enabled": True}
 
     result = GhsaVulnerabilitiesTransformer().transform(source)
@@ -113,10 +121,8 @@ def test_changed_entry_content_changes_entry_identity() -> None:
     """Change the exact vulnerability occurrence identity when evidence changes."""
     original = _source_advisory()
     changed = deepcopy(original)
-    vulnerabilities = changed["vulnerabilities"]
-    assert isinstance(vulnerabilities, list)
-    first = vulnerabilities[0]
-    assert isinstance(first, dict)
+    vulnerabilities = _object_list(changed["vulnerabilities"])
+    first = _object_dict(vulnerabilities[0])
     first["first_patched_version"] = "1.2.1"
 
     original_result = GhsaVulnerabilitiesTransformer().transform(original)
@@ -145,12 +151,9 @@ def test_empty_vulnerability_array_is_valid_source_evidence() -> None:
 def test_unknown_ecosystem_fails_closed() -> None:
     """Reject source ecosystem values outside the versioned contract vocabulary."""
     source = _source_advisory()
-    vulnerabilities = source["vulnerabilities"]
-    assert isinstance(vulnerabilities, list)
-    first = vulnerabilities[0]
-    assert isinstance(first, dict)
-    package = first["package"]
-    assert isinstance(package, dict)
+    vulnerabilities = _object_list(source["vulnerabilities"])
+    first = _object_dict(vulnerabilities[0])
+    package = _object_dict(first["package"])
     package["ecosystem"] = "future-ecosystem"
 
     with pytest.raises(
@@ -163,12 +166,9 @@ def test_unknown_ecosystem_fails_closed() -> None:
 def test_other_ecosystem_remains_supported() -> None:
     """Preserve GitHub's documented generic other ecosystem value."""
     source = _source_advisory()
-    vulnerabilities = source["vulnerabilities"]
-    assert isinstance(vulnerabilities, list)
-    first = vulnerabilities[0]
-    assert isinstance(first, dict)
-    package = first["package"]
-    assert isinstance(package, dict)
+    vulnerabilities = _object_list(source["vulnerabilities"])
+    first = _object_dict(vulnerabilities[0])
+    package = _object_dict(first["package"])
     package["ecosystem"] = "other"
 
     result = GhsaVulnerabilitiesTransformer().transform(source)
@@ -179,10 +179,8 @@ def test_other_ecosystem_remains_supported() -> None:
 def test_missing_known_entry_field_fails_closed() -> None:
     """Reject malformed known vulnerability structures."""
     source = _source_advisory()
-    vulnerabilities = source["vulnerabilities"]
-    assert isinstance(vulnerabilities, list)
-    first = vulnerabilities[0]
-    assert isinstance(first, dict)
+    vulnerabilities = _object_list(source["vulnerabilities"])
+    first = _object_dict(vulnerabilities[0])
     del first["vulnerable_version_range"]
 
     with pytest.raises(
@@ -195,10 +193,8 @@ def test_missing_known_entry_field_fails_closed() -> None:
 def test_malformed_vulnerable_function_fails_closed() -> None:
     """Reject non-string known vulnerable function evidence."""
     source = _source_advisory()
-    vulnerabilities = source["vulnerabilities"]
-    assert isinstance(vulnerabilities, list)
-    first = vulnerabilities[0]
-    assert isinstance(first, dict)
+    vulnerabilities = _object_list(source["vulnerabilities"])
+    first = _object_dict(vulnerabilities[0])
     first["vulnerable_functions"] = ["safe", 123]
 
     with pytest.raises(
