@@ -18,7 +18,7 @@ The deployed Phase 2.3E/2.3F NVD runtime architecture and its real AWS evidence 
 
 The current implementation includes AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze, incremental CVE API Bronze, versioned NVD Silver, deployed Incremental/Silver/Promotion runtimes, the authoritative watermark boundary, EventBridge Scheduler, runtime IAM separation, idempotency, observability, bounded failure recovery, the permanent NVD Glue/Athena analytics projection path, and immutable content-addressed deployment artifacts for all deployed Lambda runtimes.
 
-Phase 2.4A has completed the GitHub Security Advisory source and synchronization contract before any GHSA AWS runtime is created.
+Phase 2.4A completed the GitHub Security Advisory source and synchronization contract. Phase 2.4B is now freezing the deterministic observed-advisory and Silver normalization contract before any GHSA AWS runtime is created.
 
 ## Architecture Decision Records
 
@@ -74,6 +74,7 @@ Phase 2:
 - [`phase-2-ghsa-documentation-reconciliation.md`](labs/phase-2-ghsa-documentation-reconciliation.md) — Phase 2.4-0 reconciliation of public documentation against the post-PR #28 `main` checkpoint before GHSA implementation.
 - [`phase-2-ghsa-source-contract.md`](labs/phase-2-ghsa-source-contract.md) — completed Phase 2.4A source contract and workload-spike decision record.
 - [`phase-2-ghsa-live-rest-probe.md`](labs/phase-2-ghsa-live-rest-probe.md) — authenticated live evidence for cursor pagination, rate limits, published/modified bounded windows, payload sizes, timings, and advisory/package multiplicity.
+- [`phase-2-ghsa-advisory-silver-contract.md`](labs/phase-2-ghsa-advisory-silver-contract.md) — Phase 2.4B deterministic advisory identity and Silver contract; currently in progress.
 
 Cross-phase infrastructure closeout:
 
@@ -96,13 +97,15 @@ Phase 2.3G — NVD Glue/Athena Analytics:      COMPLETE
 Legacy Lambda artifact lifecycle migration: COMPLETE
 Phase 2.4-0 — Documentation reconciliation:  COMPLETE
 Phase 2.4A — GHSA Source Contract:           COMPLETE
-Phase 2.4B — GHSA Advisory/Silver Contract:  NEXT
+Phase 2.4B — GHSA Advisory/Silver Contract:  IN PROGRESS
 Phase 2.5 — Historical EPSS expansion:       NOT STARTED
 Phase 3 — Vulnerability Correlation Engine:  NOT STARTED
 ```
 
 Phase 2.4A accepted the versioned reviewed GHSA REST source, authenticated production requirement, exact cursor pagination, calendar-month published bootstrap default, bounded closed modified-time synchronization, GHSA-first identity with optional CVE aliases, one-to-many package evidence, nullable structured patched-version evidence, and logical-versus-physical observation identity.
 
-No GHSA AWS runtime was introduced by Phase 2.4A.
+Phase 2.4B has started by separating GHSA identity from exact observed source-content identity and by defining strict reviewed-only scalar normalization. Package/range/fix collections and the final Arrow/Parquet physical contract remain open.
 
-Phase 2 remains open. Phase 2.4B is the next GHSA gate; historical EPSS expansion follows later before Phase 2 can be closed or any Phase 3 work begins.
+No GHSA AWS runtime has been introduced.
+
+Phase 2 remains open. Phase 2.4B must freeze the complete Silver contract before GHSA Bronze/runtime work advances; historical EPSS expansion follows later before Phase 2 can be closed or any Phase 3 work begins.
