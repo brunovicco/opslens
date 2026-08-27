@@ -1,12 +1,12 @@
 # Legacy Lambda artifact lifecycle migration
 
-Status: **IN PROGRESS**
+Status: **COMPLETE**
 
 ## Objective
 
 Remove the remaining local-build artifact lifecycle drift for the legacy OpsLens ingestion Lambdas without changing their data-plane behavior.
 
-The affected functions are:
+The affected functions were:
 
 ```text
 opslens-dev-epss-ingestion
@@ -14,7 +14,7 @@ opslens-dev-kev-ingestion
 opslens-dev-nvd-bootstrap-ingestion
 ```
 
-The migration moves these functions from Terraform references to mutable local ZIP paths to the immutable deployment pattern already proven by newer OpsLens runtimes:
+They now use the immutable deployment pattern already proven by the newer OpsLens runtimes:
 
 ```text
 deterministic build
@@ -24,20 +24,20 @@ deterministic build
     -> Terraform immutable pin
 ```
 
-## Why this migration exists
+## Why this migration existed
 
-The final Phase 2.3G merge gate found a clean Bootstrap Terraform plan but a non-zero dev plan caused by legacy Lambda code hashes. The permanent NVD analytics projector and the other content-addressed runtimes remained converged.
+The final Phase 2.3G convergence review found a clean Bootstrap Terraform plan but a non-zero dev plan caused by the legacy ingestion Lambda code hashes.
 
-The legacy ingestion Lambdas still used:
+Those functions still used local build outputs directly:
 
 ```hcl
 filename         = <local dist ZIP>
 source_code_hash = filebase64sha256(<local dist ZIP>)
 ```
 
-That bound Terraform convergence to whichever ZIP happened to be rebuilt in the current environment.
+That meant rebuilding a ZIP locally could redefine Terraform's view of deployed infrastructure even when no intended deployment change existed.
 
-The desired model instead binds Terraform to an exact, versioned artifact already present in the deployment bucket:
+The permanent model now binds Terraform to an exact artifact already stored in the versioned deployment bucket:
 
 ```hcl
 s3_bucket         = <deployment artifact bucket>
@@ -46,11 +46,11 @@ s3_object_version = <exact S3 VersionId>
 source_code_hash  = <base64 SHA-256>
 ```
 
-## Additional NVD Bootstrap boundary debt
+## NVD Bootstrap package-boundary correction
 
-The NVD Bootstrap builder historically copied the complete `opslens.ingestion.nvd` package. Later incremental-ingestion and watermark-promotion code was added under that package, so unrelated source changes could alter the Bootstrap ZIP hash.
+The NVD Bootstrap builder historically copied the complete `opslens.ingestion.nvd` package. Later incremental-ingestion and authoritative-watermark code was added under that package, so unrelated source changes could alter the Bootstrap ZIP hash.
 
-Bootstrap is now narrowed to an explicit runtime source set containing only:
+The Bootstrap artifact is now built from an explicit runtime source set containing only:
 
 - Bootstrap Lambda handler and configuration;
 - Bootstrap composition root;
@@ -61,13 +61,13 @@ Bootstrap is now narrowed to an explicit runtime source set containing only:
 
 Incremental and authoritative-watermark modules remain outside the Bootstrap artifact.
 
-## Deployment-bucket retention precondition
+## Deployment-bucket retention correction
 
-The migration review found a second artifact-lifecycle inconsistency in the shared deployment bucket. The existing lifecycle configuration expired current objects under `lambda/` after 90 days and noncurrent versions after 30 days.
+The shared deployment bucket previously expired current objects under `lambda/` after 90 days and noncurrent versions after 30 days.
 
-That was incompatible with repository-controlled Terraform resources that pin an exact content-addressed key and exact S3 VersionId: a valid deployment coordinate must not become unavailable merely because a fixed age threshold elapsed.
+That lifecycle was incompatible with Terraform resources that pin a content-addressed key and exact S3 VersionId because a valid deployment coordinate could disappear merely due to age.
 
-The bucket lifecycle contract is now:
+The deployed lifecycle contract is now:
 
 ```text
 current content-addressed Lambda object -> retained
@@ -75,9 +75,7 @@ noncurrent Lambda object version         -> eligible for cleanup after 30 days
 incomplete multipart upload              -> abort after 7 days
 ```
 
-Content-addressed uploads in this migration are write-once and use a conditional create so the same hash key is not overwritten and does not intentionally produce a noncurrent version.
-
-This is a cross-cutting deployment-artifact safety correction. It does not migrate or alter the code of the newer Lambda runtimes.
+Content-addressed uploads are write-once and use conditional creation so the same hash key is not intentionally overwritten.
 
 ## Scope
 
@@ -91,7 +89,8 @@ infra/environments/dev/kev_lambda.tf
 infra/environments/dev/nvd_bootstrap_lambda.tf
 content-addressed uploads for the three legacy ingestion artifacts
 exact Terraform artifact pins
-real AWS readback and convergence proof
+AWS readback
+full Terraform convergence proof
 ```
 
 Out of scope:
@@ -108,21 +107,17 @@ GHSA ingestion
 Phase 3
 ```
 
-The newer runtimes already use immutable versioned S3 artifact coordinates and are not code-migration targets here.
+## Gate A — package boundary — COMPLETE
 
-## Migration gates
+NVD Bootstrap was built with the explicit runtime source set and checked against required and forbidden members.
 
-### Gate A — package boundary — COMPLETE
-
-NVD Bootstrap was built with the explicit runtime source set and checked against required and forbidden package members.
-
-The proof returned:
+Proof:
 
 ```text
 LEGACY_ARTIFACT_NVD_BOOTSTRAP_BOUNDARY=PASS
 ```
 
-Examples confirmed absent include:
+Examples confirmed absent from the Bootstrap ZIP included:
 
 ```text
 opslens/ingestion/nvd/incremental_lambda_handler.py
@@ -137,11 +132,9 @@ opslens/ingestion/nvd/adapters/outbound/s3_authoritative_watermark.py
 opslens/ingestion/nvd/adapters/outbound/s3_incremental_bronze.py
 ```
 
-The Bootstrap handler and its required transitive application/runtime dependencies remained present.
+## Gate B — deterministic artifacts — COMPLETE
 
-### Gate B — deterministic local artifacts — COMPLETE
-
-Each affected package was built twice from the same repository state. Both copies were compared by SHA-256, byte size, and `cmp`.
+Each affected package was built twice from the same repository state and compared by SHA-256, size, and byte equality.
 
 EPSS ingestion:
 
@@ -170,31 +163,21 @@ bytes=17546498
 LEGACY_ARTIFACT_NVD_BOOTSTRAP_DETERMINISTIC=PASS
 ```
 
-Repository quality checks at this checkpoint also passed:
+## Gate C0 — durable deployment-artifact retention — COMPLETE
 
-```text
-uv run ruff check .   -> PASS
-uv run pyright        -> 0 errors, 0 warnings, 0 informations
-uv run pytest -q      -> PASS
-git diff --check      -> PASS
-git status --short    -> clean
-```
-
-### Gate C0 — durable deployment-artifact retention — COMPLETE
-
-A targeted Terraform plan proposed exactly one in-place change:
+The targeted Terraform plan proposed exactly one in-place lifecycle change:
 
 ```text
 Plan: 0 to add, 1 to change, 0 to destroy.
 ```
 
-The change removed the fixed 90-day expiration of current `lambda/` objects and renamed the cleanup rule to make the noncurrent-only behavior explicit. The exact saved plan was applied successfully:
+The exact saved plan was applied:
 
 ```text
 Apply complete! Resources: 0 added, 1 changed, 0 destroyed.
 ```
 
-AWS lifecycle readback then returned:
+AWS lifecycle readback proved:
 
 ```text
 abort-incomplete-multipart-uploads:
@@ -208,17 +191,15 @@ cleanup-noncurrent-lambda-deployment-artifacts:
   Expiration=<absent>
 ```
 
-The validation gate returned:
+Proof:
 
 ```text
 LEGACY_ARTIFACT_DEPLOYMENT_RETENTION=PASS
 ```
 
-### Gate C — immutable artifact upload — COMPLETE
+## Gate C — immutable exact-version uploads — COMPLETE
 
-All three exact local ZIPs were first proven absent at their content-addressed keys. They were then uploaded with `If-None-Match: *`, SHA-256 object checksums, `application/zip`, metadata containing the hexadecimal SHA-256, and versioning enabled.
-
-Exact persisted coordinates:
+All three exact ZIPs were proven absent at their content-addressed keys before upload. They were then written with `If-None-Match: *`, SHA-256 object checksums, `application/zip`, SHA-256 metadata, and S3 versioning enabled.
 
 EPSS ingestion:
 
@@ -256,9 +237,9 @@ ChecksumSHA256=S6pN3Do9hB65wMp3/hCoeW3Nm9GkRN+LBq1aVfI9t04=
 metadata.sha256=4baa4ddc3a3d841eb9c0ca77fe10a8796dcd9bd1a444df8b06ad5a55f23db74e
 ```
 
-For each artifact, exact-version `HeadObject` and `GetObject` readback returned the expected VersionId, byte length, checksum, AES256 server-side encryption, content type, and metadata. The exact downloaded version independently matched the local deterministic artifact by SHA-256 and `cmp`.
+Exact-version `HeadObject` and `GetObject` readback verified VersionId, checksum, metadata, size, content type, AES256 encryption, SHA-256, and byte equality with the deterministic local artifacts.
 
-The final upload proof returned:
+Proof:
 
 ```text
 LEGACY_ARTIFACT_EPSS_EXACT_VERSION=PASS
@@ -270,33 +251,127 @@ KEV_BYTES_EXACT=PASS
 NVD_BOOTSTRAP_BYTES_EXACT=PASS
 ```
 
-### Gate D — Terraform pinning — IN PROGRESS
+## Gate D — Terraform immutable pinning — COMPLETE
 
-The repository now replaces the three local `filename` references with exact S3 artifact coordinates and static base64 SHA-256 values.
+The three Lambda resources were migrated from local `filename` inputs to immutable S3 coordinates and static Lambda-compatible SHA-256 values.
 
-The intended Terraform change surface is limited to the already-applied deployment-artifact lifecycle correction, the three ingestion Lambda code deployments, and any provider-derived scheduler policy readback caused solely by those Lambda updates.
+The full non-targeted dev plan showed:
 
-No unrelated runtime, IAM, data, Glue, or analytics changes are accepted.
+```text
+Plan: 0 to add, 5 to change, 0 to destroy.
+```
 
-Gate D remains incomplete until `terraform fmt`, `terraform validate`, and the full non-targeted dev plan prove the expected blast radius.
+The five proposed mutations were:
 
-### Gate E — AWS deployment evidence — PENDING
+```text
+aws_lambda_function.epss_ingestion
+aws_lambda_function.kev_ingestion
+aws_lambda_function.nvd_bootstrap_ingestion
+aws_iam_role_policy.epss_scheduler_runtime
+aws_iam_role_policy.kev_scheduler_runtime
+```
 
-After an approved plan and apply, read back the three Lambda configurations and verify their AWS `CodeSha256` values against the pinned artifacts.
+Two related IAM policy-document data sources were read-only plan dependencies:
 
-Where safe and useful, execute a source-specific smoke/idempotency check without weakening the evidence model.
+```text
+data.aws_iam_policy_document.epss_scheduler_runtime
+data.aws_iam_policy_document.kev_scheduler_runtime
+```
 
-### Gate F — convergence — PENDING
+The Lambda diffs were limited to moving from local ZIP deployment coordinates to the exact S3 bucket/key/VersionId pins, updating `source_code_hash`, and provider-managed `last_modified` readback.
 
-The closeout requirement is a global dev plan with:
+The exact saved plan was applied. The provider re-evaluated the scheduler policy documents and determined that no persisted scheduler IAM changes were required, so the successful apply changed only the three Lambda functions:
+
+```text
+Apply complete! Resources: 0 added, 3 changed, 0 destroyed.
+```
+
+No Lambda replacement, IAM widening, scheduler semantic change, data resource change, Glue change, or analytics change occurred.
+
+Proof:
+
+```text
+LEGACY_ARTIFACT_TERRAFORM_PIN=PASS
+```
+
+## Gate E — deployed Lambda readback — COMPLETE
+
+All three functions reached a stable successful state:
+
+```text
+LEGACY_ARTIFACT_LAMBDAS_STABLE=PASS
+```
+
+AWS `GetFunctionConfiguration` returned:
+
+EPSS:
+
+```text
+FunctionName=opslens-dev-epss-ingestion
+CodeSha256=bu48qSl7Tzk6/tbRXCjeOaaEwFtkvbsC2JFu2y8E00g=
+CodeSize=17538328
+State=Active
+LastUpdateStatus=Successful
+```
+
+KEV:
+
+```text
+FunctionName=opslens-dev-kev-ingestion
+CodeSha256=jEQ2d7/ikrbYuZUgtHPnMYg2361l5KAUwbhs/OMETvY=
+CodeSize=17538806
+State=Active
+LastUpdateStatus=Successful
+```
+
+NVD Bootstrap:
+
+```text
+FunctionName=opslens-dev-nvd-bootstrap-ingestion
+CodeSha256=S6pN3Do9hB65wMp3/hCoeW3Nm9GkRN+LBq1aVfI9t04=
+CodeSize=17546498
+State=Active
+LastUpdateStatus=Successful
+```
+
+The Terraform state independently retained the exact expected `s3_bucket`, `s3_key`, `s3_object_version`, and `source_code_hash` values for all three resources.
+
+Proof:
+
+```text
+LEGACY_ARTIFACT_LAMBDA_READBACK=PASS
+```
+
+## Gate F — global dev convergence — COMPLETE
+
+A fresh full dev plan after deployment returned:
 
 ```text
 No changes. Your infrastructure matches the configuration.
+POST_APPLY_PLAN_RC=0
 ```
 
-The migration is not complete until the legacy artifact exception identified during Phase 2.3G is gone.
+This removes the global dev convergence exception first identified during the Phase 2.3G closeout.
 
-## Current gate state
+Repository quality checks also passed at closeout:
+
+```text
+terraform -chdir=infra/environments/dev fmt -check -> PASS
+terraform -chdir=infra/environments/dev validate  -> PASS
+uv run ruff check .                                -> PASS
+uv run pyright                                     -> 0 errors, 0 warnings, 0 informations
+uv run pytest -q                                   -> PASS, 100%
+git diff --check                                   -> PASS
+git status --short                                 -> clean
+```
+
+Proof:
+
+```text
+LEGACY_ARTIFACT_NO_DRIFT=PASS
+```
+
+## Final gate state
 
 ```text
 LEGACY_ARTIFACT_NVD_BOOTSTRAP_BOUNDARY=PASS
@@ -305,15 +380,15 @@ LEGACY_ARTIFACT_KEV_DETERMINISTIC=PASS
 LEGACY_ARTIFACT_NVD_BOOTSTRAP_DETERMINISTIC=PASS
 LEGACY_ARTIFACT_DEPLOYMENT_RETENTION=PASS
 LEGACY_ARTIFACT_EXACT_VERSION_UPLOAD=PASS
-LEGACY_ARTIFACT_TERRAFORM_PIN=IN_PROGRESS
-LEGACY_ARTIFACT_LAMBDA_READBACK=PENDING
-LEGACY_ARTIFACT_NO_DRIFT=PENDING
-LEGACY_ARTIFACT_MIGRATION=IN_PROGRESS
+LEGACY_ARTIFACT_TERRAFORM_PIN=PASS
+LEGACY_ARTIFACT_LAMBDA_READBACK=PASS
+LEGACY_ARTIFACT_NO_DRIFT=PASS
+LEGACY_ARTIFACT_MIGRATION=COMPLETE
 ```
 
 ## Architectural result
 
-After completion, all deployed OpsLens Lambda runtimes will use the same artifact lifecycle principle:
+All deployed OpsLens Lambda runtimes now follow the same artifact lifecycle principle:
 
 ```text
 build output is evidence
@@ -324,6 +399,6 @@ Terraform consumes immutable coordinates
 rebuilding locally does not redefine deployed infrastructure
 ```
 
-This is an infrastructure/deployment-lifecycle correction only. It does not change the project invariant:
+This migration was an infrastructure/deployment-lifecycle correction only. It did not change the project invariant:
 
 > **Agents reason. Code verifies evidence.**
