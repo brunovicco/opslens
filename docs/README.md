@@ -15,7 +15,7 @@ docs/
 
 The deployed Phase 2.3E/2.3F NVD runtime architecture and its real AWS evidence are captured in [`phase-2-nvd-authoritative-runtime-closeout.md`](labs/phase-2-nvd-authoritative-runtime-closeout.md). Together they document the currently implemented architecture without introducing speculative future-state components.
 
-The current implementation includes AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze, incremental CVE API Bronze, versioned NVD Silver, deployed Incremental/Silver/Promotion runtimes, the authoritative watermark boundary, EventBridge Scheduler, runtime IAM separation, idempotency, observability, and bounded failure recovery.
+The current implementation includes AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze, incremental CVE API Bronze, versioned NVD Silver, deployed Incremental/Silver/Promotion runtimes, the authoritative watermark boundary, EventBridge Scheduler, runtime IAM separation, idempotency, observability, bounded failure recovery, and the permanent NVD Glue/Athena analytics projection path.
 
 ## Architecture Decision Records
 
@@ -48,6 +48,25 @@ Phase 2:
 - [`phase-2-nvd-versioned-silver-contract.md`](labs/phase-2-nvd-versioned-silver-contract.md)
 - [`phase-2-nvd-silver-workload-proof.md`](labs/phase-2-nvd-silver-workload-proof.md)
 - [`phase-2-nvd-authoritative-runtime-closeout.md`](labs/phase-2-nvd-authoritative-runtime-closeout.md)
+- [`phase-2-nvd-glue-athena-design.md`](labs/phase-2-nvd-glue-athena-design.md)
+- [`phase-2-nvd-glue-athena-source-evidence.md`](labs/phase-2-nvd-glue-athena-source-evidence.md)
+- [`phase-2-nvd-glue-athena-bootstrap-evidence.md`](labs/phase-2-nvd-glue-athena-bootstrap-evidence.md)
+- [`phase-2-nvd-glue-athena-symlink-proof.md`](labs/phase-2-nvd-glue-athena-symlink-proof.md)
+- [`phase-2-nvd-glue-athena-projection-design.md`](labs/phase-2-nvd-glue-athena-projection-design.md)
+- [`phase-2-nvd-glue-athena-projection-proof.md`](labs/phase-2-nvd-glue-athena-projection-proof.md)
+- [`phase-2-nvd-glue-athena-direct-parquet-proof.md`](labs/phase-2-nvd-glue-athena-direct-parquet-proof.md)
+- [`phase-2-nvd-glue-athena-incremental-cleanup-proof.md`](labs/phase-2-nvd-glue-athena-incremental-cleanup-proof.md)
+- [`phase-2-nvd-glue-athena-bootstrap-projection-proof.md`](labs/phase-2-nvd-glue-athena-bootstrap-projection-proof.md)
+- [`phase-2-nvd-glue-athena-bootstrap-athena-proof.md`](labs/phase-2-nvd-glue-athena-bootstrap-athena-proof.md)
+- [`phase-2-nvd-glue-athena-bootstrap-cleanup-proof.md`](labs/phase-2-nvd-glue-athena-bootstrap-cleanup-proof.md)
+- [`phase-2-nvd-glue-athena-permanent-path-design.md`](labs/phase-2-nvd-glue-athena-permanent-path-design.md)
+- [`phase-2-nvd-glue-athena-runtime-terraform.md`](labs/phase-2-nvd-glue-athena-runtime-terraform.md)
+- [`phase-2-nvd-glue-athena-permanent-catalog.md`](labs/phase-2-nvd-glue-athena-permanent-catalog.md)
+- [`phase-2-nvd-glue-athena-artifact-build.md`](labs/phase-2-nvd-glue-athena-artifact-build.md)
+- [`phase-2-nvd-glue-athena-bootstrap-permanent-seed-proof.md`](labs/phase-2-nvd-glue-athena-bootstrap-permanent-seed-proof.md)
+- [`phase-2-nvd-glue-athena-incremental-event-proof.md`](labs/phase-2-nvd-glue-athena-incremental-event-proof.md)
+- [`phase-2-nvd-glue-athena-permanent-athena-proof.md`](labs/phase-2-nvd-glue-athena-permanent-athena-proof.md)
+- [`phase-2-nvd-glue-athena-failure-replay-observability-proof.md`](labs/phase-2-nvd-glue-athena-failure-replay-observability-proof.md)
 
 ## Current milestone
 
@@ -62,5 +81,5 @@ Phase 2.3C — NVD Incremental API Contract:   COMPLETE
 Phase 2.3D — NVD Versioned Silver Contract:  COMPLETE
 Phase 2.3E — NVD Silver AWS Runtime:         COMPLETE
 Phase 2.3F — NVD Authoritative Watermark:    COMPLETE
-Phase 2.3G — NVD Glue/Athena Analytics:      NEXT
+Phase 2.3G — NVD Glue/Athena Analytics:      COMPLETE
 ```
