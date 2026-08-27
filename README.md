@@ -29,11 +29,11 @@ The project intentionally builds deterministic evidence, provenance, correlation
 | Phase 2.1 | CISA KEV Bronze Ingestion | ✅ Complete |
 | Phase 2.2 | CISA KEV Silver + Analytics | ✅ Complete |
 | Phase 2.3A–2.3G | NVD / CVE Bronze, Silver, Watermark, Glue + Athena | ✅ Complete |
-| Phase 2.4 | GitHub Security Advisories | ⏳ Not started |
+| Phase 2.4 | GitHub Security Advisories | 🚧 In progress — 2.4A source contract next |
 | Phase 2.5 | Historical EPSS expansion | ⏳ Not started |
-| Phase 3 | AI reasoning / agentic capabilities | ⏳ Not started |
+| Phase 3 | Vulnerability Correlation Engine | ⏳ Not started |
 
-The current milestone closes the complete NVD deterministic evidence path from immutable source ingestion through versioned Silver evidence, authoritative watermark promotion, permanent analytics projection, AWS Glue, and bounded Athena queries.
+The NVD deterministic evidence path is complete from immutable source ingestion through versioned Silver evidence, authoritative watermark promotion, permanent analytics projection, AWS Glue, and bounded Athena queries. The legacy Lambda artifact lifecycle migration is also complete. The current roadmap milestone is Phase 2.4 — GitHub Security Advisories, beginning with the GHSA source contract and workload spike.
 
 ## Current architecture
 
@@ -217,16 +217,19 @@ bronze/nvd/cve/bootstrap/
       manifest.json
 ```
 
-Incremental CVE API runs preserve exact response pages and a COMPLETE manifest under a deterministic update identity:
+Incremental CVE API runs preserve exact response pages under a logical update identity while separating each exact physical source observation:
 
 ```text
 bronze/nvd/cve/updates/
-  update_id=<deterministic-window-identity>/
-    page_start=000000/response.json
-    page_start=000500/response.json
-    ...
+  update_id=<logical-window-identity>/
+    attempt_id=<exact-physical-observation>/
+      page_start=000000/response.json
+      page_start=000500/response.json
+      ...
     manifest.json
 ```
+
+`update_id` identifies the logical incremental window. `attempt_id` identifies the exact physical source observation and protects replay semantics when the NVD API returns different exact bytes for the same logical window.
 
 ### Versioned Silver
 
@@ -422,7 +425,7 @@ post-deployment convergence checks
 
 The Phase 2.3G closeout passed Ruff, strict Pyright, the full Pytest suite, Terraform CI, Bootstrap Terraform convergence, and Phase 2.3G resource convergence.
 
-A known pre-existing dev convergence exception remains on legacy EPSS / KEV / NVD Bootstrap Lambda artifact hashes. Those legacy artifact lifecycle boundaries are intentionally tracked separately from the completed NVD analytics milestone.
+PR #28 then completed the remaining legacy Lambda deployment-artifact migration for EPSS, KEV, and NVD Bootstrap. All currently deployed Lambda runtimes now use deterministic content-addressed S3 artifacts pinned by exact VersionId, and the final full `dev` Terraform closeout converged with `No changes` and `POST_APPLY_PLAN_RC=0`.
 
 ## Repository structure
 
@@ -463,10 +466,12 @@ Phase 1    EPSS Vertical Slice                                 COMPLETE
 Phase 2.1  CISA KEV Bronze ingestion                          COMPLETE
 Phase 2.2  CISA KEV Silver + Glue + Athena                    COMPLETE
 Phase 2.3  NVD / CVE Bronze + Silver + Watermark + Analytics  COMPLETE
-Phase 2.4  GitHub Security Advisories                          NOT STARTED
+Phase 2.4  GitHub Security Advisories                          IN PROGRESS
 Phase 2.5  Historical EPSS                                     NOT STARTED
-Phase 3    AI reasoning / agentic capabilities                 NOT STARTED
+Phase 3    Vulnerability Correlation Engine                    NOT STARTED
 ```
+
+Phase 2.4A — GHSA Source Contract & Workload Spike is the next implementation gate. Historical EPSS follows before Phase 2 closeout. Package/version vulnerability applicability remains deterministic Phase 3 work and is not delegated to an LLM.
 
 The proven patterns are reused where appropriate, but no source is forced into a generic ingestion design when its semantics differ.
 

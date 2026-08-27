@@ -29,11 +29,11 @@ O projeto constrói primeiro evidência determinística, proveniência, correla�
 | Phase 2.1 | CISA KEV Bronze Ingestion | ✅ Concluída |
 | Phase 2.2 | CISA KEV Silver + Analytics | ✅ Concluída |
 | Phase 2.3A–2.3G | NVD / CVE Bronze, Silver, Watermark, Glue + Athena | ✅ Concluída |
-| Phase 2.4 | GitHub Security Advisories | ⏳ Não iniciada |
+| Phase 2.4 | GitHub Security Advisories | 🚧 Em andamento — 2.4A source contract é o próximo gate |
 | Phase 2.5 | Expansão histórica do EPSS | ⏳ Não iniciada |
-| Phase 3 | Raciocínio com IA / capacidades agentic | ⏳ Não iniciada |
+| Phase 3 | Vulnerability Correlation Engine | ⏳ Não iniciada |
 
-O marco atual fecha o caminho determinístico completo de evidência do NVD: ingestão imutável da fonte, Silver versionado, promoção do watermark autoritativo, projeção analítica permanente, AWS Glue e consultas Athena com custo limitado.
+O caminho determinístico de evidência do NVD está completo desde a ingestão imutável da fonte até Silver versionado, promoção do watermark autoritativo, projeção analítica permanente, AWS Glue e consultas Athena com custo limitado. A migração do lifecycle dos artefatos Lambda legados também está concluída. O milestone atual do roadmap é a Phase 2.4 — GitHub Security Advisories, começando pelo contrato da fonte GHSA e workload spike.
 
 ## Arquitetura atual
 
@@ -217,16 +217,19 @@ bronze/nvd/cve/bootstrap/
       manifest.json
 ```
 
-As execuções incrementais da CVE API preservam páginas exatas da resposta e um manifest COMPLETE sob uma identidade determinística de update:
+As execuções incrementais da CVE API preservam páginas exatas da resposta sob uma identidade lógica de update, separando cada observação física exata da fonte:
 
 ```text
 bronze/nvd/cve/updates/
-  update_id=<deterministic-window-identity>/
-    page_start=000000/response.json
-    page_start=000500/response.json
-    ...
+  update_id=<logical-window-identity>/
+    attempt_id=<exact-physical-observation>/
+      page_start=000000/response.json
+      page_start=000500/response.json
+      ...
     manifest.json
 ```
+
+`update_id` identifica a janela incremental lógica. `attempt_id` identifica a observação física exata da fonte e protege a semântica de replay quando a API do NVD retorna bytes exatos diferentes para a mesma janela lógica.
 
 ### Silver versionado
 
@@ -422,7 +425,7 @@ verificações de convergência após deployment
 
 O closeout da Phase 2.3G passou Ruff, Pyright strict, a suíte completa de Pytest, Terraform CI, convergência do Bootstrap Terraform e convergência dos recursos da Phase 2.3G.
 
-Permanece uma exceção de convergência preexistente no ambiente dev para hashes de artefatos Lambda legados de EPSS / KEV / NVD Bootstrap. Esses boundaries legados de lifecycle de artefato são acompanhados separadamente do milestone concluído de analytics do NVD.
+O PR #28 concluiu em seguida a migração dos artefatos de deployment Lambda legados de EPSS, KEV e NVD Bootstrap. Todos os runtimes Lambda atualmente implantados usam agora artefatos S3 determinísticos e content-addressed, fixados por VersionId exato, e o closeout final completo do Terraform `dev` convergiu com `No changes` e `POST_APPLY_PLAN_RC=0`.
 
 ## Estrutura do repositório
 
@@ -463,10 +466,12 @@ Phase 1    EPSS Vertical Slice                                 COMPLETE
 Phase 2.1  CISA KEV Bronze ingestion                          COMPLETE
 Phase 2.2  CISA KEV Silver + Glue + Athena                    COMPLETE
 Phase 2.3  NVD / CVE Bronze + Silver + Watermark + Analytics  COMPLETE
-Phase 2.4  GitHub Security Advisories                          NOT STARTED
+Phase 2.4  GitHub Security Advisories                          IN PROGRESS
 Phase 2.5  Historical EPSS                                     NOT STARTED
-Phase 3    AI reasoning / agentic capabilities                 NOT STARTED
+Phase 3    Vulnerability Correlation Engine                    NOT STARTED
 ```
+
+A Phase 2.4A — GHSA Source Contract & Workload Spike é o próximo gate de implementação. A expansão histórica do EPSS vem depois, antes do encerramento da Phase 2. A aplicabilidade de vulnerabilidade para package/version permanece um trabalho determinístico da Phase 3 e não é delegada a um LLM.
 
 Os padrões comprovados são reutilizados quando apropriado, mas nenhuma fonte é forçada a seguir um desenho genérico de ingestão quando suas semânticas são diferentes.
 

@@ -280,18 +280,31 @@ Persistence uses conditional S3 object creation. `412 PreconditionFailed` is tre
 
 The incremental runtime advances through closed last-modified windows and preserves every exact API page.
 
+The implemented identity model separates the logical synchronization window from the exact physical source observation:
+
+```text
+update_id
+    logical incremental-window identity
+
+attempt_id
+    exact physical source-observation identity
+```
+
 Canonical layout:
 
 ```text
 bronze/nvd/cve/updates/
-    update_id=<deterministic-window-identity>/
-        page_start=000000/
-            response.json
-        page_start=000500/
-            response.json
-        ...
+    update_id=<logical-window-identity>/
+        attempt_id=<exact-physical-observation>/
+            page_start=000000/
+                response.json
+            page_start=000500/
+                response.json
+            ...
         manifest.json
 ```
+
+This distinction protects replay semantics when the NVD API returns different exact bytes or response metadata for the same logical window.
 
 The incremental contract validates:
 
@@ -608,35 +621,40 @@ Current examples:
 
 ## Deployment artifact model
 
-The permanent NVD analytics projector uses a deterministic, content-addressed deployment artifact:
+All currently deployed OpsLens Lambda runtimes follow the same immutable deployment-artifact lifecycle:
 
 ```text
-build exact Lambda ZIP
-    -> SHA-256
-    -> immutable S3 artifact key
+source tree
+    -> deterministic ZIP build
+    -> SHA-256 identity
+    -> content-addressed S3 object key
     -> exact S3 VersionId
-    -> Terraform pin
+    -> Terraform immutable pin
+    -> Lambda CodeSha256 readback
 ```
 
-Validated projector artifact SHA-256:
+The permanent NVD analytics projector was already using this model. PR #28 completed the migration of the remaining legacy EPSS, KEV, and NVD Bootstrap ingestion runtimes and corrected the artifact-bucket lifecycle so current content-addressed Lambda objects remain durable.
+
+The final PR #28 environment closeout proved:
 
 ```text
-6ae0bf3909744d6bb5e61390885fc469c18b93ef383bd4c2380fdc874de159cf
+No changes. Your infrastructure matches the configuration.
+POST_APPLY_PLAN_RC=0
 ```
 
-A known pre-existing dev convergence exception remains on legacy EPSS, KEV, and NVD Bootstrap Lambda artifact hashes. That debt is outside the completed Phase 2.3G analytics boundary and should be addressed in a separate artifact-lifecycle change.
+There is no remaining known global `dev` Terraform drift from the legacy Lambda artifact lifecycle at this checkpoint.
 
 ---
 
 ## Current implementation status
 
 ```text
-FIRST EPSS                 IMPLEMENTED through Athena
-CISA KEV                   IMPLEMENTED through Athena
-NVD / CVE                  IMPLEMENTED through authoritative analytics + Athena
-GitHub Security Advisories NOT STARTED
-EPSS historical expansion  NOT STARTED
-Phase 3 AI reasoning       NOT STARTED
+FIRST EPSS                          IMPLEMENTED through Athena
+CISA KEV                            IMPLEMENTED through Athena
+NVD / CVE                           IMPLEMENTED through authoritative analytics + Athena
+GitHub Security Advisories          IN PROGRESS — Phase 2.4A next
+EPSS historical expansion           NOT STARTED
+Phase 3 Vulnerability Correlation   NOT STARTED
 ```
 
 Detailed NVD phase status:
@@ -651,4 +669,6 @@ Phase 2.3F — NVD Authoritative Watermark    COMPLETE
 Phase 2.3G — NVD Glue/Athena Analytics      COMPLETE
 ```
 
-GHSA ingestion and Phase 3 are intentionally outside the completed NVD milestone.
+Phase 2.4-0 reconciles the documentation against the post-PR #28 `main` checkpoint. Phase 2.4A — GHSA Source Contract & Workload Spike is the next implementation gate.
+
+Package/version vulnerability applicability remains deterministic Phase 3 work. Phase 2 remains open until GHSA and historical EPSS requirements are completed or explicitly deferred; no Bedrock, RAG, or agentic phase should begin as a substitute for those remaining deterministic data-plane milestones.
