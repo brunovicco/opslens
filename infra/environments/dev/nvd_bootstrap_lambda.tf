@@ -1,6 +1,15 @@
 locals {
-  nvd_bootstrap_lambda_artifact_path = (
-    "${path.module}/../../../dist/opslens-nvd-bootstrap-ingestion.zip"
+  nvd_bootstrap_lambda_artifact_sha256 = (
+    "4baa4ddc3a3d841eb9c0ca77fe10a8796dcd9bd1a444df8b06ad5a55f23db74e"
+  )
+  nvd_bootstrap_lambda_artifact_sha256_base64 = (
+    "S6pN3Do9hB65wMp3/hCoeW3Nm9GkRN+LBq1aVfI9t04="
+  )
+  nvd_bootstrap_lambda_artifact_version = (
+    "kHiC2lB3vu2c2Ta5mgRFmO85BuoUYz7D"
+  )
+  nvd_bootstrap_lambda_artifact_key = (
+    "lambda/nvd-bootstrap-ingestion/${local.nvd_bootstrap_lambda_artifact_sha256}.zip"
   )
 }
 
@@ -21,8 +30,11 @@ resource "aws_lambda_function" "nvd_bootstrap_ingestion" {
 
   handler = "opslens.ingestion.nvd.lambda_handler.lambda_handler"
 
-  filename         = local.nvd_bootstrap_lambda_artifact_path
-  source_code_hash = filebase64sha256(local.nvd_bootstrap_lambda_artifact_path)
+  s3_bucket         = aws_s3_bucket.deployment_artifacts.bucket
+  s3_key            = local.nvd_bootstrap_lambda_artifact_key
+  s3_object_version = local.nvd_bootstrap_lambda_artifact_version
+
+  source_code_hash = local.nvd_bootstrap_lambda_artifact_sha256_base64
 
   memory_size = 1024
   timeout     = 180
