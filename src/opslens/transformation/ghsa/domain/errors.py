@@ -7,3 +7,11 @@ class InvalidGhsaObservedAdvisoryVersionError(ValueError):
 
 class InvalidGhsaAdvisoryCoreRecordError(ValueError):
     """Raised when a GHSA advisory cannot satisfy the core Silver contract."""
+
+
+class InvalidGhsaAdvisoryCollectionsError(ValueError):
+    """Raised when GHSA structured advisory collections are invalid."""
+
+
+class InvalidGhsaVulnerabilityEntriesError(ValueError):
+    """Raised when GHSA vulnerability/package evidence is invalid."""
