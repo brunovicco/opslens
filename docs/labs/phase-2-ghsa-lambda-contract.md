@@ -95,21 +95,25 @@ manual event
   -> versioned manifest evidence response
 ```
 
-The authenticated source now enforces a 120-second maximum per-retry wait budget. If GitHub requires a longer `Retry-After`, primary reset wait, or calculated secondary-limit backoff, the current fetch fails closed rather than sleeping into the Lambda timeout or retrying earlier than GitHub permits.
+The authenticated source enforces a 120-second maximum per-retry wait budget. If GitHub requires a longer `Retry-After`, primary reset wait, or calculated secondary-limit backoff, the current fetch fails closed rather than sleeping into the Lambda timeout or retrying earlier than GitHub permits.
 
-Strict continuation-query parsing failures are also normalized to `InvalidGhsaRequestUrlError`, preserving the outbound domain boundary.
+Strict continuation-query parsing failures are normalized to `InvalidGhsaRequestUrlError`, preserving the outbound domain boundary.
 
-## Prior deployment artifact evidence
+## Validated source checkpoint
 
-Before the pre-apply hardening changes, the focused local checkpoint was green:
+After the pre-apply hardening changes, the focused local checkpoint is green:
 
 ```text
-57 passed
+61 passed
 Ruff: All checks passed
 Pyright strict: 0 errors / 0 warnings / 0 informations
 ```
 
-That exact source revision produced and published:
+Therefore the Lambda invocation contract and its dependent authenticated runtime boundaries are validated for the current source revision.
+
+## Prior deployment artifact evidence
+
+The previous source revision produced and published:
 
 ```text
 sha256=9deb08f346cbe7261199568de8a515b26b2865d7f6d2a592d837a0ac0368c928
@@ -144,8 +148,9 @@ No mutable filename-only deployment reference is allowed.
 ## Current gates
 
 ```text
-GHSA_BRONZE_LAMBDA_INVOCATION_CONTRACT_GATE=PASS_PENDING_REVALIDATION
-GHSA_BRONZE_PRE_APPLY_HARDENING_GATE=PASS_PENDING_LOCAL_VALIDATION
+GHSA_BRONZE_RUNTIME_COMPOSITION_GATE=PASS
+GHSA_BRONZE_LAMBDA_INVOCATION_CONTRACT_GATE=PASS
+GHSA_BRONZE_PRE_APPLY_HARDENING_GATE=PASS
 GHSA_BRONZE_LAMBDA_ARTIFACT_BUILD_GATE=STALE_REBUILD_REQUIRED
 GHSA_BRONZE_ARTIFACT_PUBLICATION_GATE=STALE_REPUBLISH_REQUIRED
 GHSA_BRONZE_TERRAFORM_GATE=STALE_REPIN_AND_REPLAN_REQUIRED
@@ -155,7 +160,7 @@ GHSA_2_4C_GATE=IN_PROGRESS
 
 ## Next step
 
-Run the focused GHSA unit-test, Ruff, and strict Pyright checkpoint against the hardening head. If green, rebuild and conditionally publish a new deterministic artifact, capture its exact S3 VersionId, repin Terraform, and generate a fresh reviewed plan before apply.
+Build a new deterministic artifact from the validated hardening source revision. Capture its exact SHA-256 and content-addressed key before any Terraform repin or apply.
 
 ## References
 
