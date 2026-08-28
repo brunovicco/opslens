@@ -103,10 +103,7 @@ The runtime remains Python 3.13 on x86_64.
 
 The Lambda uses 1024 MiB memory because the application may buffer up to 64 MiB of exact response bytes plus parsed advisory models before persistence. The timeout is 900 seconds for this manual proof path.
 
-The application-level GitHub rate-limit policy is intentionally much smaller than that Lambda
-timeout: one server-directed or calculated retry wait may not exceed 120 seconds. If GitHub
-requires a longer wait, the current fetch fails closed instead of sleeping into the Lambda
-timeout or retrying earlier than GitHub permits.
+The application-level GitHub rate-limit policy is intentionally much smaller than that Lambda timeout: one server-directed or calculated retry wait may not exceed 120 seconds. If GitHub requires a longer wait, the current fetch fails closed instead of sleeping into the Lambda timeout or retrying earlier than GitHub permits.
 
 ## Runtime environment
 
