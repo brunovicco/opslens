@@ -80,9 +80,17 @@ else
        and exponentially increase repeated secondary-limit delays
 ```
 
-The fallback delay is capped at 900 seconds and the page request has a bounded attempt budget.
+The runtime has a **120-second per-retry wait budget**. This budget does not override GitHub's
+minimum retry timing. If `Retry-After`, the primary-limit reset delay, or the calculated
+secondary-limit backoff requires more than 120 seconds, OpsLens does **not** clamp the delay to
+120 seconds and retry early. It fails the current source fetch immediately so a later bounded
+invocation can resume after the required wait.
 
-HTTP 401 is terminal and is not retried.
+This is intentionally separate from the Lambda function timeout. Lambda can run for at most
+900 seconds, so one GitHub-directed wait must not be allowed to consume the entire invocation
+budget.
+
+The page request still has a bounded attempt count. HTTP 401 is terminal and is not retried.
 
 HTTP 500/502/503/504 and transport failures use a separate short bounded exponential retry
 budget. Rate-limit backoff and ordinary transient-source retries are not conflated.
@@ -122,7 +130,9 @@ closed.
 
 - Secrets stay outside source identity and persistence evidence.
 - The GitHub token can rotate without changing `sync_id` or `attempt_id`.
-- Rate-limit behavior follows GitHub's documented recovery requirements.
+- Rate-limit behavior follows GitHub's documented recovery requirements without retrying earlier
+  than GitHub permits.
+- A single long GitHub-directed wait cannot consume the complete Lambda timeout budget.
 - Redirects cannot silently escape the selected outbound host/path boundary.
 - S3 replay is idempotent while still requiring versioned evidence.
 - Source growth causes deterministic subdivision rather than unbounded pagination.
@@ -131,6 +141,8 @@ closed.
 
 - Secrets Manager adds a small recurring service cost.
 - A long-lived fine-grained token still has external credential lifecycle work.
+- A rate-limit delay above the 120-second runtime budget ends the current fetch and requires a
+  later invocation rather than waiting in place.
 - Disabling redirects is stricter than GitHub's generic REST best-practice guidance; a future
   legitimate endpoint migration must update the source contract explicitly.
 - Window subdivision creates multiple child synchronization identities and therefore requires
@@ -152,6 +164,8 @@ those resources belong to the later Phase 2.4C runtime/Terraform increment.
   https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api
 - GitHub REST API rate limits:
   https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api
+- AWS Lambda timeout:
+  https://docs.aws.amazon.com/lambda/latest/dg/configuration-timeout.html
 - AWS Lambda — use Secrets Manager secrets:
   https://docs.aws.amazon.com/lambda/latest/dg/with-secrets-manager.html
 - AWS Secrets Manager best practices:
