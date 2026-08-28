@@ -97,22 +97,39 @@ For HTTP 403/429:
 
 ```text
 Retry-After
-    -> exact bounded delay
+    -> exact delay when <= 120 seconds
 
 else X-RateLimit-Remaining == 0 + X-RateLimit-Reset
-    -> wait until just after reset
+    -> exact delay until just after reset when <= 120 seconds
 
 else
     -> 60 seconds minimum
        exponential growth on repeated rate limits
-       maximum delay 900 seconds
+       fail closed when the calculated wait exceeds 120 seconds
 ```
+
+The 120-second value is a runtime **wait budget**, not permission to retry earlier than GitHub
+allows. A server-directed or calculated delay above the budget raises a bounded source failure
+immediately. The runtime never clamps a required 121+ second wait down to 120 seconds.
+
+This keeps one GitHub-directed wait well below the Lambda maximum execution time of 900 seconds
+and leaves the current invocation available for bounded source work rather than consuming the
+entire runtime in `sleep`.
 
 HTTP 401 is terminal.
 
 Transport failures and HTTP 500/502/503/504 use a short separate exponential delay.
 
 Every page request has a finite attempt budget. No retry loop is unbounded.
+
+## Outbound URL parsing boundary
+
+The exact `Link: rel="next"` URL remains untrusted input. URL decomposition, port extraction,
+and strict query parsing now share the same malformed-URL exception boundary.
+
+`parse_qsl(..., strict_parsing=True)` failures are therefore converted to
+`InvalidGhsaRequestUrlError` rather than leaking a bare `ValueError`. Higher page/pagination
+layers can continue wrapping that domain error deterministically.
 
 ## Deterministic oversized-window subdivision
 
@@ -169,35 +186,23 @@ The planned credential service adds one Secrets Manager secret. Current public A
 lists USD 0.40 per secret per month plus API request charges. A 300-second in-memory cache is
 used to keep retrieval calls low.
 
-## Current gates after implementation, before local validation
+## Current hardening checkpoint
+
+The original authenticated runtime gates were previously green. The pre-apply hardening changes
+now require a fresh focused validation before a new deployment artifact is built:
 
 ```text
-GHSA_BRONZE_SYNC_WINDOW_GATE=PASS
-GHSA_BRONZE_REQUEST_URL_ALLOWLIST_GATE=PASS
-GHSA_BRONZE_PAGE_CONTRACT_GATE=PASS
-GHSA_BRONZE_CURSOR_COMPLETION_GATE=PASS
-GHSA_BRONZE_ATTEMPT_ID_GATE=PASS
-GHSA_BRONZE_KEY_LAYOUT_GATE=PASS
-GHSA_BRONZE_COMPLETE_MANIFEST_GATE=PASS
-
-GHSA_BRONZE_AUTHENTICATED_HTTP_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_BRONZE_RATE_LIMIT_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_BRONZE_SECRET_PROVIDER_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_BRONZE_S3_ADAPTER_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_BRONZE_SUBDIVISION_GATE=PASS_PENDING_LOCAL_VALIDATION
-
-GHSA_BRONZE_RUNTIME_COMPOSITION_GATE=PENDING
-GHSA_BRONZE_TERRAFORM_GATE=PENDING
+GHSA_BRONZE_REQUEST_URL_ALLOWLIST_GATE=PASS_PENDING_REVALIDATION
+GHSA_BRONZE_RATE_LIMIT_GATE=PASS_PENDING_REVALIDATION
+GHSA_BRONZE_PRE_APPLY_HARDENING_GATE=PASS_PENDING_LOCAL_VALIDATION
 GHSA_2_4C_GATE=IN_PROGRESS
 ```
 
 ## Next step
 
-Run the focused GHSA ingestion tests, Ruff, and strict Pyright.
-
-If green, the next increment may compose these adapters into the bounded Bronze runtime
-service and only then introduce the Lambda artifact, least-privilege IAM, Secrets Manager
-resource, EventBridge scheduling decision, and Terraform.
+Run the focused GHSA ingestion tests, Ruff, and strict Pyright. If green, rebuild the
+deterministic Lambda artifact, publish the new content-addressed object, repin Terraform to its
+exact SHA-256 + S3 VersionId, and rerun the reviewed plan before apply.
 
 ## References
 
@@ -210,6 +215,8 @@ resource, EventBridge scheduling decision, and Terraform.
   https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api
 - GitHub REST rate limits:
   https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api
+- AWS Lambda timeout:
+  https://docs.aws.amazon.com/lambda/latest/dg/configuration-timeout.html
 - AWS Lambda and Secrets Manager:
   https://docs.aws.amazon.com/lambda/latest/dg/with-secrets-manager.html
 - AWS Secrets Manager best practices:
