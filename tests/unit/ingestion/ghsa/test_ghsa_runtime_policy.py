@@ -4,7 +4,10 @@ from datetime import UTC, datetime
 
 import pytest
 
-from opslens.ingestion.ghsa.application.rate_limit import GhsaRetryDelayPolicy
+from opslens.ingestion.ghsa.application.rate_limit import (
+    GhsaRetryDelayBudgetExceededError,
+    GhsaRetryDelayPolicy,
+)
 from opslens.ingestion.ghsa.application.subdivision import (
     GhsaWindowCannotSubdivideError,
     GhsaWindowSubdivisionPlanner,
@@ -60,8 +63,43 @@ def test_rate_limit_reset_is_used_when_remaining_is_zero() -> None:
     assert delay == 61.0
 
 
-def test_secondary_limit_fallback_is_exponential_and_bounded() -> None:
-    """Use at least one minute and increase the delay across repeated limits."""
+def test_retry_after_above_runtime_wait_budget_fails_closed() -> None:
+    """Never shorten a GitHub-directed wait just to fit the Lambda runtime budget."""
+    policy = GhsaRetryDelayPolicy(maximum_delay_seconds=120)
+
+    with pytest.raises(
+        GhsaRetryDelayBudgetExceededError,
+        match="Retry-After delay 121s exceeds the 120s retry wait budget",
+    ):
+        policy.rate_limit_delay_seconds(
+            status_code=429,
+            headers={"retry-after": "121"},
+            now_epoch_seconds=1000.0,
+            consecutive_rate_limit_failures=1,
+        )
+
+
+def test_primary_reset_above_runtime_wait_budget_fails_closed() -> None:
+    """Fail instead of retrying before a primary-rate-limit reset is allowed."""
+    policy = GhsaRetryDelayPolicy(maximum_delay_seconds=120)
+
+    with pytest.raises(
+        GhsaRetryDelayBudgetExceededError,
+        match="X-RateLimit-Reset delay 121s exceeds the 120s retry wait budget",
+    ):
+        policy.rate_limit_delay_seconds(
+            status_code=403,
+            headers={
+                "x-ratelimit-remaining": "0",
+                "x-ratelimit-reset": "1120",
+            },
+            now_epoch_seconds=1000.0,
+            consecutive_rate_limit_failures=1,
+        )
+
+
+def test_secondary_limit_fallback_is_exponential_with_fail_closed_budget() -> None:
+    """Back off exponentially but fail rather than clamp beyond the wait budget."""
     policy = GhsaRetryDelayPolicy(maximum_delay_seconds=120)
 
     first = policy.rate_limit_delay_seconds(
@@ -76,14 +114,19 @@ def test_secondary_limit_fallback_is_exponential_and_bounded() -> None:
         now_epoch_seconds=1000.0,
         consecutive_rate_limit_failures=2,
     )
-    third = policy.rate_limit_delay_seconds(
-        status_code=429,
-        headers={},
-        now_epoch_seconds=1000.0,
-        consecutive_rate_limit_failures=3,
-    )
 
-    assert (first, second, third) == (60.0, 120.0, 120.0)
+    assert (first, second) == (60.0, 120.0)
+
+    with pytest.raises(
+        GhsaRetryDelayBudgetExceededError,
+        match="secondary-rate-limit backoff delay 240s exceeds the 120s retry wait budget",
+    ):
+        policy.rate_limit_delay_seconds(
+            status_code=429,
+            headers={},
+            now_epoch_seconds=1000.0,
+            consecutive_rate_limit_failures=3,
+        )
 
 
 def test_non_rate_limit_status_has_no_rate_limit_delay() -> None:
