@@ -51,7 +51,7 @@ The token never enters URLs, logs, Bronze objects, manifests, `sync_id`, or `att
 
 HTTP 401 is terminal. Transport and selected 5xx failures use a separate short bounded retry path.
 
-GitHub 403/429 handling follows `Retry-After`, primary reset, and secondary-limit backoff rules. The runtime now has a 120-second per-retry wait budget. A required wait above that budget is never shortened: the fetch fails closed so a later invocation can resume after GitHub permits another request.
+GitHub 403/429 handling follows `Retry-After`, primary reset, and secondary-limit backoff rules. The runtime has a 120-second per-retry wait budget. A required wait above that budget is never shortened: the fetch fails closed so a later invocation can resume after GitHub permits another request.
 
 Strict continuation-query parsing is also inside the GHSA request-URL domain boundary. Malformed `parse_qsl(..., strict_parsing=True)` input becomes `InvalidGhsaRequestUrlError` rather than a bare `ValueError`.
 
@@ -94,17 +94,21 @@ Unknown fields fail closed. Timestamps must use canonical UTC whole-second `Z` f
 
 The Lambda environment contains only non-secret configuration and the Secrets Manager secret identifier. Credential material remains exclusively in Secrets Manager.
 
-## Prior validated checkpoint and immutable artifact evidence
+## Current validated source checkpoint
 
-Before the final pre-apply hardening changes, the focused local checkpoint was green:
+After the final pre-apply hardening changes, the focused local checkpoint supplied on 2026-08-28 is green:
 
 ```text
-57 passed
+61 passed
 Ruff: All checks passed
 Pyright strict: 0 errors / 0 warnings / 0 informations
 ```
 
-That exact source revision produced and published:
+Therefore the current source revision has passed the request-URL, authenticated HTTP, rate-limit, runtime-composition, Lambda invocation, and pre-apply hardening gates.
+
+## Prior immutable artifact evidence
+
+The earlier validated source revision produced and published:
 
 ```text
 sha256=9deb08f346cbe7261199568de8a515b26b2865d7f6d2a592d837a0ac0368c928
@@ -127,37 +131,24 @@ Plan: 5 to add, 0 to change, 0 to destroy.
 
 That saved plan must not be applied after the source changes. The current Terraform artifact pin must be replaced with the next exact artifact SHA-256 and S3 VersionId before a new reviewed plan.
 
-## Pre-apply hardening checkpoint
-
-Implemented changes:
-
-```text
-GHSA retry wait budget: 120 seconds
-server-required waits above budget: fail closed, never clamp downward
-strict query parse ValueError: wrapped as InvalidGhsaRequestUrlError
-```
-
-These changes are implemented in the branch but are not promoted until the fresh local test/lint/type checkpoint is supplied.
-
 ## Current gates
 
 ```text
 GHSA_BRONZE_SYNC_WINDOW_GATE=PASS
+GHSA_BRONZE_REQUEST_URL_ALLOWLIST_GATE=PASS
 GHSA_BRONZE_PAGE_CONTRACT_GATE=PASS
 GHSA_BRONZE_CURSOR_COMPLETION_GATE=PASS
 GHSA_BRONZE_ATTEMPT_ID_GATE=PASS
 GHSA_BRONZE_KEY_LAYOUT_GATE=PASS
 GHSA_BRONZE_COMPLETE_MANIFEST_GATE=PASS
+GHSA_BRONZE_AUTHENTICATED_HTTP_GATE=PASS
+GHSA_BRONZE_RATE_LIMIT_GATE=PASS
 GHSA_BRONZE_SECRET_PROVIDER_GATE=PASS
 GHSA_BRONZE_S3_ADAPTER_GATE=PASS
 GHSA_BRONZE_SUBDIVISION_GATE=PASS
-
-GHSA_BRONZE_REQUEST_URL_ALLOWLIST_GATE=PASS_PENDING_REVALIDATION
-GHSA_BRONZE_AUTHENTICATED_HTTP_GATE=PASS_PENDING_REVALIDATION
-GHSA_BRONZE_RATE_LIMIT_GATE=PASS_PENDING_REVALIDATION
-GHSA_BRONZE_RUNTIME_COMPOSITION_GATE=PASS_PENDING_REVALIDATION
-GHSA_BRONZE_LAMBDA_INVOCATION_CONTRACT_GATE=PASS_PENDING_REVALIDATION
-GHSA_BRONZE_PRE_APPLY_HARDENING_GATE=PASS_PENDING_LOCAL_VALIDATION
+GHSA_BRONZE_RUNTIME_COMPOSITION_GATE=PASS
+GHSA_BRONZE_LAMBDA_INVOCATION_CONTRACT_GATE=PASS
+GHSA_BRONZE_PRE_APPLY_HARDENING_GATE=PASS
 
 GHSA_BRONZE_LAMBDA_ARTIFACT_BUILD_GATE=STALE_REBUILD_REQUIRED
 GHSA_BRONZE_ARTIFACT_PUBLICATION_GATE=STALE_REPUBLISH_REQUIRED
@@ -184,7 +175,7 @@ No GHSA AWS runtime resources have been applied yet. EventBridge Scheduler remai
 
 ## Next step
 
-Run the focused GHSA ingestion tests, Ruff, and strict Pyright on the hardening head. If green, build and publish a new deterministic artifact, capture its exact SHA-256 and S3 VersionId, repin Terraform, and generate a fresh reviewed plan before apply.
+Build a new deterministic Lambda artifact from this validated source revision. Capture its exact SHA-256 and content-addressed key before publishing or repinning Terraform.
 
 ## References
 
