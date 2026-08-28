@@ -125,9 +125,9 @@ Every page request has a finite attempt budget. No retry loop is unbounded.
 ## Outbound URL parsing boundary
 
 The exact `Link: rel="next"` URL remains untrusted input. URL decomposition, port extraction,
-and strict query parsing now share the same malformed-URL exception boundary.
+and strict query parsing share the same malformed-URL exception boundary.
 
-`parse_qsl(..., strict_parsing=True)` failures are therefore converted to
+`parse_qsl(..., strict_parsing=True)` failures are converted to
 `InvalidGhsaRequestUrlError` rather than leaking a bare `ValueError`. Higher page/pagination
 layers can continue wrapping that domain error deterministically.
 
@@ -186,23 +186,31 @@ The planned credential service adds one Secrets Manager secret. Current public A
 lists USD 0.40 per secret per month plus API request charges. A 300-second in-memory cache is
 used to keep retrieval calls low.
 
-## Current hardening checkpoint
+## Validated hardening checkpoint
 
-The original authenticated runtime gates were previously green. The pre-apply hardening changes
-now require a fresh focused validation before a new deployment artifact is built:
+The final pre-apply hardening checkpoint was supplied locally on 2026-08-28:
 
 ```text
-GHSA_BRONZE_REQUEST_URL_ALLOWLIST_GATE=PASS_PENDING_REVALIDATION
-GHSA_BRONZE_RATE_LIMIT_GATE=PASS_PENDING_REVALIDATION
-GHSA_BRONZE_PRE_APPLY_HARDENING_GATE=PASS_PENDING_LOCAL_VALIDATION
+61 passed
+Ruff: All checks passed
+Pyright strict: 0 errors / 0 warnings / 0 informations
+```
+
+Therefore:
+
+```text
+GHSA_BRONZE_REQUEST_URL_ALLOWLIST_GATE=PASS
+GHSA_BRONZE_AUTHENTICATED_HTTP_GATE=PASS
+GHSA_BRONZE_RATE_LIMIT_GATE=PASS
+GHSA_BRONZE_PRE_APPLY_HARDENING_GATE=PASS
 GHSA_2_4C_GATE=IN_PROGRESS
 ```
 
 ## Next step
 
-Run the focused GHSA ingestion tests, Ruff, and strict Pyright. If green, rebuild the
-deterministic Lambda artifact, publish the new content-addressed object, repin Terraform to its
-exact SHA-256 + S3 VersionId, and rerun the reviewed plan before apply.
+Rebuild the deterministic Lambda artifact from this validated source revision. Then publish the
+new content-addressed object, capture its exact SHA-256 and S3 VersionId, repin Terraform, and
+rerun the reviewed plan before apply.
 
 ## References
 
