@@ -14,12 +14,12 @@ The invariant remains:
 
 ## Validated contract gates
 
-Local validation through the bounded runtime-composition increment is green:
+Local validation through the bounded runtime-composition increment is green based on the user's confirmed checkpoint:
 
 ```text
-51 passed
-Ruff: all checks passed
-Pyright strict: 0 errors / 0 warnings / 0 informations
+pytest GHSA ingestion: PASS
+Ruff GHSA ingestion: PASS
+Pyright strict: PASS
 ```
 
 Therefore:
