@@ -141,9 +141,10 @@ class GhsaCompleteManifest:
         if sum(page.size_bytes for page in self.pages) != self.total_bytes:
             raise ValueError("GHSA manifest page sizes do not match total_bytes.")
 
-        if self.total_items == 0:
-            if len(self.pages) != 1 or self.pages[0].item_count != 0:
-                raise ValueError("An empty GHSA attempt must contain exactly one empty page.")
+        if self.total_items == 0 and (
+            len(self.pages) != 1 or self.pages[0].item_count != 0
+        ):
+            raise ValueError("An empty GHSA attempt must contain exactly one empty page.")
 
     @property
     def page_count(self) -> int:
@@ -297,4 +298,4 @@ class GhsaCompleteManifestSerializer:
             allow_nan=False,
         )
 
-        return f"{text}\n".encode("utf-8")
+        return f"{text}\n".encode()
