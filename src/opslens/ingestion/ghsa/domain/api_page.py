@@ -58,6 +58,11 @@ class GhsaRequestUrlPolicy:
         try:
             parsed = urlsplit(url)
             port = parsed.port
+            pairs = parse_qsl(
+                parsed.query,
+                keep_blank_values=True,
+                strict_parsing=True,
+            )
         except ValueError as exc:
             raise InvalidGhsaRequestUrlError("GHSA request URL is malformed.") from exc
 
@@ -89,11 +94,6 @@ class GhsaRequestUrlPolicy:
                 "GHSA request URL cannot contain a fragment."
             )
 
-        pairs = parse_qsl(
-            parsed.query,
-            keep_blank_values=True,
-            strict_parsing=True,
-        )
         keys = tuple(key for key, _value in pairs)
 
         if len(keys) != len(set(keys)):
