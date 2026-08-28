@@ -249,7 +249,7 @@ class GhsaBronzeRuntimeService:
         return GhsaBronzeAttemptCompletion(
             sync_id=window.sync_id,
             attempt_id=attempt_id,
-            page_count=pagination.page_count,
+            page_count=len(pagination.pages),
             total_items=pagination.total_items,
             total_bytes=pagination.total_bytes,
             manifest_key=manifest_write.key,
