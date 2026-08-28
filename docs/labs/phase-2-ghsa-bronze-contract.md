@@ -6,15 +6,14 @@ _Status: IN PROGRESS_
 
 ## Purpose
 
-Define deterministic GitHub Security Advisory Bronze request, response-page, cursor-pagination, physical observation, and persistence evidence contracts before any GHSA AWS runtime resource is created.
+Define deterministic GitHub Security Advisory Bronze request, response-page, cursor-pagination,
+physical observation, persistence, and runtime-security contracts before AWS resources are
+introduced.
 
-Phase 2.4A froze the GitHub source contract. Phase 2.4B froze exact advisory content-version Silver semantics. Phase 2.4C owns the physical source observation boundary.
-
-The invariant remains:
+Phase 2.4A froze the GitHub source contract. Phase 2.4B froze advisory content-version Silver
+semantics. Phase 2.4C owns the exact physical source observation and Bronze runtime boundary.
 
 > **Agents reason. Code verifies evidence.**
-
-No model participates in source-window identity, request construction, pagination continuation, GHSA identity validation, Bronze completion, object provenance, or credential handling.
 
 ## Dependency checkpoint
 
@@ -24,124 +23,28 @@ Phase 2.4B — GHSA Advisory/Silver Contract: COMPLETE
 Phase 2.4C — GHSA Bronze:                   IN PROGRESS
 ```
 
-Accepted upstream boundaries:
-
-```text
-runtime source: GitHub Global Security Advisories REST API
-API version:    2026-03-10
-scope:          reviewed only
-bootstrap:      bounded published windows
-incremental:    bounded modified windows
-pagination:     exact Link rel=next continuation
-Silver content identity:
-                observed_advisory_version_id
-```
-
-Phase 2.4B explicitly established:
+The accepted identity separation remains:
 
 ```text
 observed_advisory_version_id != sync_id != attempt_id
 ```
 
-Bronze preserves the physical source evidence required to bind later Silver content back to one exact accepted source observation without redefining advisory content identity.
+## Increment 1 — source navigation and cursor completion
 
-## Architecture for this gate
-
-```text
-bounded GhsaSyncWindow
-        ↓
-deterministic first request URL
-        ↓
-GitHub /advisories
-        ↓
-exact response bytes + Link header
-        ↓
-GhsaAdvisoryApiPageParser
-        ↓
-allowlisted exact rel=next URL
-        ↓
-GhsaAdvisoryPagination
-        ↓
-GhsaAttemptIdFactory
-        ↓
-content-bound attempt_id
-        ↓
-deterministic Bronze page keys
-        ↓
-versioned persistence results
-        ↓
-GhsaCompleteManifest
-```
-
-No S3, Lambda, EventBridge, Terraform, IAM, or secret resource is introduced by the contract increments.
-
-## Increment 1 — logical window, URL allowlist, and complete cursor chain
-
-The first implementation increment froze the deterministic source-navigation boundary.
-
-### Logical synchronization identity
-
-`GhsaSyncWindow` carries:
+The first increment froze:
 
 ```text
-mode:        published | modified
-start_at:    inclusive UTC whole-second boundary
-end_at:      inclusive UTC whole-second boundary
-API version: 2026-03-10
-type:        reviewed
-sort:        published
-direction:   asc
-per_page:    100
+bounded published/modified GhsaSyncWindow
+deterministic sync_id
+reviewed-only source validation
+exact response-byte SHA-256
+allowlisted Link rel=next navigation
+within-page and cross-page published ordering
+duplicate GHSA detection
+64-page / 64-MiB bounded completion
 ```
 
-One logical Bronze unit may span at most 31 days.
-
-The `sync_id` hashes the versioned normalized query contract rather than runtime metadata:
-
-```text
-source contract
-+ API version
-+ mode
-+ exact normalized start/end
-+ reviewed scope
-+ sort/direction
-+ per_page
-```
-
-Runtime timestamps, Lambda request IDs, credentials, retries, and AWS metadata do not participate in `sync_id`.
-
-### Link header as untrusted navigation input
-
-OpsLens follows GitHub's exact `rel="next"` continuation URL, but every continuation remains inside the outbound allowlist:
-
-```text
-scheme: https
-host:   api.github.com
-path:   /advisories
-port:   default HTTPS or 443
-userinfo: forbidden
-fragment: forbidden
-```
-
-The URL must preserve exactly the selected synchronization filter, `type=reviewed`, `sort=published`, `direction=asc`, and `per_page=100`. Only one opaque `after` or `before` cursor may be added.
-
-This is an SSRF/outbound-navigation boundary even though GitHub is the selected trusted source.
-
-### Minimum page and pagination validation
-
-Each exact response body must be non-empty UTF-8 JSON, top-level array, at most 8 MiB, at most 100 advisories, reviewed-only, within the selected source window, unique by GHSA within the page, and sorted by `published_at` ascending.
-
-A complete pagination must start from the deterministic initial URL, follow each exact `rel=next` URL, avoid repeated request URLs and GHSA IDs, preserve cross-page published ordering, and end only when the final page has no `rel=next`.
-
-Safety caps:
-
-```text
-maximum page body:  8 MiB
-maximum pages:      64
-maximum total body: 64 MiB
-```
-
-Local validation for Increment 1:
+Local evidence:
 
 ```text
 16 passed
@@ -149,48 +52,19 @@ Ruff: all checks passed
 Pyright strict: 0 errors / 0 warnings / 0 informations
 ```
 
-## Increment 2 — physical attempt identity and COMPLETE persistence evidence
+## Increment 2 — physical attempt and COMPLETE evidence
 
-The second increment introduces no AWS resources. It freezes the deterministic shape that a future runtime must satisfy after it retrieves and persists a complete page sequence.
-
-### Physical attempt identity
-
-`GhsaAttemptIdFactory` binds the exact ordered observation:
+The second increment froze:
 
 ```text
-attempt_version
-sync_id
-page_count
-total_items
-total_bytes
-ordered pages[]:
-  request_url
-  next_url
-  sha256
-  size_bytes
-  item_count
+content-bound GhsaAttemptIdFactory
+deterministic attempt-scoped Bronze keys
+exact S3 key + VersionId persistence evidence
+canonical COMPLETE manifest
+zero-result [] as valid complete source evidence
 ```
 
-The `attempt_id` is SHA-256 over canonical JSON for that document.
-
-Consequences:
-
-```text
-same logical sync + same exact pages + same cursor chain
-    -> same attempt_id
-
-same logical sync + changed response bytes
-    -> different attempt_id
-
-same logical sync + changed cursor navigation evidence
-    -> different attempt_id
-```
-
-`attempt_id` is not a runtime invocation ID and contains no timestamp, credential, Lambda request ID, S3 VersionId, retry counter, or AWS metadata.
-
-### Bronze key layout
-
-The frozen contract layout is:
+Frozen layout:
 
 ```text
 bronze/ghsa/advisories/
@@ -201,152 +75,129 @@ bronze/ghsa/advisories/
         manifest.json
 ```
 
-The opaque GitHub cursor is intentionally not used as an S3 key component. Cursor evidence remains inside the attempt identity and manifest.
-
-This preserves the same architectural principle already proven in NVD:
+The first local run after this increment reported:
 
 ```text
-logical synchronization identity
-    !=
-exact physical observation identity
+30 passed
+Pyright strict: 0 errors / 0 warnings / 0 informations
 ```
 
-while adapting the page coordinate to cursor-based GitHub pagination.
+Ruff reported two style-only findings in the manifest implementation. Both were corrected in
+`0c1a987`; the final combined rerun after that style-only correction was not separately
+captured in this conversation before the next increment was explicitly requested.
 
-### Versioned persistence proof
+## Increment 3 — authenticated runtime-security adapters
 
-`GhsaBronzeWriteResult` requires both:
+The third increment moves toward the real runtime while still creating no AWS resources.
+
+### Credential strategy
+
+ADR-0007 accepts:
 
 ```text
-exact object key
-exact S3 VersionId
+credential store: AWS Secrets Manager
+secret value: raw GitHub token SecretString
+version stage: AWSCURRENT
+warm-runtime cache TTL: 300 seconds
+initial KMS key: aws/secretsmanager
 ```
 
-The COMPLETE manifest factory refuses completion when:
+The future Lambda execution role is intended to receive only
+`secretsmanager:GetSecretValue` on the exact GHSA token secret ARN.
+
+No custom token-rotation Lambda is introduced. Rotation remains an explicit operational action
+until a stronger ownership model such as GitHub App installation credentials is justified.
+
+### Authenticated source adapter
+
+Every request sends:
 
 ```text
-page write count != validated page count
-persisted page key != deterministic Bronze key
-pagination belongs to another sync_id
-page inventory is incomplete
+Accept: application/vnd.github+json
+Authorization: Bearer <secret>
+User-Agent: opslens-ghsa-ingestion/0.1
+X-GitHub-Api-Version: 2026-03-10
 ```
 
-This means a future S3 adapter cannot report only a successful `PutObject`; it must return the exact VersionId created for the exact key.
+The token is not included in URLs, telemetry fields, Bronze evidence, manifests, `sync_id`, or
+`attempt_id`.
 
-### COMPLETE manifest
+`HttpsGhsaTransport` performs direct HTTPS requests and does not automatically follow
+redirects. This keeps the existing outbound allowlist authoritative instead of allowing a
+redirect target to bypass it before validation.
 
-One manifest describes one exact physical attempt and preserves:
+### GitHub rate-limit policy
+
+Requests remain serial and bounded.
+
+For HTTP 403/429:
 
 ```text
-source:            github-ghsa
-source_interface:  global-security-advisories-rest
-api_version:       2026-03-10
-advisory_type:     reviewed
-mode
-sync_id
-attempt_id
-closed window start/end
-page_count
-total_items
-total_bytes
+Retry-After present
+    -> wait that many seconds
+
+else X-RateLimit-Remaining == 0 + X-RateLimit-Reset
+    -> wait until just after reset
+
+else
+    -> wait at least 60 seconds
+       exponential growth for repeated secondary limits
+       maximum delay 900 seconds
 ```
 
-Each stored page records:
+HTTP 401 is terminal. Transport failures and HTTP 500/502/503/504 use a separate short
+exponential retry path.
+
+### Deterministic subdivision
+
+If a valid logical window cannot satisfy the frozen pagination/byte caps, the subdivision
+contract is:
 
 ```text
-page_ordinal
-key
-version_id
-size_bytes
-sha256
-item_count
-request_url
-next_url
-first_ghsa_id
-last_ghsa_id
+parent = [start, end]
+left   = [start, midpoint]
+right  = [midpoint + 1 second, end]
 ```
 
-The manifest serializer uses deterministic canonical JSON ordering and a trailing newline.
+The children are non-overlapping and gapless at the frozen whole-second source precision. Each
+child has a new `sync_id`. If the parent is too small to create two valid children, the runtime
+fails closed rather than weakening the safety caps.
 
-Authorization headers and tokens are not represented in the manifest, keys, `sync_id`, or `attempt_id`.
+### Versioned S3 adapter
 
-### Empty windows
-
-A valid zero-result synchronization remains evidence:
+`S3GhsaBronzeRepository` implements conditional immutable writes:
 
 ```text
-one exact response page containing []
-no rel=next
-total_items = 0
-COMPLETE manifest with one persisted page
+PutObject
+If-None-Match: *
+VersionId required
 ```
 
-An empty logical window is therefore not confused with a failed or missing ingestion attempt.
+A 412 precondition result is accepted only when `HeadObject` proves the existing exact key has
+the expected size, `application/json` content type, deterministic metadata, and non-empty
+VersionId.
 
-## Provenance boundary with Silver
-
-Phase 2.4B freezes:
-
-```text
-observed_advisory_version_id
-    = exact canonical advisory content identity
-```
-
-Phase 2.4C now freezes:
-
-```text
-sync_id
-    = logical source-query identity
-
-attempt_id
-    = exact complete physical page/cursor observation identity
-```
-
-Later Bronze-to-Silver verification must be able to prove:
-
-```text
-Silver advisory content
-    came from
-exact page bytes
-    at exact S3 VersionId
-    inside exact COMPLETE attempt manifest
-```
-
-Repeated physical observations of identical advisory content may therefore have different `attempt_id` values while still producing the same `observed_advisory_version_id`.
-
-## Remaining Phase 2.4C work
-
-After local validation of Increment 2, the remaining Bronze/runtime gate must decide and prove:
-
-```text
-safe authenticated GitHub HTTP adapter
-credential source and rotation ownership
-bounded retry / Retry-After behavior
-safe response metadata retention
-S3 versioned page + manifest adapters
-failure/replay semantics
-oversized-window deterministic subdivision
-runtime composition
-Lambda artifact build
-least-privilege IAM
-Terraform
-real dev execution evidence
-```
-
-No watermark or Silver authority may advance from a partial attempt.
+The same immutable-write rule applies to response pages and COMPLETE manifests.
 
 ## AWS / IAM / cost boundary
 
-Current contract work:
+Increment 3 still creates no AWS resources.
+
+Planned Secrets Manager cost is approximately USD 0.40 per secret per month plus API request
+charges at current public pricing. The 300-second process-local cache is intended to keep
+secret retrieval calls low.
+
+Not yet created:
 
 ```text
-AWS resources added:  none
-IAM changes:          none
-runtime cost added:   none
-secret resources:     none
+Secrets Manager secret
+Lambda
+IAM role/policies
+EventBridge Scheduler
+Terraform resources
+runtime artifact
+real S3 objects
 ```
-
-The future runtime must use authenticated GitHub retrieval, least-privilege AWS access, bounded HTTP behavior, immutable/versioned S3 evidence, and the existing deterministic content-addressed Lambda deployment lifecycle.
 
 ## Current gates
 
@@ -355,25 +206,49 @@ GHSA_BRONZE_SYNC_WINDOW_GATE=PASS
 GHSA_BRONZE_REQUEST_URL_ALLOWLIST_GATE=PASS
 GHSA_BRONZE_PAGE_CONTRACT_GATE=PASS
 GHSA_BRONZE_CURSOR_COMPLETION_GATE=PASS
-GHSA_BRONZE_ATTEMPT_ID_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_BRONZE_KEY_LAYOUT_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_BRONZE_COMPLETE_MANIFEST_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_BRONZE_CREDENTIAL_RUNTIME_GATE=PENDING
-GHSA_BRONZE_RUNTIME_GATE=PENDING
+
+GHSA_BRONZE_ATTEMPT_ID_GATE=PASS_PENDING_FINAL_COMBINED_RERUN
+GHSA_BRONZE_KEY_LAYOUT_GATE=PASS_PENDING_FINAL_COMBINED_RERUN
+GHSA_BRONZE_COMPLETE_MANIFEST_GATE=PASS_PENDING_FINAL_COMBINED_RERUN
+
+GHSA_BRONZE_AUTHENTICATED_HTTP_GATE=PASS_PENDING_LOCAL_VALIDATION
+GHSA_BRONZE_RATE_LIMIT_GATE=PASS_PENDING_LOCAL_VALIDATION
+GHSA_BRONZE_SECRET_PROVIDER_GATE=PASS_PENDING_LOCAL_VALIDATION
+GHSA_BRONZE_S3_ADAPTER_GATE=PASS_PENDING_LOCAL_VALIDATION
+GHSA_BRONZE_SUBDIVISION_GATE=PASS_PENDING_LOCAL_VALIDATION
+
+GHSA_BRONZE_RUNTIME_COMPOSITION_GATE=PENDING
+GHSA_BRONZE_TERRAFORM_GATE=PENDING
 GHSA_2_4C_GATE=IN_PROGRESS
 ```
 
 ## Next step
 
-Run focused unit tests, Ruff, and strict Pyright for the new attempt/key/manifest increment.
+Run one combined GHSA ingestion checkpoint covering all three increments:
 
-Do not introduce AWS resources until this physical evidence contract is green.
+```text
+pytest GHSA ingestion
+Ruff GHSA ingestion
+Pyright strict
+```
+
+If green, the evidence and adapter gates can all move to PASS. The next increment is bounded
+runtime composition. Terraform and AWS resource creation remain after that composition is
+locally green.
 
 ## References
 
 - `docs/adr/0005-ghsa-source-and-synchronization-strategy.md`
 - `docs/adr/0006-ghsa-silver-content-versioning-and-physical-shape.md`
-- `docs/labs/phase-2-ghsa-live-rest-probe.md`
-- `docs/labs/phase-2-ghsa-advisory-silver-contract.md`
-- GitHub REST API — Global security advisories: https://docs.github.com/en/rest/security-advisories/global-advisories
-- GitHub REST API — Pagination: https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api
+- `docs/adr/0007-ghsa-runtime-credential-and-retry-strategy.md`
+- `docs/labs/phase-2-ghsa-runtime-security-design.md`
+- GitHub REST authentication:
+  https://docs.github.com/en/rest/authentication/authenticating-to-the-rest-api
+- GitHub REST best practices:
+  https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api
+- GitHub REST rate limits:
+  https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api
+- AWS Lambda and Secrets Manager:
+  https://docs.aws.amazon.com/lambda/latest/dg/with-secrets-manager.html
+- AWS Secrets Manager pricing:
+  https://aws.amazon.com/secrets-manager/pricing/
