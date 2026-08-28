@@ -278,6 +278,40 @@ def test_authenticated_source_honors_retry_after_before_retrying() -> None:
     assert sleeps == [3.0]
 
 
+def test_authenticated_source_fails_fast_when_retry_after_exceeds_wait_budget() -> None:
+    """Do not sleep or retry early when GitHub requires a wait beyond the runtime budget."""
+    sleeps: list[float] = []
+    transport = _FakeTransport(
+        [
+            GhsaHttpResponse(
+                status_code=429,
+                body=b"rate limited",
+                headers={"retry-after": "121"},
+            )
+        ]
+    )
+    source = GhsaAuthenticatedPageSource(
+        credential_provider=_StaticCredential(),
+        transport=transport,
+        retry_delay_policy=GhsaRetryDelayPolicy(maximum_delay_seconds=120),
+        telemetry=_Telemetry(),
+        sleep_fn=sleeps.append,
+    )
+    window = _window()
+
+    with pytest.raises(
+        GhsaRateLimitExhaustedError,
+        match="exceeds the bounded GHSA runtime retry budget",
+    ):
+        source.fetch(
+            request_url=GhsaRequestUrlPolicy.build_initial(window),
+            window=window,
+        )
+
+    assert transport.calls == 1
+    assert sleeps == []
+
+
 def test_authenticated_source_does_not_retry_unauthorized_credentials() -> None:
     """Treat 401 as a terminal credential failure rather than a retryable outage."""
     transport = _FakeTransport(
