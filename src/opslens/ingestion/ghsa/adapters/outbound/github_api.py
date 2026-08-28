@@ -54,7 +54,7 @@ class HttpsGhsaTransport:
         if parsed.scheme != GhsaRequestUrlPolicy.SCHEME:
             raise GhsaSourceUnavailableError("GHSA transport requires HTTPS.")
 
-        if hostname != GhsaRequestUrlPolicy.HOST:
+        if hostname is None or hostname != GhsaRequestUrlPolicy.HOST:
             raise GhsaSourceUnavailableError("GHSA transport host is not allowlisted.")
 
         if parsed.port not in (None, 443):
