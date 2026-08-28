@@ -10,17 +10,21 @@ Introduce the minimum Terraform-managed AWS resources required to prove one manu
 
 EventBridge Scheduler remains intentionally deferred until the synchronous manual path is proven.
 
-## Prior artifact and Terraform evidence
+## Current validated source checkpoint
 
-Before the final pre-apply hardening review, the local Lambda contract checkpoint was green:
+After the final pre-apply hardening changes, the focused local checkpoint is green:
 
 ```text
-57 passed
+61 passed
 Ruff: All checks passed
 Pyright strict: 0 errors / 0 warnings / 0 informations
 ```
 
-That source revision produced and published this exact immutable artifact:
+The current source revision therefore passes the request-URL, authenticated HTTP, rate-limit, runtime-composition, Lambda invocation, and pre-apply hardening gates.
+
+## Prior artifact and Terraform evidence
+
+The previous validated source revision produced and published this exact immutable artifact:
 
 ```text
 sha256=9deb08f346cbe7261199568de8a515b26b2865d7f6d2a592d837a0ac0368c928
@@ -128,24 +132,16 @@ The function is intentionally not placed in a VPC because it requires outbound a
 
 Reserved concurrency remains deferred for the manual-only proof path because the dev account has previously constrained concurrency quota headroom. No scheduler exists in this increment.
 
-## Pre-apply hardening
-
-Two final code-level boundaries were tightened before apply:
-
-```text
-1. Rate-limit waits above 120 seconds fail closed; required waits are never clamped downward.
-2. Strict GHSA continuation-query parsing failures are wrapped as InvalidGhsaRequestUrlError.
-```
-
-These changes require a fresh focused test/lint/type checkpoint and a new deterministic Lambda
-artifact before Terraform may be applied.
-
 ## Current gates
 
 ```text
-GHSA_BRONZE_RUNTIME_COMPOSITION_GATE=PASS_PENDING_REVALIDATION
-GHSA_BRONZE_LAMBDA_INVOCATION_CONTRACT_GATE=PASS_PENDING_REVALIDATION
-GHSA_BRONZE_PRE_APPLY_HARDENING_GATE=PASS_PENDING_LOCAL_VALIDATION
+GHSA_BRONZE_REQUEST_URL_ALLOWLIST_GATE=PASS
+GHSA_BRONZE_AUTHENTICATED_HTTP_GATE=PASS
+GHSA_BRONZE_RATE_LIMIT_GATE=PASS
+GHSA_BRONZE_RUNTIME_COMPOSITION_GATE=PASS
+GHSA_BRONZE_LAMBDA_INVOCATION_CONTRACT_GATE=PASS
+GHSA_BRONZE_PRE_APPLY_HARDENING_GATE=PASS
+
 GHSA_BRONZE_LAMBDA_ARTIFACT_BUILD_GATE=STALE_REBUILD_REQUIRED
 GHSA_BRONZE_ARTIFACT_PUBLICATION_GATE=STALE_REPUBLISH_REQUIRED
 GHSA_BRONZE_TERRAFORM_GATE=STALE_REPIN_AND_REPLAN_REQUIRED
@@ -155,8 +151,7 @@ GHSA_2_4C_GATE=IN_PROGRESS
 
 ## Required validation before apply
 
-First rerun the focused GHSA Python checkpoint. If green, rebuild and publish the new exact
-artifact, repin Terraform to the new SHA-256 + VersionId, and then run:
+Build and publish a new deterministic artifact for the current validated source revision. Then repin Terraform to its exact SHA-256 + S3 VersionId and run:
 
 ```text
 terraform fmt -check
