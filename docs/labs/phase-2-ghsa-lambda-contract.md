@@ -6,21 +6,7 @@ _Status: IN PROGRESS_
 
 ## Purpose
 
-Freeze the manual AWS Lambda invocation boundary for GHSA Bronze before creating any new AWS resource.
-
-The runtime composition gate is locally green based on the user's confirmed checkpoint:
-
-```text
-pytest GHSA ingestion: PASS
-Ruff GHSA ingestion: PASS
-Pyright strict: PASS
-```
-
-Therefore:
-
-```text
-GHSA_BRONZE_RUNTIME_COMPOSITION_GATE=PASS
-```
+Freeze the manual AWS Lambda invocation boundary for GHSA Bronze and preserve the exact deployment identity required for the manual `dev` proof.
 
 ## Manual invocation contract
 
@@ -109,6 +95,31 @@ manual event
   -> versioned manifest evidence response
 ```
 
+The authenticated source now enforces a 120-second maximum per-retry wait budget. If GitHub requires a longer `Retry-After`, primary reset wait, or calculated secondary-limit backoff, the current fetch fails closed rather than sleeping into the Lambda timeout or retrying earlier than GitHub permits.
+
+Strict continuation-query parsing failures are also normalized to `InvalidGhsaRequestUrlError`, preserving the outbound domain boundary.
+
+## Prior deployment artifact evidence
+
+Before the pre-apply hardening changes, the focused local checkpoint was green:
+
+```text
+57 passed
+Ruff: All checks passed
+Pyright strict: 0 errors / 0 warnings / 0 informations
+```
+
+That exact source revision produced and published:
+
+```text
+sha256=9deb08f346cbe7261199568de8a515b26b2865d7f6d2a592d837a0ac0368c928
+s3_key=lambda/ghsa-bronze/9deb08f346cbe7261199568de8a515b26b2865d7f6d2a592d837a0ac0368c928.zip
+s3_version_id=fYDkvIkv15n.GHoGCgOQbgcuFObO_P3w
+source_code_hash=nesI80bL5yYRmVaN6KUVsmsoZdf20qWS2DegrANoySg=
+```
+
+This remains valid immutable evidence for the previous source revision, but it is stale as the deployable representation of the current branch after the hardening changes.
+
 ## Deployment artifact boundary
 
 `scripts/build_ghsa_bronze_lambda_package.py` creates a deterministic Python 3.13/x86_64 ZIP and reports:
@@ -120,7 +131,7 @@ content-addressed key:
   lambda/ghsa-bronze/<sha256>.zip
 ```
 
-The next deployment increment must upload that exact artifact to the existing versioned deployment bucket and pin Terraform to:
+Every deployable source revision must be pinned to:
 
 ```text
 exact content-addressed S3 key
@@ -130,32 +141,34 @@ exact source_code_hash
 
 No mutable filename-only deployment reference is allowed.
 
-## AWS validation before infrastructure
-
-Official AWS documentation was rechecked on 2026-08-28:
-
-- Python 3.13 remains a supported Lambda runtime on Amazon Linux 2023.
-- Secrets Manager `GetSecretValue` requires `secretsmanager:GetSecretValue`.
-- S3 `If-None-Match: *` prevents overwriting an existing current object and returns `412 Precondition Failed` when the current key exists.
-- Custom Lambda log groups require execution-role permissions such as `logs:PutLogEvents`.
-
-References:
-
-- https://docs.aws.amazon.com/lambda/latest/dg/lambda-python.html
-- https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieving-secrets.html
-- https://docs.aws.amazon.com/AmazonS3/latest/userguide/conditional-writes.html
-- https://docs.aws.amazon.com/lambda/latest/dg/monitoring-cloudwatchlogs-loggroups.html
-
 ## Current gates
 
 ```text
-GHSA_BRONZE_RUNTIME_COMPOSITION_GATE=PASS
-GHSA_BRONZE_LAMBDA_INVOCATION_CONTRACT_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_BRONZE_LAMBDA_ARTIFACT_BUILD_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_BRONZE_TERRAFORM_GATE=PENDING
+GHSA_BRONZE_LAMBDA_INVOCATION_CONTRACT_GATE=PASS_PENDING_REVALIDATION
+GHSA_BRONZE_PRE_APPLY_HARDENING_GATE=PASS_PENDING_LOCAL_VALIDATION
+GHSA_BRONZE_LAMBDA_ARTIFACT_BUILD_GATE=STALE_REBUILD_REQUIRED
+GHSA_BRONZE_ARTIFACT_PUBLICATION_GATE=STALE_REPUBLISH_REQUIRED
+GHSA_BRONZE_TERRAFORM_GATE=STALE_REPIN_AND_REPLAN_REQUIRED
+GHSA_BRONZE_MANUAL_DEV_RUNTIME_GATE=PENDING
 GHSA_2_4C_GATE=IN_PROGRESS
 ```
 
 ## Next step
 
-Run the focused GHSA unit-test, Ruff, and strict Pyright checkpoint. If green, build the deterministic artifact locally and capture its exact SHA-256 before any Terraform Lambda resource is added.
+Run the focused GHSA unit-test, Ruff, and strict Pyright checkpoint against the hardening head. If green, rebuild and conditionally publish a new deterministic artifact, capture its exact S3 VersionId, repin Terraform, and generate a fresh reviewed plan before apply.
+
+## References
+
+- `docs/adr/0007-ghsa-runtime-credential-and-retry-strategy.md`
+- `docs/labs/phase-2-ghsa-runtime-security-design.md`
+- `docs/labs/phase-2-ghsa-manual-dev-runtime.md`
+- AWS Lambda Python runtimes:
+  https://docs.aws.amazon.com/lambda/latest/dg/lambda-python.html
+- AWS Lambda timeout:
+  https://docs.aws.amazon.com/lambda/latest/dg/configuration-timeout.html
+- AWS Secrets Manager `GetSecretValue`:
+  https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieving-secrets.html
+- Amazon S3 conditional writes:
+  https://docs.aws.amazon.com/AmazonS3/latest/userguide/conditional-writes.html
+- Lambda custom log groups:
+  https://docs.aws.amazon.com/lambda/latest/dg/monitoring-cloudwatchlogs-loggroups.html
