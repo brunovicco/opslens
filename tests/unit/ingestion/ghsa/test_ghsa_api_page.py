@@ -14,6 +14,7 @@ from opslens.ingestion.ghsa.domain.api_page import (
 from opslens.ingestion.ghsa.domain.errors import (
     InvalidGhsaApiPageError,
     InvalidGhsaPaginationError,
+    InvalidGhsaRequestUrlError,
 )
 from opslens.ingestion.ghsa.domain.sync import (
     GhsaSyncMode,
@@ -221,6 +222,22 @@ def test_rejects_external_rel_next_url() -> None:
             request_url=GhsaRequestUrlPolicy.build_initial(window),
             link_header=f'<{hostile}>; rel="next"',
             window=window,
+        )
+
+
+def test_rejects_malformed_query_as_domain_request_url_error() -> None:
+    """Keep strict query parsing failures inside the GHSA request-URL boundary."""
+    window = _window()
+    malformed = f"{GhsaRequestUrlPolicy.build_initial(window)}&broken"
+
+    with pytest.raises(
+        InvalidGhsaRequestUrlError,
+        match="request URL is malformed",
+    ):
+        GhsaRequestUrlPolicy.validate(
+            malformed,
+            window=window,
+            require_cursor=None,
         )
 
 
