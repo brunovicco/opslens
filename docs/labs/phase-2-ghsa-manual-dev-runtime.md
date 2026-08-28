@@ -22,30 +22,39 @@ Pyright strict: 0 errors / 0 warnings / 0 informations
 
 The current source revision therefore passes the request-URL, authenticated HTTP, rate-limit, runtime-composition, Lambda invocation, and pre-apply hardening gates.
 
-## Prior artifact and Terraform evidence
+## Current deterministic artifact and publication evidence
 
-The previous validated source revision produced and published this exact immutable artifact:
+The current validated hardening source revision was packaged twice with identical SHA-256 and then conditionally published to the existing versioned deployment-artifacts bucket using the content-addressed key.
 
 ```text
-sha256=9deb08f346cbe7261199568de8a515b26b2865d7f6d2a592d837a0ac0368c928
-s3_key=lambda/ghsa-bronze/9deb08f346cbe7261199568de8a515b26b2865d7f6d2a592d837a0ac0368c928.zip
-s3_version_id=fYDkvIkv15n.GHoGCgOQbgcuFObO_P3w
-checksum_sha256=nesI80bL5yYRmVaN6KUVsmsoZdf20qWS2DegrANoySg=
-content_length=17555239
+sha256=c4291b2adb51e84e2a91525b9a2bee1190579d6b984939032ae0b3f9746ee891
+s3_key=lambda/ghsa-bronze/c4291b2adb51e84e2a91525b9a2bee1190579d6b984939032ae0b3f9746ee891.zip
+s3_version_id=Jnq06HcNrjHDHibjhnOwboRbk.44grQh
+checksum_sha256=xCkbKttR6E4qkVJbmivuEZBXnWuYSTkDKuCz+XRu6JE=
+content_length=17555589
 content_type=application/zip
 encryption=AES256
 checksum_type=FULL_OBJECT
+metadata.artifact=opslens-ghsa-bronze
+metadata.sha256=c4291b2adb51e84e2a91525b9a2bee1190579d6b984939032ae0b3f9746ee891
 ```
 
-The published object remains valid evidence for that exact source revision, but it is no longer the deployable representation of the current branch after the pre-apply hardening changes.
+The exact version-specific `HeadObject` verification matched the expected VersionId, full-object checksum, content length, content type, encryption, and deterministic metadata. Therefore:
 
-A reviewed Terraform plan against that artifact was also clean:
+```text
+GHSA_BRONZE_LAMBDA_ARTIFACT_BUILD_GATE=PASS
+GHSA_BRONZE_ARTIFACT_PUBLICATION_GATE=PASS
+```
+
+The previous `9deb08...` artifact remains historical evidence for its earlier source revision only.
+
+The previously reviewed Terraform plan against that older artifact was:
 
 ```text
 Plan: 5 to add, 0 to change, 0 to destroy.
 ```
 
-The saved `/tmp/opslens-ghsa-dev.tfplan` must not be applied after the source changes. A new artifact, exact S3 VersionId, Terraform repin, and reviewed plan are required.
+The saved `/tmp/opslens-ghsa-dev.tfplan` must not be applied. Terraform must be repinned to the current exact SHA-256, S3 VersionId, and base64 source-code hash before a fresh reviewed plan is generated.
 
 ## Terraform resources
 
@@ -136,9 +145,9 @@ GHSA_BRONZE_RATE_LIMIT_GATE=PASS
 GHSA_BRONZE_RUNTIME_COMPOSITION_GATE=PASS
 GHSA_BRONZE_LAMBDA_INVOCATION_CONTRACT_GATE=PASS
 GHSA_BRONZE_PRE_APPLY_HARDENING_GATE=PASS
+GHSA_BRONZE_LAMBDA_ARTIFACT_BUILD_GATE=PASS
+GHSA_BRONZE_ARTIFACT_PUBLICATION_GATE=PASS
 
-GHSA_BRONZE_LAMBDA_ARTIFACT_BUILD_GATE=STALE_REBUILD_REQUIRED
-GHSA_BRONZE_ARTIFACT_PUBLICATION_GATE=STALE_REPUBLISH_REQUIRED
 GHSA_BRONZE_TERRAFORM_GATE=STALE_REPIN_AND_REPLAN_REQUIRED
 GHSA_BRONZE_MANUAL_DEV_RUNTIME_GATE=PENDING
 GHSA_2_4C_GATE=IN_PROGRESS
@@ -146,7 +155,7 @@ GHSA_2_4C_GATE=IN_PROGRESS
 
 ## Required validation before apply
 
-Build and publish a new deterministic artifact for the current validated source revision. Then repin Terraform to its exact SHA-256 + S3 VersionId and run:
+Repin Terraform to the current exact artifact SHA-256, S3 VersionId, and base64 source-code hash. Then run:
 
 ```text
 terraform fmt -check
@@ -154,7 +163,7 @@ terraform validate
 terraform plan
 ```
 
-Do not apply until the new plan has been reviewed for exactly the intended GHSA resources and no destructive or unrelated changes.
+Do not apply until the fresh plan has been reviewed for exactly the intended GHSA resources and no destructive or unrelated changes.
 
 After a clean apply, populate the GitHub token out of band, invoke one explicit bounded window manually, and verify the returned COMPLETE manifest VersionId plus the exact Bronze objects before closing Phase 2.4C.
 
