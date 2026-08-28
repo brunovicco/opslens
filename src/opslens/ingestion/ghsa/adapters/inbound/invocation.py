@@ -2,7 +2,7 @@
 
 import re
 from collections.abc import Mapping
-from datetime import UTC, datetime
+from datetime import datetime
 
 from opslens.ingestion.ghsa.domain.sync import GhsaSyncMode, GhsaSyncWindow
 
@@ -84,10 +84,8 @@ class GhsaBronzeInvocationParserV1:
             )
 
         try:
-            parsed = datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
         except ValueError as exc:
             raise InvalidGhsaInvocationError(
                 f"GHSA invocation {field_name} is not a valid UTC timestamp."
             ) from exc
-
-        return parsed.replace(tzinfo=UTC)
