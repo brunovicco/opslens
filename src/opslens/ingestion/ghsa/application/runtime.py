@@ -9,6 +9,7 @@ from opslens.ingestion.ghsa.application.manifest import (
     GhsaCompleteManifestFactory,
     GhsaCompleteManifestSerializer,
 )
+from opslens.ingestion.ghsa.application.models import GhsaBronzeWriteResult
 from opslens.ingestion.ghsa.application.ports import (
     GhsaBronzeRepository,
     GhsaPageSource,
@@ -214,7 +215,7 @@ class GhsaBronzeRuntimeService:
             window=window,
             pagination=pagination,
         )
-        page_writes = []
+        page_writes: list[GhsaBronzeWriteResult] = []
 
         for ordinal, page in enumerate(pagination.pages, start=1):
             page_key = self._key_factory.build_page_key(
