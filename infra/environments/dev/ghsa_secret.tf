@@ -4,6 +4,7 @@ locals {
 
 resource "aws_secretsmanager_secret" "ghsa_github_token" {
   # checkov:skip=CKV_AWS_149: ADR-0007 accepts the AWS-managed aws/secretsmanager KMS key for this single-account dev token; no customer-managed key requirement exists.
+  # checkov:skip=CKV2_AWS_57: Automatic rotation is intentionally deferred for this dev-only GitHub credential. GitHub is not an AWS Secrets Manager managed-external-secret partner; rotating this credential would require external GitHub credential lifecycle logic. The token is populated out of band and must use a bounded GitHub expiration.
 
   name = local.ghsa_github_token_secret_name
 
