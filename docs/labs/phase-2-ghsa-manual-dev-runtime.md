@@ -37,8 +37,7 @@ encryption=AES256
 checksum_type=FULL_OBJECT
 ```
 
-The published object remains valid evidence for that exact source revision, but it is no longer
-the deployable representation of the current branch after the pre-apply hardening changes.
+The published object remains valid evidence for that exact source revision, but it is no longer the deployable representation of the current branch after the pre-apply hardening changes.
 
 A reviewed Terraform plan against that artifact was also clean:
 
@@ -46,8 +45,7 @@ A reviewed Terraform plan against that artifact was also clean:
 Plan: 5 to add, 0 to change, 0 to destroy.
 ```
 
-The saved `/tmp/opslens-ghsa-dev.tfplan` must not be applied after the source changes. A new
-artifact, exact S3 VersionId, Terraform repin, and reviewed plan are required.
+The saved `/tmp/opslens-ghsa-dev.tfplan` must not be applied after the source changes. A new artifact, exact S3 VersionId, Terraform repin, and reviewed plan are required.
 
 ## Terraform resources
 
