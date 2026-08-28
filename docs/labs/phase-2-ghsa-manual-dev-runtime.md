@@ -10,9 +10,9 @@ Introduce the minimum Terraform-managed AWS resources required to prove one manu
 
 EventBridge Scheduler remains intentionally deferred until the synchronous manual path is proven.
 
-## Prerequisite evidence
+## Prior artifact and Terraform evidence
 
-The local Lambda contract checkpoint is green:
+Before the final pre-apply hardening review, the local Lambda contract checkpoint was green:
 
 ```text
 57 passed
@@ -20,7 +20,7 @@ Ruff: All checks passed
 Pyright strict: 0 errors / 0 warnings / 0 informations
 ```
 
-The deterministic artifact was built and published with exact immutable evidence:
+That source revision produced and published this exact immutable artifact:
 
 ```text
 sha256=9deb08f346cbe7261199568de8a515b26b2865d7f6d2a592d837a0ac0368c928
@@ -33,11 +33,17 @@ encryption=AES256
 checksum_type=FULL_OBJECT
 ```
 
-Therefore:
+The published object remains valid evidence for that exact source revision, but it is no longer
+the deployable representation of the current branch after the pre-apply hardening changes.
+
+A reviewed Terraform plan against that artifact was also clean:
 
 ```text
-GHSA_BRONZE_ARTIFACT_PUBLICATION_GATE=PASS
+Plan: 5 to add, 0 to change, 0 to destroy.
 ```
+
+The saved `/tmp/opslens-ghsa-dev.tfplan` must not be applied after the source changes. A new
+artifact, exact S3 VersionId, Terraform repin, and reviewed plan are required.
 
 ## Terraform resources
 
@@ -93,6 +99,11 @@ The runtime remains Python 3.13 on x86_64.
 
 The Lambda uses 1024 MiB memory because the application may buffer up to 64 MiB of exact response bytes plus parsed advisory models before persistence. The timeout is 900 seconds for this manual proof path.
 
+The application-level GitHub rate-limit policy is intentionally much smaller than that Lambda
+timeout: one server-directed or calculated retry wait may not exceed 120 seconds. If GitHub
+requires a longer wait, the current fetch fails closed instead of sleeping into the Lambda
+timeout or retrying earlier than GitHub permits.
+
 ## Runtime environment
 
 Only non-secret configuration and the Secrets Manager identifier are exposed as environment variables:
@@ -117,21 +128,35 @@ The function is intentionally not placed in a VPC because it requires outbound a
 
 Reserved concurrency remains deferred for the manual-only proof path because the dev account has previously constrained concurrency quota headroom. No scheduler exists in this increment.
 
+## Pre-apply hardening
+
+Two final code-level boundaries were tightened before apply:
+
+```text
+1. Rate-limit waits above 120 seconds fail closed; required waits are never clamped downward.
+2. Strict GHSA continuation-query parsing failures are wrapped as InvalidGhsaRequestUrlError.
+```
+
+These changes require a fresh focused test/lint/type checkpoint and a new deterministic Lambda
+artifact before Terraform may be applied.
+
 ## Current gates
 
 ```text
-GHSA_BRONZE_RUNTIME_COMPOSITION_GATE=PASS
-GHSA_BRONZE_LAMBDA_INVOCATION_CONTRACT_GATE=PASS
-GHSA_BRONZE_LAMBDA_ARTIFACT_BUILD_GATE=PASS
-GHSA_BRONZE_ARTIFACT_PUBLICATION_GATE=PASS
-GHSA_BRONZE_TERRAFORM_GATE=PASS_PENDING_LOCAL_VALIDATION
+GHSA_BRONZE_RUNTIME_COMPOSITION_GATE=PASS_PENDING_REVALIDATION
+GHSA_BRONZE_LAMBDA_INVOCATION_CONTRACT_GATE=PASS_PENDING_REVALIDATION
+GHSA_BRONZE_PRE_APPLY_HARDENING_GATE=PASS_PENDING_LOCAL_VALIDATION
+GHSA_BRONZE_LAMBDA_ARTIFACT_BUILD_GATE=STALE_REBUILD_REQUIRED
+GHSA_BRONZE_ARTIFACT_PUBLICATION_GATE=STALE_REPUBLISH_REQUIRED
+GHSA_BRONZE_TERRAFORM_GATE=STALE_REPIN_AND_REPLAN_REQUIRED
 GHSA_BRONZE_MANUAL_DEV_RUNTIME_GATE=PENDING
 GHSA_2_4C_GATE=IN_PROGRESS
 ```
 
 ## Required validation before apply
 
-Run:
+First rerun the focused GHSA Python checkpoint. If green, rebuild and publish the new exact
+artifact, repin Terraform to the new SHA-256 + VersionId, and then run:
 
 ```text
 terraform fmt -check
@@ -139,7 +164,7 @@ terraform validate
 terraform plan
 ```
 
-Do not apply until the plan has been reviewed for exactly the intended GHSA resources and no destructive or unrelated changes.
+Do not apply until the new plan has been reviewed for exactly the intended GHSA resources and no destructive or unrelated changes.
 
 After a clean apply, populate the GitHub token out of band, invoke one explicit bounded window manually, and verify the returned COMPLETE manifest VersionId plus the exact Bronze objects before closing Phase 2.4C.
 
@@ -148,6 +173,8 @@ After a clean apply, populate the GitHub token out of band, invoke one explicit 
 - `docs/adr/0007-ghsa-runtime-credential-and-retry-strategy.md`
 - AWS Lambda Python runtimes:
   https://docs.aws.amazon.com/lambda/latest/dg/lambda-python.html
+- AWS Lambda timeout:
+  https://docs.aws.amazon.com/lambda/latest/dg/configuration-timeout.html
 - AWS Lambda FunctionCode:
   https://docs.aws.amazon.com/lambda/latest/api/API_FunctionCode.html
 - AWS Secrets Manager GetSecretValue:
