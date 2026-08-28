@@ -60,6 +60,19 @@ class GhsaHttpTransport(Protocol):
         ...
 
 
+class GhsaPageSource(Protocol):
+    """Retrieve one exact authenticated GitHub advisory response page."""
+
+    def fetch(
+        self,
+        *,
+        request_url: str,
+        window: GhsaSyncWindow,
+    ) -> GhsaFetchedPage:
+        """Return exact source bytes and the associated Link header."""
+        ...
+
+
 class GhsaBronzeRepository(Protocol):
     """Persist exact GHSA pages and COMPLETE manifests."""
 
