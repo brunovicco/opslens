@@ -390,7 +390,13 @@ def test_s3_repository_verifies_existing_object_after_precondition_failure() -> 
     error = ClientError(
         {
             "Error": {"Code": "PreconditionFailed", "Message": "exists"},
-            "ResponseMetadata": {"HTTPStatusCode": 412},
+            "ResponseMetadata": {
+                "RequestId": "test-request-id",
+                "HostId": "test-host-id",
+                "HTTPStatusCode": 412,
+                "HTTPHeaders": {},
+                "RetryAttempts": 0,
+            },
         },
         "PutObject",
     )
