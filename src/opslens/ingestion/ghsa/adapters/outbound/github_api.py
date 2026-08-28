@@ -11,7 +11,10 @@ from opslens.ingestion.ghsa.application.ports import (
     GhsaHttpResponse,
     GhsaHttpTransport,
 )
-from opslens.ingestion.ghsa.application.rate_limit import GhsaRetryDelayPolicy
+from opslens.ingestion.ghsa.application.rate_limit import (
+    GhsaRetryDelayBudgetExceededError,
+    GhsaRetryDelayPolicy,
+)
 from opslens.ingestion.ghsa.domain.api_page import (
     GhsaAdvisoryApiPageParser,
     GhsaRequestUrlPolicy,
@@ -218,12 +221,32 @@ class GhsaAuthenticatedPageSource:
 
             if response.status_code in {403, 429}:
                 consecutive_rate_limits += 1
-                delay = self._retry_policy.rate_limit_delay_seconds(
-                    status_code=response.status_code,
-                    headers=response.headers,
-                    now_epoch_seconds=self._epoch(),
-                    consecutive_rate_limit_failures=consecutive_rate_limits,
-                )
+
+                try:
+                    delay = self._retry_policy.rate_limit_delay_seconds(
+                        status_code=response.status_code,
+                        headers=response.headers,
+                        now_epoch_seconds=self._epoch(),
+                        consecutive_rate_limit_failures=consecutive_rate_limits,
+                    )
+                except GhsaRetryDelayBudgetExceededError as exc:
+                    self._telemetry.metric(
+                        name="GhsaApiRateLimitWaitBudgetExceeded",
+                        value=1.0,
+                        unit="Count",
+                    )
+                    self._telemetry.info(
+                        "GitHub rate-limit wait exceeds GHSA runtime budget",
+                        fields={
+                            "attempt": attempt,
+                            "max_attempts": self._max_attempts,
+                            "mode": window.mode.value,
+                            "sync_id": window.sync_id,
+                        },
+                    )
+                    raise GhsaRateLimitExhaustedError(
+                        "GitHub rate-limit wait exceeds the bounded GHSA runtime retry budget."
+                    ) from exc
 
                 if delay is not None and attempt < self._max_attempts:
                     self._record_retry(
