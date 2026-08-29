@@ -347,7 +347,7 @@ class GhsaSilverCompletionManifestSerializerV1:
             ensure_ascii=True,
             allow_nan=False,
         )
-        raw_bytes = f"{text}\n".encode("utf-8")
+        raw_bytes = f"{text}\n".encode()
         key = self._key_factory.build_completion_manifest_key(context)
 
         return GhsaSilverCompletionArtifactV1(
