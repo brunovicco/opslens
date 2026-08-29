@@ -2,11 +2,11 @@
 
 _Date: 2026-08-28_
 
-_Status: IN PROGRESS_
+_Status: COMPLETE_
 
 ## Purpose
 
-Compose the previously validated GHSA source, evidence, security, retry, subdivision, and persistence contracts into one bounded application service before introducing Lambda or Terraform.
+Compose the previously validated GHSA source, evidence, security, retry, subdivision, and persistence contracts into one bounded application service and prove the composed runtime through the Phase 2.4C manual `dev` execution.
 
 The invariant remains:
 
@@ -16,7 +16,7 @@ No model participates in source retrieval, cursor traversal, subdivision, persis
 
 ## Validated prerequisites
 
-The local combined checkpoint before this increment is green:
+The local combined checkpoint before this increment was green:
 
 ```text
 46 passed
@@ -24,22 +24,17 @@ Ruff: all checks passed
 Pyright strict: 0 errors / 0 warnings / 0 informations
 ```
 
-Therefore the following gates are promoted to PASS:
+The later final pre-apply checkpoint increased the focused GHSA validation to:
 
 ```text
-GHSA_BRONZE_ATTEMPT_ID_GATE=PASS
-GHSA_BRONZE_KEY_LAYOUT_GATE=PASS
-GHSA_BRONZE_COMPLETE_MANIFEST_GATE=PASS
-GHSA_BRONZE_AUTHENTICATED_HTTP_GATE=PASS
-GHSA_BRONZE_RATE_LIMIT_GATE=PASS
-GHSA_BRONZE_SECRET_PROVIDER_GATE=PASS
-GHSA_BRONZE_S3_ADAPTER_GATE=PASS
-GHSA_BRONZE_SUBDIVISION_GATE=PASS
+61 passed
+Ruff: All checks passed
+Pyright strict: 0 errors / 0 warnings / 0 informations
 ```
 
 ## Runtime composition
 
-`GhsaBronzeRuntimeService` now owns one deterministic application flow:
+`GhsaBronzeRuntimeService` owns one deterministic application flow:
 
 ```text
 GhsaSyncWindow
@@ -77,7 +72,7 @@ COMPLETE manifest VersionId
 
 The runtime buffers the complete cursor chain before any attempt-keyed S3 write occurs. This is required because `attempt_id` depends on the complete ordered physical observation.
 
-The already frozen aggregate caps remain:
+The frozen aggregate caps remain:
 
 ```text
 maximum pages per attempt:      64
@@ -104,7 +99,7 @@ No watermark or downstream Silver authority may advance from page objects alone.
 
 ## Replay behavior
 
-The S3 adapter remains conditionally immutable with `If-None-Match: *`.
+The S3 adapter is conditionally immutable with `If-None-Match: *`.
 
 On replay, exact page and manifest keys may already exist. A 412 is accepted only after `HeadObject` proves the expected deterministic metadata, size, content type, and VersionId.
 
@@ -117,6 +112,8 @@ same sync query
     -> same attempt_id
     -> same deterministic object keys
 ```
+
+The live manual proof confirmed this behavior. The second invocation of the same bounded source window returned the same `sync_id`, `attempt_id`, page VersionId, manifest VersionId, totals, and object keys. S3 version listing showed exactly one physical version of each deterministic object and no delete markers.
 
 ## Deterministic subdivision
 
@@ -131,7 +128,7 @@ right = [midpoint + 1 second, end]
 
 Children are processed left-to-right and receive independent `sync_id` values.
 
-To prevent unbounded recursive expansion inside one runtime invocation, the composition introduces an explicit leaf-window budget:
+To prevent unbounded recursive expansion inside one runtime invocation, the composition uses an explicit leaf-window budget:
 
 ```text
 DEFAULT_MAX_LEAF_WINDOWS = 64
@@ -162,9 +159,24 @@ A failure after some page writes leaves no COMPLETE manifest for that attempt.
 
 Because the complete physical observation must be known before `attempt_id` and page keys can be derived, one logical attempt may buffer up to the frozen 64 MiB source-body cap plus parser/model overhead.
 
-The later Lambda sizing decision must therefore account for this evidence model rather than selecting the minimum memory tier by default.
+The deployed Lambda therefore uses 1024 MiB memory and a 900-second timeout for the manual proof path. The application-level rate-limit wait budget remains much smaller at 120 seconds per retry.
 
-No Lambda configuration is introduced in this increment.
+## Live composition proof
+
+The manual published window `2026-08-27T00:00:00Z` through `2026-08-28T00:00:00Z` completed with:
+
+```text
+root_sync_id=1670a1e4730ba3e5a8214b7278d68b43fd8c929a069bae27099abd370cf9193e
+attempt_id=e013864e669cc3b4f92766a94e9f487960bd4b3bf40247d523b8415a0d8aaa40
+leaf_count=1
+page_count=1
+total_items=10
+total_bytes=48899
+manifest_version_id=IHt7S5Uvj21ABxWfPAPsXbnQhQW3ErRH
+page_version_id=k1i1ppmalEBvDN9Dzrby5ocbdB.M8y2s
+```
+
+The exact page SHA-256 and size matched the COMPLETE manifest, and the replay created no duplicate S3 versions.
 
 ## Current gates
 
@@ -181,14 +193,13 @@ GHSA_BRONZE_RATE_LIMIT_GATE=PASS
 GHSA_BRONZE_SECRET_PROVIDER_GATE=PASS
 GHSA_BRONZE_S3_ADAPTER_GATE=PASS
 GHSA_BRONZE_SUBDIVISION_GATE=PASS
-
-GHSA_BRONZE_RUNTIME_COMPOSITION_GATE=PASS_PENDING_LOCAL_VALIDATION
-GHSA_BRONZE_TERRAFORM_GATE=PENDING
-GHSA_2_4C_GATE=IN_PROGRESS
+GHSA_BRONZE_RUNTIME_COMPOSITION_GATE=PASS
+GHSA_BRONZE_LAMBDA_INVOCATION_CONTRACT_GATE=PASS
+GHSA_BRONZE_TERRAFORM_GATE=PASS
+GHSA_BRONZE_MANUAL_DEV_RUNTIME_GATE=PASS
+GHSA_2_4C_GATE=PASS
 ```
 
 ## Next step
 
-Run the focused GHSA ingestion unit tests, Ruff, and strict Pyright for the composed runtime.
-
-If green, freeze the Lambda/runtime input contract and then introduce the minimum AWS resources required for one real `dev` execution: Secrets Manager secret metadata, Lambda, exact IAM, artifact lifecycle, and invocation wiring. EventBridge scheduling remains separate until the manual runtime path is proven.
+Proceed to Phase 2.4D — GHSA Silver Runtime. Preserve COMPLETE-manifest authority and exact Bronze provenance when projecting advisory content into Silver.
