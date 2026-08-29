@@ -9,12 +9,6 @@ from opslens.transformation.ghsa.runtime.record_processor import (
 from opslens.transformation.ghsa.serialization.logical_hash import (
     GhsaLogicalRecordSetHasherV1,
 )
-from opslens.transformation.ghsa.serialization.models import (
-    GhsaSilverParquetArtifactV1,
-)
-from opslens.transformation.ghsa.serialization.parquet import (
-    GhsaSilverParquetSerializerV1,
-)
 
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
@@ -54,39 +48,18 @@ class GhsaSilverAttemptContextV1:
 
 @dataclass(frozen=True, slots=True)
 class GhsaSilverMaterializationV1:
-    """Represent deterministic in-memory Silver output for one Bronze attempt."""
+    """Represent deterministic logical Silver output for one Bronze attempt."""
 
     context: GhsaSilverAttemptContextV1
     bindings: tuple[GhsaSilverOccurrenceRecordV1, ...]
     logical_record_set_sha256: str
-    parquet_artifact: GhsaSilverParquetArtifactV1 | None
 
     def __post_init__(self) -> None:
-        """Validate materialized logical and physical Silver invariants."""
+        """Validate materialized logical Silver invariants."""
         if _SHA256_PATTERN.fullmatch(self.logical_record_set_sha256) is None:
             raise ValueError(
                 "GHSA Silver logical_record_set_sha256 must be "
                 "a lowercase SHA-256 digest."
-            )
-
-        if not self.bindings:
-            if self.parquet_artifact is not None:
-                raise ValueError(
-                    "Empty GHSA Silver materialization cannot contain "
-                    "a Parquet artifact."
-                )
-            return
-
-        if self.parquet_artifact is None:
-            raise ValueError(
-                "Non-empty GHSA Silver materialization requires "
-                "a Parquet artifact."
-            )
-
-        if self.parquet_artifact.row_count != len(self.bindings):
-            raise ValueError(
-                "GHSA Silver Parquet row_count does not match "
-                "the bound record count."
             )
 
     @property
@@ -96,17 +69,15 @@ class GhsaSilverMaterializationV1:
 
 
 class GhsaSilverMaterializerV1:
-    """Build logical and physical Silver artifacts from verified bindings."""
+    """Build logical Silver materialization from verified bindings."""
 
     def __init__(
         self,
         *,
         logical_hasher: GhsaLogicalRecordSetHasherV1,
-        parquet_serializer: GhsaSilverParquetSerializerV1,
     ) -> None:
-        """Initialize frozen Silver serialization dependencies."""
+        """Initialize deterministic logical materialization dependencies."""
         self._logical_hasher = logical_hasher
-        self._parquet_serializer = parquet_serializer
 
     def materialize(
         self,
@@ -114,7 +85,7 @@ class GhsaSilverMaterializerV1:
         context: GhsaSilverAttemptContextV1,
         bindings: tuple[GhsaSilverOccurrenceRecordV1, ...],
     ) -> GhsaSilverMaterializationV1:
-        """Materialize one exact Bronze attempt into deterministic Silver."""
+        """Materialize one exact Bronze attempt into deterministic logical Silver."""
         ordered = tuple(
             sorted(
                 bindings,
@@ -125,26 +96,14 @@ class GhsaSilverMaterializerV1:
             )
         )
 
-        self._validate_bindings(
-            context=context,
-            bindings=ordered,
-        )
-
+        self._validate_bindings(context=context, bindings=ordered)
         records = tuple(binding.record for binding in ordered)
-
         logical_sha256 = self._logical_hasher.digest(records)
-
-        parquet_artifact = (
-            self._parquet_serializer.serialize(records)
-            if records
-            else None
-        )
 
         return GhsaSilverMaterializationV1(
             context=context,
             bindings=ordered,
             logical_record_set_sha256=logical_sha256,
-            parquet_artifact=parquet_artifact,
         )
 
     @staticmethod
@@ -175,34 +134,24 @@ class GhsaSilverMaterializerV1:
                     "GHSA Silver binding manifest_key does not match attempt context."
                 )
 
-            if (
-                occurrence.manifest_version_id
-                != context.manifest_version_id
-            ):
+            if occurrence.manifest_version_id != context.manifest_version_id:
                 raise ValueError(
                     "GHSA Silver binding manifest_version_id does not match "
                     "attempt context."
                 )
 
-
             attempt_occurrence_id = occurrence.attempt_occurrence_id
-
             if attempt_occurrence_id in attempt_occurrence_ids:
                 raise ValueError(
                     "GHSA Silver materialization contains duplicate "
                     "attempt occurrence identity."
                 )
-
             attempt_occurrence_ids.add(attempt_occurrence_id)
 
-            observed_version_id = (
-                occurrence.observed_advisory_version_id
-            )
-
+            observed_version_id = occurrence.observed_advisory_version_id
             if observed_version_id in observed_version_ids:
                 raise ValueError(
                     "GHSA Silver materialization contains duplicate "
                     "observed_advisory_version_id."
                 )
-
             observed_version_ids.add(observed_version_id)
