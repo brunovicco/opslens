@@ -1,0 +1,49 @@
+name: GHSA Silver Validation
+
+on:
+  push:
+    branches:
+      - phase-2-ghsa-silver-runtime
+    paths:
+      - "src/opslens/transformation/ghsa/**"
+      - "tests/unit/transformation/ghsa/**"
+      - ".github/workflows/ghsa-silver-validation.yml"
+      - "pyproject.toml"
+      - "uv.lock"
+
+permissions:
+  contents: read
+
+jobs:
+  ghsa-silver-quality:
+    name: GHSA Silver quality gates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+        with:
+          enable-cache: true
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Run GHSA unit tests
+        run: uv run pytest tests/unit/transformation/ghsa -q
+
+      - name: Run GHSA Ruff checks
+        run: |
+          uv run ruff check \
+            src/opslens/transformation/ghsa \
+            tests/unit/transformation/ghsa
+
+      - name: Run Pyright
+        run: uv run pyright
