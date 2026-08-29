@@ -2,14 +2,13 @@
 
 _Date started: 2026-08-28_
 
-_Status: IN PROGRESS_
+_Status: COMPLETE_
 
 ## Purpose
 
-Freeze the authenticated outbound, credential, retry, S3 persistence, and deterministic
-subdivision contracts before GHSA Lambda and Terraform resources are introduced.
+Freeze and prove the authenticated outbound, credential, retry, S3 persistence, and deterministic subdivision contracts used by the GHSA Bronze Lambda runtime.
 
-The preceding Phase 2.4C increments already proved:
+The preceding Phase 2.4C increments proved:
 
 ```text
 bounded source navigation
@@ -19,18 +18,13 @@ deterministic Bronze key layout
 versioned COMPLETE manifest contract
 ```
 
-This increment moves from evidence shape toward runtime-capable adapters while still creating
-no AWS resources.
+This increment then carried those boundaries into the live manual `dev` runtime.
 
 ## Official-source validation
 
-GitHub documents that authenticated REST requests should send an Authorization header and the
-versioned API header. GitHub also recommends serial requests and documents explicit rate-limit
-recovery precedence around `Retry-After`, `X-RateLimit-Remaining`, and
-`X-RateLimit-Reset`.
+GitHub documents that authenticated REST requests should send an Authorization header and the versioned API header. GitHub also recommends serial requests and documents explicit rate-limit recovery precedence around `Retry-After`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset`.
 
-AWS documents Secrets Manager as an appropriate location for third-party API credentials used
-by Lambda and recommends caching secret retrievals.
+AWS documents Secrets Manager as an appropriate location for third-party API credentials used by Lambda and recommends caching secret retrievals.
 
 The accepted runtime decision is recorded in ADR-0007.
 
@@ -45,7 +39,7 @@ version stage: AWSCURRENT
 cache TTL: 300 seconds
 ```
 
-The future Lambda execution role will receive only:
+The Lambda execution role receives only:
 
 ```text
 secretsmanager:GetSecretValue
@@ -53,8 +47,9 @@ secretsmanager:GetSecretValue
 
 for the exact environment-scoped secret ARN.
 
-The first runtime uses the AWS managed `aws/secretsmanager` KMS key. No custom KMS key or
-custom rotation Lambda is introduced.
+The runtime uses the AWS managed `aws/secretsmanager` KMS key. No custom KMS key or custom rotation Lambda is introduced.
+
+Automatic Secrets Manager rotation is intentionally deferred for this dev-only external GitHub credential. The Terraform resource carries an explicit Checkov `CKV2_AWS_57` suppression explaining that GitHub credential rotation would require external GitHub lifecycle logic rather than an AWS-only secret-value rotation. The fine-grained GitHub token is provisioned out of band with bounded GitHub-side expiration.
 
 The GitHub token is never placed in:
 
@@ -68,6 +63,8 @@ S3 object key
 manifest
 sync_id
 attempt_id
+Terraform configuration
+Terraform state
 ```
 
 ## Authenticated GitHub HTTP adapter
@@ -81,13 +78,11 @@ User-Agent: opslens-ghsa-ingestion/0.1
 X-GitHub-Api-Version: 2026-03-10
 ```
 
-`GhsaAuthenticatedPageSource` validates the URL against the existing GHSA outbound allowlist
-before transport execution.
+`GhsaAuthenticatedPageSource` validates the URL against the existing GHSA outbound allowlist before transport execution.
 
-`HttpsGhsaTransport` uses direct HTTPS and does not automatically follow redirects. Redirects
-therefore become terminal source-contract events instead of bypassing the outbound allowlist.
+`HttpsGhsaTransport` uses direct HTTPS and does not automatically follow redirects. Redirects therefore become terminal source-contract events instead of bypassing the outbound allowlist.
 
-The response body remains bounded by the already frozen 8 MiB page cap.
+The response body remains bounded by the frozen 8 MiB page cap.
 
 ## Rate-limit and transient retry policy
 
@@ -108,13 +103,9 @@ else
        fail closed when the calculated wait exceeds 120 seconds
 ```
 
-The 120-second value is a runtime **wait budget**, not permission to retry earlier than GitHub
-allows. A server-directed or calculated delay above the budget raises a bounded source failure
-immediately. The runtime never clamps a required 121+ second wait down to 120 seconds.
+The 120-second value is a runtime **wait budget**, not permission to retry earlier than GitHub allows. A server-directed or calculated delay above the budget raises a bounded source failure immediately. The runtime never clamps a required 121+ second wait down to 120 seconds.
 
-This keeps one GitHub-directed wait well below the Lambda maximum execution time of 900 seconds
-and leaves the current invocation available for bounded source work rather than consuming the
-entire runtime in `sleep`.
+This keeps one GitHub-directed wait well below the Lambda maximum execution time of 900 seconds and leaves the current invocation available for bounded source work rather than consuming the entire runtime in `sleep`.
 
 HTTP 401 is terminal.
 
@@ -124,16 +115,13 @@ Every page request has a finite attempt budget. No retry loop is unbounded.
 
 ## Outbound URL parsing boundary
 
-The exact `Link: rel="next"` URL remains untrusted input. URL decomposition, port extraction,
-and strict query parsing share the same malformed-URL exception boundary.
+The exact `Link: rel="next"` URL remains untrusted input. URL decomposition, port extraction, and strict query parsing share the same malformed-URL exception boundary.
 
-`parse_qsl(..., strict_parsing=True)` failures are converted to
-`InvalidGhsaRequestUrlError` rather than leaking a bare `ValueError`. Higher page/pagination
-layers can continue wrapping that domain error deterministically.
+`parse_qsl(..., strict_parsing=True)` failures are converted to `InvalidGhsaRequestUrlError` rather than leaking a bare `ValueError`. Higher page/pagination layers can continue wrapping that domain error deterministically.
 
 ## Deterministic oversized-window subdivision
 
-The current source window is a closed whole-second range.
+The source window is a closed whole-second range.
 
 If a window cannot satisfy the frozen page/byte caps, the planner may split:
 
@@ -148,12 +136,11 @@ The children do not overlap and leave no represented whole-second gap.
 
 Each child is a new logical synchronization unit with a new `sync_id`.
 
-If the parent is too small to create two valid children, subdivision fails closed rather than
-raising the safety caps.
+If the remaining parent is too small to produce two valid children, subdivision fails closed rather than raising the safety caps.
 
 ## Versioned S3 adapter
 
-`S3GhsaBronzeRepository` implements the existing persistence port.
+`S3GhsaBronzeRepository` implements the persistence port.
 
 Writes use:
 
@@ -178,17 +165,9 @@ Otherwise replay fails closed.
 
 Both response pages and COMPLETE manifests use this conditional immutable-write behavior.
 
-## Cost
-
-The code in this increment creates no AWS resources.
-
-The planned credential service adds one Secrets Manager secret. Current public AWS pricing
-lists USD 0.40 per secret per month plus API request charges. A 300-second in-memory cache is
-used to keep retrieval calls low.
-
 ## Validated hardening checkpoint
 
-The final pre-apply hardening checkpoint was supplied locally on 2026-08-28:
+The final pre-apply hardening checkpoint supplied locally on 2026-08-28 was:
 
 ```text
 61 passed
@@ -196,21 +175,42 @@ Ruff: All checks passed
 Pyright strict: 0 errors / 0 warnings / 0 informations
 ```
 
-Therefore:
+The subsequent Terraform CI run passed both static checks and the Checkov security scan.
+
+## Live security proof
+
+The deployed Lambda configuration was verified with the expected Python 3.13/x86_64 runtime, 1024 MiB memory, 900-second timeout, active X-Ray, JSON/INFO logging, exact content-addressed deployment hash, least-privilege execution role, and only non-secret environment configuration.
+
+The Secrets Manager container existed before the token value was populated. The token was inserted out of band and became `AWSCURRENT`; the local temporary token material was then explicitly removed.
+
+The first manual GHSA invocation completed without exposing credentials in the Lambda response. The resulting COMPLETE manifest and page evidence contained only the expected safe source/runtime metadata.
+
+The replay of the same bounded source window returned the same deterministic identities and exact S3 VersionIds. S3 version listing proved that conditional persistence did not create duplicate page or manifest versions.
+
+## Cost
+
+The live runtime adds one Secrets Manager secret, one Lambda function, one CloudWatch log group, and the associated IAM role/policy. The workload remains manual-only in this increment, so no EventBridge Scheduler execution cost or autonomous request cadence is introduced.
+
+The 300-second in-memory secret cache keeps Secrets Manager retrieval calls low during warm execution.
+
+## Current gates
 
 ```text
 GHSA_BRONZE_REQUEST_URL_ALLOWLIST_GATE=PASS
 GHSA_BRONZE_AUTHENTICATED_HTTP_GATE=PASS
 GHSA_BRONZE_RATE_LIMIT_GATE=PASS
+GHSA_BRONZE_SECRET_PROVIDER_GATE=PASS
+GHSA_BRONZE_S3_ADAPTER_GATE=PASS
+GHSA_BRONZE_SUBDIVISION_GATE=PASS
 GHSA_BRONZE_PRE_APPLY_HARDENING_GATE=PASS
-GHSA_2_4C_GATE=IN_PROGRESS
+GHSA_BRONZE_TERRAFORM_GATE=PASS
+GHSA_BRONZE_MANUAL_DEV_RUNTIME_GATE=PASS
+GHSA_2_4C_GATE=PASS
 ```
 
 ## Next step
 
-Rebuild the deterministic Lambda artifact from this validated source revision. Then publish the
-new content-addressed object, capture its exact SHA-256 and S3 VersionId, repin Terraform, and
-rerun the reviewed plan before apply.
+Proceed to Phase 2.4D — GHSA Silver Runtime while preserving the frozen credential, outbound, rate-limit, immutable-evidence, and COMPLETE-manifest authority boundaries.
 
 ## References
 
