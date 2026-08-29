@@ -265,7 +265,7 @@ def test_rejects_completion_with_extra_persisted_content() -> None:
     ):
         _factory().build(
             materialization=materialization,
-            stored_objects=stored + (extra,),
+            stored_objects=(*stored, extra),
         )
 
 
