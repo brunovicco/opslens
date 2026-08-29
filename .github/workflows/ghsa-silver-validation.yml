@@ -7,6 +7,7 @@ on:
     paths:
       - "src/opslens/transformation/ghsa/**"
       - "tests/unit/transformation/ghsa/**"
+      - "scripts/build_ghsa_silver_lambda_package.py"
       - ".github/workflows/ghsa-silver-validation.yml"
       - "pyproject.toml"
       - "uv.lock"
@@ -29,6 +30,8 @@ jobs:
         uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
         with:
           enable-cache: true
+      - name: Verify lock file
+        run: uv lock --check
       - name: Sync dependencies
         run: uv sync --frozen
       - name: Run GHSA unit tests
@@ -37,6 +40,18 @@ jobs:
         run: |
           uv run ruff check \
             src/opslens/transformation/ghsa \
-            tests/unit/transformation/ghsa
+            tests/unit/transformation/ghsa \
+            scripts/build_ghsa_silver_lambda_package.py
       - name: Run Pyright
         run: uv run pyright
+      - name: Build deterministic GHSA Silver package twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run python scripts/build_ghsa_silver_lambda_package.py | tee /tmp/ghsa-build-1.txt
+          first_sha="$(grep '^sha256=' /tmp/ghsa-build-1.txt | cut -d= -f2)"
+          uv run python scripts/build_ghsa_silver_lambda_package.py | tee /tmp/ghsa-build-2.txt
+          second_sha="$(grep '^sha256=' /tmp/ghsa-build-2.txt | cut -d= -f2)"
+          test -n "$first_sha"
+          test "$first_sha" = "$second_sha"
+          echo "deterministic_sha256=$first_sha"
