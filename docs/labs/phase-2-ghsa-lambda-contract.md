@@ -2,11 +2,11 @@
 
 _Date: 2026-08-28_
 
-_Status: IN PROGRESS_
+_Status: COMPLETE_
 
 ## Purpose
 
-Freeze the manual AWS Lambda invocation boundary for GHSA Bronze and preserve the exact deployment identity required for the manual `dev` proof.
+Freeze and prove the manual AWS Lambda invocation boundary for GHSA Bronze while preserving the exact deployment identity required for the manual `dev` proof.
 
 ## Manual invocation contract
 
@@ -16,8 +16,8 @@ The v1 event is intentionally explicit and fail-closed:
 {
   "schema_version": 1,
   "mode": "published",
-  "start_at": "2026-08-01T00:00:00Z",
-  "end_at": "2026-08-02T00:00:00Z"
+  "start_at": "2026-08-27T00:00:00Z",
+  "end_at": "2026-08-28T00:00:00Z"
 }
 ```
 
@@ -101,7 +101,7 @@ Strict continuation-query parsing failures are normalized to `InvalidGhsaRequest
 
 ## Validated source checkpoint
 
-After the pre-apply hardening changes, the focused local checkpoint is green:
+After the pre-apply hardening changes, the focused local checkpoint was green:
 
 ```text
 61 passed
@@ -109,20 +109,21 @@ Ruff: All checks passed
 Pyright strict: 0 errors / 0 warnings / 0 informations
 ```
 
-Therefore the Lambda invocation contract and its dependent authenticated runtime boundaries are validated for the current source revision.
+The Terraform CI security scan and static checks also passed after the explicit dev-only Secrets Manager rotation exception was documented.
 
-## Prior deployment artifact evidence
+## Current deployment artifact evidence
 
-The previous source revision produced and published:
+The deployable source revision was packaged deterministically twice and published under its content-addressed key:
 
 ```text
-sha256=9deb08f346cbe7261199568de8a515b26b2865d7f6d2a592d837a0ac0368c928
-s3_key=lambda/ghsa-bronze/9deb08f346cbe7261199568de8a515b26b2865d7f6d2a592d837a0ac0368c928.zip
-s3_version_id=fYDkvIkv15n.GHoGCgOQbgcuFObO_P3w
-source_code_hash=nesI80bL5yYRmVaN6KUVsmsoZdf20qWS2DegrANoySg=
+sha256=c4291b2adb51e84e2a91525b9a2bee1190579d6b984939032ae0b3f9746ee891
+s3_key=lambda/ghsa-bronze/c4291b2adb51e84e2a91525b9a2bee1190579d6b984939032ae0b3f9746ee891.zip
+s3_version_id=Jnq06HcNrjHDHibjhnOwboRbk.44grQh
+source_code_hash=xCkbKttR6E4qkVJbmivuEZBXnWuYSTkDKuCz+XRu6JE=
+content_length=17555589
 ```
 
-This remains valid immutable evidence for the previous source revision, but it is stale as the deployable representation of the current branch after the hardening changes.
+The earlier `9deb08...` artifact remains immutable historical evidence for its previous source revision only.
 
 ## Deployment artifact boundary
 
@@ -145,22 +146,63 @@ exact source_code_hash
 
 No mutable filename-only deployment reference is allowed.
 
+## Live Lambda evidence
+
+The deployed function configuration was verified after apply:
+
+```text
+FunctionName=opslens-dev-ghsa-bronze
+Runtime=python3.13
+Handler=opslens.ingestion.ghsa.lambda_handler.lambda_handler
+Architectures=[x86_64]
+MemorySize=1024
+Timeout=900
+CodeSha256=xCkbKttR6E4qkVJbmivuEZBXnWuYSTkDKuCz+XRu6JE=
+TracingConfig.Mode=Active
+LoggingConfig.LogFormat=JSON
+LoggingConfig.ApplicationLogLevel=INFO
+LoggingConfig.SystemLogLevel=INFO
+```
+
+The runtime secret identifier points to the Terraform-managed Secrets Manager container. The secret value itself was populated out of band and is available under `AWSCURRENT`.
+
+## Manual invocation proof
+
+The bounded published window `2026-08-27T00:00:00Z` through `2026-08-28T00:00:00Z` returned:
+
+```text
+StatusCode=200
+FunctionError=null
+status=complete
+root_sync_id=1670a1e4730ba3e5a8214b7278d68b43fd8c929a069bae27099abd370cf9193e
+attempt_id=e013864e669cc3b4f92766a94e9f487960bd4b3bf40247d523b8415a0d8aaa40
+leaf_count=1
+page_count=1
+total_items=10
+total_bytes=48899
+manifest_version_id=IHt7S5Uvj21ABxWfPAPsXbnQhQW3ErRH
+```
+
+The page referenced by the COMPLETE manifest was verified at exact S3 VersionId `k1i1ppmalEBvDN9Dzrby5ocbdB.M8y2s` with SHA-256 `6ab59c9c875257d50693f9ce45ed4a24b55ae249abc567a21e34c84604f97470` and size 48,899 bytes.
+
+A second invocation of the same event returned the same logical and physical identities and the same manifest VersionId. S3 version listing proved that no additional page or manifest versions were created.
+
 ## Current gates
 
 ```text
 GHSA_BRONZE_RUNTIME_COMPOSITION_GATE=PASS
 GHSA_BRONZE_LAMBDA_INVOCATION_CONTRACT_GATE=PASS
 GHSA_BRONZE_PRE_APPLY_HARDENING_GATE=PASS
-GHSA_BRONZE_LAMBDA_ARTIFACT_BUILD_GATE=STALE_REBUILD_REQUIRED
-GHSA_BRONZE_ARTIFACT_PUBLICATION_GATE=STALE_REPUBLISH_REQUIRED
-GHSA_BRONZE_TERRAFORM_GATE=STALE_REPIN_AND_REPLAN_REQUIRED
-GHSA_BRONZE_MANUAL_DEV_RUNTIME_GATE=PENDING
-GHSA_2_4C_GATE=IN_PROGRESS
+GHSA_BRONZE_LAMBDA_ARTIFACT_BUILD_GATE=PASS
+GHSA_BRONZE_ARTIFACT_PUBLICATION_GATE=PASS
+GHSA_BRONZE_TERRAFORM_GATE=PASS
+GHSA_BRONZE_MANUAL_DEV_RUNTIME_GATE=PASS
+GHSA_2_4C_GATE=PASS
 ```
 
 ## Next step
 
-Build a new deterministic artifact from the validated hardening source revision. Capture its exact SHA-256 and content-addressed key before any Terraform repin or apply.
+Proceed to Phase 2.4D — GHSA Silver Runtime. The Lambda invocation contract remains frozen unless a later requirement explicitly changes the bounded runtime interface.
 
 ## References
 
