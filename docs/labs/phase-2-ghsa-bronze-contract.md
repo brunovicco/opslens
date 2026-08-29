@@ -2,11 +2,11 @@
 
 _Date started: 2026-08-27_
 
-_Status: IN PROGRESS_
+_Status: COMPLETE_
 
 ## Purpose
 
-Define deterministic GitHub Security Advisory Bronze request, response-page, cursor-pagination, physical observation, persistence evidence, authenticated runtime, Lambda invocation, and manual `dev` deployment boundaries before Phase 2.4C closeout.
+Define and prove deterministic GitHub Security Advisory Bronze request, response-page, cursor-pagination, physical observation, persistence evidence, authenticated runtime, Lambda invocation, and manual `dev` deployment boundaries before Phase 2.4D.
 
 The invariant remains:
 
@@ -79,14 +79,14 @@ If aggregate page-count or total-byte limits are exceeded, the parent window is 
 
 ## Lambda invocation contract
 
-The v1 manual event remains:
+The v1 manual event is explicit and fail-closed:
 
 ```json
 {
   "schema_version": 1,
   "mode": "published",
-  "start_at": "2026-08-01T00:00:00Z",
-  "end_at": "2026-08-02T00:00:00Z"
+  "start_at": "2026-08-27T00:00:00Z",
+  "end_at": "2026-08-28T00:00:00Z"
 }
 ```
 
@@ -94,9 +94,9 @@ Unknown fields fail closed. Timestamps must use canonical UTC whole-second `Z` f
 
 The Lambda environment contains only non-secret configuration and the Secrets Manager secret identifier. Credential material remains exclusively in Secrets Manager.
 
-## Current validated source checkpoint
+## Validated source checkpoint
 
-After the final pre-apply hardening changes, the focused local checkpoint supplied on 2026-08-28 is green:
+The final pre-apply focused checkpoint supplied on 2026-08-28 was green:
 
 ```text
 61 passed
@@ -104,32 +104,63 @@ Ruff: All checks passed
 Pyright strict: 0 errors / 0 warnings / 0 informations
 ```
 
-Therefore the current source revision has passed the request-URL, authenticated HTTP, rate-limit, runtime-composition, Lambda invocation, and pre-apply hardening gates.
+The subsequent Terraform CI run also passed its static checks and Checkov security scan after the documented dev-only Secrets Manager rotation exception.
 
-## Prior immutable artifact evidence
+## Current immutable artifact evidence
 
-The earlier validated source revision produced and published:
+The validated hardening source revision was packaged twice with identical SHA-256 and conditionally published to the versioned deployment-artifacts bucket:
 
 ```text
-sha256=9deb08f346cbe7261199568de8a515b26b2865d7f6d2a592d837a0ac0368c928
-s3_key=lambda/ghsa-bronze/9deb08f346cbe7261199568de8a515b26b2865d7f6d2a592d837a0ac0368c928.zip
-s3_version_id=fYDkvIkv15n.GHoGCgOQbgcuFObO_P3w
-checksum_sha256=nesI80bL5yYRmVaN6KUVsmsoZdf20qWS2DegrANoySg=
-content_length=17555239
+sha256=c4291b2adb51e84e2a91525b9a2bee1190579d6b984939032ae0b3f9746ee891
+s3_key=lambda/ghsa-bronze/c4291b2adb51e84e2a91525b9a2bee1190579d6b984939032ae0b3f9746ee891.zip
+s3_version_id=Jnq06HcNrjHDHibjhnOwboRbk.44grQh
+source_code_hash=xCkbKttR6E4qkVJbmivuEZBXnWuYSTkDKuCz+XRu6JE=
+content_length=17555589
 content_type=application/zip
 checksum_type=FULL_OBJECT
 encryption=AES256
 ```
 
-The object remains valid immutable evidence for that revision. It is no longer the deployable representation of the current branch because the pre-apply hardening changed runtime source code.
+The previous `9deb08...` artifact remains immutable historical evidence for its earlier source revision only.
 
-The previously reviewed Terraform plan was:
+## Terraform and live runtime evidence
+
+Terraform was repinned to the current artifact and a fresh reviewed plan contained exactly five creates and no changes or destroys. The resulting live `dev` runtime was verified with:
 
 ```text
-Plan: 5 to add, 0 to change, 0 to destroy.
+Lambda: opslens-dev-ghsa-bronze
+runtime: python3.13
+architecture: x86_64
+memory: 1024 MiB
+timeout: 900 seconds
+source_code_hash: xCkbKttR6E4qkVJbmivuEZBXnWuYSTkDKuCz+XRu6JE=
+X-Ray: Active
+logging: JSON / INFO
+log retention: 14 days
+secret stage: AWSCURRENT
 ```
 
-That saved plan must not be applied after the source changes. The current Terraform artifact pin must be replaced with the next exact artifact SHA-256 and S3 VersionId before a new reviewed plan.
+The GitHub token value was populated out of band and never entered Terraform configuration or Terraform state.
+
+## Manual runtime proof
+
+The bounded published window `2026-08-27T00:00:00Z` through `2026-08-28T00:00:00Z` completed successfully:
+
+```text
+root_sync_id=1670a1e4730ba3e5a8214b7278d68b43fd8c929a069bae27099abd370cf9193e
+attempt_id=e013864e669cc3b4f92766a94e9f487960bd4b3bf40247d523b8415a0d8aaa40
+leaf_count=1
+page_count=1
+total_items=10
+total_bytes=48899
+manifest_version_id=IHt7S5Uvj21ABxWfPAPsXbnQhQW3ErRH
+page_version_id=k1i1ppmalEBvDN9Dzrby5ocbdB.M8y2s
+page_sha256=6ab59c9c875257d50693f9ce45ed4a24b55ae249abc567a21e34c84604f97470
+```
+
+The exact page bytes, size, item count, first GHSA ID, last GHSA ID, and COMPLETE manifest inventory were independently verified against the exact S3 VersionIds.
+
+A second invocation of the same logical window returned the same `sync_id`, `attempt_id`, object keys, page VersionId, and manifest VersionId. `list-object-versions` showed exactly one physical version of `response.json` and one physical version of `manifest.json`, both latest, with no delete markers. The replay therefore created no duplicate S3 versions.
 
 ## Current gates
 
@@ -149,17 +180,16 @@ GHSA_BRONZE_SUBDIVISION_GATE=PASS
 GHSA_BRONZE_RUNTIME_COMPOSITION_GATE=PASS
 GHSA_BRONZE_LAMBDA_INVOCATION_CONTRACT_GATE=PASS
 GHSA_BRONZE_PRE_APPLY_HARDENING_GATE=PASS
-
-GHSA_BRONZE_LAMBDA_ARTIFACT_BUILD_GATE=STALE_REBUILD_REQUIRED
-GHSA_BRONZE_ARTIFACT_PUBLICATION_GATE=STALE_REPUBLISH_REQUIRED
-GHSA_BRONZE_TERRAFORM_GATE=STALE_REPIN_AND_REPLAN_REQUIRED
-GHSA_BRONZE_MANUAL_DEV_RUNTIME_GATE=PENDING
-GHSA_2_4C_GATE=IN_PROGRESS
+GHSA_BRONZE_LAMBDA_ARTIFACT_BUILD_GATE=PASS
+GHSA_BRONZE_ARTIFACT_PUBLICATION_GATE=PASS
+GHSA_BRONZE_TERRAFORM_GATE=PASS
+GHSA_BRONZE_MANUAL_DEV_RUNTIME_GATE=PASS
+GHSA_2_4C_GATE=PASS
 ```
 
 ## AWS / IAM / cost boundary
 
-The planned manual `dev` runtime remains intentionally minimal:
+The deployed manual `dev` runtime remains intentionally minimal:
 
 ```text
 Secrets Manager secret container
@@ -171,11 +201,11 @@ X-Ray write permissions
 Lambda function pinned to content-addressed S3 artifact + exact VersionId
 ```
 
-No GHSA AWS runtime resources have been applied yet. EventBridge Scheduler remains deferred until manual invocation is proven in `dev`.
+EventBridge Scheduler remains intentionally absent from Phase 2.4C. Manual synchronous execution was the required runtime proof; scheduling is not introduced merely to satisfy a platform pattern.
 
 ## Next step
 
-Build a new deterministic Lambda artifact from this validated source revision. Capture its exact SHA-256 and content-addressed key before publishing or repinning Terraform.
+Proceed to Phase 2.4D — GHSA Silver Runtime. Preserve the Phase 2.4B rule that vulnerable version ranges are stored as source evidence but concrete installed-version applicability is not evaluated until Phase 3.
 
 ## References
 
