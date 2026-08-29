@@ -2,11 +2,21 @@
 
 from dataclasses import dataclass
 
-from opslens.transformation.ghsa.completion.key_factory import GhsaSilverKeyFactoryV1
-from opslens.transformation.ghsa.runtime.materializer import GhsaSilverMaterializationV1
-from opslens.transformation.ghsa.runtime.record_processor import GhsaSilverOccurrenceRecordV1
-from opslens.transformation.ghsa.serialization.models import GhsaSilverParquetArtifactV1
-from opslens.transformation.ghsa.serialization.parquet import GhsaSilverParquetSerializerV1
+from opslens.transformation.ghsa.completion.key_factory import (
+    GhsaSilverKeyFactoryV1,
+)
+from opslens.transformation.ghsa.runtime.materializer import (
+    GhsaSilverMaterializationV1,
+)
+from opslens.transformation.ghsa.runtime.record_processor import (
+    GhsaSilverOccurrenceRecordV1,
+)
+from opslens.transformation.ghsa.serialization.models import (
+    GhsaSilverParquetArtifactV1,
+)
+from opslens.transformation.ghsa.serialization.parquet import (
+    GhsaSilverParquetSerializerV1,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,11 +30,14 @@ class GhsaSilverPreparedContentObjectV1:
     def __post_init__(self) -> None:
         """Validate the one-content-version physical grain."""
         if not self.key.strip():
-            raise ValueError("GHSA Silver prepared content key cannot be empty.")
+            raise ValueError(
+                "GHSA Silver prepared content key cannot be empty."
+            )
 
         if self.parquet_artifact.row_count != 1:
             raise ValueError(
-                "GHSA Silver prepared content Parquet must contain exactly one row."
+                "GHSA Silver prepared content Parquet "
+                "must contain exactly one row."
             )
 
     @property
@@ -40,7 +53,12 @@ class GhsaSilverPreparedContentObjectV1:
     @property
     def source_advisory_sha256(self) -> str:
         """Return the canonical source advisory SHA-256."""
-        return self.binding.occurrence.observed_version.source_advisory_sha256
+        return (
+            self.binding
+            .occurrence
+            .observed_version
+            .source_advisory_sha256
+        )
 
 
 class GhsaSilverContentPreparerV1:
@@ -62,7 +80,8 @@ class GhsaSilverContentPreparerV1:
     ) -> tuple[GhsaSilverPreparedContentObjectV1, ...]:
         """Prepare one deterministic Parquet object per content version."""
         return tuple(
-            self._prepare_binding(binding) for binding in materialization.bindings
+            self._prepare_binding(binding)
+            for binding in materialization.bindings
         )
 
     def _prepare_binding(
@@ -71,10 +90,14 @@ class GhsaSilverContentPreparerV1:
     ) -> GhsaSilverPreparedContentObjectV1:
         """Serialize exactly one advisory content version."""
         observed_version = binding.occurrence.observed_version
-        parquet_artifact = self._parquet_serializer.serialize((binding.record,))
+        parquet_artifact = self._parquet_serializer.serialize(
+            (binding.record,)
+        )
 
         return GhsaSilverPreparedContentObjectV1(
-            key=self._key_factory.build_content_object_key(observed_version),
+            key=self._key_factory.build_content_object_key(
+                observed_version
+            ),
             binding=binding,
             parquet_artifact=parquet_artifact,
         )
