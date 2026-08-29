@@ -28,6 +28,7 @@ from opslens.transformation.ghsa.domain.vulnerabilities_transformer import (
 )
 from opslens.transformation.ghsa.runtime.materializer import (
     GhsaSilverAttemptContextV1,
+    GhsaSilverMaterializationV1,
     GhsaSilverMaterializerV1,
 )
 from opslens.transformation.ghsa.runtime.provenance import (
@@ -143,7 +144,7 @@ def _binding(
 
 
 def _materialization() -> tuple[
-    object,
+    GhsaSilverMaterializationV1,
     tuple[GhsaSilverStoredContentObjectV1, ...],
 ]:
     """Build deterministic logical materialization plus exact stored objects."""
