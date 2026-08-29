@@ -108,8 +108,9 @@ class GhsaBronzeAdvisoryOccurrenceV1:
         """Return the deterministic Silver advisory-content identity."""
         return self.observed_version.observed_advisory_version_id
 
+
     @property
-    def physical_occurrence_id(self) -> str:
+    def attempt_occurrence_id(self) -> str:
         """Return the exact advisory position inside one Bronze attempt."""
         return (
             f"{self.attempt_id}/"

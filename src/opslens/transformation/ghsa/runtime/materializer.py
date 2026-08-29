@@ -154,7 +154,7 @@ class GhsaSilverMaterializerV1:
         bindings: tuple[GhsaSilverOccurrenceRecordV1, ...],
     ) -> None:
         """Require every record to belong to one exact Bronze attempt."""
-        physical_ids: set[str] = set()
+        attempt_occurrence_ids: set[str] = set()
         observed_version_ids: set[str] = set()
 
         for binding in bindings:
@@ -184,15 +184,16 @@ class GhsaSilverMaterializerV1:
                     "attempt context."
                 )
 
-            physical_id = occurrence.physical_occurrence_id
 
-            if physical_id in physical_ids:
+            attempt_occurrence_id = occurrence.attempt_occurrence_id
+
+            if attempt_occurrence_id in attempt_occurrence_ids:
                 raise ValueError(
                     "GHSA Silver materialization contains duplicate "
-                    "physical occurrence identity."
+                    "attempt occurrence identity."
                 )
 
-            physical_ids.add(physical_id)
+            attempt_occurrence_ids.add(attempt_occurrence_id)
 
             observed_version_id = (
                 occurrence.observed_advisory_version_id

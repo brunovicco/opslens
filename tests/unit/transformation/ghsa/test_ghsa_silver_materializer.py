@@ -241,7 +241,7 @@ def test_rejects_duplicate_physical_occurrence() -> None:
 
     with pytest.raises(
         ValueError,
-        match="duplicate physical occurrence",
+        match="duplicate attempt occurrence",
     ):
         _materializer().materialize(
             context=_context(),

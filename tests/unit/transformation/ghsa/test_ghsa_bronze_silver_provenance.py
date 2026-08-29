@@ -39,14 +39,14 @@ def _occurrence(
     )
 
 
-def test_builds_exact_physical_occurrence_identity() -> None:
+def test_builds_exact_attempt_occurrence_identity() -> None:
     """Build a stable identifier for one exact Bronze advisory occurrence."""
     occurrence = _occurrence(
         page_ordinal=2,
         source_index=7,
     )
 
-    assert occurrence.physical_occurrence_id == (
+    assert occurrence.attempt_occurrence_id == (
         f"{ATTEMPT_ID}/page:000002/item:007"
     )
 

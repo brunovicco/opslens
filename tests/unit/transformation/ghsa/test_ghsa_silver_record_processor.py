@@ -188,7 +188,7 @@ def test_preserves_exact_bronze_physical_provenance() -> None:
     assert bound.occurrence.attempt_id == ATTEMPT_ID
     assert bound.occurrence.source_index == 0
 
-    assert bound.occurrence.physical_occurrence_id == (
+    assert bound.occurrence.attempt_occurrence_id == (
         f"{ATTEMPT_ID}/page:000001/item:000"
     )
 

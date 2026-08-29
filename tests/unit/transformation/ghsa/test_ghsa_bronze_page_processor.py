@@ -71,13 +71,13 @@ def test_derives_occurrences_from_exact_verified_page() -> None:
 
     assert first.source_index == 0
     assert first.ghsa_id == "GHSA-gvrw-qqp5-jgc5"
-    assert first.physical_occurrence_id == (
+    assert first.attempt_occurrence_id == (
         f"{ATTEMPT_ID}/page:000001/item:000"
     )
 
     assert second.source_index == 1
     assert second.ghsa_id == "GHSA-vxj7-4xrp-5vr4"
-    assert second.physical_occurrence_id == (
+    assert second.attempt_occurrence_id == (
         f"{ATTEMPT_ID}/page:000001/item:001"
     )
 
