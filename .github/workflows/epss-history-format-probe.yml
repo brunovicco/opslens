@@ -1,0 +1,54 @@
+name: EPSS Historical Format Probe
+
+on:
+  push:
+    branches:
+      - phase-2-epss-history
+    paths:
+      - ".github/workflows/epss-history-format-probe.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Validate probe helper
+        run: |
+          python -m py_compile scripts/probe_epss_historical_formats.py
+
+      - name: Run exact pinned archive probe
+        run: |
+          python scripts/probe_epss_historical_formats.py \
+            --archive-commit 7ba701f5599057c496489ceecd701cbd43911f5c \
+            | tee /tmp/epss-historical-format-probe.json
+
+      - name: Print compact format evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('/tmp/epss-historical-format-probe.json').read_text())
+          for item in data['results']:
+              print({
+                  'snapshot_date': item['snapshot_date'],
+                  'format_family': item['format_family'],
+                  'metadata_present': item['metadata_present'],
+                  'header': item['header'],
+                  'first_line': item['first_line'],
+                  'second_line': item['second_line'],
+                  'source_sha256': item['source_sha256'],
+                  'compressed_bytes': item['compressed_bytes'],
+                  'decompressed_bytes': item['decompressed_bytes'],
+              })
+          print('failures=', data['failures'])
+          PY
