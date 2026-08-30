@@ -3,6 +3,8 @@
 from collections.abc import Mapping
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
+from datetime import date
+from hashlib import sha256
 from typing import Any
 
 import pytest
@@ -28,7 +30,7 @@ KEY = (
     f"archive_commit={'a' * 40}/snapshot_date=2021-04-14/manifest.json"
 )
 MANIFEST = HistoricalEpssCompletionManifestV1(
-    snapshot_date=__import__("datetime").date(2021, 4, 14),
+    snapshot_date=date(2021, 4, 14),
     archive_commit="a" * 40,
     bronze_manifest_key="bronze/manifest.json",
     bronze_manifest_version_id="bronze-version",
@@ -47,7 +49,7 @@ ARTIFACT = HistoricalEpssCompletionArtifactV1(
     manifest=MANIFEST,
     key=KEY,
     raw_bytes=RAW_BYTES,
-    sha256=__import__("hashlib").sha256(RAW_BYTES).hexdigest(),
+    sha256=sha256(RAW_BYTES).hexdigest(),
 )
 
 
@@ -55,6 +57,7 @@ class FakeTelemetry:
     """Capture minimal telemetry required by adapters."""
 
     def __init__(self) -> None:
+        """Initialize metric capture."""
         self.metrics: list[tuple[str, float, str]] = []
 
     def info(self, message: str, *, fields: Mapping[str, object] | None = None) -> None:
@@ -92,6 +95,7 @@ class FakeS3Client:
     """Provide configurable Put, Head, and exact Get behavior."""
 
     def __init__(self) -> None:
+        """Initialize deterministic S3 behavior."""
         self.put_error: ClientError | None = None
         self.put_response: dict[str, object] = {"VersionId": "completion-version"}
         self.version_id = "completion-version"
