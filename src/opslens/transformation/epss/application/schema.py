@@ -27,14 +27,18 @@ class SilverColumn:
     nullable: bool = False
 
 
-EPSS_SILVER_SCHEMA_VERSION = 1
+EPSS_SILVER_SCHEMA_VERSION = 2
 
 EPSS_SILVER_DATA_COLUMNS: tuple[SilverColumn, ...] = (
     SilverColumn("cve", SilverPhysicalType.STRING),
     SilverColumn("epss", SilverPhysicalType.FLOAT64),
-    SilverColumn("percentile", SilverPhysicalType.FLOAT64),
-    SilverColumn("model_version", SilverPhysicalType.STRING),
-    SilverColumn("score_timestamp", SilverPhysicalType.TIMESTAMP_UTC_MICROS),
+    SilverColumn("percentile", SilverPhysicalType.FLOAT64, nullable=True),
+    SilverColumn("model_version", SilverPhysicalType.STRING, nullable=True),
+    SilverColumn(
+        "score_timestamp",
+        SilverPhysicalType.TIMESTAMP_UTC_MICROS,
+        nullable=True,
+    ),
     SilverColumn("source", SilverPhysicalType.STRING),
     SilverColumn("source_sha256", SilverPhysicalType.STRING),
 )
