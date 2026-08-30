@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 from datetime import date
-from typing import Any
+from typing import cast
 
 from opslens.ingestion.epss.domain.history import EpssModelEra
 from opslens.transformation.epss.history.models import (
@@ -48,18 +48,23 @@ class HistoricalEpssBronzeManifestParserV1:
     ) -> HistoricalEpssBronzeManifestV1:
         """Parse exact manifest bytes and bind them to their S3 coordinate."""
         try:
-            value = json.loads(payload.raw_bytes)
+            decoded: object = json.loads(payload.raw_bytes)
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise InvalidHistoricalEpssBronzeManifestError(
                 "Historical EPSS Bronze manifest must be valid UTF-8 JSON."
             ) from exc
 
-        if not isinstance(value, dict):
+        if not isinstance(decoded, dict):
             raise InvalidHistoricalEpssBronzeManifestError(
                 "Historical EPSS Bronze manifest must be a JSON object."
             )
+        if not all(isinstance(key, str) for key in decoded):
+            raise InvalidHistoricalEpssBronzeManifestError(
+                "Historical EPSS Bronze manifest keys must be strings."
+            )
 
-        keys = frozenset(value)
+        value = cast(dict[str, object], decoded)
+        keys: frozenset[str] = frozenset(value)
         if keys != _REQUIRED_KEYS:
             missing = sorted(_REQUIRED_KEYS - keys)
             extra = sorted(keys - _REQUIRED_KEYS)
@@ -68,7 +73,8 @@ class HistoricalEpssBronzeManifestParserV1:
                 f"missing={missing}, extra={extra}."
             )
 
-        if value["schema_version"] != 1 or type(value["schema_version"]) is not int:
+        schema_version = value["schema_version"]
+        if type(schema_version) is not int or schema_version != 1:
             raise InvalidHistoricalEpssBronzeManifestError(
                 "Historical EPSS Bronze manifest schema_version must be integer 1."
             )
@@ -113,21 +119,23 @@ class HistoricalEpssBronzeManifestParserV1:
                 "Historical EPSS manifest model_era does not match snapshot_date."
             )
 
-        metadata_present = value["source_metadata_present"]
-        if type(metadata_present) is not bool:
+        metadata_raw = value["source_metadata_present"]
+        if type(metadata_raw) is not bool:
             raise InvalidHistoricalEpssBronzeManifestError(
                 "Historical EPSS source_metadata_present must be boolean."
             )
+        metadata_present = cast(bool, metadata_raw)
         if metadata_present is (model_era is EpssModelEra.V1):
             raise InvalidHistoricalEpssBronzeManifestError(
                 "Historical EPSS source metadata presence conflicts with model era."
             )
 
-        compressed_size = value["compressed_size_bytes"]
-        if type(compressed_size) is not int or compressed_size <= 0:
+        compressed_size_raw = value["compressed_size_bytes"]
+        if type(compressed_size_raw) is not int or compressed_size_raw <= 0:
             raise InvalidHistoricalEpssBronzeManifestError(
                 "Historical EPSS compressed_size_bytes must be a positive integer."
             )
+        compressed_size = cast(int, compressed_size_raw)
 
         expected_archive_path = (
             f"{snapshot_date.year}/epss_scores-{snapshot_date.isoformat()}.csv.gz"
@@ -171,7 +179,8 @@ class HistoricalEpssBronzeManifestParserV1:
         )
 
     @staticmethod
-    def _required_string(value: dict[str, Any], key: str) -> str:
+    def _required_string(value: dict[str, object], key: str) -> str:
+        """Return one validated non-empty manifest string field."""
         raw = value[key]
         if not isinstance(raw, str) or not raw.strip():
             raise InvalidHistoricalEpssBronzeManifestError(
@@ -181,6 +190,7 @@ class HistoricalEpssBronzeManifestParserV1:
 
     @staticmethod
     def _parse_date(raw: object) -> date:
+        """Parse one canonical ISO snapshot date from manifest evidence."""
         if not isinstance(raw, str):
             raise InvalidHistoricalEpssBronzeManifestError(
                 "Historical EPSS snapshot_date must be an ISO date string."
