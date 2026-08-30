@@ -5,7 +5,6 @@ from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from datetime import date
 from hashlib import sha256
-from typing import Any
 
 import pytest
 from botocore.exceptions import ClientError
@@ -13,10 +12,13 @@ from botocore.exceptions import ClientError
 from opslens.transformation.epss.adapters.outbound.s3_history_completion import (
     HistoricalEpssCompletionConcurrentWriteError,
     HistoricalEpssCompletionWriteEvidenceError,
+    S3HistoricalEpssCompletionPutResponse,
     S3HistoricalEpssCompletionRepository,
 )
 from opslens.transformation.epss.adapters.outbound.s3_history_completion_replay import (
     HistoricalEpssCompletionReplayMismatchError,
+    S3GetCompletionResponse,
+    S3HeadCompletionResponse,
     S3HistoricalEpssCompletionReplayVerifier,
 )
 from opslens.transformation.epss.history.completion import (
@@ -97,22 +99,39 @@ class FakeS3Client:
     def __init__(self) -> None:
         """Initialize deterministic S3 behavior."""
         self.put_error: ClientError | None = None
-        self.put_response: dict[str, object] = {"VersionId": "completion-version"}
+        self.put_response: S3HistoricalEpssCompletionPutResponse = {
+            "VersionId": "completion-version"
+        }
         self.version_id = "completion-version"
         self.payload = RAW_BYTES
         self.body: FakeBody | None = None
 
-    def put_object(self, **kwargs: Any) -> dict[str, object]:
+    def put_object(
+        self,
+        *,
+        Bucket: str,
+        Key: str,
+        Body: bytes,
+        ContentType: str,
+        Metadata: Mapping[str, str],
+        IfNoneMatch: str,
+    ) -> S3HistoricalEpssCompletionPutResponse:
         """Return configured create evidence or raise configured error."""
         if self.put_error is not None:
             raise self.put_error
         return self.put_response
 
-    def head_object(self, **kwargs: Any) -> dict[str, object]:
+    def head_object(self, *, Bucket: str, Key: str) -> S3HeadCompletionResponse:
         """Return current-version replay coordinates."""
         return {"VersionId": self.version_id, "ContentLength": len(self.payload)}
 
-    def get_object(self, **kwargs: Any) -> dict[str, object]:
+    def get_object(
+        self,
+        *,
+        Bucket: str,
+        Key: str,
+        VersionId: str,
+    ) -> S3GetCompletionResponse:
         """Return exact-version replay bytes."""
         self.body = FakeBody(self.payload)
         return {
@@ -127,7 +146,13 @@ def _client_error(status_code: int) -> ClientError:
     return ClientError(
         error_response={
             "Error": {"Code": "test", "Message": "test"},
-            "ResponseMetadata": {"HTTPStatusCode": status_code},
+            "ResponseMetadata": {
+                "RequestId": "request-id",
+                "HostId": "host-id",
+                "HTTPStatusCode": status_code,
+                "HTTPHeaders": {},
+                "RetryAttempts": 0,
+            },
         },
         operation_name="PutObject",
     )
