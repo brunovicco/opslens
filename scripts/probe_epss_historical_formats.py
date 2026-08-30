@@ -70,7 +70,7 @@ def _fetch_bounded(url: str) -> bytes:
         method="GET",
     )
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310
+        with urllib.request.urlopen(request, timeout=30) as response:
             content_length = response.headers.get("Content-Length")
             if content_length is not None and int(content_length) > MAX_COMPRESSED_BYTES:
                 raise RuntimeError(f"source exceeds compressed limit: {content_length}")
