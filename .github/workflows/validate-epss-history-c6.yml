@@ -1,0 +1,74 @@
+name: Validate EPSS History 2.5C-6
+
+on:
+  push:
+    branches:
+      - phase-2-epss-history
+    paths:
+      - ".github/workflows/validate-epss-history-c6.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Validate lockfile
+        run: uv lock --check
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Ruff full Python surface
+        run: uv run ruff check src tests scripts
+
+      - name: Pyright full repository typing surface
+        run: uv run pyright
+
+      - name: Full unit regression
+        run: uv run pytest -q
+
+      - name: Verify no infrastructure drift in Phase 2.5 branch
+        run: |
+          changed="$(git diff --name-only origin/main...HEAD -- infra .github/workflows)"
+          unexpected="$(printf '%s\n' "$changed" | grep -v '^\.github/workflows/validate-epss-history-c6\.yml$' || true)"
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected infrastructure/workflow changes detected:"
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
+
+      - name: Verify forward EPSS runtime surface is narrowly bounded
+        run: |
+          changed="$(git diff --name-only origin/main...HEAD -- \
+            src/opslens/ingestion/epss \
+            src/opslens/transformation/epss)"
+          unexpected="$(printf '%s\n' "$changed" | grep -Ev '^$|^src/opslens/ingestion/epss/domain/history\.py$|^src/opslens/transformation/epss/history/|^src/opslens/transformation/epss/adapters/outbound/s3_history_|^src/opslens/transformation/epss/adapters/outbound/parquet\.py$|^src/opslens/transformation/epss/application/schema\.py$|^src/opslens/transformation/epss/domain/models\.py$' || true)"
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected forward EPSS runtime change detected:"
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
+
+      - name: Gate marker
+        run: |
+          echo "EPSS_HISTORY_FULL_RUFF_GATE=PASS"
+          echo "EPSS_HISTORY_FULL_PYRIGHT_GATE=PASS"
+          echo "EPSS_HISTORY_FULL_UNIT_REGRESSION_GATE=PASS"
+          echo "EPSS_HISTORY_NO_INFRA_DRIFT_GATE=PASS"
+          echo "EPSS_HISTORY_FORWARD_RUNTIME_SURFACE_GATE=PASS"
+          echo "EPSS_2_5C6_GATE=PASS"
