@@ -1,0 +1,54 @@
+name: EPSS History Source Discovery Validation
+
+on:
+  push:
+    branches:
+      - phase-2-epss-history
+    paths:
+      - ".github/workflows/epss-history-source-discovery-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+
+      - name: Sync frozen dependencies
+        run: uv sync --frozen
+
+      - name: Ruff source discovery helper
+        run: uv run ruff check scripts/discover_epss_history_source.py
+
+      - name: Compile source discovery helper
+        run: uv run python -m py_compile scripts/discover_epss_history_source.py
+
+      - name: Discover pinned EPSS history archive
+        run: |
+          uv run python scripts/discover_epss_history_source.py \
+            --ref 7ba701f5599057c496489ceecd701cbd43911f5c \
+            | tee /tmp/epss-history-source.json
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('/tmp/epss-history-source.json').read_text())
+          assert data['resolved_commit_sha'] == '7ba701f5599057c496489ceecd701cbd43911f5c'
+          assert data['archive_start_date'] == '2021-04-14'
+          assert data['archive_end_date'] == '2026-08-30'
+          assert data['score_files_downloaded'] == 0
+          assert data['legacy_v1_snapshot_count'] > 0
+          print('EPSS_HISTORY_PINNED_ARCHIVE_DISCOVERY_GATE=PASS')
+          PY
