@@ -6,6 +6,7 @@ on:
       - phase-2-epss-history
     paths:
       - ".github/workflows/epss-history-sample-probe-validation.yml"
+      - "scripts/probe_epss_history_samples.py"
 
 permissions:
   contents: read
@@ -35,6 +36,8 @@ jobs:
         run: uv run python -m py_compile scripts/probe_epss_history_samples.py
 
       - name: Run immutable five-era sample probe
+        env:
+          PYTHONPATH: src
         run: |
           uv run python scripts/probe_epss_history_samples.py \
             --commit 7ba701f5599057c496489ceecd701cbd43911f5c \
