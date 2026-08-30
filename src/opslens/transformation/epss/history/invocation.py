@@ -4,19 +4,18 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
-from typing import cast
+from typing import Protocol
 
 from opslens.transformation.epss.history.completion import (
-    HistoricalEpssCompletionManifestFactoryV1,
+    HistoricalEpssCompletionArtifactV1,
     HistoricalEpssCompletionPersistenceResultV1,
-    PersistHistoricalEpssCompletion,
 )
 from opslens.transformation.epss.history.models import (
+    HistoricalEpssBronzeEvidenceV1,
+    HistoricalEpssSilverArtifactV1,
     HistoricalEpssSilverPersistenceResultV1,
 )
-from opslens.transformation.epss.history.persistence import PersistHistoricalEpssSilver
-from opslens.transformation.epss.history.preparation import PrepareHistoricalEpssSilver
-from opslens.transformation.epss.history.reader import ReadHistoricalEpssBronzeEvidence
+from opslens.transformation.epss.history.preparation import HistoricalEpssPreparedSilverV1
 
 _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 _MANIFEST_KEY_RE = re.compile(
@@ -46,6 +45,67 @@ class HistoricalEpssInvocationResultV1:
     snapshot_date: date
     silver: HistoricalEpssSilverPersistenceResultV1
     completion: HistoricalEpssCompletionPersistenceResultV1
+
+
+class HistoricalEpssBronzeEvidenceReader(Protocol):
+    """Read one exact historical Bronze evidence pair."""
+
+    def execute(
+        self,
+        *,
+        manifest_key: str,
+        manifest_version_id: str,
+    ) -> HistoricalEpssBronzeEvidenceV1:
+        """Return exact manifest and source evidence."""
+        ...
+
+
+class HistoricalEpssSilverPreparer(Protocol):
+    """Prepare deterministic Silver from verified Bronze evidence."""
+
+    def execute(
+        self,
+        evidence: HistoricalEpssBronzeEvidenceV1,
+    ) -> HistoricalEpssPreparedSilverV1:
+        """Return exact deterministic Parquet and key."""
+        ...
+
+
+class HistoricalEpssSilverPersister(Protocol):
+    """Persist or replay-verify deterministic historical Silver."""
+
+    def execute(
+        self,
+        *,
+        key: str,
+        artifact: HistoricalEpssSilverArtifactV1,
+    ) -> HistoricalEpssSilverPersistenceResultV1:
+        """Return exact persisted Silver evidence."""
+        ...
+
+
+class HistoricalEpssCompletionFactory(Protocol):
+    """Build deterministic completion evidence."""
+
+    def build(
+        self,
+        *,
+        bronze: HistoricalEpssBronzeEvidenceV1,
+        silver: HistoricalEpssSilverPersistenceResultV1,
+    ) -> HistoricalEpssCompletionArtifactV1:
+        """Bind exact Bronze and Silver evidence."""
+        ...
+
+
+class HistoricalEpssCompletionPersister(Protocol):
+    """Persist completion evidence last."""
+
+    def execute(
+        self,
+        artifact: HistoricalEpssCompletionArtifactV1,
+    ) -> HistoricalEpssCompletionPersistenceResultV1:
+        """Return exact persisted completion evidence."""
+        ...
 
 
 class HistoricalEpssInvocationParserV1:
@@ -122,11 +182,11 @@ class ExecuteHistoricalEpssInvocationV1:
         self,
         *,
         parser: HistoricalEpssInvocationParserV1,
-        bronze_reader: ReadHistoricalEpssBronzeEvidence,
-        silver_preparer: PrepareHistoricalEpssSilver,
-        silver_persistence: PersistHistoricalEpssSilver,
-        completion_factory: HistoricalEpssCompletionManifestFactoryV1,
-        completion_persistence: PersistHistoricalEpssCompletion,
+        bronze_reader: HistoricalEpssBronzeEvidenceReader,
+        silver_preparer: HistoricalEpssSilverPreparer,
+        silver_persistence: HistoricalEpssSilverPersister,
+        completion_factory: HistoricalEpssCompletionFactory,
+        completion_persistence: HistoricalEpssCompletionPersister,
         first_forward_snapshot_date: date,
     ) -> None:
         """Initialize strict one-snapshot historical composition dependencies."""
