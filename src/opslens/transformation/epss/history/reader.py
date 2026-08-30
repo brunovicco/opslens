@@ -63,7 +63,7 @@ class ReadHistoricalEpssBronzeEvidence:
             )
 
         git_blob_prefix = f"blob {len(source.raw_bytes)}\0".encode()
-        git_blob_sha1 = hashlib.sha1(  # noqa: S324
+        git_blob_sha1 = hashlib.sha1(
             git_blob_prefix + source.raw_bytes,
             usedforsecurity=False,
         ).hexdigest()
