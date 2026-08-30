@@ -1,0 +1,54 @@
+name: GHSA Cross-source Final Validation
+
+on:
+  push:
+    branches:
+      - phase-2-ghsa-cross-source-closeout
+    paths:
+      - ".github/workflows/ghsa-cross-source-final-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+
+      - name: Check lock
+        run: uv lock --check
+
+      - name: Sync frozen dependencies
+        run: uv sync --frozen
+
+      - name: Ruff cross-source helpers
+        run: |
+          uv run ruff check \
+            scripts/discover_cross_source_coordinates.py \
+            scripts/select_cross_source_proof_cve.py \
+            scripts/build_cross_source_cve_evidence.py
+
+      - name: Compile cross-source helpers
+        run: |
+          uv run python -m py_compile \
+            scripts/discover_cross_source_coordinates.py \
+            scripts/select_cross_source_proof_cve.py \
+            scripts/build_cross_source_cve_evidence.py
+
+      - name: Verify closeout documentation
+        run: |
+          grep -F "Phase 2.4 | GitHub Security Advisories | ✅ Complete" README.md
+          grep -F "Phase 2.4 | GitHub Security Advisories | ✅ Concluída" README.pt-br.md
+          grep -F "Phase 2.4F — GHSA Cross-source Closeout:     COMPLETE" docs/README.md
+          grep -F "Phase 2.5 — Historical EPSS expansion:       NEXT" docs/README.md
+          grep -F "PHASE_2_4_GHSA_GATE=PASS" docs/labs/phase-2-ghsa-cross-source-closeout.md
