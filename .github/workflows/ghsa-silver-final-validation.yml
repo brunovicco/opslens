@@ -1,0 +1,121 @@
+name: GHSA Silver Final Validation
+
+on:
+  push:
+    branches:
+      - phase-2-ghsa-silver-runtime
+    paths:
+      - ".github/workflows/ghsa-silver-final-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  application:
+    name: GHSA Silver application gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+        with:
+          enable-cache: true
+
+      - name: Verify lock
+        run: uv lock --check
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Run GHSA unit tests
+        run: uv run pytest tests/unit/transformation/ghsa -q
+
+      - name: Run Ruff
+        run: |
+          uv run ruff check \
+            src/opslens/transformation/ghsa \
+            tests/unit/transformation/ghsa \
+            scripts/build_ghsa_silver_lambda_package.py
+
+      - name: Run Pyright
+        run: uv run pyright
+
+  terraform-static:
+    name: GHSA Silver Terraform static gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+
+      - name: Build local Terraform artifact dependencies
+        run: |
+          uv run python scripts/build_lambda_package.py
+          uv run python scripts/build_kev_lambda_package.py
+          uv run python scripts/build_nvd_lambda_package.py
+          uv run python scripts/build_nvd_incremental_lambda_package.py
+          uv run python scripts/build_nvd_analytics_projector_lambda_package.py
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.15.8
+          terraform_wrapper: false
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive infra
+
+      - name: Terraform init without backend
+        run: terraform -chdir=infra/environments/dev init -backend=false -input=false
+
+      - name: Terraform validate
+        run: terraform -chdir=infra/environments/dev validate
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@6e1e0642c0289bd619021bf6b34e3c08ed1e005a # v6.3.0
+        with:
+          tflint_version: v0.64.0
+
+      - name: Initialize TFLint
+        run: tflint --init --config="$GITHUB_WORKSPACE/.tflint.hcl"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Run TFLint
+        run: |
+          tflint \
+            --config="$GITHUB_WORKSPACE/.tflint.hcl" \
+            --chdir=infra/environments/dev \
+            --format=compact
+
+  terraform-security:
+    name: GHSA Silver Terraform security gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Checkov
+        run: python -m pip install --disable-pip-version-check checkov==3.3.9
+
+      - name: Run Checkov
+        run: checkov --directory infra --framework terraform
