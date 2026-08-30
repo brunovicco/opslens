@@ -52,6 +52,7 @@ class S3VersionedHistoricalEpssBronzeObjectReader:
     """Read exact historical EPSS Bronze versions from one data bucket."""
 
     def __init__(self, *, client: S3VersionedGetClient, bucket_name: str) -> None:
+        """Initialize the reader with one exact-version S3 client and bucket."""
         normalized_bucket = bucket_name.strip()
         if not normalized_bucket:
             raise ValueError("Historical EPSS S3 bucket name cannot be empty.")
