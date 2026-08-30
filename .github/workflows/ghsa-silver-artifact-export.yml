@@ -1,0 +1,69 @@
+name: GHSA Silver Canonical Artifact Export
+
+on:
+  push:
+    branches:
+      - phase-2-ghsa-silver-runtime
+    paths:
+      - ".github/workflows/ghsa-silver-artifact-export.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  export-artifact:
+    name: Build and export canonical Linux artifact
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+        with:
+          enable-cache: true
+
+      - name: Verify lock file
+        run: uv lock --check
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Build canonical package twice
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          expected_sha="5740e5b4d7348392a00bada4136622719c0e5c1dee11eef8b2fff19ff45aca54"
+
+          uv run python scripts/build_ghsa_silver_lambda_package.py | tee /tmp/ghsa-build-1.txt
+          first_sha="$(grep '^sha256=' /tmp/ghsa-build-1.txt | cut -d= -f2)"
+
+          uv run python scripts/build_ghsa_silver_lambda_package.py | tee /tmp/ghsa-build-2.txt
+          second_sha="$(grep '^sha256=' /tmp/ghsa-build-2.txt | cut -d= -f2)"
+
+          test -n "$first_sha"
+          test "$first_sha" = "$second_sha"
+          test "$second_sha" = "$expected_sha"
+
+          printf '%s  %s\n' "$second_sha" "opslens-ghsa-silver.zip" > dist/opslens-ghsa-silver.sha256
+
+          echo "canonical_sha256=$second_sha"
+          echo "canonical_artifact=dist/opslens-ghsa-silver.zip"
+
+      - name: Upload canonical deployment bytes
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ghsa-silver-lambda-canonical
+          path: |
+            dist/opslens-ghsa-silver.zip
+            dist/opslens-ghsa-silver.sha256
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
