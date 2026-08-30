@@ -7,6 +7,7 @@ import pytest
 
 from opslens.ingestion.epss.domain.errors import InvalidEpssSnapshotError
 from opslens.ingestion.epss.domain.history import (
+    EpssHistoricalSourceShape,
     EpssModelEra,
     HistoricalEpssSnapshotParser,
 )
@@ -17,8 +18,8 @@ def _gzip(text: str) -> bytes:
     return gzip.compress(text.encode("utf-8"), mtime=0)
 
 
-def test_parses_v1_without_fabricating_unavailable_fields() -> None:
-    """Preserve the real EPSS v1 two-column/no-metadata source shape."""
+def test_parses_early_v1_without_fabricating_unavailable_fields() -> None:
+    """Preserve the real early-v1 two-column/no-metadata source shape."""
     payload = _gzip(
         "cve,epss\n"
         "CVE-2020-5902,0.65117\n"
@@ -31,6 +32,7 @@ def test_parses_v1_without_fabricating_unavailable_fields() -> None:
     )
 
     assert snapshot.model_era is EpssModelEra.V1
+    assert snapshot.source_shape is EpssHistoricalSourceShape.LEGACY_TWO_COLUMN
     assert snapshot.source_metadata_present is False
     assert snapshot.percentile_available is False
     assert snapshot.model_version is None
@@ -39,11 +41,32 @@ def test_parses_v1_without_fabricating_unavailable_fields() -> None:
     assert len(snapshot.sha256) == 64
 
 
-def test_rejects_v1_shape_that_claims_modern_percentile_header() -> None:
-    """Fail closed when a v1 coordinate carries a modern physical header."""
+def test_parses_late_v1_percentile_when_physically_published() -> None:
+    """Preserve the real late-v1 three-column shape without inventing metadata."""
     payload = _gzip(
         "cve,epss,percentile\n"
-        "CVE-2020-5902,0.65117,0.999\n"
+        "CVE-2021-4034,0.04225,0.7411899992581052\n"
+    )
+
+    snapshot = HistoricalEpssSnapshotParser().parse(
+        payload,
+        snapshot_date=date(2022, 2, 3),
+    )
+
+    assert snapshot.model_era is EpssModelEra.V1
+    assert snapshot.source_shape is EpssHistoricalSourceShape.LEGACY_THREE_COLUMN
+    assert snapshot.source_metadata_present is False
+    assert snapshot.percentile_available is True
+    assert snapshot.model_version is None
+    assert snapshot.score_timestamp is None
+    assert snapshot.row_count == 1
+
+
+def test_rejects_unknown_v1_physical_header() -> None:
+    """Fail closed when a v1 coordinate carries an unobserved physical shape."""
+    payload = _gzip(
+        "cve,epss,percentile,extra\n"
+        "CVE-2020-5902,0.65117,0.999,value\n"
     )
 
     with pytest.raises(InvalidEpssSnapshotError, match="v1 CSV header"):
@@ -67,6 +90,7 @@ def test_parses_modern_snapshot_with_source_declared_metadata() -> None:
     )
 
     assert snapshot.model_era is EpssModelEra.V2
+    assert snapshot.source_shape is EpssHistoricalSourceShape.MODERN_METADATA
     assert snapshot.source_metadata_present is True
     assert snapshot.percentile_available is True
     assert snapshot.model_version == "v2022.01.01"
