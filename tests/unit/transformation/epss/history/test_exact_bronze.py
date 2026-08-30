@@ -9,6 +9,7 @@ import pytest
 
 from opslens.transformation.epss.adapters.outbound.s3_history_exact_object import (
     HistoricalEpssS3EvidenceMismatchError,
+    S3VersionedGetResponse,
     S3VersionedHistoricalEpssBronzeObjectReader,
 )
 from opslens.transformation.epss.history.manifest import (
@@ -96,7 +97,7 @@ class FakeS3Client:
         Bucket: str,
         Key: str,
         VersionId: str,
-    ) -> dict[str, object]:
+    ) -> S3VersionedGetResponse:
         """Return one deterministic exact-version S3 response."""
         self.calls.append({"Bucket": Bucket, "Key": Key, "VersionId": VersionId})
         payload = self.objects[(Key, VersionId)]
