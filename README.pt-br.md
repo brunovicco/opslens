@@ -29,11 +29,11 @@ O projeto constrói primeiro evidência determinística, proveniência, correla�
 | Phase 2.1 | CISA KEV Bronze Ingestion | ✅ Concluída |
 | Phase 2.2 | CISA KEV Silver + Analytics | ✅ Concluída |
 | Phase 2.3A–2.3G | NVD / CVE Bronze, Silver, Watermark, Glue + Athena | ✅ Concluída |
-| Phase 2.4 | GitHub Security Advisories | 🚧 Em andamento — Glue/Athena 2.4E concluído; closeout cross-source 2.4F é o próximo gate |
-| Phase 2.5 | Expansão histórica do EPSS | ⏳ Não iniciada |
+| Phase 2.4 | GitHub Security Advisories | ✅ Concluída — Bronze, Silver imutável, Glue/Athena e prova cross-source |
+| Phase 2.5 | Expansão histórica do EPSS | 🚧 Próxima |
 | Phase 3 | Vulnerability Correlation Engine | ⏳ Não iniciada |
 
-O caminho determinístico de evidência do NVD está completo desde a ingestão imutável da fonte até Silver versionado, promoção do watermark autoritativo, projeção analítica permanente, AWS Glue e consultas Athena com custo limitado. O caminho GHSA agora está concluído até a ingestão Bronze de advisories reviewed, o runtime Silver imutável por versão de conteúdo, uma tabela Glue explícita sobre os bytes Silver autoritativos e consultas Athena limitadas por custo sobre evidência nested. O milestone atual do roadmap é a Phase 2.4F — evidência determinística cross-source e closeout de GHSA.
+O caminho determinístico de evidência do NVD está completo desde a ingestão imutável da fonte até Silver versionado, promoção do watermark autoritativo, projeção analítica permanente, AWS Glue e consultas Athena com custo limitado. O caminho GHSA está completo até a ingestão Bronze de advisories reviewed, o runtime Silver imutável por versão de conteúdo, uma tabela Glue explícita sobre os bytes Silver autoritativos, consultas Athena limitadas por custo sobre evidência nested e uma prova cross-source real entre NVD, CISA KEV, FIRST EPSS e GHSA. O milestone atual do roadmap é a Phase 2.5 — expansão histórica do EPSS.
 
 ## Arquitetura atual
 
@@ -203,7 +203,7 @@ opslens_dev.ghsa_advisory_versions
 Amazon Athena
 ```
 
-A Phase 2.4D comprovou end to end um attempt Bronze real com 10 advisories. Foram criados dez objetos Parquet autoritativos de uma linha e um manifest Silver COMPLETE; o replay criou zero novas versões S3. A Phase 2.4E então expôs a relação Silver autoritativa diretamente por `opslens_dev.ghsa_advisory_versions`: o Athena reproduziu 10 versões de conteúdo únicas, 18 entradas de vulnerabilidade, evidência nested estruturalmente válida, sete placeholders CVSS v4 indisponíveis sem violações de normalização tipada e scans muito abaixo do cutoff de 10 MiB. A aplicabilidade de package/version permanece trabalho determinístico da Phase 3.
+A Phase 2.4D comprovou end to end um attempt Bronze real com 10 advisories. Foram criados dez objetos Parquet autoritativos de uma linha e um manifest Silver COMPLETE; o replay criou zero novas versões S3. A Phase 2.4E então expôs a relação Silver autoritativa diretamente por `opslens_dev.ghsa_advisory_versions`: o Athena reproduziu 10 versões de conteúdo únicas, 18 entradas de vulnerabilidade, evidência nested estruturalmente válida, sete placeholders CVSS v4 indisponíveis sem violações de normalização tipada e scans muito abaixo do cutoff de 10 MiB. A Phase 2.4F fechou o milestone com `CVE-2026-42350`: uma observação NVD, ausência KEV explícita no snapshot `2026-08-29`, EPSS `0.00312` no percentil `0.23543` no snapshot `2026-08-30`, uma versão exata de advisory GHSA e quatro ranges publicados para pacote Go com quatro first-patched versions. A aplicabilidade de package/version permanece trabalho determinístico da Phase 3.
 
 ## Princípios
 
