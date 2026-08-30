@@ -162,6 +162,66 @@ def test_unknown_cvss_family_is_preserved_in_canonical_source_json() -> None:
     assert len(result.cvss_severities.metrics) == 2
 
 
+def test_empty_known_cvss_vector_is_preserved_without_typed_metric() -> None:
+    """Treat a present-but-empty GitHub CVSS family as unavailable evidence."""
+    source = _source_collections()
+    severities = _object_dict(source["cvss_severities"])
+    cvss_v4 = _object_dict(severities["cvss_v4"])
+    cvss_v4["vector_string"] = ""
+    cvss_v4["score"] = 0.0
+
+    result = GhsaAdvisoryCollectionsTransformer().transform(source)
+    persisted = cast(
+        dict[str, object],
+        json.loads(result.cvss_severities.canonical_json),
+    )
+
+    assert tuple(metric.family for metric in result.cvss_severities.metrics) == (
+        GhsaCvssFamily.V3,
+    )
+    assert persisted["cvss_v4"] == {
+        "score": 0.0,
+        "vector_string": "",
+    }
+
+
+def test_null_known_cvss_vector_and_score_are_preserved_without_typed_metric() -> None:
+    """Preserve a nullable unavailable CVSS family without inventing a metric."""
+    source = _source_collections()
+    severities = _object_dict(source["cvss_severities"])
+    cvss_v4 = _object_dict(severities["cvss_v4"])
+    cvss_v4["vector_string"] = None
+    cvss_v4["score"] = None
+
+    result = GhsaAdvisoryCollectionsTransformer().transform(source)
+    persisted = cast(
+        dict[str, object],
+        json.loads(result.cvss_severities.canonical_json),
+    )
+
+    assert tuple(metric.family for metric in result.cvss_severities.metrics) == (
+        GhsaCvssFamily.V3,
+    )
+    assert persisted["cvss_v4"] == {
+        "score": None,
+        "vector_string": None,
+    }
+
+
+def test_non_string_known_cvss_vector_fails_closed() -> None:
+    """Reject non-string non-null vectors for a known CVSS family."""
+    source = _source_collections()
+    severities = _object_dict(source["cvss_severities"])
+    cvss_v4 = _object_dict(severities["cvss_v4"])
+    cvss_v4["vector_string"] = 4
+
+    with pytest.raises(
+        InvalidGhsaAdvisoryCollectionsError,
+        match="must be a string or null",
+    ):
+        GhsaAdvisoryCollectionsTransformer().transform(source)
+
+
 def test_malformed_known_cvss_score_fails_closed() -> None:
     """Reject malformed structures for CVSS families the contract understands."""
     source = _source_collections()
@@ -172,6 +232,20 @@ def test_malformed_known_cvss_score_fails_closed() -> None:
     with pytest.raises(
         InvalidGhsaAdvisoryCollectionsError,
         match="must be numeric",
+    ):
+        GhsaAdvisoryCollectionsTransformer().transform(source)
+
+
+def test_present_known_cvss_vector_requires_numeric_score() -> None:
+    """Reject a typed CVSS observation when its score is unavailable."""
+    source = _source_collections()
+    severities = _object_dict(source["cvss_severities"])
+    cvss_v4 = _object_dict(severities["cvss_v4"])
+    cvss_v4["score"] = None
+
+    with pytest.raises(
+        InvalidGhsaAdvisoryCollectionsError,
+        match="must be numeric when vector_string is present",
     ):
         GhsaAdvisoryCollectionsTransformer().transform(source)
 
