@@ -19,16 +19,23 @@ jobs:
         with:
           ref: phase-2-ghsa-cross-source-closeout
 
-      - name: Correct Portuguese architecture needle
+      - name: Correct Portuguese architecture replacement block
         run: |
           python - <<'PY'
           from pathlib import Path
           path = Path("scripts/_tmp_patch_phase_2_4f_closeout_docs.py")
           text = path.read_text()
-          old = "- catálogo Glue explícito de GHSA sobre Silver autoritativo e analytics Athena com custo limitado sobre evidência nested;"
-          new = "- catálogo Glue explícito para GHSA sobre Silver autoritativo e analytics nested no Athena com custo limitado;"
-          if text.count(old) != 1:
-              raise RuntimeError(f"expected one temporary PT-BR needle, found {text.count(old)}")
+          old = '''        (
+            "- catálogo Glue explícito de GHSA sobre Silver autoritativo e analytics Athena com custo limitado sobre evidência nested;",
+            "- catálogo Glue explícito de GHSA sobre Silver autoritativo e analytics Athena com custo limitado sobre evidência nested;\\n- evidência cross-source determinística centrada em CVE entre NVD, CISA KEV, FIRST EPSS e GHSA com coordenadas temporais explícitas por fonte;",
+        ),'''
+          new = '''        (
+            "- catálogo Glue explícito para GHSA sobre Silver autoritativo e analytics nested no Athena com custo limitado;",
+            "- catálogo Glue explícito para GHSA sobre Silver autoritativo e analytics nested no Athena com custo limitado;\\n- evidência cross-source determinística centrada em CVE entre NVD, CISA KEV, FIRST EPSS e GHSA com coordenadas temporais explícitas por fonte;",
+        ),'''
+          count = text.count(old)
+          if count != 1:
+              raise RuntimeError(f"expected one PT-BR tuple block, found {count}")
           path.write_text(text.replace(old, new, 1))
           PY
 
