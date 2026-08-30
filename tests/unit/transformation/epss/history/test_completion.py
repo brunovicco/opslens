@@ -9,6 +9,7 @@ import pytest
 from opslens.ingestion.epss.domain.history import EpssModelEra
 from opslens.transformation.epss.history.completion import (
     HistoricalEpssCompletionAlreadyExistsError,
+    HistoricalEpssCompletionArtifactV1,
     HistoricalEpssCompletionManifestFactoryV1,
     HistoricalEpssCompletionReplayStatus,
     HistoricalEpssCompletionStoredObjectV1,
@@ -133,9 +134,14 @@ class FakeRepository:
     """Create completion or signal that exact replay verification is required."""
 
     def __init__(self, *, already_exists: bool = False) -> None:
+        """Initialize deterministic repository behavior."""
         self.already_exists = already_exists
 
-    def put_if_absent(self, *, artifact):  # type: ignore[no-untyped-def]
+    def put_if_absent(
+        self,
+        *,
+        artifact: HistoricalEpssCompletionArtifactV1,
+    ) -> HistoricalEpssCompletionStoredObjectV1:
         """Return exact create evidence or force replay path."""
         if self.already_exists:
             raise HistoricalEpssCompletionAlreadyExistsError("exists")
@@ -150,7 +156,11 @@ class FakeRepository:
 class FakeReplayVerifier:
     """Return exact verified completion replay evidence."""
 
-    def verify_current(self, *, artifact):  # type: ignore[no-untyped-def]
+    def verify_current(
+        self,
+        *,
+        artifact: HistoricalEpssCompletionArtifactV1,
+    ) -> HistoricalEpssCompletionStoredObjectV1:
         """Return exact current-version evidence."""
         return HistoricalEpssCompletionStoredObjectV1(
             key=artifact.key,
