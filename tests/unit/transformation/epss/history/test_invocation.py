@@ -74,6 +74,7 @@ class FakeBronzeReader:
     """Return exact Bronze evidence and record ordering."""
 
     def __init__(self, calls: list[str]) -> None:
+        """Initialize call-order capture."""
         self.calls = calls
 
     def execute(
@@ -93,6 +94,7 @@ class FakePreparer:
     """Prepare deterministic Silver bytes and record ordering."""
 
     def __init__(self, calls: list[str]) -> None:
+        """Initialize call-order capture."""
         self.calls = calls
 
     def execute(
@@ -116,6 +118,7 @@ class FakeSilverPersistence:
     """Persist deterministic Silver and record ordering."""
 
     def __init__(self, calls: list[str]) -> None:
+        """Initialize call-order capture."""
         self.calls = calls
 
     def execute(
@@ -143,6 +146,7 @@ class FakeCompletionFactory:
     """Build deterministic completion evidence and record ordering."""
 
     def __init__(self, calls: list[str]) -> None:
+        """Initialize call-order capture and deterministic factory."""
         self.calls = calls
         self.delegate = HistoricalEpssCompletionManifestFactoryV1()
 
@@ -161,6 +165,7 @@ class FakeCompletionPersistence:
     """Persist completion last and record ordering."""
 
     def __init__(self, calls: list[str]) -> None:
+        """Initialize call-order capture."""
         self.calls = calls
 
     def execute(
@@ -180,7 +185,11 @@ class FakeCompletionPersistence:
         )
 
 
-def _service(calls: list[str], *, forward_date: date = date(2026, 8, 15)) -> ExecuteHistoricalEpssInvocationV1:
+def _service(
+    calls: list[str],
+    *,
+    forward_date: date = date(2026, 8, 15),
+) -> ExecuteHistoricalEpssInvocationV1:
     """Build explicit invocation composition with deterministic fakes."""
     return ExecuteHistoricalEpssInvocationV1(
         parser=HistoricalEpssInvocationParserV1(approved_archive_commit=COMMIT),
