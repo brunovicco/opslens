@@ -1,7 +1,9 @@
 """Historical FIRST EPSS source models and compatibility parser."""
 
+import csv
 import gzip
 import hashlib
+import io
 from dataclasses import dataclass
 from datetime import date, datetime
 from enum import StrEnum
@@ -48,17 +50,27 @@ class EpssModelEra(StrEnum):
         }[self]
 
 
+class EpssHistoricalSourceShape(StrEnum):
+    """Represent physical CSV shapes observed in the pinned EPSS archive."""
+
+    LEGACY_TWO_COLUMN = "legacy_two_column"
+    LEGACY_THREE_COLUMN = "legacy_three_column"
+    MODERN_METADATA = "modern_metadata"
+
+
 @dataclass(frozen=True, slots=True)
 class HistoricalEpssSnapshot:
     """Represent one validated historical EPSS archive snapshot.
 
-    Source-declared metadata remains nullable because EPSS v1 files contain
-    neither the metadata comment nor a percentile column.
+    Source-declared metadata remains nullable because EPSS v1 files do not
+    contain the modern metadata comment. Early v1 files also omit percentile,
+    while later pre-v2 files can physically contain a percentile column.
     """
 
     raw_bytes: bytes
     snapshot_date: date
     model_era: EpssModelEra
+    source_shape: EpssHistoricalSourceShape
     source_metadata_present: bool
     model_version: str | None
     score_timestamp: datetime | None
@@ -88,16 +100,29 @@ class HistoricalEpssSnapshot:
             )
 
         if self.model_era is EpssModelEra.V1:
-            if self.source_metadata_present or self.percentile_available:
-                raise ValueError("EPSS v1 must not claim metadata or percentile availability.")
-        elif not self.source_metadata_present or not self.percentile_available:
-            raise ValueError("Modern EPSS snapshots require metadata and percentile values.")
+            if self.source_metadata_present:
+                raise ValueError("EPSS v1 must not claim modern source metadata.")
+            if self.source_shape is EpssHistoricalSourceShape.MODERN_METADATA:
+                raise ValueError("EPSS v1 cannot use the modern metadata source shape.")
+            expected_percentile = (
+                self.source_shape is EpssHistoricalSourceShape.LEGACY_THREE_COLUMN
+            )
+            if self.percentile_available is not expected_percentile:
+                raise ValueError(
+                    "EPSS v1 percentile availability must match the physical source header."
+                )
+        else:
+            if self.source_shape is not EpssHistoricalSourceShape.MODERN_METADATA:
+                raise ValueError("EPSS v2+ snapshots require the modern metadata source shape.")
+            if not self.source_metadata_present or not self.percentile_available:
+                raise ValueError("Modern EPSS snapshots require metadata and percentile values.")
 
 
 class HistoricalEpssSnapshotParser:
-    """Parse immutable EPSS archive bytes across v1 and modern source shapes."""
+    """Parse immutable EPSS archive bytes across legacy and modern shapes."""
 
-    LEGACY_HEADER = "cve,epss"
+    LEGACY_TWO_COLUMN_HEADER = ("cve", "epss")
+    LEGACY_THREE_COLUMN_HEADER = ("cve", "epss", "percentile")
 
     def __init__(self, modern_parser: EpssSnapshotParser | None = None) -> None:
         """Initialize with the proven current-snapshot parser for v2+ files."""
@@ -132,6 +157,7 @@ class HistoricalEpssSnapshotParser:
             raw_bytes=payload,
             snapshot_date=snapshot_date,
             model_era=model_era,
+            source_shape=EpssHistoricalSourceShape.MODERN_METADATA,
             source_metadata_present=True,
             model_version=snapshot.model_version,
             score_timestamp=snapshot.score_timestamp,
@@ -142,7 +168,7 @@ class HistoricalEpssSnapshotParser:
 
     @classmethod
     def _parse_v1(cls, *, payload: bytes, snapshot_date: date) -> HistoricalEpssSnapshot:
-        """Parse the legacy two-column EPSS v1 physical source contract."""
+        """Parse an observed metadata-free EPSS v1 physical source contract."""
         try:
             decompressed = gzip.decompress(payload)
         except (gzip.BadGzipFile, EOFError, OSError) as exc:
@@ -151,44 +177,61 @@ class HistoricalEpssSnapshotParser:
             ) from exc
 
         try:
-            text = decompressed.decode("utf-8")
+            text_stream = io.StringIO(decompressed.decode("utf-8"), newline="")
         except UnicodeDecodeError as exc:
             raise InvalidEpssSnapshotError(
                 "Historical EPSS v1 snapshot is not valid UTF-8."
             ) from exc
 
-        lines = text.splitlines()
-        if not lines:
-            raise InvalidEpssSnapshotError("Historical EPSS v1 snapshot is empty.")
+        reader = csv.reader(text_stream)
+        header = next(reader, None)
+        header_tuple = tuple(header or ())
 
-        header = lines[0].strip()
-        if header != cls.LEGACY_HEADER:
+        if header_tuple == cls.LEGACY_TWO_COLUMN_HEADER:
+            source_shape = EpssHistoricalSourceShape.LEGACY_TWO_COLUMN
+            percentile_available = False
+        elif header_tuple == cls.LEGACY_THREE_COLUMN_HEADER:
+            source_shape = EpssHistoricalSourceShape.LEGACY_THREE_COLUMN
+            percentile_available = True
+        else:
             raise InvalidEpssSnapshotError(
-                "Unexpected historical EPSS v1 CSV header. "
-                f"Expected {cls.LEGACY_HEADER!r}, received {header!r}."
+                "Unexpected historical EPSS v1 CSV header. Expected one of "
+                f"{cls.LEGACY_TWO_COLUMN_HEADER!r} or "
+                f"{cls.LEGACY_THREE_COLUMN_HEADER!r}, received {header_tuple!r}."
             )
 
-        data_rows = [line for line in lines[1:] if line.strip()]
-        if not data_rows:
+        row_count = 0
+        expected_columns = len(header_tuple)
+
+        try:
+            for line_number, row in enumerate(reader, start=2):
+                if not row or all(not value.strip() for value in row):
+                    continue
+                if len(row) != expected_columns:
+                    raise InvalidEpssSnapshotError(
+                        f"Malformed historical EPSS v1 row at line {line_number}: "
+                        f"expected exactly {expected_columns} columns."
+                    )
+                row_count += 1
+        except csv.Error as exc:
+            raise InvalidEpssSnapshotError(
+                "Historical EPSS v1 snapshot contains malformed CSV."
+            ) from exc
+
+        if row_count <= 0:
             raise InvalidEpssSnapshotError(
                 "Historical EPSS v1 snapshot does not contain data rows."
             )
-
-        for line_number, line in enumerate(data_rows, start=2):
-            if len(line.split(",")) != 2:
-                raise InvalidEpssSnapshotError(
-                    f"Malformed historical EPSS v1 row at line {line_number}: "
-                    "expected exactly two columns."
-                )
 
         return HistoricalEpssSnapshot(
             raw_bytes=payload,
             snapshot_date=snapshot_date,
             model_era=EpssModelEra.V1,
+            source_shape=source_shape,
             source_metadata_present=False,
             model_version=None,
             score_timestamp=None,
             sha256=hashlib.sha256(payload).hexdigest(),
-            row_count=len(data_rows),
-            percentile_available=False,
+            row_count=row_count,
+            percentile_available=percentile_available,
         )
