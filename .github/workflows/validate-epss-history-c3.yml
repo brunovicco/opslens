@@ -1,0 +1,54 @@
+name: Validate EPSS History 2.5C-3
+
+on:
+  push:
+    branches:
+      - phase-2-epss-history
+    paths:
+      - ".github/workflows/validate-epss-history-c3.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Validate lockfile
+        run: uv lock --check
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Ruff
+        run: |
+          uv run ruff check \
+            src/opslens/transformation/epss/history \
+            src/opslens/transformation/epss/adapters/outbound/s3_history_exact_object.py \
+            tests/unit/transformation/epss/history
+
+      - name: Pyright
+        run: uv run pyright
+
+      - name: Exact Bronze boundary tests
+        run: uv run pytest -q tests/unit/transformation/epss/history
+
+      - name: Gate marker
+        run: |
+          echo "EPSS_HISTORY_EXACT_MANIFEST_VERSION_READ_GATE=PASS"
+          echo "EPSS_HISTORY_EXACT_SOURCE_VERSION_READ_GATE=PASS"
+          echo "EPSS_HISTORY_MANIFEST_COORDINATE_VALIDATION_GATE=PASS"
+          echo "EPSS_HISTORY_SOURCE_SHA_BINDING_GATE=PASS"
+          echo "EPSS_HISTORY_GIT_BLOB_IDENTITY_BINDING_GATE=PASS"
+          echo "EPSS_2_5C3_GATE=PASS"
