@@ -18,7 +18,7 @@ The deployed Phase 2.3E/2.3F NVD runtime architecture and its real AWS evidence 
 
 The current implementation includes AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze, incremental CVE API Bronze, versioned NVD Silver, deployed Incremental/Silver/Promotion runtimes, the authoritative watermark boundary, EventBridge Scheduler, runtime IAM separation, idempotency, observability, bounded failure recovery, the permanent NVD Glue/Athena analytics projection path, and immutable content-addressed deployment artifacts for all deployed Lambda runtimes.
 
-Phase 2.4A completed the GitHub Security Advisory source/synchronization contract, Phase 2.4B froze deterministic advisory-content identity and Silver schema v1, Phase 2.4C proved the reviewed-only GHSA Bronze AWS runtime, and Phase 2.4D proved immutable advisory-version Silver persistence with exact Bronze VersionIds, deterministic one-row Parquet content objects, COMPLETE provenance, least-privilege IAM, and zero-new-version replay. Phase 2.4E — GHSA Glue/Athena Analytics — is next.
+Phase 2.4A completed the GitHub Security Advisory source/synchronization contract, Phase 2.4B froze deterministic advisory-content identity and Silver schema v1, Phase 2.4C proved the reviewed-only GHSA Bronze AWS runtime, Phase 2.4D proved immutable advisory-version Silver persistence with exact Bronze VersionIds and zero-new-version replay, and Phase 2.4E exposed that authoritative Silver relation directly through an explicit Glue table and bounded Athena queries. Phase 2.4F — cross-source deterministic evidence and GHSA closeout — is next.
 
 ## Architecture Decision Records
 
@@ -83,6 +83,8 @@ Phase 2:
 - [`phase-2-ghsa-lambda-contract.md`](labs/phase-2-ghsa-lambda-contract.md) — manual Bronze Lambda invocation and deployment-artifact contract.
 - [`phase-2-ghsa-manual-dev-runtime.md`](labs/phase-2-ghsa-manual-dev-runtime.md) — real Phase 2.4C AWS Bronze proof and replay evidence.
 - [`phase-2-ghsa-silver-runtime-closeout.md`](labs/phase-2-ghsa-silver-runtime-closeout.md) — completed Phase 2.4D exact Bronze-to-Silver runtime, immutable content objects, COMPLETE provenance, CVSS placeholder refinement, Terraform deployment, and zero-new-version replay proof.
+- [`phase-2-ghsa-glue-athena-design.md`](labs/phase-2-ghsa-glue-athena-design.md) — selected Phase 2.4E direct-Silver analytics boundary, explicit schema, zero-partition v1 table, cost boundary, and current-state semantics.
+- [`phase-2-ghsa-glue-athena-closeout.md`](labs/phase-2-ghsa-glue-athena-closeout.md) — completed Phase 2.4E Glue deployment and real Athena evidence for exact content identity, nested package/CWE/CVSS structures, CVSS placeholder preservation, and bounded scans.
 
 Cross-phase infrastructure closeout:
 
@@ -108,12 +110,12 @@ Phase 2.4A — GHSA Source Contract:           COMPLETE
 Phase 2.4B — GHSA Advisory/Silver Contract:  COMPLETE
 Phase 2.4C — GHSA Bronze:                    COMPLETE
 Phase 2.4D — GHSA Silver Runtime:            COMPLETE
-Phase 2.4E — GHSA Glue/Athena Analytics:     NEXT
-Phase 2.4F — GHSA Cross-source Closeout:     NOT STARTED
+Phase 2.4E — GHSA Glue/Athena Analytics:     COMPLETE
+Phase 2.4F — GHSA Cross-source Closeout:     NEXT
 Phase 2.5 — Historical EPSS expansion:       NOT STARTED
 Phase 3 — Vulnerability Correlation Engine:  NOT STARTED
 ```
 
 Phase 2.4D is complete. `observed_advisory_version_id` remains exact advisory content identity and is distinct from Bronze `sync_id`, physical `attempt_id`, and occurrence position. Exact Bronze provenance now binds deterministically to one-row immutable Silver content objects and an attempt-level COMPLETE manifest.
 
-Phase 2.4E — GHSA Glue/Athena Analytics — is next. Phase 2 remains open; GHSA analytics/cross-source exit criteria and historical EPSS expansion must still pass or be explicitly deferred before Phase 3 begins.
+Phase 2.4E — GHSA Glue/Athena Analytics — is complete. The authoritative one-row Silver Parquets are now queryable directly through `opslens_dev.ghsa_advisory_versions`; real Athena proofs returned 10/10 unique content versions, 18 vulnerability entries, structurally valid nested evidence, seven unavailable CVSS v4 placeholders with zero fabricated typed metrics, and scans of 6,035 and 72,077 bytes. Phase 2.4F is next. Phase 2 remains open; cross-source exit criteria and historical EPSS expansion must still pass or be explicitly deferred before Phase 3 begins.

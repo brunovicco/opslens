@@ -29,11 +29,11 @@ O projeto constrói primeiro evidência determinística, proveniência, correla�
 | Phase 2.1 | CISA KEV Bronze Ingestion | ✅ Concluída |
 | Phase 2.2 | CISA KEV Silver + Analytics | ✅ Concluída |
 | Phase 2.3A–2.3G | NVD / CVE Bronze, Silver, Watermark, Glue + Athena | ✅ Concluída |
-| Phase 2.4 | GitHub Security Advisories | 🚧 Em andamento — runtime Silver 2.4D concluído; Glue/Athena 2.4E é o próximo gate |
+| Phase 2.4 | GitHub Security Advisories | 🚧 Em andamento — Glue/Athena 2.4E concluído; closeout cross-source 2.4F é o próximo gate |
 | Phase 2.5 | Expansão histórica do EPSS | ⏳ Não iniciada |
 | Phase 3 | Vulnerability Correlation Engine | ⏳ Não iniciada |
 
-O caminho determinístico de evidência do NVD está completo desde a ingestão imutável da fonte até Silver versionado, promoção do watermark autoritativo, projeção analítica permanente, AWS Glue e consultas Athena com custo limitado. O caminho GHSA agora está concluído até a ingestão Bronze de advisories reviewed e o runtime Silver imutável de versões de advisory, com proveniência por VersionId exato do S3 e evidência COMPLETE segura para replay. O milestone atual do roadmap é a Phase 2.4E — GHSA Glue/Athena Analytics.
+O caminho determinístico de evidência do NVD está completo desde a ingestão imutável da fonte até Silver versionado, promoção do watermark autoritativo, projeção analítica permanente, AWS Glue e consultas Athena com custo limitado. O caminho GHSA agora está concluído até a ingestão Bronze de advisories reviewed, o runtime Silver imutável por versão de conteúdo, uma tabela Glue explícita sobre os bytes Silver autoritativos e consultas Athena limitadas por custo sobre evidência nested. O milestone atual do roadmap é a Phase 2.4F — evidência determinística cross-source e closeout de GHSA.
 
 ## Arquitetura atual
 
@@ -194,9 +194,16 @@ por observed_advisory_version_id
         v
 manifest Silver COMPLETE
   ocorrência -> VersionId exato do conteúdo
+        |
+        v
+AWS Glue Data Catalog
+opslens_dev.ghsa_advisory_versions
+        |
+        v
+Amazon Athena
 ```
 
-A Phase 2.4D comprovou end to end um attempt Bronze real com 10 advisories. Foram criados dez objetos Parquet autoritativos de uma linha e um manifest Silver COMPLETE. Uma segunda invocação reproduziu as mesmas identidades e criou zero novas versões S3. A aplicabilidade de package/version permanece trabalho determinístico da Phase 3.
+A Phase 2.4D comprovou end to end um attempt Bronze real com 10 advisories. Foram criados dez objetos Parquet autoritativos de uma linha e um manifest Silver COMPLETE; o replay criou zero novas versões S3. A Phase 2.4E então expôs a relação Silver autoritativa diretamente por `opslens_dev.ghsa_advisory_versions`: o Athena reproduziu 10 versões de conteúdo únicas, 18 entradas de vulnerabilidade, evidência nested estruturalmente válida, sete placeholders CVSS v4 indisponíveis sem violações de normalização tipada e scans muito abaixo do cutoff de 10 MiB. A aplicabilidade de package/version permanece trabalho determinístico da Phase 3.
 
 ## Princípios
 
@@ -428,7 +435,7 @@ A arquitetura evita serviços que ainda não resolvem um requisito demonstrado.
 
 Exemplos atuais:
 
-- nenhum Glue crawler para EPSS, KEV ou NVD;
+- nenhum Glue crawler para EPSS, KEV, NVD ou GHSA;
 - nenhum requisito de Step Functions no data plane atual;
 - nenhum DynamoDB para idempotência;
 - nenhum requisito de Iceberg neste estágio;
@@ -499,7 +506,7 @@ Phase 2.5  Historical EPSS                                     NOT STARTED
 Phase 3    Vulnerability Correlation Engine                    NOT STARTED
 ```
 
-A Phase 2.4A — GHSA Source Contract & Workload Spike é o próximo gate de implementação. A expansão histórica do EPSS vem depois, antes do encerramento da Phase 2. A aplicabilidade de vulnerabilidade para package/version permanece um trabalho determinístico da Phase 3 e não é delegada a um LLM.
+A Phase 2.4E — GHSA Glue/Athena Analytics está concluída. A Phase 2.4F — evidência determinística cross-source e closeout de GHSA — é o próximo gate de implementação. A expansão histórica do EPSS vem depois, antes do encerramento da Phase 2. A aplicabilidade de vulnerabilidade para package/version permanece um trabalho determinístico da Phase 3 e não é delegada a um LLM.
 
 Os padrões comprovados são reutilizados quando apropriado, mas nenhuma fonte é forçada a seguir um desenho genérico de ingestão quando suas semânticas são diferentes.
 

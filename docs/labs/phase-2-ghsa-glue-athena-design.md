@@ -2,7 +2,7 @@
 
 _Date started: 2026-08-30_
 
-_Status: SELECTED FOR IMPLEMENTATION_
+_Status: COMPLETE — live Glue deployment and bounded Athena proof passed on 2026-08-30_
 
 ## Purpose
 
@@ -362,13 +362,13 @@ Those are deterministic Phase 3 correlation decisions.
 ## Implementation sequence
 
 ```text
-2.4E-1  freeze direct-Silver analytics contract                 COMPLETE by this document
-2.4E-2  add explicit Glue ghsa_advisory_versions table
-2.4E-3  static Terraform/schema validation
-2.4E-4  live Terraform plan/apply
-2.4E-5  deterministic Athena query + PyArrow equivalence proof
-2.4E-6  cost/cardinality/nested-evidence proof
-2.4E-7  closeout and handoff to 2.4F
+2.4E-1  freeze direct-Silver analytics contract                 COMPLETE
+2.4E-2  add explicit Glue ghsa_advisory_versions table            COMPLETE
+2.4E-3  static Terraform/schema validation                         COMPLETE
+2.4E-4  live Terraform plan/apply                                  COMPLETE
+2.4E-5  deterministic Athena query / exact Silver identity proof   COMPLETE
+2.4E-6  cost/cardinality/nested-evidence/CVSS proof                COMPLETE
+2.4E-7  closeout and handoff to 2.4F                               COMPLETE
 ```
 
 ## Gates
@@ -381,9 +381,22 @@ GHSA_ANALYTICS_NO_PROJECTOR_GATE=PASS
 GHSA_ANALYTICS_EXPLICIT_SCHEMA_GATE=PASS
 GHSA_ANALYTICS_NO_CURRENT_STATE_INFERENCE_GATE=PASS
 GHSA_2_4E_1_GATE=PASS
+GHSA_ANALYTICS_GLUE_SCHEMA_STATIC_GATE=PASS
+GHSA_ANALYTICS_NO_PARTITION_GATE=PASS
+GHSA_ANALYTICS_DEPLOYMENT_IAM_STATIC_GATE=PASS
+GHSA_ANALYTICS_BOOTSTRAP_LIVE_PLAN_GATE=PASS
+GHSA_ANALYTICS_BOOTSTRAP_LIVE_APPLY_GATE=PASS
+GHSA_ANALYTICS_DEV_LIVE_PLAN_GATE=PASS
+GHSA_ANALYTICS_DEV_LIVE_APPLY_GATE=PASS
+GHSA_ANALYTICS_ATHENA_BASE_QUERY_GATE=PASS
+GHSA_ANALYTICS_ATHENA_IDENTITY_GATE=PASS
+GHSA_ANALYTICS_ATHENA_COST_GATE=PASS
+GHSA_ANALYTICS_COMPLEX_TYPES_GATE=PASS
+GHSA_ANALYTICS_CVSS_SEMANTIC_GATE=PASS
+GHSA_2_4E_GATE=PASS
 ```
 
-Phase 2.4E overall remains open until the real Glue/Athena proof passes.
+Real proof is recorded in `phase-2-ghsa-glue-athena-closeout.md`. Phase 2.4F is the next authorized GHSA gate.
 
 ## References
 
