@@ -1,6 +1,6 @@
 # Phase 2.5C — Historical EPSS Bronze/Silver Evidence Design
 
-Status: **2.5C-1 DESIGN COMPLETE; 2.5C-2 PARSER/SCHEMA COMPLETE; 2.5C-3 NEXT**
+Status: **2.5C-1 DESIGN COMPLETE; 2.5C-2 PARSER/SCHEMA COMPLETE; 2.5C-3 EXACT BRONZE VERSION BOUNDARY COMPLETE; 2.5C-4 NEXT**
 
 ## Purpose
 
@@ -273,7 +273,7 @@ For an EPSS v1 row:
 
 ```text
 cve             = exact source CVE
-EPSs            = exact source score
+epss            = exact source score
 percentile      = NULL
 model_version   = NULL
 score_timestamp = NULL
@@ -465,10 +465,10 @@ No GenAI service is introduced because none is required for this deterministic d
   STATUS: COMPLETE
 
 2.5C-3 — exact historical Bronze manifest reader + VersionId boundary
-  STATUS: NEXT
+  STATUS: COMPLETE
 
 2.5C-4 — deterministic Silver persistence + verified replay
-  STATUS: NOT STARTED
+  STATUS: NEXT
 
 2.5C-5 — completion evidence + strict explicit invocation composition
   STATUS: NOT STARTED
@@ -510,6 +510,22 @@ EPSS_HISTORY_UNIT_TEST_GATE=PASS
 EPSS_2_5C2_GATE=PASS
 ```
 
+## 2.5C-3 gates
+
+The exact historical Bronze authority boundary is implemented and was validated successfully in CI before the temporary C3 validation workflow was removed.
+
+```text
+EPSS_HISTORY_EXACT_MANIFEST_VERSION_READ_GATE=PASS
+EPSS_HISTORY_EXACT_SOURCE_VERSION_READ_GATE=PASS
+EPSS_HISTORY_MANIFEST_COORDINATE_VALIDATION_GATE=PASS
+EPSS_HISTORY_SOURCE_SHA_BINDING_GATE=PASS
+EPSS_HISTORY_GIT_BLOB_IDENTITY_BINDING_GATE=PASS
+EPSS_HISTORY_C3_FINAL_NARROWING_GATE=PASS
+EPSS_2_5C3_GATE=PASS
+```
+
+C3 proves that historical transformation authority is the exact manifest `VersionId`, which in turn binds the exact source object `VersionId`, source SHA-256, Git blob identity, archive path, snapshot date, and model era. It does not create historical Bronze objects in AWS and does not authorize bulk backfill.
+
 ## Next authorized step
 
-Implement only **2.5C-3**: the exact historical Bronze manifest reader and S3 `VersionId` authority boundary. Do not create historical Bronze objects in AWS and do not start bulk backfill yet.
+Implement only **2.5C-4**: deterministic Silver persistence with exact `VersionId` capture and byte-for-byte verified replay at the deterministic Silver key. Do not implement completion manifests, create historical Bronze objects in AWS, or start bulk backfill yet.
