@@ -118,7 +118,10 @@ def _client_error(*, status_code: int, error_code: str) -> ClientError:
     )
 
 
-def _repository(client: FakeS3Client, telemetry: FakeTelemetry | None = None) -> S3HistoricalEpssSilverRepository:
+def _repository(
+    client: FakeS3Client,
+    telemetry: FakeTelemetry | None = None,
+) -> S3HistoricalEpssSilverRepository:
     """Build the historical Silver repository with deterministic fakes."""
     return S3HistoricalEpssSilverRepository(
         client=client,
