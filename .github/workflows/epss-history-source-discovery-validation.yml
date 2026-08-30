@@ -6,6 +6,7 @@ on:
       - phase-2-epss-history
     paths:
       - ".github/workflows/epss-history-source-discovery-validation.yml"
+      - "scripts/discover_epss_history_source.py"
 
 permissions:
   contents: read
