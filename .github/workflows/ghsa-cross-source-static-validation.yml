@@ -1,0 +1,35 @@
+name: GHSA Cross-source Static Validation
+
+on:
+  push:
+    branches:
+      - phase-2-ghsa-cross-source-closeout
+    paths:
+      - ".github/workflows/ghsa-cross-source-static-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Ruff discovery helper
+        run: uv run ruff check scripts/discover_cross_source_coordinates.py
+
+      - name: Compile discovery helper
+        run: uv run python -m py_compile scripts/discover_cross_source_coordinates.py
