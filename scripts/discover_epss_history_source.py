@@ -82,6 +82,7 @@ class GitHubReader:
     """Minimal serial GitHub REST reader with explicit request accounting."""
 
     def __init__(self, *, token: str | None, timeout_seconds: float) -> None:
+        """Initialize the reader with optional authentication and a timeout."""
         if timeout_seconds <= 0:
             raise ValueError("timeout-seconds must be positive")
         self._token = token
