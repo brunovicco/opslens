@@ -1,0 +1,56 @@
+name: Validate EPSS History 2.5C-2
+
+on:
+  push:
+    branches:
+      - phase-2-epss-history
+    paths:
+      - "src/opslens/ingestion/epss/**"
+      - "src/opslens/transformation/epss/**"
+      - "tests/unit/ingestion/epss/**"
+      - "tests/unit/transformation/epss/**"
+      - ".github/workflows/validate-epss-history-c2.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Validate lockfile
+        run: uv lock --check
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Ruff
+        run: |
+          uv run ruff check \
+            src/opslens/ingestion/epss \
+            src/opslens/transformation/epss \
+            tests/unit/ingestion/epss \
+            tests/unit/transformation/epss
+
+      - name: Pyright
+        run: uv run pyright
+
+      - name: EPSS unit tests
+        run: |
+          uv run pytest -q \
+            tests/unit/ingestion/epss \
+            tests/unit/transformation/epss
