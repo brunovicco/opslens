@@ -209,6 +209,24 @@ one observed advisory content version
     -> zero or more nested vulnerability occurrences
 ```
 
+## Phase 2.4D runtime refinement — unavailable CVSS placeholders
+
+Real reviewed-advisory evidence in Phase 2.4D showed that GitHub may include a known `cvss_v3` or `cvss_v4` object whose vector is unavailable as an empty or nullable placeholder. This refines normalization without changing Silver schema v1 or content identity.
+
+```text
+usable known vector + numeric score
+    -> typed cvss_metrics observation
+
+known family present but vector unavailable
+    -> preserve exact cvss_severities source JSON
+    -> do not fabricate a typed metric
+
+malformed non-null vector or incompatible score
+    -> fail closed
+```
+
+The real 10-advisory Bronze attempt contained seven unavailable CVSS v4 placeholders. All seven were preserved in canonical source JSON while emitting no invented typed CVSS v4 metric.
+
 ## Explicit Phase 3 boundary
 
 Phase 2.4 may preserve:

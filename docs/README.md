@@ -18,7 +18,7 @@ The deployed Phase 2.3E/2.3F NVD runtime architecture and its real AWS evidence 
 
 The current implementation includes AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze, incremental CVE API Bronze, versioned NVD Silver, deployed Incremental/Silver/Promotion runtimes, the authoritative watermark boundary, EventBridge Scheduler, runtime IAM separation, idempotency, observability, bounded failure recovery, the permanent NVD Glue/Athena analytics projection path, and immutable content-addressed deployment artifacts for all deployed Lambda runtimes.
 
-Phase 2.4A completed the GitHub Security Advisory source/synchronization contract. Phase 2.4B is complete and freezes deterministic GHSA observed-content identity, reviewed-only core fields, collections, one-to-many package/range/fix evidence, nested Arrow schema v1, logical record-set hashing, and deterministic Parquet v1 serialization. No GHSA AWS runtime has yet been introduced.
+Phase 2.4A completed the GitHub Security Advisory source/synchronization contract, Phase 2.4B froze deterministic advisory-content identity and Silver schema v1, Phase 2.4C proved the reviewed-only GHSA Bronze AWS runtime, and Phase 2.4D proved immutable advisory-version Silver persistence with exact Bronze VersionIds, deterministic one-row Parquet content objects, COMPLETE provenance, least-privilege IAM, and zero-new-version replay. Phase 2.4E — GHSA Glue/Athena Analytics — is next.
 
 ## Architecture Decision Records
 
@@ -28,6 +28,7 @@ Phase 2.4A completed the GitHub Security Advisory source/synchronization contrac
 - [`0004 — NVD ingestion and vulnerability versioning strategy`](adr/0004-nvd-ingestion-and-versioning-strategy.md)
 - [`0005 — GHSA source and synchronization strategy`](adr/0005-ghsa-source-and-synchronization-strategy.md) — Accepted from the completed Phase 2.4A source-contract and bounded live-workload evidence.
 - [`0006 — GHSA Silver content versioning and physical shape`](adr/0006-ghsa-silver-content-versioning-and-physical-shape.md) — Accepted from the completed Phase 2.4B logical/Arrow/Parquet contract and explicit content-vs-physical-observation provenance boundary.
+- [`0007 — GHSA runtime credential and retry strategy`](adr/0007-ghsa-runtime-credential-and-retry-strategy.md) — Accepted runtime boundary for GitHub credentials, bounded retry, and GHSA source access.
 
 See [`adr/README.md`](adr/README.md) for the ADR index.
 
@@ -76,6 +77,12 @@ Phase 2:
 - [`phase-2-ghsa-source-contract.md`](labs/phase-2-ghsa-source-contract.md) — completed Phase 2.4A source contract and workload-spike decision record.
 - [`phase-2-ghsa-live-rest-probe.md`](labs/phase-2-ghsa-live-rest-probe.md) — authenticated live evidence for cursor pagination, rate limits, published/modified bounded windows, payload sizes, timings, and advisory/package multiplicity.
 - [`phase-2-ghsa-advisory-silver-contract.md`](labs/phase-2-ghsa-advisory-silver-contract.md) — completed Phase 2.4B contract for exact advisory content versions, structured collections, one-to-many package/range/fix evidence, nested Arrow schema v1, logical hashing, and deterministic Parquet serialization.
+- [`phase-2-ghsa-bronze-contract.md`](labs/phase-2-ghsa-bronze-contract.md) — Phase 2.4C deterministic Bronze layout, sync/attempt identity, cursor-chain, page validation, and COMPLETE contract.
+- [`phase-2-ghsa-runtime-security-design.md`](labs/phase-2-ghsa-runtime-security-design.md) — runtime credential, outbound HTTP, retry, S3, and IAM boundary.
+- [`phase-2-ghsa-runtime-composition.md`](labs/phase-2-ghsa-runtime-composition.md) — Bronze runtime composition and deterministic persistence boundary.
+- [`phase-2-ghsa-lambda-contract.md`](labs/phase-2-ghsa-lambda-contract.md) — manual Bronze Lambda invocation and deployment-artifact contract.
+- [`phase-2-ghsa-manual-dev-runtime.md`](labs/phase-2-ghsa-manual-dev-runtime.md) — real Phase 2.4C AWS Bronze proof and replay evidence.
+- [`phase-2-ghsa-silver-runtime-closeout.md`](labs/phase-2-ghsa-silver-runtime-closeout.md) — completed Phase 2.4D exact Bronze-to-Silver runtime, immutable content objects, COMPLETE provenance, CVSS placeholder refinement, Terraform deployment, and zero-new-version replay proof.
 
 Cross-phase infrastructure closeout:
 
@@ -99,13 +106,14 @@ Legacy Lambda artifact lifecycle migration: COMPLETE
 Phase 2.4-0 — Documentation reconciliation:  COMPLETE
 Phase 2.4A — GHSA Source Contract:           COMPLETE
 Phase 2.4B — GHSA Advisory/Silver Contract:  COMPLETE
-Phase 2.4C — GHSA Bronze:                    NEXT
+Phase 2.4C — GHSA Bronze:                    COMPLETE
+Phase 2.4D — GHSA Silver Runtime:            COMPLETE
+Phase 2.4E — GHSA Glue/Athena Analytics:     NEXT
+Phase 2.4F — GHSA Cross-source Closeout:     NOT STARTED
 Phase 2.5 — Historical EPSS expansion:       NOT STARTED
 Phase 3 — Vulnerability Correlation Engine:  NOT STARTED
 ```
 
-Phase 2.4B is frozen. `observed_advisory_version_id` is exact advisory content identity and remains distinct from the future Bronze `sync_id` and physical `attempt_id`. Exact Bronze occurrence provenance and Bronze-to-Silver completion proof are intentionally owned by Phase 2.4C/2.4D rather than embedded into the content-version identifier.
+Phase 2.4D is complete. `observed_advisory_version_id` remains exact advisory content identity and is distinct from Bronze `sync_id`, physical `attempt_id`, and occurrence position. Exact Bronze provenance now binds deterministically to one-row immutable Silver content objects and an attempt-level COMPLETE manifest.
 
-No GHSA AWS runtime has been introduced.
-
-Phase 2 remains open. Historical EPSS expansion follows later before Phase 2 can be closed or any Phase 3 work begins.
+Phase 2.4E — GHSA Glue/Athena Analytics — is next. Phase 2 remains open; GHSA analytics/cross-source exit criteria and historical EPSS expansion must still pass or be explicitly deferred before Phase 3 begins.

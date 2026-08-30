@@ -1,5 +1,6 @@
 """Deterministic normalization of GHSA identifiers, references, CWE, and CVSS."""
 
+import math
 from typing import cast
 
 from opslens.transformation.ghsa.domain.canonicalization import (
@@ -141,7 +142,7 @@ class GhsaAdvisoryCollectionsTransformer:
         return tuple(result)
 
     def _cvss_severities(self, source_advisory: dict[str, object]) -> GhsaCvssSeverities:
-        """Normalize known CVSS v3/v4 metrics and preserve exact source object."""
+        """Normalize usable CVSS v3/v4 metrics and preserve exact source object."""
         value = source_advisory["cvss_severities"]
         mapping = self._require_object(value, path="cvss_severities")
         metrics: list[GhsaCvssMetric] = []
@@ -163,24 +164,35 @@ class GhsaAdvisoryCollectionsTransformer:
                     f"{', '.join(sorted(missing))}."
                 )
 
-            vector_string = self._required_mapping_text(
-                metric,
-                "vector_string",
-                path=f"cvss_severities.{family.value}",
+            vector_value = metric["vector_string"]
+            score = self._optional_cvss_score(
+                metric["score"],
+                family=family,
             )
-            score_value = metric["score"]
 
-            if isinstance(score_value, bool) or not isinstance(score_value, (int, float)):
+            if vector_value is None:
+                continue
+
+            if not isinstance(vector_value, str):
+                raise InvalidGhsaAdvisoryCollectionsError(
+                    f"GitHub advisory cvss_severities.{family.value}.vector_string "
+                    "must be a string or null."
+                )
+
+            if not vector_value.strip():
+                continue
+
+            if score is None:
                 raise InvalidGhsaAdvisoryCollectionsError(
                     f"GitHub advisory cvss_severities.{family.value}.score "
-                    "must be numeric."
+                    "must be numeric when vector_string is present."
                 )
 
             metrics.append(
                 GhsaCvssMetric(
                     family=family,
-                    vector_string=vector_string,
-                    score=float(score_value),
+                    vector_string=vector_value,
+                    score=score,
                 )
             )
 
@@ -190,6 +202,32 @@ class GhsaAdvisoryCollectionsTransformer:
             metrics=tuple(metrics),
             canonical_json=canonical_json,
         )
+
+    @staticmethod
+    def _optional_cvss_score(
+        value: object,
+        *,
+        family: GhsaCvssFamily,
+    ) -> float | None:
+        """Validate one nullable source CVSS score without inventing a metric."""
+        if value is None:
+            return None
+
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise InvalidGhsaAdvisoryCollectionsError(
+                f"GitHub advisory cvss_severities.{family.value}.score "
+                "must be numeric or null."
+            )
+
+        score = float(value)
+
+        if not math.isfinite(score) or score < 0.0 or score > 10.0:
+            raise InvalidGhsaAdvisoryCollectionsError(
+                f"GitHub advisory cvss_severities.{family.value}.score "
+                "must be between 0.0 and 10.0."
+            )
+
+        return score
 
     @staticmethod
     def _required_text(source_advisory: dict[str, object], field_name: str) -> str:

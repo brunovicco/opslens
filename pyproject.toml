@@ -20,6 +20,10 @@ epss-silver-runtime = [
     "pyarrow==25.0.*",
 ]
 
+ghsa-silver-runtime = [
+    "pyarrow==25.0.*",
+]
+
 kev-silver-runtime = [
     "pyarrow==25.0.*",
 ]

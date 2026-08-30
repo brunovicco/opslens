@@ -2,7 +2,7 @@
 
 🇺🇸 [English](architecture.md) | 🇧🇷 **Português**
 
-_Última atualização: 2026-08-27_
+_Última atualização: 2026-08-30_
 
 ## Visão geral
 
@@ -19,6 +19,8 @@ A arquitetura implementada cobre atualmente:
 - promoção do watermark autoritativo do NVD;
 - projeção analítica permanente do NVD;
 - AWS Glue Data Catalog e Athena para NVD;
+- ingestão Bronze de GHSA reviewed com evidência COMPLETE versionada exata;
+- objetos Silver imutáveis por versão de advisory GHSA e proveniência COMPLETE por attempt;
 - verificação de evidência por versão exata de objeto S3;
 - persistência condicional idempotente;
 - retries assíncronos limitados e recuperação via SQS OnFailure;
@@ -528,6 +530,50 @@ A invocação event-driven foi correlacionada no CloudWatch por VersionId exato 
 
 ---
 
+## GitHub Security Advisories
+
+O caminho GHSA implementado cobre Bronze determinístico de advisories reviewed e evidência Silver imutável por versão exata de conteúdo do advisory.
+
+```text
+GitHub Global Security Advisories REST API
+        |
+        v
+GHSA Bronze Lambda
+        |
+        v
+páginas Bronze versionadas + COMPLETE
+        |
+        v
+GHSA Silver Lambda
+  leitura exata de manifest/páginas por VersionId
+  recomputação do attempt_id
+  normalização determinística
+        |
+        v
+um objeto Parquet imutável de uma linha
+por observed_advisory_version_id
+        |
+        v
+manifest Silver COMPLETE
+```
+
+As fronteiras de identidade de conteúdo e observação física permanecem separadas:
+
+```text
+observed_advisory_version_id -> conteúdo exato do advisory na fonte
+sync_id                      -> janela lógica da fonte
+attempt_id                   -> observação Bronze física exata
+attempt_occurrence_id        -> posição exata na observação
+```
+
+Objetos Silver usam persistência create-only e verificação exata no replay. O COMPLETE só é publicado depois que todos os objetos de conteúdo foram criados ou verificados exatamente. Uma prova real com 10 advisories produziu dez objetos Parquet de uma linha e um COMPLETE; o replay preservou as mesmas onze versões S3 e criou zero versões novas.
+
+O workload real também comprovou que o GitHub pode expor uma família CVSS conhecida como placeholder indisponível. O placeholder permanece no JSON canônico da fonte, mas não gera métrica tipada fabricada. Estruturas conhecidas realmente malformadas continuam falhando fechado.
+
+Glue/Athena para GHSA fica intencionalmente para a Phase 2.4E. Aplicabilidade de package/version permanece trabalho determinístico da Phase 3.
+
+---
+
 ## Recuperação de falhas
 
 A plataforma trata entrega de Scheduler, processamento assíncrono Lambda, validação de evidência e recuperação via SQS como boundaries distintos de falha.
@@ -598,6 +644,8 @@ Identidades de runtime
     +-- NVD Silver
     +-- NVD Promotion
     +-- NVD Analytics Projector
+    +-- GHSA Bronze
+    +-- GHSA Silver
 ```
 
 Least privilege é avaliado de acordo com a responsabilidade de cada runtime, e não em relação ao data lake inteiro.
@@ -652,7 +700,7 @@ Não existe drift global conhecido no Terraform `dev` decorrente do lifecycle le
 FIRST EPSS                          IMPLEMENTED through Athena
 CISA KEV                            IMPLEMENTED through Athena
 NVD / CVE                           IMPLEMENTED through authoritative analytics + Athena
-GitHub Security Advisories          IN PROGRESS — Phase 2.4A next
+GitHub Security Advisories          IMPLEMENTED through immutable Silver; Glue/Athena next
 EPSS historical expansion           NOT STARTED
 Phase 3 Vulnerability Correlation   NOT STARTED
 ```
@@ -669,6 +717,6 @@ Phase 2.3F — NVD Authoritative Watermark    COMPLETE
 Phase 2.3G — NVD Glue/Athena Analytics      COMPLETE
 ```
 
-A Phase 2.4-0 reconcilia a documentação com o checkpoint de `main` posterior ao PR #28. A Phase 2.4A — GHSA Source Contract & Workload Spike é o próximo gate de implementação.
+As Phases GHSA 2.4A source contract, 2.4B advisory/Silver contract, 2.4C Bronze runtime e 2.4D runtime Silver imutável estão concluídas. A Phase 2.4E — GHSA Glue/Athena Analytics — é o próximo gate de implementação.
 
-A aplicabilidade de vulnerabilidade para package/version permanece um trabalho determinístico da Phase 3. A Phase 2 continua aberta até que os requisitos de GHSA e histórico EPSS sejam concluídos ou explicitamente adiados; Bedrock, RAG ou fases agentic não devem substituir esses milestones determinísticos restantes do data plane.
+A aplicabilidade de vulnerabilidade para package/version permanece um trabalho determinístico da Phase 3. A Phase 2 continua aberta até que os requisitos de analytics/cross-source de GHSA e histórico EPSS sejam concluídos ou explicitamente adiados; Bedrock, RAG ou fases agentic não devem substituir esses milestones determinísticos restantes do data plane.
