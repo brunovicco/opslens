@@ -6,6 +6,8 @@ on:
       - phase-2-ghsa-analytics
     paths:
       - ".github/workflows/ghsa-analytics-static-validation.yml"
+      - "infra/bootstrap/github_analytics_permissions.tf"
+      - "infra/environments/dev/analytics_ghsa_glue.tf"
 
 permissions:
   contents: read
