@@ -8,8 +8,8 @@ resource "aws_glue_catalog_table" "ghsa_advisory_versions" {
   table_type = "EXTERNAL_TABLE"
 
   parameters = {
-    EXTERNAL               = "TRUE"
-    classification         = "parquet"
+    EXTERNAL              = "TRUE"
+    classification        = "parquet"
     "parquet.compression" = "SNAPPY"
   }
 
