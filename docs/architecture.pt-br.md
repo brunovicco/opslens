@@ -22,6 +22,7 @@ A arquitetura implementada cobre atualmente:
 - ingestão Bronze de GHSA reviewed com evidência COMPLETE versionada exata;
 - objetos Silver imutáveis por versão de advisory GHSA e proveniência COMPLETE por attempt;
 - catálogo Glue explícito para GHSA sobre Silver autoritativo e analytics nested no Athena com custo limitado;
+- evidência cross-source determinística centrada em CVE entre NVD, CISA KEV, FIRST EPSS e GHSA com coordenadas temporais explícitas por fonte;
 - verificação de evidência por versão exata de objeto S3;
 - persistência condicional idempotente;
 - retries assíncronos limitados e recuperação via SQS OnFailure;
@@ -708,8 +709,8 @@ Não existe drift global conhecido no Terraform `dev` decorrente do lifecycle le
 FIRST EPSS                          IMPLEMENTED through Athena
 CISA KEV                            IMPLEMENTED through Athena
 NVD / CVE                           IMPLEMENTED through authoritative analytics + Athena
-GitHub Security Advisories          IMPLEMENTED through immutable Silver; Glue/Athena next
-EPSS historical expansion           NOT STARTED
+GitHub Security Advisories          IMPLEMENTED through cross-source deterministic evidence
+EPSS historical expansion           NEXT
 Phase 3 Vulnerability Correlation   NOT STARTED
 ```
 
@@ -725,6 +726,6 @@ Phase 2.3F — NVD Authoritative Watermark    COMPLETE
 Phase 2.3G — NVD Glue/Athena Analytics      COMPLETE
 ```
 
-As Phases GHSA 2.4A source contract, 2.4B advisory/Silver contract, 2.4C Bronze runtime e 2.4D runtime Silver imutável estão concluídas. A Phase 2.4E — GHSA Glue/Athena Analytics — é o próximo gate de implementação.
+As Phases GHSA 2.4A source contract, 2.4B advisory/Silver contract, 2.4C Bronze runtime, 2.4D runtime Silver imutável, 2.4E Glue/Athena analytics e 2.4F evidência determinística cross-source estão concluídas. A prova final 2.4F selecionou `CVE-2026-42350` por overlap GHSA real e preservou uma observação NVD, ausência KEV explícita no snapshot `2026-08-29`, evidência EPSS no snapshot `2026-08-30`, uma versão exata de conteúdo GHSA e quatro ranges publicados com quatro first-patched versions.
 
-A aplicabilidade de vulnerabilidade para package/version permanece um trabalho determinístico da Phase 3. A Phase 2 continua aberta até que os requisitos de analytics/cross-source de GHSA e histórico EPSS sejam concluídos ou explicitamente adiados; Bedrock, RAG ou fases agentic não devem substituir esses milestones determinísticos restantes do data plane.
+A aplicabilidade de vulnerabilidade para package/version permanece um trabalho determinístico da Phase 3. A Phase 2 agora continua aberta apenas para a expansão histórica do EPSS na Phase 2.5, salvo adiamento explícito conforme as regras do roadmap; Bedrock, RAG ou fases agentic não devem substituir esse milestone determinístico restante do data plane.
