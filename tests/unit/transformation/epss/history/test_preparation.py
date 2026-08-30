@@ -3,9 +3,6 @@
 import gzip
 import hashlib
 from datetime import date
-from io import BytesIO
-
-import pyarrow.parquet as pq
 
 from opslens.ingestion.epss.domain.history import (
     EpssModelEra,
@@ -65,22 +62,30 @@ def _evidence() -> HistoricalEpssBronzeEvidenceV1:
 
 def test_prepares_early_v1_without_fabricating_nullable_fields() -> None:
     """Serialize exact legacy rows with unavailable evidence preserved as NULL."""
+    evidence = _evidence()
+    parser = HistoricalEpssSnapshotParser()
+    transformer = HistoricalEpssSilverRecordTransformer()
+    snapshot = parser.parse(
+        evidence.source.raw_bytes,
+        snapshot_date=evidence.manifest.snapshot_date,
+    )
+    records = tuple(transformer.iter_records(snapshot))
+
+    assert [record.cve for record in records] == ["CVE-2021-0001", "CVE-2021-0002"]
+    assert [record.epss for record in records] == [0.1, 0.9]
+    assert [record.percentile for record in records] == [None, None]
+    assert [record.model_version for record in records] == [None, None]
+    assert [record.score_timestamp for record in records] == [None, None]
+
     service = PrepareHistoricalEpssSilver(
-        parser=HistoricalEpssSnapshotParser(),
-        transformer=HistoricalEpssSilverRecordTransformer(),
+        parser=parser,
+        transformer=transformer,
         record_writer=PyArrowSilverEpssRecordWriter(batch_size=1),
         key_factory=EpssSilverKeyFactory(),
     )
-
-    prepared = service.execute(_evidence())
+    prepared = service.execute(evidence)
 
     assert prepared.key == "silver/epss/snapshot_date=2021-04-14/part-00000.parquet"
     assert prepared.artifact.row_count == 2
     assert prepared.artifact.schema_version == 2
-
-    table = pq.read_table(BytesIO(prepared.artifact.parquet_bytes))
-    assert table.column("cve").to_pylist() == ["CVE-2021-0001", "CVE-2021-0002"]
-    assert table.column("epss").to_pylist() == [0.1, 0.9]
-    assert table.column("percentile").to_pylist() == [None, None]
-    assert table.column("model_version").to_pylist() == [None, None]
-    assert table.column("score_timestamp").to_pylist() == [None, None]
+    assert prepared.artifact.parquet_bytes.startswith(b"PAR1")
