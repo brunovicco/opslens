@@ -15,6 +15,7 @@ class HistoricalEpssBronzeObjectPayloadV1:
     raw_bytes: bytes
 
     def __post_init__(self) -> None:
+        """Validate the exact immutable object coordinate and payload."""
         if not self.key.strip():
             raise ValueError("Historical EPSS Bronze object key cannot be empty.")
         if not self.version_id.strip():
