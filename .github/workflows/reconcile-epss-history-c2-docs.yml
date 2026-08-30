@@ -1,0 +1,41 @@
+name: Reconcile EPSS History 2.5C-2 Docs
+
+on:
+  push:
+    branches:
+      - phase-2-epss-history
+    paths:
+      - ".github/workflows/reconcile-epss-history-c2-docs.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: phase-2-epss-history
+
+      - name: Patch docs fail closed
+        run: python scripts/_tmp_reconcile_epss_history_c2_docs.py
+
+      - name: Verify reconciled semantics
+        run: |
+          grep -F "Late v1 transition shape" docs/labs/phase-2-epss-history-source-compatibility.md
+          grep -F "legacy_three_column" docs/labs/phase-2-epss-history-bronze-silver-design.md
+          grep -F "EPSS_2_5C2_GATE=PASS" docs/labs/phase-2-epss-history-bronze-silver-design.md
+          grep -F "2.5C-3 — exact historical Bronze manifest reader + VersionId boundary" docs/labs/phase-2-epss-history-bronze-silver-design.md
+
+      - name: Commit reconciled docs
+        run: |
+          git config user.name "Bruno Vicco"
+          git config user.email "bfvicco@gmail.com"
+          git add \
+            docs/labs/phase-2-epss-history-source-compatibility.md \
+            docs/labs/phase-2-epss-history-bronze-silver-design.md
+          git diff --cached --check
+          git commit -m "docs(phase-2): reconcile EPSS history C2 source shapes"
+          git push origin HEAD:phase-2-epss-history
