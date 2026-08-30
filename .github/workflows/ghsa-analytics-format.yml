@@ -1,0 +1,43 @@
+name: GHSA Analytics Terraform Format
+
+on:
+  push:
+    branches:
+      - phase-2-ghsa-analytics
+    paths:
+      - ".github/workflows/ghsa-analytics-format.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.15.8
+          terraform_wrapper: false
+
+      - name: Format changed Terraform
+        run: |
+          terraform fmt infra/bootstrap/github_analytics_permissions.tf
+          terraform fmt infra/environments/dev/analytics_ghsa_glue.tf
+          git diff --check
+          git diff --exit-code --quiet || git diff
+
+      - name: Commit formatting
+        run: |
+          if git diff --quiet; then
+            echo "No formatting changes required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add infra/bootstrap/github_analytics_permissions.tf infra/environments/dev/analytics_ghsa_glue.tf
+          git commit -m "style(phase-2): format GHSA analytics Terraform"
+          git push origin HEAD:phase-2-ghsa-analytics
