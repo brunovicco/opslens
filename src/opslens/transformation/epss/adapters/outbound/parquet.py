@@ -121,7 +121,7 @@ class PyArrowSilverEpssRecordWriter:
 
     @staticmethod
     def _schema() -> pa.Schema:
-        """Build the canonical Arrow representation of the EPSS Silver schema."""
+        """Build the canonical Arrow representation of EPSS Silver schema v2."""
         metadata = {
             b"opslens.dataset": b"epss-silver",
             b"opslens.schema_version": str(EPSS_SILVER_SCHEMA_VERSION).encode("ascii"),
@@ -131,12 +131,12 @@ class PyArrowSilverEpssRecordWriter:
             [
                 pa.field("cve", pa.string(), nullable=False),
                 pa.field("epss", pa.float64(), nullable=False),
-                pa.field("percentile", pa.float64(), nullable=False),
-                pa.field("model_version", pa.string(), nullable=False),
+                pa.field("percentile", pa.float64(), nullable=True),
+                pa.field("model_version", pa.string(), nullable=True),
                 pa.field(
                     "score_timestamp",
                     pa.timestamp("us", tz="UTC"),
-                    nullable=False,
+                    nullable=True,
                 ),
                 pa.field("source", pa.string(), nullable=False),
                 pa.field("source_sha256", pa.string(), nullable=False),
@@ -158,7 +158,12 @@ class PyArrowSilverEpssRecordWriter:
                 pa.array((record.percentile for record in records), type=pa.float64()),
                 pa.array((record.model_version for record in records), type=pa.string()),
                 pa.array(
-                    (record.score_timestamp.astimezone(UTC) for record in records),
+                    (
+                        None
+                        if record.score_timestamp is None
+                        else record.score_timestamp.astimezone(UTC)
+                        for record in records
+                    ),
                     type=pa.timestamp("us", tz="UTC"),
                 ),
                 pa.array((record.source for record in records), type=pa.string()),
