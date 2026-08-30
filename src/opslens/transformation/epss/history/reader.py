@@ -28,6 +28,7 @@ class ReadHistoricalEpssBronzeEvidence:
         object_reader: S3VersionedHistoricalEpssBronzeObjectReader,
         manifest_parser: HistoricalEpssBronzeManifestParserV1 | None = None,
     ) -> None:
+        """Initialize with explicit exact-object and manifest dependencies."""
         self._object_reader = object_reader
         self._manifest_parser = manifest_parser or HistoricalEpssBronzeManifestParserV1()
 
