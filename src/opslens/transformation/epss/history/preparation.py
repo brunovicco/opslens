@@ -3,9 +3,9 @@
 import csv
 import gzip
 import io
+from collections.abc import Iterator
 from dataclasses import dataclass
 from io import BytesIO
-from typing import Iterator
 
 from opslens.ingestion.epss.domain.history import (
     EpssHistoricalSourceShape,
@@ -193,7 +193,9 @@ class PrepareHistoricalEpssSilver:
         )
 
         if snapshot.sha256 != manifest.source_sha256:
-            raise ValueError("Historical EPSS parsed source SHA-256 does not match Bronze evidence.")
+            raise ValueError(
+                "Historical EPSS parsed source SHA-256 does not match Bronze evidence."
+            )
         if snapshot.model_era is not manifest.model_era:
             raise ValueError("Historical EPSS parsed model era does not match Bronze evidence.")
         if snapshot.source_metadata_present is not manifest.source_metadata_present:
