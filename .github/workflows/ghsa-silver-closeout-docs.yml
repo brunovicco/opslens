@@ -1,0 +1,198 @@
+name: GHSA Silver Closeout Documentation
+
+on:
+  push:
+    branches:
+      - phase-2-ghsa-silver-runtime
+    paths:
+      - ".github/workflows/ghsa-silver-closeout-docs.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Reconcile public documentation
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file_path = Path(path)
+              text = file_path.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise RuntimeError(
+                      f"{path}: expected exactly one replacement target, found {count}: {old[:120]!r}"
+                  )
+              file_path.write_text(text.replace(old, new, 1))
+
+
+          # Root README — English.
+          replace_once(
+              "README.md",
+              "| Phase 2.4 | GitHub Security Advisories | 🚧 In progress — 2.4A source contract next |",
+              "| Phase 2.4 | GitHub Security Advisories | 🚧 In progress — 2.4D Silver runtime complete; 2.4E Glue/Athena next |",
+          )
+          replace_once(
+              "README.md",
+              "The NVD deterministic evidence path is complete from immutable source ingestion through versioned Silver evidence, authoritative watermark promotion, permanent analytics projection, AWS Glue, and bounded Athena queries. The legacy Lambda artifact lifecycle migration is also complete. The current roadmap milestone is Phase 2.4 — GitHub Security Advisories, beginning with the GHSA source contract and workload spike.",
+              "The NVD deterministic evidence path is complete from immutable source ingestion through versioned Silver evidence, authoritative watermark promotion, permanent analytics projection, AWS Glue, and bounded Athena queries. The GHSA path is now complete through reviewed-advisory Bronze ingestion and immutable advisory-version Silver runtime with exact S3 VersionId provenance and replay-safe COMPLETE evidence. The current roadmap milestone is Phase 2.4E — GHSA Glue/Athena Analytics.",
+          )
+          replace_once(
+              "README.md",
+              "OpsLens currently has three implemented threat-intelligence data paths.",
+              "OpsLens currently has four implemented threat-intelligence data paths.",
+          )
+          replace_once(
+              "README.md",
+              "Analytics is downstream-only. The analytics projector cannot advance the watermark, mutate Silver authority, list the bucket, delete objects, or write Glue partitions.\n",
+              "Analytics is downstream-only. The analytics projector cannot advance the watermark, mutate Silver authority, list the bucket, delete objects, or write Glue partitions.\n\n### GitHub Security Advisories\n\n```text\nGitHub Global Security Advisories REST API\n        |\n        v\nGHSA Bronze Lambda\n        |\n        v\nversioned S3 Bronze pages + COMPLETE\n        |\n        v\nGHSA Silver Lambda\n  exact manifest/page VersionId reads\n  attempt_id recomputation\n  deterministic advisory normalization\n        |\n        v\none immutable one-row Parquet object\nper observed_advisory_version_id\n        |\n        v\nSilver COMPLETE manifest\n  occurrence -> exact content VersionId\n```\n\nPhase 2.4D proved a real 10-advisory Bronze attempt end to end. Ten authoritative one-row Parquet objects and one Silver COMPLETE manifest were created. A second invocation reproduced the same identities and created zero additional S3 versions. Package/version applicability remains deterministic Phase 3 work.\n",
+          )
+
+          # Root README — Portuguese.
+          replace_once(
+              "README.pt-br.md",
+              "| Phase 2.4 | GitHub Security Advisories | 🚧 Em andamento — 2.4A source contract é o próximo gate |",
+              "| Phase 2.4 | GitHub Security Advisories | 🚧 Em andamento — runtime Silver 2.4D concluído; Glue/Athena 2.4E é o próximo gate |",
+          )
+          replace_once(
+              "README.pt-br.md",
+              "O caminho determinístico de evidência do NVD está completo desde a ingestão imutável da fonte até Silver versionado, promoção do watermark autoritativo, projeção analítica permanente, AWS Glue e consultas Athena com custo limitado. A migração do lifecycle dos artefatos Lambda legados também está concluída. O milestone atual do roadmap é a Phase 2.4 — GitHub Security Advisories, começando pelo contrato da fonte GHSA e workload spike.",
+              "O caminho determinístico de evidência do NVD está completo desde a ingestão imutável da fonte até Silver versionado, promoção do watermark autoritativo, projeção analítica permanente, AWS Glue e consultas Athena com custo limitado. O caminho GHSA agora está concluído até a ingestão Bronze de advisories reviewed e o runtime Silver imutável de versões de advisory, com proveniência por VersionId exato do S3 e evidência COMPLETE segura para replay. O milestone atual do roadmap é a Phase 2.4E — GHSA Glue/Athena Analytics.",
+          )
+          replace_once(
+              "README.pt-br.md",
+              "O OpsLens possui hoje três caminhos implementados de threat intelligence.",
+              "O OpsLens possui hoje quatro caminhos implementados de threat intelligence.",
+          )
+          replace_once(
+              "README.pt-br.md",
+              "Analytics é estritamente downstream. O projector analítico não pode avançar o watermark, alterar a autoridade Silver, listar o bucket, deletar objetos nem escrever partições no Glue.\n",
+              "Analytics é estritamente downstream. O projector analítico não pode avançar o watermark, alterar a autoridade Silver, listar o bucket, deletar objetos nem escrever partições no Glue.\n\n### GitHub Security Advisories\n\n```text\nGitHub Global Security Advisories REST API\n        |\n        v\nGHSA Bronze Lambda\n        |\n        v\npáginas Bronze versionadas no S3 + COMPLETE\n        |\n        v\nGHSA Silver Lambda\n  leituras exatas por VersionId de manifest/páginas\n  recomputação do attempt_id\n  normalização determinística do advisory\n        |\n        v\num objeto Parquet imutável de uma linha\npor observed_advisory_version_id\n        |\n        v\nmanifest Silver COMPLETE\n  ocorrência -> VersionId exato do conteúdo\n```\n\nA Phase 2.4D comprovou end to end um attempt Bronze real com 10 advisories. Foram criados dez objetos Parquet autoritativos de uma linha e um manifest Silver COMPLETE. Uma segunda invocação reproduziu as mesmas identidades e criou zero novas versões S3. A aplicabilidade de package/version permanece trabalho determinístico da Phase 3.\n",
+          )
+
+          # Documentation index.
+          replace_once(
+              "docs/README.md",
+              "Phase 2.4A completed the GitHub Security Advisory source/synchronization contract. Phase 2.4B is complete and freezes deterministic GHSA observed-content identity, reviewed-only core fields, collections, one-to-many package/range/fix evidence, nested Arrow schema v1, logical record-set hashing, and deterministic Parquet v1 serialization. No GHSA AWS runtime has yet been introduced.",
+              "Phase 2.4A completed the GitHub Security Advisory source/synchronization contract, Phase 2.4B froze deterministic advisory-content identity and Silver schema v1, Phase 2.4C proved the reviewed-only GHSA Bronze AWS runtime, and Phase 2.4D proved immutable advisory-version Silver persistence with exact Bronze VersionIds, deterministic one-row Parquet content objects, COMPLETE provenance, least-privilege IAM, and zero-new-version replay. Phase 2.4E — GHSA Glue/Athena Analytics — is next.",
+          )
+          replace_once(
+              "docs/README.md",
+              "- [`0006 — GHSA Silver content versioning and physical shape`](adr/0006-ghsa-silver-content-versioning-and-physical-shape.md) — Accepted from the completed Phase 2.4B logical/Arrow/Parquet contract and explicit content-vs-physical-observation provenance boundary.\n",
+              "- [`0006 — GHSA Silver content versioning and physical shape`](adr/0006-ghsa-silver-content-versioning-and-physical-shape.md) — Accepted from the completed Phase 2.4B logical/Arrow/Parquet contract and explicit content-vs-physical-observation provenance boundary.\n- [`0007 — GHSA runtime credential and retry strategy`](adr/0007-ghsa-runtime-credential-and-retry-strategy.md) — Accepted runtime boundary for GitHub credentials, bounded retry, and GHSA source access.\n",
+          )
+          replace_once(
+              "docs/README.md",
+              "- [`phase-2-ghsa-advisory-silver-contract.md`](labs/phase-2-ghsa-advisory-silver-contract.md) — completed Phase 2.4B contract for exact advisory content versions, structured collections, one-to-many package/range/fix evidence, nested Arrow schema v1, logical hashing, and deterministic Parquet serialization.\n",
+              "- [`phase-2-ghsa-advisory-silver-contract.md`](labs/phase-2-ghsa-advisory-silver-contract.md) — completed Phase 2.4B contract for exact advisory content versions, structured collections, one-to-many package/range/fix evidence, nested Arrow schema v1, logical hashing, and deterministic Parquet serialization.\n- [`phase-2-ghsa-bronze-contract.md`](labs/phase-2-ghsa-bronze-contract.md) — Phase 2.4C deterministic Bronze layout, sync/attempt identity, cursor-chain, page validation, and COMPLETE contract.\n- [`phase-2-ghsa-runtime-security-design.md`](labs/phase-2-ghsa-runtime-security-design.md) — runtime credential, outbound HTTP, retry, S3, and IAM boundary.\n- [`phase-2-ghsa-runtime-composition.md`](labs/phase-2-ghsa-runtime-composition.md) — Bronze runtime composition and deterministic persistence boundary.\n- [`phase-2-ghsa-lambda-contract.md`](labs/phase-2-ghsa-lambda-contract.md) — manual Bronze Lambda invocation and deployment-artifact contract.\n- [`phase-2-ghsa-manual-dev-runtime.md`](labs/phase-2-ghsa-manual-dev-runtime.md) — real Phase 2.4C AWS Bronze proof and replay evidence.\n- [`phase-2-ghsa-silver-runtime-closeout.md`](labs/phase-2-ghsa-silver-runtime-closeout.md) — completed Phase 2.4D exact Bronze-to-Silver runtime, immutable content objects, COMPLETE provenance, CVSS placeholder refinement, Terraform deployment, and zero-new-version replay proof.\n",
+          )
+          replace_once(
+              "docs/README.md",
+              "Phase 2.4C — GHSA Bronze:                    NEXT\nPhase 2.5 — Historical EPSS expansion:       NOT STARTED",
+              "Phase 2.4C — GHSA Bronze:                    COMPLETE\nPhase 2.4D — GHSA Silver Runtime:            COMPLETE\nPhase 2.4E — GHSA Glue/Athena Analytics:     NEXT\nPhase 2.4F — GHSA Cross-source Closeout:     NOT STARTED\nPhase 2.5 — Historical EPSS expansion:       NOT STARTED",
+          )
+          replace_once(
+              "docs/README.md",
+              "Phase 2.4B is frozen. `observed_advisory_version_id` is exact advisory content identity and remains distinct from the future Bronze `sync_id` and physical `attempt_id`. Exact Bronze occurrence provenance and Bronze-to-Silver completion proof are intentionally owned by Phase 2.4C/2.4D rather than embedded into the content-version identifier.\n\nNo GHSA AWS runtime has been introduced.\n\nPhase 2 remains open. Historical EPSS expansion follows later before Phase 2 can be closed or any Phase 3 work begins.",
+              "Phase 2.4D is complete. `observed_advisory_version_id` remains exact advisory content identity and is distinct from Bronze `sync_id`, physical `attempt_id`, and occurrence position. Exact Bronze provenance now binds deterministically to one-row immutable Silver content objects and an attempt-level COMPLETE manifest.\n\nPhase 2.4E — GHSA Glue/Athena Analytics — is next. Phase 2 remains open; GHSA analytics/cross-source exit criteria and historical EPSS expansion must still pass or be explicitly deferred before Phase 3 begins.",
+          )
+
+          # Architecture — English.
+          replace_once(
+              "docs/architecture.md",
+              "_Last updated: 2026-08-27_",
+              "_Last updated: 2026-08-30_",
+          )
+          replace_once(
+              "docs/architecture.md",
+              "- NVD Glue Data Catalog and Athena analytics;\n",
+              "- NVD Glue Data Catalog and Athena analytics;\n- GHSA reviewed-advisory Bronze ingestion with exact versioned COMPLETE evidence;\n- GHSA immutable advisory-version Silver content objects and attempt-level COMPLETE provenance;\n",
+          )
+          replace_once(
+              "docs/architecture.md",
+              "---\n\n## Failure recovery\n",
+              "---\n\n## GitHub Security Advisories\n\nThe implemented GHSA path now covers deterministic reviewed-advisory Bronze and immutable advisory-version Silver evidence.\n\n```text\nGitHub Global Security Advisories REST API\n        |\n        v\nGHSA Bronze Lambda\n        |\n        v\nversioned Bronze pages + COMPLETE\n        |\n        v\nGHSA Silver Lambda\n  exact manifest/page VersionId reads\n  attempt_id recomputation\n  deterministic normalization\n        |\n        v\none immutable one-row Parquet object\nper observed_advisory_version_id\n        |\n        v\nSilver COMPLETE manifest\n```\n\nThe content identity and physical-observation boundaries remain separate:\n\n```text\nobserved_advisory_version_id -> exact advisory source content\nsync_id                      -> logical source window\nattempt_id                   -> exact physical Bronze observation\nattempt_occurrence_id        -> exact source position inside that attempt\n```\n\nSilver content objects use create-only persistence and exact replay verification. The COMPLETE manifest is published only after every content object has been created or exactly verified. A real 10-advisory proof produced ten one-row Parquet objects and one COMPLETE manifest; replay preserved the same eleven S3 versions and created zero new versions.\n\nThe live workload also proved that GitHub may expose a known CVSS family as an unavailable placeholder. Such placeholders remain in canonical source JSON but do not create fabricated typed metrics. Malformed known-family structures still fail closed.\n\nGHSA Glue/Athena analytics is intentionally deferred to Phase 2.4E. Package/version applicability remains deterministic Phase 3 work.\n\n---\n\n## Failure recovery\n",
+          )
+          replace_once(
+              "docs/architecture.md",
+              "    +-- NVD Analytics Projector\n",
+              "    +-- NVD Analytics Projector\n    +-- GHSA Bronze\n    +-- GHSA Silver\n",
+          )
+          replace_once(
+              "docs/architecture.md",
+              "GitHub Security Advisories          IN PROGRESS — Phase 2.4A next",
+              "GitHub Security Advisories          IMPLEMENTED through immutable Silver; Glue/Athena next",
+          )
+          replace_once(
+              "docs/architecture.md",
+              "Phase 2.4-0 reconciles the documentation against the post-PR #28 `main` checkpoint. Phase 2.4A — GHSA Source Contract & Workload Spike is the next implementation gate.\n\nPackage/version vulnerability applicability remains deterministic Phase 3 work. Phase 2 remains open until GHSA and historical EPSS requirements are completed or explicitly deferred; no Bedrock, RAG, or agentic phase should begin as a substitute for those remaining deterministic data-plane milestones.",
+              "GHSA Phase 2.4A source contract, 2.4B advisory/Silver contract, 2.4C Bronze runtime, and 2.4D immutable Silver runtime are complete. Phase 2.4E — GHSA Glue/Athena Analytics — is the next implementation gate.\n\nPackage/version vulnerability applicability remains deterministic Phase 3 work. Phase 2 remains open until GHSA analytics/cross-source exit criteria and historical EPSS requirements are completed or explicitly deferred; no Bedrock, RAG, or agentic phase should begin as a substitute for those remaining deterministic data-plane milestones.",
+          )
+
+          # Architecture — Portuguese.
+          replace_once(
+              "docs/architecture.pt-br.md",
+              "_Última atualização: 2026-08-27_",
+              "_Última atualização: 2026-08-30_",
+          )
+          replace_once(
+              "docs/architecture.pt-br.md",
+              "- AWS Glue Data Catalog e Athena para NVD;\n",
+              "- AWS Glue Data Catalog e Athena para NVD;\n- ingestão Bronze de GHSA reviewed com evidência COMPLETE versionada exata;\n- objetos Silver imutáveis por versão de advisory GHSA e proveniência COMPLETE por attempt;\n",
+          )
+          replace_once(
+              "docs/architecture.pt-br.md",
+              "---\n\n## Recuperação de falhas\n",
+              "---\n\n## GitHub Security Advisories\n\nO caminho GHSA implementado cobre Bronze determinístico de advisories reviewed e evidência Silver imutável por versão exata de conteúdo do advisory.\n\n```text\nGitHub Global Security Advisories REST API\n        |\n        v\nGHSA Bronze Lambda\n        |\n        v\npáginas Bronze versionadas + COMPLETE\n        |\n        v\nGHSA Silver Lambda\n  leitura exata de manifest/páginas por VersionId\n  recomputação do attempt_id\n  normalização determinística\n        |\n        v\num objeto Parquet imutável de uma linha\npor observed_advisory_version_id\n        |\n        v\nmanifest Silver COMPLETE\n```\n\nAs fronteiras de identidade de conteúdo e observação física permanecem separadas:\n\n```text\nobserved_advisory_version_id -> conteúdo exato do advisory na fonte\nsync_id                      -> janela lógica da fonte\nattempt_id                   -> observação Bronze física exata\nattempt_occurrence_id        -> posição exata na observação\n```\n\nObjetos Silver usam persistência create-only e verificação exata no replay. O COMPLETE só é publicado depois que todos os objetos de conteúdo foram criados ou verificados exatamente. Uma prova real com 10 advisories produziu dez objetos Parquet de uma linha e um COMPLETE; o replay preservou as mesmas onze versões S3 e criou zero versões novas.\n\nO workload real também comprovou que o GitHub pode expor uma família CVSS conhecida como placeholder indisponível. O placeholder permanece no JSON canônico da fonte, mas não gera métrica tipada fabricada. Estruturas conhecidas realmente malformadas continuam falhando fechado.\n\nGlue/Athena para GHSA fica intencionalmente para a Phase 2.4E. Aplicabilidade de package/version permanece trabalho determinístico da Phase 3.\n\n---\n\n## Recuperação de falhas\n",
+          )
+          replace_once(
+              "docs/architecture.pt-br.md",
+              "    +-- NVD Analytics Projector\n",
+              "    +-- NVD Analytics Projector\n    +-- GHSA Bronze\n    +-- GHSA Silver\n",
+          )
+          replace_once(
+              "docs/architecture.pt-br.md",
+              "GitHub Security Advisories          IN PROGRESS — Phase 2.4A next",
+              "GitHub Security Advisories          IMPLEMENTED through immutable Silver; Glue/Athena next",
+          )
+          replace_once(
+              "docs/architecture.pt-br.md",
+              "A Phase 2.4-0 reconcilia a documentação com o checkpoint de `main` posterior ao PR #28. A Phase 2.4A — GHSA Source Contract & Workload Spike é o próximo gate de implementação.\n\nA aplicabilidade de vulnerabilidade para package/version permanece um trabalho determinístico da Phase 3. A Phase 2 continua aberta até que os requisitos de GHSA e histórico EPSS sejam concluídos ou explicitamente adiados; Bedrock, RAG ou fases agentic não devem substituir esses milestones determinísticos restantes do data plane.",
+              "As Phases GHSA 2.4A source contract, 2.4B advisory/Silver contract, 2.4C Bronze runtime e 2.4D runtime Silver imutável estão concluídas. A Phase 2.4E — GHSA Glue/Athena Analytics — é o próximo gate de implementação.\n\nA aplicabilidade de vulnerabilidade para package/version permanece um trabalho determinístico da Phase 3. A Phase 2 continua aberta até que os requisitos de analytics/cross-source de GHSA e histórico EPSS sejam concluídos ou explicitamente adiados; Bedrock, RAG ou fases agentic não devem substituir esses milestones determinísticos restantes do data plane.",
+          )
+
+          # Phase 2.4B runtime refinement.
+          replace_once(
+              "docs/labs/phase-2-ghsa-advisory-silver-contract.md",
+              "## Explicit Phase 3 boundary\n",
+              "## Phase 2.4D runtime refinement — unavailable CVSS placeholders\n\nReal reviewed-advisory evidence in Phase 2.4D showed that GitHub may include a known `cvss_v3` or `cvss_v4` object whose vector is unavailable as an empty or nullable placeholder. This refines normalization without changing Silver schema v1 or content identity.\n\n```text\nusable known vector + numeric score\n    -> typed cvss_metrics observation\n\nknown family present but vector unavailable\n    -> preserve exact cvss_severities source JSON\n    -> do not fabricate a typed metric\n\nmalformed non-null vector or incompatible score\n    -> fail closed\n```\n\nThe real 10-advisory Bronze attempt contained seven unavailable CVSS v4 placeholders. All seven were preserved in canonical source JSON while emitting no invented typed CVSS v4 metric.\n\n## Explicit Phase 3 boundary\n",
+          )
+          PY
+
+      - name: Verify reconciliation diff
+        run: |
+          git diff --check
+          git diff --stat
+          grep -q "Phase 2.4D — GHSA Silver Runtime:            COMPLETE" docs/README.md
+          grep -q "GHSA_2_4D_GATE=PASS" docs/labs/phase-2-ghsa-silver-runtime-closeout.md
+          grep -q "version_count_after=11" docs/labs/phase-2-ghsa-silver-runtime-closeout.md
+
+      - name: Commit reconciled documentation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md README.pt-br.md docs/README.md docs/architecture.md docs/architecture.pt-br.md docs/labs/phase-2-ghsa-advisory-silver-contract.md
+          git commit -m "docs(phase-2): reconcile GHSA Silver runtime completion"
+          git push origin HEAD:phase-2-ghsa-silver-runtime
