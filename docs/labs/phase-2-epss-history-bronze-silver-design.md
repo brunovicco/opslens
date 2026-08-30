@@ -1,6 +1,6 @@
 # Phase 2.5C — Historical EPSS Bronze/Silver Evidence Design
 
-Status: **2.5C-1 DESIGN COMPLETE — implementation not yet authorized**
+Status: **2.5C-1 DESIGN COMPLETE; 2.5C-2 PARSER/SCHEMA COMPLETE; 2.5C-3 NEXT**
 
 ## Purpose
 
@@ -25,22 +25,27 @@ archive end: 2026-08-30
 
 The immutable inventory contains 1,956 available daily snapshots from `2021-04-14` through `2026-08-30`, with nine source dates absent from the archive. Those absences remain absences.
 
-Representative source-byte proof established two physical contracts:
+Representative and transition-boundary source-byte proof established three physical contracts:
 
 ```text
-EPSS v1
+EPSS v1 early legacy
   metadata comment: absent
   columns:          cve,epss
   percentile:       absent
 
-EPSS v2-v5
+EPSS v1 late legacy (observed 2022-02-03)
+  metadata comment: absent
+  columns:          cve,epss,percentile
+  percentile:       present
+
+EPSS v2-v5 modern
   metadata comment: present
   columns:          cve,epss,percentile
   model_version:    source-declared
   score_date:       source-declared
 ```
 
-The current OpsLens parser accepts v2-v5 and correctly rejects v1 under its modern-only contract.
+The forward/current OpsLens parser remains modern-only. The historical parser introduced in 2.5C-2 classifies both observed v1 legacy headers explicitly and delegates v2-v5 to the proven modern parser.
 
 ## Existing forward authority remains unchanged
 
@@ -199,17 +204,25 @@ source_score_timestamp        nullable
 source_sha256                 required
 raw_bytes                     required
 row_count                     required
-source_shape                  v1 | modern
+source_shape                  legacy_two_column | legacy_three_column | modern_metadata
 ```
 
-For v1:
+For v1, metadata remains absent in both observed source shapes:
 
 ```text
-source_shape             = v1
-percentile               = NULL
-source_model_version     = NULL
-source_score_timestamp   = NULL
-source_metadata_present  = false
+early legacy:
+  source_shape             = legacy_two_column
+  percentile               = NULL
+  source_model_version     = NULL
+  source_score_timestamp   = NULL
+  source_metadata_present  = false
+
+late legacy:
+  source_shape             = legacy_three_column
+  percentile               = exact source value
+  source_model_version     = NULL
+  source_score_timestamp   = NULL
+  source_metadata_present  = false
 ```
 
 For v2-v5:
@@ -391,7 +404,7 @@ invalid archive path/date
 unknown model-era coordinate within the pinned scope
 bad gzip
 bad CSV header for the expected era
-v1 percentile unexpectedly present under the frozen v1 contract
+unknown or malformed legacy v1 header/row shape
 modern metadata missing
 modern metadata/date mismatch
 modern model-version/date-era mismatch
@@ -449,10 +462,10 @@ No GenAI service is introduced because none is required for this deterministic d
   STATUS: COMPLETE
 
 2.5C-2 — legacy-capable source model + parser + Silver schema v2
-  STATUS: NEXT
+  STATUS: COMPLETE
 
 2.5C-3 — exact historical Bronze manifest reader + VersionId boundary
-  STATUS: NOT STARTED
+  STATUS: NEXT
 
 2.5C-4 — deterministic Silver persistence + verified replay
   STATUS: NOT STARTED
@@ -480,15 +493,23 @@ EPSS_HISTORY_NO_AWS_MUTATION_2_5C1_GATE=PASS
 EPSS_2_5C1_GATE=PASS
 ```
 
+## 2.5C-2 gates
+
+```text
+EPSS_HISTORY_LEGACY_TWO_COLUMN_SOURCE_GATE=PASS
+EPSS_HISTORY_LEGACY_THREE_COLUMN_SOURCE_GATE=PASS
+EPSS_HISTORY_LATE_V1_PERCENTILE_PRESERVATION_GATE=PASS
+EPSS_HISTORY_V1_NO_FABRICATED_METADATA_GATE=PASS
+EPSS_HISTORY_MODERN_PARSER_COMPATIBILITY_GATE=PASS
+EPSS_HISTORY_SILVER_SCHEMA_V2_GATE=PASS
+EPSS_HISTORY_SILVER_V2_NULLABLE_LEGACY_FIELDS_GATE=PASS
+EPSS_HISTORY_REAL_FORMAT_BOUNDARY_GATE=PASS
+EPSS_HISTORY_RUFF_GATE=PASS
+EPSS_HISTORY_PYRIGHT_GATE=PASS
+EPSS_HISTORY_UNIT_TEST_GATE=PASS
+EPSS_2_5C2_GATE=PASS
+```
+
 ## Next authorized step
 
-Implement only **2.5C-2**:
-
-1. introduce a legacy-capable historical source model and parser;
-2. keep v1 `percentile`, `model_version`, and `score_timestamp` genuinely nullable;
-3. evolve the EPSS Silver physical schema to version 2 with those three fields nullable;
-4. preserve modern v2-v5 behavior unchanged;
-5. add focused unit tests for v1 and modern metadata/date/model-era validation;
-6. run repository regression gates.
-
-Do not create historical Bronze objects in AWS and do not start bulk backfill in 2.5C-2.
+Implement only **2.5C-3**: the exact historical Bronze manifest reader and S3 `VersionId` authority boundary. Do not create historical Bronze objects in AWS and do not start bulk backfill yet.

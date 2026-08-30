@@ -1,6 +1,6 @@
 # Phase 2.5B — Historical EPSS Representative Source Compatibility
 
-Status: **COMPLETE**
+Status: **COMPLETE — reconciled with transition-boundary source proof**
 
 ## Purpose
 
@@ -24,7 +24,7 @@ repository: empiricalsec/epss_scores
 commit:     7ba701f5599057c496489ceecd701cbd43911f5c
 ```
 
-The probe selected the first published archive snapshot in each documented model era:
+The original compatibility probe selected the first published archive snapshot in each documented model era:
 
 ```text
 v1 -> 2021-04-14
@@ -33,6 +33,8 @@ v3 -> 2023-03-07
 v4 -> 2025-03-17
 v5 -> 2026-06-15
 ```
+
+A later transition-boundary probe also inspected `2022-02-03`, the final v1-era day, because a model era must not be assumed to imply one physical CSV shape.
 
 For each sample, the downloaded raw bytes were checked against the GitHub content API blob SHA by recomputing the Git blob identity. All five exact blob checks passed.
 
@@ -45,7 +47,7 @@ current parser rejected: v1
 
 The v1 rejection is not an incidental parser bug. The physical source contract is different.
 
-### v1 physical shape
+### Early v1 physical shape
 
 Pinned file:
 
@@ -75,14 +77,37 @@ received 'CVE-2020-5902,0.65117'.
 
 That message results from the current parser treating the first physical v1 line as a metadata row and the first data row as the expected CSV header.
 
-This proves two separate legacy gaps:
+This proves two gaps for the earliest observed v1 shape:
 
 ```text
-v1 has no FIRST metadata comment
-v1 has no percentile field
+early v1 has no FIRST metadata comment
+early v1 has no percentile field
 ```
 
-OpsLens must not synthesize either as though it were source-declared evidence.
+OpsLens must not synthesize either as though it were source-declared evidence. It must also not generalize the early-v1 two-column shape to every v1-era date.
+
+### Late v1 transition shape
+
+Pinned file:
+
+```text
+2022/epss_scores-2022-02-03.csv.gz
+```
+
+Observed by the exact transition-boundary probe:
+
+```text
+metadata comment:              absent
+CSV header:                    cve,epss,percentile
+percentile column:             present
+source-declared model version: absent
+source-declared score date:    absent
+compressed bytes:              403,029
+uncompressed bytes:            3,375,720
+source SHA-256:                 49c983102fd76369a3dce375ba7cf7d4889767989baf296919ea0169efffd349
+```
+
+Therefore v1 is a model era, not a single physical source shape. The historical parser must preserve percentile when the exact legacy file publishes it while keeping model version and score timestamp null because no modern metadata row is present.
 
 ## v2 physical shape
 
@@ -232,7 +257,7 @@ model_version
 score_timestamp
 ```
 
-The v1 source cannot truthfully satisfy that contract because both `percentile` and source-declared model/timestamp metadata are absent.
+The earliest v1 source cannot truthfully satisfy the old non-null contract because `percentile` and source-declared model/timestamp metadata are absent. Late-v1 files can publish `percentile`, but still lack source-declared model/timestamp metadata. Therefore nullability must follow exact physical evidence, not model era alone.
 
 Phase 2.5C must therefore make an explicit schema/provenance decision before implementation. Acceptable design work may include nullable historical fields and snapshot-level provenance, but the following are forbidden:
 
@@ -254,7 +279,8 @@ It does **not** prove the AWS runtime boundary and does **not** authorize a 1,95
 ```text
 EPSS_HISTORY_PINNED_SAMPLE_BLOB_IDENTITY_GATE=PASS
 EPSS_HISTORY_V1_NO_METADATA_GATE=PASS
-EPSS_HISTORY_V1_NO_PERCENTILE_GATE=PASS
+EPSS_HISTORY_EARLY_V1_NO_PERCENTILE_GATE=PASS
+EPSS_HISTORY_LATE_V1_PERCENTILE_PRESERVATION_GATE=PASS
 EPSS_HISTORY_V2_V5_METADATA_GATE=PASS
 EPSS_HISTORY_V2_V5_CURRENT_PARSER_GATE=PASS
 EPSS_HISTORY_V2_V5_CURRENT_SILVER_SERIALIZATION_GATE=PASS
@@ -266,11 +292,4 @@ EPSS_2_5B_GATE=PASS
 
 ## Next authorized gate
 
-Phase 2.5C must freeze and implement the historical Bronze/Silver evidence contract before any bulk backfill:
-
-1. exact immutable historical source coordinates and Bronze identity;
-2. legacy v1 representation without fabricated percentile/metadata;
-3. exact S3 `VersionId` reads in Silver;
-4. replay verification of existing Silver bytes rather than accepting `412` blindly;
-5. coexistence with the forward-daily pipeline;
-6. a controlled backfill trigger boundary that cannot fan out 1,956 objects accidentally.
+Phase 2.5C-1 design and 2.5C-2 legacy-capable parser/Silver schema v2 are now complete. The next authorized gate is 2.5C-3: implement the exact historical Bronze manifest reader and `VersionId` authority boundary before any AWS backfill. Replay hardening, completion evidence, and controlled explicit invocation remain subsequent C-subgates.
