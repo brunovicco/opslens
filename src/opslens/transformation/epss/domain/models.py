@@ -17,19 +17,19 @@ class SilverEpssRecord:
     Attributes:
         cve: Canonical CVE identifier.
         epss: EPSS probability score in the inclusive range from 0.0 to 1.0.
-        percentile: EPSS percentile in the inclusive range from 0.0 to 1.0.
-        model_version: EPSS model version declared by FIRST.
-        score_timestamp: Timezone-aware timestamp declared by the source snapshot.
+        percentile: Source percentile when published; unavailable for EPSS v1.
+        model_version: Source-declared model version when present.
+        score_timestamp: Source-declared score timestamp when present.
         source: Canonical source identifier.
         source_sha256: SHA-256 digest of the immutable Bronze source artifact.
-        snapshot_date: Source snapshot date derived from the score timestamp.
+        snapshot_date: Canonical snapshot date used as the Silver partition.
     """
 
     cve: str
     epss: float
-    percentile: float
-    model_version: str
-    score_timestamp: datetime
+    percentile: float | None
+    model_version: str | None
+    score_timestamp: datetime | None
     source: str
     source_sha256: str
     snapshot_date: date
@@ -42,14 +42,21 @@ class SilverEpssRecord:
         if not math.isfinite(self.epss) or not 0.0 <= self.epss <= 1.0:
             raise ValueError("EPSS score must be a finite value between 0.0 and 1.0.")
 
-        if not math.isfinite(self.percentile) or not 0.0 <= self.percentile <= 1.0:
+        if self.percentile is not None and (
+            not math.isfinite(self.percentile) or not 0.0 <= self.percentile <= 1.0
+        ):
             raise ValueError("EPSS percentile must be a finite value between 0.0 and 1.0.")
 
-        if not self.model_version.strip():
-            raise ValueError("EPSS model version cannot be empty.")
+        if self.model_version is not None and not self.model_version.strip():
+            raise ValueError("EPSS model version cannot be blank when present.")
 
-        if self.score_timestamp.tzinfo is None:
-            raise ValueError("EPSS score timestamp must be timezone-aware.")
+        if self.score_timestamp is not None:
+            if self.score_timestamp.tzinfo is None:
+                raise ValueError("EPSS score timestamp must be timezone-aware when present.")
+            if self.snapshot_date != self.score_timestamp.date():
+                raise ValueError(
+                    "EPSS snapshot date must match the date declared by the score timestamp."
+                )
 
         if self.source != _FIRST_EPSS_SOURCE:
             raise ValueError(f"EPSS Silver source must be {_FIRST_EPSS_SOURCE!r}.")
@@ -57,9 +64,4 @@ class SilverEpssRecord:
         if _SHA256_PATTERN.fullmatch(self.source_sha256) is None:
             raise ValueError(
                 "EPSS source SHA-256 digest must contain 64 lowercase hexadecimal characters."
-            )
-
-        if self.snapshot_date != self.score_timestamp.date():
-            raise ValueError(
-                "EPSS snapshot date must match the date declared by the score timestamp."
             )
