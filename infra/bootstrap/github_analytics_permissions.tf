@@ -3,6 +3,7 @@ locals {
   dev_analytics_glue_epss_table_name = "epss_scores"
   dev_analytics_glue_kev_table_name  = "kev_entries"
   dev_analytics_glue_nvd_table_name  = "nvd_cve_versions"
+  dev_analytics_glue_ghsa_table_name = "ghsa_advisory_versions"
   dev_analytics_athena_workgroup     = "opslens-dev"
 
   dev_analytics_glue_catalog_arn = (
@@ -23,6 +24,10 @@ locals {
 
   dev_analytics_glue_nvd_table_arn = (
     "arn:aws:glue:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/${local.dev_analytics_glue_database_name}/${local.dev_analytics_glue_nvd_table_name}"
+  )
+
+  dev_analytics_glue_ghsa_table_arn = (
+    "arn:aws:glue:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/${local.dev_analytics_glue_database_name}/${local.dev_analytics_glue_ghsa_table_name}"
   )
 
   dev_analytics_glue_database_tables_arn = (
@@ -125,6 +130,24 @@ data "aws_iam_policy_document" "github_actions_analytics" {
       local.dev_analytics_glue_catalog_arn,
       local.dev_analytics_glue_database_arn,
       local.dev_analytics_glue_nvd_table_arn,
+    ]
+  }
+
+  statement {
+    sid    = "ManageOpsLensGlueGhsaTable"
+    effect = "Allow"
+
+    actions = [
+      "glue:CreateTable",
+      "glue:DeleteTable",
+      "glue:GetTable",
+      "glue:UpdateTable",
+    ]
+
+    resources = [
+      local.dev_analytics_glue_catalog_arn,
+      local.dev_analytics_glue_database_arn,
+      local.dev_analytics_glue_ghsa_table_arn,
     ]
   }
 

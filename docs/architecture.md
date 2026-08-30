@@ -21,6 +21,7 @@ The implemented architecture currently covers:
 - NVD Glue Data Catalog and Athena analytics;
 - GHSA reviewed-advisory Bronze ingestion with exact versioned COMPLETE evidence;
 - GHSA immutable advisory-version Silver content objects and attempt-level COMPLETE provenance;
+- explicit GHSA Glue catalog over authoritative Silver and bounded Athena nested-evidence analytics;
 - exact S3 object-version evidence verification;
 - idempotent conditional persistence;
 - bounded asynchronous retries and SQS OnFailure recovery;
@@ -555,6 +556,13 @@ per observed_advisory_version_id
         |
         v
 Silver COMPLETE manifest
+        |
+        v
+AWS Glue Data Catalog
+opslens_dev.ghsa_advisory_versions
+        |
+        v
+Amazon Athena
 ```
 
 The content identity and physical-observation boundaries remain separate:
@@ -570,7 +578,7 @@ Silver content objects use create-only persistence and exact replay verification
 
 The live workload also proved that GitHub may expose a known CVSS family as an unavailable placeholder. Such placeholders remain in canonical source JSON but do not create fabricated typed metrics. Malformed known-family structures still fail closed.
 
-GHSA Glue/Athena analytics is intentionally deferred to Phase 2.4E. Package/version applicability remains deterministic Phase 3 work.
+Phase 2.4E exposes the authoritative Silver relation directly as `opslens_dev.ghsa_advisory_versions`, with no projector, crawler, or Glue partitions. Real Athena proofs returned 10 unique content versions, 18 vulnerability entries, structurally valid nested identifiers/CWEs/CVSS/package evidence, seven unavailable CVSS v4 placeholders with zero fabricated typed metrics, and scans of 6,035 and 72,077 bytes under the unchanged 10 MiB cutoff. Package/version applicability remains deterministic Phase 3 work.
 
 ---
 

@@ -29,11 +29,11 @@ The project intentionally builds deterministic evidence, provenance, correlation
 | Phase 2.1 | CISA KEV Bronze Ingestion | ✅ Complete |
 | Phase 2.2 | CISA KEV Silver + Analytics | ✅ Complete |
 | Phase 2.3A–2.3G | NVD / CVE Bronze, Silver, Watermark, Glue + Athena | ✅ Complete |
-| Phase 2.4 | GitHub Security Advisories | 🚧 In progress — 2.4D Silver runtime complete; 2.4E Glue/Athena next |
+| Phase 2.4 | GitHub Security Advisories | 🚧 In progress — 2.4E Glue/Athena complete; 2.4F cross-source closeout next |
 | Phase 2.5 | Historical EPSS expansion | ⏳ Not started |
 | Phase 3 | Vulnerability Correlation Engine | ⏳ Not started |
 
-The NVD deterministic evidence path is complete from immutable source ingestion through versioned Silver evidence, authoritative watermark promotion, permanent analytics projection, AWS Glue, and bounded Athena queries. The GHSA path is now complete through reviewed-advisory Bronze ingestion and immutable advisory-version Silver runtime with exact S3 VersionId provenance and replay-safe COMPLETE evidence. The current roadmap milestone is Phase 2.4E — GHSA Glue/Athena Analytics.
+The NVD deterministic evidence path is complete from immutable source ingestion through versioned Silver evidence, authoritative watermark promotion, permanent analytics projection, AWS Glue, and bounded Athena queries. The GHSA path is now complete through reviewed-advisory Bronze ingestion, immutable advisory-version Silver runtime, an explicit Glue external table over authoritative Silver bytes, and bounded Athena nested-evidence queries. The current roadmap milestone is Phase 2.4F — GHSA cross-source deterministic evidence and closeout.
 
 ## Current architecture
 
@@ -194,9 +194,16 @@ per observed_advisory_version_id
         v
 Silver COMPLETE manifest
   occurrence -> exact content VersionId
+        |
+        v
+AWS Glue Data Catalog
+opslens_dev.ghsa_advisory_versions
+        |
+        v
+Amazon Athena
 ```
 
-Phase 2.4D proved a real 10-advisory Bronze attempt end to end. Ten authoritative one-row Parquet objects and one Silver COMPLETE manifest were created. A second invocation reproduced the same identities and created zero additional S3 versions. Package/version applicability remains deterministic Phase 3 work.
+Phase 2.4D proved a real 10-advisory Bronze attempt end to end. Ten authoritative one-row Parquet objects and one Silver COMPLETE manifest were created, and replay created zero additional S3 versions. Phase 2.4E then exposed the authoritative Silver relation directly through `opslens_dev.ghsa_advisory_versions`: Athena reproduced 10 unique content versions, 18 vulnerability entries, valid nested evidence, seven unavailable CVSS v4 placeholders with zero typed-v4 normalization violations, and remained far below the 10 MiB workgroup cutoff. Package/version applicability remains deterministic Phase 3 work.
 
 ## Core principles
 
@@ -428,7 +435,7 @@ The architecture avoids services that do not yet solve a demonstrated requiremen
 
 Current examples:
 
-- no Glue crawler for EPSS, KEV, or NVD;
+- no Glue crawler for EPSS, KEV, NVD, or GHSA;
 - no Step Functions requirement in the current data plane;
 - no DynamoDB idempotency store;
 - no Iceberg requirement yet;
@@ -499,7 +506,7 @@ Phase 2.5  Historical EPSS                                     NOT STARTED
 Phase 3    Vulnerability Correlation Engine                    NOT STARTED
 ```
 
-Phase 2.4A — GHSA Source Contract & Workload Spike is the next implementation gate. Historical EPSS follows before Phase 2 closeout. Package/version vulnerability applicability remains deterministic Phase 3 work and is not delegated to an LLM.
+Phase 2.4E — GHSA Glue/Athena Analytics is complete. Phase 2.4F — cross-source deterministic evidence and GHSA closeout — is the next implementation gate. Historical EPSS follows before Phase 2 closeout. Package/version vulnerability applicability remains deterministic Phase 3 work and is not delegated to an LLM.
 
 The proven patterns are reused where appropriate, but no source is forced into a generic ingestion design when its semantics differ.
 
