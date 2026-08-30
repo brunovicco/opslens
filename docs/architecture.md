@@ -2,7 +2,7 @@
 
 🇺🇸 **English** | 🇧🇷 [Português](architecture.pt-br.md)
 
-_Last updated: 2026-08-27_
+_Last updated: 2026-08-30_
 
 ## Overview
 
@@ -19,6 +19,8 @@ The implemented architecture currently covers:
 - NVD authoritative watermark promotion;
 - permanent NVD analytics projection;
 - NVD Glue Data Catalog and Athena analytics;
+- GHSA reviewed-advisory Bronze ingestion with exact versioned COMPLETE evidence;
+- GHSA immutable advisory-version Silver content objects and attempt-level COMPLETE provenance;
 - exact S3 object-version evidence verification;
 - idempotent conditional persistence;
 - bounded asynchronous retries and SQS OnFailure recovery;
@@ -528,6 +530,50 @@ The event-driven invocation was correlated through CloudWatch by the exact water
 
 ---
 
+## GitHub Security Advisories
+
+The implemented GHSA path now covers deterministic reviewed-advisory Bronze and immutable advisory-version Silver evidence.
+
+```text
+GitHub Global Security Advisories REST API
+        |
+        v
+GHSA Bronze Lambda
+        |
+        v
+versioned Bronze pages + COMPLETE
+        |
+        v
+GHSA Silver Lambda
+  exact manifest/page VersionId reads
+  attempt_id recomputation
+  deterministic normalization
+        |
+        v
+one immutable one-row Parquet object
+per observed_advisory_version_id
+        |
+        v
+Silver COMPLETE manifest
+```
+
+The content identity and physical-observation boundaries remain separate:
+
+```text
+observed_advisory_version_id -> exact advisory source content
+sync_id                      -> logical source window
+attempt_id                   -> exact physical Bronze observation
+attempt_occurrence_id        -> exact source position inside that attempt
+```
+
+Silver content objects use create-only persistence and exact replay verification. The COMPLETE manifest is published only after every content object has been created or exactly verified. A real 10-advisory proof produced ten one-row Parquet objects and one COMPLETE manifest; replay preserved the same eleven S3 versions and created zero new versions.
+
+The live workload also proved that GitHub may expose a known CVSS family as an unavailable placeholder. Such placeholders remain in canonical source JSON but do not create fabricated typed metrics. Malformed known-family structures still fail closed.
+
+GHSA Glue/Athena analytics is intentionally deferred to Phase 2.4E. Package/version applicability remains deterministic Phase 3 work.
+
+---
+
 ## Failure recovery
 
 The platform treats scheduler delivery, Lambda asynchronous processing, evidence validation, and SQS recovery as separate failure boundaries.
@@ -598,6 +644,8 @@ Runtime identities
     +-- NVD Silver
     +-- NVD Promotion
     +-- NVD Analytics Projector
+    +-- GHSA Bronze
+    +-- GHSA Silver
 ```
 
 Least privilege is evaluated against each runtime's responsibility rather than against the entire data lake.
@@ -652,7 +700,7 @@ There is no remaining known global `dev` Terraform drift from the legacy Lambda 
 FIRST EPSS                          IMPLEMENTED through Athena
 CISA KEV                            IMPLEMENTED through Athena
 NVD / CVE                           IMPLEMENTED through authoritative analytics + Athena
-GitHub Security Advisories          IN PROGRESS — Phase 2.4A next
+GitHub Security Advisories          IMPLEMENTED through immutable Silver; Glue/Athena next
 EPSS historical expansion           NOT STARTED
 Phase 3 Vulnerability Correlation   NOT STARTED
 ```
@@ -669,6 +717,6 @@ Phase 2.3F — NVD Authoritative Watermark    COMPLETE
 Phase 2.3G — NVD Glue/Athena Analytics      COMPLETE
 ```
 
-Phase 2.4-0 reconciles the documentation against the post-PR #28 `main` checkpoint. Phase 2.4A — GHSA Source Contract & Workload Spike is the next implementation gate.
+GHSA Phase 2.4A source contract, 2.4B advisory/Silver contract, 2.4C Bronze runtime, and 2.4D immutable Silver runtime are complete. Phase 2.4E — GHSA Glue/Athena Analytics — is the next implementation gate.
 
-Package/version vulnerability applicability remains deterministic Phase 3 work. Phase 2 remains open until GHSA and historical EPSS requirements are completed or explicitly deferred; no Bedrock, RAG, or agentic phase should begin as a substitute for those remaining deterministic data-plane milestones.
+Package/version vulnerability applicability remains deterministic Phase 3 work. Phase 2 remains open until GHSA analytics/cross-source exit criteria and historical EPSS requirements are completed or explicitly deferred; no Bedrock, RAG, or agentic phase should begin as a substitute for those remaining deterministic data-plane milestones.

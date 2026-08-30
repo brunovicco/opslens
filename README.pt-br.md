@@ -29,15 +29,15 @@ O projeto constrói primeiro evidência determinística, proveniência, correla�
 | Phase 2.1 | CISA KEV Bronze Ingestion | ✅ Concluída |
 | Phase 2.2 | CISA KEV Silver + Analytics | ✅ Concluída |
 | Phase 2.3A–2.3G | NVD / CVE Bronze, Silver, Watermark, Glue + Athena | ✅ Concluída |
-| Phase 2.4 | GitHub Security Advisories | 🚧 Em andamento — 2.4A source contract é o próximo gate |
+| Phase 2.4 | GitHub Security Advisories | 🚧 Em andamento — runtime Silver 2.4D concluído; Glue/Athena 2.4E é o próximo gate |
 | Phase 2.5 | Expansão histórica do EPSS | ⏳ Não iniciada |
 | Phase 3 | Vulnerability Correlation Engine | ⏳ Não iniciada |
 
-O caminho determinístico de evidência do NVD está completo desde a ingestão imutável da fonte até Silver versionado, promoção do watermark autoritativo, projeção analítica permanente, AWS Glue e consultas Athena com custo limitado. A migração do lifecycle dos artefatos Lambda legados também está concluída. O milestone atual do roadmap é a Phase 2.4 — GitHub Security Advisories, começando pelo contrato da fonte GHSA e workload spike.
+O caminho determinístico de evidência do NVD está completo desde a ingestão imutável da fonte até Silver versionado, promoção do watermark autoritativo, projeção analítica permanente, AWS Glue e consultas Athena com custo limitado. O caminho GHSA agora está concluído até a ingestão Bronze de advisories reviewed e o runtime Silver imutável de versões de advisory, com proveniência por VersionId exato do S3 e evidência COMPLETE segura para replay. O milestone atual do roadmap é a Phase 2.4E — GHSA Glue/Athena Analytics.
 
 ## Arquitetura atual
 
-O OpsLens possui hoje três caminhos implementados de threat intelligence.
+O OpsLens possui hoje quatro caminhos implementados de threat intelligence.
 
 ### FIRST EPSS
 
@@ -169,6 +169,34 @@ watermark_committed
 ```
 
 Analytics é estritamente downstream. O projector analítico não pode avançar o watermark, alterar a autoridade Silver, listar o bucket, deletar objetos nem escrever partições no Glue.
+
+### GitHub Security Advisories
+
+```text
+GitHub Global Security Advisories REST API
+        |
+        v
+GHSA Bronze Lambda
+        |
+        v
+páginas Bronze versionadas no S3 + COMPLETE
+        |
+        v
+GHSA Silver Lambda
+  leituras exatas por VersionId de manifest/páginas
+  recomputação do attempt_id
+  normalização determinística do advisory
+        |
+        v
+um objeto Parquet imutável de uma linha
+por observed_advisory_version_id
+        |
+        v
+manifest Silver COMPLETE
+  ocorrência -> VersionId exato do conteúdo
+```
+
+A Phase 2.4D comprovou end to end um attempt Bronze real com 10 advisories. Foram criados dez objetos Parquet autoritativos de uma linha e um manifest Silver COMPLETE. Uma segunda invocação reproduziu as mesmas identidades e criou zero novas versões S3. A aplicabilidade de package/version permanece trabalho determinístico da Phase 3.
 
 ## Princípios
 

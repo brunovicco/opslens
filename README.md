@@ -29,15 +29,15 @@ The project intentionally builds deterministic evidence, provenance, correlation
 | Phase 2.1 | CISA KEV Bronze Ingestion | ✅ Complete |
 | Phase 2.2 | CISA KEV Silver + Analytics | ✅ Complete |
 | Phase 2.3A–2.3G | NVD / CVE Bronze, Silver, Watermark, Glue + Athena | ✅ Complete |
-| Phase 2.4 | GitHub Security Advisories | 🚧 In progress — 2.4A source contract next |
+| Phase 2.4 | GitHub Security Advisories | 🚧 In progress — 2.4D Silver runtime complete; 2.4E Glue/Athena next |
 | Phase 2.5 | Historical EPSS expansion | ⏳ Not started |
 | Phase 3 | Vulnerability Correlation Engine | ⏳ Not started |
 
-The NVD deterministic evidence path is complete from immutable source ingestion through versioned Silver evidence, authoritative watermark promotion, permanent analytics projection, AWS Glue, and bounded Athena queries. The legacy Lambda artifact lifecycle migration is also complete. The current roadmap milestone is Phase 2.4 — GitHub Security Advisories, beginning with the GHSA source contract and workload spike.
+The NVD deterministic evidence path is complete from immutable source ingestion through versioned Silver evidence, authoritative watermark promotion, permanent analytics projection, AWS Glue, and bounded Athena queries. The GHSA path is now complete through reviewed-advisory Bronze ingestion and immutable advisory-version Silver runtime with exact S3 VersionId provenance and replay-safe COMPLETE evidence. The current roadmap milestone is Phase 2.4E — GHSA Glue/Athena Analytics.
 
 ## Current architecture
 
-OpsLens currently has three implemented threat-intelligence data paths.
+OpsLens currently has four implemented threat-intelligence data paths.
 
 ### FIRST EPSS
 
@@ -169,6 +169,34 @@ watermark_committed
 ```
 
 Analytics is downstream-only. The analytics projector cannot advance the watermark, mutate Silver authority, list the bucket, delete objects, or write Glue partitions.
+
+### GitHub Security Advisories
+
+```text
+GitHub Global Security Advisories REST API
+        |
+        v
+GHSA Bronze Lambda
+        |
+        v
+versioned S3 Bronze pages + COMPLETE
+        |
+        v
+GHSA Silver Lambda
+  exact manifest/page VersionId reads
+  attempt_id recomputation
+  deterministic advisory normalization
+        |
+        v
+one immutable one-row Parquet object
+per observed_advisory_version_id
+        |
+        v
+Silver COMPLETE manifest
+  occurrence -> exact content VersionId
+```
+
+Phase 2.4D proved a real 10-advisory Bronze attempt end to end. Ten authoritative one-row Parquet objects and one Silver COMPLETE manifest were created. A second invocation reproduced the same identities and created zero additional S3 versions. Package/version applicability remains deterministic Phase 3 work.
 
 ## Core principles
 
