@@ -173,12 +173,6 @@ data "aws_iam_policy_document" "github_actions_epss_history_deploy" {
     resources = [
       local.dev_epss_history_transformer_log_group_arn,
     ]
-
-    condition {
-      test     = "StringEquals"
-      variable = "aws:RequestTag/Purpose"
-      values   = ["epss-history-transformer-observability"]
-    }
   }
 
   statement {
