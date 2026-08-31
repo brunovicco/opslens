@@ -207,6 +207,7 @@ data "aws_iam_policy_document" "github_actions_epss_history_deploy" {
       "lambda:GetRuntimeManagementConfig",
       "lambda:ListTags",
       "lambda:ListVersionsByFunction",
+      "lambda:TagResource",
     ]
 
     resources = [
