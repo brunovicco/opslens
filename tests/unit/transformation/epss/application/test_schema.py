@@ -8,9 +8,9 @@ from opslens.transformation.epss.application.schema import (
 )
 
 
-def test_epss_silver_schema_version_is_positive() -> None:
-    """Expose a positive explicit schema version."""
-    assert EPSS_SILVER_SCHEMA_VERSION == 1
+def test_epss_silver_schema_version_is_v2() -> None:
+    """Expose the explicit legacy-compatible Silver schema version."""
+    assert EPSS_SILVER_SCHEMA_VERSION == 2
 
 
 def test_epss_silver_columns_have_stable_order() -> None:
@@ -39,9 +39,17 @@ def test_epss_silver_columns_have_expected_physical_types() -> None:
     )
 
 
-def test_epss_silver_columns_are_non_nullable() -> None:
-    """Require every physical EPSS data column to contain a value."""
-    assert all(not column.nullable for column in EPSS_SILVER_DATA_COLUMNS)
+def test_epss_silver_v2_nullability_matches_legacy_source_contract() -> None:
+    """Permit null only where EPSS v1 physically lacks source evidence."""
+    assert tuple(column.nullable for column in EPSS_SILVER_DATA_COLUMNS) == (
+        False,
+        False,
+        True,
+        True,
+        True,
+        False,
+        False,
+    )
 
 
 def test_snapshot_date_is_partition_only() -> None:

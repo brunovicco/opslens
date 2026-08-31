@@ -20,7 +20,7 @@ def _record(
     percentile: float = 0.987654,
     snapshot_date: date = date(2026, 8, 15),
 ) -> SilverEpssRecord:
-    """Build a valid normalized EPSS record for Parquet tests."""
+    """Build a valid normalized modern EPSS record for Parquet tests."""
     score_timestamp = datetime(
         snapshot_date.year,
         snapshot_date.month,
@@ -43,6 +43,20 @@ def _record(
     )
 
 
+def _legacy_record(cve: str) -> SilverEpssRecord:
+    """Build a truthful EPSS v1 record with unavailable fields left null."""
+    return SilverEpssRecord(
+        cve=cve,
+        epss=0.65117,
+        percentile=None,
+        model_version=None,
+        score_timestamp=None,
+        source="first-epss",
+        source_sha256="b" * 64,
+        snapshot_date=date(2021, 4, 14),
+    )
+
+
 def test_writes_valid_parquet_artifact() -> None:
     """Serialize normalized records into a readable Parquet artifact."""
     destination = BytesIO()
@@ -61,12 +75,12 @@ def test_writes_valid_parquet_artifact() -> None:
 
     assert result.row_count == 2
     assert result.size_bytes == len(destination.getvalue())
-    assert result.schema_version == 1
+    assert result.schema_version == 2
     assert table.num_rows == 2
 
 
 def test_writes_expected_physical_schema() -> None:
-    """Persist the exact EPSS Silver physical column contract."""
+    """Persist the exact EPSS Silver v2 physical column contract."""
     destination = BytesIO()
 
     PyArrowSilverEpssRecordWriter().write(
@@ -90,6 +104,13 @@ def test_writes_expected_physical_schema() -> None:
     assert table.schema.field("epss").type == pa.float64()
     assert table.schema.field("percentile").type == pa.float64()
     assert table.schema.field("score_timestamp").type == pa.timestamp("us", tz="UTC")
+    assert table.schema.field("cve").nullable is False
+    assert table.schema.field("epss").nullable is False
+    assert table.schema.field("percentile").nullable is True
+    assert table.schema.field("model_version").nullable is True
+    assert table.schema.field("score_timestamp").nullable is True
+    assert table.schema.field("source").nullable is False
+    assert table.schema.field("source_sha256").nullable is False
     assert "snapshot_date" not in table.column_names
 
 
@@ -119,6 +140,27 @@ def test_preserves_normalized_values() -> None:
     assert row["source_sha256"] == "a" * 64
 
 
+def test_preserves_legacy_unavailable_fields_as_null() -> None:
+    """Serialize EPSS v1 unavailable evidence as null instead of fabrication."""
+    destination = BytesIO()
+
+    PyArrowSilverEpssRecordWriter().write(
+        records=(_legacy_record("CVE-2020-5902"),),
+        destination=destination,
+    )
+
+    table = pq.read_table(BytesIO(destination.getvalue()))
+    row = table.to_pylist()[0]
+
+    assert row["cve"] == "CVE-2020-5902"
+    assert row["epss"] == pytest.approx(0.65117)
+    assert row["percentile"] is None
+    assert row["model_version"] is None
+    assert row["score_timestamp"] is None
+    assert row["source"] == "first-epss"
+    assert row["source_sha256"] == "b" * 64
+
+
 def test_writes_schema_metadata() -> None:
     """Persist dataset identity and schema version as Parquet metadata."""
     destination = BytesIO()
@@ -133,7 +175,7 @@ def test_writes_schema_metadata() -> None:
 
     assert metadata is not None
     assert metadata[b"opslens.dataset"] == b"epss-silver"
-    assert metadata[b"opslens.schema_version"] == b"1"
+    assert metadata[b"opslens.schema_version"] == b"2"
 
 
 def test_writes_multiple_batches() -> None:
