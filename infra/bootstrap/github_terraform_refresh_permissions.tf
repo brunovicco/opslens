@@ -31,6 +31,20 @@ locals {
     "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:${log_group_name}"
   ]
 
+  github_terraform_refresh_lambda_function_names = [
+    "opslens-dev-ghsa-bronze",
+    "opslens-dev-ghsa-silver",
+    "opslens-dev-kev-silver",
+    "opslens-dev-nvd-bootstrap-ingestion",
+    "opslens-dev-nvd-incremental",
+    "opslens-dev-nvd-silver",
+  ]
+
+  github_terraform_refresh_lambda_function_arns = [
+    for function_name in local.github_terraform_refresh_lambda_function_names :
+    "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${function_name}"
+  ]
+
   github_terraform_refresh_queue_names = [
     "opslens-dev-kev-silver-failures",
     "opslens-dev-nvd-silver-failures",
@@ -80,6 +94,19 @@ data "aws_iam_policy_document" "github_actions_terraform_refresh" {
     actions = ["logs:ListTagsForResource"]
 
     resources = local.github_terraform_refresh_log_group_arns
+  }
+
+  statement {
+    sid    = "ReadLegacyLambdaFunctions"
+    effect = "Allow"
+
+    actions = [
+      "lambda:GetFunction",
+      "lambda:GetFunctionCodeSigningConfig",
+      "lambda:ListVersionsByFunction",
+    ]
+
+    resources = local.github_terraform_refresh_lambda_function_arns
   }
 
   statement {
