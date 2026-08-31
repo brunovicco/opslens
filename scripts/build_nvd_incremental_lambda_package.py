@@ -5,7 +5,7 @@ import shutil
 import stat
 import subprocess
 from pathlib import Path
-from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
+from zipfile import ZIP_STORED, ZipFile, ZipInfo
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -221,8 +221,11 @@ def write_deterministic_zip() -> None:
     with ZipFile(
         ARTIFACT_PATH,
         mode="w",
-        compression=ZIP_DEFLATED,
-        compresslevel=9,
+        # DEFLATE output varies across zlib versions even when filenames,
+        # contents, and ZIP metadata are identical. The uncompressed package
+        # remains below Lambda's direct-upload limit, so storing entries makes
+        # the deployment hash reproducible across local and CI environments.
+        compression=ZIP_STORED,
     ) as archive:
         for path in files:
             relative_path = path.relative_to(
@@ -233,7 +236,7 @@ def write_deterministic_zip() -> None:
                 filename=relative_path,
                 date_time=ZIP_TIMESTAMP,
             )
-            info.compress_type = ZIP_DEFLATED
+            info.compress_type = ZIP_STORED
             info.create_system = 3
             info.external_attr = (
                 normalized_permissions(path) << 16
@@ -242,8 +245,7 @@ def write_deterministic_zip() -> None:
             archive.writestr(
                 info,
                 path.read_bytes(),
-                compress_type=ZIP_DEFLATED,
-                compresslevel=9,
+                compress_type=ZIP_STORED,
             )
 
 
