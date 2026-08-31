@@ -26,7 +26,9 @@ data "aws_iam_policy_document" "epss_history_coordinator_assume_role" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:brunovicco/opslens:ref:refs/heads/main"]
+      values = [
+        "repo:brunovicco@38844444/opslens@1333092779:ref:refs/heads/main",
+      ]
     }
   }
 }
