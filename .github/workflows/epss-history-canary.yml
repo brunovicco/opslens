@@ -1,0 +1,76 @@
+name: EPSS History Canary
+
+on:
+  workflow_dispatch:
+    inputs:
+      execute:
+        description: "Execute the frozen seven-snapshot canary (default is plan-only)"
+        required: true
+        type: boolean
+        default: false
+      confirmation:
+        description: "Execution only: enter EPSS-HISTORY-CANARY-7 exactly"
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  epss-history-canary:
+    name: Historical EPSS seven-snapshot canary
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    env:
+      EPSS_DATA_BUCKET: opslens-dev-data-487757851499-us-east-1
+      EPSS_HISTORY_TRANSFORMER_FUNCTION: opslens-dev-epss-history-transformer
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+        with:
+          enable-cache: true
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen
+
+      - name: Configure bounded coordinator credentials
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        with:
+          role-to-assume: arn:aws:iam::487757851499:role/OpsLensEpssHistoryCoordinatorRole
+          aws-region: us-east-1
+          allowed-account-ids: 487757851499
+
+      - name: Plan frozen canary read-only
+        if: ${{ !inputs.execute }}
+        run: uv run python scripts/run_epss_history_canary.py
+
+      - name: Validate exact execution confirmation
+        if: ${{ inputs.execute }}
+        env:
+          CANARY_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          test "$CANARY_CONFIRMATION" = "EPSS-HISTORY-CANARY-7" || {
+            echo "Execution requires the exact confirmation EPSS-HISTORY-CANARY-7" >&2
+            exit 1
+          }
+
+      - name: Execute exactly seven snapshots sequentially
+        if: ${{ inputs.execute }}
+        env:
+          CANARY_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          uv run python scripts/run_epss_history_canary.py \
+            --execute \
+            --confirmation "$CANARY_CONFIRMATION"
