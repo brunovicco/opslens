@@ -10,6 +10,7 @@ on:
       - "scripts/build_lambda_package.py"
       - "scripts/build_kev_lambda_package.py"
       - "scripts/build_nvd_lambda_package.py"
+      - "scripts/build_nvd_incremental_lambda_package.py"
       - "scripts/build_nvd_analytics_projector_lambda_package.py"
       - "scripts/build_epss_history_transformer_lambda_package.py"
       - "pyproject.toml"

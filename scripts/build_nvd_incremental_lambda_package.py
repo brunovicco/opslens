@@ -1,11 +1,12 @@
 """Build the deterministic AWS Lambda package for NVD incremental ingestion."""
 
+import csv
 import hashlib
 import shutil
 import stat
 import subprocess
 from pathlib import Path
-from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
+from zipfile import ZIP_STORED, ZipFile, ZipInfo
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -153,6 +154,26 @@ def remove_unneeded_runtime_files() -> None:
             path.unlink()
 
 
+def remove_stale_dependency_records() -> None:
+    """Remove RECORD entries for dependency files excluded from the ZIP."""
+    for record_path in PACKAGE_DIR.glob("*.dist-info/RECORD"):
+        with record_path.open(newline="") as record_file:
+            rows = list(csv.reader(record_file))
+
+        retained_rows = [
+            row
+            for row in rows
+            if row and (PACKAGE_DIR / row[0]).is_file()
+        ]
+
+        with record_path.open("w", newline="") as record_file:
+            writer = csv.writer(
+                record_file,
+                lineterminator="\n",
+            )
+            writer.writerows(retained_rows)
+
+
 def copy_application_source() -> None:
     """Copy NVD ingestion and observability runtime source."""
     destination_root = PACKAGE_DIR / "opslens"
@@ -221,8 +242,11 @@ def write_deterministic_zip() -> None:
     with ZipFile(
         ARTIFACT_PATH,
         mode="w",
-        compression=ZIP_DEFLATED,
-        compresslevel=9,
+        # DEFLATE output varies across zlib versions even when filenames,
+        # contents, and ZIP metadata are identical. The uncompressed package
+        # remains below Lambda's direct-upload limit, so storing entries makes
+        # the deployment hash reproducible across local and CI environments.
+        compression=ZIP_STORED,
     ) as archive:
         for path in files:
             relative_path = path.relative_to(
@@ -233,7 +257,7 @@ def write_deterministic_zip() -> None:
                 filename=relative_path,
                 date_time=ZIP_TIMESTAMP,
             )
-            info.compress_type = ZIP_DEFLATED
+            info.compress_type = ZIP_STORED
             info.create_system = 3
             info.external_attr = (
                 normalized_permissions(path) << 16
@@ -242,8 +266,7 @@ def write_deterministic_zip() -> None:
             archive.writestr(
                 info,
                 path.read_bytes(),
-                compress_type=ZIP_DEFLATED,
-                compresslevel=9,
+                compress_type=ZIP_STORED,
             )
 
 
@@ -276,6 +299,7 @@ def main() -> None:
     export_runtime_dependencies()
     install_runtime_dependencies()
     remove_unneeded_runtime_files()
+    remove_stale_dependency_records()
     copy_application_source()
     validate_package_contents()
     write_deterministic_zip()
