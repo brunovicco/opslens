@@ -35,6 +35,10 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: uv run python scripts/build_lambda_package.py
 
+      - name: Build EPSS history transformer Lambda package
+        working-directory: ${{ github.workspace }}
+        run: uv run python scripts/build_epss_history_transformer_lambda_package.py
+
       - name: Build KEV Lambda package
         working-directory: ${{ github.workspace }}
         run: uv run python scripts/build_kev_lambda_package.py
@@ -49,6 +53,12 @@ jobs:
           role-to-assume: arn:aws:iam::487757851499:role/OpsLensGitHubDeployRole
           aws-region: us-east-1
           allowed-account-ids: 487757851499
+
+      - name: Publish EPSS history transformer artifact create-only
+        working-directory: ${{ github.workspace }}
+        run: |
+          uv run python scripts/publish_epss_history_transformer_artifact.py \
+            --bucket opslens-dev-artifacts-487757851499-us-east-1
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
