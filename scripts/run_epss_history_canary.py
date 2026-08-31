@@ -108,7 +108,9 @@ class GitHubArchiveReader:
 
         expected_years = set(range(2021, 2027))
         if set(year_tree_shas) != expected_years:
-            raise ValueError("Pinned EPSS root tree does not contain exactly the expected year trees.")
+            raise ValueError(
+                "Pinned EPSS root tree does not contain exactly the expected year trees."
+            )
 
         work_items: list[HistoricalEpssWorkItemV1] = []
         observed_dates: set[date] = set()
@@ -147,7 +149,9 @@ class GitHubArchiveReader:
         expected_dates = _calendar_dates(ARCHIVE_FIRST_DATE, ARCHIVE_PIN_END_DATE)
         unexpected = observed_dates - expected_dates
         if unexpected:
-            raise ValueError("Pinned EPSS archive contains snapshots outside the approved date range.")
+            raise ValueError(
+                "Pinned EPSS archive contains snapshots outside the approved date range."
+            )
         source_absent_dates = tuple(sorted(expected_dates - observed_dates))
 
         return HistoricalEpssArchiveInventoryV1(
@@ -344,7 +348,9 @@ class S3HistoricalBronzePublisher:
             VersionId=version_id,
         )
         if response.get("VersionId") != version_id:
-            raise ValueError("Historical EPSS Bronze replay GetObject VersionId changed after head.")
+            raise ValueError(
+                "Historical EPSS Bronze replay GetObject VersionId changed after head."
+            )
         body = response.get("Body")
         if body is None:
             raise ValueError("Historical EPSS Bronze replay response is missing Body.")
@@ -400,7 +406,9 @@ class LambdaHistoricalTransformerInvoker:
         result = cast(dict[str, object], decoded)
         snapshot_date = _required_date(result, "snapshot_date")
         if snapshot_date != coordinate.snapshot_date:
-            raise ValueError("Historical EPSS transformer response snapshot does not match request.")
+            raise ValueError(
+                "Historical EPSS transformer response snapshot does not match request."
+            )
         return HistoricalEpssTransformerResultV1(
             snapshot_date=snapshot_date,
             request_id=_required_string(result, "request_id"),
