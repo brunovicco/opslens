@@ -1,0 +1,56 @@
+name: Cleanup stale OpsLens branches
+
+on:
+  push:
+    branches:
+      - phase-2-epss-history-bootstrap
+    paths:
+      - ".github/workflows/cleanup-stale-branches.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    name: Delete confirmed stale remote branches
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 1
+
+      - name: Delete stale branches
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          stale_branches=(
+            "docs/phase-2-kev"
+            "lab-kev-async-failure"
+            "phase-2-ghsa-advisory-silver-contract"
+            "phase-2-ghsa-analytics"
+            "phase-2-ghsa-cross-source-closeout"
+            "phase-2-ghsa-doc-reconciliation"
+            "phase-2-ghsa-silver-runtime"
+            "phase-2-ghsa-source-contract"
+            "phase-2-kev-scheduler-runtime"
+            "phase-2-nvd-authoritative-watermark"
+            "noop"
+          )
+
+          for branch in "${stale_branches[@]}"; do
+            if git ls-remote --exit-code --heads origin "refs/heads/${branch}" >/dev/null 2>&1; then
+              echo "Deleting ${branch}"
+              git push origin --delete "${branch}"
+            else
+              echo "Already absent: ${branch}"
+            fi
+          done
+
+          for required_branch in main phase-2-epss-history-bootstrap; do
+            git ls-remote --exit-code --heads origin "refs/heads/${required_branch}" >/dev/null
+            echo "Retained ${required_branch}"
+          done
+
+          echo "OPSLENS_REMOTE_BRANCH_CLEANUP_GATE=PASS"
