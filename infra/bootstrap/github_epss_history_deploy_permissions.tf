@@ -71,6 +71,38 @@ data "aws_iam_policy_document" "github_actions_epss_history_deploy" {
   }
 
   statement {
+    sid     = "TagEpssHistoryCoordinatorRoleOnCreate"
+    effect  = "Allow"
+    actions = ["iam:TagRole"]
+
+    resources = [
+      local.dev_epss_history_coordinator_role_arn,
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Purpose"
+      values   = ["epss-history-canary-coordinator"]
+    }
+  }
+
+  statement {
+    sid     = "TagEpssHistoryTransformerRoleOnCreate"
+    effect  = "Allow"
+    actions = ["iam:TagRole"]
+
+    resources = [
+      local.dev_epss_history_transformer_role_arn,
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Purpose"
+      values   = ["epss-history-transformer-runtime"]
+    }
+  }
+
+  statement {
     sid    = "ReadEpssHistoryRoles"
     effect = "Allow"
 
@@ -131,6 +163,22 @@ data "aws_iam_policy_document" "github_actions_epss_history_deploy" {
     resources = [
       local.dev_epss_history_transformer_log_group_arn,
     ]
+  }
+
+  statement {
+    sid     = "TagEpssHistoryTransformerLogGroupOnCreate"
+    effect  = "Allow"
+    actions = ["logs:TagResource"]
+
+    resources = [
+      local.dev_epss_history_transformer_log_group_arn,
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Purpose"
+      values   = ["epss-history-transformer-observability"]
+    }
   }
 
   statement {
