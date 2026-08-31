@@ -166,8 +166,8 @@ data "aws_iam_policy_document" "github_actions_epss_history_deploy" {
   }
 
   statement {
-    sid     = "TagEpssHistoryTransformerLogGroupOnCreate"
-    effect  = "Allow"
+    sid    = "TagEpssHistoryTransformerLogGroupOnCreate"
+    effect = "Allow"
     actions = [
       "logs:TagLogGroup",
       "logs:TagResource",
