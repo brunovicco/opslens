@@ -45,6 +45,16 @@ locals {
     "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${function_name}"
   ]
 
+  github_terraform_refresh_silver_eventing_function_names = [
+    "opslens-dev-kev-silver",
+    "opslens-dev-nvd-silver",
+  ]
+
+  github_terraform_refresh_silver_eventing_function_arns = [
+    for function_name in local.github_terraform_refresh_silver_eventing_function_names :
+    "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${function_name}"
+  ]
+
   github_terraform_refresh_queue_names = [
     "opslens-dev-kev-silver-failures",
     "opslens-dev-nvd-silver-failures",
@@ -107,6 +117,18 @@ data "aws_iam_policy_document" "github_actions_terraform_refresh" {
     ]
 
     resources = local.github_terraform_refresh_lambda_function_arns
+  }
+
+  statement {
+    sid    = "ReadLegacySilverLambdaEventing"
+    effect = "Allow"
+
+    actions = [
+      "lambda:GetFunctionEventInvokeConfig",
+      "lambda:GetPolicy",
+    ]
+
+    resources = local.github_terraform_refresh_silver_eventing_function_arns
   }
 
   statement {
