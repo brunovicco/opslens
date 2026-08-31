@@ -22,7 +22,7 @@ class HistoricalEpssRuntimeSettings:
     approved_archive_commit: str
 
     @classmethod
-    def from_environment(cls) -> "HistoricalEpssRuntimeSettings":
+    def from_environment(cls) -> HistoricalEpssRuntimeSettings:
         """Load strict runtime settings from Lambda environment variables."""
         data_bucket = os.environ.get("EPSS_DATA_BUCKET", "").strip()
         approved_archive_commit = os.environ.get("EPSS_HISTORY_ARCHIVE_COMMIT", "").strip()
@@ -101,7 +101,9 @@ class S3HistoricalEpssForwardBoundaryReader:
                 try:
                     snapshot_date = date.fromisoformat(raw_snapshot_date)
                 except ValueError as exc:
-                    raise ValueError("Forward EPSS object contains an invalid snapshot date.") from exc
+                    raise ValueError(
+                        "Forward EPSS object contains an invalid snapshot date."
+                    ) from exc
                 if snapshot_date.isoformat() != raw_snapshot_date:
                     raise ValueError("Forward EPSS snapshot date must be canonical.")
                 if earliest is None or snapshot_date < earliest:
