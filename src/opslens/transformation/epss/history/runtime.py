@@ -28,7 +28,7 @@ class HistoricalEpssRuntimeSettings:
         approved_archive_commit = os.environ.get("EPSS_HISTORY_ARCHIVE_COMMIT", "").strip()
         if not data_bucket:
             raise ValueError("EPSS_DATA_BUCKET is required for historical EPSS runtime.")
-        if not re.fullmatch(r"[0-9a-f]{40}", approved_archive_commit):
+        if re.fullmatch(r"[0-9a-f]{40}", approved_archive_commit) is None:
             raise ValueError(
                 "EPSS_HISTORY_ARCHIVE_COMMIT must be a lowercase 40-character Git SHA."
             )
@@ -55,13 +55,7 @@ class _S3ListResponse(TypedDict, total=False):
 class HistoricalEpssForwardListClient(Protocol):
     """Define the narrow S3 list capability used for forward boundary discovery."""
 
-    def list_objects_v2(
-        self,
-        *,
-        Bucket: str,
-        Prefix: str,
-        ContinuationToken: str | None = None,
-    ) -> _S3ListResponse:
+    def list_objects_v2(self, **kwargs: object) -> _S3ListResponse:
         """List canonical forward EPSS object keys."""
         ...
 
@@ -88,11 +82,14 @@ class S3HistoricalEpssForwardBoundaryReader:
         continuation_token: str | None = None
 
         while True:
-            response = self._client.list_objects_v2(
-                Bucket=self._bucket_name,
-                Prefix=_FORWARD_PREFIX,
-                ContinuationToken=continuation_token,
-            )
+            request: dict[str, object] = {
+                "Bucket": self._bucket_name,
+                "Prefix": _FORWARD_PREFIX,
+            }
+            if continuation_token is not None:
+                request["ContinuationToken"] = continuation_token
+
+            response = self._client.list_objects_v2(**request)
             for summary in response.get("Contents", []):
                 key = summary.get("Key")
                 if not isinstance(key, str):
