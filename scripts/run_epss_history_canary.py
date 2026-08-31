@@ -226,6 +226,18 @@ class GitHubArchiveReader:
         raise RuntimeError("GitHub request exhausted retries.") from last_error
 
 
+class GitHubArchiveSourceReader:
+    """Adapt the shared GitHub archive client to the source-reader port."""
+
+    def __init__(self, *, archive_reader: GitHubArchiveReader) -> None:
+        """Initialize one inert-byte archive source adapter."""
+        self._archive_reader = archive_reader
+
+    def read(self, work_item: HistoricalEpssWorkItemV1) -> bytes:
+        """Read exact source bytes for one pinned work item."""
+        return self._archive_reader.read_source(work_item)
+
+
 class S3HistoricalBronzePublisher:
     """Create or exact-replay-verify historical Bronze source and manifest objects."""
 
@@ -532,7 +544,7 @@ def main() -> None:
             bucket_name=data_bucket,
         ),
         archive_inventory_reader=archive_reader,
-        source_reader=archive_reader,
+        source_reader=GitHubArchiveSourceReader(archive_reader=archive_reader),
         bronze_publisher=S3HistoricalBronzePublisher(
             client=s3_client,
             bucket_name=data_bucket,
