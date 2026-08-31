@@ -2,7 +2,8 @@
 
 from typing import cast
 
-from boto3.session import Session
+import boto3
+from mypy_boto3_s3 import S3Client
 
 from opslens.ingestion.epss.domain.history import HistoricalEpssSnapshotParser
 from opslens.shared.observability.ports import OperationalTelemetry
@@ -54,7 +55,7 @@ def build_runtime_executor(
 ) -> ExecuteHistoricalEpssInvocationV1:
     """Compose exact-version history transformation from environment and AWS SDK."""
     settings = HistoricalEpssRuntimeSettings.from_environment()
-    raw_s3_client = Session().client("s3")
+    raw_s3_client: S3Client = boto3.client("s3")
 
     boundary_reader = S3HistoricalEpssForwardBoundaryReader(
         client=cast(HistoricalEpssForwardListClient, raw_s3_client),
