@@ -16,7 +16,9 @@ DEFAULT_ARTIFACT = PROJECT_ROOT / "dist" / "opslens-epss-history-transformer.zip
 
 def parse_args() -> argparse.Namespace:
     """Parse immutable artifact publication arguments."""
-    parser = argparse.ArgumentParser(description="Publish EPSS history transformer ZIP create-only.")
+    parser = argparse.ArgumentParser(
+        description="Publish EPSS history transformer ZIP create-only."
+    )
     parser.add_argument("--bucket", required=True, help="Versioned deployment-artifacts S3 bucket.")
     parser.add_argument(
         "--artifact",
@@ -36,6 +38,29 @@ def _read_body(response: dict[str, Any]) -> bytes:
         return body.read()
     finally:
         body.close()
+
+
+def _verify_existing_artifact(
+    *,
+    client: Any,
+    bucket: str,
+    key: str,
+    raw_bytes: bytes,
+) -> str:
+    """Verify an existing content-addressed deployment artifact exactly."""
+    head = client.head_object(Bucket=bucket, Key=key)
+    version_id = head.get("VersionId")
+    size = head.get("ContentLength")
+    if not isinstance(version_id, str) or not version_id.strip():
+        raise RuntimeError("Existing artifact HeadObject requires S3 VersionId.")
+    if type(size) is not int or size != len(raw_bytes):
+        raise ValueError("Existing artifact size differs from deterministic ZIP.")
+    existing = _read_body(client.get_object(Bucket=bucket, Key=key, VersionId=version_id))
+    if existing != raw_bytes:
+        raise ValueError(
+            "Existing content-addressed artifact bytes differ from deterministic ZIP."
+        )
+    return version_id
 
 
 def main() -> None:
@@ -67,18 +92,12 @@ def main() -> None:
         if http_status != 412:
             raise
         status = "replay_verified"
-        head = client.head_object(Bucket=args.bucket, Key=key)
-        version_id = head.get("VersionId")
-        size = head.get("ContentLength")
-        if not isinstance(version_id, str) or not version_id.strip():
-            raise RuntimeError("Existing artifact HeadObject requires S3 VersionId.")
-        if type(size) is not int or size != len(raw_bytes):
-            raise ValueError("Existing artifact size differs from deterministic ZIP.")
-        existing = _read_body(
-            client.get_object(Bucket=args.bucket, Key=key, VersionId=version_id)
+        version_id = _verify_existing_artifact(
+            client=client,
+            bucket=args.bucket,
+            key=key,
+            raw_bytes=raw_bytes,
         )
-        if existing != raw_bytes:
-            raise ValueError("Existing content-addressed artifact bytes differ from deterministic ZIP.")
 
     print(
         json.dumps(
