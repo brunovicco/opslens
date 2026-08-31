@@ -55,8 +55,23 @@ jobs:
       - name: Full unit regression
         run: uv run pytest -q
 
+      - name: Build EPSS Lambda package
+        run: uv run python scripts/build_lambda_package.py
+
       - name: Build historical transformer package
         run: uv run python scripts/build_epss_history_transformer_lambda_package.py
+
+      - name: Build KEV Lambda package
+        run: uv run python scripts/build_kev_lambda_package.py
+
+      - name: Build NVD Bootstrap Lambda package
+        run: uv run python scripts/build_nvd_lambda_package.py
+
+      - name: Build NVD Incremental Lambda package
+        run: uv run python scripts/build_nvd_incremental_lambda_package.py
+
+      - name: Build NVD Analytics Projector Lambda package
+        run: uv run python scripts/build_nvd_analytics_projector_lambda_package.py
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
