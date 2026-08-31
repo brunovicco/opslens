@@ -1,6 +1,6 @@
 """Composition root for the dedicated historical EPSS transformer Lambda."""
 
-from typing import cast
+from typing import Literal, Protocol, cast
 
 import boto3
 from mypy_boto3_s3 import S3Client
@@ -50,12 +50,21 @@ from opslens.transformation.epss.history.runtime import (
 )
 
 
+class _Boto3S3ClientFactory(Protocol):
+    """Narrow the runtime SDK factory to the only service required here."""
+
+    def client(self, service_name: Literal["s3"]) -> S3Client:
+        """Create a typed S3 client."""
+        ...
+
+
 def build_runtime_executor(
     telemetry: OperationalTelemetry,
 ) -> ExecuteHistoricalEpssInvocationV1:
     """Compose exact-version history transformation from environment and AWS SDK."""
     settings = HistoricalEpssRuntimeSettings.from_environment()
-    raw_s3_client: S3Client = boto3.client("s3")
+    sdk = cast(_Boto3S3ClientFactory, boto3)
+    raw_s3_client = sdk.client("s3")
 
     boundary_reader = S3HistoricalEpssForwardBoundaryReader(
         client=cast(HistoricalEpssForwardListClient, raw_s3_client),
