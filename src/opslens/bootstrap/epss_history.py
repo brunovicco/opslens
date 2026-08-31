@@ -202,7 +202,9 @@ class HistoricalEpssCanaryItemResultV1:
     def __post_init__(self) -> None:
         """Require the transformer response to match the submitted snapshot."""
         if self.transformer.snapshot_date != self.work_item.snapshot_date:
-            raise ValueError("Historical EPSS transformer result snapshot date does not match work.")
+            raise ValueError(
+                "Historical EPSS transformer result snapshot date does not match work."
+            )
         if _SHA256_RE.fullmatch(self.source_sha256) is None:
             raise ValueError("Historical EPSS canary source SHA-256 is invalid.")
 
@@ -350,10 +352,17 @@ class HistoricalEpssBootstrapPlanFactoryV1:
     def select_canary(plan: HistoricalEpssBootstrapPlanV1) -> HistoricalEpssCanaryPlanV1:
         """Select exactly the seven D1-authorized snapshots from a full plan."""
         by_date = {item.snapshot_date: item for item in plan.work_items}
-        missing = [snapshot_date for snapshot_date in CANARY_DATES if snapshot_date not in by_date]
+        missing = [
+            snapshot_date
+            for snapshot_date in CANARY_DATES
+            if snapshot_date not in by_date
+        ]
         if missing:
             formatted = ", ".join(value.isoformat() for value in missing)
-            raise ValueError(f"Historical EPSS canary dates are unavailable in fresh plan: {formatted}.")
+            raise ValueError(
+                "Historical EPSS canary dates are unavailable in fresh plan: "
+                f"{formatted}."
+            )
         return HistoricalEpssCanaryPlanV1(
             plan=plan,
             canary_items=tuple(by_date[snapshot_date] for snapshot_date in CANARY_DATES),
@@ -410,7 +419,9 @@ class ExecuteHistoricalEpssCanaryV1:
                 snapshot=snapshot,
             )
             if coordinate.snapshot_date != work_item.snapshot_date:
-                raise ValueError("Historical EPSS Bronze coordinate snapshot date does not match work.")
+                raise ValueError(
+                    "Historical EPSS Bronze coordinate snapshot date does not match work."
+                )
             transformer = self._transformer_invoker.invoke(coordinate)
             results.append(
                 HistoricalEpssCanaryItemResultV1(
@@ -441,7 +452,9 @@ class ExecuteHistoricalEpssCanaryV1:
             usedforsecurity=False,
         ).hexdigest()
         if git_blob_sha1 != work_item.archive_git_blob_sha1:
-            raise ValueError("Historical EPSS source Git blob identity does not match pinned metadata.")
+            raise ValueError(
+                "Historical EPSS source Git blob identity does not match pinned metadata."
+            )
         snapshot = self._snapshot_parser.parse(
             source_bytes,
             snapshot_date=work_item.snapshot_date,
