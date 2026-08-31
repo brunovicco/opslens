@@ -1,5 +1,6 @@
 """Build the deterministic AWS Lambda package for NVD incremental ingestion."""
 
+import csv
 import hashlib
 import shutil
 import stat
@@ -153,6 +154,26 @@ def remove_unneeded_runtime_files() -> None:
             path.unlink()
 
 
+def remove_stale_dependency_records() -> None:
+    """Remove RECORD entries for dependency files excluded from the ZIP."""
+    for record_path in PACKAGE_DIR.glob("*.dist-info/RECORD"):
+        with record_path.open(newline="") as record_file:
+            rows = list(csv.reader(record_file))
+
+        retained_rows = [
+            row
+            for row in rows
+            if row and (PACKAGE_DIR / row[0]).is_file()
+        ]
+
+        with record_path.open("w", newline="") as record_file:
+            writer = csv.writer(
+                record_file,
+                lineterminator="\n",
+            )
+            writer.writerows(retained_rows)
+
+
 def copy_application_source() -> None:
     """Copy NVD ingestion and observability runtime source."""
     destination_root = PACKAGE_DIR / "opslens"
@@ -278,6 +299,7 @@ def main() -> None:
     export_runtime_dependencies()
     install_runtime_dependencies()
     remove_unneeded_runtime_files()
+    remove_stale_dependency_records()
     copy_application_source()
     validate_package_contents()
     write_deterministic_zip()
