@@ -27,7 +27,7 @@ CANARY_DATES = (
     date(2023, 3, 7),
     date(2025, 3, 17),
     date(2026, 6, 15),
-    date(2026, 8, 14),
+    date(2026, 8, 13),
 )
 CANARY_MAX_SOURCE_BYTES = 10 * 1024 * 1024
 _SHA1_RE = re.compile(r"^[0-9a-f]{40}$")

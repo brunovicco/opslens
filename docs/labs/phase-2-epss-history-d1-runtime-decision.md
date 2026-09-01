@@ -62,10 +62,10 @@ No implicit S3 fan-out is permitted.
 
 ## Current dev forward-authority evidence
 
-The latest real `dev` evidence already recorded by the Phase 2.5C design identifies the earliest canonical forward snapshot as:
+Fresh read-only target-environment evidence identifies the earliest canonical forward snapshot as:
 
 ```text
-first_forward_snapshot_date = 2026-08-15
+first_forward_snapshot_date = 2026-08-14
 ```
 
 This value is **environment evidence**, not a product constant.
@@ -73,16 +73,16 @@ This value is **environment evidence**, not a product constant.
 Therefore the current D1 planning boundary is:
 
 ```text
-historical eligible date < 2026-08-15
+historical eligible date < 2026-08-14
 ```
 
 and the current candidate interval is:
 
 ```text
-2021-04-14 .. 2026-08-14
+2021-04-14 .. 2026-08-13
 ```
 
-D1 does not hard-code `2026-08-15` into domain code. Before the first D2 mutating execution, the coordinator must rediscover the earliest forward snapshot read-only from the target environment. If the observed boundary differs, the worklist and `plan_id` must be regenerated before any historical write.
+D1 does not hard-code `2026-08-14` into domain code. Before any mutating execution, the coordinator must rediscover the earliest forward snapshot read-only from the target environment. If the observed boundary differs, the worklist and `plan_id` must be regenerated before any historical write.
 
 This is a fail-closed precondition.
 
@@ -91,11 +91,11 @@ This is a fail-closed precondition.
 Using the pinned archive inventory and the currently evidenced dev boundary:
 
 ```text
-calendar dates in candidate interval: 1,949
+calendar dates in candidate interval: 1,948
 source absences in candidate interval:     9
-available candidate snapshots:         1,940
-candidate compressed source bytes:     2,539,677,859
-candidate compressed MiB:              ~2,422.03
+available candidate snapshots:         1,939
+candidate compressed source bytes:     2,537,138,865
+candidate compressed MiB:              ~2,419.61
 ```
 
 Candidate snapshots by model era:
@@ -106,10 +106,10 @@ Candidate snapshots by model era:
 | v2 | 395 |
 | v3 | 740 |
 | v4 | 455 |
-| v5 | 61 |
-| **Total** | **1,940** |
+| v5 | 60 |
+| **Total** | **1,939** |
 
-The 16 archive snapshots from `2026-08-15` through `2026-08-30` are excluded from the current dev historical plan because they are on or after the forward-authority boundary.
+The 17 archive snapshots from `2026-08-14` through `2026-08-30` are excluded from the current dev historical plan because they are on or after the forward-authority boundary.
 
 ## Worklist contract
 
@@ -486,15 +486,15 @@ D1 uses a deliberately conservative estimate before AWS mutation.
 
 ### Lambda
 
-For the current 1,940-snapshot dev candidate set at 1 GB memory:
+For the current 1,939-snapshot dev candidate set at 1 GB memory:
 
 | Average billed duration | GB-seconds | Approx. compute charge before free tier |
 | ---: | ---: | ---: |
-| 15 s | 29,100 | ~$0.49 |
-| 20 s | 38,800 | ~$0.65 |
-| 30 s | 58,200 | ~$0.97 |
+| 15 s | 29,085 | ~$0.49 |
+| 20 s | 38,780 | ~$0.65 |
+| 30 s | 58,170 | ~$0.97 |
 
-At $0.20 per one million requests, 1,940 invocations are materially below one cent before any free-tier effect.
+At $0.20 per one million requests, 1,939 invocations are materially below one cent before any free-tier effect.
 
 D1 therefore sets this compute guardrail:
 
@@ -515,7 +515,7 @@ Silver Parquet
 completion manifest
 ```
 
-For 1,940 snapshots that is about 7,760 object writes, plus exact reads used by transformation/replay verification.
+For 1,939 snapshots that is about 7,756 object writes, plus exact reads used by transformation/replay verification.
 
 Using representative S3 Standard US East (N. Virginia) rates of $0.005/1,000 PUT-class requests and $0.0004/1,000 GET-class requests, request charges remain only a few cents for this workload.
 
@@ -529,7 +529,7 @@ A deliberately conservative Silver upper bound uses the largest representative P
 
 ```text
 largest representative Parquet: ~5.45 MB
-1,940 * ~5.45 MB:               ~10.57 GB
+1,939 * ~5.45 MB:               ~10.57 GB
 Bronze + conservative Silver:   ~13.1 GB
 ```
 
@@ -567,7 +567,7 @@ operator coordination becomes unreliable enough to justify durable managed orche
 
 ## Estimated elapsed time
 
-Using the current 1,940-snapshot candidate set:
+Using the current 1,939-snapshot candidate set:
 
 ```text
 15 s average, concurrency 2 -> ~4.0 h of transformation wall time
@@ -590,12 +590,12 @@ D1 freezes a **seven-snapshot canary** that covers every known physical/model tr
 | `2023-03-07` | first v3 snapshot |
 | `2025-03-17` | first v4 snapshot |
 | `2026-06-15` | first v5 snapshot |
-| `2026-08-14` | latest date currently eligible immediately before forward authority |
+| `2026-08-13` | latest date currently eligible immediately before forward authority |
 
 Known compressed source bytes for this slice total approximately:
 
 ```text
-9,345,356 bytes
+9,340,984 bytes
 ~8.91 MiB
 ```
 
@@ -638,7 +638,7 @@ EPSS_HISTORY_D2_OBSERVABILITY_GATE
 EPSS_HISTORY_D2_COST_GUARDRAIL_GATE
 ```
 
-If fresh target-environment discovery does not return `2026-08-15`, the current candidate calculations are informational only: D2 must regenerate the canonical plan and `plan_id` from the newly observed boundary before mutation.
+If fresh target-environment discovery does not return `2026-08-14`, the current candidate calculations are informational only: D2 must regenerate the canonical plan and `plan_id` from the newly observed boundary before mutation.
 
 ## D1 gates
 
@@ -691,4 +691,4 @@ Perform only **2.5D-2 — bounded bootstrap implementation and seven-snapshot ca
 
 D2 may implement the coordinator/runtime/IAM surface required to execute the frozen seven-snapshot canary, but it must revalidate the forward boundary before its first historical write and must not execute more than the seven frozen snapshots.
 
-The full 1,940-snapshot historical plan remains unauthorized until the canary has been executed, reviewed and closed by a later gate.
+The full 1,939-snapshot historical plan remains unauthorized until the canary has been executed, reviewed and closed by a later gate.

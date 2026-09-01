@@ -69,17 +69,17 @@ silver/epss/snapshot_date=YYYY-MM-DD/part-00000.parquet
 
 Phase 2.5 must not rewrite those canonical daily observations merely because the same calendar dates also exist in the historical archive.
 
-For the current `dev` evidence, the earliest already-preserved forward snapshot is:
+Fresh read-only `dev` evidence now identifies the earliest already-preserved forward snapshot as:
 
 ```text
-2026-08-15
+2026-08-14
 ```
 
 Therefore the historical bootstrap candidate range in this environment is:
 
 ```text
 archive start .. day before forward authority starts
-2021-04-14 .. 2026-08-14
+2021-04-14 .. 2026-08-13
 ```
 
 The boundary must be discovered from real target-environment evidence before a backfill; it is not a globally hard-coded product date.
