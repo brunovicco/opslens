@@ -54,7 +54,7 @@ jobs:
 
       - name: Plan frozen canary read-only
         if: ${{ !inputs.execute }}
-        run: uv run python scripts/run_epss_history_canary.py
+        run: PYTHONPATH=src uv run python scripts/run_epss_history_canary.py
 
       - name: Validate exact execution confirmation
         if: ${{ inputs.execute }}
@@ -71,6 +71,6 @@ jobs:
         env:
           CANARY_CONFIRMATION: ${{ inputs.confirmation }}
         run: |
-          uv run python scripts/run_epss_history_canary.py \
+          PYTHONPATH=src uv run python scripts/run_epss_history_canary.py \
             --execute \
             --confirmation "$CANARY_CONFIRMATION"
