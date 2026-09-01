@@ -7,6 +7,7 @@ locals {
 }
 
 data "aws_iam_policy_document" "epss_history_coordinator_assume_role" {
+  # checkov:skip=CKV_AWS_358:GitHub immutable OIDC subject uses owner/repository IDs; Checkov does not yet recognize the official immutable sub format.
   statement {
     sid     = "AllowGitHubActionsMain"
     effect  = "Allow"
@@ -26,7 +27,9 @@ data "aws_iam_policy_document" "epss_history_coordinator_assume_role" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:brunovicco/opslens:ref:refs/heads/main"]
+      values = [
+        "repo:brunovicco@38844444/opslens@1333092779:ref:refs/heads/main",
+      ]
     }
   }
 }
