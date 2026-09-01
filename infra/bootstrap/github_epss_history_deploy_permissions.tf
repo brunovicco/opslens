@@ -226,6 +226,16 @@ data "aws_iam_policy_document" "github_actions_epss_history_deploy" {
   }
 
   statement {
+    sid     = "UpdateEpssHistoryTransformerFunctionCode"
+    effect  = "Allow"
+    actions = ["lambda:UpdateFunctionCode"]
+
+    resources = [
+      local.dev_epss_history_transformer_function_arn,
+    ]
+  }
+
+  statement {
     sid     = "PassEpssHistoryTransformerRole"
     effect  = "Allow"
     actions = ["iam:PassRole"]
