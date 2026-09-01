@@ -50,6 +50,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
         with:
           role-to-assume: arn:aws:iam::487757851499:role/OpsLensEpssHistoryCoordinatorRole
+          role-duration-seconds: 21600
           aws-region: us-east-1
           allowed-account-ids: 487757851499
 
