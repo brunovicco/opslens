@@ -12,6 +12,7 @@ from opslens.transformation.epss.application.key_factory import EpssSilverKeyFac
 from opslens.transformation.epss.history.models import (
     HistoricalEpssBronzeEvidenceV1,
     HistoricalEpssSilverPersistenceResultV1,
+    HistoricalEpssSilverReplayStatus,
 )
 
 _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
@@ -147,6 +148,11 @@ class HistoricalEpssCompletionManifestFactoryV1:
                 "Historical EPSS completion Silver key does not match snapshot_date."
             )
 
+        # Completion bytes are durable snapshot evidence, so they must not encode
+        # whether this particular invocation created or replay-verified Silver.
+        # Existing canary completions were first persisted with "created"; keep
+        # that canonical value so future retries reproduce the exact same bytes.
+        canonical_silver_status = HistoricalEpssSilverReplayStatus.CREATED.value
         completion = HistoricalEpssCompletionManifestV1(
             snapshot_date=manifest.snapshot_date,
             archive_commit=manifest.archive_commit,
@@ -160,7 +166,7 @@ class HistoricalEpssCompletionManifestFactoryV1:
             silver_sha256=stored.parquet_sha256,
             silver_schema_version=stored.schema_version,
             row_count=stored.row_count,
-            replay_status=silver.replay_status.value,
+            replay_status=canonical_silver_status,
         )
 
         document = {
