@@ -63,7 +63,9 @@ def _bronze() -> HistoricalEpssBronzeEvidenceV1:
     )
 
 
-def _silver() -> HistoricalEpssSilverPersistenceResultV1:
+def _silver(
+    replay_status: HistoricalEpssSilverReplayStatus = HistoricalEpssSilverReplayStatus.REPLAY_VERIFIED,
+) -> HistoricalEpssSilverPersistenceResultV1:
     """Build exact persisted Silver evidence for completion tests."""
     return HistoricalEpssSilverPersistenceResultV1(
         stored_object=HistoricalEpssSilverStoredObjectV1(
@@ -74,7 +76,7 @@ def _silver() -> HistoricalEpssSilverPersistenceResultV1:
             row_count=64_712,
             schema_version=2,
         ),
-        replay_status=HistoricalEpssSilverReplayStatus.REPLAY_VERIFIED,
+        replay_status=replay_status,
     )
 
 
@@ -94,7 +96,7 @@ def test_builds_canonical_completion_manifest_from_exact_evidence() -> None:
         "archive_commit": COMMIT,
         "bronze_manifest_key": _bronze().manifest.manifest_key,
         "bronze_manifest_version_id": "manifest-version",
-        "replay_status": "replay_verified",
+        "replay_status": "created",
         "row_count": 64_712,
         "schema_version": 1,
         "silver_key": SILVER_KEY,
@@ -107,6 +109,24 @@ def test_builds_canonical_completion_manifest_from_exact_evidence() -> None:
         "source_sha256": SOURCE_SHA,
     }
     assert artifact.sha256 == hashlib.sha256(artifact.raw_bytes).hexdigest()
+
+
+def test_completion_bytes_do_not_change_when_silver_is_replay_verified() -> None:
+    """Keep completion bytes identical across create and exact Silver replay attempts."""
+    factory = HistoricalEpssCompletionManifestFactoryV1()
+
+    created = factory.build(
+        bronze=_bronze(),
+        silver=_silver(HistoricalEpssSilverReplayStatus.CREATED),
+    )
+    replayed = factory.build(
+        bronze=_bronze(),
+        silver=_silver(HistoricalEpssSilverReplayStatus.REPLAY_VERIFIED),
+    )
+
+    assert replayed.raw_bytes == created.raw_bytes
+    assert replayed.sha256 == created.sha256
+    assert json.loads(replayed.raw_bytes)["replay_status"] == "created"
 
 
 def test_rejects_silver_key_outside_snapshot_coordinate() -> None:
