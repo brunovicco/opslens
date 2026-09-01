@@ -1,9 +1,13 @@
 """Composition root for the dedicated historical EPSS transformer Lambda."""
 
-from typing import Literal, Protocol, cast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Literal, Protocol, cast
 
 import boto3
-from mypy_boto3_s3 import S3Client
+
+if TYPE_CHECKING:
+    from mypy_boto3_s3 import S3Client
 
 from opslens.ingestion.epss.domain.history import HistoricalEpssSnapshotParser
 from opslens.shared.observability.ports import OperationalTelemetry
