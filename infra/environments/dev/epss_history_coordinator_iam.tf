@@ -35,8 +35,9 @@ data "aws_iam_policy_document" "epss_history_coordinator_assume_role" {
 }
 
 resource "aws_iam_role" "epss_history_coordinator" {
-  name        = local.epss_history_coordinator_role_name
-  description = "Bounded GitHub Actions coordinator role for the seven-snapshot EPSS history canary."
+  name                 = local.epss_history_coordinator_role_name
+  description          = "Bounded GitHub Actions coordinator role for the seven-snapshot EPSS history canary."
+  max_session_duration = 21600
 
   assume_role_policy = data.aws_iam_policy_document.epss_history_coordinator_assume_role.json
 
