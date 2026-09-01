@@ -119,6 +119,16 @@ data "aws_iam_policy_document" "github_actions_epss_history_deploy" {
   }
 
   statement {
+    sid     = "UpdateEpssHistoryCoordinatorTrustPolicy"
+    effect  = "Allow"
+    actions = ["iam:UpdateAssumeRolePolicy"]
+
+    resources = [
+      local.dev_epss_history_coordinator_role_arn,
+    ]
+  }
+
+  statement {
     sid     = "CreateEpssHistoryRoleInlinePolicies"
     effect  = "Allow"
     actions = ["iam:PutRolePolicy"]
