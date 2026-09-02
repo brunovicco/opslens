@@ -15,3 +15,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0005](0005-ghsa-source-and-synchronization-strategy.md) | GitHub Security Advisory source and synchronization strategy | Accepted |
 | [0006](0006-ghsa-silver-content-versioning-and-physical-shape.md) | GHSA Silver content versioning and physical shape | Accepted |
 | [0007](0007-ghsa-runtime-credential-and-retry-strategy.md) | GHSA runtime credential and retry strategy | Accepted |
+| [0008](0008-pypi-correlation-semantics.md) | Start vulnerability correlation with PyPI semantics | Accepted |
