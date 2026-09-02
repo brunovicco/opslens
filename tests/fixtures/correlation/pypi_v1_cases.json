@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "ecosystem": "pypi",
+  "purpose": "Frozen Phase 3 PyPI correlation contract cases. Expected results are deterministic and fail closed.",
+  "cases": [
+    {
+      "id": "pypi-name-normalization-requests",
+      "package": "Requests",
+      "version": "2.31.0",
+      "vulnerable_range": ">= 2.0.0, < 2.32.0",
+      "expected_package_canonical": "requests",
+      "expected_version_canonical": "2.31.0",
+      "expected_result": "affected"
+    },
+    {
+      "id": "pypi-name-normalization-separators",
+      "package": "Friendly_Bard",
+      "version": "1.0",
+      "vulnerable_range": "= 1.0",
+      "expected_package_canonical": "friendly-bard",
+      "expected_version_canonical": "1.0",
+      "expected_result": "affected"
+    },
+    {
+      "id": "pypi-exclusive-upper-not-affected",
+      "package": "demo-package",
+      "version": "4.3.5",
+      "vulnerable_range": ">= 4.3.0, < 4.3.5",
+      "expected_package_canonical": "demo-package",
+      "expected_version_canonical": "4.3.5",
+      "expected_result": "not_affected"
+    },
+    {
+      "id": "pypi-inclusive-upper-affected",
+      "package": "demo-package",
+      "version": "1.0.8",
+      "vulnerable_range": "<= 1.0.8",
+      "expected_package_canonical": "demo-package",
+      "expected_version_canonical": "1.0.8",
+      "expected_result": "affected"
+    },
+    {
+      "id": "pypi-open-upper-affected",
+      "package": "demo-package",
+      "version": "9.1.0",
+      "vulnerable_range": ">= 0.0.1",
+      "expected_package_canonical": "demo-package",
+      "expected_version_canonical": "9.1.0",
+      "expected_result": "affected"
+    },
+    {
+      "id": "pypi-prerelease-below-final",
+      "package": "demo-package",
+      "version": "2.0rc1",
+      "vulnerable_range": "< 2.0",
+      "expected_package_canonical": "demo-package",
+      "expected_version_canonical": "2.0rc1",
+      "expected_result": "affected"
+    },
+    {
+      "id": "pypi-final-at-exclusive-boundary",
+      "package": "demo-package",
+      "version": "2.0",
+      "vulnerable_range": "< 2.0",
+      "expected_package_canonical": "demo-package",
+      "expected_version_canonical": "2.0",
+      "expected_result": "not_affected"
+    },
+    {
+      "id": "pypi-postrelease-above-final",
+      "package": "demo-package",
+      "version": "2.0.post1",
+      "vulnerable_range": "<= 2.0",
+      "expected_package_canonical": "demo-package",
+      "expected_version_canonical": "2.0.post1",
+      "expected_result": "not_affected"
+    },
+    {
+      "id": "pypi-version-normalization-rc",
+      "package": "demo-package",
+      "version": "1.0RC1",
+      "vulnerable_range": "= 1.0rc1",
+      "expected_package_canonical": "demo-package",
+      "expected_version_canonical": "1.0rc1",
+      "expected_result": "affected"
+    },
+    {
+      "id": "pypi-epoch-ordering",
+      "package": "demo-package",
+      "version": "1!1.0",
+      "vulnerable_range": "> 2.0",
+      "expected_package_canonical": "demo-package",
+      "expected_version_canonical": "1!1.0",
+      "expected_result": "affected"
+    },
+    {
+      "id": "pypi-known-fix-does-not-replace-range",
+      "package": "demo-package",
+      "version": "3.0.0",
+      "vulnerable_range": ">= 1.0.0, < 2.0.0",
+      "first_patched_version": "2.0.0",
+      "expected_package_canonical": "demo-package",
+      "expected_version_canonical": "3.0.0",
+      "expected_result": "not_affected"
+    },
+    {
+      "id": "pypi-missing-fix-still-affected",
+      "package": "demo-package",
+      "version": "1.5.0",
+      "vulnerable_range": ">= 1.0.0, < 2.0.0",
+      "first_patched_version": null,
+      "expected_package_canonical": "demo-package",
+      "expected_version_canonical": "1.5.0",
+      "expected_result": "affected"
+    },
+    {
+      "id": "pypi-invalid-version-fails-closed",
+      "package": "demo-package",
+      "version": "definitely-not-a-pep440-version",
+      "vulnerable_range": ">= 1.0",
+      "expected_package_canonical": "demo-package",
+      "expected_result": "unsupported",
+      "expected_reason_code": "invalid_version"
+    },
+    {
+      "id": "pypi-unsupported-operator-fails-closed",
+      "package": "demo-package",
+      "version": "1.5.0",
+      "vulnerable_range": "~= 1.4",
+      "expected_package_canonical": "demo-package",
+      "expected_version_canonical": "1.5.0",
+      "expected_result": "unsupported",
+      "expected_reason_code": "unsupported_range_operator"
+    },
+    {
+      "id": "pypi-malformed-range-fails-closed",
+      "package": "demo-package",
+      "version": "1.5.0",
+      "vulnerable_range": ">=",
+      "expected_package_canonical": "demo-package",
+      "expected_version_canonical": "1.5.0",
+      "expected_result": "unsupported",
+      "expected_reason_code": "invalid_range"
+    }
+  ]
+}
