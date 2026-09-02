@@ -26,6 +26,8 @@ from opslens.repository_intelligence.domain.models import (
 )
 
 __all__ = [
+    "MAX_REPOSITORY_FILE_BYTES",
+    "UV_LOCK_PATH",
     "GitHubRepositoryIdentity",
     "ImmutableRepositoryFileEvidence",
     "ImmutableRepositorySnapshot",
@@ -33,10 +35,8 @@ __all__ = [
     "InvalidRepositoryFileEvidenceError",
     "InvalidRepositoryIdentityError",
     "InvalidRepositorySnapshotError",
-    "MAX_REPOSITORY_FILE_BYTES",
     "RepositoryIntelligenceContractError",
     "RepositoryProvider",
-    "UV_LOCK_PATH",
     "UnsupportedRepositoryFileError",
     "UnsupportedRepositoryVisibilityError",
     "compute_content_sha256",
