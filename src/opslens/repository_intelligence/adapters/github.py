@@ -10,6 +10,7 @@ from opslens.repository_intelligence.domain import (
     ImmutableRepositorySnapshot,
     InvalidGitHubSourceEvidenceError,
     InvalidRepositorySnapshotError,
+    UnsupportedRepositoryVisibilityError,
     validate_github_repository_ref,
 )
 
@@ -19,6 +20,7 @@ class GitHubRepositoryMetadataEvidence:
     """Validated repository metadata required before resolving one immutable snapshot."""
 
     repository: GitHubRepositoryIdentity
+    visibility: str
     default_branch: str
 
 
@@ -30,7 +32,13 @@ def project_github_repository_metadata(
     name = _required_str(payload, "name")
     full_name = _required_str(payload, "full_name")
     is_private = _required_bool(payload, "private")
+    visibility = _required_str(payload, "visibility")
     default_branch = _required_clean_ref(payload, "default_branch")
+
+    if visibility != "public":
+        raise UnsupportedRepositoryVisibilityError(
+            f"GitHub visibility {visibility!r} is outside the public-only Phase 4 v1 contract."
+        )
 
     owner_payload = _required_object(payload, "owner")
     owner = _required_str(owner_payload, "login")
@@ -44,6 +52,7 @@ def project_github_repository_metadata(
     )
     return GitHubRepositoryMetadataEvidence(
         repository=repository,
+        visibility=visibility,
         default_branch=default_branch,
     )
 
