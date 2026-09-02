@@ -84,7 +84,9 @@ class ParsedUvLockEvidence:
         if self.file_evidence.path != UV_LOCK_PATH:
             raise InvalidUvLockError("Parsed uv.lock evidence must originate from `uv.lock`.")
         if self.schema_version != SUPPORTED_UV_LOCK_SCHEMA_VERSION:
-            raise InvalidUvLockError("Parsed uv.lock evidence carries an unsupported schema version.")
+            raise InvalidUvLockError(
+                "Parsed uv.lock evidence carries an unsupported schema version."
+            )
         if self.revision is not None and self.revision not in SUPPORTED_UV_LOCK_REVISIONS:
             raise InvalidUvLockError("Parsed uv.lock evidence carries an unsupported revision.")
         if self.requires_python is not None:
