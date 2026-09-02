@@ -24,6 +24,23 @@ class RepositoryProvider(StrEnum):
     GITHUB = "github"
 
 
+def validate_github_repository_coordinates(owner: str, name: str) -> tuple[str, str]:
+    """Validate GitHub owner/name before repository source acquisition."""
+    if _OWNER_PATTERN.fullmatch(owner) is None:
+        raise InvalidRepositoryIdentityError(
+            "GitHub repository owner is outside the Phase 4 v1 identity "
+            f"contract: {owner!r}."
+        )
+
+    if _REPOSITORY_NAME_PATTERN.fullmatch(name) is None:
+        raise InvalidRepositoryIdentityError(
+            "GitHub repository name is outside the Phase 4 v1 identity "
+            f"contract: {name!r}."
+        )
+
+    return owner, name
+
+
 @dataclass(frozen=True, slots=True)
 class GitHubRepositoryIdentity:
     """Stable source identity for one public GitHub repository.
@@ -45,17 +62,7 @@ class GitHubRepositoryIdentity:
                 "GitHub repository id must be a positive integer and cannot be boolean."
             )
 
-        if _OWNER_PATTERN.fullmatch(self.owner) is None:
-            raise InvalidRepositoryIdentityError(
-                "GitHub repository owner is outside the Phase 4 v1 identity "
-                f"contract: {self.owner!r}."
-            )
-
-        if _REPOSITORY_NAME_PATTERN.fullmatch(self.name) is None:
-            raise InvalidRepositoryIdentityError(
-                "GitHub repository name is outside the Phase 4 v1 identity "
-                f"contract: {self.name!r}."
-            )
+        validate_github_repository_coordinates(self.owner, self.name)
 
         expected_full_name = f"{self.owner}/{self.name}"
         if self.full_name != expected_full_name:
@@ -84,6 +91,25 @@ class GitHubRepositoryIdentity:
         return f"{self.provider.value}:{self.repository_id}"
 
 
+def validate_github_repository_ref(value: str) -> str:
+    """Validate one bounded clean GitHub ref before it reaches source acquisition."""
+    if (
+        not value
+        or value != value.strip()
+        or _CONTROL_CHARACTER_PATTERN.search(value) is not None
+    ):
+        raise InvalidRepositorySnapshotError(
+            "Requested GitHub ref must be a non-empty clean provenance token."
+        )
+
+    if len(value) > 1024:
+        raise InvalidRepositorySnapshotError(
+            "Requested GitHub ref exceeds the Phase 4 v1 evidence bound."
+        )
+
+    return value
+
+
 @dataclass(frozen=True, slots=True)
 class ImmutableRepositorySnapshot:
     """One exact public GitHub repository snapshot resolved to a full commit SHA."""
@@ -95,19 +121,7 @@ class ImmutableRepositorySnapshot:
 
     def __post_init__(self) -> None:
         """Validate immutable commit authority and ref provenance."""
-        if (
-            not self.requested_ref
-            or self.requested_ref != self.requested_ref.strip()
-            or _CONTROL_CHARACTER_PATTERN.search(self.requested_ref) is not None
-        ):
-            raise InvalidRepositorySnapshotError(
-                "Requested GitHub ref must be a non-empty clean provenance token."
-            )
-
-        if len(self.requested_ref) > 1024:
-            raise InvalidRepositorySnapshotError(
-                "Requested GitHub ref exceeds the Phase 4 v1 evidence bound."
-            )
+        validate_github_repository_ref(self.requested_ref)
 
         if _FULL_GIT_SHA_PATTERN.fullmatch(self.commit_sha) is None:
             raise InvalidRepositorySnapshotError(
