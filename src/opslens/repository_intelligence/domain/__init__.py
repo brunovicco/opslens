@@ -2,10 +2,20 @@
 
 from opslens.repository_intelligence.domain.errors import (
     InvalidGitHubSourceEvidenceError,
+    InvalidRepositoryFileEvidenceError,
     InvalidRepositoryIdentityError,
     InvalidRepositorySnapshotError,
     RepositoryIntelligenceContractError,
+    UnsupportedRepositoryFileError,
     UnsupportedRepositoryVisibilityError,
+)
+from opslens.repository_intelligence.domain.file_evidence import (
+    MAX_REPOSITORY_FILE_BYTES,
+    UV_LOCK_PATH,
+    ImmutableRepositoryFileEvidence,
+    compute_content_sha256,
+    compute_git_blob_sha1,
+    validate_repository_evidence_path,
 )
 from opslens.repository_intelligence.domain.models import (
     GitHubRepositoryIdentity,
@@ -17,13 +27,21 @@ from opslens.repository_intelligence.domain.models import (
 
 __all__ = [
     "GitHubRepositoryIdentity",
+    "ImmutableRepositoryFileEvidence",
     "ImmutableRepositorySnapshot",
     "InvalidGitHubSourceEvidenceError",
+    "InvalidRepositoryFileEvidenceError",
     "InvalidRepositoryIdentityError",
     "InvalidRepositorySnapshotError",
+    "MAX_REPOSITORY_FILE_BYTES",
     "RepositoryIntelligenceContractError",
     "RepositoryProvider",
+    "UV_LOCK_PATH",
+    "UnsupportedRepositoryFileError",
     "UnsupportedRepositoryVisibilityError",
+    "compute_content_sha256",
+    "compute_git_blob_sha1",
     "validate_github_repository_coordinates",
     "validate_github_repository_ref",
+    "validate_repository_evidence_path",
 ]
