@@ -35,3 +35,21 @@ class UnsupportedPackagePurlFeatureError(CorrelationContractError):
     """Raised when a valid-looking purl uses a feature outside the frozen v1 contract."""
 
     reason_code = "unsupported_purl_feature"
+
+
+class InvalidVulnerableRangeError(CorrelationContractError):
+    """Raised when vulnerable-range evidence cannot be parsed by the frozen grammar."""
+
+    reason_code = "invalid_range"
+
+
+class UnsupportedRangeOperatorError(InvalidVulnerableRangeError):
+    """Raised when a range uses an operator outside the explicit Phase 3 v1 allowlist."""
+
+    reason_code = "unsupported_range_operator"
+
+
+class InvalidFirstPatchedVersionError(CorrelationContractError):
+    """Raised when supplied fixed-version evidence is not a valid ecosystem version."""
+
+    reason_code = "invalid_first_patched_version"
