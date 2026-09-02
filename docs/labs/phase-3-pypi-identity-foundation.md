@@ -60,21 +60,25 @@ Examples:
 
 ## Validation
 
-Local isolated validation of the new identity code completed with:
+Local isolated validation of the initial identity module completed with:
 
 ```text
 28 passed
 ```
 
-A reusable pull-request Python CI workflow is added in the same branch to run:
+Draft PR #61 introduced a pull-request quality workflow. Its first execution deliberately tried repository-wide Ruff/Pyright/Pytest gates. Lock verification and dependency sync passed, but Ruff stopped the run on 51 pre-existing findings outside the Phase 3 slice, primarily Phase 2 historical EPSS files and tests.
+
+That failure is useful baseline evidence, but fixing unrelated Phase 2 style debt inside the first Phase 3 correlation PR would violate the small-slice boundary. The workflow was therefore narrowed to the new correlation surface while retaining lock verification:
 
 ```text
 uv lock --check
 uv sync --frozen
-ruff check src tests
-pyright
-pytest
+ruff check src/opslens/correlation tests/unit/correlation
+pyright src/opslens/correlation tests/unit/correlation
+pytest tests/unit/correlation
 ```
+
+Repository-wide lint debt remains visible and should be handled independently rather than silently mixed into vulnerability-correlation work.
 
 The draft PR remains the authoritative CI validation before merge.
 
