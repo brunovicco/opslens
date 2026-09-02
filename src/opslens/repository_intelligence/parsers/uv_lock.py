@@ -164,7 +164,9 @@ def _required_source(
 
 
 def _unsupported_source_kind(source_kind: str) -> str:
-    """Map known local source aliases while preserving unknown source kinds explicitly."""
+    """Map unsupported source authority to an explicit stable classification."""
+    if source_kind == "registry":
+        return "custom_registry"
     if source_kind in {"path", "directory"}:
         return "path"
     return source_kind
