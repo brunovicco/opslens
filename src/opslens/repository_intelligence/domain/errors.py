@@ -23,3 +23,9 @@ class InvalidRepositorySnapshotError(RepositoryIntelligenceContractError):
     """Raised when an immutable repository snapshot cannot be established exactly."""
 
     reason_code = "invalid_repository_snapshot"
+
+
+class InvalidGitHubSourceEvidenceError(RepositoryIntelligenceContractError):
+    """Raised when GitHub REST evidence is malformed or missing required fields."""
+
+    reason_code = "invalid_github_source_evidence"
