@@ -47,12 +47,14 @@ class GitHubRepositoryIdentity:
 
         if _OWNER_PATTERN.fullmatch(self.owner) is None:
             raise InvalidRepositoryIdentityError(
-                f"GitHub repository owner is outside the Phase 4 v1 identity contract: {self.owner!r}."
+                "GitHub repository owner is outside the Phase 4 v1 identity "
+                f"contract: {self.owner!r}."
             )
 
         if _REPOSITORY_NAME_PATTERN.fullmatch(self.name) is None:
             raise InvalidRepositoryIdentityError(
-                f"GitHub repository name is outside the Phase 4 v1 identity contract: {self.name!r}."
+                "GitHub repository name is outside the Phase 4 v1 identity "
+                f"contract: {self.name!r}."
             )
 
         expected_full_name = f"{self.owner}/{self.name}"
@@ -62,7 +64,9 @@ class GitHubRepositoryIdentity:
             )
 
         if type(self.is_private) is not bool:
-            raise InvalidRepositoryIdentityError("GitHub repository privacy evidence must be boolean.")
+            raise InvalidRepositoryIdentityError(
+                "GitHub repository privacy evidence must be boolean."
+            )
 
         if self.is_private:
             raise UnsupportedRepositoryVisibilityError(
