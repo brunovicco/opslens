@@ -1,4 +1,4 @@
-"""Bounded read-only GitHub REST source for immutable repository snapshot resolution."""
+"""Bounded read-only GitHub REST source for immutable repository evidence."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from typing import Protocol, cast
 from urllib.parse import quote
 
 from opslens.repository_intelligence.domain import (
+    UV_LOCK_PATH,
     validate_github_repository_coordinates,
     validate_github_repository_ref,
 )
@@ -84,6 +85,7 @@ class GitHubRestClientConfig:
 
     timeout_seconds: float = 10.0
     max_json_response_bytes: int = 1_048_576
+    max_file_json_response_bytes: int = 1_572_864
     max_sha_response_bytes: int = 128
     user_agent: str = "OpsLens/phase4"
     token: str | None = field(default=None, repr=False, compare=False)
@@ -98,6 +100,14 @@ class GitHubRestClientConfig:
             or not 1 <= self.max_json_response_bytes <= 8 * 1024 * 1024
         ):
             raise ValueError("GitHub JSON response budget must be between 1 byte and 8 MiB.")
+
+        if (
+            type(self.max_file_json_response_bytes) is not int
+            or not 1 <= self.max_file_json_response_bytes <= 8 * 1024 * 1024
+        ):
+            raise ValueError(
+                "GitHub file JSON response budget must be between 1 byte and 8 MiB."
+            )
 
         if (
             type(self.max_sha_response_bytes) is not int
@@ -169,7 +179,7 @@ def _default_connection_factory(host: str, timeout_seconds: float) -> GitHubHttp
 
 
 class GitHubRestSnapshotSource:
-    """Implement the snapshot source Protocol with fixed-host serial GitHub GETs."""
+    """Implement fixed-host serial GitHub GETs for immutable repository evidence."""
 
     def __init__(
         self,
@@ -215,12 +225,36 @@ class GitHubRestSnapshotSource:
             },
         }
 
-    def _get_json(self, path: str) -> dict[str, object]:
+    def get_uv_lock(self, owner: str, name: str, commit_sha: str) -> dict[str, object]:
+        """Read only `uv.lock` at one exact full commit SHA through the Contents API."""
+        owner, name = validate_github_repository_coordinates(owner, name)
+        if _FULL_GIT_SHA_PATTERN.fullmatch(commit_sha) is None:
+            raise GitHubInvalidResponseError(
+                "GitHub uv.lock acquisition requires one full lowercase 40-hex commit SHA."
+            )
+
+        prefix = f"/repos/{_segment(owner)}/{_segment(name)}"
+        path = f"{prefix}/contents/{UV_LOCK_PATH}?ref={quote(commit_sha, safe='')}"
+        return self._get_json(
+            path,
+            max_response_bytes=self._config.max_file_json_response_bytes,
+        )
+
+    def _get_json(
+        self,
+        path: str,
+        *,
+        max_response_bytes: int | None = None,
+    ) -> dict[str, object]:
         """Fetch one bounded GitHub JSON object."""
         response = self._get(
             path=path,
             accept=_GITHUB_JSON_MEDIA_TYPE,
-            max_response_bytes=self._config.max_json_response_bytes,
+            max_response_bytes=(
+                self._config.max_json_response_bytes
+                if max_response_bytes is None
+                else max_response_bytes
+            ),
         )
         media_type = _base_media_type(response.content_type)
         if media_type != "application/json":
