@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Mapping
 
 import pytest
 
 from opslens.repository_intelligence.adapters.github_http import (
-    GitHubHttpStatusError,
     GitHubHttpsConnection,
+    GitHubHttpStatusError,
     GitHubInvalidResponseError,
     GitHubRateLimitError,
     GitHubResourceNotFoundError,
@@ -341,9 +341,7 @@ def test_unexpected_json_content_type_fails_closed() -> None:
 
 def test_invalid_json_fails_closed() -> None:
     """Reject malformed GitHub response bodies after bounded reading."""
-    factory = FakeConnectionFactory(
-        responses=[_json_response(b"{not-json")]
-    )
+    factory = FakeConnectionFactory(responses=[_json_response(b"{not-json")])
     source = GitHubRestSnapshotSource(connection_factory=factory)
 
     with pytest.raises(GitHubInvalidResponseError):
@@ -412,7 +410,8 @@ def test_snapshot_resolution_uses_exactly_three_serial_gets() -> None:
     assert evidence.snapshot.snapshot_id == f"github:{_REPOSITORY_ID}@{_COMMIT_SHA}"
     assert evidence.snapshot.tree_sha == _TREE_SHA
     assert len(factory.factory_calls) == 3
-    assert [
-        connection.request_calls[0][0]
-        for connection in factory.connections
-    ] == ["GET", "GET", "GET"]
+    assert [connection.request_calls[0][0] for connection in factory.connections] == [
+        "GET",
+        "GET",
+        "GET",
+    ]
