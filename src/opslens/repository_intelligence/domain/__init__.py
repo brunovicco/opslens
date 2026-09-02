@@ -26,6 +26,11 @@ from opslens.repository_intelligence.domain.models import (
     validate_github_repository_coordinates,
     validate_github_repository_ref,
 )
+from opslens.repository_intelligence.domain.pypi_normalization import (
+    NormalizedRepositoryPyPIDependencyEvidence,
+    RepositoryPyPINormalizationInventory,
+    UnsupportedRepositoryPyPINormalizationEvidence,
+)
 from opslens.repository_intelligence.domain.uv_lock import (
     MAX_UV_LOCK_PACKAGE_RECORDS,
     PYPI_SIMPLE_REGISTRY_URL,
@@ -52,10 +57,13 @@ __all__ = [
     "InvalidRepositoryIdentityError",
     "InvalidRepositorySnapshotError",
     "InvalidUvLockError",
+    "NormalizedRepositoryPyPIDependencyEvidence",
     "ParsedUvLockEvidence",
     "RepositoryIntelligenceContractError",
     "RepositoryProvider",
+    "RepositoryPyPINormalizationInventory",
     "UnsupportedRepositoryFileError",
+    "UnsupportedRepositoryPyPINormalizationEvidence",
     "UnsupportedRepositoryVisibilityError",
     "UnsupportedUvLockSchemaError",
     "UvLockedPyPIPackageEvidence",
