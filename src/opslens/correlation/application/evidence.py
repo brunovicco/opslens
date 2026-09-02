@@ -108,7 +108,7 @@ def build_phase3_correlation_evidence_record(
     if applicability is not None:
         clause_payloads = [
             {
-                "operator": clause.operator.value,
+                "operator": clause.operator,
                 "bound_original": clause.bound_original,
                 "bound_canonical": clause.bound_canonical,
                 "matched": clause.matched,
