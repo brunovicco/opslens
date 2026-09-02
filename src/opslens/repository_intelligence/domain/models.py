@@ -24,6 +24,23 @@ class RepositoryProvider(StrEnum):
     GITHUB = "github"
 
 
+def validate_github_repository_coordinates(owner: str, name: str) -> tuple[str, str]:
+    """Validate GitHub owner/name before repository source acquisition."""
+    if _OWNER_PATTERN.fullmatch(owner) is None:
+        raise InvalidRepositoryIdentityError(
+            "GitHub repository owner is outside the Phase 4 v1 identity "
+            f"contract: {owner!r}."
+        )
+
+    if _REPOSITORY_NAME_PATTERN.fullmatch(name) is None:
+        raise InvalidRepositoryIdentityError(
+            "GitHub repository name is outside the Phase 4 v1 identity "
+            f"contract: {name!r}."
+        )
+
+    return owner, name
+
+
 @dataclass(frozen=True, slots=True)
 class GitHubRepositoryIdentity:
     """Stable source identity for one public GitHub repository.
@@ -45,17 +62,7 @@ class GitHubRepositoryIdentity:
                 "GitHub repository id must be a positive integer and cannot be boolean."
             )
 
-        if _OWNER_PATTERN.fullmatch(self.owner) is None:
-            raise InvalidRepositoryIdentityError(
-                "GitHub repository owner is outside the Phase 4 v1 identity "
-                f"contract: {self.owner!r}."
-            )
-
-        if _REPOSITORY_NAME_PATTERN.fullmatch(self.name) is None:
-            raise InvalidRepositoryIdentityError(
-                "GitHub repository name is outside the Phase 4 v1 identity "
-                f"contract: {self.name!r}."
-            )
+        validate_github_repository_coordinates(self.owner, self.name)
 
         expected_full_name = f"{self.owner}/{self.name}"
         if self.full_name != expected_full_name:
