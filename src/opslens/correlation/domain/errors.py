@@ -65,3 +65,9 @@ class InvalidCveAliasReconciliationError(CorrelationContractError):
     """Raised when CVE alias evidence cannot be reconciled without inventing a link."""
 
     reason_code = "invalid_cve_alias_reconciliation"
+
+
+class InvalidCorrelationEvidenceRecordError(CorrelationContractError):
+    """Raised when Phase 3 evidence components cannot form one canonical record."""
+
+    reason_code = "invalid_correlation_evidence_record"
