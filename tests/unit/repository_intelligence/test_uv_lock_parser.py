@@ -67,7 +67,7 @@ def _lock_bytes(
         'requires-python = ">=3.13, <3.15"\n'
         f"{extra_header}"
         f"{package_records}"
-    ).encode("utf-8")
+    ).encode()
 
 
 def _pypi_package(
@@ -205,7 +205,7 @@ def test_future_revision_fails_closed() -> None:
 )
 def test_boolean_and_non_integer_schema_fields_are_invalid(header: str) -> None:
     """Keep TOML booleans/strings from being accepted as integer schema evidence."""
-    content = (header + _pypi_package()).encode("utf-8")
+    content = (header + _pypi_package()).encode()
 
     with pytest.raises(InvalidUvLockError):
         parse_uv_lock_evidence(_file_evidence(content))
@@ -264,7 +264,12 @@ def test_package_count_bound_fails_before_record_processing() -> None:
         '[[package]]\nversion = "1.0"\nsource = { registry = "https://pypi.org/simple" }\n',
         '[[package]]\nname = "x"\nsource = { registry = "https://pypi.org/simple" }\n',
         '[[package]]\nname = "x"\nversion = "1.0"\n',
-        '[[package]]\nname = " x"\nversion = "1.0"\nsource = { registry = "https://pypi.org/simple" }\n',
+        (
+            '[[package]]\n'
+            'name = " x"\n'
+            'version = "1.0"\n'
+            'source = { registry = "https://pypi.org/simple" }\n'
+        ),
     ],
 )
 def test_malformed_package_records_fail_closed(package_records: str) -> None:
@@ -289,7 +294,7 @@ def test_source_with_multiple_kinds_is_ambiguous_and_fails_closed() -> None:
 
 
 def test_pypi_url_with_different_spelling_is_not_silently_canonicalized() -> None:
-    """Treat non-exact registry authority as unsupported until a future source policy says otherwise."""
+    """Treat non-exact registry authority as unsupported."""
     content = _lock_bytes(_pypi_package(registry="https://pypi.org/simple/"))
 
     parsed = parse_uv_lock_evidence(_file_evidence(content))
@@ -308,7 +313,11 @@ def test_pypi_url_with_different_spelling_is_not_silently_canonicalized() -> Non
         ('{ virtual = "." }', "virtual", "unsupported_non_registry_source"),
         ('{ editable = "." }', "editable", "unsupported_non_registry_source"),
         ('{ directory = "../lib" }', "path", "unsupported_non_registry_source"),
-        ('{ git = "https://github.com/example/lib.git#abc" }', "git", "unsupported_non_registry_source"),
+        (
+            '{ git = "https://github.com/example/lib.git#abc" }',
+            "git",
+            "unsupported_non_registry_source",
+        ),
         ('{ url = "https://example.com/lib.whl" }', "url", "unsupported_source_kind"),
     ],
 )
