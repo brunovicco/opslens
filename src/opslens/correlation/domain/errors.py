@@ -53,3 +53,9 @@ class InvalidFirstPatchedVersionError(CorrelationContractError):
     """Raised when supplied fixed-version evidence is not a valid ecosystem version."""
 
     reason_code = "invalid_first_patched_version"
+
+
+class InvalidGhsaEvidenceBridgeError(CorrelationContractError):
+    """Raised when normalized GHSA evidence cannot be linked without losing authority."""
+
+    reason_code = "invalid_ghsa_evidence_bridge"
