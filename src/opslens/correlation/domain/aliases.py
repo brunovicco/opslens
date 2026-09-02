@@ -10,7 +10,7 @@ class CveAliasLinkState(StrEnum):
     """States for a GitHub CVE assertion evaluated against supplied NVD evidence."""
 
     NO_GITHUB_CVE = "no_github_cve"
-    GITHUB_ASSERTED_UNVERIFIED = "github_asserted_unverified"
+    GITHUB_ASSERTED_ONLY = "github_asserted_only"
     NVD_OBSERVED = "nvd_observed"
     NVD_REJECTED = "nvd_rejected"
 
