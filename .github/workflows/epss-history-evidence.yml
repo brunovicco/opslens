@@ -1,0 +1,46 @@
+name: EPSS History Evidence
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  epss-history-evidence:
+    name: Historical EPSS post-backfill evidence
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    env:
+      EPSS_DATA_BUCKET: opslens-dev-data-487757851499-us-east-1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+        with:
+          enable-cache: true
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen
+
+      - name: Configure read-only evidence credentials
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        with:
+          role-to-assume: arn:aws:iam::487757851499:role/OpsLensEpssHistoryEvidenceRole
+          role-duration-seconds: 21600
+          aws-region: us-east-1
+          allowed-account-ids: 487757851499
+
+      - name: Verify all 1,939 historical snapshots read-only
+        run: PYTHONPATH=src uv run python scripts/run_epss_history_evidence.py
