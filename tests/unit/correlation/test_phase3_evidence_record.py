@@ -17,12 +17,12 @@ from opslens.correlation.adapters.ghsa import (
     GhsaSourceIdentifierEvidence,
     evaluate_ghsa_pypi_vulnerability,
 )
-from opslens.correlation.domain.aliases import CveAliasLinkState
-from opslens.correlation.domain.errors import InvalidCorrelationEvidenceRecordError
-from opslens.correlation.domain.evidence import (
+from opslens.correlation.application.evidence import (
     Phase3CorrelationEvidenceRecordV1,
     build_phase3_correlation_evidence_record,
 )
+from opslens.correlation.domain.aliases import CveAliasLinkState
+from opslens.correlation.domain.errors import InvalidCorrelationEvidenceRecordError
 from opslens.correlation.domain.pypi_ranges import CorrelationResult
 from opslens.transformation.nvd.domain.models import (
     NvdCveCoreRecord,
@@ -39,12 +39,9 @@ _TIMESTAMP = datetime(2026, 9, 2, 12, 0, tzinfo=UTC)
 
 def _source(*, cve_id: str | None = _CVE_ID) -> GhsaPyPIVulnerabilityEvidence:
     """Build one exact GHSA PyPI source occurrence for evidence-record tests."""
-    identifiers = [
-        GhsaSourceIdentifierEvidence(identifier_type="GHSA", value=_GHSA_ID),
-    ]
+    identifiers = [GhsaSourceIdentifierEvidence(identifier_type="GHSA", value=_GHSA_ID)]
     if cve_id is not None:
         identifiers.append(GhsaSourceIdentifierEvidence(identifier_type="CVE", value=cve_id))
-
     return GhsaPyPIVulnerabilityEvidence(
         observed_advisory_version_id=_GHSA_VERSION_ID,
         source_advisory_sha256="a" * 64,
@@ -62,16 +59,11 @@ def _source(*, cve_id: str | None = _CVE_ID) -> GhsaPyPIVulnerabilityEvidence:
 
 
 def _nvd(
-    *,
-    status: NvdVulnerabilityStatus = NvdVulnerabilityStatus.ANALYZED,
+    *, status: NvdVulnerabilityStatus = NvdVulnerabilityStatus.ANALYZED
 ) -> NvdCveCoreRecord:
     """Build one exact NVD CVE observation for alias evidence."""
     observed = ObservedCveVersion.from_source(
-        {
-            "id": _CVE_ID,
-            "sourceIdentifier": "nvd@nist.gov",
-            "vulnStatus": status.value,
-        }
+        {"id": _CVE_ID, "sourceIdentifier": "nvd@nist.gov", "vulnStatus": status.value}
     )
     return NvdCveCoreRecord(
         observed_version=observed,
@@ -101,16 +93,15 @@ def _decision(
 
 def _record(
     *,
-    source: GhsaPyPIVulnerabilityEvidence | None = None,
     status: NvdVulnerabilityStatus = NvdVulnerabilityStatus.ANALYZED,
     package: str = "demo-package",
     version: str = "1.5",
     purl: str | None = "pkg:pypi/demo-package@1.5",
 ) -> Phase3CorrelationEvidenceRecordV1:
-    """Build one full Phase 3 record through applicability and alias reconciliation."""
-    ghsa = source or _source()
-    decision = _decision(ghsa, package=package, version=version, purl=purl)
-    alias = reconcile_github_cve_with_nvd(ghsa, nvd=_nvd(status=status))
+    """Build one full record through applicability and alias reconciliation."""
+    source = _source()
+    decision = _decision(source, package=package, version=version, purl=purl)
+    alias = reconcile_github_cve_with_nvd(source, nvd=_nvd(status=status))
     return build_phase3_correlation_evidence_record(decision=decision, alias=alias)
 
 
@@ -122,10 +113,9 @@ def _payload(record: Phase3CorrelationEvidenceRecordV1) -> dict[str, object]:
 
 
 def test_affected_record_contains_complete_phase3_output_and_source_coordinates() -> None:
-    """Emit affected status, range, fix, identifiers, aliases, and exact provenance."""
+    """Emit status, range, fix, aliases, normalized input, and exact provenance."""
     record = _record()
     payload = _payload(record)
-
     assert record.result is CorrelationResult.AFFECTED
     assert record.correlation_record_id == f"correlation:v1@sha256:{record.evidence_sha256}"
     assert payload["schema_version"] == "1"
@@ -141,49 +131,43 @@ def test_affected_record_contains_complete_phase3_output_and_source_coordinates(
     assert decision["vulnerable_range_original"] == ">= 1.0, < 2.0"
     assert decision["first_patched_version_original"] == "2.0"
     assert decision["first_patched_version_canonical"] == "2.0"
-    clauses = cast(list[object], decision["parsed_clauses"])
-    assert len(clauses) == 2
+    assert len(cast(list[object], decision["parsed_clauses"])) == 2
 
-    source_evidence = cast(dict[str, object], payload["source_evidence"])
-    ghsa = cast(dict[str, object], source_evidence["ghsa"])
-    nvd_alias = cast(dict[str, object], source_evidence["nvd_alias"])
-    assert ghsa["ghsa_id"] == _GHSA_ID
+    sources = cast(dict[str, object], payload["source_evidence"])
+    ghsa = cast(dict[str, object], sources["ghsa"])
+    nvd = cast(dict[str, object], sources["nvd_alias"])
     assert ghsa["observed_advisory_version_id"] == _GHSA_VERSION_ID
     assert ghsa["vulnerability_entry_id"] == _GHSA_ENTRY_ID
-    assert nvd_alias["link_state"] == CveAliasLinkState.NVD_OBSERVED.value
-    assert nvd_alias["cve_id"] == _CVE_ID
+    assert nvd["link_state"] == CveAliasLinkState.NVD_OBSERVED.value
+    assert nvd["cve_id"] == _CVE_ID
 
 
-def test_same_evidence_produces_identical_canonical_bytes_and_content_id() -> None:
-    """Make repeat correlation of identical immutable evidence byte-for-byte stable."""
+def test_identical_evidence_is_byte_stable_and_content_addressed() -> None:
+    """Make repeated evaluation of identical evidence byte-for-byte stable."""
     first = _record()
     second = _record()
-
     assert first.canonical_json == second.canonical_json
     assert first.evidence_sha256 == second.evidence_sha256
     assert first.correlation_record_id == second.correlation_record_id
 
 
-def test_changed_installed_version_changes_content_identity_and_decision() -> None:
-    """Bind record identity to installed package evidence and resulting applicability."""
+def test_changed_installed_version_changes_identity_and_decision() -> None:
+    """Bind evidence identity to the installed version and applicability result."""
     affected = _record(version="1.5", purl="pkg:pypi/demo-package@1.5")
     fixed = _record(version="2.0", purl="pkg:pypi/demo-package@2.0")
-
     assert affected.result is CorrelationResult.AFFECTED
     assert fixed.result is CorrelationResult.NOT_AFFECTED
     assert affected.evidence_sha256 != fixed.evidence_sha256
 
 
-def test_package_non_match_is_reproducible_without_range_clause_evaluation() -> None:
+def test_package_non_match_emits_evidence_without_range_evaluation() -> None:
     """Emit deterministic non-match evidence when package identity differs."""
     record = _record(
         package="other-package",
         version="1.5",
         purl="pkg:pypi/other-package@1.5",
     )
-    payload = _payload(record)
-    decision = cast(dict[str, object], payload["decision"])
-
+    decision = cast(dict[str, object], _payload(record)["decision"])
     assert record.result is CorrelationResult.NOT_AFFECTED
     assert decision["reason_code"] == "package_identity_mismatch"
     assert decision["package_identity_matched"] is False
@@ -192,62 +176,55 @@ def test_package_non_match_is_reproducible_without_range_clause_evaluation() -> 
     assert decision["first_patched_version_canonical"] is None
 
 
-def test_unsupported_installed_identity_is_still_content_addressed_evidence() -> None:
-    """Emit a reproducible unsupported result instead of dropping invalid purl evidence."""
+def test_unsupported_installed_identity_is_content_addressed() -> None:
+    """Emit reproducible unsupported evidence instead of dropping an invalid purl."""
     source = _source()
-    decision = _decision(
-        source,
-        purl="pkg:pypi/different-package@1.5",
-    )
+    decision = _decision(source, purl="pkg:pypi/different-package@1.5")
     alias = reconcile_github_cve_with_nvd(source, nvd=_nvd())
     record = build_phase3_correlation_evidence_record(decision=decision, alias=alias)
-    payload = _payload(record)
-    decision_payload = cast(dict[str, object], payload["decision"])
-
+    decision_payload = cast(dict[str, object], _payload(record)["decision"])
     assert record.result is CorrelationResult.UNSUPPORTED
     assert decision_payload["reason_code"] == "invalid_purl"
     assert decision_payload["package_identity_matched"] is None
 
 
-def test_nvd_rejected_state_is_preserved_in_final_record() -> None:
-    """Carry rejected NVD evidence through the final record without rewriting its meaning."""
+def test_nvd_rejected_state_survives_final_record() -> None:
+    """Carry rejected NVD evidence without rewriting its source meaning."""
     record = _record(status=NvdVulnerabilityStatus.REJECTED)
-    payload = _payload(record)
-    source_evidence = cast(dict[str, object], payload["source_evidence"])
-    nvd_alias = cast(dict[str, object], source_evidence["nvd_alias"])
-
-    assert nvd_alias["link_state"] == CveAliasLinkState.NVD_REJECTED.value
-    assert nvd_alias["vulnerability_status"] == NvdVulnerabilityStatus.REJECTED.value
+    sources = cast(dict[str, object], _payload(record)["source_evidence"])
+    nvd = cast(dict[str, object], sources["nvd_alias"])
+    assert nvd["link_state"] == CveAliasLinkState.NVD_REJECTED.value
+    assert nvd["vulnerability_status"] == NvdVulnerabilityStatus.REJECTED.value
 
 
-def test_alias_from_different_ghsa_occurrence_cannot_be_assembled() -> None:
-    """Fail closed when applicability and alias evidence refer to different source records."""
+def test_different_ghsa_occurrence_cannot_be_assembled() -> None:
+    """Fail closed when decision and alias refer to different GHSA occurrences."""
     source = _source()
     decision = _decision(source)
     alias = reconcile_github_cve_with_nvd(source, nvd=_nvd())
-    wrong_alias = replace(alias, ghsa_vulnerability_entry_id="different-entry")
-
     with pytest.raises(InvalidCorrelationEvidenceRecordError) as exc_info:
-        build_phase3_correlation_evidence_record(decision=decision, alias=wrong_alias)
-
+        build_phase3_correlation_evidence_record(
+            decision=decision,
+            alias=replace(alias, ghsa_vulnerability_entry_id="different-entry"),
+        )
     assert exc_info.value.reason_code == "invalid_correlation_evidence_record"
 
 
-def test_alias_with_different_github_cve_assertion_cannot_be_assembled() -> None:
-    """Require the final record to preserve one consistent GitHub CVE assertion."""
+def test_different_github_cve_assertion_cannot_be_assembled() -> None:
+    """Require one consistent GitHub CVE assertion in the final record."""
     source = _source()
     decision = _decision(source)
     alias = reconcile_github_cve_with_nvd(source, nvd=_nvd())
-    wrong_alias = replace(alias, github_cve_id="CVE-2026-99999")
-
     with pytest.raises(InvalidCorrelationEvidenceRecordError):
-        build_phase3_correlation_evidence_record(decision=decision, alias=wrong_alias)
+        build_phase3_correlation_evidence_record(
+            decision=decision,
+            alias=replace(alias, github_cve_id="CVE-2026-99999"),
+        )
 
 
-def test_tampered_hash_is_rejected_by_record_invariants() -> None:
+def test_tampered_hash_is_rejected() -> None:
     """Detect evidence bytes that no longer match their content address."""
     record = _record()
-
     with pytest.raises(InvalidCorrelationEvidenceRecordError):
         Phase3CorrelationEvidenceRecordV1(
             canonical_json=record.canonical_json,
@@ -257,12 +234,10 @@ def test_tampered_hash_is_rejected_by_record_invariants() -> None:
 
 
 def test_noncanonical_json_is_rejected_even_with_matching_hash() -> None:
-    """Reject semantically valid but differently encoded JSON as canonical evidence."""
+    """Reject semantically equal but differently encoded JSON as canonical evidence."""
     record = _record()
-    payload = _payload(record)
-    pretty_json = json.dumps(payload, indent=2, sort_keys=False).encode("utf-8")
+    pretty_json = json.dumps(_payload(record), indent=2, sort_keys=False).encode("utf-8")
     pretty_hash = hashlib.sha256(pretty_json).hexdigest()
-
     with pytest.raises(InvalidCorrelationEvidenceRecordError):
         Phase3CorrelationEvidenceRecordV1(
             canonical_json=pretty_json,
@@ -271,12 +246,13 @@ def test_noncanonical_json_is_rejected_even_with_matching_hash() -> None:
         )
 
 
-def test_matched_package_cannot_claim_missing_applicability_evidence() -> None:
-    """Reject internally inconsistent decision objects before canonical serialization."""
+def test_matched_package_requires_applicability_evidence() -> None:
+    """Reject internally inconsistent decisions before canonical serialization."""
     source = _source()
     decision = _decision(source)
     alias = reconcile_github_cve_with_nvd(source, nvd=_nvd())
-    invalid_decision = replace(decision, applicability=None)
-
     with pytest.raises(InvalidCorrelationEvidenceRecordError):
-        build_phase3_correlation_evidence_record(decision=invalid_decision, alias=alias)
+        build_phase3_correlation_evidence_record(
+            decision=replace(decision, applicability=None),
+            alias=alias,
+        )
