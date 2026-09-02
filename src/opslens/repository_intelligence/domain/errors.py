@@ -29,3 +29,15 @@ class InvalidGitHubSourceEvidenceError(RepositoryIntelligenceContractError):
     """Raised when GitHub REST evidence is malformed or missing required fields."""
 
     reason_code = "invalid_github_source_evidence"
+
+
+class InvalidRepositoryFileEvidenceError(RepositoryIntelligenceContractError):
+    """Raised when immutable repository file evidence fails integrity validation."""
+
+    reason_code = "invalid_repository_file_evidence"
+
+
+class UnsupportedRepositoryFileError(RepositoryIntelligenceContractError):
+    """Raised when a repository path is outside the Phase 4 v1 evidence allowlist."""
+
+    reason_code = "unsupported_repository_file"
