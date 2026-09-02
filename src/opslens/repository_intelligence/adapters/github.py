@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from typing import cast
 
@@ -10,9 +9,9 @@ from opslens.repository_intelligence.domain import (
     GitHubRepositoryIdentity,
     ImmutableRepositorySnapshot,
     InvalidGitHubSourceEvidenceError,
+    InvalidRepositorySnapshotError,
+    validate_github_repository_ref,
 )
-
-_CONTROL_CHARACTER_PATTERN = re.compile(r"[\x00-\x1f\x7f]", re.ASCII)
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,12 +111,9 @@ def _required_bool(payload: dict[str, object], field: str) -> bool:
 def _required_clean_ref(payload: dict[str, object], field: str) -> str:
     """Validate one source-provided ref before it can be used for commit resolution."""
     value = _required_str(payload, field)
-    if (
-        value != value.strip()
-        or _CONTROL_CHARACTER_PATTERN.search(value) is not None
-        or len(value) > 1024
-    ):
+    try:
+        return validate_github_repository_ref(value)
+    except InvalidRepositorySnapshotError as exc:
         raise InvalidGitHubSourceEvidenceError(
             f"GitHub source field {field!r} is not a clean bounded ref token."
-        )
-    return value
+        ) from exc
