@@ -6,14 +6,14 @@ import tomllib
 from typing import cast
 
 from opslens.repository_intelligence.domain import (
-    ImmutableRepositoryFileEvidence,
-    InvalidUvLockError,
     MAX_UV_LOCK_PACKAGE_RECORDS,
     PYPI_SIMPLE_REGISTRY_URL,
-    ParsedUvLockEvidence,
     SUPPORTED_UV_LOCK_REVISIONS,
     SUPPORTED_UV_LOCK_SCHEMA_VERSION,
     UV_LOCK_PATH,
+    ImmutableRepositoryFileEvidence,
+    InvalidUvLockError,
+    ParsedUvLockEvidence,
     UnsupportedUvLockSchemaError,
     UvLockedPyPIPackageEvidence,
     UvUnsupportedLockedPackageEvidence,
