@@ -30,7 +30,7 @@ OpsLens Phase 3 v1 deliberately narrows the general PURL contract further: a cor
 
 PEP 440 ordering contains semantics that must not be reimplemented with lexical strings or hand-written tuples, including pre-releases, post-releases, development releases, epochs, and accepted normalized spellings.
 
-The repository lock already contains `packaging` because pytest depends on it. Before this correlation module becomes a deployable runtime dependency, `packaging` must also be promoted to an explicit OpsLens project/runtime dependency and the lockfile regenerated. The current branch intentionally keeps that dependency-wiring change separate from the identity semantics so the lockfile remains authoritative during this gate.
+`packaging>=26.3` is now an explicit OpsLens runtime dependency rather than relying on pytest's transitive dependency. The lockfile already resolved `packaging==26.3`, so promoting it to a direct dependency changed only the root dependency metadata and preserved the locked artifact identity.
 
 ## Failure behavior
 
@@ -76,6 +76,14 @@ uv sync --frozen
 ruff check src/opslens/correlation tests/unit/correlation
 pyright src/opslens/correlation tests/unit/correlation
 pytest tests/unit/correlation
+```
+
+The bounded correlation run then passed with:
+
+```text
+Ruff:    PASS
+Pyright: 0 errors, 0 warnings, 0 informations
+Pytest:  66 passed
 ```
 
 Repository-wide lint debt remains visible and should be handled independently rather than silently mixed into vulnerability-correlation work.
