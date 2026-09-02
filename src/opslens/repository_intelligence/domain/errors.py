@@ -41,3 +41,15 @@ class UnsupportedRepositoryFileError(RepositoryIntelligenceContractError):
     """Raised when a repository path is outside the Phase 4 v1 evidence allowlist."""
 
     reason_code = "unsupported_repository_file"
+
+
+class InvalidUvLockError(RepositoryIntelligenceContractError):
+    """Raised when verified `uv.lock` bytes violate the supported parser contract."""
+
+    reason_code = "invalid_uv_lock"
+
+
+class UnsupportedUvLockSchemaError(InvalidUvLockError):
+    """Raised when a valid lockfile declares unsupported schema semantics."""
+
+    reason_code = "unsupported_uv_lock_schema"

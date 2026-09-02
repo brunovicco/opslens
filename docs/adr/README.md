@@ -19,3 +19,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0009](0009-immutable-public-repository-snapshot.md) | Use exact GitHub commit identity for repository snapshots | Accepted |
 | [0010](0010-bounded-read-only-github-rest-transport.md) | Bound public GitHub REST acquisition before dependency reads | Accepted |
 | [0011](0011-immutable-uv-lock-evidence.md) | Bind `uv.lock` evidence to an exact immutable repository snapshot | Accepted |
+| [0012](0012-deterministic-uv-lock-parser.md) | Parse verified `uv.lock` evidence deterministically | Accepted |

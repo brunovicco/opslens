@@ -5,9 +5,11 @@ from opslens.repository_intelligence.domain.errors import (
     InvalidRepositoryFileEvidenceError,
     InvalidRepositoryIdentityError,
     InvalidRepositorySnapshotError,
+    InvalidUvLockError,
     RepositoryIntelligenceContractError,
     UnsupportedRepositoryFileError,
     UnsupportedRepositoryVisibilityError,
+    UnsupportedUvLockSchemaError,
 )
 from opslens.repository_intelligence.domain.file_evidence import (
     MAX_REPOSITORY_FILE_BYTES,
@@ -24,9 +26,23 @@ from opslens.repository_intelligence.domain.models import (
     validate_github_repository_coordinates,
     validate_github_repository_ref,
 )
+from opslens.repository_intelligence.domain.uv_lock import (
+    MAX_UV_LOCK_PACKAGE_RECORDS,
+    PYPI_SIMPLE_REGISTRY_URL,
+    SUPPORTED_UV_LOCK_REVISIONS,
+    SUPPORTED_UV_LOCK_SCHEMA_VERSION,
+    ParsedUvLockEvidence,
+    UvLockedPyPIPackageEvidence,
+    UvUnsupportedLockedPackageEvidence,
+    UvUnsupportedPackageReason,
+)
 
 __all__ = [
     "MAX_REPOSITORY_FILE_BYTES",
+    "MAX_UV_LOCK_PACKAGE_RECORDS",
+    "PYPI_SIMPLE_REGISTRY_URL",
+    "SUPPORTED_UV_LOCK_REVISIONS",
+    "SUPPORTED_UV_LOCK_SCHEMA_VERSION",
     "UV_LOCK_PATH",
     "GitHubRepositoryIdentity",
     "ImmutableRepositoryFileEvidence",
@@ -35,10 +51,16 @@ __all__ = [
     "InvalidRepositoryFileEvidenceError",
     "InvalidRepositoryIdentityError",
     "InvalidRepositorySnapshotError",
+    "InvalidUvLockError",
+    "ParsedUvLockEvidence",
     "RepositoryIntelligenceContractError",
     "RepositoryProvider",
     "UnsupportedRepositoryFileError",
     "UnsupportedRepositoryVisibilityError",
+    "UnsupportedUvLockSchemaError",
+    "UvLockedPyPIPackageEvidence",
+    "UvUnsupportedLockedPackageEvidence",
+    "UvUnsupportedPackageReason",
     "compute_content_sha256",
     "compute_git_blob_sha1",
     "validate_github_repository_coordinates",
