@@ -84,6 +84,25 @@ class GitHubRepositoryIdentity:
         return f"{self.provider.value}:{self.repository_id}"
 
 
+def validate_github_repository_ref(value: str) -> str:
+    """Validate one bounded clean GitHub ref before it reaches source acquisition."""
+    if (
+        not value
+        or value != value.strip()
+        or _CONTROL_CHARACTER_PATTERN.search(value) is not None
+    ):
+        raise InvalidRepositorySnapshotError(
+            "Requested GitHub ref must be a non-empty clean provenance token."
+        )
+
+    if len(value) > 1024:
+        raise InvalidRepositorySnapshotError(
+            "Requested GitHub ref exceeds the Phase 4 v1 evidence bound."
+        )
+
+    return value
+
+
 @dataclass(frozen=True, slots=True)
 class ImmutableRepositorySnapshot:
     """One exact public GitHub repository snapshot resolved to a full commit SHA."""
@@ -95,19 +114,7 @@ class ImmutableRepositorySnapshot:
 
     def __post_init__(self) -> None:
         """Validate immutable commit authority and ref provenance."""
-        if (
-            not self.requested_ref
-            or self.requested_ref != self.requested_ref.strip()
-            or _CONTROL_CHARACTER_PATTERN.search(self.requested_ref) is not None
-        ):
-            raise InvalidRepositorySnapshotError(
-                "Requested GitHub ref must be a non-empty clean provenance token."
-            )
-
-        if len(self.requested_ref) > 1024:
-            raise InvalidRepositorySnapshotError(
-                "Requested GitHub ref exceeds the Phase 4 v1 evidence bound."
-            )
+        validate_github_repository_ref(self.requested_ref)
 
         if _FULL_GIT_SHA_PATTERN.fullmatch(self.commit_sha) is None:
             raise InvalidRepositorySnapshotError(
