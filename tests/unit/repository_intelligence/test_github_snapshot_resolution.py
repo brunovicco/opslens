@@ -67,8 +67,12 @@ class FakeGitHubSnapshotSource:
 
     repository_payload: dict[str, object]
     commit_payload: dict[str, object]
-    repository_calls: list[tuple[str, str]] = field(default_factory=list)
-    commit_calls: list[tuple[str, str, str]] = field(default_factory=list)
+    repository_calls: list[tuple[str, str]] = field(
+        default_factory=lambda: list[tuple[str, str]]()
+    )
+    commit_calls: list[tuple[str, str, str]] = field(
+        default_factory=lambda: list[tuple[str, str, str]]()
+    )
 
     def get_repository(self, owner: str, name: str) -> dict[str, object]:
         """Return the configured repository payload and record the lookup."""
@@ -109,9 +113,7 @@ def test_commit_payload_projects_exact_snapshot_identity() -> None:
 def test_non_public_visibility_fails_closed() -> None:
     """Require explicit public visibility instead of inferring it from private=false."""
     with pytest.raises(UnsupportedRepositoryVisibilityError):
-        project_github_repository_metadata(
-            _repository_payload(visibility="internal")
-        )
+        project_github_repository_metadata(_repository_payload(visibility="internal"))
 
 
 def test_private_flag_cannot_disagree_with_public_only_contract() -> None:
@@ -143,9 +145,7 @@ def test_source_boolean_repository_id_is_rejected_before_domain_projection() -> 
 def test_source_full_name_mismatch_remains_domain_identity_failure() -> None:
     """Reject source fields that individually parse but describe different identities."""
     with pytest.raises(InvalidRepositoryIdentityError):
-        project_github_repository_metadata(
-            _repository_payload(full_name="other/opslens")
-        )
+        project_github_repository_metadata(_repository_payload(full_name="other/opslens"))
 
 
 def test_missing_commit_tree_is_invalid_source_evidence() -> None:
