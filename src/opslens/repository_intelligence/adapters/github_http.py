@@ -5,13 +5,13 @@ from __future__ import annotations
 import json
 import math
 import re
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from http.client import HTTPSConnection
-from typing import Callable, Mapping, Protocol, cast
+from typing import Protocol, cast
 from urllib.parse import quote
 
 from opslens.repository_intelligence.domain import (
-    InvalidRepositorySnapshotError,
     validate_github_repository_coordinates,
     validate_github_repository_ref,
 )
@@ -42,6 +42,7 @@ class GitHubRateLimitError(GitHubRestAcquisitionError):
         retry_after_seconds: int | None,
         reset_epoch_seconds: int | None,
     ) -> None:
+        """Create one typed rate-limit failure from non-secret response metadata."""
         super().__init__(f"GitHub API rate limited the request with status {status_code}.")
         self.status_code = status_code
         self.retry_after_seconds = retry_after_seconds
@@ -66,6 +67,7 @@ class GitHubHttpStatusError(GitHubRestAcquisitionError):
     reason_code = "github_http_status_error"
 
     def __init__(self, status_code: int) -> None:
+        """Create one generic HTTP-status failure without response-body disclosure."""
         super().__init__(f"GitHub API returned HTTP status {status_code}.")
         self.status_code = status_code
 
@@ -175,6 +177,7 @@ class GitHubRestSnapshotSource:
         config: GitHubRestClientConfig | None = None,
         connection_factory: GitHubHttpsConnectionFactory = _default_connection_factory,
     ) -> None:
+        """Create a source with explicit local bounds and an injectable HTTPS factory."""
         self._config = config or GitHubRestClientConfig()
         self._connection_factory = connection_factory
 
