@@ -11,6 +11,7 @@ from opslens.repository_intelligence.domain.models import (
     GitHubRepositoryIdentity,
     ImmutableRepositorySnapshot,
     RepositoryProvider,
+    validate_github_repository_ref,
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "RepositoryIntelligenceContractError",
     "RepositoryProvider",
     "UnsupportedRepositoryVisibilityError",
+    "validate_github_repository_ref",
 ]
