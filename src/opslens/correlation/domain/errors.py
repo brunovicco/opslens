@@ -59,3 +59,9 @@ class InvalidGhsaEvidenceBridgeError(CorrelationContractError):
     """Raised when normalized GHSA evidence cannot be linked without losing authority."""
 
     reason_code = "invalid_ghsa_evidence_bridge"
+
+
+class InvalidCveAliasReconciliationError(CorrelationContractError):
+    """Raised when CVE alias evidence cannot be reconciled without inventing a link."""
+
+    reason_code = "invalid_cve_alias_reconciliation"

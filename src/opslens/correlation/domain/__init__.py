@@ -1,5 +1,9 @@
 """Domain types for deterministic vulnerability correlation."""
 
+from opslens.correlation.domain.aliases import (
+    CveAliasLinkState,
+    CveAliasReconciliationEvidence,
+)
 from opslens.correlation.domain.pypi import (
     CanonicalPyPIPackage,
     CanonicalPyPIPurl,
@@ -26,6 +30,8 @@ __all__ = [
     "CanonicalPyPIPurl",
     "CanonicalPyPIVersion",
     "CorrelationResult",
+    "CveAliasLinkState",
+    "CveAliasReconciliationEvidence",
     "PyPIClauseEvidence",
     "PyPICorrelationEvidence",
     "PyPIEcosystem",
