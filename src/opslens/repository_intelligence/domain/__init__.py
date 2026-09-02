@@ -1,6 +1,7 @@
 """Domain types for immutable repository intelligence evidence."""
 
 from opslens.repository_intelligence.domain.errors import (
+    InvalidGitHubSourceEvidenceError,
     InvalidRepositoryIdentityError,
     InvalidRepositorySnapshotError,
     RepositoryIntelligenceContractError,
@@ -15,6 +16,7 @@ from opslens.repository_intelligence.domain.models import (
 __all__ = [
     "GitHubRepositoryIdentity",
     "ImmutableRepositorySnapshot",
+    "InvalidGitHubSourceEvidenceError",
     "InvalidRepositoryIdentityError",
     "InvalidRepositorySnapshotError",
     "RepositoryIntelligenceContractError",
