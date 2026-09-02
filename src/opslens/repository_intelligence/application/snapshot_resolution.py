@@ -53,10 +53,12 @@ def resolve_github_repository_snapshot(
     repository_payload = source.get_repository(requested_owner, requested_name)
     metadata = project_github_repository_metadata(repository_payload)
 
-    used_default_branch = requested_ref is None
-    effective_ref = metadata.default_branch if used_default_branch else requested_ref
-    assert effective_ref is not None
-    effective_ref = validate_github_repository_ref(effective_ref)
+    if requested_ref is None:
+        used_default_branch = True
+        effective_ref = metadata.default_branch
+    else:
+        used_default_branch = False
+        effective_ref = validate_github_repository_ref(requested_ref)
 
     commit_payload = source.get_commit(
         metadata.repository.owner,
