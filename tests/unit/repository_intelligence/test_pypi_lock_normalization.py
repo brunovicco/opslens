@@ -187,7 +187,7 @@ def test_duplicate_canonical_identity_records_preserve_index_and_markers() -> No
             _pypi_package("Example_Pkg", "1.0", markers='"sys_platform == \'linux\'"')
             + _pypi_package(
                 "example-pkg",
-                "1.0.0",
+                "1.0",
                 markers='"sys_platform == \'darwin\'"',
             )
         )
