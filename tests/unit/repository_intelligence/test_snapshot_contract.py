@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from typing import cast
 
 import pytest
 
@@ -20,22 +21,21 @@ _COMMIT_SHA = "a" * 40
 _TREE_SHA = "b" * 40
 
 
-def _repository(**overrides: object) -> GitHubRepositoryIdentity:
-    """Build one valid public GitHub repository identity."""
-    values: dict[str, object] = {
-        "repository_id": _REPOSITORY_ID,
-        "owner": "brunovicco",
-        "name": "opslens",
-        "full_name": "brunovicco/opslens",
-        "is_private": False,
-    }
-    values.update(overrides)
+def _repository(
+    *,
+    repository_id: int = _REPOSITORY_ID,
+    owner: str = "brunovicco",
+    name: str = "opslens",
+    full_name: str = "brunovicco/opslens",
+    is_private: bool = False,
+) -> GitHubRepositoryIdentity:
+    """Build one public GitHub repository identity for contract tests."""
     return GitHubRepositoryIdentity(
-        repository_id=values["repository_id"],  # type: ignore[arg-type]
-        owner=values["owner"],  # type: ignore[arg-type]
-        name=values["name"],  # type: ignore[arg-type]
-        full_name=values["full_name"],  # type: ignore[arg-type]
-        is_private=values["is_private"],  # type: ignore[arg-type]
+        repository_id=repository_id,
+        owner=owner,
+        name=name,
+        full_name=full_name,
+        is_private=is_private,
     )
 
 
@@ -75,7 +75,7 @@ def test_private_repository_fails_closed() -> None:
 def test_boolean_repository_id_is_not_accepted_as_integer() -> None:
     """Reject Python bool values even though bool subclasses int."""
     with pytest.raises(InvalidRepositoryIdentityError):
-        _repository(repository_id=True)
+        _repository(repository_id=cast(int, True))
 
 
 def test_non_positive_repository_id_is_rejected() -> None:
