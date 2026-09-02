@@ -4,10 +4,6 @@ from opslens.correlation.domain.aliases import (
     CveAliasLinkState,
     CveAliasReconciliationEvidence,
 )
-from opslens.correlation.domain.evidence import (
-    Phase3CorrelationEvidenceRecordV1,
-    build_phase3_correlation_evidence_record,
-)
 from opslens.correlation.domain.pypi import (
     CanonicalPyPIPackage,
     CanonicalPyPIPurl,
@@ -36,14 +32,12 @@ __all__ = [
     "CorrelationResult",
     "CveAliasLinkState",
     "CveAliasReconciliationEvidence",
-    "Phase3CorrelationEvidenceRecordV1",
     "PyPIClauseEvidence",
     "PyPICorrelationEvidence",
     "PyPIEcosystem",
     "PyPIRangeClause",
     "PyPIRangeOperator",
     "PyPIVulnerableRange",
-    "build_phase3_correlation_evidence_record",
     "canonicalize_pypi_ecosystem",
     "canonicalize_pypi_package",
     "canonicalize_pypi_purl",
