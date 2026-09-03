@@ -2,9 +2,9 @@
 
 _Last updated: 2026-09-03_
 
-This document is the accumulated architecture baseline after completion of **Phase 4 — Repository Intelligence**.
+This document is the accumulated architecture baseline after completion of **Phase 5 — Risk Prioritization Engine**.
 
-The next authority boundary is **Phase 5 — Risk Prioritization Engine**.
+The next roadmap boundary is **Phase 6 — Semantic Query Layer**.
 
 ## 1. Purpose
 
@@ -12,13 +12,19 @@ OpsLens is an open-source software supply chain and threat-intelligence platform
 
 The product goal is:
 
-> Given the software I actually use, which vulnerabilities affect it, what exact evidence proves that, and how should those findings eventually be prioritized?
+> Given the software I actually use, which vulnerabilities affect it, what exact evidence proves that, and which findings should I prioritize?
 
-The architecture deliberately establishes trustworthy deterministic evidence before adding semantic or agentic reasoning.
+The architecture deliberately establishes trustworthy deterministic evidence and policy enforcement before adding semantic, generative, or agentic reasoning.
 
 Core invariant:
 
 > **Agents reason. Code verifies evidence.**
+
+Additional permanent boundaries:
+
+> **READ, NEVER EXECUTE third-party repository code.**
+
+> **Repository Risk != Runtime Exposure.**
 
 ## 2. Permanent architectural principles
 
@@ -28,18 +34,20 @@ Unless changed by an explicit ADR:
 - deterministic facts remain authoritative;
 - exact source versions and content hashes participate in evidence provenance;
 - package identity normalization remains deterministic;
-- version parsing and version-range matching remain deterministic;
+- version parsing and vulnerable-range matching remain deterministic;
 - vulnerability applicability remains deterministic;
 - CVE/GHSA/NVD alias reconciliation remains deterministic;
-- KEV/EPSS/CVSS evidence lookup remains deterministic;
-- risk policy evaluation will remain deterministic;
+- KEV/EPSS/CVSS evidence remains deterministic and source-preserving;
+- risk-policy evaluation remains deterministic;
 - semantic-query validation and SQL compilation remain deterministic;
 - evidence validation remains deterministic;
 - execution/tool/cost enforcement remains deterministic;
 - LLMs may later classify, plan, route, synthesize, and explain over validated evidence;
+- LLMs do not replace applicability, source evidence, or risk-policy enforcement;
 - natural-language planning never receives unrestricted SQL authority;
-- third-party repository code is untrusted data to inspect, never code to execute;
+- third-party repository content is untrusted data to inspect, never code to execute;
 - Repository Risk is not Runtime Exposure;
+- missing evidence is not silently converted into benign evidence;
 - duplicate delivery is expected and replay must be safe;
 - schema, provenance, authority, or exact-evidence mismatches fail closed;
 - IAM uses least privilege and responsibility separation;
@@ -49,7 +57,7 @@ Unless changed by an explicit ADR:
 
 ## 3. Current system shape
 
-The implemented system has three deterministic layers.
+The implemented system now has four deterministic layers.
 
 ```text
 THREAT INTELLIGENCE DATA
@@ -65,21 +73,16 @@ immutable public GitHub snapshot + inert uv.lock + deterministic findings
         |
         v
 RepositoryAnalysisResult
-```
-
-Phase 5 will add a fourth layer:
-
-```text
-RepositoryAnalysisResult
         |
         v
-Risk Policy v1
+RISK PRIORITIZATION
+versioned Risk Policy v1 + factor evidence + deterministic ranking
         |
         v
-versioned deterministic priority decision
+RiskPrioritizationResult
 ```
 
-Risk Policy does not become a new source of applicability truth.
+Risk Policy is a downstream policy authority. It does not become a new source of vulnerability applicability truth.
 
 ## 4. AWS foundation
 
@@ -308,133 +311,72 @@ Phase 4 analyzes a supported public GitHub repository without executing its code
 Current v1 scope:
 
 ```text
-provider:             GitHub public repositories
-repository evidence:  uv.lock
-supported packages:   canonical PyPI source records
-network operation:    bounded read-only GitHub REST
-code execution:       never
+provider:             public GitHub repositories
+repository evidence: root-level uv.lock
+supported packages:  canonical PyPI source records
+network operation:   bounded read-only GitHub REST
+code execution:      never
 ```
 
-### 7.1 Immutable repository identity
+### 7.1 Immutable repository authority
 
-Repository identity uses GitHub's numeric repository ID plus source coordinates. A requested ref is resolved to an exact commit and tree SHA.
+Authority combines GitHub's numeric repository ID with an exact commit SHA.
 
 ```text
-repository owner/name/ref
- -> GitHub metadata
+owner/name/ref
+ -> canonical GitHub metadata
  -> exact commit SHA
  -> exact tree SHA
- -> immutable snapshot_id
+ -> immutable snapshot
 ```
 
-Example shape:
-
-```text
-github:<repository_id>@<40-char-commit-sha>
-```
-
-Moving branch names never become evidence authority after resolution.
+After resolution, moving refs remain provenance only.
 
 ### 7.2 Bounded GitHub transport
 
-The repository transport is intentionally narrow:
+The acquisition boundary uses HTTPS to a fixed host, GET only, bounded timeouts and response bytes, no redirects, no automatic retry loops, and no arbitrary caller-supplied absolute URL authority.
 
-- fixed GitHub API host;
-- GET only;
-- bounded timeouts;
-- bounded response bytes;
-- no redirect authority expansion;
-- no automatic unbounded retries;
-- explicit rate-limit failures;
-- no generic remote URL execution path.
+### 7.3 Immutable `uv.lock`
 
-### 7.3 Immutable `uv.lock` evidence
+Only root-level `uv.lock` is allowlisted in v1.
 
-Only the allowlisted `uv.lock` path is accepted in v1.
+The file is read at `snapshot.commit_sha`, treated as inert bytes, bounded to 1 MiB, verified against the Git blob SHA-1, and independently hashed with SHA-256.
 
-Acquisition always uses the exact immutable commit, never the moving requested ref.
+No `uv`, package manager, build, test, Dockerfile, setup hook, workflow, or repository script is executed.
 
-The evidence verifies:
+### 7.4 Deterministic parsing and normalization
 
-```text
-GitHub path/type/name/encoding/size
-Base64 payload
-Git blob SHA-1 = sha1("blob <len>\0" + bytes)
-independent OpsLens SHA-256
-1 MiB content bound
-```
+The parser uses stdlib `tomllib` over already verified bytes, preserves source indexes and resolution markers, caps work at 5,000 package records, and keeps unsupported source kinds explicit.
 
-The bytes remain inert data.
+Supported PyPI records are normalized only through the Phase 3 authority.
 
-### 7.4 Deterministic lock parsing
-
-The parser uses Python stdlib `tomllib` over already verified bytes.
-
-It preserves:
-
-- lock schema/revision evidence;
-- `requires-python`;
-- global/package resolution markers;
-- zero-based source record indexes;
-- duplicate marker-fork records;
-- explicit unsupported source kinds.
-
-It does not execute `uv`, install dependencies, or infer deployment truth from resolution markers.
-
-### 7.5 Phase 3 normalization bridge
-
-Supported canonical-PyPI lock records are normalized only through the existing Phase 3 package/version/purl authority.
-
-Every PyPI-source record is accounted for exactly once as:
-
-```text
-normalized
-or
-unsupported with explicit reason
-```
-
-### 7.6 Repository vulnerability findings
-
-Normalized repository dependencies are joined to exact GHSA PyPI vulnerability occurrences by canonical package identity before applicability evaluation.
+### 7.5 Repository vulnerability findings
 
 ```text
 locked dependency
  + exact GHSA occurrence
  -> canonical package join
- -> Phase 3 range evaluator
- -> assessment
- -> affected repository finding when applicable
+ -> deterministic range evaluation
+ -> affected | not_affected | unsupported
 ```
 
-Unsupported evidence remains explicit and never becomes a false negative.
-
-A positive finding proves repository-risk evidence for the immutable lock snapshot; it does not prove runtime presence or exploitability.
-
-Base findings use content-addressed canonical evidence:
+Only `affected` emits a repository finding.
 
 ```text
 repository-finding:v1@sha256:<digest>
 ```
 
-### 7.7 NVD/CVSS enrichment
+The finding proves repository-risk evidence at the immutable snapshot. It does not prove runtime presence or exploitability.
 
-An already affected finding may be enriched with exact NVD evidence without changing applicability truth.
+### 7.6 NVD/CVSS enrichment
 
-Properties:
+Affected findings may receive exact NVD evidence without changing applicability truth.
 
-- the exact GHSA occurrence is rebound before alias reconciliation;
-- zero or one exact NVD observed version is supplied per CVE;
-- duplicate NVD candidates fail closed instead of choosing `latest`;
-- CVSS metrics are re-derived from the exact NVD canonical source content;
-- every supported CVSS observation is preserved;
-- no preferred/highest/merged score is selected;
-- NVD rejected state remains distinct.
+Every supported CVSS observation is preserved. Phase 4 intentionally does not choose a preferred/highest/merged score.
 
-### 7.8 CISA KEV enrichment
+### 7.7 CISA KEV enrichment
 
-KEV enrichment consumes one complete immutable catalog snapshot, re-verifies its source hash, and reruns the existing deterministic Silver transformer over the full catalog.
-
-States are exactly:
+States:
 
 ```text
 present
@@ -442,13 +384,11 @@ absent
 cve_unavailable
 ```
 
-`absent` requires a GitHub-asserted CVE plus validated complete-snapshot non-membership.
+`absent` is valid only after proving non-membership in a complete validated catalog snapshot.
 
-### 7.9 FIRST EPSS enrichment
+### 7.8 FIRST EPSS enrichment
 
-EPSS enrichment consumes exactly one explicitly selected current or historical EPSS snapshot.
-
-States are exactly:
+States:
 
 ```text
 score_present
@@ -456,30 +396,11 @@ score_absent
 cve_unavailable
 ```
 
-There is no automatic `latest`, nearest-date, max-score, trend, or multi-date selection inside the evidence domain.
+Evidence comes from exactly one explicitly selected current or historical snapshot. There is no automatic `latest`, max-score, trend, or nearest-date selection.
 
-Historical EPSS v1 preserves unavailable model metadata/percentile fields rather than fabricating modern values.
+### 7.9 Final projection
 
-### 7.10 Final analysis projection
-
-`RepositoryAnalysisResult` accepts only the already validated final EPSS enrichment chain and derives a consumer-facing projection.
-
-It can expose:
-
-```text
-dependency
-installed version
-purl
-GHSA/CVE identifiers
-matched range and clauses
-fixed version
-all CVSS observations
-KEV evidence
-EPSS evidence
-exact evidence-chain references
-```
-
-It does not expose a risk score, priority, or runtime-exposure assertion.
+`RepositoryAnalysisResult` derives a consumer-facing projection from the fully validated evidence chain.
 
 Final identities:
 
@@ -488,30 +409,142 @@ repository-analysis-finding:v1@sha256:<digest>
 repository-analysis:v1@sha256:<digest>
 ```
 
-## 8. Evidence chain and cache boundary
+Phase 4 assigns no priority and no runtime-exposure claim.
 
-The final analysis identity changes when any authoritative selected evidence changes.
+## 8. Risk Prioritization Engine — Phase 5
 
-This is intentional:
+Phase 5 introduces a downstream **policy authority** that remains separate from Phase 4 source facts.
+
+### 8.1 Architectural boundary
+
+```text
+RepositoryAnalysisResult
+ -> application projection
+ -> RiskFindingInput
+ -> pure deterministic Risk Policy v1
+ -> RiskFactorContribution[]
+ -> priority score + tier
+ -> completeness / review_required
+ -> deterministic ranking
+ -> RiskPrioritizationResult
+```
+
+The `risk_policy` domain makes no network calls and has no AWS, GitHub, NVD, KEV, EPSS, or model adapter authority.
+
+### 8.2 Risk Policy v1
+
+Maximum score: `100`.
+
+```text
+KEV present                         +40
+
+EPSS >= 0.70                        +30
+EPSS >= 0.30 and < 0.70            +20
+EPSS >= 0.10 and < 0.30            +10
+EPSS < 0.10                           +0
+
+max supported CVSS >= 9.0           +20
+max supported CVSS >= 7.0           +10
+max supported CVSS >= 4.0            +5
+max supported CVSS < 4.0              +0
+
+known fixed version                  +10
+```
+
+Priority tiers:
+
+```text
+P0  score >= 80
+P1  score >= 60 and < 80
+P2  score >= 30 and < 60
+P3  score < 30
+```
+
+This value is explicitly an **OpsLens priority score**.
+
+It is not an exploitation probability, a replacement for EPSS/CVSS/KEV, or a runtime-exposure score.
+
+### 8.3 CVSS policy aggregation
+
+Phase 4 preserves all supported NVD CVSS observations.
+
+Risk Policy v1 introduces the downstream aggregation:
+
+```text
+max supported observed CVSS base score
+```
+
+The selected value exists only in policy evidence. Original source observations remain intact.
+
+If a future unsupported CVSS family appears, v1 assigns no CVSS points and marks the evaluation `partial/review_required` instead of pretending complete support.
+
+### 8.4 Missing evidence
+
+```text
+KEV absent in complete catalog      -> complete negative evidence
+EPSS absent in complete snapshot    -> complete negative evidence
+CVE unavailable                     -> partial / review_required
+no supported CVSS evidence          -> partial / review_required
+unsupported CVSS family             -> partial / review_required
+```
+
+Missing evidence receives no fabricated risk points, but a low score with partial evidence also cannot be represented as a complete low-risk conclusion.
+
+### 8.5 Fixed version
+
+A known first patched version contributes `+10` as an explicit actionability bonus.
+
+This does not alter applicability. Absence of a known fix does not prove remediation is impossible.
+
+### 8.6 Policy identities
+
+```text
+risk-policy:v1@sha256:<digest>
+risk-evaluation:v1@sha256:<digest>
+risk-prioritization:v1@sha256:<digest>
+```
+
+Same evidence + same policy reproduces the same identities and priority.
+
+### 8.7 Ranking
+
+```text
+1. priority_score descending
+2. analysis_finding_id ascending
+```
+
+The tie-breaker exists only for reproducibility and carries no risk meaning.
+
+### 8.8 Factors excluded from v1
+
+```text
+direct vs transitive
+runtime deployment presence
+runtime package activation
+reachability
+internet exposure
+business criticality
+asset criticality
+```
+
+A future policy version may use them only after deterministic upstream evidence contracts exist.
+
+## 9. Evidence and cache boundary
+
+Content-addressed identities include the selected threat-intelligence evidence.
 
 ```text
 same repository commit
- + different EPSS snapshot
- -> different analysis_id
+ + different temporal KEV/EPSS evidence
+ -> potentially different RepositoryAnalysisResult
+ -> potentially different RiskPrioritizationResult
 ```
 
-Therefore a repository commit alone is not a safe cache key.
+The commit alone is not a safe cache key.
 
-Future reuse should key storage by the complete content-addressed evidence identity. Phase 4 deliberately deferred DynamoDB/ElastiCache/other cache infrastructure until a measured workload justifies:
+No cache backend exists because no measured workload yet justifies storage cost, invalidation, IAM, observability, failure recovery, and retention semantics.
 
-- storage cost;
-- invalidation semantics;
-- IAM surface;
-- observability;
-- failure recovery;
-- retention policy.
-
-## 9. Security boundaries
+## 10. Security boundaries
 
 ```text
 Human administration
@@ -520,81 +553,117 @@ Human administration
 GitHub Actions
  -> OIDC
  -> deployment role
- -> Terraform-managed AWS changes
+ -> Terraform changes
 
 Threat-intelligence runtimes
  -> source-specific least-privilege roles
 
 Repository Intelligence
- -> public GitHub read-only network authority
- -> inert repository evidence only
- -> no third-party code execution
+ -> bounded public GitHub read-only authority
+ -> inert data only
+ -> zero third-party code execution
+
+Risk Policy
+ -> deterministic Phase 4 evidence only
+ -> no network or model authority
 ```
 
-A deterministic finding remains a repository observation. Runtime exposure is a later independent evidence domain.
+A deterministic repository priority remains a **Repository Risk** result. Runtime Exposure remains a separate future evidence domain.
 
-## 10. Cost discipline
-
-Current examples:
+## 11. Cost discipline
 
 - no Glue crawler where explicit schemas suffice;
-- no DynamoDB repository cache before measured reuse;
-- no Step Functions unless workflow semantics justify it;
+- no DynamoDB/cache before measured reuse;
+- no Step Functions without real workflow semantics;
 - no Iceberg requirement yet;
-- no vector database before retrieval work begins;
-- no Bedrock call for deterministic applicability/findings;
-- Athena dev workgroup enforces a 10 MiB scan cutoff.
+- no vector database before retrieval;
+- no Bedrock call in applicability or prioritization;
+- Athena dev workgroup with a 10 MiB scan cutoff.
 
-## 11. Quality gates
+Incremental AWS cost from Phase 5: `$0`.
 
-Code-bearing deterministic changes are validated with scoped CI so newly introduced code cannot hide behind historical repository findings.
+## 12. Quality gates
 
-Current correlation/repository gates:
+Dedicated deterministic CI slices now cover:
 
 ```text
-uv lock --check
-uv sync --frozen
-Ruff
-strict Pyright
-Pytest
+Correlation
+Repository Intelligence
+Risk Policy
 ```
 
-Phase 4 closeout:
+Phase 5 closeout:
 
 ```text
-Repository Intelligence pytest: 174 passed
-Correlation pytest:             116 passed
-Pyright:                         0 errors / 0 warnings
-Ruff:                            PASS
+Risk Policy Ruff:                 PASS
+Risk Policy Pyright:              0 errors / 0 warnings
+Risk Policy pytest:               31 passed
+Repository Intelligence pytest:   174 passed
+Correlation pytest:               116 passed
 ```
 
 AWS-bearing changes additionally use Terraform fmt/validate, TFLint, Checkov, canonical plan review, deployment verification, and post-apply convergence checks.
 
-## 12. Phase 5 boundary
-
-Phase 5 introduces **Risk Policy v1** over the final Phase 4 evidence.
-
-Candidate factors include:
+## 13. ADRs through Phase 5
 
 ```text
-affected status
-KEV
-EPSS
-CVSS
-fix availability
-direct/transitive evidence when available
-future runtime evidence
-evidence completeness
+0001 Terraform state strategy
+0002 GitHub Actions OIDC
+0003 AWS Region strategy
+0004 NVD ingestion/versioning
+0005 GHSA source/synchronization
+0006 GHSA Silver content identity
+0007 GHSA runtime credentials/retry
+0008 PyPI correlation semantics
+0009 immutable public repository snapshot
+0010 bounded read-only GitHub REST transport
+0011 immutable uv.lock evidence
+0012 deterministic uv.lock parser
+0013 Phase 3 PyPI normalization bridge
+0014 deterministic repository vulnerability findings
+0015 repository NVD/CVSS enrichment
+0016 repository KEV snapshot enrichment
+0017 repository EPSS snapshot enrichment
+0018 repository analysis result projection
+0019 deterministic Risk Policy v1
 ```
 
-Required invariants:
+`docs/adr/README.md` is the canonical index.
 
-- same evidence + same policy version => same priority;
-- factor-level explanation is reconstructable;
-- policy version is recorded;
-- missing/unsupported evidence has explicit semantics;
-- LLM is not required for ranking;
-- risk policy cannot rewrite applicability or source evidence;
-- Repository Risk remains distinct from Runtime Exposure.
+## 14. Non-goals at the current boundary
 
-This boundary intentionally starts only after the Phase 4 evidence system is complete.
+Not yet implemented:
+
+- private repositories;
+- arbitrary manifests;
+- ecosystems beyond PyPI v1;
+- runtime exposure;
+- reachability;
+- business/asset criticality;
+- unrestricted text-to-SQL;
+- RAG/vector retrieval;
+- autonomous remediation;
+- agentic authority over deterministic evidence;
+- arbitrary MCP.
+
+## 15. Next boundary — Phase 6 Semantic Query Layer
+
+```text
+User question
+ -> Amazon Bedrock planner
+ -> typed SemanticQuery
+ -> deterministic validator
+ -> deterministic SQL compiler
+ -> bounded read-only Athena workgroup
+ -> structured evidence
+```
+
+Permanent guardrail:
+
+> **No unrestricted text-to-SQL.**
+
+The model may propose a typed semantic intent. Application code owns allowlists, validation, SQL compilation, limits, and execution authority.
+
+Before Phase 6 implementation, current official Amazon Bedrock and Athena documentation must be checked for APIs, available models, IAM, limits, and pricing.
+
+The first Phase 6 gate should freeze one narrow factual question, the typed query contract, and the SQL compiler boundary before API/UI/RAG/agent work.
