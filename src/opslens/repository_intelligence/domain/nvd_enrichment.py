@@ -27,6 +27,7 @@ from opslens.transformation.nvd.domain.models import (
     NvdCveCoreRecord,
     NvdCvssMetric,
     NvdCvssMetrics,
+    NvdVulnerabilityStatus,
 )
 
 MAX_NVD_ENRICHMENT_RECORDS = 50_000
@@ -91,7 +92,8 @@ class RepositoryNvdEnrichedFinding:
         }
         if has_nvd_state != (self.nvd_cvss is not None):
             raise InvalidRepositoryNvdEnrichmentError(
-                "NVD-linked alias states require exact NVD/CVSS evidence and only those states may carry it."
+                "NVD-linked alias states require exact NVD/CVSS evidence; "
+                "only those states may carry it."
             )
 
         if self.nvd_cvss is not None:
@@ -131,6 +133,16 @@ class RepositoryNvdEnrichedFinding:
                 raise InvalidRepositoryNvdEnrichmentError(
                     f"Repository NVD enrichment disagrees on {field_name}."
                 )
+
+        if nvd.vuln_status is NvdVulnerabilityStatus.REJECTED:
+            if self.alias.state is not CveAliasLinkState.NVD_REJECTED:
+                raise InvalidRepositoryNvdEnrichmentError(
+                    "Rejected NVD source evidence requires the NVD rejected alias state."
+                )
+        elif self.alias.state is not CveAliasLinkState.NVD_OBSERVED:
+            raise InvalidRepositoryNvdEnrichmentError(
+                "Non-rejected NVD source evidence requires the NVD observed alias state."
+            )
 
     def _validate_absent_nvd_binding(self) -> None:
         """Ensure non-NVD alias states do not smuggle NVD coordinates."""
@@ -260,7 +272,8 @@ class RepositoryNvdEnrichmentEvidence:
         )
         if observed_findings != self.scan.findings:
             raise InvalidRepositoryNvdEnrichmentError(
-                "Repository NVD enrichment must preserve every affected finding exactly once and in order."
+                "Repository NVD enrichment must preserve every affected finding "
+                "exactly once and in order."
             )
 
         enrichment_ids = [
@@ -300,7 +313,10 @@ def derive_repository_nvd_cvss_evidence(
 def _derive_cvss_from_exact_nvd_source(nvd: NvdCveCoreRecord) -> NvdCvssMetrics:
     """Re-run the existing Phase 2 CVSS transformer on exact canonical NVD content."""
     try:
-        parsed = cast(object, json.loads(nvd.observed_version.canonical_json.decode("utf-8")))
+        parsed = cast(
+            object,
+            json.loads(nvd.observed_version.canonical_json.decode("utf-8")),
+        )
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise InvalidRepositoryNvdEnrichmentError(
             "Exact NVD source content is not valid UTF-8 JSON."
