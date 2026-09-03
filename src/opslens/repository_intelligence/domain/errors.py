@@ -65,3 +65,15 @@ class RepositoryVulnerabilityScanLimitError(InvalidRepositoryVulnerabilityScanEr
     """Raised when a deterministic repository vulnerability scan exceeds a hard bound."""
 
     reason_code = "repository_vulnerability_scan_limit_exceeded"
+
+
+class InvalidRepositoryNvdEnrichmentError(RepositoryIntelligenceContractError):
+    """Raised when a repository finding cannot bind to exact NVD/CVSS evidence."""
+
+    reason_code = "invalid_repository_nvd_enrichment"
+
+
+class RepositoryNvdEnrichmentLimitError(InvalidRepositoryNvdEnrichmentError):
+    """Raised when deterministic NVD enrichment exceeds a hard evidence bound."""
+
+    reason_code = "repository_nvd_enrichment_limit_exceeded"
