@@ -1,5 +1,8 @@
 """Application services for bounded repository intelligence acquisition."""
 
+from opslens.repository_intelligence.application.epss_enrichment import (
+    enrich_repository_findings_with_epss,
+)
 from opslens.repository_intelligence.application.file_acquisition import (
     GitHubUvLockSource,
     acquire_uv_lock_evidence,
@@ -28,6 +31,7 @@ __all__ = [
     "GitHubUvLockSource",
     "acquire_uv_lock_evidence",
     "build_repository_pypi_vulnerability_scan",
+    "enrich_repository_findings_with_epss",
     "enrich_repository_findings_with_kev",
     "enrich_repository_findings_with_nvd",
     "normalize_uv_lock_pypi_dependencies",
