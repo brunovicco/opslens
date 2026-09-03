@@ -43,6 +43,21 @@ def _is_runtime_instance(value: object, expected_type: type[object]) -> bool:
     return isinstance(value, expected_type)
 
 
+def _normalize_epss_score(value: object) -> float | None:
+    """Validate one untrusted optional EPSS score and return its canonical float."""
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise SemanticQueryValidationError("EPSS minimum_score must be numeric.")
+
+    normalized_score = float(value)
+    if not math.isfinite(normalized_score) or not 0.0 <= normalized_score <= 1.0:
+        raise SemanticQueryValidationError(
+            "EPSS minimum_score must be finite and between 0.0 and 1.0."
+        )
+    return normalized_score
+
+
 @dataclass(frozen=True, slots=True)
 class EpssFilters:
     """Strongly typed filters for the first EPSS semantic-query slice."""
@@ -57,18 +72,9 @@ class EpssFilters:
                 "EPSS snapshot_date must be an explicit calendar date."
             )
 
-        score: object = self.minimum_score
-        if score is None:
-            return
-        if isinstance(score, bool) or not isinstance(score, (int, float)):
-            raise SemanticQueryValidationError("EPSS minimum_score must be numeric.")
-
-        normalized_score = float(score)
-        if not math.isfinite(normalized_score) or not 0.0 <= normalized_score <= 1.0:
-            raise SemanticQueryValidationError(
-                "EPSS minimum_score must be finite and between 0.0 and 1.0."
-            )
-        object.__setattr__(self, "minimum_score", normalized_score)
+        normalized_score = _normalize_epss_score(self.minimum_score)
+        if normalized_score is not None:
+            object.__setattr__(self, "minimum_score", normalized_score)
 
 
 @dataclass(frozen=True, slots=True)
