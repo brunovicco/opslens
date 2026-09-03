@@ -7,7 +7,6 @@ import json
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import StrEnum
-from typing import TypeAlias
 
 from opslens.ingestion.epss.domain.errors import InvalidEpssSnapshotError
 from opslens.ingestion.epss.domain.history import (
@@ -36,7 +35,7 @@ MAX_EPSS_ENRICHMENT_BYTES = 64 * 1024 * 1024
 _EPSS_ENRICHMENT_SCHEMA_VERSION = "1"
 _EPSS_ENRICHMENT_ENGINE = "opslens.phase4.repository-epss.v1"
 
-RepositoryEpssSourceSnapshot: TypeAlias = EpssSnapshot | HistoricalEpssSnapshot
+type RepositoryEpssSourceSnapshot = EpssSnapshot | HistoricalEpssSnapshot
 
 
 class RepositoryEpssSnapshotKind(StrEnum):
