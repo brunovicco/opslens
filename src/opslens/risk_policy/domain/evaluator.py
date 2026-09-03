@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from opslens.risk_policy.domain.models import (
     RISK_POLICY_V1,
-    RiskEvidenceCompleteness,
     RiskEpssState,
+    RiskEvidenceCompleteness,
     RiskFactorContribution,
     RiskFactorName,
     RiskFindingEvaluation,
