@@ -77,3 +77,15 @@ class RepositoryNvdEnrichmentLimitError(InvalidRepositoryNvdEnrichmentError):
     """Raised when deterministic NVD enrichment exceeds a hard evidence bound."""
 
     reason_code = "repository_nvd_enrichment_limit_exceeded"
+
+
+class InvalidRepositoryKevEnrichmentError(RepositoryIntelligenceContractError):
+    """Raised when repository findings cannot bind to a complete KEV snapshot."""
+
+    reason_code = "invalid_repository_kev_enrichment"
+
+
+class RepositoryKevEnrichmentLimitError(InvalidRepositoryKevEnrichmentError):
+    """Raised when deterministic KEV enrichment exceeds a hard processing bound."""
+
+    reason_code = "repository_kev_enrichment_limit_exceeded"
