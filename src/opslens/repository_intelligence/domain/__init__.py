@@ -1,5 +1,9 @@
 """Domain types for immutable repository intelligence evidence."""
 
+from opslens.repository_intelligence.domain.analysis_result import (
+    RepositoryAnalysisFinding,
+    RepositoryAnalysisResult,
+)
 from opslens.repository_intelligence.domain.epss_enrichment import (
     MAX_EPSS_ENRICHMENT_BYTES,
     MAX_EPSS_ENRICHMENT_RECORDS,
@@ -12,6 +16,7 @@ from opslens.repository_intelligence.domain.epss_enrichment import (
 )
 from opslens.repository_intelligence.domain.errors import (
     InvalidGitHubSourceEvidenceError,
+    InvalidRepositoryAnalysisResultError,
     InvalidRepositoryEpssEnrichmentError,
     InvalidRepositoryFileEvidenceError,
     InvalidRepositoryIdentityError,
@@ -102,6 +107,7 @@ __all__ = [
     "ImmutableRepositoryFileEvidence",
     "ImmutableRepositorySnapshot",
     "InvalidGitHubSourceEvidenceError",
+    "InvalidRepositoryAnalysisResultError",
     "InvalidRepositoryEpssEnrichmentError",
     "InvalidRepositoryFileEvidenceError",
     "InvalidRepositoryIdentityError",
@@ -112,6 +118,8 @@ __all__ = [
     "InvalidUvLockError",
     "NormalizedRepositoryPyPIDependencyEvidence",
     "ParsedUvLockEvidence",
+    "RepositoryAnalysisFinding",
+    "RepositoryAnalysisResult",
     "RepositoryEpssEnrichedFinding",
     "RepositoryEpssEnrichmentEvidence",
     "RepositoryEpssEnrichmentLimitError",
