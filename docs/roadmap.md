@@ -28,8 +28,8 @@ concept
 | 2 | Threat Intelligence Data Lake | ✅ Complete |
 | 3 | Vulnerability Correlation Engine | ✅ Complete |
 | 4 | Repository Intelligence | ✅ Complete |
-| 5 | Risk Prioritization Engine | 🚧 Next |
-| 6 | Semantic Query Layer | ⏳ Planned |
+| 5 | Risk Prioritization Engine | ✅ Complete |
+| 6 | Semantic Query Layer | 🚧 Next |
 | 7 | Knowledge Retrieval with Bedrock | ⏳ Planned |
 | 8 | Hybrid Retrieval | ⏳ Planned |
 | 9 | Public Analyze Your Repository | ⏳ Planned |
@@ -115,46 +115,167 @@ public GitHub repository
 
 Phase 4 never executes repository code and does not claim runtime exposure.
 
-## Phase 5 — Risk Prioritization Engine — NEXT
+### Phase 5 — Risk Prioritization Engine
+
+Completed **Risk Policy v1**, a separate deterministic priority authority over already-validated Phase 4 findings.
+
+```text
+RepositoryAnalysisResult
+ -> typed policy facts
+ -> deterministic Risk Policy v1
+ -> factor contributions
+ -> priority score + tier
+ -> completeness / review_required
+ -> deterministic ranking
+ -> RiskPrioritizationResult
+```
+
+Risk Policy v1 currently uses only evidence that Phase 4 proves:
+
+```text
+KEV present                         +40
+EPSS >= 0.70 / 0.30 / 0.10          +30 / +20 / +10
+max supported CVSS >= 9 / 7 / 4     +20 / +10 / +5
+known fixed version                 +10
+```
+
+Priority tiers:
+
+```text
+P0 >= 80
+P1 >= 60
+P2 >= 30
+P3 < 30
+```
+
+Properties:
+
+- same evidence + same policy reproduces the same priority;
+- every contribution has a stable reason and observed value;
+- the exact policy/evaluation/ranking are content-addressed;
+- missing evidence remains `partial` / `review_required` rather than silently low risk;
+- proven KEV/EPSS absence remains distinct from missing evidence;
+- an LLM is not required for factor extraction, scoring, tiers, or ranking;
+- Repository Risk remains distinct from Runtime Exposure.
+
+Deterministic identities:
+
+```text
+risk-policy:v1@sha256:<digest>
+risk-evaluation:v1@sha256:<digest>
+risk-prioritization:v1@sha256:<digest>
+```
+
+Phase 5 added no AWS resources, IAM permissions, or model calls.
+
+Closeout: [`labs/phase-5-risk-policy-closeout.md`](labs/phase-5-risk-policy-closeout.md).
+
+## Phase 6 — Semantic Query Layer — NEXT
 
 ### Goal
 
-Prioritize already-proven repository findings with an explicit deterministic policy.
+Convert natural-language factual questions into a safe typed query representation and deterministic Athena SQL.
 
-### Candidate factors
-
-- affected status;
-- direct/transitive evidence when available;
-- CISA KEV;
-- EPSS;
-- CVSS;
-- fix availability;
-- future runtime-exposure evidence;
-- evidence completeness.
-
-### Deliverable
+Target flow:
 
 ```text
-Risk Policy v1
+User question
+ -> Bedrock planner
+ -> typed SemanticQuery
+ -> deterministic validator
+ -> deterministic SQL compiler
+ -> bounded read-only Athena workgroup
+ -> structured result evidence
 ```
+
+### Permanent guardrail
+
+> **No unrestricted text-to-SQL.**
+
+The model proposes a semantic query. Application code owns validation and SQL generation.
+
+### Initial contract areas
+
+The phase should begin with a deliberately small allowlisted surface, for example:
+
+```text
+metrics
+  vulnerability_count
+  repository_finding_count
+
+dimensions
+  repository
+  priority_tier
+  severity
+
+filters
+  repository identity
+  KEV state
+  EPSS minimum
+  priority tier
+
+order
+limit
+```
+
+The exact first metric/dimension/filter set must be frozen from the real current datasets before implementation. Do not create broad query flexibility merely for demo aesthetics.
+
+### AWS learning focus
+
+- Amazon Bedrock Converse or the current recommended Bedrock inference API for planning;
+- model selection and inference parameters;
+- structured model output and validation;
+- Amazon Athena read-only execution;
+- Athena workgroups and bytes-scanned controls;
+- IAM boundaries between planner and query executor;
+- token accounting, latency, throttling, retries, and failure diagnosis;
+- CloudWatch/X-Ray integration where justified by the first runtime slice.
+
+Before implementation, current official AWS documentation must be used to verify APIs, features, limits, IAM behavior, model availability, and pricing.
+
+### Security boundary
+
+The LLM must never receive arbitrary SQL authority.
+
+The first implementation must establish:
+
+```text
+allowlisted metrics
+allowlisted dimensions
+strongly typed filters
+bounded limit/order semantics
+compiler-owned SQL
+read-only Athena execution authority
+existing 10 MiB dev workgroup scan cutoff
+```
+
+Invalid or unsupported semantic queries fail closed before Athena execution.
 
 ### Exit criteria
 
-- the same evidence always produces the same priority;
-- factor-level explanation is available;
-- policy version is recorded with the decision;
-- an LLM is not required for ranking;
-- tests demonstrate expected priority changes when individual factors change;
-- missing/unsupported evidence has explicit semantics rather than silent defaults;
-- Repository Risk remains distinct from Runtime Exposure.
+- typed `SemanticQuery` contract exists;
+- metric/dimension/filter allowlists are explicit;
+- invalid or unknown semantics fail closed;
+- SQL is generated only by deterministic application code;
+- Athena execution is read-only and bounded;
+- planner evaluation set measures metric/dimension/filter accuracy separately;
+- at least one real factual question runs end to end;
+- model/API/token/latency/cost evidence is recorded;
+- intentional planner or query failure can be diagnosed;
+- ADR explains why unrestricted text-to-SQL is not used.
 
-## Phase 6 — Semantic Query Layer
+### First authorized implementation behavior
 
-Convert natural language into a safe typed semantic query, validate it deterministically, compile SQL in code, and execute only through bounded Athena workgroups.
+At Phase 6 start:
 
-Guardrail:
+1. read Current State, Architecture, Roadmap, and AIP-C01 Learning Map;
+2. inspect the existing Glue/Athena schemas and current `main`;
+3. verify current Bedrock and Athena official documentation;
+4. choose the first narrow factual question;
+5. freeze the typed semantic-query contract and SQL compiler boundary;
+6. recommend only the first small implementation gate.
 
-> No unrestricted text-to-SQL.
+Do not add RAG, Knowledge Bases, vector search, agents, MCP, or AgentCore to Phase 6.
 
 ## Phase 7 — Knowledge Retrieval with Bedrock
 
