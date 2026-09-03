@@ -8,9 +8,11 @@ from dataclasses import dataclass, field
 from typing import cast
 
 from opslens.correlation.domain.pypi_ranges import PyPIClauseEvidence
+from opslens.ingestion.epss.domain.history import HistoricalEpssSnapshot
 from opslens.repository_intelligence.domain.epss_enrichment import (
     RepositoryEpssEnrichedFinding,
     RepositoryEpssEnrichmentEvidence,
+    RepositoryEpssSnapshotEvidence,
     RepositoryEpssState,
 )
 from opslens.repository_intelligence.domain.errors import (
@@ -168,9 +170,7 @@ class RepositoryAnalysisFinding:
                 "source_identifier": nvd.nvd_cvss.nvd.source_identifier,
                 "vulnerability_status": nvd.nvd_cvss.nvd.vuln_status.value,
             }
-            unsupported_cvss = list(
-                nvd.nvd_cvss.cvss.unsupported_cvss_families
-            )
+            unsupported_cvss = list(nvd.nvd_cvss.cvss.unsupported_cvss_families)
 
         payload: dict[str, object] = {
             "schema_version": _ANALYSIS_SCHEMA_VERSION,
@@ -396,16 +396,10 @@ def _kev_record_payload(record: SilverKevRecord | None) -> dict[str, object] | N
     }
 
 
-def _epss_snapshot_payload(evidence: object) -> dict[str, object]:
+def _epss_snapshot_payload(
+    evidence: RepositoryEpssSnapshotEvidence,
+) -> dict[str, object]:
     """Project exact selected EPSS snapshot coordinates from validated evidence."""
-    from opslens.repository_intelligence.domain.epss_enrichment import (
-        RepositoryEpssSnapshotEvidence,
-    )
-
-    if not isinstance(evidence, RepositoryEpssSnapshotEvidence):
-        raise InvalidRepositoryAnalysisResultError(
-            "Final repository analysis requires typed EPSS snapshot evidence."
-        )
     snapshot = evidence.snapshot
     payload: dict[str, object] = {
         "kind": evidence.kind.value,
@@ -420,15 +414,24 @@ def _epss_snapshot_payload(evidence: object) -> dict[str, object]:
         "row_count": snapshot.row_count,
         "payload_size_bytes": len(snapshot.raw_bytes),
     }
-    historical_fields = (
-        "model_era",
-        "source_shape",
-        "source_metadata_present",
-        "percentile_available",
-    )
-    for field_name in historical_fields:
-        value = getattr(snapshot, field_name, None)
-        payload[field_name] = value.value if hasattr(value, "value") else value
+    if isinstance(snapshot, HistoricalEpssSnapshot):
+        payload.update(
+            {
+                "model_era": snapshot.model_era.value,
+                "source_shape": snapshot.source_shape.value,
+                "source_metadata_present": snapshot.source_metadata_present,
+                "percentile_available": snapshot.percentile_available,
+            }
+        )
+    else:
+        payload.update(
+            {
+                "model_era": None,
+                "source_shape": "modern_metadata",
+                "source_metadata_present": True,
+                "percentile_available": True,
+            }
+        )
     return payload
 
 
