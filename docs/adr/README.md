@@ -21,3 +21,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0011](0011-immutable-uv-lock-evidence.md) | Bind `uv.lock` evidence to an exact immutable repository snapshot | Accepted |
 | [0012](0012-deterministic-uv-lock-parser.md) | Parse verified `uv.lock` evidence deterministically | Accepted |
 | [0013](0013-phase3-pypi-normalization-bridge.md) | Normalize locked PyPI records through the Phase 3 identity contract | Accepted |
+| [0014](0014-deterministic-repository-vulnerability-findings.md) | Emit deterministic repository vulnerability findings from normalized lock and GHSA evidence | Accepted |

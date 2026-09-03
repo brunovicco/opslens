@@ -53,3 +53,15 @@ class UnsupportedUvLockSchemaError(InvalidUvLockError):
     """Raised when a valid lockfile declares unsupported schema semantics."""
 
     reason_code = "unsupported_uv_lock_schema"
+
+
+class InvalidRepositoryVulnerabilityScanError(RepositoryIntelligenceContractError):
+    """Raised when repository/GHSA evidence cannot form one deterministic scan."""
+
+    reason_code = "invalid_repository_vulnerability_scan"
+
+
+class RepositoryVulnerabilityScanLimitError(InvalidRepositoryVulnerabilityScanError):
+    """Raised when a deterministic repository vulnerability scan exceeds a hard bound."""
+
+    reason_code = "repository_vulnerability_scan_limit_exceeded"
