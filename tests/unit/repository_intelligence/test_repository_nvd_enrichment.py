@@ -29,7 +29,10 @@ from opslens.repository_intelligence.domain import (
     compute_git_blob_sha1,
 )
 from opslens.repository_intelligence.parsers.uv_lock import parse_uv_lock_evidence
-from opslens.transformation.nvd.domain.models import NvdCvssMetrics
+from opslens.transformation.nvd.domain.models import (
+    NvdCveCoreRecord,
+    NvdCvssMetrics,
+)
 from opslens.transformation.nvd.domain.transformer import NvdCveCoreTransformer
 
 _REPOSITORY_ID = 1_333_092_779
@@ -175,9 +178,26 @@ def _nvd_source(
     return source
 
 
-def _nvd(**kwargs: object):  # type: ignore[no-untyped-def]
+def _nvd(
+    *,
+    cve_id: str = _CVE_ID,
+    status: str = "Analyzed",
+    base_score: float = 9.8,
+    include_second_metric: bool = False,
+    unsupported_family: bool = False,
+    last_modified: str = "2026-09-02T12:00:00.000",
+) -> NvdCveCoreRecord:
     """Normalize a complete NVD source object through the existing Phase 2 authority."""
-    return NvdCveCoreTransformer().transform(_nvd_source(**kwargs))
+    return NvdCveCoreTransformer().transform(
+        _nvd_source(
+            cve_id=cve_id,
+            status=status,
+            base_score=base_score,
+            include_second_metric=include_second_metric,
+            unsupported_family=unsupported_family,
+            last_modified=last_modified,
+        )
+    )
 
 
 def test_matching_cve_attaches_exact_nvd_and_cvss_without_changing_finding() -> None:
