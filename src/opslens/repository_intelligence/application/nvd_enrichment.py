@@ -129,7 +129,8 @@ def _index_nvd_records(
         cve_id = record.observed_version.cve_id
         if cve_id in indexed:
             raise InvalidRepositoryNvdEnrichmentError(
-                "Repository NVD enrichment cannot choose between multiple NVD observations for one CVE."
+                "Repository NVD enrichment cannot choose between multiple NVD "
+                "observations for one CVE."
             )
         indexed[cve_id] = record
 
