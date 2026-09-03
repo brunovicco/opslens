@@ -38,6 +38,11 @@ class SortDirection(StrEnum):
     DESC = "desc"
 
 
+def _is_runtime_instance(value: object, expected_type: type[object]) -> bool:
+    """Check untrusted runtime values without weakening public type annotations."""
+    return isinstance(value, expected_type)
+
+
 @dataclass(frozen=True, slots=True)
 class EpssFilters:
     """Strongly typed filters for the first EPSS semantic-query slice."""
@@ -52,7 +57,7 @@ class EpssFilters:
                 "EPSS snapshot_date must be an explicit calendar date."
             )
 
-        score = self.minimum_score
+        score: object = self.minimum_score
         if score is None:
             return
         if isinstance(score, bool) or not isinstance(score, (int, float)):
@@ -79,19 +84,20 @@ class SemanticQuery:
 
     def __post_init__(self) -> None:
         """Validate the frozen Phase 6.1 semantic-query surface."""
-        if not isinstance(self.metric, SemanticMetric):
+        if not _is_runtime_instance(self.metric, SemanticMetric):
             raise SemanticQueryValidationError("Unknown semantic metric.")
         if type(self.dimensions) is not tuple or any(
-            not isinstance(dimension, SemanticDimension) for dimension in self.dimensions
+            not _is_runtime_instance(dimension, SemanticDimension)
+            for dimension in self.dimensions
         ):
             raise SemanticQueryValidationError("Unknown semantic dimension.")
         if len(set(self.dimensions)) != len(self.dimensions):
             raise SemanticQueryValidationError("Semantic dimensions cannot be duplicated.")
-        if not isinstance(self.filters, EpssFilters):
+        if not _is_runtime_instance(self.filters, EpssFilters):
             raise SemanticQueryValidationError("Unsupported semantic filter contract.")
-        if not isinstance(self.order_by, SemanticOrderField):
+        if not _is_runtime_instance(self.order_by, SemanticOrderField):
             raise SemanticQueryValidationError("Unknown semantic order field.")
-        if not isinstance(self.order_direction, SortDirection):
+        if not _is_runtime_instance(self.order_direction, SortDirection):
             raise SemanticQueryValidationError("Unknown semantic sort direction.")
         if type(self.limit) is not int or not 1 <= self.limit <= MAX_QUERY_LIMIT:
             raise SemanticQueryValidationError(
