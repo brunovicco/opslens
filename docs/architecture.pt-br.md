@@ -1,240 +1,199 @@
 # Arquitetura do OpsLens
 
-🇺🇸 [English](architecture.md) | 🇧🇷 **Português**
+_Última atualização: 2026-09-03_
 
-_Última atualização: 2026-08-30_
+Este documento é o baseline arquitetural acumulado após a conclusão da **Phase 4 — Repository Intelligence**.
 
-## Visão geral
+O próximo boundary de autoridade é a **Phase 5 — Risk Prioritization Engine**.
 
-OpsLens é uma plataforma open source de inteligência para software supply chain construída na AWS.
+## 1. Propósito
 
-A arquitetura implementada cobre atualmente:
+OpsLens é uma plataforma open source de software supply chain e threat intelligence construída na AWS.
 
-- fundação de identidade e deployment na AWS;
-- FIRST EPSS Bronze, Silver determinístico, Glue e Athena;
-- CISA KEV Bronze, Silver determinístico, Glue e Athena;
-- NVD CVE Bootstrap Bronze por yearly feed;
-- NVD CVE API 2.0 Bronze incremental;
-- NVD Silver versionado;
-- promoção do watermark autoritativo do NVD;
-- projeção analítica permanente do NVD;
-- AWS Glue Data Catalog e Athena para NVD;
-- ingestão Bronze de GHSA reviewed com evidência COMPLETE versionada exata;
-- objetos Silver imutáveis por versão de advisory GHSA e proveniência COMPLETE por attempt;
-- catálogo Glue explícito para GHSA sobre Silver autoritativo e analytics nested no Athena com custo limitado;
-- evidência cross-source determinística centrada em CVE entre NVD, CISA KEV, FIRST EPSS e GHSA com coordenadas temporais explícitas por fonte;
-- verificação de evidência por versão exata de objeto S3;
-- persistência condicional idempotente;
-- retries assíncronos limitados e recuperação via SQS OnFailure;
-- observabilidade com CloudWatch, métricas e X-Ray;
-- infraestrutura gerenciada por Terraform com controles explícitos de custo.
+O objetivo do produto é:
 
-O projeto prioriza evidência determinística e correlação estruturada antes de raciocínio generativo.
+> Considerando o software que eu realmente utilizo, quais vulnerabilidades o afetam, qual evidência exata prova isso e como esses findings devem ser priorizados no futuro?
 
-A invariante central é:
+A arquitetura estabelece deliberadamente evidência determinística confiável antes de adicionar raciocínio semântico ou agentic.
+
+Invariante central:
 
 > **Agents reason. Code verifies evidence.**
 
----
+## 2. Princípios arquiteturais permanentes
 
-## Princípios arquiteturais
+Salvo mudança explícita por ADR:
 
-- Evidência bruta é preservada antes de enriquecimento ou interpretação.
-- Fatos determinísticos permanecem autoritativos; modelos podem explicá-los, mas não estabelecê-los.
-- VersionIds exatos de objetos S3 fazem parte do modelo de evidência.
-- Detalhes de AWS SDK e runtime ficam fora do core de domínio sempre que possível.
-- Bootstrap humano, deployment via GitHub, ingestão, transformação, scheduling, promotion e analytics usam boundaries IAM separados.
-- Entrega duplicada é esperada e precisa ser segura.
-- Boundaries operacionais emitem logs estruturados, métricas e traces.
-- Risco de repositório e exposição em runtime são conceitos diferentes.
-- Serviços AWS entram apenas quando resolvem um requisito demonstrado.
-- Custo e observabilidade são requisitos arquiteturais.
-- Código de terceiros é dado para inspeção, nunca código para execução.
-- Planejamento em linguagem natural nunca recebe autoridade SQL irrestrita.
+- evidência bruta de terceiros é preservada antes de enrichment ou interpretação;
+- fatos determinísticos permanecem autoritativos;
+- versões exatas da fonte e hashes de conteúdo participam da proveniência;
+- normalização de package identity permanece determinística;
+- parsing de versões e avaliação de ranges permanecem determinísticos;
+- aplicabilidade de vulnerabilidade permanece determinística;
+- reconciliação CVE/GHSA/NVD permanece determinística;
+- lookup de KEV/EPSS/CVSS permanece determinístico;
+- avaliação de política de risco permanecerá determinística;
+- validação de semantic query e compilação SQL permanecem determinísticas;
+- validação de evidência permanece determinística;
+- limites de execução/tools/custo permanecem determinísticos;
+- LLMs poderão depois classificar, planejar, rotear, sintetizar e explicar sobre evidência validada;
+- planejamento em linguagem natural nunca recebe autoridade SQL irrestrita;
+- código de repositórios de terceiros é dado não confiável para inspeção, nunca código a executar;
+- Repository Risk não é Runtime Exposure;
+- entrega duplicada é esperada e replay precisa ser seguro;
+- divergências de schema, proveniência, autoridade ou evidência exata falham fechado;
+- IAM usa least privilege e separação de responsabilidades;
+- serviços AWS entram somente para requisitos concretos;
+- custo e observabilidade são requisitos arquiteturais;
+- um ambiente `dev` real é preferido a ambientes fictícios de portfólio.
 
----
+## 3. Forma atual do sistema
 
-## Fundação AWS
-
-### Administração humana
-
-```text
-AWS IAM Identity Center
-    |
-    v
-credenciais humanas temporárias
-    |
-    v
-profile opslens-bootstrap
-```
-
-### Deployment via GitHub
+O sistema implementado possui três camadas determinísticas.
 
 ```text
-GitHub Actions
-    |
-    v
-OIDC
-    |
-    v
-AWS STS
-    |
-    v
-OpsLensGitHubDeployRole
+THREAT INTELLIGENCE DATA
+NVD + CISA KEV + FIRST EPSS + GitHub Security Advisories
+        |
+        v
+DETERMINISTIC CORRELATION
+PyPI identity + PEP 440 + GHSA range + CVE/NVD alias evidence
+        |
+        v
+REPOSITORY INTELLIGENCE
+snapshot público GitHub imutável + uv.lock inerte + findings determinísticos
+        |
+        v
+RepositoryAnalysisResult
 ```
 
-Nenhuma access key persistente da AWS é armazenada no GitHub.
+A Phase 5 adicionará uma quarta camada:
 
-A identidade de deployment é separada de todas as identidades de runtime.
+```text
+RepositoryAnalysisResult
+        |
+        v
+Risk Policy v1
+        |
+        v
+decisão determinística e versionada de prioridade
+```
 
-### Terraform
+Risk Policy não se torna nova fonte de verdade de aplicabilidade.
+
+## 4. Fundação AWS
+
+```text
+environment:             dev
+primary workload Region: us-east-1
+IaC:                     Terraform
+human access:            AWS IAM Identity Center
+CI/CD identity:          GitHub Actions OIDC -> AWS STS
+observability:           CloudWatch + X-Ray
+analytics:               AWS Glue + Amazon Athena
+```
+
+Existe apenas um ambiente real: `dev`.
+
+A administração humana usa credenciais temporárias do IAM Identity Center. GitHub Actions assume roles AWS via OIDC; access keys persistentes não são armazenadas no GitHub.
+
+Layout Terraform:
 
 ```text
 infra/
-    bootstrap/
-    environments/
-        dev/
+  bootstrap/
+  environments/
+    dev/
 ```
 
-Existe apenas um ambiente real atualmente:
+Storage principal:
 
 ```text
-dev
+Data:       opslens-dev-data-487757851499-us-east-1
+Artifacts:  opslens-dev-artifacts-487757851499-us-east-1
+TF state:   opslens-dev-tfstate-487757851499-us-east-1
 ```
 
-O state do Terraform fica remoto no Amazon S3. O projeto evita ambientes fictícios de staging ou produção criados apenas para aparência de portfólio.
+Analytics:
 
----
+```text
+Glue database:    opslens_dev
+Athena workgroup: opslens-dev
+scan cutoff:      10.485.760 bytes
+```
 
-## Data plane implementado
+## 5. Threat Intelligence Data Lake — Phase 2
 
-### FIRST EPSS
+A Phase 2 preserva autoridade source-local. NVD, KEV, EPSS e GHSA não são achatados em um registro universal com perda de semântica.
+
+### 5.1 FIRST EPSS atual
 
 ```text
 FIRST EPSS
-    |
-    v
-EventBridge Scheduler
-    |
-    v
-EPSS Ingestion Lambda
-    |
-    v
-S3 Bronze
-bronze/epss/snapshot_date=YYYY-MM-DD/epss_scores.csv.gz
-    |
-    v
-S3 ObjectCreated
-    |
-    v
-EPSS Silver Lambda
-    |
-    v
-S3 Silver / Parquet
-silver/epss/snapshot_date=YYYY-MM-DD/part-00000.parquet
-    |
-    v
-AWS Glue Data Catalog
-opslens_dev.epss_scores
-    |
-    v
-Amazon Athena
+ -> EventBridge Scheduler
+ -> Lambda de ingestão EPSS
+ -> S3 Bronze imutável
+ -> transformer Silver determinístico
+ -> Parquet
+ -> Glue: opslens_dev.epss_scores
+ -> Athena
 ```
 
-O EPSS preserva o artefato comprimido original do FIRST, proveniência SHA-256, versionamento S3, transformação Silver determinística e analytics temporal por `snapshot_date`.
+Seleção temporal é explícita via snapshot date.
 
-### CISA KEV
+### 5.2 EPSS histórico
+
+A autoridade histórica em bulk é fixada em um commit específico do archive e preenche a relação Silver canônica do EPSS antes do boundary do caminho forward.
+
+Intervalo congelado:
+
+```text
+2021-04-14 .. 2026-08-13
+```
+
+O caminho histórico preserva bytes exatos da fonte, hash da fonte, coordenadas Git do archive, S3 VersionIds, semântica de model era, saída Silver determinística e evidência de completion.
+
+Nenhuma data ausente na fonte é substituída silenciosamente.
+
+### 5.3 CISA KEV
 
 ```text
 CISA KEV JSON
-    |
-    v
-EventBridge Scheduler
-opslens-dev-kev-daily
-    |
-    v
-KEV Ingestion Lambda
-    |
-    +--> fetch HTTP limitado
-    +--> validação do contrato da fonte
-    +--> proveniência SHA-256
-    +--> S3 PutObject condicional
-    |
-    v
-S3 Bronze
-bronze/kev/snapshot_date=YYYY-MM-DD/known_exploited_vulnerabilities.json
-    |
-    v
-S3 ObjectCreated:Put
-    |
-    v
-KEV Silver Lambda
-    |
-    +--> leitura por VersionId exato
-    +--> verificação evento/S3
-    +--> normalização determinística
-    +--> schema Arrow tipado
-    +--> serialização Parquet
-    +--> PutObject Silver condicional
-    |
-    v
-S3 Silver / Parquet
-silver/kev/snapshot_date=YYYY-MM-DD/part-00000.parquet
-    |
-    v
-AWS Glue Data Catalog
-opslens_dev.kev_entries
-    |
-    v
-Amazon Athena
-opslens-dev
+ -> ingestão limitada
+ -> Bronze imutável
+ -> verificação por versão exata da fonte
+ -> normalização Silver determinística
+ -> Parquet
+ -> Glue: opslens_dev.kev_entries
+ -> Athena
 ```
 
-O runtime KEV Silver falha fechado em divergências de transporte ou proveniência e usa retries limitados da Lambda com destination SQS OnFailure dedicada.
+Ausência KEV só é significativa contra um snapshot completo e validado.
 
-### NVD CVE
+### 5.4 NVD / CVE
 
 ```text
 NVD yearly feeds                  NVD CVE API 2.0
        |                                  |
        v                                  v
-Bootstrap ingestion                Incremental ingestion
+Bootstrap Bronze                  Incremental Bronze
        |                                  |
-       +-------------> S3 Bronze <--------+
-                       evidência imutável
-                              |
-                              v
-                     NVD Silver runtime
-                              |
-                              v
-                Silver versionado / Parquet
-                              |
-                              v
-                  evidência Silver COMPLETE
-                              |
-                              v
-                 verificação de promoção
-                              |
-                              v
-                  watermark autoritativo
-                              |
-                              v
-            NVD Analytics Projector Lambda
-                              |
-                              v
-               namespace analítico limpo
-                              |
-                              v
-                   AWS Glue Data Catalog
-                 opslens_dev.nvd_cve_versions
-                              |
-                              v
-                       Amazon Athena
+       +----------> Silver versionado <---+
+                          |
+                          v
+                    Silver COMPLETE
+                          |
+                          v
+                watermark autoritativo
+                          |
+                          v
+              projeção analítica permanente
+                          |
+                          v
+                 Glue + Athena limitado
 ```
 
-O caminho NVD separa deliberadamente preservação da fonte, conclusão da transformação, compromisso de autoridade e disponibilidade analítica.
-
-A invariante de autoridade é:
+Invariante de autoridade:
 
 ```text
 bronze_complete
@@ -246,486 +205,396 @@ watermark_committed
     -> analytics_projected
 ```
 
-Uma janela Bronze-complete não pode se tornar autoritativa até que a evidência Silver determinística esteja completa e as verificações exatas de promotion passem. Analytics permanece downstream-only e não pode alterar autoridade upstream.
+O analytics projector é estritamente downstream e não pode avançar o estado autoritativo do NVD.
 
----
-
-## NVD Bronze
-
-### Bootstrap yearly feeds
-
-Layout canônico:
-
-```text
-bronze/nvd/cve/bootstrap/
-    feed_year=YYYY/
-        feed_revision=<source-revision>/
-            nvdcve-2.0-YYYY.json.gz
-            nvdcve-2.0-YYYY.meta
-            manifest.json
-```
-
-A revisão do feed combina o timestamp normalizado de modificação da fonte NVD com o SHA-256 da fonte.
-
-O runtime valida:
-
-- recuperação limitada do META;
-- contrato do META;
-- recuperação limitada do gzip;
-- tamanho comprimido e descomprimido;
-- decodificação gzip;
-- SHA-256 da fonte;
-- revisão determinística do feed;
-- VersionIds exatos dos objetos persistidos.
-
-A persistência usa criação condicional de objeto no S3. `412 PreconditionFailed` é tratado apenas como possível duplicata e só resulta em sucesso após verificação da evidência existente.
-
-### Incremental CVE API 2.0
-
-O runtime incremental avança por janelas fechadas de `lastModified` e preserva cada página exata retornada pela API.
-
-O modelo de identidade implementado separa a janela lógica de sincronização da observação física exata da fonte:
-
-```text
-update_id
-    identidade da janela incremental lógica
-
-attempt_id
-    identidade da observação física exata da fonte
-```
-
-Layout canônico:
-
-```text
-bronze/nvd/cve/updates/
-    update_id=<logical-window-identity>/
-        attempt_id=<exact-physical-observation>/
-            page_start=000000/
-                response.json
-            page_start=000500/
-                response.json
-            ...
-        manifest.json
-```
-
-Essa distinção protege a semântica de replay quando a API do NVD retorna bytes exatos ou metadata de resposta diferentes para a mesma janela lógica.
-
-O contrato incremental valida:
-
-- respostas HTTP limitadas;
-- pacing respeitoso;
-- retries limitados para falhas transitórias da fonte;
-- `totalResults` estável;
-- paginação contígua;
-- cobertura terminal;
-- rejeição de CVEs duplicadas;
-- bytes exatos da resposta e SHA-256;
-- VersionIds exatos persistidos no S3.
-
-Bronze COMPLETE só é gravado depois que todas as páginas foram criadas ou verificadas exatamente.
-
-Concluir Bronze não avança o watermark autoritativo.
-
----
-
-## NVD Silver versionado
-
-O contrato Silver separa três identidades:
-
-```text
-cve_id
-    identidade da vulnerabilidade
-
-observed_cve_version_id
-    identidade do conteúdo exato da CVE na fonte
-
-observation_id
-    identidade da ocorrência Bronze imutável
-```
-
-O objeto CVE original completo participa da identidade determinística de conteúdo, permitindo que modificações históricas, rejection e unrejection criem novas versões observadas em vez de sobrescrever histórico.
-
-Silver v1 preserva:
-
-- campos centrais da CVE;
-- descrições localizadas e tags;
-- evidência CWE / weakness;
-- referências;
-- observações CVSS v2, v3.0, v3.1 e v4 suportadas;
-- JSON canônico das métricas;
-- árvores canônicas de configuração CPE;
-- proveniência Bronze versionada exata.
-
-Estruturas conhecidas malformadas de métrica ou configuração falham fechado. Famílias futuras desconhecidas não são interpretadas silenciosamente; Bronze imutável continua sendo a evidência da fonte.
-
-Contrato físico:
-
-```text
-dataset:           nvd_cve_versions
-schema_version:    1
-Parquet format:    1.0
-data page version: 1.0
-compression:       snappy
-row group size:    5000
-```
-
-Silver COMPLETE liga o conjunto lógico normalizado a bytes Parquet determinísticos, SHA-256, tamanho, row count e VersionId S3 exato.
-
-Para batches incrementais:
-
-```text
-Silver row_count == verified Bronze total_results
-```
-
-Uma janela incremental válida com zero resultados é suportada.
-
----
-
-## Watermark autoritativo do NVD
-
-O watermark autoritativo representa o último boundary incremental comprometido.
-
-Promotion só é permitida depois que a evidência exata prova:
-
-```text
-Bronze COMPLETE
-    -> Silver COMPLETE exato
-    -> VersionId + SHA-256 exatos do Silver Parquet
-    -> identidade do conjunto lógico de registros
-    -> avanço estrito do boundary committed
-```
-
-O basis de promotion usa `kind = silver_complete_promotion` e liga o watermark autoritativo ao manifest e ao Parquet Silver exatos.
-
-Isso impede confundir sucesso de Bronze com sucesso de transformação e sucesso de transformação com autoridade committed.
-
----
-
-## Projeção analítica permanente do NVD
-
-O caminho analítico permanente é uma projeção da autoridade committed, não uma nova fonte de autoridade.
-
-Caminho incremental:
-
-```text
-VersionId exato do evento S3 ObjectCreated do watermark
-    -> validação estrita do watermark canônico
-    -> evidência Silver COMPLETE exata
-    -> VersionId + SHA-256 exatos do Silver Parquet
-    -> CopyObject condicional a partir da versão exata
-    -> destino analítico determinístico
-    -> verificação exata do destino
-```
-
-Bootstrap usa uma invocação explícita e exata `bootstrap_seed` em vez de fingir que o feed Bootstrap possui watermark incremental.
-
-Namespace permanente:
-
-```text
-analytics/nvd/cve/schema_version=1/
-    source_kind=<bootstrap|incremental>/
-        projection_date=YYYY-MM-DD/
-            <deterministic-batch-file>.parquet
-```
-
-Comportamento de replay:
-
-```text
-CopyObject condicional
-If-None-Match: *
-        |
-        +--> created
-        |
-        +--> 412 destino existente
-                |
-                v
-          verificação exata do objeto atual
-                |
-                +--> match exato -> already_projected
-                +--> mismatch    -> fail closed
-```
-
-O projector verifica VersionId do destino, tamanho, content type, metadata completa, SHA-256 e assinatura Parquet `PAR1`.
-
-O IAM de runtime exclui intencionalmente:
-
-```text
-s3:ListBucket
-s3:DeleteObject
-watermark PutObject
-mutação Silver
-mutação de partições Glue
-```
-
----
-
-## NVD Glue e Athena
-
-Tabela permanente:
-
-```text
-Database: opslens_dev
-Table:    nvd_cve_versions
-Type:     EXTERNAL_TABLE
-Columns:  32 colunas Silver v1
-```
-
-Root location:
-
-```text
-s3://<data-bucket>/analytics/nvd/cve/schema_version=1/
-```
-
-Partition projection:
-
-```text
-source_kind_partition -> bootstrap,incremental
-projection_date       -> 2026-01-01,NOW
-```
-
-Não é necessário crawler nem escrita runtime de partições Glue.
-
-O workgroup de desenvolvimento do Athena aplica:
-
-```text
-bytes-scanned cutoff: 10.485.760 bytes
-result encryption:    SSE_S3
-```
-
-Queries permanentes do NVD validadas:
-
-| Query | Objetivo | Dados escaneados |
-| --- | --- | ---: |
-| A | Cardinalidade / lineage Bootstrap + Incremental | 536.071 bytes |
-| B | Amostra nested CVSS do Bootstrap | 3.928.022 bytes |
-| B2 | Equivalência exata de source/type CVSS | 3.928.022 bytes |
-| C | Observação Incremental determinística | 43.880 bytes |
-
-Todas permaneceram abaixo do cutoff de 10 MiB e reproduziram a evidência local exata do Parquet.
-
----
-
-## Evidência NVD validada
-
-### Projeção permanente Bootstrap
-
-```text
-rows:                  48293
-destination VersionId: NzP5XmGl6yeMoQvmMv4JgCmixd_5N.ba
-SHA-256:               4ea6e3ae1d73908d8fb4f953dcf181802bf111001bcdb7f3695e4773fe854541
-replay:                already_projected
-version após replay:   inalterada
-```
-
-### Projeção permanente Incremental
-
-```text
-watermark VersionId:   q9Zwn_4jdUZei_jqP6fytSy1aabtus7h
-committed_through_at:  2026-08-26T21:25:00Z
-update_id:             fc809fd639fc53f56c0e01278b2c4d99b19298c15a02ca2369b8dba392de4abc
-rows:                  331
-destination VersionId: qPiaURVW17cIGxSqROAgUbqIqIq1L0Jl
-SHA-256:               3ad08d8e257128bc8334fc98ae0eade8d4808136b84df8a8ab8de64978bcc6f9
-```
-
-A invocação event-driven foi correlacionada no CloudWatch por VersionId exato do watermark, update identity, destination VersionId e contexto de request/trace.
-
----
-
-## GitHub Security Advisories
-
-O caminho GHSA implementado cobre Bronze determinístico de advisories reviewed e evidência Silver imutável por versão exata de conteúdo do advisory.
+### 5.5 GitHub Security Advisories
 
 ```text
 GitHub Global Security Advisories REST API
-        |
-        v
-GHSA Bronze Lambda
-        |
-        v
-páginas Bronze versionadas + COMPLETE
-        |
-        v
-GHSA Silver Lambda
-  leitura exata de manifest/páginas por VersionId
-  recomputação do attempt_id
-  normalização determinística
-        |
-        v
-um objeto Parquet imutável de uma linha
-por observed_advisory_version_id
-        |
-        v
-manifest Silver COMPLETE
-        |
-        v
-AWS Glue Data Catalog
-opslens_dev.ghsa_advisory_versions
-        |
-        v
-Amazon Athena
+ -> páginas Bronze reviewed-only + COMPLETE
+ -> identidade exata do conteúdo do advisory
+ -> normalização determinística
+ -> um Parquet imutável de uma linha por versão observada
+ -> Silver COMPLETE
+ -> Glue: opslens_dev.ghsa_advisory_versions
+ -> Athena
 ```
 
-As fronteiras de identidade de conteúdo e observação física permanecem separadas:
+Identidades importantes permanecem separadas:
 
 ```text
-observed_advisory_version_id -> conteúdo exato do advisory na fonte
-sync_id                      -> janela lógica da fonte
-attempt_id                   -> observação Bronze física exata
-attempt_occurrence_id        -> posição exata na observação
+sync_id                       janela lógica da fonte
+attempt_id                    observação física exata
+observed_advisory_version_id  identidade exata do conteúdo
+vulnerability_entry_id        ocorrência exata da vulnerabilidade
 ```
 
-Objetos Silver usam persistência create-only e verificação exata no replay. O COMPLETE só é publicado depois que todos os objetos de conteúdo foram criados ou verificados exatamente. Uma prova real com 10 advisories produziu dez objetos Parquet de uma linha e um COMPLETE; o replay preservou as mesmas onze versões S3 e criou zero versões novas.
+A evidência GHSA de package/range/fix continua source-local mesmo quando um alias CVE também é observado no NVD.
 
-O workload real também comprovou que o GitHub pode expor uma família CVSS conhecida como placeholder indisponível. O placeholder permanece no JSON canônico da fonte, mas não gera métrica tipada fabricada. Estruturas conhecidas realmente malformadas continuam falhando fechado.
+## 6. Vulnerability Correlation Engine — Phase 3
 
-A Phase 2.4E expõe a relação Silver autoritativa diretamente como `opslens_dev.ghsa_advisory_versions`, sem projector, crawler ou partições Glue. Provas reais no Athena retornaram 10 versões de conteúdo únicas, 18 entradas de vulnerabilidade, identifiers/CWEs/CVSS/evidência de package nested estruturalmente válidos, sete placeholders CVSS v4 indisponíveis sem métricas tipadas fabricadas e scans de 6.035 e 72.077 bytes sob o cutoff inalterado de 10 MiB. Aplicabilidade de package/version permanece trabalho determinístico da Phase 3.
+A Phase 3 está concluída para o escopo explicitamente suportado **PyPI v1**.
 
----
-
-## Recuperação de falhas
-
-A plataforma trata entrega de Scheduler, processamento assíncrono Lambda, validação de evidência e recuperação via SQS como boundaries distintos de falha.
-
-Padrões relevantes incluem:
-
-- idade máxima de evento limitada;
-- dois retries assíncronos da Lambda;
-- destinations SQS OnFailure específicas por fonte;
-- parser e validação de evidência fail-closed;
-- telemetria estruturada de falhas;
-- destinos determinísticos seguros para replay.
-
-O closeout de analytics do NVD validou:
+### 6.1 Autoridade de identidade
 
 ```text
-invalid async invocation accepted: StatusCode 202
-condition:                         RetriesExhausted
-approximateInvokeCount:            3
-functionError:                     Unhandled
-errorType:                         InvalidNvdAnalyticsProjectionInvocationError
-failure queue após cleanup:        0 / 0 / 0
+alias de ecossistema da fonte
+ -> ecossistema canônico: pypi
+package name
+ -> normalização PyPA
+version
+ -> PEP 440 Version
+package + version
+ -> purl canônico pkg:pypi/...
 ```
 
-O evento inválido nunca atravessou o boundary de execução da projeção.
+A grafia original da fonte e a identidade canônica são preservadas.
 
----
+### 6.2 Autoridade de vulnerable range
 
-## Observabilidade
+Operadores GHSA suportados:
 
-O runtime utiliza:
+```text
+=  <  <=  >  >=
+```
 
-- AWS Lambda Powertools Logger, Metrics e Tracer;
-- logs estruturados no CloudWatch;
-- métricas de plataforma da AWS Lambda;
-- métricas do EventBridge Scheduler;
-- AWS X-Ray.
+Cláusulas separadas por vírgula são conjunções determinísticas.
 
-No analytics permanente do NVD, evidência do trigger e evidência de conclusão compartilham `request_id` da Lambda e contexto X-Ray, permitindo reconstruir um evento exato de watermark até seu resultado de projeção.
+Estados de resultado:
 
----
+```text
+affected
+not_affected
+unsupported
+```
 
-## Limites de segurança
+Semânticas inválidas/não suportadas nunca colapsam para `not_affected`.
+
+`first_patched_version` é apenas evidência de remediação; não substitui o vulnerable range publicado.
+
+### 6.3 Boundary GHSA/NVD
+
+A afirmação CVE do GitHub e a versão exata observada no NVD permanecem registros independentes.
+
+Estados de reconciliação incluem:
+
+```text
+no_github_cve
+github_asserted_only
+nvd_observed
+nvd_rejected
+```
+
+Um registro NVD compatível cria uma aresta de evidência; não substitui a proveniência GHSA.
+
+### 6.4 Identidade da evidência de correlação
+
+O registro final da Phase 3 usa Canonical JSON e content addressing SHA-256:
+
+```text
+correlation:v1@sha256:<digest>
+```
+
+O registro contém identidade instalada, resultado de aplicabilidade, cláusulas de range, fix evidence, coordenadas GHSA exatas e coordenadas NVD exatas quando fornecidas.
+
+Regra permanente:
+
+> **Nenhum LLM decide aplicabilidade de vulnerabilidade.**
+
+## 7. Repository Intelligence — Phase 4
+
+A Phase 4 analisa um repositório público suportado do GitHub sem executar seu código.
+
+Escopo v1 atual:
+
+```text
+provider:             repositórios públicos GitHub
+evidência:            uv.lock
+packages suportados:  registros PyPI canônicos
+operação de rede:     GitHub REST read only e limitado
+execução de código:   nunca
+```
+
+### 7.1 Identidade imutável do repositório
+
+A identidade usa o repository ID numérico do GitHub mais coordenadas da fonte. O ref solicitado é resolvido para commit SHA e tree SHA exatos.
+
+```text
+owner/name/ref
+ -> metadata GitHub
+ -> commit SHA exato
+ -> tree SHA exato
+ -> snapshot_id imutável
+```
+
+Formato:
+
+```text
+github:<repository_id>@<40-char-commit-sha>
+```
+
+Depois da resolução, branch names móveis deixam de ser autoridade de evidência.
+
+### 7.2 Transporte GitHub limitado
+
+O transporte é propositalmente estreito:
+
+- host fixo da API GitHub;
+- apenas GET;
+- timeouts limitados;
+- response bytes limitados;
+- sem expansão de autoridade via redirect;
+- sem retry automático ilimitado;
+- falhas explícitas de rate limit;
+- sem caminho genérico para execução de URL remota.
+
+### 7.3 Evidência imutável do `uv.lock`
+
+Apenas o path allowlisted `uv.lock` é aceito no v1.
+
+A aquisição sempre usa o commit exato, nunca o ref móvel solicitado.
+
+A evidência verifica:
+
+```text
+path/type/name/encoding/size do GitHub
+payload Base64
+Git blob SHA-1 = sha1("blob <len>\0" + bytes)
+SHA-256 independente do OpsLens
+limite de 1 MiB
+```
+
+Os bytes permanecem dados inertes.
+
+### 7.4 Parsing determinístico do lockfile
+
+O parser usa `tomllib` da stdlib sobre bytes previamente verificados.
+
+Preserva:
+
+- schema/revision do lock;
+- `requires-python`;
+- resolution markers globais e por package;
+- source record indexes zero-based;
+- registros duplicados de marker forks;
+- source kinds não suportados de forma explícita.
+
+Ele não executa `uv`, não instala dependências e não trata resolution markers como verdade de deployment.
+
+### 7.5 Bridge de normalização da Phase 3
+
+Registros PyPI suportados do lock são normalizados somente pela autoridade existente da Phase 3.
+
+Cada registro PyPI é contabilizado exatamente uma vez como:
+
+```text
+normalized
+ou
+unsupported com motivo explícito
+```
+
+### 7.6 Repository vulnerability findings
+
+Dependências normalizadas são ligadas a ocorrências GHSA PyPI exatas por package identity canônica antes da avaliação de aplicabilidade.
+
+```text
+locked dependency
+ + ocorrência GHSA exata
+ -> canonical package join
+ -> range evaluator da Phase 3
+ -> assessment
+ -> affected repository finding quando aplicável
+```
+
+Evidência unsupported permanece explícita e nunca vira falso negativo.
+
+Um finding positivo prova repository-risk evidence para o snapshot imutável do lockfile; não prova presença nem explorabilidade no runtime.
+
+Findings base usam evidência canônica content-addressed:
+
+```text
+repository-finding:v1@sha256:<digest>
+```
+
+### 7.7 Enrichment NVD/CVSS
+
+Um finding já afetado pode receber evidência NVD exata sem alterar a verdade de aplicabilidade.
+
+Propriedades:
+
+- a ocorrência GHSA exata é validada novamente antes do alias reconciliation;
+- zero ou uma versão NVD exata é fornecida por CVE;
+- candidatos duplicados falham fechado em vez de escolher `latest`;
+- métricas CVSS são rederivadas do conteúdo canônico exato do NVD;
+- todas as observações CVSS suportadas são preservadas;
+- nenhum score preferred/highest/merged é escolhido;
+- estado NVD rejected permanece distinto.
+
+### 7.8 Enrichment CISA KEV
+
+O enrichment KEV consome um snapshot completo e imutável do catálogo, verifica novamente o hash da fonte e reexecuta o transformer Silver determinístico sobre o catálogo inteiro.
+
+Estados exatos:
+
+```text
+present
+absent
+cve_unavailable
+```
+
+`absent` exige CVE afirmado pelo GitHub mais não-membership comprovado no snapshot completo validado.
+
+### 7.9 Enrichment FIRST EPSS
+
+O enrichment EPSS consome exatamente um snapshot atual ou histórico explicitamente selecionado.
+
+Estados exatos:
+
+```text
+score_present
+score_absent
+cve_unavailable
+```
+
+Não existe seleção automática de `latest`, nearest-date, max-score, trend ou múltiplas datas dentro do domínio de evidência.
+
+EPSS histórico v1 preserva metadata/percentile indisponíveis em vez de fabricar valores modernos.
+
+### 7.10 Projeção final
+
+`RepositoryAnalysisResult` aceita apenas a cadeia final já validada de enrichment EPSS e deriva uma projeção consumer-facing.
+
+Pode expor:
+
+```text
+dependency
+installed version
+purl
+GHSA/CVE
+matched range e clauses
+fixed version
+todas as observações CVSS
+evidência KEV
+evidência EPSS
+referências exatas da cadeia
+```
+
+Não expõe risk score, priority nem runtime-exposure assertion.
+
+Identidades finais:
+
+```text
+repository-analysis-finding:v1@sha256:<digest>
+repository-analysis:v1@sha256:<digest>
+```
+
+## 8. Cadeia de evidência e boundary de cache
+
+A identidade final muda quando qualquer evidência autoritativa selecionada muda.
+
+Exemplo intencional:
+
+```text
+mesmo commit do repositório
+ + snapshot EPSS diferente
+ -> analysis_id diferente
+```
+
+Portanto, o commit do repositório sozinho não é uma cache key segura.
+
+Reuse futuro deve usar a identidade content-addressed completa. A Phase 4 adiou DynamoDB/ElastiCache/outro cache até um workload medido justificar:
+
+- custo de storage;
+- semântica de invalidação;
+- superfície IAM;
+- observabilidade;
+- failure recovery;
+- política de retenção.
+
+## 9. Boundaries de segurança
 
 ```text
 Administração humana
-    |
-    v
-AWS IAM Identity Center
+ -> AWS IAM Identity Center
 
 GitHub Actions
-    |
-    v
-OIDC
-    |
-    v
-OpsLensGitHubDeployRole
-    |
-    v
-infraestrutura gerenciada por Terraform
+ -> OIDC
+ -> deployment role
+ -> mudanças AWS gerenciadas por Terraform
 
-Identidades de runtime
-    |
-    +-- EPSS ingestion / Silver / Scheduler
-    +-- KEV ingestion / Silver / Scheduler
-    +-- NVD Bootstrap ingestion
-    +-- NVD Incremental ingestion / Scheduler
-    +-- NVD Silver
-    +-- NVD Promotion
-    +-- NVD Analytics Projector
-    +-- GHSA Bronze
-    +-- GHSA Silver
+Runtimes de threat intelligence
+ -> roles least-privilege específicas por fonte
+
+Repository Intelligence
+ -> autoridade de rede read-only no GitHub público
+ -> somente evidência inerte
+ -> nenhuma execução de código de terceiros
 ```
 
-Least privilege é avaliado de acordo com a responsabilidade de cada runtime, e não em relação ao data lake inteiro.
+Um finding determinístico continua sendo observação de repositório. Runtime exposure é um domínio independente posterior.
 
----
-
-## Disciplina de custos
-
-A arquitetura evita serviços sem necessidade demonstrada.
+## 10. Disciplina de custo
 
 Exemplos atuais:
 
-- nenhum Glue crawler para EPSS, KEV ou NVD;
-- nenhum requisito de Step Functions no data plane atual;
-- nenhum DynamoDB para idempotência;
-- nenhum requisito de Iceberg neste estágio;
-- nenhum caminho irrestrito de linguagem natural para SQL;
-- workgroup dev do Athena limitado a 10 MiB por query.
+- sem Glue crawler onde schemas explícitos bastam;
+- sem cache DynamoDB antes de reuse medido;
+- sem Step Functions sem semântica real de workflow;
+- sem requisito Iceberg até aqui;
+- sem vector database antes de retrieval;
+- sem chamada Bedrock para aplicabilidade/findings determinísticos;
+- Athena dev com cutoff de 10 MiB por scan.
 
----
+## 11. Quality gates
 
-## Modelo de artefato de deployment
+Mudanças determinísticas de código usam CI escopado para impedir que código novo se esconda atrás de findings históricos.
 
-Todos os runtimes Lambda atualmente implantados no OpsLens seguem o mesmo lifecycle imutável de artefato de deployment:
-
-```text
-source tree
-    -> build determinístico do ZIP
-    -> identidade SHA-256
-    -> chave S3 content-addressed
-    -> VersionId S3 exato
-    -> pin imutável no Terraform
-    -> readback do Lambda CodeSha256
-```
-
-O NVD analytics projector permanente já utilizava esse modelo. O PR #28 concluiu a migração dos runtimes legados de ingestão EPSS, KEV e NVD Bootstrap e corrigiu o lifecycle do bucket de artefatos para manter duráveis os objetos Lambda content-addressed atuais.
-
-O closeout final do ambiente no PR #28 comprovou:
+Gates atuais de correlation/repository:
 
 ```text
-No changes. Your infrastructure matches the configuration.
-POST_APPLY_PLAN_RC=0
+uv lock --check
+uv sync --frozen
+Ruff
+strict Pyright
+Pytest
 ```
 
-Não existe drift global conhecido no Terraform `dev` decorrente do lifecycle legado de artefatos Lambda neste checkpoint.
-
----
-
-## Status atual da implementação
+Closeout da Phase 4:
 
 ```text
-FIRST EPSS                          IMPLEMENTED through Athena
-CISA KEV                            IMPLEMENTED through Athena
-NVD / CVE                           IMPLEMENTED through authoritative analytics + Athena
-GitHub Security Advisories          IMPLEMENTED through cross-source deterministic evidence
-EPSS historical expansion           NEXT
-Phase 3 Vulnerability Correlation   NOT STARTED
+Repository Intelligence pytest: 174 passed
+Correlation pytest:             116 passed
+Pyright:                         0 errors / 0 warnings
+Ruff:                            PASS
 ```
 
-Status detalhado do NVD:
+Mudanças com AWS também usam Terraform fmt/validate, TFLint, Checkov, revisão de plano canônico, verificação de deployment e convergence checks pós-apply.
+
+## 12. Boundary da Phase 5
+
+A Phase 5 introduz **Risk Policy v1** sobre a evidência final da Phase 4.
+
+Fatores candidatos:
 
 ```text
-Phase 2.3A — NVD Source Contract            COMPLETE
-Phase 2.3B — NVD Bootstrap Bronze           COMPLETE
-Phase 2.3C — NVD Incremental API Contract   COMPLETE
-Phase 2.3D — NVD Versioned Silver Contract  COMPLETE
-Phase 2.3E — NVD Silver AWS Runtime         COMPLETE
-Phase 2.3F — NVD Authoritative Watermark    COMPLETE
-Phase 2.3G — NVD Glue/Athena Analytics      COMPLETE
+affected status
+KEV
+EPSS
+CVSS
+fix availability
+direct/transitive quando disponível
+futura runtime evidence
+evidence completeness
 ```
 
-As Phases GHSA 2.4A source contract, 2.4B advisory/Silver contract, 2.4C Bronze runtime, 2.4D runtime Silver imutável, 2.4E Glue/Athena analytics e 2.4F evidência determinística cross-source estão concluídas. A prova final 2.4F selecionou `CVE-2026-42350` por overlap GHSA real e preservou uma observação NVD, ausência KEV explícita no snapshot `2026-08-29`, evidência EPSS no snapshot `2026-08-30`, uma versão exata de conteúdo GHSA e quatro ranges publicados com quatro first-patched versions.
+Invariantes requeridos:
 
-A aplicabilidade de vulnerabilidade para package/version permanece um trabalho determinístico da Phase 3. A Phase 2 agora continua aberta apenas para a expansão histórica do EPSS na Phase 2.5, salvo adiamento explícito conforme as regras do roadmap; Bedrock, RAG ou fases agentic não devem substituir esse milestone determinístico restante do data plane.
+- mesma evidência + mesma policy version => mesma prioridade;
+- explicação por fator é reconstruível;
+- policy version é registrada;
+- evidência ausente/unsupported tem semântica explícita;
+- LLM não é necessário para ranking;
+- risk policy não pode reescrever aplicabilidade nem source evidence;
+- Repository Risk permanece distinto de Runtime Exposure.
+
+Esse boundary começa somente depois da conclusão do sistema de evidência da Phase 4.

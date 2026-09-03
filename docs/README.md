@@ -2,125 +2,171 @@
 
 This directory contains the public technical documentation for OpsLens.
 
+The project has completed the deterministic foundation through **Phase 4 — Repository Intelligence**. The next roadmap boundary is **Phase 5 — Risk Prioritization Engine**.
+
+## Start here
+
+- [`current-state.md`](current-state.md) — factual implementation checkpoint and current supported scope.
+- [`roadmap.md`](roadmap.md) — incremental roadmap from completed foundation through the planned agentic phases.
+- [`architecture.md`](architecture.md) — current accumulated English architecture.
+- [`architecture.pt-br.md`](architecture.pt-br.md) — current accumulated Portuguese architecture.
+- [`adr/README.md`](adr/README.md) — architecture decision index.
+- [`labs/`](labs/) — implementation, failure, workload, AWS, and closeout evidence.
+
+## Current architecture boundary
+
+The implemented deterministic repository-analysis chain is:
+
 ```text
-docs/
-├── architecture.md
-├── architecture.pt-br.md
-├── adr/
-└── labs/
+public GitHub repository
+ -> immutable repository snapshot
+ -> bounded GET-only GitHub REST acquisition
+ -> exact inert uv.lock evidence
+ -> deterministic lock parsing
+ -> PyPI / PEP 440 / purl normalization
+ -> GHSA vulnerable-range applicability
+ -> CVE/GHSA/NVD alias reconciliation
+ -> NVD/CVSS enrichment
+ -> complete CISA KEV snapshot evidence
+ -> explicit FIRST EPSS snapshot evidence
+ -> content-addressed RepositoryAnalysisResult
 ```
 
-## Architecture
+No third-party repository code is executed.
 
-[`architecture.md`](architecture.md) contains the accumulated English architecture baseline through the complete NVD Bronze, Silver, authoritative watermark, permanent analytics projection, Glue, and Athena path. [`architecture.pt-br.md`](architecture.pt-br.md) provides the equivalent Portuguese architecture document.
-
-The deployed Phase 2.3E/2.3F NVD runtime architecture and its real AWS evidence are captured in [`phase-2-nvd-authoritative-runtime-closeout.md`](labs/phase-2-nvd-authoritative-runtime-closeout.md). The Phase 2.3G permanent analytics implementation and evidence are captured by the NVD Glue/Athena lab series below.
-
-The current implementation includes AWS identity and deployment boundaries, FIRST EPSS Bronze/Silver/Glue/Athena, the complete CISA KEV Bronze/Silver/Glue/Athena path, NVD CVE JSON 2.0 Bootstrap Bronze, incremental CVE API Bronze, versioned NVD Silver, deployed Incremental/Silver/Promotion runtimes, the authoritative watermark boundary, EventBridge Scheduler, runtime IAM separation, idempotency, observability, bounded failure recovery, the permanent NVD Glue/Athena analytics projection path, and immutable content-addressed deployment artifacts for all deployed Lambda runtimes.
-
-Phase 2.4A completed the GitHub Security Advisory source/synchronization contract, Phase 2.4B froze deterministic advisory-content identity and Silver schema v1, Phase 2.4C proved the reviewed-only GHSA Bronze AWS runtime, Phase 2.4D proved immutable advisory-version Silver persistence with exact Bronze VersionIds and zero-new-version replay, Phase 2.4E exposed that authoritative Silver relation directly through an explicit Glue table and bounded Athena queries, and Phase 2.4F proved source-local cross-source evidence across NVD, CISA KEV, FIRST EPSS, and GHSA. Phase 2.4 is complete; Phase 2.5 — Historical EPSS expansion — is next.
+The final result remains repository-risk evidence. It is not proof of deployed runtime exposure and does not yet contain a risk score or priority.
 
 ## Architecture Decision Records
 
-- [`0001 — Terraform state strategy`](adr/0001-terraform-state-strategy.md)
-- [`0002 — GitHub Actions OIDC deployment identity`](adr/0002-github-actions-oidc.md)
-- [`0003 — AWS regional strategy`](adr/0003-aws-region-strategy.md)
-- [`0004 — NVD ingestion and vulnerability versioning strategy`](adr/0004-nvd-ingestion-and-versioning-strategy.md)
-- [`0005 — GHSA source and synchronization strategy`](adr/0005-ghsa-source-and-synchronization-strategy.md) — Accepted from the completed Phase 2.4A source-contract and bounded live-workload evidence.
-- [`0006 — GHSA Silver content versioning and physical shape`](adr/0006-ghsa-silver-content-versioning-and-physical-shape.md) — Accepted from the completed Phase 2.4B logical/Arrow/Parquet contract and explicit content-vs-physical-observation provenance boundary.
-- [`0007 — GHSA runtime credential and retry strategy`](adr/0007-ghsa-runtime-credential-and-retry-strategy.md) — Accepted runtime boundary for GitHub credentials, bounded retry, and GHSA source access.
+The current ADR series covers the AWS foundation, NVD/GHSA source and authority paths, deterministic correlation semantics, immutable repository intelligence, threat-intelligence enrichment, and the final Phase 4 analysis projection.
 
-See [`adr/README.md`](adr/README.md) for the ADR index.
+| ADR | Decision |
+| --- | --- |
+| [`0001`](adr/0001-terraform-state-strategy.md) | Terraform state strategy |
+| [`0002`](adr/0002-github-actions-oidc.md) | GitHub Actions OIDC deployment identity |
+| [`0003`](adr/0003-aws-region-strategy.md) | AWS regional strategy |
+| [`0004`](adr/0004-nvd-ingestion-and-versioning-strategy.md) | NVD ingestion and vulnerability versioning strategy |
+| [`0005`](adr/0005-ghsa-source-and-synchronization-strategy.md) | GHSA source and synchronization strategy |
+| [`0006`](adr/0006-ghsa-silver-content-versioning-and-physical-shape.md) | GHSA Silver content versioning and physical shape |
+| [`0007`](adr/0007-ghsa-runtime-credential-and-retry-strategy.md) | GHSA runtime credential and retry strategy |
+| [`0008`](adr/0008-pypi-correlation-semantics.md) | PyPI deterministic correlation semantics |
+| [`0009`](adr/0009-immutable-public-repository-snapshot.md) | Immutable public GitHub repository snapshot |
+| [`0010`](adr/0010-bounded-read-only-github-rest-transport.md) | Bounded read-only GitHub REST transport |
+| [`0011`](adr/0011-immutable-uv-lock-evidence.md) | Immutable `uv.lock` evidence |
+| [`0012`](adr/0012-deterministic-uv-lock-parser.md) | Deterministic `uv.lock` parser |
+| [`0013`](adr/0013-phase3-pypi-normalization-bridge.md) | Phase 3 PyPI normalization bridge |
+| [`0014`](adr/0014-deterministic-repository-vulnerability-findings.md) | Deterministic repository vulnerability findings |
+| [`0015`](adr/0015-repository-nvd-cvss-enrichment.md) | Repository NVD/CVSS enrichment |
+| [`0016`](adr/0016-repository-kev-snapshot-enrichment.md) | Repository KEV snapshot enrichment |
+| [`0017`](adr/0017-repository-epss-snapshot-enrichment.md) | Repository EPSS snapshot enrichment |
+| [`0018`](adr/0018-repository-analysis-result-projection.md) | Final repository-analysis result projection and safe cache boundary |
 
-## Labs and operational evidence
+See [`adr/README.md`](adr/README.md) for the canonical ADR index.
 
-Phase 0:
+## Phase closeouts
 
-- [`phase-0-iam-oidc-failure.md`](labs/phase-0-iam-oidc-failure.md)
-- [`phase-0-cloudwatch-authorization-failure.md`](labs/phase-0-cloudwatch-authorization-failure.md)
+### Phase 0 — AWS Foundation
 
-Phase 1:
+Key evidence includes IAM/OIDC and CloudWatch authorization failure labs, Terraform bootstrap, remote state, least-privilege identities, observability, and budget/cost controls.
+
+### Phase 1 — FIRST EPSS
 
 - [`phase-1-epss-athena-query.md`](labs/phase-1-epss-athena-query.md)
 
-Phase 2:
+This phase established the first complete Bronze -> Silver -> Glue -> Athena path.
 
-- [`phase-2-kev-async-failure-recovery.md`](labs/phase-2-kev-async-failure-recovery.md)
-- [`phase-2-kev-silver-runtime.md`](labs/phase-2-kev-silver-runtime.md)
-- [`phase-2-kev-athena-query.md`](labs/phase-2-kev-athena-query.md)
-- [`phase-2-nvd-source-contract.md`](labs/phase-2-nvd-source-contract.md)
-- [`phase-2-nvd-bootstrap-bronze.md`](labs/phase-2-nvd-bootstrap-bronze.md)
-- [`phase-2-nvd-incremental-contract.md`](labs/phase-2-nvd-incremental-contract.md)
-- [`phase-2-nvd-versioned-silver-contract.md`](labs/phase-2-nvd-versioned-silver-contract.md)
-- [`phase-2-nvd-silver-workload-proof.md`](labs/phase-2-nvd-silver-workload-proof.md)
+### Phase 2 — Threat Intelligence Data Lake
+
+Phase 2 completed:
+
+```text
+CISA KEV
+NVD / CVE
+GitHub Security Advisories
+FIRST EPSS current path
+Historical EPSS expansion
+```
+
+The detailed NVD, GHSA, and historical EPSS design/runtime/closeout records remain in [`labs/`](labs/).
+
+Representative closeouts:
+
 - [`phase-2-nvd-authoritative-runtime-closeout.md`](labs/phase-2-nvd-authoritative-runtime-closeout.md)
-- [`phase-2-nvd-glue-athena-design.md`](labs/phase-2-nvd-glue-athena-design.md)
-- [`phase-2-nvd-glue-athena-source-evidence.md`](labs/phase-2-nvd-glue-athena-source-evidence.md)
-- [`phase-2-nvd-glue-athena-bootstrap-evidence.md`](labs/phase-2-nvd-glue-athena-bootstrap-evidence.md)
-- [`phase-2-nvd-glue-athena-symlink-proof.md`](labs/phase-2-nvd-glue-athena-symlink-proof.md)
-- [`phase-2-nvd-glue-athena-projection-design.md`](labs/phase-2-nvd-glue-athena-projection-design.md)
-- [`phase-2-nvd-glue-athena-projection-proof.md`](labs/phase-2-nvd-glue-athena-projection-proof.md)
-- [`phase-2-nvd-glue-athena-direct-parquet-proof.md`](labs/phase-2-nvd-glue-athena-direct-parquet-proof.md)
-- [`phase-2-nvd-glue-athena-incremental-cleanup-proof.md`](labs/phase-2-nvd-glue-athena-incremental-cleanup-proof.md)
-- [`phase-2-nvd-glue-athena-bootstrap-projection-proof.md`](labs/phase-2-nvd-glue-athena-bootstrap-projection-proof.md)
-- [`phase-2-nvd-glue-athena-bootstrap-athena-proof.md`](labs/phase-2-nvd-glue-athena-bootstrap-athena-proof.md)
-- [`phase-2-nvd-glue-athena-bootstrap-cleanup-proof.md`](labs/phase-2-nvd-glue-athena-bootstrap-cleanup-proof.md)
-- [`phase-2-nvd-glue-athena-permanent-path-design.md`](labs/phase-2-nvd-glue-athena-permanent-path-design.md)
-- [`phase-2-nvd-glue-athena-runtime-terraform.md`](labs/phase-2-nvd-glue-athena-runtime-terraform.md)
-- [`phase-2-nvd-glue-athena-permanent-catalog.md`](labs/phase-2-nvd-glue-athena-permanent-catalog.md)
-- [`phase-2-nvd-glue-athena-artifact-build.md`](labs/phase-2-nvd-glue-athena-artifact-build.md)
-- [`phase-2-nvd-glue-athena-bootstrap-permanent-seed-proof.md`](labs/phase-2-nvd-glue-athena-bootstrap-permanent-seed-proof.md)
-- [`phase-2-nvd-glue-athena-incremental-event-proof.md`](labs/phase-2-nvd-glue-athena-incremental-event-proof.md)
-- [`phase-2-nvd-glue-athena-permanent-athena-proof.md`](labs/phase-2-nvd-glue-athena-permanent-athena-proof.md)
-- [`phase-2-nvd-glue-athena-failure-replay-observability-proof.md`](labs/phase-2-nvd-glue-athena-failure-replay-observability-proof.md)
-- [`phase-2-ghsa-documentation-reconciliation.md`](labs/phase-2-ghsa-documentation-reconciliation.md) — Phase 2.4-0 reconciliation of public documentation against the post-PR #28 `main` checkpoint before GHSA implementation.
-- [`phase-2-ghsa-source-contract.md`](labs/phase-2-ghsa-source-contract.md) — completed Phase 2.4A source contract and workload-spike decision record.
-- [`phase-2-ghsa-live-rest-probe.md`](labs/phase-2-ghsa-live-rest-probe.md) — authenticated live evidence for cursor pagination, rate limits, published/modified bounded windows, payload sizes, timings, and advisory/package multiplicity.
-- [`phase-2-ghsa-advisory-silver-contract.md`](labs/phase-2-ghsa-advisory-silver-contract.md) — completed Phase 2.4B contract for exact advisory content versions, structured collections, one-to-many package/range/fix evidence, nested Arrow schema v1, logical hashing, and deterministic Parquet serialization.
-- [`phase-2-ghsa-bronze-contract.md`](labs/phase-2-ghsa-bronze-contract.md) — Phase 2.4C deterministic Bronze layout, sync/attempt identity, cursor-chain, page validation, and COMPLETE contract.
-- [`phase-2-ghsa-runtime-security-design.md`](labs/phase-2-ghsa-runtime-security-design.md) — runtime credential, outbound HTTP, retry, S3, and IAM boundary.
-- [`phase-2-ghsa-runtime-composition.md`](labs/phase-2-ghsa-runtime-composition.md) — Bronze runtime composition and deterministic persistence boundary.
-- [`phase-2-ghsa-lambda-contract.md`](labs/phase-2-ghsa-lambda-contract.md) — manual Bronze Lambda invocation and deployment-artifact contract.
-- [`phase-2-ghsa-manual-dev-runtime.md`](labs/phase-2-ghsa-manual-dev-runtime.md) — real Phase 2.4C AWS Bronze proof and replay evidence.
-- [`phase-2-ghsa-silver-runtime-closeout.md`](labs/phase-2-ghsa-silver-runtime-closeout.md) — completed Phase 2.4D exact Bronze-to-Silver runtime, immutable content objects, COMPLETE provenance, CVSS placeholder refinement, Terraform deployment, and zero-new-version replay proof.
-- [`phase-2-ghsa-glue-athena-design.md`](labs/phase-2-ghsa-glue-athena-design.md) — selected Phase 2.4E direct-Silver analytics boundary, explicit schema, zero-partition v1 table, cost boundary, and current-state semantics.
-- [`phase-2-ghsa-glue-athena-closeout.md`](labs/phase-2-ghsa-glue-athena-closeout.md) — completed Phase 2.4E Glue deployment and real Athena evidence for exact content identity, nested package/CWE/CVSS structures, CVSS placeholder preservation, and bounded scans.
-- [`phase-2-ghsa-cross-source-evidence-contract.md`](labs/phase-2-ghsa-cross-source-evidence-contract.md) — Phase 2.4F contract for explicit source-time coordinates, source-local authority, no lossy four-way join, and the Phase 3 package-range boundary.
-- [`phase-2-ghsa-cross-source-coordinate-discovery.md`](labs/phase-2-ghsa-cross-source-coordinate-discovery.md) — real read-only AWS discovery of EPSS, KEV, NVD, GHSA, Glue, and Athena proof coordinates.
-- [`phase-2-ghsa-cross-source-cve-selection.md`](labs/phase-2-ghsa-cross-source-cve-selection.md) — deterministic GHSA-seeded CVE overlap selection proving the empirical 3/4 maximum overlap and selecting `CVE-2026-42350`.
-- [`phase-2-ghsa-cross-source-closeout.md`](labs/phase-2-ghsa-cross-source-closeout.md) — completed Phase 2.4F source-local evidence bundle, package/range/fix proof, scan-cost evidence, and Phase 2.4 closeout.
+- [`phase-2-ghsa-cross-source-closeout.md`](labs/phase-2-ghsa-cross-source-closeout.md)
+- [`phase-2-epss-history-c6-closeout.md`](labs/phase-2-epss-history-c6-closeout.md)
 
-Cross-phase infrastructure closeout:
+Phase 2 preserves source-local authority instead of collapsing NVD, KEV, EPSS, and GHSA into one lossy universal record.
 
-- [`legacy-lambda-artifact-lifecycle-migration.md`](labs/legacy-lambda-artifact-lifecycle-migration.md) — completed migration of the remaining local-file Lambda deployment artifacts to immutable content-addressed S3 pins, including exact S3 VersionId provenance and full dev convergence proof.
+### Phase 3 — Vulnerability Correlation Engine
+
+- [`phase-3-correlation-engine-closeout.md`](labs/phase-3-correlation-engine-closeout.md)
+
+Phase 3 is complete for the supported PyPI v1 scope. It defines canonical package/version identity, PEP 440 applicability, GHSA range semantics, fixed-version evidence, deterministic CVE/GHSA/NVD reconciliation, and content-addressed correlation records.
+
+Final Phase 3 validation:
+
+```text
+Correlation Ruff:                 PASS
+Correlation Pyright:              0 errors / 0 warnings
+Correlation pytest:               116 passed
+```
+
+### Phase 4 — Repository Intelligence
+
+- [`phase-4-repository-intelligence-closeout.md`](labs/phase-4-repository-intelligence-closeout.md)
+
+Phase 4 completed the read-only repository path through PRs #68–#78.
+
+Implemented gates:
+
+```text
+4.1 immutable repository snapshot
+4.2 repository/ref -> exact commit resolution
+4.3 bounded read-only GitHub transport
+4.4 immutable uv.lock evidence
+4.5 deterministic uv.lock parser
+4.6 Phase 3 PyPI normalization bridge
+4.7 deterministic vulnerability findings
+4.8 exact NVD/CVSS enrichment
+4.9 complete-snapshot CISA KEV enrichment
+4.10 exact FIRST EPSS snapshot enrichment
+4.11 final RepositoryAnalysisResult projection
+```
+
+Final Phase 4 validation:
+
+```text
+Repository Intelligence Ruff:     PASS
+Repository Intelligence Pyright:  0 errors / 0 warnings
+Repository Intelligence pytest:   174 passed
+Correlation regression:           116 passed
+```
+
+The final `RepositoryAnalysisResult` is content-addressed and contains only evidence-derived fields. Risk ranking remains outside Phase 4.
+
+## Evidence and authority principles
+
+The documentation should be read with these permanent constraints in mind:
+
+- raw third-party evidence is preserved before interpretation;
+- deterministic facts remain authoritative;
+- exact versions/hashes participate in provenance;
+- duplicate delivery is expected and replay must be safe;
+- malformed, unsupported, or inconsistent evidence fails closed;
+- package identity, version parsing, range matching, aliases, KEV/EPSS/CVSS lookup, and final repository findings remain deterministic;
+- third-party repository code is untrusted data and is never executed;
+- Repository Risk and Runtime Exposure are separate concepts;
+- LLMs may later plan, explain, route, and synthesize, but do not replace deterministic evidence authorities.
 
 ## Current milestone
 
 ```text
 Phase 0 — AWS Foundation:                    COMPLETE
 Phase 1 — EPSS Vertical Slice:               COMPLETE
-Phase 2.1 — CISA KEV Bronze:                 COMPLETE
-Phase 2.2 — CISA KEV Silver/Analytics:       COMPLETE
-Phase 2.3A — NVD Source Contract:            COMPLETE
-Phase 2.3B — NVD Bootstrap Bronze:           COMPLETE
-Phase 2.3C — NVD Incremental API Contract:   COMPLETE
-Phase 2.3D — NVD Versioned Silver Contract:  COMPLETE
-Phase 2.3E — NVD Silver AWS Runtime:         COMPLETE
-Phase 2.3F — NVD Authoritative Watermark:    COMPLETE
-Phase 2.3G — NVD Glue/Athena Analytics:      COMPLETE
-Legacy Lambda artifact lifecycle migration: COMPLETE
-Phase 2.4-0 — Documentation reconciliation:  COMPLETE
-Phase 2.4A — GHSA Source Contract:           COMPLETE
-Phase 2.4B — GHSA Advisory/Silver Contract:  COMPLETE
-Phase 2.4C — GHSA Bronze:                    COMPLETE
-Phase 2.4D — GHSA Silver Runtime:            COMPLETE
-Phase 2.4E — GHSA Glue/Athena Analytics:     COMPLETE
-Phase 2.4F — GHSA Cross-source Closeout:     COMPLETE
-Phase 2.4 — GitHub Security Advisories:       COMPLETE
-Phase 2.5 — Historical EPSS expansion:       NEXT
-Phase 3 — Vulnerability Correlation Engine:  NOT STARTED
+Phase 2 — Threat Intelligence Data Lake:     COMPLETE
+Phase 3 — Vulnerability Correlation Engine:  COMPLETE
+Phase 4 — Repository Intelligence:           COMPLETE
+Phase 5 — Risk Prioritization Engine:        NEXT
 ```
 
-Phase 2.4D is complete. `observed_advisory_version_id` remains exact advisory content identity and is distinct from Bronze `sync_id`, physical `attempt_id`, and occurrence position. Exact Bronze provenance now binds deterministically to one-row immutable Silver content objects and an attempt-level COMPLETE manifest.
-
-Phase 2.4E — GHSA Glue/Athena Analytics — is complete. The authoritative one-row Silver Parquets are queryable directly through `opslens_dev.ghsa_advisory_versions`; real Athena proofs returned 10/10 unique content versions, 18 vulnerability entries, structurally valid nested evidence, seven unavailable CVSS v4 placeholders with zero fabricated typed metrics, and scans of 6,035 and 72,077 bytes. Phase 2.4F is also complete: the real `CVE-2026-42350` bundle preserved one NVD observation, explicit KEV absence, one EPSS score, one exact GHSA advisory version, and four package/range/fix entries while every source-local query remained below the unchanged 10 MiB cutoff. Phase 2.4 is closed. Phase 2 remains open only for Phase 2.5 Historical EPSS expansion before Phase 3 begins, unless that requirement is explicitly deferred under the roadmap rules.
+Phase 5 will introduce a versioned deterministic **Risk Policy v1** over the evidence already established by Phase 4. It must not retroactively change package applicability, source provenance, or runtime-exposure semantics.
