@@ -28,8 +28,8 @@ concept
 | 2 | Threat Intelligence Data Lake | ✅ Complete |
 | 3 | Vulnerability Correlation Engine | ✅ Complete |
 | 4 | Repository Intelligence | ✅ Complete |
-| 5 | Risk Prioritization Engine | 🚧 Next |
-| 6 | Semantic Query Layer | ⏳ Planned |
+| 5 | Risk Prioritization Engine | ✅ Complete |
+| 6 | Semantic Query Layer | 🚧 Next |
 | 7 | Knowledge Retrieval with Bedrock | ⏳ Planned |
 | 8 | Hybrid Retrieval | ⏳ Planned |
 | 9 | Public Analyze Your Repository | ⏳ Planned |
@@ -115,46 +115,161 @@ public GitHub repository
 
 Phase 4 never executes repository code and does not claim runtime exposure.
 
-## Phase 5 — Risk Prioritization Engine — NEXT
+## Phase 5 — Risk Prioritization Engine — COMPLETE
 
 ### Goal
 
 Prioritize already-proven repository findings with an explicit deterministic policy.
 
-### Candidate factors
-
-- affected status;
-- direct/transitive evidence when available;
-- CISA KEV;
-- EPSS;
-- CVSS;
-- fix availability;
-- future runtime-exposure evidence;
-- evidence completeness.
-
-### Deliverable
+### Implemented architecture
 
 ```text
-Risk Policy v1
+RepositoryAnalysisResult
+ -> Phase 5 application bridge
+ -> typed RiskFindingInput
+ -> pure Risk Policy v1 evaluator
+ -> factor contributions
+ -> priority score / tier / completeness
+ -> deterministic ranking
 ```
+
+### Risk Policy v1
+
+```text
+CISA KEV present                    +40
+EPSS >= 0.70 / 0.30 / 0.10         +30 / +20 / +10
+max supported CVSS >= 9 / 7 / 4    +20 / +10 / +5
+known first patched version         +10
+```
+
+Priority tiers:
+
+```text
+P0 >= 80
+P1 >= 60
+P2 >= 30
+P3 < 30
+```
+
+The score is an OpsLens prioritization-policy output, not a vulnerability probability, a replacement for CVSS/EPSS/KEV, or a runtime-exposure claim.
+
+Evidence completeness and `review_required` remain explicit and separate from score.
+
+### Deterministic identities
+
+```text
+risk-policy:v1@sha256:<digest>
+risk-evaluation:v1@sha256:<digest>
+risk-prioritization:v1@sha256:<digest>
+```
+
+### Exit status
+
+Completed through PR #80 / merge commit:
+
+```text
+81a2e78a3e8329aa811c20012bc565f35f1a87e5
+```
+
+Final CI:
+
+```text
+33810836040 — SUCCESS
+
+Risk Policy Ruff:                 PASS
+Risk Policy Pyright:              0 errors / 0 warnings
+Risk Policy pytest:               31 passed
+Repository Intelligence pytest:   174 passed
+Correlation pytest:               116 passed
+```
+
+Exit criteria satisfied:
+
+- same evidence + same policy reproduces the same priority evidence;
+- factor-level reason evidence is available;
+- policy version and content-addressed policy identity are recorded;
+- no LLM is required for scoring/ranking;
+- isolated tests demonstrate priority changes from policy factors;
+- missing/unsupported evidence remains explicit;
+- Repository Risk remains separate from Runtime Exposure.
+
+Closeout evidence:
+
+```text
+docs/labs/phase-5-risk-prioritization-closeout.md
+ADR 0019 — Deterministic Risk Policy v1
+```
+
+The v1 weights and thresholds are explicit product-policy choices and should be evaluated against historical cases before a future policy version changes them.
+
+## Phase 6 — Semantic Query Layer — NEXT
+
+### Goal
+
+Convert a natural-language structured-intelligence question into a safe typed query plan and execute only compiler-owned SQL through the bounded Athena analytics boundary.
+
+### Target flow
+
+```text
+User question
+ -> Bedrock planner
+ -> typed semantic query
+ -> deterministic validation
+ -> code-owned SQL compiler
+ -> bounded read-only Athena workgroup
+```
+
+### Permanent guardrail
+
+> **No unrestricted text-to-SQL.**
+
+The model may propose a semantic query object. It never receives authority to produce arbitrary executable SQL.
+
+### First implementation boundary
+
+Before adding a Bedrock call, freeze and test the deterministic contract:
+
+```text
+metric vocabulary
+dimension vocabulary
+typed filters
+order/limit semantics
+temporal snapshot semantics
+semantic-query validation
+SQL compiler ownership
+parameter/identifier handling
+Athena workgroup boundary
+```
+
+The smallest first supported question should reuse already-proven structured evidence, for example:
+
+> Which repository findings have a given priority tier?
+
+or another equally narrow metric/filter combination selected during Gate 6.1.
+
+### Learning focus
+
+- Amazon Bedrock Converse API after the deterministic boundary is stable;
+- structured model outputs;
+- schema validation;
+- model inference parameters;
+- token accounting;
+- Amazon Athena workgroups and bytes-scanned controls;
+- safe structured-query planning;
+- failure handling and deterministic compiler tests.
 
 ### Exit criteria
 
-- the same evidence always produces the same priority;
-- factor-level explanation is available;
-- policy version is recorded with the decision;
-- an LLM is not required for ranking;
-- tests demonstrate expected priority changes when individual factors change;
-- missing/unsupported evidence has explicit semantics rather than silent defaults;
-- Repository Risk remains distinct from Runtime Exposure.
-
-## Phase 6 — Semantic Query Layer
-
-Convert natural language into a safe typed semantic query, validate it deterministically, compile SQL in code, and execute only through bounded Athena workgroups.
-
-Guardrail:
-
-> No unrestricted text-to-SQL.
+- explicit metric/dimension/filter allowlists exist;
+- invalid semantic queries are rejected before SQL execution;
+- SQL text is owned only by deterministic application code;
+- supported structured questions execute through a read-only bounded Athena workgroup;
+- temporal selection is explicit rather than implicit `latest` behavior;
+- planner accuracy has an evaluation dataset;
+- token usage and planner latency are observable;
+- Athena bytes scanned are measured;
+- at least one invalid planner output/failure path is diagnosed;
+- ADR explains why OpsLens does not use unrestricted text-to-SQL.
 
 ## Phase 7 — Knowledge Retrieval with Bedrock
 
