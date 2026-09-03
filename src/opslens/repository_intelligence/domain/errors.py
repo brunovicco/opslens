@@ -101,3 +101,9 @@ class RepositoryEpssEnrichmentLimitError(InvalidRepositoryEpssEnrichmentError):
     """Raised when deterministic EPSS enrichment exceeds a hard processing bound."""
 
     reason_code = "repository_epss_enrichment_limit_exceeded"
+
+
+class InvalidRepositoryAnalysisResultError(RepositoryIntelligenceContractError):
+    """Raised when the final Phase 4 repository-analysis projection is inconsistent."""
+
+    reason_code = "invalid_repository_analysis_result"
