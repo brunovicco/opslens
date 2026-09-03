@@ -4,6 +4,9 @@ from opslens.repository_intelligence.application.file_acquisition import (
     GitHubUvLockSource,
     acquire_uv_lock_evidence,
 )
+from opslens.repository_intelligence.application.nvd_enrichment import (
+    enrich_repository_findings_with_nvd,
+)
 from opslens.repository_intelligence.application.pypi_normalization import (
     normalize_uv_lock_pypi_dependencies,
 )
@@ -22,6 +25,7 @@ __all__ = [
     "GitHubUvLockSource",
     "acquire_uv_lock_evidence",
     "build_repository_pypi_vulnerability_scan",
+    "enrich_repository_findings_with_nvd",
     "normalize_uv_lock_pypi_dependencies",
     "resolve_github_repository_snapshot",
 ]
