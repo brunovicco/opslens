@@ -6,7 +6,7 @@
 
 ### Deterministic Software Supply Chain & Threat Intelligence on AWS
 
-**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Deterministic Evidence · AWS Serverless · Security Automation**
+**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Deterministic Evidence · AWS Serverless · Security Automation**
 
 </div>
 
@@ -14,7 +14,7 @@ OpsLens is an open-source software supply chain intelligence platform built on A
 
 It is designed to answer:
 
-> Given the software I actually use, which vulnerabilities affect it, what evidence proves that, and how should those findings eventually be prioritized?
+> Given the software I actually use, which vulnerabilities affect it, what evidence proves that, and which findings should I prioritize?
 
 The project deliberately establishes deterministic evidence, provenance, package/version correlation, least-privilege boundaries, observability, failure recovery, and cost controls before introducing generative or agentic reasoning.
 
@@ -29,19 +29,20 @@ The project deliberately establishes deterministic evidence, provenance, package
 | Phase 2 | Threat Intelligence Data Lake | ✅ Complete |
 | Phase 3 | Vulnerability Correlation Engine | ✅ Complete |
 | Phase 4 | Repository Intelligence | ✅ Complete |
-| Phase 5 | Risk Prioritization Engine | 🚧 Next |
+| Phase 5 | Risk Prioritization Engine | ✅ Complete |
+| Phase 6 | Semantic Query Layer | 🚧 Next |
 
-Implementation checkpoint after Phase 4:
+Latest implementation checkpoint:
 
 ```text
-4baa9bddd20d827aa06654fc14f52c7ec5135f2c
+81a2e78a3e8329aa811c20012bc565f35f1a87e5
 ```
 
 See [Current State](docs/current-state.md) and [Roadmap](docs/roadmap.md) for the detailed status.
 
 ## What OpsLens can do today
 
-The implemented deterministic path can analyze a supported public GitHub repository snapshot without executing repository code:
+The implemented deterministic path can analyze a supported public GitHub repository snapshot without executing repository code and then prioritize its already-proven findings through a versioned deterministic policy:
 
 ```text
 public GitHub repository
@@ -75,9 +76,15 @@ CVE/GHSA <-> exact NVD evidence reconciliation
         |
         v
 content-addressed RepositoryAnalysisResult
+        |
+        v
+Deterministic Risk Policy v1
+        |
+        v
+priority score + tier + factor evidence + completeness + stable rank
 ```
 
-A final finding can contain:
+A final repository finding can contain:
 
 - dependency name and installed version;
 - canonical purl;
@@ -90,12 +97,22 @@ A final finding can contain:
 - EPSS state, snapshot coordinates, score and percentile when available;
 - immutable repository, lockfile, advisory, NVD, KEV, and EPSS evidence references.
 
-The current result intentionally has **no risk score or priority**. That authority starts in Phase 5.
+Phase 5 can deterministically add:
+
+- factor-level KEV, EPSS, CVSS, and fixed-version contributions;
+- priority score and P0–P3 tier;
+- `complete` / `partial` evidence status;
+- explicit `review_required` state;
+- content-addressed policy/evaluation/prioritization identities;
+- deterministic repository-level ranking.
+
+The priority score is an explicit OpsLens policy output. It is **not** a vulnerability probability, a CVSS replacement, or runtime-exposure evidence.
 
 ## Core invariants
 
 - Deterministic evidence and correlation first; generative reasoning second.
 - **No LLM decides vulnerability applicability.**
+- Risk-policy evaluation and ranking are deterministic and versioned.
 - Raw source evidence is preserved before transformation.
 - Exact source versions and content hashes participate in evidence identity.
 - Unsupported or malformed semantics fail closed.
@@ -223,6 +240,44 @@ This identity is also the safe future reuse/cache coordinate. A repository commi
 
 No cache backend was added in Phase 4 because no measured workload yet justifies the additional storage, invalidation, IAM, observability, and cost surface.
 
+See [Phase 4 closeout](docs/labs/phase-4-repository-intelligence-closeout.md).
+
+## Phase 5 — Risk Prioritization Engine
+
+Risk Policy v1 consumes only structured evidence already proven by Phase 4.
+
+Current contributions:
+
+```text
+CISA KEV present                    +40
+EPSS >= 0.70 / 0.30 / 0.10         +30 / +20 / +10
+max supported CVSS >= 9 / 7 / 4    +20 / +10 / +5
+known first patched version         +10
+```
+
+Priority tiers:
+
+```text
+P0 >= 80
+P1 >= 60
+P2 >= 30
+P3 < 30
+```
+
+The policy separately exposes evidence completeness and review requirements so missing evidence cannot silently become a low-risk conclusion.
+
+Deterministic identities:
+
+```text
+risk-policy:v1@sha256:<digest>
+risk-evaluation:v1@sha256:<digest>
+risk-prioritization:v1@sha256:<digest>
+```
+
+Risk Policy v1 introduces no AWS service, IAM permission, model call, persistence, or runtime cost.
+
+See [Phase 5 closeout](docs/labs/phase-5-risk-prioritization-closeout.md) and [ADR 0019](docs/adr/0019-deterministic-risk-policy-v1.md).
+
 ## AWS foundation
 
 ```text
@@ -250,7 +305,7 @@ Examples:
 - no Iceberg requirement yet;
 - no vector database before a retrieval phase needs one;
 - no unrestricted text-to-SQL;
-- no model call in deterministic applicability or repository finding truth;
+- no model call in deterministic applicability, repository finding truth, or risk-policy ranking;
 - Athena dev workgroup keeps a `10,485,760` byte scan cutoff.
 
 ## Quality gates
@@ -269,9 +324,12 @@ canonical Terraform plans
 post-deployment convergence checks
 ```
 
-Final Phase 4 validation:
+Latest deterministic-slice validation:
 
 ```text
+Risk Policy Ruff:                 PASS
+Risk Policy Pyright:              0 errors / 0 warnings
+Risk Policy pytest:               31 passed
 Repository Intelligence Ruff:     PASS
 Repository Intelligence Pyright:  0 errors / 0 warnings
 Repository Intelligence pytest:   174 passed
@@ -300,7 +358,8 @@ Correlation pytest:               116 passed
 ├── src/
 │   └── opslens/
 │       ├── correlation/
-│       └── repository_intelligence/
+│       ├── repository_intelligence/
+│       └── risk_policy/
 ├── tests/
 ├── README.md
 ├── README.pt-br.md
@@ -317,15 +376,24 @@ Correlation pytest:               116 passed
 - [ADR index](docs/adr/README.md)
 - [Labs and operational evidence](docs/README.md)
 
-## Next — Phase 5: Risk Prioritization Engine
+## Next — Phase 6: Semantic Query Layer
 
-Phase 5 introduces a new authority boundary: **Risk Policy v1**.
+Phase 6 introduces the first model-assisted structured-query planning boundary:
 
-Phase 0–4 answer factual questions such as “is this locked version affected?” and “what exact KEV/EPSS/CVSS evidence exists?”. Phase 5 will deterministically map those facts into a versioned priority decision.
+```text
+User question
+ -> Bedrock planner
+ -> typed semantic query
+ -> deterministic validation
+ -> code-owned SQL compiler
+ -> bounded read-only Athena workgroup
+```
 
-Candidate factors include affected status, KEV, EPSS, CVSS, fix availability, future direct/transitive and runtime evidence, and evidence completeness.
+Permanent guardrail:
 
-The policy must be reproducible, explainable at factor level, versioned, and testable without an LLM.
+> **No unrestricted text-to-SQL.**
+
+The first Phase 6 gate should freeze the typed semantic-query vocabulary and deterministic SQL compiler before Bedrock receives any planning authority.
 
 ---
 
