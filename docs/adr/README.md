@@ -24,3 +24,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0014](0014-deterministic-repository-vulnerability-findings.md) | Emit deterministic repository vulnerability findings from normalized lock and GHSA evidence | Accepted |
 | [0015](0015-repository-nvd-cvss-enrichment.md) | Enrich repository findings with exact NVD and CVSS evidence | Accepted |
 | [0016](0016-repository-kev-snapshot-enrichment.md) | Enrich repository findings from a complete CISA KEV snapshot | Accepted |
+| [0017](0017-repository-epss-snapshot-enrichment.md) | Enrich repository findings from one exact EPSS score snapshot | Accepted |
