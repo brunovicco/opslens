@@ -8,8 +8,8 @@ import pytest
 
 from opslens.risk_policy.domain import (
     RISK_POLICY_V1,
-    RiskEvidenceCompleteness,
     RiskEpssState,
+    RiskEvidenceCompleteness,
     RiskFindingInput,
     RiskKevState,
     RiskPrioritizationResult,
