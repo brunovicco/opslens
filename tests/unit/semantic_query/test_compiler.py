@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import cast
 
 import pytest
@@ -45,9 +45,9 @@ def _query(
 
 def test_phase_6_1_allowlists_are_deliberately_narrow() -> None:
     """The first contract exposes only the proven EPSS/CVE query surface."""
-    assert ALLOWED_METRICS == {SemanticMetric.EPSS_SCORE}
-    assert ALLOWED_DIMENSIONS == {SemanticDimension.CVE}
-    assert ALLOWED_ORDER_FIELDS == {SemanticOrderField.EPSS_SCORE}
+    assert {SemanticMetric.EPSS_SCORE} == ALLOWED_METRICS
+    assert {SemanticDimension.CVE} == ALLOWED_DIMENSIONS
+    assert {SemanticOrderField.EPSS_SCORE} == ALLOWED_ORDER_FIELDS
     assert MAX_QUERY_LIMIT == 100
 
 
@@ -128,7 +128,7 @@ def test_snapshot_date_requires_an_explicit_calendar_date() -> None:
     """Datetime/latest-style ambiguity does not enter the first contract."""
     with pytest.raises(SemanticQueryValidationError, match="snapshot_date"):
         EpssFilters(
-            snapshot_date=cast(date, datetime(2026, 9, 3, 12, 0)),
+            snapshot_date=cast(date, datetime(2026, 9, 3, 12, 0, tzinfo=timezone.utc)),
             minimum_score=0.7,
         )
 
