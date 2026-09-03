@@ -110,7 +110,8 @@ class RepositoryPyPINormalizationInventory:
 
         if observed != expected_by_index:
             raise InvalidUvLockError(
-                "Every PyPI-source lock record must be accounted for exactly once after normalization."
+                "Every PyPI-source lock record must be accounted for exactly once "
+                "after normalization."
             )
 
     @property
@@ -126,7 +127,8 @@ def _record_once(
     """Insert one record by source index while rejecting duplicate bridge accounting."""
     if record.record_index in observed:
         raise InvalidUvLockError(
-            f"PyPI lock record {record.record_index} appears more than once in normalization output."
+            f"PyPI lock record {record.record_index} appears more than once "
+            "in normalization output."
         )
     observed[record.record_index] = record
 
