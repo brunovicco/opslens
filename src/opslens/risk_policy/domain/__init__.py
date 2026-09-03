@@ -4,8 +4,8 @@ from opslens.risk_policy.domain.evaluator import evaluate_risk_finding_v1
 from opslens.risk_policy.domain.models import (
     RISK_POLICY_V1,
     RankedRiskFinding,
-    RiskEvidenceCompleteness,
     RiskEpssState,
+    RiskEvidenceCompleteness,
     RiskFactorContribution,
     RiskFactorName,
     RiskFindingEvaluation,
@@ -19,8 +19,8 @@ from opslens.risk_policy.domain.models import (
 __all__ = [
     "RISK_POLICY_V1",
     "RankedRiskFinding",
-    "RiskEvidenceCompleteness",
     "RiskEpssState",
+    "RiskEvidenceCompleteness",
     "RiskFactorContribution",
     "RiskFactorName",
     "RiskFindingEvaluation",
