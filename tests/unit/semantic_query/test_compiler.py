@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from typing import cast
 
 import pytest
@@ -128,7 +128,7 @@ def test_snapshot_date_requires_an_explicit_calendar_date() -> None:
     """Datetime/latest-style ambiguity does not enter the first contract."""
     with pytest.raises(SemanticQueryValidationError, match="snapshot_date"):
         EpssFilters(
-            snapshot_date=cast(date, datetime(2026, 9, 3, 12, 0, tzinfo=timezone.utc)),
+            snapshot_date=cast(date, datetime(2026, 9, 3, 12, 0, tzinfo=UTC)),
             minimum_score=0.7,
         )
 
