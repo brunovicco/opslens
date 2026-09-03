@@ -90,10 +90,6 @@ def _index_ghsa_occurrences(
             raise RepositoryNvdEnrichmentLimitError(
                 "Repository NVD enrichment exceeds the GHSA rehydration bound."
             )
-        if not isinstance(source, GhsaPyPIVulnerabilityEvidence):
-            raise InvalidRepositoryNvdEnrichmentError(
-                "Repository NVD enrichment requires typed GHSA vulnerability evidence."
-            )
 
         key = (
             source.observed_advisory_version_id,
@@ -120,10 +116,6 @@ def _index_nvd_records(
         if count > MAX_NVD_ENRICHMENT_RECORDS:
             raise RepositoryNvdEnrichmentLimitError(
                 "Repository NVD enrichment exceeds the NVD observation bound."
-            )
-        if not isinstance(record, NvdCveCoreRecord):
-            raise InvalidRepositoryNvdEnrichmentError(
-                "Repository NVD enrichment requires typed NVD core evidence."
             )
 
         cve_id = record.observed_version.cve_id
