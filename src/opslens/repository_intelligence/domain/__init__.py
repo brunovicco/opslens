@@ -4,11 +4,13 @@ from opslens.repository_intelligence.domain.errors import (
     InvalidGitHubSourceEvidenceError,
     InvalidRepositoryFileEvidenceError,
     InvalidRepositoryIdentityError,
+    InvalidRepositoryKevEnrichmentError,
     InvalidRepositoryNvdEnrichmentError,
     InvalidRepositorySnapshotError,
     InvalidRepositoryVulnerabilityScanError,
     InvalidUvLockError,
     RepositoryIntelligenceContractError,
+    RepositoryKevEnrichmentLimitError,
     RepositoryNvdEnrichmentLimitError,
     RepositoryVulnerabilityScanLimitError,
     UnsupportedRepositoryFileError,
@@ -22,6 +24,14 @@ from opslens.repository_intelligence.domain.file_evidence import (
     compute_content_sha256,
     compute_git_blob_sha1,
     validate_repository_evidence_path,
+)
+from opslens.repository_intelligence.domain.kev_enrichment import (
+    MAX_KEV_ENRICHMENT_BYTES,
+    MAX_KEV_ENRICHMENT_RECORDS,
+    RepositoryKevEnrichedFinding,
+    RepositoryKevEnrichmentEvidence,
+    RepositoryKevSnapshotEvidence,
+    RepositoryKevState,
 )
 from opslens.repository_intelligence.domain.models import (
     GitHubRepositoryIdentity,
@@ -64,6 +74,8 @@ from opslens.repository_intelligence.domain.vulnerability_findings import (
 
 __all__ = [
     "MAX_GHSA_VULNERABILITY_OCCURRENCES",
+    "MAX_KEV_ENRICHMENT_BYTES",
+    "MAX_KEV_ENRICHMENT_RECORDS",
     "MAX_NVD_ENRICHMENT_RECORDS",
     "MAX_REPOSITORY_FILE_BYTES",
     "MAX_REPOSITORY_VULNERABILITY_CANDIDATE_EVALUATIONS",
@@ -78,6 +90,7 @@ __all__ = [
     "InvalidGitHubSourceEvidenceError",
     "InvalidRepositoryFileEvidenceError",
     "InvalidRepositoryIdentityError",
+    "InvalidRepositoryKevEnrichmentError",
     "InvalidRepositoryNvdEnrichmentError",
     "InvalidRepositorySnapshotError",
     "InvalidRepositoryVulnerabilityScanError",
@@ -85,6 +98,11 @@ __all__ = [
     "NormalizedRepositoryPyPIDependencyEvidence",
     "ParsedUvLockEvidence",
     "RepositoryIntelligenceContractError",
+    "RepositoryKevEnrichedFinding",
+    "RepositoryKevEnrichmentEvidence",
+    "RepositoryKevEnrichmentLimitError",
+    "RepositoryKevSnapshotEvidence",
+    "RepositoryKevState",
     "RepositoryNvdCvssEvidence",
     "RepositoryNvdEnrichedFinding",
     "RepositoryNvdEnrichmentEvidence",
