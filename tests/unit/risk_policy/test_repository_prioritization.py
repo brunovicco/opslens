@@ -34,8 +34,8 @@ from opslens.risk_policy.application import (
     prioritize_repository_analysis,
 )
 from opslens.risk_policy.domain import (
-    RiskEvidenceCompleteness,
     RiskEpssState,
+    RiskEvidenceCompleteness,
     RiskKevState,
     RiskPriorityTier,
 )
@@ -66,14 +66,14 @@ def _repository_snapshot() -> ImmutableRepositorySnapshot:
 def _inventory():  # type: ignore[no-untyped-def]
     """Build normalized inert PyPI dependency evidence."""
     content = (
-        "version = 1\n"
-        "revision = 3\n"
-        'requires-python = ">=3.13"\n'
-        "[[package]]\n"
-        'name = "Requests"\n'
-        'version = "2.31.0"\n'
-        'source = { registry = "https://pypi.org/simple" }\n'
-    ).encode()
+        b"version = 1\n"
+        b"revision = 3\n"
+        b'requires-python = ">=3.13"\n'
+        b"[[package]]\n"
+        b'name = "Requests"\n'
+        b'version = "2.31.0"\n'
+        b'source = { registry = "https://pypi.org/simple" }\n'
+    )
     evidence = ImmutableRepositoryFileEvidence(
         snapshot=_repository_snapshot(),
         path="uv.lock",
