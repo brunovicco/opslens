@@ -89,3 +89,15 @@ class RepositoryKevEnrichmentLimitError(InvalidRepositoryKevEnrichmentError):
     """Raised when deterministic KEV enrichment exceeds a hard processing bound."""
 
     reason_code = "repository_kev_enrichment_limit_exceeded"
+
+
+class InvalidRepositoryEpssEnrichmentError(RepositoryIntelligenceContractError):
+    """Raised when repository findings cannot bind to one exact EPSS snapshot."""
+
+    reason_code = "invalid_repository_epss_enrichment"
+
+
+class RepositoryEpssEnrichmentLimitError(InvalidRepositoryEpssEnrichmentError):
+    """Raised when deterministic EPSS enrichment exceeds a hard processing bound."""
+
+    reason_code = "repository_epss_enrichment_limit_exceeded"

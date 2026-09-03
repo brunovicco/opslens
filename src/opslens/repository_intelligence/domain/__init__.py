@@ -1,7 +1,18 @@
 """Domain types for immutable repository intelligence evidence."""
 
+from opslens.repository_intelligence.domain.epss_enrichment import (
+    MAX_EPSS_ENRICHMENT_BYTES,
+    MAX_EPSS_ENRICHMENT_RECORDS,
+    RepositoryEpssEnrichedFinding,
+    RepositoryEpssEnrichmentEvidence,
+    RepositoryEpssSnapshotEvidence,
+    RepositoryEpssSnapshotKind,
+    RepositoryEpssSourceSnapshot,
+    RepositoryEpssState,
+)
 from opslens.repository_intelligence.domain.errors import (
     InvalidGitHubSourceEvidenceError,
+    InvalidRepositoryEpssEnrichmentError,
     InvalidRepositoryFileEvidenceError,
     InvalidRepositoryIdentityError,
     InvalidRepositoryKevEnrichmentError,
@@ -9,6 +20,7 @@ from opslens.repository_intelligence.domain.errors import (
     InvalidRepositorySnapshotError,
     InvalidRepositoryVulnerabilityScanError,
     InvalidUvLockError,
+    RepositoryEpssEnrichmentLimitError,
     RepositoryIntelligenceContractError,
     RepositoryKevEnrichmentLimitError,
     RepositoryNvdEnrichmentLimitError,
@@ -73,6 +85,8 @@ from opslens.repository_intelligence.domain.vulnerability_findings import (
 )
 
 __all__ = [
+    "MAX_EPSS_ENRICHMENT_BYTES",
+    "MAX_EPSS_ENRICHMENT_RECORDS",
     "MAX_GHSA_VULNERABILITY_OCCURRENCES",
     "MAX_KEV_ENRICHMENT_BYTES",
     "MAX_KEV_ENRICHMENT_RECORDS",
@@ -88,6 +102,7 @@ __all__ = [
     "ImmutableRepositoryFileEvidence",
     "ImmutableRepositorySnapshot",
     "InvalidGitHubSourceEvidenceError",
+    "InvalidRepositoryEpssEnrichmentError",
     "InvalidRepositoryFileEvidenceError",
     "InvalidRepositoryIdentityError",
     "InvalidRepositoryKevEnrichmentError",
@@ -97,6 +112,13 @@ __all__ = [
     "InvalidUvLockError",
     "NormalizedRepositoryPyPIDependencyEvidence",
     "ParsedUvLockEvidence",
+    "RepositoryEpssEnrichedFinding",
+    "RepositoryEpssEnrichmentEvidence",
+    "RepositoryEpssEnrichmentLimitError",
+    "RepositoryEpssSnapshotEvidence",
+    "RepositoryEpssSnapshotKind",
+    "RepositoryEpssSourceSnapshot",
+    "RepositoryEpssState",
     "RepositoryIntelligenceContractError",
     "RepositoryKevEnrichedFinding",
     "RepositoryKevEnrichmentEvidence",
