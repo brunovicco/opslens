@@ -113,6 +113,8 @@ Correlation pytest:               116 passed
 
 ### Phase 4 — Repository Intelligence
 
+- [`phase-4-repository-intelligence-closeout.md`](labs/phase-4-repository-intelligence-closeout.md)
+
 Phase 4 completed the read-only repository path through PRs #68–#78.
 
 Implemented gates:
