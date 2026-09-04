@@ -10,7 +10,6 @@ from opslens.semantic_query.domain import SemanticQuery
 from opslens.semantic_query.planner import (
     BedrockPlannerInvocationEvidence,
     BedrockPlannerResult,
-    PlannedSemanticQuery,
     SemanticPlannerRequest,
     UnsupportedPlannerDecision,
     UnsupportedReason,
@@ -84,12 +83,9 @@ class ExecuteNaturalLanguageSemanticQuery:
                 reason=outcome.reason,
             )
 
-        if isinstance(outcome, PlannedSemanticQuery):
-            result = self._executor.execute(outcome.query)
-            return ExecutedNaturalLanguageSemanticQuery(
-                planner_evidence=planned.evidence,
-                semantic_query=outcome.query,
-                result=result,
-            )
-
-        raise TypeError("Unknown planner outcome type.")
+        result = self._executor.execute(outcome.query)
+        return ExecutedNaturalLanguageSemanticQuery(
+            planner_evidence=planned.evidence,
+            semantic_query=outcome.query,
+            result=result,
+        )
