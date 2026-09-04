@@ -14,9 +14,9 @@ from opslens.semantic_query.application.natural_language import (
 
 __all__ = [
     "AthenaQueryResult",
-    "ExecutedNaturalLanguageSemanticQuery",
     "ExecuteNaturalLanguageSemanticQuery",
     "ExecuteSemanticQuery",
+    "ExecutedNaturalLanguageSemanticQuery",
     "NaturalLanguageSemanticQueryResult",
     "SemanticQueryPlanner",
     "TypedSemanticQueryExecutor",
