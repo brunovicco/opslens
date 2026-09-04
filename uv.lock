@@ -125,7 +125,7 @@ wheels = [
 [[package]]
 name = "governed-llm-gateway-client"
 version = "0.2.0"
-source = { git = "https://github.com/brunovicco/governed-llm-gateway.git?subdirectory=packages%2Fgateway-client&rev=96b09956e933db50bf9ea900973f8a0b2145cb3c#96b09956e933db50bf9ea900973f8a0b2145cb3c" }
+source = { git = "https://github.com/brunovicco/governed-llm-gateway.git?subdirectory=packages%2Fgateway-client&rev=ba5661514f90aff96749789e3275ce5685e1aea4#ba5661514f90aff96749789e3275ce5685e1aea4" }
 dependencies = [
     { name = "governed-llm-gateway-contracts" },
     { name = "httpx" },
@@ -134,7 +134,7 @@ dependencies = [
 [[package]]
 name = "governed-llm-gateway-contracts"
 version = "0.1.0"
-source = { git = "https://github.com/brunovicco/governed-llm-gateway.git?subdirectory=packages%2Fgateway-contracts&rev=96b09956e933db50bf9ea900973f8a0b2145cb3c#96b09956e933db50bf9ea900973f8a0b2145cb3c" }
+source = { git = "https://github.com/brunovicco/governed-llm-gateway.git?subdirectory=packages%2Fgateway-contracts&rev=ba5661514f90aff96749789e3275ce5685e1aea4#ba5661514f90aff96749789e3275ce5685e1aea4" }
 
 [[package]]
 name = "h11"
@@ -254,8 +254,8 @@ nvd-silver-runtime = [
 requires-dist = [
     { name = "aws-lambda-powertools", extras = ["tracer"], specifier = ">=3.34.0" },
     { name = "boto3", specifier = ">=1.43.72" },
-    { name = "governed-llm-gateway-client", git = "https://github.com/brunovicco/governed-llm-gateway.git?subdirectory=packages%2Fgateway-client&rev=96b09956e933db50bf9ea900973f8a0b2145cb3c" },
-    { name = "governed-llm-gateway-contracts", git = "https://github.com/brunovicco/governed-llm-gateway.git?subdirectory=packages%2Fgateway-contracts&rev=96b09956e933db50bf9ea900973f8a0b2145cb3c" },
+    { name = "governed-llm-gateway-client", git = "https://github.com/brunovicco/governed-llm-gateway.git?subdirectory=packages%2Fgateway-client&rev=ba5661514f90aff96749789e3275ce5685e1aea4" },
+    { name = "governed-llm-gateway-contracts", git = "https://github.com/brunovicco/governed-llm-gateway.git?subdirectory=packages%2Fgateway-contracts&rev=ba5661514f90aff96749789e3275ce5685e1aea4" },
     { name = "packaging", specifier = ">=26.3" },
 ]
 
