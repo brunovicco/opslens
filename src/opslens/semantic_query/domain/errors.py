@@ -11,3 +11,15 @@ class SemanticQueryValidationError(SemanticQueryError):
 
 class UnsupportedSemanticQueryError(SemanticQueryError):
     """Raised when a valid-looking query requests unsupported semantics."""
+
+
+class SemanticQueryExecutionError(SemanticQueryError):
+    """Raised when a compiled semantic query cannot execute safely."""
+
+
+class SemanticQueryTimeoutError(SemanticQueryExecutionError):
+    """Raised when Athena does not reach a terminal state inside the execution bound."""
+
+
+class SemanticQueryResultError(SemanticQueryExecutionError):
+    """Raised when Athena returns malformed or unexpectedly unbounded evidence."""
