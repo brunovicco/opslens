@@ -158,12 +158,12 @@ def _parse_explicit_date(value: object) -> date:
     return parsed
 
 
-def _enum_value[_EnumT: StrEnum](
-    enum_type: type[_EnumT],
+def _enum_value[EnumT: StrEnum](
+    enum_type: type[EnumT],
     value: object,
     *,
     field: str,
-) -> _EnumT:
+) -> EnumT:
     """Convert one string to an allowlisted enum without leaking ValueError semantics."""
     if not isinstance(value, str):
         raise PlannerContractError(f"{field} must be a string.")
