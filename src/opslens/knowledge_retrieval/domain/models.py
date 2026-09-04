@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
 from hashlib import sha256
-from typing import Self
+from typing import Self, cast
 from urllib.parse import urlparse
 
 from opslens.knowledge_retrieval.domain.errors import KnowledgeRetrievalValidationError
@@ -103,9 +103,10 @@ def _validate_https_uri(value: object, label: str) -> str:
 
 def _normalize_text_tuple(value: object, label: str) -> tuple[str, ...]:
     """Normalize one tuple of unique non-empty strings."""
-    if type(value) is not tuple:
+    if not isinstance(value, tuple):
         raise KnowledgeRetrievalValidationError(f"{label} must be a tuple.")
-    normalized = tuple(_normalize_required_text(item, label) for item in value)
+    values = cast(tuple[object, ...], value)
+    normalized = tuple(_normalize_required_text(item, label) for item in values)
     if len(set(normalized)) != len(normalized):
         raise KnowledgeRetrievalValidationError(f"{label} cannot contain duplicates.")
     return normalized
@@ -135,7 +136,11 @@ class KnowledgeDocument:
             "document_id",
             _normalize_required_text(self.document_id, "document_id"),
         )
-        object.__setattr__(self, "source_id", _normalize_required_text(self.source_id, "source_id"))
+        object.__setattr__(
+            self,
+            "source_id",
+            _normalize_required_text(self.source_id, "source_id"),
+        )
         _require_runtime_instance(self.source_type, KnowledgeSourceType, "source_type")
         object.__setattr__(self, "title", _normalize_required_text(self.title, "title"))
         object.__setattr__(
@@ -174,9 +179,7 @@ class KnowledgeDocument:
             and self.updated_at is not None
             and self.updated_at < self.published_at
         ):
-            raise KnowledgeRetrievalValidationError(
-                "updated_at cannot precede published_at."
-            )
+            raise KnowledgeRetrievalValidationError("updated_at cannot precede published_at.")
 
     @classmethod
     def from_text(
@@ -281,13 +284,21 @@ class RetrievedChunk:
 
     def __post_init__(self) -> None:
         """Reject malformed provenance, content identity, rank, or score evidence."""
-        object.__setattr__(self, "chunk_id", _normalize_required_text(self.chunk_id, "chunk_id"))
+        object.__setattr__(
+            self,
+            "chunk_id",
+            _normalize_required_text(self.chunk_id, "chunk_id"),
+        )
         object.__setattr__(
             self,
             "document_id",
             _normalize_required_text(self.document_id, "document_id"),
         )
-        object.__setattr__(self, "source_id", _normalize_required_text(self.source_id, "source_id"))
+        object.__setattr__(
+            self,
+            "source_id",
+            _normalize_required_text(self.source_id, "source_id"),
+        )
         _require_runtime_instance(self.source_type, KnowledgeSourceType, "source_type")
         object.__setattr__(
             self,
@@ -425,13 +436,21 @@ class Citation:
                 "citation_id must use the deterministic C1, C2, ... form."
             )
         object.__setattr__(self, "citation_id", normalized_citation_id)
-        object.__setattr__(self, "chunk_id", _normalize_required_text(self.chunk_id, "chunk_id"))
+        object.__setattr__(
+            self,
+            "chunk_id",
+            _normalize_required_text(self.chunk_id, "chunk_id"),
+        )
         object.__setattr__(
             self,
             "document_id",
             _normalize_required_text(self.document_id, "document_id"),
         )
-        object.__setattr__(self, "source_id", _normalize_required_text(self.source_id, "source_id"))
+        object.__setattr__(
+            self,
+            "source_id",
+            _normalize_required_text(self.source_id, "source_id"),
+        )
         object.__setattr__(
             self,
             "canonical_uri",
