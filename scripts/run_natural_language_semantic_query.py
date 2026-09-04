@@ -18,6 +18,7 @@ from opslens.semantic_query.adapters.outbound import (
     BedrockSemanticPlanner,
 )
 from opslens.semantic_query.application import (
+    ExecutedNaturalLanguageSemanticQuery,
     ExecuteNaturalLanguageSemanticQuery,
     ExecuteSemanticQuery,
     UnsupportedNaturalLanguageSemanticQuery,
@@ -58,25 +59,29 @@ def _parse_args() -> argparse.Namespace:
 
 def _bedrock_client(session: Session) -> BedrockConverseClient:
     """Create the bounded Bedrock runtime client behind the local Protocol boundary."""
-    client = session.client(  # pyright: ignore[reportUnknownMemberType]
-        "bedrock-runtime",
-        region_name=BEDROCK_PLANNER_REGION,
-        config=Config(
-            connect_timeout=10,
-            read_timeout=300,
-            retries={"total_max_attempts": 1, "mode": "standard"},
+    return cast(
+        BedrockConverseClient,
+        session.client(  # pyright: ignore[reportUnknownMemberType]
+            "bedrock-runtime",
+            region_name=BEDROCK_PLANNER_REGION,
+            config=Config(
+                connect_timeout=10,
+                read_timeout=300,
+                retries={"total_max_attempts": 1, "mode": "standard"},
+            ),
         ),
     )
-    return cast(BedrockConverseClient, client)
 
 
 def _athena_client(session: Session, region: str) -> AthenaQueryClient:
     """Create the Athena client behind the existing bounded executor Protocol."""
-    client = session.client(  # pyright: ignore[reportUnknownMemberType]
-        "athena",
-        region_name=region,
+    return cast(
+        AthenaQueryClient,
+        session.client(  # pyright: ignore[reportUnknownMemberType]
+            "athena",
+            region_name=region,
+        ),
     )
-    return cast(AthenaQueryClient, client)
 
 
 def main() -> int:
