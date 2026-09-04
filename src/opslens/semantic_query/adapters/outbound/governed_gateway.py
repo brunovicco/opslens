@@ -21,12 +21,9 @@ from governed_llm_gateway_contracts import (
     WorkloadRequirements,
 )
 
-from opslens.semantic_query.planner.bedrock import (
-    BEDROCK_PLANNER_MAX_TOKENS,
-    PLANNER_SYSTEM_PROMPT,
-)
 from opslens.semantic_query.planner.models import PlannerOutcome, SemanticPlannerRequest
 from opslens.semantic_query.planner.parser import parse_planner_json
+from opslens.semantic_query.planner.prompt import PLANNER_MAX_TOKENS, PLANNER_SYSTEM_PROMPT
 from opslens.semantic_query.planner.schema import PLANNER_OUTPUT_SCHEMA, PLANNER_SCHEMA_NAME
 
 
@@ -80,7 +77,7 @@ class GovernedGatewaySemanticPlanner:
                         name=PLANNER_SCHEMA_NAME,
                         schema=PLANNER_OUTPUT_SCHEMA,
                     ),
-                    max_output_tokens=BEDROCK_PLANNER_MAX_TOKENS,
+                    max_output_tokens=PLANNER_MAX_TOKENS,
                     provider_timeout_seconds=self._config.timeout_seconds,
                 )
         except GatewayHTTPError as exc:
