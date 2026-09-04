@@ -18,7 +18,7 @@ from opslens.semantic_query.planner import (
 
 
 class BedrockPlannerRuntimeError(RuntimeError):
-    """Raised when the Bedrock runtime response violates the bounded adapter contract."""
+    """Raised when Bedrock invocation or response violates the bounded adapter contract."""
 
 
 class BedrockConverseClient(Protocol):
@@ -49,7 +49,10 @@ class BedrockSemanticPlanner:
 
         payload = build_bedrock_converse_request(request)
         started = self._clock()
-        response = self._client.converse(**payload)
+        try:
+            response = self._client.converse(**payload)
+        except Exception as exc:
+            raise BedrockPlannerRuntimeError("Bedrock Converse invocation failed.") from exc
         client_elapsed_ms = _elapsed_milliseconds(started, self._clock())
 
         model_output = _extract_single_text_output(response)
