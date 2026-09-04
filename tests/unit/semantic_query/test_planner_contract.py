@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from datetime import date
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -184,10 +185,8 @@ def test_bedrock_request_builder_is_pure_and_bounded() -> None:
         }
     ]
 
-    output_config = built["outputConfig"]
-    assert isinstance(output_config, dict)
-    text_format = output_config["textFormat"]
-    assert isinstance(text_format, dict)
+    output_config = cast(dict[str, object], built["outputConfig"])
+    text_format = cast(dict[str, object], output_config["textFormat"])
     assert text_format["type"] == "json_schema"
 
 
@@ -209,12 +208,13 @@ def test_every_planner_object_schema_disallows_additional_properties() -> None:
 
     def visit(value: object) -> None:
         if isinstance(value, dict):
-            if value.get("type") == "object":
-                object_nodes.append(value)
-            for nested in value.values():
+            mapping = cast(dict[str, object], value)
+            if mapping.get("type") == "object":
+                object_nodes.append(mapping)
+            for nested in mapping.values():
                 visit(nested)
         elif isinstance(value, list):
-            for nested in value:
+            for nested in cast(list[object], value):
                 visit(nested)
 
     visit(PLANNER_OUTPUT_SCHEMA)
@@ -266,7 +266,9 @@ def test_field_mutation_degrades_only_relevant_planner_metrics() -> None:
     first_supported = next(
         case for case in cases if isinstance(case.expected, PlannedSemanticQuery)
     )
-    expected_query = first_supported.expected.query
+    expected_outcome = first_supported.expected
+    assert isinstance(expected_outcome, PlannedSemanticQuery)
+    expected_query = expected_outcome.query
     predictions[first_supported.case_id] = PlannedSemanticQuery(
         SemanticQuery(
             metric=expected_query.metric,
