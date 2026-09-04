@@ -169,9 +169,9 @@ planned_for_gate_7_2
 
 The IDs therefore freeze evaluation expectations without pretending that the canonical corpus has already been acquired or indexed.
 
-## Current validation evidence
+## Validation evidence
 
-A local isolated validation of the new Phase 7 package and tests produced:
+Initial isolated validation of the new Phase 7 package produced:
 
 ```text
 Python:      3.13.5
@@ -180,19 +180,47 @@ compileall:  PASS
 line length: 0 Python lines > 100 characters
 ```
 
-The repository CI configuration now contains a dedicated `knowledge-retrieval-quality` job with:
+The repository CI now contains a dedicated `knowledge-retrieval-quality` job with Ruff, Pyright strict, and pytest.
+
+### Troubleshooting sequence
+
+Manual workflow-dispatch run:
 
 ```text
-Ruff
-Pyright strict
-pytest
+run: 33930905530
 ```
 
-The current connector-authored commits do not automatically trigger GitHub Actions, so green Ruff/Pyright CI evidence remains pending and Gate 7.1 is not yet closed.
+Existing regression slices passed. The new knowledge-retrieval job failed at Ruff with two test-only findings:
+
+- an unescaped regex metacharacter in `pytest.raises(..., match=...)`;
+- a `SIM300` equality-order lint finding.
+
+Both were corrected without changing the domain contract.
+
+The next automated PR runs reached Pyright and exposed strict-type findings around runtime `isinstance` guards. The implementation was refactored so untrusted runtime normalization occurs in helpers that accept `object`, preserving both strong public type annotations and fail-closed runtime validation.
+
+Final PR validation:
+
+```text
+workflow: Python CI
+run:      33931113097
+commit:   f882f5df12f20f68b2601bf525a625fe72a36b7b
+
+Knowledge Retrieval Ruff:     PASS
+Knowledge Retrieval Pyright:  0 errors / 0 warnings
+Knowledge Retrieval pytest:   14 passed in 0.08s
+
+Correlation regression:              PASS
+Repository Intelligence regression:  PASS
+Risk Policy regression:              PASS
+Semantic Query regression:           PASS
+```
+
+All five Python CI jobs completed successfully.
 
 ## AWS/resource evidence
 
-For this Gate 7.1 increment:
+For Gate 7.1:
 
 ```text
 Bedrock Knowledge Base created: no
@@ -203,6 +231,8 @@ IAM role created:                no
 paid AWS retrieval call:         no
 paid AWS synthesis call:         no
 ```
+
+Gate 7.1 therefore remained offline-first as required.
 
 ## Gate 7.1 exit criteria
 
@@ -217,15 +247,16 @@ paid AWS synthesis call:         no
 [x] Citation contract frozen
 [x] malformed provenance/content identity fails closed
 [x] golden retrieval fixture exists
-[x] local unit tests pass
+[x] unit tests pass
+[x] Ruff quality gate demonstrated
+[x] Pyright strict quality gate demonstrated
+[x] regressions remain green
 [x] no AWS resources or paid calls
-[ ] Ruff quality gate demonstrated
-[ ] Pyright strict quality gate demonstrated
-[ ] final Gate 7.1 review/closeout
+[x] final Gate 7.1 review/closeout demonstrated
 ```
 
-## Next action
+## Gate status
 
-Remain inside Gate 7.1.
+**Gate 7.1 is complete on PR #93 and ready for logical merge.**
 
-Run the dedicated quality gate through GitHub Actions or an equivalent local environment with the repository's locked development dependencies. Resolve any findings, update this evidence, and only then decide whether Gate 7.2 may begin.
+Gate 7.2 is not implemented in this branch. Its work should begin only after PR #93 is merged, unless that merge is explicitly deferred.
