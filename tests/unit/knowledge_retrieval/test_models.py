@@ -44,7 +44,11 @@ def _document() -> KnowledgeDocument:
     )
 
 
-def _chunk(*, rank: int = 1, chunk_id: str = "knowledge-chunk:pypa-remediation:upgrade:v1") -> RetrievedChunk:
+def _chunk(
+    *,
+    rank: int = 1,
+    chunk_id: str = "knowledge-chunk:pypa-remediation:upgrade:v1",
+) -> RetrievedChunk:
     """Build one valid retrieved chunk tied to the document fixture."""
     document = _document()
     return RetrievedChunk.from_text(
@@ -173,10 +177,7 @@ def test_retrieval_evidence_enforces_top_k_unique_ids_and_ordered_ranks() -> Non
         replace(evidence, chunks=(first, replace(second, chunk_id=first.chunk_id)))
 
     with pytest.raises(KnowledgeRetrievalValidationError, match="request.top_k"):
-        replace(
-            evidence,
-            request=RetrievalRequest(query=request.query, top_k=1),
-        )
+        replace(evidence, request=RetrievalRequest(query=request.query, top_k=1))
 
 
 def test_citation_is_projected_from_admitted_chunk_provenance() -> None:
