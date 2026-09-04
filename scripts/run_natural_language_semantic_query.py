@@ -18,7 +18,6 @@ from opslens.semantic_query.adapters.outbound import (
     BedrockSemanticPlanner,
 )
 from opslens.semantic_query.application import (
-    ExecutedNaturalLanguageSemanticQuery,
     ExecuteNaturalLanguageSemanticQuery,
     ExecuteSemanticQuery,
     UnsupportedNaturalLanguageSemanticQuery,
