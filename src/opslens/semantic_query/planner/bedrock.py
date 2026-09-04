@@ -47,7 +47,7 @@ def build_bedrock_converse_request(
     request: SemanticPlannerRequest,
 ) -> dict[str, object]:
     """Build a deterministic Converse request without invoking Amazon Bedrock."""
-    if not isinstance(request, SemanticPlannerRequest):
+    if type(request) is not SemanticPlannerRequest:
         raise TypeError("request must be SemanticPlannerRequest.")
 
     return {
