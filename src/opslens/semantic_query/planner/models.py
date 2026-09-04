@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import TypeAlias
 
 from opslens.semantic_query.domain import SemanticQuery
 
@@ -86,4 +85,4 @@ class UnsupportedPlannerDecision:
         return PlannerDecision.UNSUPPORTED
 
 
-PlannerOutcome: TypeAlias = PlannedSemanticQuery | UnsupportedPlannerDecision
+type PlannerOutcome = PlannedSemanticQuery | UnsupportedPlannerDecision
