@@ -16,6 +16,8 @@ from opslens.semantic_query.planner.evaluation import (
 )
 from opslens.semantic_query.planner.models import (
     MAX_PLANNER_QUESTION_CHARS,
+    BedrockPlannerInvocationEvidence,
+    BedrockPlannerResult,
     PlannedSemanticQuery,
     PlannerContractError,
     PlannerDecision,
@@ -46,6 +48,8 @@ __all__ = [
     "PLANNER_SCHEMA_DESCRIPTION",
     "PLANNER_SCHEMA_NAME",
     "PLANNER_SYSTEM_PROMPT",
+    "BedrockPlannerInvocationEvidence",
+    "BedrockPlannerResult",
     "PlannedSemanticQuery",
     "PlannerContractError",
     "PlannerDecision",
