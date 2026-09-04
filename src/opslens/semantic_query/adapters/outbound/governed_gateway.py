@@ -93,6 +93,14 @@ class GovernedGatewaySemanticPlanner:
             raise SemanticPlannerUnavailableError(
                 "Governed gateway planner execution did not succeed"
             )
+        if response.execution is None:
+            raise SemanticPlannerUnavailableError(
+                "Governed gateway planner returned no terminal execution evidence"
+            )
+        if response.execution.status is not ExecutionStatus.SUCCEEDED:
+            raise SemanticPlannerUnavailableError(
+                "Governed gateway terminal execution evidence did not succeed"
+            )
         if response.content is None or not response.content.strip():
             raise SemanticPlannerUnavailableError("Governed gateway planner returned no content")
 
