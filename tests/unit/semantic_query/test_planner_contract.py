@@ -172,7 +172,7 @@ def test_bedrock_request_builder_is_pure_and_bounded() -> None:
     built = build_bedrock_converse_request(request)
 
     assert BEDROCK_PLANNER_REGION == "us-east-1"
-    assert BEDROCK_PLANNER_MODEL_ID == "anthropic.claude-haiku-4-5-20251001-v1:0"
+    assert BEDROCK_PLANNER_MODEL_ID == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
     assert built["modelId"] == BEDROCK_PLANNER_MODEL_ID
     assert built["inferenceConfig"] == {
         "maxTokens": BEDROCK_PLANNER_MAX_TOKENS,

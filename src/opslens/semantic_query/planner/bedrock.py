@@ -12,7 +12,7 @@ from opslens.semantic_query.planner.schema import (
 )
 
 BEDROCK_PLANNER_REGION: Final = "us-east-1"
-BEDROCK_PLANNER_MODEL_ID: Final = "anthropic.claude-haiku-4-5-20251001-v1:0"
+BEDROCK_PLANNER_MODEL_ID: Final = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 BEDROCK_PLANNER_MAX_TOKENS: Final = 256
 BEDROCK_PLANNER_TEMPERATURE: Final = 0.0
 

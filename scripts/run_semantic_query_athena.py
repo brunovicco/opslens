@@ -56,6 +56,17 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _athena_client(session: Session, region: str) -> AthenaQueryClient:
+    """Create the Athena client behind the bounded executor Protocol boundary."""
+    return cast(
+        AthenaQueryClient,
+        session.client(  # pyright: ignore[reportUnknownMemberType]
+            "athena",
+            region_name=region,
+        ),
+    )
+
+
 def main() -> int:
     """Compile the typed query, execute it, and print bounded evidence as JSON."""
     args = _parse_args()
@@ -70,7 +81,7 @@ def main() -> int:
     )
 
     session = Session(profile_name=args.profile, region_name=args.region)
-    client = cast(AthenaQueryClient, session.client("athena"))
+    client = _athena_client(session, args.region)
     use_case = ExecuteSemanticQuery(AthenaQueryExecutor(client))
     result = use_case.execute(query)
 
