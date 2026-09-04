@@ -1,6 +1,6 @@
 # OpsLens — Current State
 
-_Last updated: 2026-09-03_
+_Last updated: 2026-09-04_
 
 This document is the public implementation checkpoint for the OpsLens repository.
 
@@ -18,20 +18,22 @@ Phase 2    Threat Intelligence Data Lake                      COMPLETE
 Phase 3    Vulnerability Correlation Engine                   COMPLETE
 Phase 4    Repository Intelligence                            COMPLETE
 Phase 5    Risk Prioritization Engine                         COMPLETE
-Phase 6    Semantic Query Layer                               NEXT
+Phase 6    Semantic Query Layer                               IN PROGRESS
+  Gate 6.1 Typed contract + deterministic SQL compiler        COMPLETE
+  Gate 6.2 Bounded read-only Athena execution                 COMPLETE
 ```
 
-Latest implementation checkpoint before this documentation closeout:
+Latest merged implementation checkpoint before this documentation closeout:
 
 ```text
-commit: 81a2e78a3e8329aa811c20012bc565f35f1a87e5
-PR:     #80 — feat(risk): introduce deterministic Risk Policy v1
+commit: bf5b6d4d5ad17ba1e883a2b202bd71e1a983fa16
+PR:     #86 — fix(semantic-query): follow bounded Athena result pagination
 status: merged
 ```
 
 ## What is implemented
 
-OpsLens now has four deterministic layers:
+OpsLens now has five deterministic layers or authorities available to later model-driven orchestration:
 
 ```text
 1. Threat Intelligence Data Lake
@@ -45,9 +47,12 @@ OpsLens now has four deterministic layers:
 
 4. Risk Prioritization Engine
    versioned deterministic Risk Policy v1 / factor explanations / ranking
+
+5. Semantic Query deterministic foundation
+   typed query contract / allowlists / deterministic SQL / bounded Athena execution
 ```
 
-End-to-end supported path:
+End-to-end repository analysis path:
 
 ```text
 public GitHub repository
@@ -69,6 +74,18 @@ public GitHub repository
  -> content-addressed RiskPrioritizationResult
 ```
 
+Current Phase 6 structured-query path:
+
+```text
+typed SemanticQuery
+ -> deterministic validation
+ -> deterministic SQL compiler
+ -> exact compiler-shape admission
+ -> opslens-dev Athena workgroup
+ -> explicit EPSS snapshot partition
+ -> bounded structured result evidence
+```
+
 No third-party repository code is executed.
 
 ## Permanent boundaries
@@ -79,6 +96,8 @@ No third-party repository code is executed.
 
 > **Repository Risk != Runtime Exposure.**
 
+> **No unrestricted text-to-SQL.**
+
 The following remain deterministic authorities:
 
 - package identity normalization;
@@ -88,11 +107,12 @@ The following remain deterministic authorities:
 - KEV, EPSS, and CVSS evidence;
 - risk policy evaluation;
 - canonical evidence serialization and content addressing;
-- semantic-query validation and SQL compilation when Phase 6 introduces them;
+- semantic-query validation and SQL compilation;
+- Athena query execution bounds and result validation;
 - evidence validation;
 - execution/tool/cost enforcement.
 
-LLMs may later plan, route, synthesize, and explain over validated evidence. They do not replace deterministic truth.
+LLMs may later plan, route, synthesize, and explain over validated evidence. They do not replace deterministic truth or receive arbitrary SQL authority.
 
 ## Phase 2 — Threat Intelligence Data Lake
 
@@ -263,6 +283,67 @@ incremental AWS cost:  $0
 
 Closeout: [`labs/phase-5-risk-policy-closeout.md`](labs/phase-5-risk-policy-closeout.md).
 
+## Phase 6 — Semantic Query Layer
+
+Phase 6 is **in progress**. The deterministic query boundary is established before any Bedrock planner is allowed to participate.
+
+### Gate 6.1 — typed semantic query + SQL compiler — COMPLETE
+
+The first supported factual slice is intentionally narrow:
+
+> Which CVEs have EPSS of at least 0.7 on an explicit snapshot date?
+
+Implemented deterministic contract:
+
+```text
+metric:       epss_score
+dimension:    cve
+filters:      explicit snapshot_date, optional minimum_score
+order:        epss_score ASC|DESC, deterministic cve ASC tie break
+limit:        1..100, default 20
+```
+
+The compiler owns database/table/columns/predicates/order/limit. Filter values become validated positional Athena execution parameters. ADR 0020 permanently rejects unrestricted text-to-SQL.
+
+### Gate 6.2 — bounded read-only Athena execution — COMPLETE
+
+The application now executes only compiler-owned EPSS queries through the fixed dev boundary:
+
+```text
+database:   opslens_dev
+workgroup:  opslens-dev
+relation:   "opslens_dev"."epss_scores"
+scan cutoff: 10 MiB via enforced workgroup configuration
+```
+
+The executor bounds polling, result rows, pagination traversal, metadata consistency, and query/result limit alignment. Defense in depth admits only the exact Gate 6.1 SQL grammar and validated literal parameter shapes even if the adapter is called directly.
+
+The first real integration attempt exposed a valid Athena `GetQueryResults` pagination behavior that mocks had not represented. The executor was corrected to follow bounded continuation tokens without increasing semantic query authority.
+
+Successful real `dev` evidence on 2026-09-04:
+
+```text
+query_execution_id:         958fb573-1a69-4ce6-8a36-d9be45e71c79
+row_count:                  20
+data_scanned_bytes:         3,785,003 (~3.61 MiB)
+engine_execution_time_ms:   973
+total_execution_time_ms:    1,128
+```
+
+Intentional fail-closed evidence:
+
+```text
+requested limit: 101
+result: SemanticQueryValidationError before compilation/Athena
+reason: Semantic query limit must be an integer from 1 to 100.
+```
+
+Gate 6.2 introduced no new AWS resources and no model calls. The local IAM Identity Center profile used for smoke validation is not the final runtime least-privilege role.
+
+Closeout: [`../labs/phase-6-gate-6-2-athena-readonly-execution.md`](../labs/phase-6-gate-6-2-athena-readonly-execution.md).
+
+Phase 6 is **not complete**. Remaining phase exit criteria include the bounded natural-language planner, planner evaluation dataset, model/token/latency/cost evidence, diagnosable planner failure behavior, and final runtime IAM boundary when a deployed runtime exists.
+
 ## AWS foundation
 
 ```text
@@ -296,22 +377,22 @@ Dedicated Python CI slices now exist for:
 src/opslens/correlation
 src/opslens/repository_intelligence
 src/opslens/risk_policy
+src/opslens/semantic_query
 ```
 
 A pre-existing repo-wide Ruff backlog outside these scoped deterministic slices remains separate technical debt and should not be mixed into Phase 6 without an explicit cleanup decision.
 
-## Next boundary — Phase 6: Semantic Query Layer
+## Next boundary — continue Phase 6
 
-Phase 6 introduces the first natural-language planner in the current roadmap sequence.
-
-Target architecture:
+Target architecture remains:
 
 ```text
 User question
- -> Bedrock planner
+ -> bounded Bedrock planner
  -> typed SemanticQuery
  -> deterministic validation
  -> deterministic SQL compiler
+ -> exact compiler-shape admission
  -> bounded read-only Athena execution
  -> structured evidence
 ```
@@ -320,6 +401,4 @@ Permanent guardrail:
 
 > **No unrestricted text-to-SQL.**
 
-Before implementation, current Amazon Bedrock and Athena APIs, model availability, limits, IAM requirements, and pricing must be checked against official AWS documentation.
-
-Phase 6 must start by freezing the smallest semantic-query contract and compiler boundary before adding API/UI/agent integration.
+Gate 6.1 and Gate 6.2 are complete. The next gate must preserve the existing deterministic boundary while adding the smallest planner/evaluation surface needed to translate natural-language questions into the already-frozen `SemanticQuery` contract. Bedrock model/API choice, structured-output support, IAM, token accounting, latency, failure behavior, and current pricing must be validated against official AWS documentation before implementation.

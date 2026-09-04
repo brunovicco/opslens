@@ -71,7 +71,7 @@ class _FakeAthenaClient:
                 "QueryString": QueryString,
                 "QueryExecutionContext": dict(QueryExecutionContext),
                 "WorkGroup": WorkGroup,
-                "ExecutionParameters": tuple(ExecutionParameters),
+                "ExecutionParameters": ExecutionParameters,
             }
         )
         if self.query_execution_id is None:
@@ -130,6 +130,28 @@ def _semantic_query(*, limit: int = 20) -> SemanticQuery:
         dimensions=(SemanticDimension.CVE,),
         filters=EpssFilters(snapshot_date=date(2026, 9, 3), minimum_score=0.7),
         limit=limit,
+    )
+
+
+def _compiled_query(
+    *,
+    where: str = 'WHERE "snapshot_date" = ? AND "epss" >= ?',
+    order: str = 'ORDER BY "epss" DESC, "cve" ASC',
+    limit: int = 20,
+    parameters: tuple[str, ...] = ("'2026-09-03'", "0.7"),
+) -> CompiledAthenaQuery:
+    """Build the exact Gate 6.1 compiler shape for direct-adapter hardening tests."""
+    return CompiledAthenaQuery(
+        sql="\n".join(
+            [
+                'SELECT "cve", "epss"',
+                'FROM "opslens_dev"."epss_scores"',
+                where,
+                order,
+                f"LIMIT {limit}",
+            ]
+        ),
+        execution_parameters=parameters,
     )
 
 
@@ -193,7 +215,7 @@ def test_application_compiles_then_executes_in_fixed_dev_boundary() -> None:
     start = client.start_calls[0]
     assert start["QueryExecutionContext"] == {"Database": ATHENA_DATABASE}
     assert start["WorkGroup"] == ATHENA_WORKGROUP
-    assert start["ExecutionParameters"] == ("'2026-09-03'", "0.7")
+    assert start["ExecutionParameters"] == ["'2026-09-03'", "0.7"]
     assert start["QueryString"] == (
         'SELECT "cve", "epss"\n'
         'FROM "opslens_dev"."epss_scores"\n'
@@ -372,12 +394,31 @@ def test_null_result_value_is_preserved_explicitly() -> None:
         'DROP TABLE "opslens_dev"."epss_scores"',
         'SELECT "cve" FROM "opslens_dev"."epss_scores"; DROP TABLE x',
         'SELECT "cve" FROM "other"."table"',
+        (
+            'SELECT "cve", "epss"\n'
+            'FROM "opslens_dev"."epss_scores"\n'
+            'JOIN "other"."table" ON 1 = 1\n'
+            'WHERE "snapshot_date" = ? AND "epss" >= ?\n'
+            'ORDER BY "epss" DESC, "cve" ASC\n'
+            'LIMIT 20'
+        ),
+        (
+            'SELECT "cve", "epss"\n'
+            'FROM "opslens_dev"."epss_scores"\n'
+            'WHERE "snapshot_date" = ? AND "epss" >= ?\n'
+            'ORDER BY "cve" ASC\n'
+            'LIMIT 20'
+        ),
     ],
 )
-def test_direct_adapter_call_cannot_bypass_read_only_epss_boundary(sql: str) -> None:
-    """Even a manually forged compiled object cannot broaden Gate 6.2 authority."""
+def test_direct_adapter_call_cannot_bypass_compiler_sql_boundary(sql: str) -> None:
+    """A forged compiled object cannot broaden the exact Gate 6.1 SQL grammar."""
+    placeholder_count = sql.count("?")
+    parameters = tuple("0.7" for _ in range(placeholder_count))
+    if placeholder_count:
+        parameters = ("'2026-09-03'", *parameters[1:])
     client = _FakeAthenaClient()
-    forged = CompiledAthenaQuery(sql=sql, execution_parameters=())
+    forged = CompiledAthenaQuery(sql=sql, execution_parameters=parameters)
 
     with pytest.raises(SemanticQueryExecutionError):
         _executor(client).execute(forged, max_rows=20)
@@ -385,14 +426,59 @@ def test_direct_adapter_call_cannot_bypass_read_only_epss_boundary(sql: str) -> 
     assert client.start_calls == []
 
 
+@pytest.mark.parametrize(
+    "parameters",
+    [
+        ("'2026-09-03' OR 1=1", "0.7"),
+        ("'2026-02-30'", "0.7"),
+        ("'2026-09-03'", "0.7 OR 1=1"),
+        ("'2026-09-03'", "nan"),
+        ("'2026-09-03'", "1.01"),
+    ],
+)
+def test_direct_adapter_call_rejects_forged_execution_parameters(
+    parameters: tuple[str, str],
+) -> None:
+    """Execution parameters cannot inject semantics outside compiler-owned literals."""
+    client = _FakeAthenaClient()
+    forged = _compiled_query(parameters=parameters)
+
+    with pytest.raises(SemanticQueryExecutionError):
+        _executor(client).execute(forged, max_rows=20)
+
+    assert client.start_calls == []
+
+
+def test_direct_adapter_requires_sql_limit_to_match_result_bound() -> None:
+    """A caller cannot decouple SQL authority from the validated result bound."""
+    client = _FakeAthenaClient()
+    forged = _compiled_query(limit=21)
+
+    with pytest.raises(SemanticQueryExecutionError, match="must match"):
+        _executor(client).execute(forged, max_rows=20)
+
+    assert client.start_calls == []
+
+
+def test_direct_adapter_accepts_compiler_shape_without_epss_threshold() -> None:
+    """The exact no-threshold Gate 6.1 compiler variant remains supported."""
+    client = _FakeAthenaClient()
+    compiled = _compiled_query(
+        where='WHERE "snapshot_date" = ?',
+        parameters=("'2026-09-03'",),
+    )
+
+    result = _executor(client).execute(compiled, max_rows=20)
+
+    assert result.query_execution_id == "query-123"
+    assert client.start_calls[0]["ExecutionParameters"] == ["'2026-09-03'"]
+
+
 @pytest.mark.parametrize("max_rows", [0, 101, -1])
 def test_adapter_has_its_own_result_bound(max_rows: int) -> None:
     """Infrastructure execution remains bounded if called outside the application service."""
     client = _FakeAthenaClient()
-    compiled = CompiledAthenaQuery(
-        sql='SELECT "cve" FROM "opslens_dev"."epss_scores"',
-        execution_parameters=(),
-    )
+    compiled = _compiled_query()
 
     with pytest.raises(SemanticQueryExecutionError, match="result bound"):
         _executor(client).execute(compiled, max_rows=max_rows)

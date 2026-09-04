@@ -1,6 +1,6 @@
 # Phase 6 Gate 6.2 — Bounded read-only Athena execution
 
-Status: implementation gate; real `dev` smoke evidence is required before closeout.
+Status: **COMPLETE** — real `dev` success and intentional fail-closed evidence recorded on 2026-09-04.
 
 ## Purpose
 
@@ -34,15 +34,28 @@ relation   "opslens_dev"."epss_scores"
 
 A caller or future model cannot select another database, workgroup, table, column, or SQL fragment.
 
+The adapter additionally requires the exact Gate 6.1 compiler grammar before calling Athena:
+
+```text
+SELECT "cve", "epss"
+FROM "opslens_dev"."epss_scores"
+WHERE "snapshot_date" = ? [AND "epss" >= ?]
+ORDER BY "epss" ASC|DESC, "cve" ASC
+LIMIT 1..100
+```
+
+The SQL `LIMIT` must equal the already-validated semantic result bound. The adapter also validates the positional literal shapes: a quoted explicit ISO calendar date and, when present, a finite EPSS value from `0.0` through `1.0`. This defense in depth prevents a manually forged `CompiledAthenaQuery` from using the allowed relation as a bridge to joins, different projections/predicates/orderings, injected execution-parameter semantics, or a broader SQL limit.
+
 The adapter also rejects:
 
-- non-`SELECT` statements;
-- multiple statements / semicolons;
-- statements outside the EPSS Silver relation;
+- SQL outside the exact compiler-owned EPSS grammar;
+- SQL/result-bound mismatches;
+- invalid execution-parameter literal shapes;
 - row bounds outside `1..100`;
 - pagination that exceeds the semantic row bound;
 - repeated/cyclic Athena pagination tokens;
-- malformed result metadata or row widths;
+- malformed or changing result metadata;
+- malformed result row widths;
 - unknown Athena states.
 
 ## Bounded runtime behavior
@@ -90,7 +103,7 @@ The application does not supply a result location, so the enforced workgroup con
 
 This gate does not create a long-lived runtime role yet because there is no deployed semantic-query runtime to attach it to.
 
-The real smoke test therefore uses an explicitly selected local AWS identity through the standard SDK credential chain. That identity is validation-only evidence and does **not** satisfy the final Phase 6 runtime least-privilege IAM criterion.
+The real smoke test therefore used an explicitly selected local IAM Identity Center validation profile through the standard SDK credential chain. That identity is validation-only evidence and does **not** satisfy the final Phase 6 runtime least-privilege IAM criterion.
 
 Before a Lambda/API/agent runtime is introduced, create a dedicated least-privilege execution role scoped to the required Athena workgroup, Glue catalog/database/table metadata, source S3 objects, and Athena result location.
 
@@ -126,12 +139,15 @@ Failure-path tests cover:
 - missing execution ID;
 - pagination that would exceed the semantic row bound;
 - repeated pagination tokens;
+- malformed or changing result metadata;
 - malformed row width;
-- direct attempts to bypass the read-only EPSS relation boundary.
+- direct attempts to bypass the exact compiler-owned SQL grammar;
+- forged execution parameters;
+- SQL/result-bound mismatches.
 
 ## Real dev smoke
 
-Run the smoke script with an explicit snapshot date that exists in the EPSS Silver dataset. The repository currently uses a `src/` layout without installing the local project package during `uv sync`, so the local smoke command explicitly adds `src` to `PYTHONPATH`:
+The repository currently uses a `src/` layout without installing the local project package during `uv sync`, so the local smoke command explicitly adds `src` to `PYTHONPATH`:
 
 ```bash
 PYTHONPATH=src uv run python scripts/run_semantic_query_athena.py \
@@ -142,24 +158,62 @@ PYTHONPATH=src uv run python scripts/run_semantic_query_athena.py \
   --profile opslens-bootstrap
 ```
 
-Do not add a `latest` fallback if that date is unavailable. Select another known snapshot explicitly.
+No `latest` fallback exists. Temporal selection remains explicit.
 
-Record at minimum:
+### Successful end-to-end evidence — 2026-09-04
+
+The corrected executor completed the real query end to end through `opslens-dev` and returned bounded structured evidence:
 
 ```text
-query_execution_id
-row_count
-data_scanned_bytes
-engine_execution_time_ms
-total_execution_time_ms
-first bounded result rows
+query_execution_id:         958fb573-1a69-4ce6-8a36-d9be45e71c79
+columns:                    cve, epss
+row_count:                  20
+data_scanned_bytes:         3,785,003
+engine_execution_time_ms:   973
+total_execution_time_ms:    1,128
 ```
 
-Also record an intentional failure using a nonexistent explicit partition date or another safe failure case that does not broaden SQL authority.
+`3,785,003` bytes is approximately `3.61 MiB`, below the existing `10 MiB` workgroup cutoff.
+
+First bounded rows:
+
+```text
+CVE-2014-0160   0.99999
+CVE-2014-3566   0.99999
+CVE-2014-6271   0.99999
+CVE-2015-1635   0.99999
+CVE-2017-5638   0.99999
+```
+
+All 20 returned rows were within the requested `EPSS >= 0.7` filter. The equal-score rows also demonstrated the deterministic secondary `cve ASC` ordering compiled by application code.
+
+### Intentional safe failure — 2026-09-04
+
+The explicit failure test used an invalid semantic limit of `101`:
+
+```bash
+PYTHONPATH=src uv run python scripts/run_semantic_query_athena.py \
+  --snapshot-date 2026-09-03 \
+  --epss-min 0.7 \
+  --limit 101 \
+  --region us-east-1 \
+  --profile opslens-bootstrap
+```
+
+Observed failure:
+
+```text
+SemanticQueryValidationError:
+Semantic query limit must be an integer from 1 to 100.
+```
+
+The failure occurs while constructing `SemanticQuery`, before compilation or any Athena API call. This is the intended fail-closed behavior for unsupported query authority.
+
+A nonexistent explicit partition date is **not** used as a failure test because Athena may legitimately return a successful empty result for a valid query whose selected partition contains no rows.
 
 ### 2026-09-04 integration finding — Athena result pagination
 
-The first real `dev` smoke reached a successful Athena execution and entered `GetQueryResults`, but the application rejected the response because Athena returned a `NextToken` even though the compiler-owned SQL already had `LIMIT 20`.
+The first real `dev` attempt reached a successful Athena execution and entered `GetQueryResults`, but the application rejected the response because Athena returned a `NextToken` even though the compiler-owned SQL already had `LIMIT 20`.
 
 Observed application failure:
 
@@ -180,22 +234,23 @@ compiler-owned SQL LIMIT <= 100
  + repeated token => fail closed
 ```
 
-The failure is retained as integration evidence; it is not treated as the intentional Gate 6.2 failure test because the Athena query itself succeeded and the defect was in local result-page handling.
+The integration failure is retained as evidence because it produced a real implementation correction rather than being hidden by mocks.
 
 ## Cost
 
 Incremental infrastructure cost: `0`.
 
-The smoke query itself incurs normal Athena data-scanned charges plus the existing S3/Glue costs. The workgroup's 10 MiB cutoff remains the hard query scan bound for this dev slice.
+The smoke query itself incurred normal Athena data-scanned charges plus existing S3/Glue costs. The workgroup's 10 MiB cutoff remained the hard query scan bound for this dev slice; the observed query scanned approximately 3.61 MiB.
 
-## Gate 6.2 closeout condition
+## Gate 6.2 closeout
 
-Do not mark Gate 6.2 complete until:
+Gate 6.2 is complete because:
 
-1. CI is green;
-2. one real query succeeds end to end in `opslens-dev`;
-3. bytes scanned and execution timing are recorded;
-4. one intentional safe failure is recorded;
-5. no broader AWS service or model authority was introduced.
+1. CI is green for the merged execution/pagination implementation and must remain green for this closeout hardening;
+2. one real query succeeded end to end in `opslens-dev`;
+3. bytes scanned and execution timing were recorded;
+4. one intentional fail-closed semantic validation was recorded;
+5. no broader AWS service or model authority was introduced;
+6. direct adapter admission was narrowed to the exact compiler-owned Gate 6.1 grammar and literal parameter shapes.
 
-Bedrock remains outside Gate 6.2.
+Bedrock remains outside Gate 6.2. Phase 6 as a whole remains **IN PROGRESS**.

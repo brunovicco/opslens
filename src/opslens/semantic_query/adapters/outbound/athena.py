@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import math
+import re
 import time
 from collections.abc import Callable, Mapping, Sequence
+from datetime import date
 from typing import Protocol, cast
 
 from opslens.semantic_query.application.models import AthenaQueryResult
@@ -19,6 +22,7 @@ ATHENA_WORKGROUP = "opslens-dev"
 _EPSS_RELATION = '"opslens_dev"."epss_scores"'
 _TERMINAL_STATES = frozenset({"SUCCEEDED", "FAILED", "CANCELLED"})
 _ACTIVE_STATES = frozenset({"QUEUED", "RUNNING"})
+_SNAPSHOT_PARAMETER = re.compile(r"'(\d{4}-\d{2}-\d{2})'")
 
 
 class AthenaQueryClient(Protocol):
@@ -106,13 +110,13 @@ class AthenaQueryExecutor:
             raise SemanticQueryExecutionError(
                 "Athena result bound must be an integer from 1 to 100."
             )
-        self._assert_read_only_compiled_shape(query)
+        self._assert_compiler_owned_shape(query, max_rows=max_rows)
 
         start_response = self._client.start_query_execution(
             QueryString=query.sql,
             QueryExecutionContext={"Database": ATHENA_DATABASE},
             WorkGroup=ATHENA_WORKGROUP,
-            ExecutionParameters=query.execution_parameters,
+            ExecutionParameters=list(query.execution_parameters),
         )
         query_execution_id = _required_string(
             start_response,
@@ -324,23 +328,95 @@ class AthenaQueryExecutor:
         return tuple(values)
 
     @staticmethod
-    def _assert_read_only_compiled_shape(query: CompiledAthenaQuery) -> None:
-        """Fail closed if a caller bypasses the compiler-owned SELECT boundary."""
-        statement = query.sql.strip()
-        if not statement.upper().startswith("SELECT "):
-            raise SemanticQueryExecutionError("Athena executor accepts SELECT statements only.")
-        if ";" in statement:
+    def _assert_compiler_owned_shape(
+        query: CompiledAthenaQuery,
+        *,
+        max_rows: int,
+    ) -> None:
+        """Accept only the exact Gate 6.1 compiler grammar and literal parameters."""
+        lines = query.sql.strip().splitlines()
+        if len(lines) != 5:
             raise SemanticQueryExecutionError(
-                "Athena executor accepts exactly one compiler-owned SQL statement."
+                "Athena executor accepts only the Gate 6.1 compiler SQL shape."
             )
-        if _EPSS_RELATION not in statement:
+        if lines[0] != 'SELECT "cve", "epss"' or lines[1] != f"FROM {_EPSS_RELATION}":
             raise SemanticQueryExecutionError(
-                "Athena executor is currently restricted to the EPSS Silver relation."
+                "Athena executor accepts only the compiler-owned EPSS projection."
             )
+
+        threshold_filter = 'WHERE "snapshot_date" = ? AND "epss" >= ?'
+        snapshot_filter = 'WHERE "snapshot_date" = ?'
+        if lines[2] not in {snapshot_filter, threshold_filter}:
+            raise SemanticQueryExecutionError(
+                "Athena executor accepts only the compiler-owned EPSS predicates."
+            )
+        if lines[3] not in {
+            'ORDER BY "epss" ASC, "cve" ASC',
+            'ORDER BY "epss" DESC, "cve" ASC',
+        }:
+            raise SemanticQueryExecutionError(
+                "Athena executor accepts only the compiler-owned EPSS ordering."
+            )
+
+        limit_prefix = "LIMIT "
+        if not lines[4].startswith(limit_prefix):
+            raise SemanticQueryExecutionError(
+                "Athena executor requires the compiler-owned SQL row limit."
+            )
+        limit_text = lines[4][len(limit_prefix) :]
+        if not limit_text or any(character < "0" or character > "9" for character in limit_text):
+            raise SemanticQueryExecutionError("Athena SQL limit must be an ASCII integer.")
+        sql_limit = int(limit_text)
+        if not 1 <= sql_limit <= 100 or sql_limit != max_rows:
+            raise SemanticQueryExecutionError(
+                "Athena SQL limit must match the validated semantic result bound."
+            )
+
+        expected_parameter_count = 2 if lines[2] == threshold_filter else 1
+        if len(query.execution_parameters) != expected_parameter_count:
+            raise SemanticQueryExecutionError(
+                "Athena execution parameters do not match the compiler-owned predicate shape."
+            )
+        _validate_snapshot_parameter(query.execution_parameters[0])
+        if expected_parameter_count == 2:
+            _validate_epss_parameter(query.execution_parameters[1])
 
     def _cancel(self, query_execution_id: str) -> None:
         """Best-effort cancellation for bounded failure paths."""
         self._client.stop_query_execution(QueryExecutionId=query_execution_id)
+
+
+def _validate_snapshot_parameter(parameter: str) -> None:
+    """Accept only one compiler-rendered quoted ISO calendar date."""
+    match = _SNAPSHOT_PARAMETER.fullmatch(parameter)
+    if match is None:
+        raise SemanticQueryExecutionError(
+            "Athena snapshot execution parameter must be a quoted ISO date."
+        )
+    try:
+        date.fromisoformat(match.group(1))
+    except ValueError as exc:
+        raise SemanticQueryExecutionError(
+            "Athena snapshot execution parameter must be a valid calendar date."
+        ) from exc
+
+
+def _validate_epss_parameter(parameter: str) -> None:
+    """Accept only one finite numeric EPSS literal inside the deterministic range."""
+    if parameter != parameter.strip():
+        raise SemanticQueryExecutionError(
+            "Athena EPSS execution parameter cannot contain surrounding whitespace."
+        )
+    try:
+        value = float(parameter)
+    except ValueError as exc:
+        raise SemanticQueryExecutionError(
+            "Athena EPSS execution parameter must be numeric."
+        ) from exc
+    if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+        raise SemanticQueryExecutionError(
+            "Athena EPSS execution parameter must be finite and between 0.0 and 1.0."
+        )
 
 
 def _required_mapping(
