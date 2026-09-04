@@ -72,6 +72,7 @@ def _planner() -> GovernedGatewaySemanticPlanner:
 def test_gateway_planner_preserves_bounded_structured_contract(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Keep the gateway request provider-neutral and schema-bounded."""
     monkeypatch.setattr(gateway_module, "GatewayClient", _FakeGatewayClient)
     _FakeGatewayClient.content = '{"decision":"unsupported","reason":"ambiguous"}'
     _FakeGatewayClient.status = ExecutionStatus.SUCCEEDED
@@ -105,6 +106,7 @@ def test_gateway_planner_preserves_bounded_structured_contract(
 
 
 def test_gateway_planner_rejects_failed_partial_content(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Reject partial output whenever gateway execution is terminally failed."""
     monkeypatch.setattr(gateway_module, "GatewayClient", _FakeGatewayClient)
     _FakeGatewayClient.content = '{"decision":"unsupported","reason":"ambiguous"}'
     _FakeGatewayClient.status = ExecutionStatus.FAILED
@@ -116,6 +118,7 @@ def test_gateway_planner_rejects_failed_partial_content(monkeypatch: pytest.Monk
 def test_gateway_planner_keeps_deterministic_parser_as_final_authority(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Reject malformed model proposals through the existing deterministic parser."""
     monkeypatch.setattr(gateway_module, "GatewayClient", _FakeGatewayClient)
     _FakeGatewayClient.content = '{"decision":"semantic_query","metric":"epss_score"}'
     _FakeGatewayClient.status = ExecutionStatus.SUCCEEDED
