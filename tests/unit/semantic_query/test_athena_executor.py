@@ -35,12 +35,19 @@ class _FakeAthenaClient:
         state_reason: str | None = None,
         query_execution_id: str | None = "query-123",
         result_response: Mapping[str, object] | None = None,
+        result_responses: Sequence[Mapping[str, object]] | None = None,
         statistics: Mapping[str, object] | None = None,
     ) -> None:
+        if result_response is not None and result_responses is not None:
+            raise ValueError("Provide either result_response or result_responses, not both.")
+
         self.states = list(states)
         self.state_reason = state_reason
         self.query_execution_id = query_execution_id
-        self.result_response = result_response or _result_response()
+        if result_responses is not None:
+            self.result_responses = list(result_responses)
+        else:
+            self.result_responses = [result_response or _result_response()]
         self.statistics = statistics or {
             "DataScannedInBytes": 4096,
             "EngineExecutionTimeInMillis": 25,
@@ -93,14 +100,19 @@ class _FakeAthenaClient:
         *,
         QueryExecutionId: str,
         MaxResults: int,
+        NextToken: str | None = None,
     ) -> Mapping[str, object]:
-        self.result_calls.append(
-            {
-                "QueryExecutionId": QueryExecutionId,
-                "MaxResults": MaxResults,
-            }
-        )
-        return self.result_response
+        call: dict[str, object] = {
+            "QueryExecutionId": QueryExecutionId,
+            "MaxResults": MaxResults,
+        }
+        if NextToken is not None:
+            call["NextToken"] = NextToken
+        self.result_calls.append(call)
+
+        if not self.result_responses:
+            raise AssertionError("Athena fake received an unexpected result-page request.")
+        return self.result_responses.pop(0)
 
     def stop_query_execution(
         self,
@@ -127,10 +139,14 @@ def _result_response(
     next_token: str | None = None,
 ) -> Mapping[str, object]:
     """Build the subset of GetQueryResults used by the adapter."""
-    values = rows or (
-        ("cve", "epss"),
-        ("CVE-2026-0001", "0.91"),
-        ("CVE-2026-0002", "0.72"),
+    values = (
+        (
+            ("cve", "epss"),
+            ("CVE-2026-0001", "0.91"),
+            ("CVE-2026-0002", "0.72"),
+        )
+        if rows is None
+        else rows
     )
     response: dict[str, object] = {
         "ResultSet": {
@@ -199,7 +215,7 @@ def test_application_compiles_then_executes_in_fixed_dev_boundary() -> None:
 
 
 def test_sql_limit_controls_get_query_results_page_bound() -> None:
-    """The API result page cannot exceed the semantic query row limit plus header."""
+    """Each API result page is bounded by the semantic query limit plus header."""
     client = _FakeAthenaClient()
     use_case = ExecuteSemanticQuery(_executor(client))
 
@@ -261,11 +277,69 @@ def test_missing_query_execution_id_is_rejected() -> None:
         ExecuteSemanticQuery(_executor(client)).execute(_semantic_query())
 
 
-def test_unexpected_result_pagination_is_rejected() -> None:
-    """A bounded SQL query should never require another result page in this slice."""
-    client = _FakeAthenaClient(result_response=_result_response(next_token="unexpected"))
+def test_bounded_result_pagination_is_followed() -> None:
+    """Athena pagination is transport behavior, not broader SQL authority."""
+    client = _FakeAthenaClient(
+        result_responses=(
+            _result_response(
+                rows=(
+                    ("cve", "epss"),
+                    ("CVE-2026-0001", "0.91"),
+                ),
+                next_token="page-2",
+            ),
+            _result_response(rows=(("CVE-2026-0002", "0.72"),)),
+        )
+    )
 
-    with pytest.raises(SemanticQueryResultError, match="pagination"):
+    result = ExecuteSemanticQuery(_executor(client)).execute(_semantic_query())
+
+    assert result.rows == (
+        ("CVE-2026-0001", "0.91"),
+        ("CVE-2026-0002", "0.72"),
+    )
+    assert client.result_calls == [
+        {"QueryExecutionId": "query-123", "MaxResults": 21},
+        {
+            "QueryExecutionId": "query-123",
+            "MaxResults": 21,
+            "NextToken": "page-2",
+        },
+    ]
+
+
+def test_paginated_rows_still_cannot_exceed_semantic_limit() -> None:
+    """Following a continuation token cannot increase the semantic row authority."""
+    client = _FakeAthenaClient(
+        result_responses=(
+            _result_response(
+                rows=(
+                    ("cve", "epss"),
+                    ("CVE-2026-0001", "0.91"),
+                ),
+                next_token="page-2",
+            ),
+            _result_response(rows=(("CVE-2026-0002", "0.72"),)),
+        )
+    )
+
+    with pytest.raises(SemanticQueryResultError, match="more rows"):
+        ExecuteSemanticQuery(_executor(client)).execute(_semantic_query(limit=1))
+
+
+def test_repeated_result_pagination_token_is_rejected() -> None:
+    """A malformed token cycle cannot cause unbounded result retrieval."""
+    client = _FakeAthenaClient(
+        result_responses=(
+            _result_response(
+                rows=(("cve", "epss"),),
+                next_token="page-2",
+            ),
+            _result_response(rows=(), next_token="page-2"),
+        )
+    )
+
+    with pytest.raises(SemanticQueryResultError, match="repeated"):
         ExecuteSemanticQuery(_executor(client)).execute(_semantic_query())
 
 
