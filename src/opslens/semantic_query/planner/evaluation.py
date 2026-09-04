@@ -126,9 +126,9 @@ class PlannerEvaluation:
         }
 
 
-def load_planner_eval_cases(path: Path) -> tuple[PlannerEvalCase, ...]:
+def load_planner_eval_cases(path: object) -> tuple[PlannerEvalCase, ...]:
     """Load a bounded JSONL golden dataset through the same deterministic parser."""
-    if type(path) is not Path:
+    if not isinstance(path, Path):
         raise TypeError("path must be pathlib.Path.")
 
     cases: list[PlannerEvalCase] = []
