@@ -6,7 +6,7 @@ import json
 from collections.abc import Mapping, Sequence
 from datetime import date
 from enum import StrEnum
-from typing import TypeVar, cast
+from typing import cast
 
 from opslens.semantic_query.domain import (
     EpssFilters,
@@ -25,8 +25,6 @@ from opslens.semantic_query.planner.models import (
     UnsupportedPlannerDecision,
     UnsupportedReason,
 )
-
-_EnumT = TypeVar("_EnumT", bound=StrEnum)
 
 _SEMANTIC_QUERY_KEYS = frozenset(
     {
@@ -160,7 +158,7 @@ def _parse_explicit_date(value: object) -> date:
     return parsed
 
 
-def _enum_value(
+def _enum_value[_EnumT: StrEnum](
     enum_type: type[_EnumT],
     value: object,
     *,
