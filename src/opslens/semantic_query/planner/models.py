@@ -148,10 +148,13 @@ class BedrockPlannerResult:
 
     def __post_init__(self) -> None:
         """Keep model semantics and invocation evidence explicit and independently typed."""
-        if not isinstance(
-            self.outcome,
-            (PlannedSemanticQuery, UnsupportedPlannerDecision),
+        runtime_outcome: object = self.outcome
+        if type(runtime_outcome) not in (
+            PlannedSemanticQuery,
+            UnsupportedPlannerDecision,
         ):
             raise PlannerContractError("Unknown planner outcome type.")
         if type(self.evidence) is not BedrockPlannerInvocationEvidence:
-            raise PlannerContractError("Planner result evidence must be Bedrock invocation evidence.")
+            raise PlannerContractError(
+                "Planner result evidence must be Bedrock invocation evidence."
+            )
