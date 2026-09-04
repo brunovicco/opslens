@@ -28,14 +28,14 @@ class PlannerEvalCase:
 
     def __post_init__(self) -> None:
         """Keep evaluation identities and expected outputs explicit."""
-        if not isinstance(self.case_id, str) or not self.case_id.strip():
+        if type(self.case_id) is not str or not self.case_id.strip():
             raise PlannerContractError("Planner eval case_id cannot be blank.")
-        if not isinstance(self.request, SemanticPlannerRequest):
+        if type(self.request) is not SemanticPlannerRequest:
             raise PlannerContractError("Planner eval request has the wrong type.")
-        if not isinstance(
-            self.expected,
-            (PlannedSemanticQuery, UnsupportedPlannerDecision),
-        ):
+        if type(self.expected) not in {
+            PlannedSemanticQuery,
+            UnsupportedPlannerDecision,
+        }:
             raise PlannerContractError("Planner eval expected outcome has the wrong type.")
 
 
@@ -128,7 +128,7 @@ class PlannerEvaluation:
 
 def load_planner_eval_cases(path: Path) -> tuple[PlannerEvalCase, ...]:
     """Load a bounded JSONL golden dataset through the same deterministic parser."""
-    if not isinstance(path, Path):
+    if type(path) is not Path:
         raise TypeError("path must be pathlib.Path.")
 
     cases: list[PlannerEvalCase] = []
