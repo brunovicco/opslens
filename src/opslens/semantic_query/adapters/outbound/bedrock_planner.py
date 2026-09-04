@@ -7,7 +7,11 @@ from dataclasses import dataclass
 from typing import Protocol, cast
 
 from opslens.semantic_query.planner.bedrock import build_bedrock_converse_request
-from opslens.semantic_query.planner.models import PlannerContractError, PlannerOutcome, SemanticPlannerRequest
+from opslens.semantic_query.planner.models import (
+    PlannerContractError,
+    PlannerOutcome,
+    SemanticPlannerRequest,
+)
 from opslens.semantic_query.planner.parser import parse_planner_json
 
 
@@ -114,5 +118,6 @@ def _sequence(value: object, *, context: str) -> tuple[object, ...]:
 
 def _non_negative_int(value: object, *, field: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-        raise BedrockPlannerRuntimeError(f"Bedrock response {field} must be a non-negative integer.")
+        message = f"Bedrock response {field} must be a non-negative integer."
+        raise BedrockPlannerRuntimeError(message)
     return value
