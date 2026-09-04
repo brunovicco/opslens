@@ -54,9 +54,14 @@ class RetrievalBackend(StrEnum):
     BEDROCK_KNOWLEDGE_BASE = "bedrock_knowledge_base"
 
 
+def _is_runtime_instance(value: object, expected_type: type[object]) -> bool:
+    """Check untrusted runtime values without weakening public annotations."""
+    return isinstance(value, expected_type)
+
+
 def _require_runtime_instance(value: object, expected_type: type[object], label: str) -> None:
     """Reject untrusted runtime values that do not match a frozen contract type."""
-    if not isinstance(value, expected_type):
+    if not _is_runtime_instance(value, expected_type):
         raise KnowledgeRetrievalValidationError(f"{label} has an unsupported value.")
 
 
@@ -239,15 +244,23 @@ class RetrievalRequest:
             raise KnowledgeRetrievalValidationError(
                 f"top_k must be an integer from 1 to {MAX_RETRIEVAL_TOP_K}."
             )
-        if type(self.source_types) is not tuple or any(
-            not isinstance(source_type, KnowledgeSourceType)
-            for source_type in self.source_types
+
+        source_types: object = self.source_types
+        if not isinstance(source_types, tuple):
+            raise KnowledgeRetrievalValidationError("source_types must be a tuple.")
+        runtime_source_types = cast(tuple[object, ...], source_types)
+        if any(
+            not _is_runtime_instance(source_type, KnowledgeSourceType)
+            for source_type in runtime_source_types
         ):
             raise KnowledgeRetrievalValidationError(
                 "source_types must contain only allowlisted source types."
             )
-        if len(set(self.source_types)) != len(self.source_types):
+        typed_source_types = cast(tuple[KnowledgeSourceType, ...], runtime_source_types)
+        if len(set(typed_source_types)) != len(typed_source_types):
             raise KnowledgeRetrievalValidationError("source_types cannot contain duplicates.")
+        object.__setattr__(self, "source_types", typed_source_types)
+
         object.__setattr__(
             self,
             "vulnerability_ids",
@@ -321,15 +334,19 @@ class RetrievedChunk:
             raise KnowledgeRetrievalValidationError(
                 f"rank must be an integer from 1 to {MAX_RETRIEVAL_TOP_K}."
             )
-        if self.relevance_score is not None:
-            if isinstance(self.relevance_score, bool) or not isinstance(
-                self.relevance_score, (int, float)
+
+        relevance_score: object = self.relevance_score
+        if relevance_score is not None:
+            if isinstance(relevance_score, bool) or not isinstance(
+                relevance_score,
+                (int, float),
             ):
                 raise KnowledgeRetrievalValidationError("relevance_score must be numeric.")
-            normalized_score = float(self.relevance_score)
+            normalized_score = float(relevance_score)
             if not math.isfinite(normalized_score):
                 raise KnowledgeRetrievalValidationError("relevance_score must be finite.")
             object.__setattr__(self, "relevance_score", normalized_score)
+
         object.__setattr__(self, "title", _normalize_optional_text(self.title, "title"))
         object.__setattr__(
             self,
@@ -389,29 +406,38 @@ class RetrievalEvidence:
             _normalize_required_text(self.retrieval_id, "retrieval_id"),
         )
         _require_runtime_instance(self.request, RetrievalRequest, "request")
-        if type(self.chunks) is not tuple or any(
-            not isinstance(chunk, RetrievedChunk) for chunk in self.chunks
+
+        chunks: object = self.chunks
+        if not isinstance(chunks, tuple):
+            raise KnowledgeRetrievalValidationError("chunks must be a tuple.")
+        runtime_chunks = cast(tuple[object, ...], chunks)
+        if any(
+            not _is_runtime_instance(chunk, RetrievedChunk)
+            for chunk in runtime_chunks
         ):
             raise KnowledgeRetrievalValidationError(
                 "chunks must contain only RetrievedChunk values."
             )
+        typed_chunks = cast(tuple[RetrievedChunk, ...], runtime_chunks)
+        object.__setattr__(self, "chunks", typed_chunks)
+
         _require_runtime_instance(self.backend, RetrievalBackend, "backend")
         object.__setattr__(
             self,
             "backend_reference",
             _normalize_optional_text(self.backend_reference, "backend_reference"),
         )
-        if len(self.chunks) > self.request.top_k:
+        if len(typed_chunks) > self.request.top_k:
             raise KnowledgeRetrievalValidationError(
                 "retrieval cannot return more chunks than request.top_k."
             )
-        expected_ranks = tuple(range(1, len(self.chunks) + 1))
-        actual_ranks = tuple(chunk.rank for chunk in self.chunks)
+        expected_ranks = tuple(range(1, len(typed_chunks) + 1))
+        actual_ranks = tuple(chunk.rank for chunk in typed_chunks)
         if actual_ranks != expected_ranks:
             raise KnowledgeRetrievalValidationError(
                 "retrieved chunk ranks must be contiguous and ordered from 1."
             )
-        chunk_ids = tuple(chunk.chunk_id for chunk in self.chunks)
+        chunk_ids = tuple(chunk.chunk_id for chunk in typed_chunks)
         if len(set(chunk_ids)) != len(chunk_ids):
             raise KnowledgeRetrievalValidationError("retrieved chunk IDs must be unique.")
 
