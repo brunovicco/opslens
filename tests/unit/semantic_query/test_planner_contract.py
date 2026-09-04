@@ -148,7 +148,7 @@ def test_planner_payload_reuses_epss_score_validation(minimum_score: object) -> 
     assert isinstance(filters, dict)
     filters["minimum_score"] = minimum_score
 
-    with pytest.raises(PlannerContractError, match="minimum_score|SemanticQuery"):
+    with pytest.raises(PlannerContractError, match=r"minimum_score|SemanticQuery"):
         parse_planner_payload(payload)
 
 
@@ -158,7 +158,7 @@ def test_planner_payload_reuses_semantic_limit_validation(limit: object) -> None
     payload = _supported_payload()
     payload["limit"] = limit
 
-    with pytest.raises(PlannerContractError, match="limit|SemanticQuery"):
+    with pytest.raises(PlannerContractError, match=r"limit|SemanticQuery"):
         parse_planner_payload(payload)
 
 
@@ -193,11 +193,11 @@ def test_bedrock_request_builder_is_pure_and_bounded() -> None:
 
 def test_bedrock_schema_is_canonical_and_grants_no_sql_field() -> None:
     """The model can emit semantic intent only, never SQL text or identifiers."""
-    assert PLANNER_OUTPUT_SCHEMA_JSON == json.dumps(
+    assert json.dumps(
         PLANNER_OUTPUT_SCHEMA,
         sort_keys=True,
         separators=(",", ":"),
-    )
+    ) == PLANNER_OUTPUT_SCHEMA_JSON
     assert '"sql"' not in PLANNER_OUTPUT_SCHEMA_JSON.lower()
     assert '"minimum"' not in PLANNER_OUTPUT_SCHEMA_JSON
     assert '"maximum"' not in PLANNER_OUTPUT_SCHEMA_JSON
