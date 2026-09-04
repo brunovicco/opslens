@@ -2,6 +2,9 @@
 
 from opslens.semantic_query.domain.errors import (
     SemanticQueryError,
+    SemanticQueryExecutionError,
+    SemanticQueryResultError,
+    SemanticQueryTimeoutError,
     SemanticQueryValidationError,
     UnsupportedSemanticQueryError,
 )
@@ -33,6 +36,9 @@ __all__ = [
     "SemanticOrderField",
     "SemanticQuery",
     "SemanticQueryError",
+    "SemanticQueryExecutionError",
+    "SemanticQueryResultError",
+    "SemanticQueryTimeoutError",
     "SemanticQueryValidationError",
     "SortDirection",
     "UnsupportedSemanticQueryError",
