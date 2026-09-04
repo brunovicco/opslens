@@ -22,6 +22,7 @@ class FakeBedrockClient:
     """Capture the frozen Converse request and return one deterministic response."""
 
     def __init__(self, response: Mapping[str, object]) -> None:
+        """Store one deterministic response and an empty observed-request record."""
         self.response = response
         self.observed: dict[str, object] = {}
 
@@ -88,7 +89,7 @@ def test_bedrock_runtime_rejects_missing_latency_instead_of_estimating_it() -> N
     response = dict(_response('{"decision":"unsupported","reason":"ambiguous"}'))
     response["metrics"] = {}
 
-    with pytest.raises(BedrockPlannerRuntimeError, match="metrics.latencyMs"):
+    with pytest.raises(BedrockPlannerRuntimeError, match=r"metrics\.latencyMs"):
         BedrockSemanticPlanner(FakeBedrockClient(response)).plan(
             SemanticPlannerRequest("show EPSS for 2026-09-01")
         )
