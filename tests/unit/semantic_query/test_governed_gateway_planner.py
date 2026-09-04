@@ -21,6 +21,7 @@ from opslens.semantic_query.adapters.outbound.governed_gateway import (
     SemanticPlannerUnavailableError,
 )
 from opslens.semantic_query.planner.models import (
+    PlannerContractError,
     PlannerDecision,
     SemanticPlannerRequest,
     UnsupportedPlannerDecision,
@@ -123,5 +124,5 @@ def test_gateway_planner_keeps_deterministic_parser_as_final_authority(
     _FakeGatewayClient.content = '{"decision":"semantic_query","metric":"epss_score"}'
     _FakeGatewayClient.status = ExecutionStatus.SUCCEEDED
 
-    with pytest.raises(ValueError, match="exact"):
+    with pytest.raises(PlannerContractError, match="must match the frozen contract"):
         _planner().plan(SemanticPlannerRequest("show EPSS for 2026-09-01"))
