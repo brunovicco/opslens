@@ -176,7 +176,7 @@ def test_retrieval_evidence_enforces_top_k_unique_ids_and_ordered_ranks() -> Non
     with pytest.raises(KnowledgeRetrievalValidationError, match="unique"):
         replace(evidence, chunks=(first, replace(second, chunk_id=first.chunk_id)))
 
-    with pytest.raises(KnowledgeRetrievalValidationError, match="request.top_k"):
+    with pytest.raises(KnowledgeRetrievalValidationError, match=r"request\.top_k"):
         replace(evidence, request=RetrievalRequest(query=request.query, top_k=1))
 
 
@@ -202,7 +202,7 @@ def test_citation_is_projected_from_admitted_chunk_provenance() -> None:
 
 def test_canonical_metadata_allowlist_is_provider_independent() -> None:
     """Gate 7.1 freezes canonical provenance fields without choosing an AWS projection."""
-    assert CANONICAL_METADATA_FIELDS == frozenset(
+    assert frozenset(
         {
             "source_id",
             "source_type",
@@ -217,4 +217,4 @@ def test_canonical_metadata_allowlist_is_provider_independent() -> None:
             "package_name",
             "section_path",
         }
-    )
+    ) == CANONICAL_METADATA_FIELDS
