@@ -90,7 +90,9 @@ class GovernedGatewaySemanticPlanner:
             ) from None
 
         if response.status is not ExecutionStatus.SUCCEEDED:
-            raise SemanticPlannerUnavailableError("Governed gateway planner execution did not succeed")
+            raise SemanticPlannerUnavailableError(
+                "Governed gateway planner execution did not succeed"
+            )
         if response.content is None or not response.content.strip():
             raise SemanticPlannerUnavailableError("Governed gateway planner returned no content")
 
