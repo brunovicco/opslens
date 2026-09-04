@@ -21,19 +21,23 @@ Phase 5    Risk Prioritization Engine                         COMPLETE
 Phase 6    Semantic Query Layer                               IN PROGRESS
   Gate 6.1 Typed contract + deterministic SQL compiler        COMPLETE
   Gate 6.2 Bounded read-only Athena execution                 COMPLETE
+  Gate 6.3 Bounded planner contract + offline evaluation      COMPLETE
+  Gate 6.4 Real Bedrock planner invocation                    NEXT
 ```
 
-Latest merged implementation checkpoint before this documentation closeout:
+Latest merged implementation checkpoint before the Gate 6.3 branch:
 
 ```text
-commit: bf5b6d4d5ad17ba1e883a2b202bd71e1a983fa16
-PR:     #86 — fix(semantic-query): follow bounded Athena result pagination
+commit: b7a05bc56269f10f841af86027260085219a7143
+PR:     #87 — fix(semantic-query): close Gate 6.2 with hardened Athena boundary
 status: merged
 ```
 
+Gate 6.3 is implemented in PR #88 and is ready for merge after its final documentation-only CI validation. It adds no real model invocation or AWS authority.
+
 ## What is implemented
 
-OpsLens now has five deterministic layers or authorities available to later model-driven orchestration:
+OpsLens now has five deterministic layers or authorities plus an offline bounded planner contract available to later model-driven orchestration:
 
 ```text
 1. Threat Intelligence Data Lake
@@ -50,6 +54,10 @@ OpsLens now has five deterministic layers or authorities available to later mode
 
 5. Semantic Query deterministic foundation
    typed query contract / allowlists / deterministic SQL / bounded Athena execution
+
+6. Offline bounded planner contract
+   bounded natural-language request / structured-output schema /
+   deterministic model-output parser / golden evaluation dataset
 ```
 
 End-to-end repository analysis path:
@@ -77,7 +85,10 @@ public GitHub repository
 Current Phase 6 structured-query path:
 
 ```text
-typed SemanticQuery
+bounded natural-language question
+ -> frozen planner request/schema contract (offline in Gate 6.3)
+ -> deterministic planner-output parser
+ -> typed SemanticQuery
  -> deterministic validation
  -> deterministic SQL compiler
  -> exact compiler-shape admission
@@ -107,6 +118,7 @@ The following remain deterministic authorities:
 - KEV, EPSS, and CVSS evidence;
 - risk policy evaluation;
 - canonical evidence serialization and content addressing;
+- planner-output validation into the typed semantic contract;
 - semantic-query validation and SQL compilation;
 - Athena query execution bounds and result validation;
 - evidence validation;
@@ -285,7 +297,7 @@ Closeout: [`labs/phase-5-risk-policy-closeout.md`](labs/phase-5-risk-policy-clos
 
 ## Phase 6 — Semantic Query Layer
 
-Phase 6 is **in progress**. The deterministic query boundary is established before any Bedrock planner is allowed to participate.
+Phase 6 is **in progress**. The deterministic query boundary and offline planner contract are established before any real Bedrock invocation is allowed to participate.
 
 ### Gate 6.1 — typed semantic query + SQL compiler — COMPLETE
 
@@ -307,18 +319,16 @@ The compiler owns database/table/columns/predicates/order/limit. Filter values b
 
 ### Gate 6.2 — bounded read-only Athena execution — COMPLETE
 
-The application now executes only compiler-owned EPSS queries through the fixed dev boundary:
+The application executes only compiler-owned EPSS queries through the fixed dev boundary:
 
 ```text
-database:   opslens_dev
-workgroup:  opslens-dev
-relation:   "opslens_dev"."epss_scores"
+database:    opslens_dev
+workgroup:   opslens-dev
+relation:    "opslens_dev"."epss_scores"
 scan cutoff: 10 MiB via enforced workgroup configuration
 ```
 
 The executor bounds polling, result rows, pagination traversal, metadata consistency, and query/result limit alignment. Defense in depth admits only the exact Gate 6.1 SQL grammar and validated literal parameter shapes even if the adapter is called directly.
-
-The first real integration attempt exposed a valid Athena `GetQueryResults` pagination behavior that mocks had not represented. The executor was corrected to follow bounded continuation tokens without increasing semantic query authority.
 
 Successful real `dev` evidence on 2026-09-04:
 
@@ -342,7 +352,62 @@ Gate 6.2 introduced no new AWS resources and no model calls. The local IAM Ident
 
 Closeout: [`../labs/phase-6-gate-6-2-athena-readonly-execution.md`](../labs/phase-6-gate-6-2-athena-readonly-execution.md).
 
-Phase 6 is **not complete**. Remaining phase exit criteria include the bounded natural-language planner, planner evaluation dataset, model/token/latency/cost evidence, diagnosable planner failure behavior, and final runtime IAM boundary when a deployed runtime exists.
+### Gate 6.3 — bounded planner contract + offline evaluation — COMPLETE
+
+Gate 6.3 freezes the model-facing contract without making a Bedrock call:
+
+```text
+question length: <= 1,000 chars
+planner decisions: semantic_query | unsupported
+supported metric: epss_score
+supported dimension: exactly [cve]
+required time: explicit YYYY-MM-DD
+threshold semantics: inclusive >= only
+order: epss_score asc|desc
+limit: 1..100
+output: Bedrock structured-output JSON Schema
+SQL authority: none
+```
+
+Model output is never trusted as a query directly. The deterministic parser rejects extra/missing fields, relative or invalid dates, unsupported values, invalid score/limit values, and injected SQL, then reconstructs the existing `SemanticQuery` type before compilation is possible.
+
+The frozen offline evaluation fixture contains:
+
+```text
+18 total cases
+  8 supported semantic-query cases
+ 10 fail-closed unsupported cases
+```
+
+Field-level metrics independently measure decision, metric, dimensions, date, threshold, ordering, limit, exact query, and unsupported-reason accuracy.
+
+Final Gate 6.3 CI evidence:
+
+```text
+GitHub Actions run:        33881700812
+Semantic Query Ruff:       PASS
+Semantic Query Pyright:    0 errors / 0 warnings
+Semantic Query pytest:     70 passed in 0.16s
+Correlation regression:    PASS
+Repository Intel regression: PASS
+Risk Policy regression:    PASS
+```
+
+Gate 6.3 introduced:
+
+```text
+new AWS resources:   0
+new IAM permissions: 0
+Bedrock calls:       0
+Athena calls:        0
+incremental AWS cost: $0
+```
+
+ADR: [`adr/0021-bounded-bedrock-semantic-query-planner.md`](adr/0021-bounded-bedrock-semantic-query-planner.md).
+
+Closeout: [`../labs/phase-6-gate-6-3-planner-contract-evaluation.md`](../labs/phase-6-gate-6-3-planner-contract-evaluation.md).
+
+Phase 6 is **not complete**. Remaining phase exit criteria include a real bounded Bedrock invocation, real planner accuracy evidence, model/token/latency/cost evidence, diagnosable planner failure behavior, at least one natural-language question through the deterministic execution path, and final runtime IAM boundary when a deployed runtime exists.
 
 ## AWS foundation
 
@@ -382,13 +447,15 @@ src/opslens/semantic_query
 
 A pre-existing repo-wide Ruff backlog outside these scoped deterministic slices remains separate technical debt and should not be mixed into Phase 6 without an explicit cleanup decision.
 
-## Next boundary — continue Phase 6
+## Next boundary — Gate 6.4: real Bedrock planner invocation
 
 Target architecture remains:
 
 ```text
 User question
  -> bounded Bedrock planner
+ -> structured planner output
+ -> deterministic planner-output parser
  -> typed SemanticQuery
  -> deterministic validation
  -> deterministic SQL compiler
@@ -401,4 +468,6 @@ Permanent guardrail:
 
 > **No unrestricted text-to-SQL.**
 
-Gate 6.1 and Gate 6.2 are complete. The next gate must preserve the existing deterministic boundary while adding the smallest planner/evaluation surface needed to translate natural-language questions into the already-frozen `SemanticQuery` contract. Bedrock model/API choice, structured-output support, IAM, token accounting, latency, failure behavior, and current pricing must be validated against official AWS documentation before implementation.
+Before Gate 6.4 implementation, revalidate current official AWS documentation for the selected model's lifecycle/availability, direct-vs-cross-Region inference mode, structured-output support, Converse request/response fields, IAM, quotas/throttling behavior, and pricing.
+
+Gate 6.4 is the first gate authorized to make a real Bedrock model call. It must capture model ID, Region/inference mode, input/output/total tokens, planner latency, estimated model cost, one diagnosable planner failure, and at least one supported natural-language factual question through the already-proven deterministic query/Athena path. Do not add RAG, Knowledge Bases, agents, MCP, or AgentCore to this phase.
