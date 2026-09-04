@@ -84,7 +84,7 @@ def _extract_single_text(response: Mapping[str, object]) -> str:
     if len(content) != 1:
         raise BedrockPlannerRuntimeError("Bedrock planner must return exactly one content block.")
     block = _mapping(content[0], context="output.message.content[0]")
-    if frozenset(block) != {"text"}:
+    if set(block) != {"text"}:
         raise BedrockPlannerRuntimeError("Bedrock planner content block must contain only text.")
     text = block.get("text")
     if not isinstance(text, str) or not text.strip():
