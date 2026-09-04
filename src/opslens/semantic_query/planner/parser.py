@@ -43,7 +43,7 @@ _UNSUPPORTED_KEYS = frozenset({"decision", "reason"})
 
 def parse_planner_json(text: str) -> PlannerOutcome:
     """Parse one JSON model output and revalidate it through deterministic code."""
-    if not isinstance(text, str) or not text.strip():
+    if type(text) is not str or not text.strip():
         raise PlannerContractError("Planner output must be non-empty JSON text.")
 
     try:
