@@ -30,7 +30,7 @@ concept
 | 4 | Repository Intelligence | ✅ Complete |
 | 5 | Risk Prioritization Engine | ✅ Complete |
 | 6 | Semantic Query Layer | ✅ Complete — PR #91 / `95db66e` |
-| 7 | Knowledge Retrieval with Bedrock | 🚧 Gate 7.1 in progress |
+| 7 | Knowledge Retrieval with Bedrock | 🚧 Gate 7.1 complete; PR #93 merge pending |
 | 8 | Hybrid Retrieval | ⏳ Planned |
 | 9 | Public Analyze Your Repository | ⏳ Planned |
 | 10 | Observability & Operational Excellence | ⏳ Planned |
@@ -318,11 +318,11 @@ knowledge/remediation question
 
 Structured NVD, CISA KEV, FIRST EPSS, CVSS, GHSA applicability, repository-version, and Risk Policy evidence remain outside the RAG authority boundary.
 
-### Gate 7.1 — Corpus + retrieval contract — IN PROGRESS
+### Gate 7.1 — Corpus + retrieval contract — COMPLETE / MERGE PENDING
 
-Offline-first scope only. Freeze provider-independent contracts and evaluation fixtures before any AWS retrieval resource exists.
+Gate 7.1 remained offline-first and froze provider-independent contracts and evaluation fixtures before any AWS retrieval resource exists.
 
-Current contract:
+Frozen contract:
 
 ```text
 KnowledgeDocument
@@ -332,7 +332,7 @@ RetrievalEvidence
 Citation
 ```
 
-Current v1 bounds:
+Frozen v1 bounds:
 
 ```text
 query:         <= 1,000 chars
@@ -355,21 +355,30 @@ prepared metrics: Recall@K + MRR
 corpus status: planned_for_gate_7_2
 ```
 
-Current local validation:
+Final functional validation:
 
 ```text
-pytest:      14 passed
-compileall:  PASS
-line length: 0 Python lines > 100 characters
+workflow: Python CI
+run:      33931113097
+commit:   f882f5df12f20f68b2601bf525a625fe72a36b7b
+
+Knowledge Retrieval Ruff:     PASS
+Knowledge Retrieval Pyright:  0 errors / 0 warnings
+Knowledge Retrieval pytest:   14 passed in 0.08s
+
+Correlation regression:              PASS
+Repository Intelligence regression:  PASS
+Risk Policy regression:              PASS
+Semantic Query regression:           PASS
 ```
 
-A dedicated `knowledge-retrieval-quality` CI job is configured for Ruff, Pyright strict, and pytest. Green automated/manual quality evidence is still required before Gate 7.1 can close.
+No Knowledge Base, vector store/index, embedding job, IAM role, retrieval call, synthesis call, or other paid AWS resource/call was introduced.
 
-No Knowledge Base, vector store/index, embedding job, IAM role, retrieval call, synthesis call, or other paid AWS resource/call is allowed in this gate.
+Closeout: [`../labs/phase-7-gate-7-1-retrieval-contract.md`](../labs/phase-7-gate-7-1-retrieval-contract.md).
 
-### Gate 7.2 — Reproducible canonical corpus — BLOCKED BY 7.1
+### Gate 7.2 — Reproducible canonical corpus — NEXT AFTER PR #93 MERGE
 
-Planned only after Gate 7.1 closes:
+Gate 7.2 is not implemented in the Gate 7.1 branch. After logical merge, its scope is:
 
 - trusted source acquisition;
 - exact source bytes/text;
