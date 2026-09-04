@@ -40,7 +40,8 @@ The adapter also rejects:
 - multiple statements / semicolons;
 - statements outside the EPSS Silver relation;
 - row bounds outside `1..100`;
-- unexpected Athena pagination;
+- pagination that exceeds the semantic row bound;
+- repeated/cyclic Athena pagination tokens;
 - malformed result metadata or row widths;
 - unknown Athena states.
 
@@ -54,6 +55,8 @@ terminal:  SUCCEEDED | FAILED | CANCELLED
 ```
 
 A polling timeout triggers `StopQueryExecution` before raising a typed timeout error.
+
+`GetQueryResults` pagination is treated as an Athena transport concern, not as broader query authority. Continuation tokens may be followed only while the accumulated result remains inside the already-validated semantic row limit. Token cycles and excess rows fail closed.
 
 The successful result records:
 
@@ -97,7 +100,7 @@ Current AWS documentation was checked for:
 
 - `StartQueryExecution` execution parameters, database context, and explicit workgroup selection;
 - `GetQueryExecution` terminal/active state semantics;
-- `GetQueryResults` result retrieval and S3 result-object permission implications;
+- `GetQueryResults` result retrieval, `MaxResults`, continuation tokens, and S3 result-object permission implications;
 - workgroup-enforced query settings and bytes-scanned controls.
 
 Important security implication: permission to the Athena result S3 location can allow direct result-object access independently of `athena:GetQueryResults`. Final runtime IAM must therefore constrain both Athena API actions and S3 result access.
@@ -121,21 +124,22 @@ Failure-path tests cover:
 - timeout + cancellation;
 - unknown future state;
 - missing execution ID;
-- unexpected result pagination;
+- pagination that would exceed the semantic row bound;
+- repeated pagination tokens;
 - malformed row width;
 - direct attempts to bypass the read-only EPSS relation boundary.
 
 ## Real dev smoke
 
-After the implementation PR is green, run the smoke script with an explicit snapshot date that exists in the EPSS Silver dataset:
+Run the smoke script with an explicit snapshot date that exists in the EPSS Silver dataset. The repository currently uses a `src/` layout without installing the local project package during `uv sync`, so the local smoke command explicitly adds `src` to `PYTHONPATH`:
 
 ```bash
-uv run python scripts/run_semantic_query_athena.py \
+PYTHONPATH=src uv run python scripts/run_semantic_query_athena.py \
   --snapshot-date 2026-09-03 \
   --epss-min 0.7 \
   --limit 20 \
   --region us-east-1 \
-  --profile <your-dev-validation-profile>
+  --profile opslens-bootstrap
 ```
 
 Do not add a `latest` fallback if that date is unavailable. Select another known snapshot explicitly.
@@ -153,6 +157,31 @@ first bounded result rows
 
 Also record an intentional failure using a nonexistent explicit partition date or another safe failure case that does not broaden SQL authority.
 
+### 2026-09-04 integration finding — Athena result pagination
+
+The first real `dev` smoke reached a successful Athena execution and entered `GetQueryResults`, but the application rejected the response because Athena returned a `NextToken` even though the compiler-owned SQL already had `LIMIT 20`.
+
+Observed application failure:
+
+```text
+SemanticQueryResultError:
+Athena returned pagination for a SQL query that is already row-bounded.
+```
+
+This exposed an incorrect application assumption: SQL row bounds and Athena result-page transport are separate concerns. AWS documents `GetQueryResults` as a paginated API whose `NextToken` continues a truncated response.
+
+The corrective boundary is:
+
+```text
+compiler-owned SQL LIMIT <= 100
+ + bounded GetQueryResults page size
+ + bounded continuation-token traversal
+ + accumulated rows must remain <= semantic limit
+ + repeated token => fail closed
+```
+
+The failure is retained as integration evidence; it is not treated as the intentional Gate 6.2 failure test because the Athena query itself succeeded and the defect was in local result-page handling.
+
 ## Cost
 
 Incremental infrastructure cost: `0`.
@@ -164,7 +193,7 @@ The smoke query itself incurs normal Athena data-scanned charges plus the existi
 Do not mark Gate 6.2 complete until:
 
 1. CI is green;
-2. one real query succeeds in `opslens-dev`;
+2. one real query succeeds end to end in `opslens-dev`;
 3. bytes scanned and execution timing are recorded;
 4. one intentional safe failure is recorded;
 5. no broader AWS service or model authority was introduced.
