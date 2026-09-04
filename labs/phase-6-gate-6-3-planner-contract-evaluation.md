@@ -1,6 +1,6 @@
 # Phase 6 Gate 6.3 — Bounded planner contract and evaluation foundation
 
-Status: implementation gate; no Bedrock invocation in this gate.
+Status: COMPLETE — offline planner contract/evaluation gate; no Bedrock invocation occurred.
 
 Date: 2026-09-04
 
@@ -80,7 +80,7 @@ tools:        none
 
 The response format uses `outputConfig.textFormat` with a JSON Schema.
 
-No Bedrock client is constructed and no model call occurs in Gate 6.3.
+No Bedrock client is constructed and no model call occurs in Gate 6.3. The model ID is a Gate 6.4 smoke-test candidate, not a permanent model selection; availability, lifecycle, API support, IAM, and pricing must be revalidated immediately before the first real invocation.
 
 ## Why structured output is not enough
 
@@ -132,7 +132,7 @@ Fixture:
 
 `tests/fixtures/semantic_query/planner_eval_v1.jsonl`
 
-Initial corpus:
+Frozen corpus:
 
 ```text
 18 total cases
@@ -194,9 +194,33 @@ Unit tests intentionally reject:
 
 These failures occur before the existing compiler/Athena execution path.
 
+## CI evidence
+
+Final Gate 6.3 validation:
+
+```text
+GitHub Actions run: 33881700812
+
+Semantic Query Ruff:     PASS
+Semantic Query Pyright:  0 errors / 0 warnings
+Semantic Query pytest:   70 passed in 0.16s
+
+Correlation regression:             PASS
+Repository Intelligence regression: PASS
+Risk Policy regression:             PASS
+```
+
+CI itself exposed and closed three useful implementation defects before closeout:
+
+1. modern Python/Ruff typing rules required PEP 695 type aliases/generics;
+2. strict Pyright identified redundant typed guards and unknown nested test types;
+3. an exact `type(path) is Path` guard rejected the concrete `PosixPath` returned by `pathlib`, so the loader now accepts `Path` subclasses while retaining a runtime boundary.
+
+The final run is green across all four scoped quality-gate jobs.
+
 ## AWS / IAM
 
-Gate 6.3 introduces:
+Gate 6.3 introduced:
 
 ```text
 new AWS resources:   0
@@ -240,7 +264,7 @@ This gate directly practices:
 
 ## Gate 6.3 closeout
 
-Mark Gate 6.3 complete only when:
+Gate 6.3 satisfies all closeout conditions:
 
 1. planner input is bounded;
 2. output schema is explicit and contains no SQL authority;
@@ -251,5 +275,22 @@ Mark Gate 6.3 complete only when:
 7. semantic-query CI is green;
 8. no AWS/model authority was introduced.
 
-After closeout, Gate 6.4 may add the first real Bedrock Converse invocation and
-record token, latency, model, IAM, failure, and cost evidence.
+## Next — Gate 6.4
+
+Gate 6.4 may add the first real Bedrock Converse invocation. Before implementation it must revalidate current official AWS documentation for the selected model's lifecycle/availability, direct-vs-cross-Region inference behavior, structured-output support, Converse request/response fields, IAM, quotas/throttling, and pricing.
+
+The first real model gate must preserve:
+
+```text
+natural-language question
+ -> bounded Bedrock planner
+ -> structured output
+ -> deterministic parser
+ -> typed SemanticQuery
+ -> deterministic SQL compiler
+ -> bounded Athena executor
+```
+
+It must record input/output/total tokens, planner latency, model/Region/inference mode, estimated invocation cost, one diagnosable planner failure, and at least one supported natural-language question through the already-proven deterministic execution path.
+
+Phase 6 remains IN PROGRESS.
