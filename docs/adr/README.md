@@ -27,3 +27,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0017](0017-repository-epss-snapshot-enrichment.md) | Enrich repository findings from one exact EPSS score snapshot | Accepted |
 | [0018](0018-repository-analysis-result-projection.md) | Project the final repository analysis result and defer cache infrastructure | Accepted |
 | [0019](0019-deterministic-risk-policy-v1.md) | Prioritize repository findings with deterministic Risk Policy v1 | Accepted |
+| [0020](0020-no-unrestricted-text-to-sql.md) | Reject unrestricted text-to-SQL in the Semantic Query Layer | Accepted |
