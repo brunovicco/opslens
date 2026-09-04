@@ -37,7 +37,7 @@ class SemanticPlannerRequest:
 
     def __post_init__(self) -> None:
         """Normalize and bound planner input before it reaches a model."""
-        if not isinstance(self.question, str):
+        if type(self.question) is not str:
             raise PlannerContractError("Planner question must be a string.")
 
         normalized = self.question.strip()
@@ -59,7 +59,7 @@ class PlannedSemanticQuery:
 
     def __post_init__(self) -> None:
         """Reject forged outcomes that do not contain the deterministic domain type."""
-        if not isinstance(self.query, SemanticQuery):
+        if type(self.query) is not SemanticQuery:
             raise PlannerContractError("Planned semantic query must contain SemanticQuery.")
 
     @property
@@ -76,7 +76,7 @@ class UnsupportedPlannerDecision:
 
     def __post_init__(self) -> None:
         """Reject unknown unsupported reasons at runtime."""
-        if not isinstance(self.reason, UnsupportedReason):
+        if type(self.reason) is not UnsupportedReason:
             raise PlannerContractError("Unknown unsupported planner reason.")
 
     @property
