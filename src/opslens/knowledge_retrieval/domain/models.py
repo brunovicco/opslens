@@ -117,6 +117,36 @@ def _normalize_text_tuple(value: object, label: str) -> tuple[str, ...]:
     return normalized
 
 
+def _normalize_source_types(value: object) -> tuple[KnowledgeSourceType, ...]:
+    """Validate an untrusted tuple of allowlisted knowledge source types."""
+    if not isinstance(value, tuple):
+        raise KnowledgeRetrievalValidationError("source_types must be a tuple.")
+    values = cast(tuple[object, ...], value)
+    if any(
+        not _is_runtime_instance(source_type, KnowledgeSourceType)
+        for source_type in values
+    ):
+        raise KnowledgeRetrievalValidationError(
+            "source_types must contain only allowlisted source types."
+        )
+    typed_values = cast(tuple[KnowledgeSourceType, ...], values)
+    if len(set(typed_values)) != len(typed_values):
+        raise KnowledgeRetrievalValidationError("source_types cannot contain duplicates.")
+    return typed_values
+
+
+def _normalize_relevance_score(value: object) -> float | None:
+    """Normalize one optional provider relevance score without inventing confidence semantics."""
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise KnowledgeRetrievalValidationError("relevance_score must be numeric.")
+    normalized_score = float(value)
+    if not math.isfinite(normalized_score):
+        raise KnowledgeRetrievalValidationError("relevance_score must be finite.")
+    return normalized_score
+
+
 @dataclass(frozen=True, slots=True)
 class KnowledgeDocument:
     """One canonical explanatory/remediation source snapshot with exact content identity."""
@@ -244,23 +274,11 @@ class RetrievalRequest:
             raise KnowledgeRetrievalValidationError(
                 f"top_k must be an integer from 1 to {MAX_RETRIEVAL_TOP_K}."
             )
-
-        source_types: object = self.source_types
-        if not isinstance(source_types, tuple):
-            raise KnowledgeRetrievalValidationError("source_types must be a tuple.")
-        runtime_source_types = cast(tuple[object, ...], source_types)
-        if any(
-            not _is_runtime_instance(source_type, KnowledgeSourceType)
-            for source_type in runtime_source_types
-        ):
-            raise KnowledgeRetrievalValidationError(
-                "source_types must contain only allowlisted source types."
-            )
-        typed_source_types = cast(tuple[KnowledgeSourceType, ...], runtime_source_types)
-        if len(set(typed_source_types)) != len(typed_source_types):
-            raise KnowledgeRetrievalValidationError("source_types cannot contain duplicates.")
-        object.__setattr__(self, "source_types", typed_source_types)
-
+        object.__setattr__(
+            self,
+            "source_types",
+            _normalize_source_types(self.source_types),
+        )
         object.__setattr__(
             self,
             "vulnerability_ids",
@@ -334,19 +352,11 @@ class RetrievedChunk:
             raise KnowledgeRetrievalValidationError(
                 f"rank must be an integer from 1 to {MAX_RETRIEVAL_TOP_K}."
             )
-
-        relevance_score: object = self.relevance_score
-        if relevance_score is not None:
-            if isinstance(relevance_score, bool) or not isinstance(
-                relevance_score,
-                (int, float),
-            ):
-                raise KnowledgeRetrievalValidationError("relevance_score must be numeric.")
-            normalized_score = float(relevance_score)
-            if not math.isfinite(normalized_score):
-                raise KnowledgeRetrievalValidationError("relevance_score must be finite.")
-            object.__setattr__(self, "relevance_score", normalized_score)
-
+        object.__setattr__(
+            self,
+            "relevance_score",
+            _normalize_relevance_score(self.relevance_score),
+        )
         object.__setattr__(self, "title", _normalize_optional_text(self.title, "title"))
         object.__setattr__(
             self,
@@ -388,6 +398,18 @@ class RetrievedChunk:
         )
 
 
+def _normalize_retrieved_chunks(value: object) -> tuple[RetrievedChunk, ...]:
+    """Validate an untrusted tuple of retrieved chunks before evidence admission."""
+    if not isinstance(value, tuple):
+        raise KnowledgeRetrievalValidationError("chunks must be a tuple.")
+    values = cast(tuple[object, ...], value)
+    if any(not _is_runtime_instance(chunk, RetrievedChunk) for chunk in values):
+        raise KnowledgeRetrievalValidationError(
+            "chunks must contain only RetrievedChunk values."
+        )
+    return cast(tuple[RetrievedChunk, ...], values)
+
+
 @dataclass(frozen=True, slots=True)
 class RetrievalEvidence:
     """Complete bounded retrieval operation evidence before any synthesis step."""
@@ -406,21 +428,8 @@ class RetrievalEvidence:
             _normalize_required_text(self.retrieval_id, "retrieval_id"),
         )
         _require_runtime_instance(self.request, RetrievalRequest, "request")
-
-        chunks: object = self.chunks
-        if not isinstance(chunks, tuple):
-            raise KnowledgeRetrievalValidationError("chunks must be a tuple.")
-        runtime_chunks = cast(tuple[object, ...], chunks)
-        if any(
-            not _is_runtime_instance(chunk, RetrievedChunk)
-            for chunk in runtime_chunks
-        ):
-            raise KnowledgeRetrievalValidationError(
-                "chunks must contain only RetrievedChunk values."
-            )
-        typed_chunks = cast(tuple[RetrievedChunk, ...], runtime_chunks)
+        typed_chunks = _normalize_retrieved_chunks(self.chunks)
         object.__setattr__(self, "chunks", typed_chunks)
-
         _require_runtime_instance(self.backend, RetrievalBackend, "backend")
         object.__setattr__(
             self,
