@@ -1,6 +1,6 @@
 # OpsLens — Incremental Roadmap
 
-_Last updated: 2026-09-03_
+_Last updated: 2026-09-04_
 
 OpsLens advances in small, demonstrable, observable, and reversible gates.
 
@@ -29,7 +29,7 @@ concept
 | 3 | Vulnerability Correlation Engine | ✅ Complete |
 | 4 | Repository Intelligence | ✅ Complete |
 | 5 | Risk Prioritization Engine | ✅ Complete |
-| 6 | Semantic Query Layer | 🚧 Next |
+| 6 | Semantic Query Layer | 🚧 In progress — Gates 6.1 and 6.2 complete |
 | 7 | Knowledge Retrieval with Bedrock | ⏳ Planned |
 | 8 | Hybrid Retrieval | ⏳ Planned |
 | 9 | Public Analyze Your Repository | ⏳ Planned |
@@ -170,20 +170,21 @@ Phase 5 added no AWS resources, IAM permissions, or model calls.
 
 Closeout: [`labs/phase-5-risk-policy-closeout.md`](labs/phase-5-risk-policy-closeout.md).
 
-## Phase 6 — Semantic Query Layer — NEXT
+## Phase 6 — Semantic Query Layer — IN PROGRESS
 
 ### Goal
 
-Convert natural-language factual questions into a safe typed query representation and deterministic Athena SQL.
+Convert natural-language factual questions into a safe typed query representation and deterministic Athena SQL without giving a model unrestricted SQL authority.
 
 Target flow:
 
 ```text
 User question
- -> Bedrock planner
+ -> bounded Bedrock planner
  -> typed SemanticQuery
  -> deterministic validator
  -> deterministic SQL compiler
+ -> exact compiler-shape admission
  -> bounded read-only Athena workgroup
  -> structured result evidence
 ```
@@ -192,90 +193,136 @@ User question
 
 > **No unrestricted text-to-SQL.**
 
-The model proposes a semantic query. Application code owns validation and SQL generation.
+A future model may propose only a typed semantic query. Application code owns validation, SQL generation, execution limits, and evidence validation.
 
-### Initial contract areas
+### Gate 6.1 — Typed semantic-query contract + deterministic compiler — COMPLETE
 
-The phase should begin with a deliberately small allowlisted surface, for example:
+The first factual question was frozen from the real EPSS dataset rather than a broad hypothetical query surface:
+
+> Which CVEs have EPSS of at least 0.7 on an explicit snapshot date?
+
+Current allowlisted contract:
 
 ```text
-metrics
-  vulnerability_count
-  repository_finding_count
+metric
+  epss_score
 
-dimensions
-  repository
-  priority_tier
-  severity
+dimension
+  cve
 
 filters
-  repository identity
-  KEV state
-  EPSS minimum
-  priority tier
+  snapshot_date: required explicit calendar date
+  minimum_score: optional finite value in 0.0..1.0
 
 order
+  epss_score ASC|DESC
+  cve ASC deterministic tie break
+
 limit
+  1..100
+  default 20
 ```
 
-The exact first metric/dimension/filter set must be frozen from the real current datasets before implementation. Do not create broad query flexibility merely for demo aesthetics.
-
-### AWS learning focus
-
-- Amazon Bedrock Converse or the current recommended Bedrock inference API for planning;
-- model selection and inference parameters;
-- structured model output and validation;
-- Amazon Athena read-only execution;
-- Athena workgroups and bytes-scanned controls;
-- IAM boundaries between planner and query executor;
-- token accounting, latency, throttling, retries, and failure diagnosis;
-- CloudWatch/X-Ray integration where justified by the first runtime slice.
-
-Before implementation, current official AWS documentation must be used to verify APIs, features, limits, IAM behavior, model availability, and pricing.
-
-### Security boundary
-
-The LLM must never receive arbitrary SQL authority.
-
-The first implementation must establish:
+The compiler owns:
 
 ```text
-allowlisted metrics
-allowlisted dimensions
-strongly typed filters
-bounded limit/order semantics
-compiler-owned SQL
-read-only Athena execution authority
-existing 10 MiB dev workgroup scan cutoff
+database/table
+selected columns
+predicates
+ordering
+LIMIT
 ```
 
-Invalid or unsupported semantic queries fail closed before Athena execution.
+Only validated filter values become positional Athena execution parameters.
 
-### Exit criteria
+ADR: [`adr/0020-no-unrestricted-text-to-sql.md`](adr/0020-no-unrestricted-text-to-sql.md).
 
-- typed `SemanticQuery` contract exists;
-- metric/dimension/filter allowlists are explicit;
-- invalid or unknown semantics fail closed;
-- SQL is generated only by deterministic application code;
-- Athena execution is read-only and bounded;
-- planner evaluation set measures metric/dimension/filter accuracy separately;
-- at least one real factual question runs end to end;
-- model/API/token/latency/cost evidence is recorded;
-- intentional planner or query failure can be diagnosed;
-- ADR explains why unrestricted text-to-SQL is not used.
+### Gate 6.2 — Bounded read-only Athena execution — COMPLETE
 
-### First authorized implementation behavior
+The first real AWS execution boundary is now proven through the existing dev analytics stack:
 
-At Phase 6 start:
+```text
+database:    opslens_dev
+workgroup:   opslens-dev
+relation:    "opslens_dev"."epss_scores"
+scan cutoff: 10 MiB, enforced by workgroup
+```
 
-1. read Current State, Architecture, Roadmap, and AIP-C01 Learning Map;
-2. inspect the existing Glue/Athena schemas and current `main`;
-3. verify current Bedrock and Athena official documentation;
-4. choose the first narrow factual question;
-5. freeze the typed semantic-query contract and SQL compiler boundary;
-6. recommend only the first small implementation gate.
+Executor controls include:
+
+- fixed database/workgroup/relation;
+- exact Gate 6.1 compiler SQL grammar admission;
+- validated execution-parameter literal shapes;
+- SQL `LIMIT` equal to semantic result bound;
+- synchronous bounded polling;
+- cancellation on timeout or unknown state;
+- bounded `GetQueryResults` pagination;
+- continuation-token cycle detection;
+- accumulated result row bound;
+- stable metadata and row-width validation;
+- recorded data-scanned and execution timings.
+
+The first real smoke exposed a valid Athena pagination behavior that mocks had not represented. The implementation was corrected to treat `NextToken` as bounded transport behavior rather than broader query authority.
+
+Real success evidence on 2026-09-04:
+
+```text
+query_execution_id:         958fb573-1a69-4ce6-8a36-d9be45e71c79
+row_count:                  20
+data_scanned_bytes:         3,785,003 (~3.61 MiB)
+engine_execution_time_ms:   973
+total_execution_time_ms:    1,128
+```
+
+Intentional fail-closed evidence:
+
+```text
+limit: 101
+ -> SemanticQueryValidationError
+ -> rejected before compilation and Athena
+```
+
+Gate 6.2 added no AWS resources and no model calls. A local IAM Identity Center profile was used only for validation; it does not satisfy the final runtime least-privilege role criterion.
+
+Closeout: [`../labs/phase-6-gate-6-2-athena-readonly-execution.md`](../labs/phase-6-gate-6-2-athena-readonly-execution.md).
+
+### Remaining Phase 6 work
+
+The deterministic query foundation is complete, but Phase 6 is not complete. Remaining exit work includes:
+
+```text
+bounded natural-language planner contract
+planner structured-output validation
+planner evaluation dataset
+metric/dimension/filter accuracy measurement
+current Bedrock model/API selection
+model IAM boundary
+input/output token accounting
+planner latency evidence
+model invocation cost evidence
+throttling/retry/failure diagnosis
+at least one natural-language factual question end to end
+intentional planner failure evidence
+final runtime least-privilege boundary when a deployed runtime exists
+```
+
+Before the next implementation gate, current official AWS documentation must be rechecked for Bedrock API behavior, supported structured output, model availability, IAM, quotas, retry/throttling behavior, token accounting, and pricing.
 
 Do not add RAG, Knowledge Bases, vector search, agents, MCP, or AgentCore to Phase 6.
+
+### Phase 6 exit criteria
+
+- [x] typed `SemanticQuery` contract exists;
+- [x] metric/dimension/filter allowlists are explicit;
+- [x] invalid or unknown semantics fail closed;
+- [x] SQL is generated only by deterministic application code;
+- [x] Athena execution is read-only and bounded for the supported slice;
+- [ ] planner evaluation set measures semantic-field accuracy separately;
+- [ ] at least one natural-language factual question runs end to end;
+- [ ] model/API/token/latency/cost evidence is recorded;
+- [ ] intentional planner failure can be diagnosed;
+- [x] ADR explains why unrestricted text-to-SQL is not used;
+- [ ] final runtime IAM is least privilege once a deployed runtime exists.
 
 ## Phase 7 — Knowledge Retrieval with Bedrock
 
