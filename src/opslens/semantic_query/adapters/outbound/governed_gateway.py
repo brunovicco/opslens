@@ -44,7 +44,7 @@ class GovernedGatewayPlannerConfig:
 
 
 class GovernedGatewaySemanticPlanner:
-    """Request a typed proposal while leaving query authority deterministic."""
+    """Accept proposals only after successful terminal gateway execution evidence."""
 
     def __init__(self, config: GovernedGatewayPlannerConfig) -> None:
         """Store provider-neutral gateway configuration only."""
