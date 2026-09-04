@@ -45,6 +45,19 @@ class _FakeBedrockClient:
         return self._response
 
 
+class _FailingBedrockClient:
+    """Raise one configured provider-side failure after recording the request."""
+
+    def __init__(self, error: Exception) -> None:
+        self._error = error
+        self.requests: list[dict[str, object]] = []
+
+    def converse(self, **request: object) -> Mapping[str, object]:
+        """Record the request and raise the configured provider failure."""
+        self.requests.append(dict(request))
+        raise self._error
+
+
 def _clock(*values: float) -> Callable[[], float]:
     """Return a deterministic monotonic clock over the supplied values."""
     iterator = iter(values)
@@ -158,6 +171,23 @@ def test_bedrock_adapter_preserves_typed_fail_closed_decision() -> None:
         UnsupportedReason.MISSING_EXPLICIT_SNAPSHOT_DATE
     )
     assert result.evidence.client_elapsed_ms == 870
+
+
+def test_bedrock_adapter_wraps_provider_invocation_failure() -> None:
+    """Provider or credential failures become a stable adapter error with the cause preserved."""
+    provider_error = RuntimeError("expired credentials")
+    client = _FailingBedrockClient(provider_error)
+    planner = BedrockSemanticPlanner(client, clock=_clock(1.0))
+    request = SemanticPlannerRequest(
+        "Which CVEs have EPSS of at least 0.7 on 2026-09-03?"
+    )
+
+    with pytest.raises(BedrockPlannerRuntimeError, match="Converse invocation failed") as exc_info:
+        planner.plan(request)
+
+    assert exc_info.value.__cause__ is provider_error
+    assert len(client.requests) == 1
+    assert client.requests[0]["modelId"] == BEDROCK_PLANNER_MODEL_ID
 
 
 def test_bedrock_adapter_rejects_multiple_content_blocks() -> None:
