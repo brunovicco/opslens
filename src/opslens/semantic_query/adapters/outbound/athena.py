@@ -48,6 +48,7 @@ class AthenaQueryClient(Protocol):
         *,
         QueryExecutionId: str,
         MaxResults: int,
+        NextToken: str | None = None,
     ) -> Mapping[str, object]:
         """Return one bounded page of Athena query results."""
         ...
@@ -195,17 +196,80 @@ class AthenaQueryExecutor:
         *,
         max_rows: int,
     ) -> tuple[tuple[str, ...], tuple[tuple[str | None, ...], ...]]:
-        """Read one bounded result page and reject unexpected pagination."""
-        response = self._client.get_query_results(
-            QueryExecutionId=query_execution_id,
-            MaxResults=max_rows + 1,
+        """Read bounded Athena result pages while preserving the semantic row limit."""
+        next_token: str | None = None
+        seen_tokens: set[str] = set()
+        columns: tuple[str, ...] | None = None
+        rows: list[tuple[str | None, ...]] = []
+        first_page = True
+
+        # Athena can legally paginate GetQueryResults even when the SQL itself has LIMIT.
+        # Keep result retrieval bounded independently: at most one continuation per
+        # permitted semantic row plus one final empty/metadata page.
+        max_pages = max_rows + 2
+
+        for _ in range(max_pages):
+            response = self._get_query_results_page(
+                query_execution_id,
+                max_results=max_rows + 1,
+                next_token=next_token,
+            )
+            page_columns, page_rows = self._parse_result_page(response)
+
+            if columns is None:
+                columns = page_columns
+            elif page_columns != columns:
+                raise SemanticQueryResultError(
+                    "Athena result metadata changed between result pages."
+                )
+
+            if first_page and page_rows and page_rows[0] == columns:
+                page_rows = page_rows[1:]
+            first_page = False
+
+            rows.extend(page_rows)
+            if len(rows) > max_rows:
+                raise SemanticQueryResultError(
+                    "Athena returned more rows than the semantic-query limit permits."
+                )
+
+            next_token = _optional_string(response.get("NextToken"))
+            if next_token is None:
+                return columns, tuple(rows)
+            if next_token in seen_tokens:
+                raise SemanticQueryResultError(
+                    "Athena repeated a result pagination token."
+                )
+            seen_tokens.add(next_token)
+
+        raise SemanticQueryResultError(
+            "Athena result pagination exceeded the bounded page limit."
         )
 
-        if _optional_string(response.get("NextToken")) is not None:
-            raise SemanticQueryResultError(
-                "Athena returned pagination for a SQL query that is already row-bounded."
+    def _get_query_results_page(
+        self,
+        query_execution_id: str,
+        *,
+        max_results: int,
+        next_token: str | None,
+    ) -> Mapping[str, object]:
+        """Fetch one Athena result page without sending a null pagination token."""
+        if next_token is None:
+            return self._client.get_query_results(
+                QueryExecutionId=query_execution_id,
+                MaxResults=max_results,
             )
+        return self._client.get_query_results(
+            QueryExecutionId=query_execution_id,
+            MaxResults=max_results,
+            NextToken=next_token,
+        )
 
+    def _parse_result_page(
+        self,
+        response: Mapping[str, object],
+    ) -> tuple[tuple[str, ...], tuple[tuple[str | None, ...], ...]]:
+        """Parse one Athena result page and preserve raw row ordering."""
         result_set = _required_mapping(response, "ResultSet", context="GetQueryResults")
         metadata = _required_mapping(
             result_set,
@@ -230,14 +294,6 @@ class AthenaQueryExecutor:
 
         raw_rows = _required_sequence(result_set, "Rows", context="GetQueryResults.ResultSet")
         rows = tuple(self._parse_row(item, expected_columns=len(columns)) for item in raw_rows)
-
-        if rows and rows[0] == columns:
-            rows = rows[1:]
-        if len(rows) > max_rows:
-            raise SemanticQueryResultError(
-                "Athena returned more rows than the semantic-query limit permits."
-            )
-
         return columns, rows
 
     @staticmethod
