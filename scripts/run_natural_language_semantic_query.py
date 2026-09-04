@@ -18,7 +18,6 @@ from opslens.semantic_query.adapters.outbound import (
     BedrockSemanticPlanner,
 )
 from opslens.semantic_query.application import (
-    ExecutedNaturalLanguageSemanticQuery,
     ExecuteNaturalLanguageSemanticQuery,
     ExecuteSemanticQuery,
     UnsupportedNaturalLanguageSemanticQuery,
@@ -57,28 +56,37 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _bedrock_client(session: Session) -> BedrockConverseClient:
+    """Create the bounded Bedrock runtime client behind the local Protocol boundary."""
+    client = session.client(  # pyright: ignore[reportUnknownMemberType]
+        "bedrock-runtime",
+        region_name=BEDROCK_PLANNER_REGION,
+        config=Config(
+            connect_timeout=10,
+            read_timeout=300,
+            retries={"total_max_attempts": 1, "mode": "standard"},
+        ),
+    )
+    return cast(BedrockConverseClient, client)
+
+
+def _athena_client(session: Session, region: str) -> AthenaQueryClient:
+    """Create the Athena client behind the existing bounded executor Protocol."""
+    client = session.client(  # pyright: ignore[reportUnknownMemberType]
+        "athena",
+        region_name=region,
+    )
+    return cast(AthenaQueryClient, client)
+
+
 def main() -> int:
     """Execute the versioned bounded Bedrock-to-Athena path and print JSON evidence."""
     args = _parse_args()
     request = SemanticPlannerRequest(args.question)
 
     session = Session(profile_name=args.profile)
-    bedrock_client = cast(
-        BedrockConverseClient,
-        session.client(
-            "bedrock-runtime",
-            region_name=BEDROCK_PLANNER_REGION,
-            config=Config(
-                connect_timeout=10,
-                read_timeout=300,
-                retries={"total_max_attempts": 1, "mode": "standard"},
-            ),
-        ),
-    )
-    athena_client = cast(
-        AthenaQueryClient,
-        session.client("athena", region_name=args.athena_region),
-    )
+    bedrock_client = _bedrock_client(session)
+    athena_client = _athena_client(session, args.athena_region)
 
     use_case = ExecuteNaturalLanguageSemanticQuery(
         BedrockSemanticPlanner(bedrock_client),
@@ -94,7 +102,7 @@ def main() -> int:
             "planner_evidence": asdict(outcome.planner_evidence),
             "athena_invoked": False,
         }
-    elif isinstance(outcome, ExecutedNaturalLanguageSemanticQuery):
+    else:
         payload = {
             "question": request.question,
             "decision": "semantic_query",
@@ -110,8 +118,6 @@ def main() -> int:
                 "total_execution_time_ms": outcome.result.total_execution_time_ms,
             },
         }
-    else:
-        raise TypeError(f"Unknown natural-language semantic-query outcome: {type(outcome).__name__}")
 
     print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
