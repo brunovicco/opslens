@@ -6,8 +6,14 @@ requires-python = ">=3.13,<3.15"
 dependencies = [
     "aws-lambda-powertools[tracer]>=3.34.0",
     "boto3>=1.43.72",
+    "governed-llm-gateway-client",
+    "governed-llm-gateway-contracts",
     "packaging>=26.3",
 ]
+
+[tool.uv.sources]
+governed-llm-gateway-client = { git = "https://github.com/brunovicco/governed-llm-gateway.git", rev = "96b09956e933db50bf9ea900973f8a0b2145cb3c", subdirectory = "packages/gateway-client" }
+governed-llm-gateway-contracts = { git = "https://github.com/brunovicco/governed-llm-gateway.git", rev = "96b09956e933db50bf9ea900973f8a0b2145cb3c", subdirectory = "packages/gateway-contracts" }
 
 [dependency-groups]
 dev = [
