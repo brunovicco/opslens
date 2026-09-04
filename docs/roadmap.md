@@ -29,7 +29,7 @@ concept
 | 3 | Vulnerability Correlation Engine | ✅ Complete |
 | 4 | Repository Intelligence | ✅ Complete |
 | 5 | Risk Prioritization Engine | ✅ Complete |
-| 6 | Semantic Query Layer | 🚧 In progress — Gates 6.1, 6.2 and 6.3 complete; Gate 6.4 next |
+| 6 | Semantic Query Layer | 🚧 Gate 6.4 implemented; final validation/PR/merge pending |
 | 7 | Knowledge Retrieval with Bedrock | ⏳ Planned |
 | 8 | Hybrid Retrieval | ⏳ Planned |
 | 9 | Public Analyze Your Repository | ⏳ Planned |
@@ -47,7 +47,7 @@ concept
 
 ### Phase 0 — AWS Foundation
 
-Established the real `dev` environment, Terraform remote state, IAM Identity Center human access, GitHub Actions OIDC deployment identity, least-privilege runtime roles, budget/cost controls, CloudWatch, X-Ray, and intentional failure-path validation.
+Established the real `dev` environment, Terraform remote state, IAM Identity Center human access, GitHub Actions OIDC deployment identity, budget/cost controls, CloudWatch, X-Ray, and intentional failure-path validation.
 
 ### Phase 1 — EPSS Vertical Slice
 
@@ -65,30 +65,19 @@ FIRST EPSS
 
 ### Phase 2 — Threat Intelligence Data Lake
 
-Completed:
-
-```text
-2.1 CISA KEV Bronze                         COMPLETE
-2.2 CISA KEV Silver / Analytics             COMPLETE
-2.3 NVD/CVE deterministic authority path    COMPLETE
-2.4 GitHub Security Advisories              COMPLETE
-2.5 Historical EPSS expansion               COMPLETE
-```
-
-Phase 2 preserves independent source authority and explicit temporal/provenance coordinates for NVD, KEV, EPSS, and GHSA.
+Completed NVD/CVE, CISA KEV, FIRST EPSS current/historical, and GitHub Security Advisory source-local deterministic evidence while preserving explicit provenance and time coordinates.
 
 ### Phase 3 — Vulnerability Correlation Engine
 
-Completed the deterministic PyPI v1 applicability authority:
+Completed deterministic PyPI v1 applicability:
 
 ```text
-ecosystem/package/version/purl
- + exact GHSA package/range evidence
- -> deterministic package identity
- -> PEP 440 range evaluation
+package/version/purl
+ + GHSA range evidence
+ -> PEP 440 applicability
  -> affected | not_affected | unsupported
- -> CVE/GHSA/NVD alias evidence
- -> canonical content-addressed correlation record
+ -> CVE/GHSA/NVD reconciliation
+ -> content-addressed correlation record
 ```
 
 Permanent rule:
@@ -102,35 +91,19 @@ Completed the read-only public GitHub repository slice:
 ```text
 public GitHub repository
  -> immutable commit snapshot
- -> bounded read-only acquisition
+ -> bounded GET-only acquisition
  -> exact inert uv.lock
  -> deterministic parser
- -> Phase 3 normalization/correlation
- -> repository finding
- -> NVD/CVSS
- -> complete KEV snapshot
- -> explicit EPSS snapshot
+ -> Phase 3 correlation
+ -> NVD/CVSS + KEV + EPSS evidence
  -> RepositoryAnalysisResult
 ```
 
-Phase 4 never executes repository code and does not claim runtime exposure.
+Repository code is never executed, and repository risk is not claimed as runtime exposure.
 
 ### Phase 5 — Risk Prioritization Engine
 
-Completed **Risk Policy v1**, a separate deterministic priority authority over already-validated Phase 4 findings.
-
-```text
-RepositoryAnalysisResult
- -> typed policy facts
- -> deterministic Risk Policy v1
- -> factor contributions
- -> priority score + tier
- -> completeness / review_required
- -> deterministic ranking
- -> RiskPrioritizationResult
-```
-
-Risk Policy v1 currently uses only evidence that Phase 4 proves:
+Completed deterministic Risk Policy v1:
 
 ```text
 KEV present                         +40
@@ -148,40 +121,20 @@ P2 >= 30
 P3 < 30
 ```
 
-Properties:
+Missing evidence remains `partial` / `review_required`; it does not silently become a confident low-risk result.
 
-- same evidence + same policy reproduces the same priority;
-- every contribution has a stable reason and observed value;
-- the exact policy/evaluation/ranking are content-addressed;
-- missing evidence remains `partial` / `review_required` rather than silently low risk;
-- proven KEV/EPSS absence remains distinct from missing evidence;
-- an LLM is not required for factor extraction, scoring, tiers, or ranking;
-- Repository Risk remains distinct from Runtime Exposure.
-
-Deterministic identities:
-
-```text
-risk-policy:v1@sha256:<digest>
-risk-evaluation:v1@sha256:<digest>
-risk-prioritization:v1@sha256:<digest>
-```
-
-Phase 5 added no AWS resources, IAM permissions, or model calls.
-
-Closeout: [`labs/phase-5-risk-policy-closeout.md`](labs/phase-5-risk-policy-closeout.md).
-
-## Phase 6 — Semantic Query Layer — IN PROGRESS
+## Phase 6 — Semantic Query Layer — CLOSEOUT IN PROGRESS
 
 ### Goal
 
-Convert natural-language factual questions into a safe typed query representation and deterministic Athena SQL without giving a model unrestricted SQL authority.
+Convert bounded natural-language factual questions into a typed semantic query and deterministic Athena SQL without giving a model unrestricted SQL authority.
 
 Target flow:
 
 ```text
 User question
  -> bounded Bedrock planner
- -> structured planner output
+ -> structured planner proposal
  -> deterministic planner-output parser
  -> typed SemanticQuery
  -> deterministic validator
@@ -191,80 +144,45 @@ User question
  -> structured result evidence
 ```
 
-### Permanent guardrail
+Permanent guardrail:
 
 > **No unrestricted text-to-SQL.**
 
-A model may propose only a typed semantic query. Application code owns validation, SQL generation, execution limits, and evidence validation.
-
 ### Gate 6.1 — Typed semantic-query contract + deterministic compiler — COMPLETE
 
-The first factual question was frozen from the real EPSS dataset rather than a broad hypothetical query surface:
+First supported slice:
 
 > Which CVEs have EPSS of at least 0.7 on an explicit snapshot date?
 
-Current allowlisted contract:
+Contract:
 
 ```text
-metric
-  epss_score
-
-dimension
-  cve
-
-filters
-  snapshot_date: required explicit calendar date
-  minimum_score: optional finite value in 0.0..1.0
-
-order
-  epss_score ASC|DESC
-  cve ASC deterministic tie break
-
-limit
-  1..100
-  default 20
+metric:          epss_score
+dimension:       cve
+snapshot_date:   required explicit date
+minimum_score:   optional 0.0..1.0
+order:           epss_score ASC|DESC + cve ASC tie break
+limit:           1..100, default 20
 ```
 
-The compiler owns:
-
-```text
-database/table
-selected columns
-predicates
-ordering
-LIMIT
-```
-
-Only validated filter values become positional Athena execution parameters.
+Only deterministic application code owns database/table/columns/predicates/order/LIMIT.
 
 ADR: [`adr/0020-no-unrestricted-text-to-sql.md`](adr/0020-no-unrestricted-text-to-sql.md).
 
 ### Gate 6.2 — Bounded read-only Athena execution — COMPLETE
 
-The first real AWS execution boundary is proven through the existing dev analytics stack:
+Real dev boundary:
 
 ```text
 database:    opslens_dev
 workgroup:   opslens-dev
 relation:    "opslens_dev"."epss_scores"
-scan cutoff: 10 MiB, enforced by workgroup
+scan cutoff: 10 MiB enforced by workgroup
 ```
 
-Executor controls include:
+Executor controls fixed relation/workgroup, exact compiler-shape admission, validated execution-parameter shapes, bounded polling/pagination/results, metadata validation, and recorded scan/timing evidence.
 
-- fixed database/workgroup/relation;
-- exact Gate 6.1 compiler SQL grammar admission;
-- validated execution-parameter literal shapes;
-- SQL `LIMIT` equal to semantic result bound;
-- synchronous bounded polling;
-- cancellation on timeout or unknown state;
-- bounded `GetQueryResults` pagination;
-- continuation-token cycle detection;
-- accumulated result row bound;
-- stable metadata and row-width validation;
-- recorded data-scanned and execution timings.
-
-Real success evidence on 2026-09-04:
+Real success evidence:
 
 ```text
 query_execution_id:         958fb573-1a69-4ce6-8a36-d9be45e71c79
@@ -274,243 +192,174 @@ engine_execution_time_ms:   973
 total_execution_time_ms:    1,128
 ```
 
-Intentional fail-closed evidence:
-
-```text
-limit: 101
- -> SemanticQueryValidationError
- -> rejected before compilation and Athena
-```
-
-Gate 6.2 added no AWS resources and no model calls. A local IAM Identity Center profile was used only for validation; it does not satisfy the final runtime least-privilege role criterion.
+Intentional `limit=101` fails before Athena.
 
 Closeout: [`../labs/phase-6-gate-6-2-athena-readonly-execution.md`](../labs/phase-6-gate-6-2-athena-readonly-execution.md).
 
 ### Gate 6.3 — Bounded planner contract + offline evaluation — COMPLETE
 
-Gate 6.3 freezes the model-facing planner boundary before making a real Bedrock call.
-
-The planner input is bounded to 1,000 characters. Its output is exactly one of:
+Frozen planner authority:
 
 ```text
-semantic_query
-unsupported
+input length:      <= 1,000 chars
+decisions:         semantic_query | unsupported
+metric:            epss_score
+dimensions:        exactly [cve]
+snapshot_date:     explicit YYYY-MM-DD
+minimum_score:     null or inclusive >= threshold
+order:             epss_score asc|desc
+limit:             1..100
+SQL field:         none
 ```
 
-Supported model-facing semantics remain identical to Gate 6.1:
+The deterministic parser rejects malformed/extra/missing fields, unsupported semantics, invalid values, relative/missing dates, and SQL injection attempts before rebuilding `SemanticQuery`.
 
-```text
-metric:           epss_score
-dimensions:       exactly [cve]
-snapshot_date:    explicit YYYY-MM-DD only
-minimum_score:    null or inclusive >= threshold in 0.0..1.0
-order_by:         epss_score
-order_direction:  asc | desc
-limit:            1..100
-```
-
-The Bedrock structured-output JSON Schema contains no SQL field or caller-selected table/column authority. Every model proposal must be reparsed through deterministic application code and the existing `SemanticQuery` constructor.
-
-Explicit fail-closed planner reasons:
-
-```text
-missing_explicit_snapshot_date
-unsupported_semantics
-ambiguous
-```
-
-The first golden evaluation corpus is frozen at:
+Golden offline evaluation:
 
 ```text
 18 total cases
-  8 supported semantic-query cases
- 10 fail-closed unsupported cases
-```
-
-Evaluation measures separately:
-
-```text
-decision
-metric
-dimensions
-snapshot date
-minimum score
-order field
-order direction
-limit
-exact SemanticQuery
-unsupported reason
-```
-
-The pure Converse request contract currently uses a smoke-test candidate of `anthropic.claude-haiku-4-5-20251001-v1:0` in `us-east-1`, `temperature=0.0`, `maxTokens=256`, no streaming, no tools. This is not yet a permanent model selection and no model was invoked in Gate 6.3.
-
-Final CI evidence:
-
-```text
-GitHub Actions run:      33881700812
-Semantic Query Ruff:     PASS
-Semantic Query Pyright:  0 errors / 0 warnings
-Semantic Query pytest:   70 passed in 0.16s
-Correlation regression: PASS
-Repository Intel:       PASS
-Risk Policy:             PASS
-```
-
-Gate 6.3 added:
-
-```text
-new AWS resources:   0
-new IAM permissions: 0
-Bedrock calls:       0
-Athena calls:        0
-incremental AWS cost: $0
+  8 supported
+ 10 fail-closed unsupported
 ```
 
 ADR: [`adr/0021-bounded-bedrock-semantic-query-planner.md`](adr/0021-bounded-bedrock-semantic-query-planner.md).
 
 Closeout: [`../labs/phase-6-gate-6-3-planner-contract-evaluation.md`](../labs/phase-6-gate-6-3-planner-contract-evaluation.md).
 
-### Gate 6.4 — Real Bedrock planner invocation — NEXT
+### Gate 6.4 — Real Bedrock planner invocation — IMPLEMENTED / CLOSEOUT PENDING
 
-Gate 6.4 is the first gate authorized to make a real model call.
-
-Before implementation, revalidate current official AWS documentation for:
+Selected runtime boundary:
 
 ```text
-selected model lifecycle / availability
-Converse structured-output support
-direct vs cross-Region inference behavior
-request / response fields
-bedrock:InvokeModel IAM scope
-quotas, throttling, retry behavior
-usage token fields
-current pricing
+model_id:       us.anthropic.claude-haiku-4-5-20251001-v1:0
+client Region:  us-east-1
+inference mode: US Geographic system-defined inference profile
+streaming:      disabled
+tools:          disabled
+temperature:    0.0
+maxTokens:      256
 ```
 
-The smallest real flow should be:
+Implemented code:
 
 ```text
-natural-language question
- -> bounded Converse invocation
- -> structured planner response
- -> deterministic parser
- -> SemanticQuery
+BedrockPlannerInvocationEvidence
+BedrockPlannerResult
+BedrockConverseClient Protocol
+BedrockSemanticPlanner
+ExecuteNaturalLanguageSemanticQuery
+scripts/run_natural_language_semantic_query.py
 ```
 
-Then prove one supported question through the existing deterministic path:
+The Bedrock adapter is injected with a client, performs one bounded Converse call, requires the expected non-streaming text shape, reparses the model text through `parse_planner_json()`, and records metadata-only invocation evidence. SDK/provider failures are wrapped at the adapter boundary while preserving their cause.
+
+Real supported versioned E2E evidence on 2026-09-04:
 
 ```text
-SemanticQuery
- -> deterministic compiler
- -> bounded Athena executor
- -> structured evidence
+question:                       Which CVEs have EPSS of at least 0.7 on 2026-09-03?
+decision:                       semantic_query
+input/output/total:             942 / 79 / 1021 tokens
+Bedrock latency:                1,632 ms
+client elapsed:                 2,894 ms
+retries:                        0
+estimated planner cost:         ~$0.00147
+Athena query_execution_id:      09a32501-a06c-4437-809c-ebcaf350cd1d
+Athena rows:                    20
+Athena data scanned:            3,785,003 bytes (~3.61 MiB)
+Athena engine/total:            994 / 1,192 ms
 ```
 
-Gate 6.4 must record at minimum:
+Real fail-closed versioned evidence:
 
 ```text
-model ID
-Region / inference mode
-inputTokens
-outputTokens
-totalTokens
-planner latency
-estimated model invocation cost
-planner decision / parsed SemanticQuery
-Athena query_execution_id for supported end-to-end case
-Athena data scanned / latency
-one intentional diagnosable planner failure
+question:         Which CVEs have EPSS of at least 0.7?
+decision:         unsupported
+reason:           missing_explicit_snapshot_date
+athena_invoked:   false
+input/output:     933 / 23 tokens
+Bedrock latency:  878 ms
+client elapsed:   2,145 ms
+retries:          0
+estimated cost:   ~$0.00115
 ```
 
-Do not grant SQL, arbitrary identifiers, streaming, tools, RAG, Knowledge Bases, agents, MCP, or AgentCore merely to complete the first model invocation.
+A local IAM Identity Center token-expiry failure was also diagnosed before Bedrock invocation and did not reach Athena.
 
-### Remaining Phase 6 work
+Closeout: [`../labs/phase-6-gate-6-4-real-bedrock-planner.md`](../labs/phase-6-gate-6-4-real-bedrock-planner.md).
 
-After Gate 6.3, remaining phase exit work includes:
+### Phase 6 exit state
 
-```text
-real Bedrock planner invocation
-real planner evaluation results against the frozen dataset
-model IAM boundary
-input/output token accounting
-planner latency evidence
-model invocation cost evidence
-throttling/retry/failure diagnosis
-at least one natural-language factual question end to end
-intentional planner failure evidence
-final runtime least-privilege boundary when a deployed runtime exists
-```
+- [x] typed `SemanticQuery` contract;
+- [x] explicit metric/dimension/filter allowlists;
+- [x] invalid/unknown semantics fail closed;
+- [x] deterministic SQL only;
+- [x] bounded read-only Athena for the supported slice;
+- [x] planner evaluation set with field-level metrics;
+- [x] real bounded Bedrock invocation;
+- [x] typed runtime invocation evidence;
+- [x] real model/API/token/latency/cost evidence;
+- [x] versioned natural-language question through model + parser + compiler + Athena;
+- [x] versioned intentional semantic failure with `athena_invoked=false`;
+- [x] diagnosable local authentication failure;
+- [x] ADR rejecting unrestricted text-to-SQL;
+- [x] ADR defining bounded planner authority;
+- [ ] final targeted/regression validation + PR + green CI + merge;
+- [deferred] final deployed runtime IAM least privilege until a runtime identity exists.
 
-### Phase 6 exit criteria
-
-- [x] typed `SemanticQuery` contract exists;
-- [x] metric/dimension/filter allowlists are explicit;
-- [x] invalid or unknown semantics fail closed;
-- [x] SQL is generated only by deterministic application code;
-- [x] Athena execution is read-only and bounded for the supported slice;
-- [x] planner evaluation set measures semantic-field accuracy separately;
-- [ ] at least one natural-language factual question runs end to end through a real model;
-- [ ] model/API/token/latency/cost evidence is recorded;
-- [ ] intentional real planner failure can be diagnosed;
-- [x] ADR explains why unrestricted text-to-SQL is not used;
-- [x] ADR defines the bounded structured planner authority;
-- [ ] final runtime IAM is least privilege once a deployed runtime exists.
+The local bootstrap/admin Identity Center profile is lab validation only and does not satisfy the future deployed-runtime IAM criterion.
 
 Do not add RAG, Knowledge Bases, vector search, agents, MCP, or AgentCore to Phase 6.
 
-## Phase 7 — Knowledge Retrieval with Bedrock
+## Next Phase after Phase 6 merge
+
+### Phase 7 — Knowledge Retrieval with Bedrock
 
 Add a controlled RAG path for remediation/documentation questions with separately testable retrieval, citations, chunking/metadata decisions, and retrieval-quality evaluation.
 
-## Phase 8 — Hybrid Retrieval
+This is deliberately separate from the structured Phase 6 path: not every question is RAG.
 
-Combine structured threat intelligence with semantic retrieval, preferably scoping knowledge retrieval using deterministic CVE/GHSA/package evidence first.
+## Future phases
 
-## Phase 9 — Public Analyze Your Repository
+### Phase 8 — Hybrid Retrieval
 
-Expose a bounded public demo only after repository intelligence and risk policy are stable.
+Combine deterministic structured threat intelligence with semantic retrieval, preferably using validated CVE/GHSA/package evidence to scope knowledge retrieval first.
 
-Expected controls include validation, cache/reuse, per-client limits, global budget, reserved concurrency, size/duration limits, tool/LLM/Athena call limits, output-token limits, abuse tests, and a kill switch.
+### Phase 9 — Public Analyze Your Repository
 
-## Phase 10 — Observability & Operational Excellence
+Expose a bounded public demo only after repository intelligence, risk policy, structured query, and retrieval boundaries are stable.
+
+### Phase 10 — Observability & Operational Excellence
 
 Make the end-to-end system diagnosable through stage latency, errors, throttling, queue/DLQ state, Athena bytes, model tokens/latency, retrieval latency, and estimated investigation cost.
 
-## Phase 11 — Single-Agent Baseline
+### Phase 11 — Single-Agent Baseline
 
 Build one bounded agent over existing deterministic tools before introducing multi-agent complexity. Measure quality, latency, cost, tool calls, and failure modes.
 
-## Phase 12 — Multi-Agent Architecture
+### Phase 12 — Multi-Agent Architecture
 
 Introduce specialization only where it demonstrably improves the single-agent baseline.
 
-Candidate roles:
-
-- Supervisor;
-- Exposure Agent;
-- Threat Intelligence Agent;
-- Remediation Agent.
-
-## Phase 13 — MCP
+### Phase 13 — MCP
 
 Expose controlled OpsLens capabilities through typed, authorized, observable MCP tools with allowlists and prompt/tool-injection tests.
 
-## Phase 14 — Amazon Bedrock AgentCore
+### Phase 14 — Amazon Bedrock AgentCore
 
-Evaluate/adopt AgentCore only after a working bounded agent baseline exists and there is a concrete need for its runtime, gateway, identity, memory, or observability capabilities.
+Evaluate/adopt AgentCore only after a working bounded agent baseline exists and there is a concrete need for runtime, gateway, identity, memory, or observability capabilities.
 
-## Phase 15 — A2A
+### Phase 15 — A2A
 
 Introduce agent-to-agent interoperability only after internal agent contracts and authority boundaries are stable.
 
-## Phase 16 — Runtime Exposure with Amazon Inspector
+### Phase 16 — Runtime Exposure with Amazon Inspector
 
-Add deployed-runtime/package evidence so OpsLens can distinguish repository risk from real runtime exposure rather than inferring one from the other.
+Add deployed-runtime/package evidence so OpsLens can distinguish repository risk from real runtime exposure rather than infer one from the other.
 
-## Phase 17 — Security Hardening
+### Phase 17 — Security Hardening
 
-Expand abuse-case, identity, authorization, data-handling, supply-chain, prompt/tool-injection, red-team, and denial-of-wallet controls across the public and agentic surfaces.
+Expand identity, authorization, abuse-case, data-handling, supply-chain, prompt/tool-injection, red-team, and denial-of-wallet controls.
 
-## Phase 18 — Evaluation, Cost & Portfolio Readiness
+### Phase 18 — Evaluation, Cost & Portfolio Readiness
 
-Close the program with reproducible evaluation, measured cost, architecture/runbooks, portfolio documentation, and explicit evidence for the trade-offs made across deterministic, retrieval, and agentic paths.
+Close the program with reproducible evaluation, measured cost, architecture/runbooks, portfolio documentation, and explicit evidence for deterministic, retrieval, and agentic trade-offs.
