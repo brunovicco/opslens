@@ -6,7 +6,11 @@ from types import TracebackType
 from typing import ClassVar
 
 import pytest
-from governed_llm_gateway_contracts import ExecutionStatus, StreamEventType
+from governed_llm_gateway_contracts import (
+    ExecutionStatus,
+    StructuredOutputSchema,
+    WorkloadRequirements,
+)
 
 from opslens.semantic_query.adapters.outbound import governed_gateway as gateway_module
 from opslens.semantic_query.adapters.outbound.governed_gateway import (
@@ -76,9 +80,12 @@ def test_gateway_planner_preserves_bounded_structured_contract(
     assert outcome.reason is UnsupportedReason.AMBIGUOUS
     assert _FakeGatewayClient.observed["workload"] == "opslens.semantic-query.plan"
     requirements = _FakeGatewayClient.observed["requirements"]
-    assert getattr(requirements, "structured_output") is True
+    assert isinstance(requirements, WorkloadRequirements)
+    assert requirements.structured_output is True
     structured_output = _FakeGatewayClient.observed["structured_output"]
-    assert getattr(structured_output, "name") == PLANNER_SCHEMA_NAME
+    assert isinstance(structured_output, StructuredOutputSchema)
+    assert structured_output.name == PLANNER_SCHEMA_NAME
+    assert "tools" not in _FakeGatewayClient.observed
 
 
 def test_gateway_planner_rejects_failed_partial_content(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -99,7 +106,3 @@ def test_gateway_planner_keeps_deterministic_parser_as_final_authority(
 
     with pytest.raises(ValueError, match="exact"):
         _planner().plan(SemanticPlannerRequest("show EPSS for 2026-09-01"))
-
-
-def test_gateway_planner_does_not_use_streaming_or_tools() -> None:
-    assert StreamEventType.RESPONSE_COMPLETED.value == "response.completed"
