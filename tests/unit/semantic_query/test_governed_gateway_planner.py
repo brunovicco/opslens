@@ -8,6 +8,8 @@ from typing import ClassVar
 import pytest
 from governed_llm_gateway_contracts import (
     ExecutionStatus,
+    Message,
+    MessageRole,
     StructuredOutputSchema,
     WorkloadRequirements,
 )
@@ -24,7 +26,8 @@ from opslens.semantic_query.planner.models import (
     UnsupportedPlannerDecision,
     UnsupportedReason,
 )
-from opslens.semantic_query.planner.schema import PLANNER_SCHEMA_NAME
+from opslens.semantic_query.planner.prompt import PLANNER_MAX_TOKENS, PLANNER_SYSTEM_PROMPT
+from opslens.semantic_query.planner.schema import PLANNER_OUTPUT_SCHEMA, PLANNER_SCHEMA_NAME
 
 
 class _FakeResponse:
@@ -79,13 +82,26 @@ def test_gateway_planner_preserves_bounded_structured_contract(
     assert outcome.decision is PlannerDecision.UNSUPPORTED
     assert outcome.reason is UnsupportedReason.AMBIGUOUS
     assert _FakeGatewayClient.observed["workload"] == "opslens.semantic-query.plan"
+    assert _FakeGatewayClient.observed["max_output_tokens"] == PLANNER_MAX_TOKENS
+    assert _FakeGatewayClient.observed["provider_timeout_seconds"] == 10.0
+
+    messages = _FakeGatewayClient.observed["messages"]
+    assert isinstance(messages, tuple)
+    assert messages == (
+        Message(role=MessageRole.SYSTEM, content=PLANNER_SYSTEM_PROMPT),
+        Message(role=MessageRole.USER, content="show me the latest EPSS values"),
+    )
+
     requirements = _FakeGatewayClient.observed["requirements"]
     assert isinstance(requirements, WorkloadRequirements)
     assert requirements.structured_output is True
     structured_output = _FakeGatewayClient.observed["structured_output"]
     assert isinstance(structured_output, StructuredOutputSchema)
     assert structured_output.name == PLANNER_SCHEMA_NAME
+    assert structured_output.schema == PLANNER_OUTPUT_SCHEMA
     assert "tools" not in _FakeGatewayClient.observed
+    assert "provider" not in _FakeGatewayClient.observed
+    assert "model" not in _FakeGatewayClient.observed
 
 
 def test_gateway_planner_rejects_failed_partial_content(monkeypatch: pytest.MonkeyPatch) -> None:
