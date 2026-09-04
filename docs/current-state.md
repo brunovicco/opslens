@@ -19,7 +19,8 @@ Phase 6    Semantic Query Layer                                COMPLETE
   Gate 6.3 Bounded planner contract + offline evaluation       COMPLETE
   Gate 6.4 Real Bedrock planner invocation                     COMPLETE
 Phase 7    Knowledge Retrieval with Bedrock                    IN PROGRESS
-  Gate 7.1 Corpus + retrieval contract                         IN PROGRESS
+  Gate 7.1 Corpus + retrieval contract                         COMPLETE / MERGE PENDING
+  Gate 7.2 Reproducible canonical corpus                       NOT STARTED
 ```
 
 Phase 6 was squash-merged through PR #91:
@@ -29,10 +30,12 @@ commit: 95db66e278059629ce6572b2950e9cca705c6498
 PR:     #91 — feat(semantic-query): close Gate 6.4 with real Bedrock runtime evidence
 ```
 
-Gate 7.1 is being developed on:
+Gate 7.1 is complete on branch/PR:
 
 ```text
-feat/phase7-retrieval-contract
+branch: feat/phase7-retrieval-contract
+PR:     #93 — feat(knowledge-retrieval): start Phase 7 Gate 7.1 contracts
+status: ready for logical merge after final documentation-only closeout
 ```
 
 ## Permanent boundaries
@@ -338,9 +341,9 @@ knowledge/remediation question
  -> answer + deterministic citations
 ```
 
-### Gate 7.1 — Corpus + retrieval contract — IN PROGRESS
+### Gate 7.1 — Corpus + retrieval contract — COMPLETE / MERGE PENDING
 
-Current offline-first branch freezes:
+The offline-first contract freezes:
 
 ```text
 KnowledgeDocument
@@ -350,7 +353,7 @@ RetrievalEvidence
 Citation
 ```
 
-Current v1 retrieval bounds:
+Frozen v1 retrieval bounds:
 
 ```text
 query:         non-blank, <= 1,000 characters
@@ -363,7 +366,7 @@ The contract preserves separate logical source identity and exact SHA-256 conten
 
 Citations are projected deterministically from admitted `RetrievedChunk` evidence rather than accepting model-authored provenance.
 
-Canonical metadata is provider-independent. No Bedrock metadata projection, embedding model, chunking strategy, vector store, or Knowledge Base mode is frozen in Gate 7.1.
+Canonical metadata is provider-independent. No Bedrock metadata projection, embedding model, chunking strategy, vector store, or Knowledge Base mode was frozen in Gate 7.1.
 
 Offline golden fixture:
 
@@ -375,17 +378,32 @@ metrics prepared for later: Recall@K + MRR
 corpus status: planned_for_gate_7_2
 ```
 
-Local validation of the current increment:
+Final CI evidence for the functional Gate 7.1 commit:
 
 ```text
-pytest:      14 passed
-compileall:  PASS
-line length: 0 Python lines > 100 characters
-Pyright:     pending automated/manual strict run
-Ruff:        dedicated CI gate configured; automated run pending
+workflow: Python CI
+run:      33931113097
+commit:   f882f5df12f20f68b2601bf525a625fe72a36b7b
+
+Knowledge Retrieval Ruff:     PASS
+Knowledge Retrieval Pyright:  0 errors / 0 warnings
+Knowledge Retrieval pytest:   14 passed in 0.08s
+
+Correlation regression:              PASS
+Repository Intelligence regression:  PASS
+Risk Policy regression:              PASS
+Semantic Query regression:           PASS
 ```
 
-No AWS resource, Knowledge Base, vector index, embedding job, IAM role, or paid AWS call has been added for Gate 7.1.
+The earlier failing CI runs exposed and resolved two Ruff findings and strict-type runtime-validation findings. Runtime validation was preserved by moving untrusted normalization behind helpers accepting `object` rather than weakening public type annotations.
+
+No AWS resource, Knowledge Base, vector index, embedding job, IAM role, or paid AWS call was added for Gate 7.1.
+
+Closeout evidence: [`../labs/phase-7-gate-7-1-retrieval-contract.md`](../labs/phase-7-gate-7-1-retrieval-contract.md).
+
+### Gate 7.2 — Reproducible canonical corpus — NOT STARTED
+
+Gate 7.2 remains outside PR #93. It may begin only after the Gate 7.1 logical merge, unless that merge is explicitly deferred.
 
 ## AWS foundation
 
@@ -417,14 +435,13 @@ A pre-existing repo-wide Ruff backlog outside these scoped deterministic slices 
 
 ## Next action
 
-Complete Gate 7.1 only:
+Close the Gate 7.1 logical increment:
 
 ```text
-1. run Ruff + Pyright strict + pytest for knowledge_retrieval
-2. resolve any quality-gate findings
-3. finalize Gate 7.1 contract/golden-dataset documentation
-4. demonstrate Gate 7.1 exit criteria
-5. only then decide whether Gate 7.2 may begin
+1. review PR #93
+2. squash-merge PR #93 into main
+3. confirm the resulting main commit
+4. only then start Gate 7.2 — Reproducible canonical corpus
 ```
 
-Do not create a Knowledge Base, vector store/index, embedding job, IAM role, or paid AWS retrieval/synthesis path before Gate 7.1 closes.
+Do not create a Knowledge Base, vector store/index, embedding job, IAM role, or paid AWS retrieval/synthesis path as part of the Gate 7.1 PR.
