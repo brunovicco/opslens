@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import date
 
 import pytest
@@ -44,7 +44,7 @@ class _FakeBedrockClient:
         return self._response
 
 
-def _clock(*values: float):  # type: ignore[no-untyped-def]
+def _clock(*values: float) -> Callable[[], float]:
     """Return a deterministic monotonic clock over the supplied values."""
     iterator = iter(values)
     return lambda: next(iterator)
