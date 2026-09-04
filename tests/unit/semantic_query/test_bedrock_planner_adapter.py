@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Mapping
 from datetime import date
+from typing import cast
 
 import pytest
 
@@ -162,10 +163,8 @@ def test_bedrock_adapter_preserves_typed_fail_closed_decision() -> None:
 def test_bedrock_adapter_rejects_multiple_content_blocks() -> None:
     """Unexpected multimodal or partial content cannot cross the planner boundary."""
     response = _response(_supported_output())
-    output = response["output"]
-    assert isinstance(output, dict)
-    message = output["message"]
-    assert isinstance(message, dict)
+    output = cast(dict[str, object], response["output"])
+    message = cast(dict[str, object], output["message"])
     message["content"] = [
         {"text": json.dumps(_supported_output())},
         {"text": json.dumps(_supported_output())},
@@ -203,8 +202,7 @@ def test_bedrock_adapter_rejects_missing_runtime_evidence() -> None:
 def test_bedrock_adapter_rejects_inconsistent_token_evidence() -> None:
     """Token metadata must satisfy the evidence contract before it is returned."""
     response = _response(_supported_output())
-    usage = response["usage"]
-    assert isinstance(usage, dict)
+    usage = cast(dict[str, object], response["usage"])
     usage["totalTokens"] = 999
     planner = BedrockSemanticPlanner(
         _FakeBedrockClient(response),
