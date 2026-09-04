@@ -1,0 +1,18 @@
+{"expected":{"decision":"semantic_query","dimensions":["cve"],"filters":{"minimum_score":0.7,"snapshot_date":"2026-09-03"},"limit":20,"metric":"epss_score","order_by":"epss_score","order_direction":"desc"},"id":"s01","question":"Which CVEs have EPSS of at least 0.7 on 2026-09-03?"}
+{"expected":{"decision":"semantic_query","dimensions":["cve"],"filters":{"minimum_score":null,"snapshot_date":"2026-09-03"},"limit":20,"metric":"epss_score","order_by":"epss_score","order_direction":"desc"},"id":"s02","question":"List CVEs by highest EPSS on 2026-09-03."}
+{"expected":{"decision":"semantic_query","dimensions":["cve"],"filters":{"minimum_score":null,"snapshot_date":"2026-09-03"},"limit":5,"metric":"epss_score","order_by":"epss_score","order_direction":"desc"},"id":"s03","question":"Show the 5 CVEs with the highest EPSS on 2026-09-03."}
+{"expected":{"decision":"semantic_query","dimensions":["cve"],"filters":{"minimum_score":null,"snapshot_date":"2026-09-03"},"limit":10,"metric":"epss_score","order_by":"epss_score","order_direction":"asc"},"id":"s04","question":"Show 10 CVEs with the lowest EPSS on 2026-09-03."}
+{"expected":{"decision":"semantic_query","dimensions":["cve"],"filters":{"minimum_score":0.7,"snapshot_date":"2026-09-03"},"limit":20,"metric":"epss_score","order_by":"epss_score","order_direction":"desc"},"id":"s05","question":"Which CVEs have an EPSS score of at least 70% on 2026-09-03?"}
+{"expected":{"decision":"semantic_query","dimensions":["cve"],"filters":{"minimum_score":0.3,"snapshot_date":"2026-08-31"},"limit":20,"metric":"epss_score","order_by":"epss_score","order_direction":"desc"},"id":"s06","question":"Which CVEs have EPSS >= 0.3 on 2026-08-31?"}
+{"expected":{"decision":"semantic_query","dimensions":["cve"],"filters":{"minimum_score":0.1,"snapshot_date":"2026-09-01"},"limit":100,"metric":"epss_score","order_by":"epss_score","order_direction":"desc"},"id":"s07","question":"Return the top 100 CVEs with EPSS at least 0.1 on 2026-09-01."}
+{"expected":{"decision":"semantic_query","dimensions":["cve"],"filters":{"minimum_score":0.0,"snapshot_date":"2026-09-03"},"limit":20,"metric":"epss_score","order_by":"epss_score","order_direction":"desc"},"id":"s08","question":"Which CVEs have EPSS of at least 0 on 2026-09-03?"}
+{"expected":{"decision":"unsupported","reason":"missing_explicit_snapshot_date"},"id":"u01","question":"Which CVEs have EPSS of at least 0.7?"}
+{"expected":{"decision":"unsupported","reason":"missing_explicit_snapshot_date"},"id":"u02","question":"Which CVEs have EPSS of at least 0.7 in the latest snapshot?"}
+{"expected":{"decision":"unsupported","reason":"missing_explicit_snapshot_date"},"id":"u03","question":"Which CVEs have EPSS of at least 0.7 today?"}
+{"expected":{"decision":"unsupported","reason":"unsupported_semantics"},"id":"u04","question":"Which CVEs have EPSS above 0.7 on 2026-09-03?"}
+{"expected":{"decision":"unsupported","reason":"unsupported_semantics"},"id":"u05","question":"Which vulnerabilities are in CISA KEV on 2026-09-03?"}
+{"expected":{"decision":"unsupported","reason":"unsupported_semantics"},"id":"u06","question":"What remediation is recommended for CVE-2021-44228?"}
+{"expected":{"decision":"unsupported","reason":"unsupported_semantics"},"id":"u07","question":"Show P0 vulnerabilities on 2026-09-03."}
+{"expected":{"decision":"unsupported","reason":"ambiguous"},"id":"u08","question":"Which CVEs had high EPSS last Tuesday?"}
+{"expected":{"decision":"unsupported","reason":"unsupported_semantics"},"id":"u09","question":"Show the top 101 CVEs by EPSS on 2026-09-03."}
+{"expected":{"decision":"unsupported","reason":"unsupported_semantics"},"id":"u10","question":"Which CVEs have EPSS at least 1.2 on 2026-09-03?"}

@@ -29,7 +29,7 @@ concept
 | 3 | Vulnerability Correlation Engine | ✅ Complete |
 | 4 | Repository Intelligence | ✅ Complete |
 | 5 | Risk Prioritization Engine | ✅ Complete |
-| 6 | Semantic Query Layer | 🚧 In progress — Gates 6.1 and 6.2 complete |
+| 6 | Semantic Query Layer | 🚧 In progress — Gates 6.1, 6.2 and 6.3 complete; Gate 6.4 next |
 | 7 | Knowledge Retrieval with Bedrock | ⏳ Planned |
 | 8 | Hybrid Retrieval | ⏳ Planned |
 | 9 | Public Analyze Your Repository | ⏳ Planned |
@@ -181,6 +181,8 @@ Target flow:
 ```text
 User question
  -> bounded Bedrock planner
+ -> structured planner output
+ -> deterministic planner-output parser
  -> typed SemanticQuery
  -> deterministic validator
  -> deterministic SQL compiler
@@ -193,7 +195,7 @@ User question
 
 > **No unrestricted text-to-SQL.**
 
-A future model may propose only a typed semantic query. Application code owns validation, SQL generation, execution limits, and evidence validation.
+A model may propose only a typed semantic query. Application code owns validation, SQL generation, execution limits, and evidence validation.
 
 ### Gate 6.1 — Typed semantic-query contract + deterministic compiler — COMPLETE
 
@@ -239,7 +241,7 @@ ADR: [`adr/0020-no-unrestricted-text-to-sql.md`](adr/0020-no-unrestricted-text-t
 
 ### Gate 6.2 — Bounded read-only Athena execution — COMPLETE
 
-The first real AWS execution boundary is now proven through the existing dev analytics stack:
+The first real AWS execution boundary is proven through the existing dev analytics stack:
 
 ```text
 database:    opslens_dev
@@ -261,8 +263,6 @@ Executor controls include:
 - accumulated result row bound;
 - stable metadata and row-width validation;
 - recorded data-scanned and execution timings.
-
-The first real smoke exposed a valid Athena pagination behavior that mocks had not represented. The implementation was corrected to treat `NextToken` as bounded transport behavior rather than broader query authority.
 
 Real success evidence on 2026-09-04:
 
@@ -286,16 +286,151 @@ Gate 6.2 added no AWS resources and no model calls. A local IAM Identity Center 
 
 Closeout: [`../labs/phase-6-gate-6-2-athena-readonly-execution.md`](../labs/phase-6-gate-6-2-athena-readonly-execution.md).
 
-### Remaining Phase 6 work
+### Gate 6.3 — Bounded planner contract + offline evaluation — COMPLETE
 
-The deterministic query foundation is complete, but Phase 6 is not complete. Remaining exit work includes:
+Gate 6.3 freezes the model-facing planner boundary before making a real Bedrock call.
+
+The planner input is bounded to 1,000 characters. Its output is exactly one of:
 
 ```text
-bounded natural-language planner contract
-planner structured-output validation
-planner evaluation dataset
-metric/dimension/filter accuracy measurement
-current Bedrock model/API selection
+semantic_query
+unsupported
+```
+
+Supported model-facing semantics remain identical to Gate 6.1:
+
+```text
+metric:           epss_score
+dimensions:       exactly [cve]
+snapshot_date:    explicit YYYY-MM-DD only
+minimum_score:    null or inclusive >= threshold in 0.0..1.0
+order_by:         epss_score
+order_direction:  asc | desc
+limit:            1..100
+```
+
+The Bedrock structured-output JSON Schema contains no SQL field or caller-selected table/column authority. Every model proposal must be reparsed through deterministic application code and the existing `SemanticQuery` constructor.
+
+Explicit fail-closed planner reasons:
+
+```text
+missing_explicit_snapshot_date
+unsupported_semantics
+ambiguous
+```
+
+The first golden evaluation corpus is frozen at:
+
+```text
+18 total cases
+  8 supported semantic-query cases
+ 10 fail-closed unsupported cases
+```
+
+Evaluation measures separately:
+
+```text
+decision
+metric
+dimensions
+snapshot date
+minimum score
+order field
+order direction
+limit
+exact SemanticQuery
+unsupported reason
+```
+
+The pure Converse request contract currently uses a smoke-test candidate of `anthropic.claude-haiku-4-5-20251001-v1:0` in `us-east-1`, `temperature=0.0`, `maxTokens=256`, no streaming, no tools. This is not yet a permanent model selection and no model was invoked in Gate 6.3.
+
+Final CI evidence:
+
+```text
+GitHub Actions run:      33881700812
+Semantic Query Ruff:     PASS
+Semantic Query Pyright:  0 errors / 0 warnings
+Semantic Query pytest:   70 passed in 0.16s
+Correlation regression: PASS
+Repository Intel:       PASS
+Risk Policy:             PASS
+```
+
+Gate 6.3 added:
+
+```text
+new AWS resources:   0
+new IAM permissions: 0
+Bedrock calls:       0
+Athena calls:        0
+incremental AWS cost: $0
+```
+
+ADR: [`adr/0021-bounded-bedrock-semantic-query-planner.md`](adr/0021-bounded-bedrock-semantic-query-planner.md).
+
+Closeout: [`../labs/phase-6-gate-6-3-planner-contract-evaluation.md`](../labs/phase-6-gate-6-3-planner-contract-evaluation.md).
+
+### Gate 6.4 — Real Bedrock planner invocation — NEXT
+
+Gate 6.4 is the first gate authorized to make a real model call.
+
+Before implementation, revalidate current official AWS documentation for:
+
+```text
+selected model lifecycle / availability
+Converse structured-output support
+direct vs cross-Region inference behavior
+request / response fields
+bedrock:InvokeModel IAM scope
+quotas, throttling, retry behavior
+usage token fields
+current pricing
+```
+
+The smallest real flow should be:
+
+```text
+natural-language question
+ -> bounded Converse invocation
+ -> structured planner response
+ -> deterministic parser
+ -> SemanticQuery
+```
+
+Then prove one supported question through the existing deterministic path:
+
+```text
+SemanticQuery
+ -> deterministic compiler
+ -> bounded Athena executor
+ -> structured evidence
+```
+
+Gate 6.4 must record at minimum:
+
+```text
+model ID
+Region / inference mode
+inputTokens
+outputTokens
+totalTokens
+planner latency
+estimated model invocation cost
+planner decision / parsed SemanticQuery
+Athena query_execution_id for supported end-to-end case
+Athena data scanned / latency
+one intentional diagnosable planner failure
+```
+
+Do not grant SQL, arbitrary identifiers, streaming, tools, RAG, Knowledge Bases, agents, MCP, or AgentCore merely to complete the first model invocation.
+
+### Remaining Phase 6 work
+
+After Gate 6.3, remaining phase exit work includes:
+
+```text
+real Bedrock planner invocation
+real planner evaluation results against the frozen dataset
 model IAM boundary
 input/output token accounting
 planner latency evidence
@@ -306,10 +441,6 @@ intentional planner failure evidence
 final runtime least-privilege boundary when a deployed runtime exists
 ```
 
-Before the next implementation gate, current official AWS documentation must be rechecked for Bedrock API behavior, supported structured output, model availability, IAM, quotas, retry/throttling behavior, token accounting, and pricing.
-
-Do not add RAG, Knowledge Bases, vector search, agents, MCP, or AgentCore to Phase 6.
-
 ### Phase 6 exit criteria
 
 - [x] typed `SemanticQuery` contract exists;
@@ -317,12 +448,15 @@ Do not add RAG, Knowledge Bases, vector search, agents, MCP, or AgentCore to Pha
 - [x] invalid or unknown semantics fail closed;
 - [x] SQL is generated only by deterministic application code;
 - [x] Athena execution is read-only and bounded for the supported slice;
-- [ ] planner evaluation set measures semantic-field accuracy separately;
-- [ ] at least one natural-language factual question runs end to end;
+- [x] planner evaluation set measures semantic-field accuracy separately;
+- [ ] at least one natural-language factual question runs end to end through a real model;
 - [ ] model/API/token/latency/cost evidence is recorded;
-- [ ] intentional planner failure can be diagnosed;
+- [ ] intentional real planner failure can be diagnosed;
 - [x] ADR explains why unrestricted text-to-SQL is not used;
+- [x] ADR defines the bounded structured planner authority;
 - [ ] final runtime IAM is least privilege once a deployed runtime exists.
+
+Do not add RAG, Knowledge Bases, vector search, agents, MCP, or AgentCore to Phase 6.
 
 ## Phase 7 — Knowledge Retrieval with Bedrock
 
