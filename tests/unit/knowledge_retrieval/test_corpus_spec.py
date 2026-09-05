@@ -8,20 +8,26 @@ from typing import cast
 
 from opslens.knowledge_retrieval.domain import CORPUS_SPEC_ID, SOURCE_REGISTRY_ID
 
-_FIXTURE_DIR = Path(__file__).parents[2] / "fixtures" / "knowledge_retrieval"
-_CORPUS_SPEC_FIXTURE = _FIXTURE_DIR / "corpus_spec_v1.json"
-_SOURCE_REGISTRY_FIXTURE = _FIXTURE_DIR / "source_registry_v1.json"
-_GOLDEN_FIXTURE = _FIXTURE_DIR / "golden_retrieval_v1.json"
+_REPO_ROOT = Path(__file__).parents[3]
+_CORPUS_DIR = _REPO_ROOT / "knowledge" / "corpus" / "v1"
+_CORPUS_SPEC_FILE = _CORPUS_DIR / "corpus_spec.json"
+_SOURCE_REGISTRY_FILE = _CORPUS_DIR / "source_registry.json"
+_GOLDEN_FIXTURE = (
+    Path(__file__).parents[2]
+    / "fixtures"
+    / "knowledge_retrieval"
+    / "golden_retrieval_v1.json"
+)
 
 
 def _load(path: Path) -> dict[str, object]:
-    """Load one checked-in JSON fixture through an explicit typing boundary."""
+    """Load one checked-in JSON input through an explicit typing boundary."""
     return cast(dict[str, object], json.loads(path.read_text(encoding="utf-8")))
 
 
 def test_corpus_spec_freezes_minimal_deterministic_normalization() -> None:
     """The v1 normalizer changes representation only where the policy explicitly allows it."""
-    raw = _load(_CORPUS_SPEC_FIXTURE)
+    raw = _load(_CORPUS_SPEC_FILE)
 
     assert raw["spec_id"] == CORPUS_SPEC_ID
     assert raw["source_registry_id"] == SOURCE_REGISTRY_ID
@@ -31,15 +37,15 @@ def test_corpus_spec_freezes_minimal_deterministic_normalization() -> None:
         "unicode": "preserve",
         "bom": "reject",
         "nul": "reject",
-        "selection": "exact-start-inclusive-end-exclusive",
+        "selection": "exact-line-aligned-start-inclusive-end-exclusive",
         "document_join": "two-lf",
     }
 
 
 def test_corpus_spec_exactly_covers_registry_and_positive_golden_chunks() -> None:
     """No source-registry document or golden chunk is silently added, omitted, or reordered."""
-    corpus = _load(_CORPUS_SPEC_FIXTURE)
-    registry = _load(_SOURCE_REGISTRY_FIXTURE)
+    corpus = _load(_CORPUS_SPEC_FILE)
+    registry = _load(_SOURCE_REGISTRY_FILE)
     golden = _load(_GOLDEN_FIXTURE)
 
     corpus_documents = cast(list[dict[str, object]], corpus["documents"])
@@ -79,7 +85,7 @@ def test_corpus_spec_exactly_covers_registry_and_positive_golden_chunks() -> Non
 
 def test_all_corpus_selectors_are_explicit_bounded_and_provenanced() -> None:
     """Each chunk has exact non-empty sentinels and a human-readable section path."""
-    corpus = _load(_CORPUS_SPEC_FIXTURE)
+    corpus = _load(_CORPUS_SPEC_FILE)
     documents = cast(list[dict[str, object]], corpus["documents"])
 
     selectors = [
