@@ -89,7 +89,9 @@ def test_retrieve_region_is_frozen_to_us_east_1() -> None:
         require_retrieve_region("us-west-2")
 
 
-def test_invalid_top_k_fails_before_runtime_client_creation(capsys: pytest.CaptureFixture[str]) -> None:
+def test_invalid_top_k_fails_before_runtime_client_creation(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     """The Gate 7.1 product bound rejects provider breadth before any AWS client is needed."""
     exit_code = main(
         [
