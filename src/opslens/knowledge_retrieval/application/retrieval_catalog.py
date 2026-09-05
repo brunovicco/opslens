@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import cast
 
 from opslens.knowledge_retrieval.application.bedrock_publication import (
     BEDROCK_PUBLICATION_PREFIX,
@@ -28,6 +29,25 @@ def _require_nonblank(value: object, *, field: str) -> str:
     """Require one trimmed non-empty string at a runtime boundary."""
     if not isinstance(value, str) or not value or value != value.strip():
         raise RetrievalCatalogError(f"{field} must be one trimmed non-empty string")
+    return value
+
+
+def _require_catalog_chunks(value: object) -> tuple[CanonicalRetrievalChunk, ...]:
+    """Validate one untrusted runtime tuple of canonical retrieval chunks."""
+    if not isinstance(value, tuple) or not value:
+        raise RetrievalCatalogError("chunks must be one non-empty tuple")
+    items = cast(tuple[object, ...], value)
+    if any(not isinstance(chunk, CanonicalRetrievalChunk) for chunk in items):
+        raise RetrievalCatalogError(
+            "chunks must contain only CanonicalRetrievalChunk values"
+        )
+    return cast(tuple[CanonicalRetrievalChunk, ...], items)
+
+
+def _require_manifest(value: object) -> KnowledgeCorpusManifest:
+    """Validate one untrusted runtime checked-corpus manifest."""
+    if not isinstance(value, KnowledgeCorpusManifest):
+        raise RetrievalCatalogError("manifest must be one KnowledgeCorpusManifest")
     return value
 
 
@@ -70,15 +90,11 @@ class CanonicalRetrievalCatalog:
 
     def __post_init__(self) -> None:
         """Reject empty or ambiguous content-addressed lookup authority."""
-        if not isinstance(self.chunks, tuple) or not self.chunks:
-            raise RetrievalCatalogError("chunks must be one non-empty tuple")
-        if any(not isinstance(chunk, CanonicalRetrievalChunk) for chunk in self.chunks):
-            raise RetrievalCatalogError(
-                "chunks must contain only CanonicalRetrievalChunk values"
-            )
-        keys = tuple(chunk.content_key for chunk in self.chunks)
-        digests = tuple(chunk.chunk_content_sha256 for chunk in self.chunks)
-        chunk_ids = tuple(chunk.chunk_id for chunk in self.chunks)
+        typed_chunks = _require_catalog_chunks(self.chunks)
+        object.__setattr__(self, "chunks", typed_chunks)
+        keys = tuple(chunk.content_key for chunk in typed_chunks)
+        digests = tuple(chunk.chunk_content_sha256 for chunk in typed_chunks)
+        chunk_ids = tuple(chunk.chunk_id for chunk in typed_chunks)
         for label, values in (
             ("content_key", keys),
             ("chunk_content_sha256", digests),
@@ -106,11 +122,10 @@ class CanonicalRetrievalCatalog:
 
 def build_retrieval_catalog(manifest: KnowledgeCorpusManifest) -> CanonicalRetrievalCatalog:
     """Build the content-key lookup authority directly from one checked typed manifest."""
-    if not isinstance(manifest, KnowledgeCorpusManifest):
-        raise RetrievalCatalogError("manifest must be one KnowledgeCorpusManifest")
+    typed_manifest = _require_manifest(manifest)
 
     chunks: list[CanonicalRetrievalChunk] = []
-    for document in manifest.documents:
+    for document in typed_manifest.documents:
         for chunk in document.chunks:
             chunks.append(
                 CanonicalRetrievalChunk(
