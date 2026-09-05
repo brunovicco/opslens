@@ -125,6 +125,19 @@ class _FailingPutClient(_FakeS3Client):
         raise _ProviderCodeError("AccessDenied")
 
 
+class _ParamValidationLikeError(RuntimeError):
+    """Synthetic non-provider exception used to verify safe type diagnostics."""
+
+
+class _FailingValidationPutClient(_FakeS3Client):
+    """Fake client that raises a local SDK validation-like exception."""
+
+    def put_object(self, **kwargs: object) -> object:
+        """Raise one deterministic local exception without a provider response."""
+        _ = kwargs
+        raise _ParamValidationLikeError("secret validation detail")
+
+
 def _store(client: _FakeS3Client) -> BoundedS3PublicationStore:
     """Return one adapter fixed to the real OpsLens account-shape boundary."""
     return BoundedS3PublicationStore(
@@ -133,6 +146,16 @@ def _store(client: _FakeS3Client) -> BoundedS3PublicationStore:
             bucket_name="opslens-dev-data-487757851499-us-east-1",
             expected_bucket_owner="487757851499",
         ),
+    )
+
+
+def _payload() -> PublicationPayload:
+    """Return one deterministic object payload for adapter failure tests."""
+    return PublicationPayload(
+        key=f"{BEDROCK_PUBLICATION_PREFIX}/chunks/example.txt",
+        body=b"example",
+        content_type=CONTENT_TEXT_PLAIN,
+        checksum_sha256=sha256(b"example").hexdigest(),
     )
 
 
@@ -191,17 +214,26 @@ def test_adapter_fails_closed_when_prefix_requires_pagination() -> None:
         _store(client).list_keys(f"{BEDROCK_PUBLICATION_PREFIX}/")
 
 
-def test_adapter_exposes_only_bounded_provider_error_code() -> None:
-    """Transport diagnostics retain a safe provider code without provider response bodies."""
+def test_adapter_exposes_only_bounded_provider_error_code_and_type() -> None:
+    """Transport diagnostics retain safe provider identity without response bodies."""
     client = _FailingPutClient()
-    payload = PublicationPayload(
-        key=f"{BEDROCK_PUBLICATION_PREFIX}/chunks/example.txt",
-        body=b"example",
-        content_type=CONTENT_TEXT_PLAIN,
-        checksum_sha256=sha256(b"example").hexdigest(),
-    )
 
     with pytest.raises(S3PublicationStoreError, match="provider_code=AccessDenied") as exc_info:
-        _store(client).put(payload)
+        _store(client).put(_payload())
 
-    assert "synthetic provider failure" not in str(exc_info.value)
+    message = str(exc_info.value)
+    assert "provider_type=_ProviderCodeError" in message
+    assert "synthetic provider failure" not in message
+
+
+def test_adapter_exposes_safe_exception_type_without_exception_detail() -> None:
+    """Local SDK failures expose only their bounded class name when no code exists."""
+    client = _FailingValidationPutClient()
+
+    with pytest.raises(
+        S3PublicationStoreError,
+        match="provider_type=_ParamValidationLikeError",
+    ) as exc_info:
+        _store(client).put(_payload())
+
+    assert "secret validation detail" not in str(exc_info.value)
