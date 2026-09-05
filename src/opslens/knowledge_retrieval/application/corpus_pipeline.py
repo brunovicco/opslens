@@ -14,6 +14,7 @@ from opslens.knowledge_retrieval.domain import (
     KnowledgeCorpusSpec,
     KnowledgeSourceDescriptor,
     KnowledgeSourceRegistry,
+    MaterializedKnowledgeDocument,
 )
 
 MAX_CORPUS_DOCUMENTS = 10
@@ -46,7 +47,7 @@ def materialize_corpus(
             f"corpus replay must contain between 1 and {MAX_CORPUS_DOCUMENTS} documents"
         )
 
-    materialized = []
+    materialized: list[MaterializedKnowledgeDocument] = []
     for descriptor, document_spec in zip(
         registry.entries,
         spec.documents,
