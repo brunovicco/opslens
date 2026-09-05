@@ -34,23 +34,43 @@ def normalize_source_text(body: bytes) -> str:
     return normalized
 
 
+def _line_aligned_marker_positions(source_text: str, marker: str) -> tuple[int, ...]:
+    """Return occurrences that start and end on exact normalized line boundaries."""
+    positions: list[int] = []
+    search_from = 0
+    while True:
+        index = source_text.find(marker, search_from)
+        if index < 0:
+            return tuple(positions)
+        end_index = index + len(marker)
+        starts_on_boundary = index == 0 or source_text[index - 1] == "\n"
+        ends_on_boundary = end_index == len(source_text) or source_text[end_index] == "\n"
+        if starts_on_boundary and ends_on_boundary:
+            positions.append(index)
+        search_from = index + 1
+
+
 def select_exact_section(source_text: str, selection: ChunkSelectionSpec) -> str:
-    """Select one exact start-inclusive/end-exclusive section from normalized source text."""
-    start_count = source_text.count(selection.start_marker)
-    if start_count != 1:
+    """Select one exact line-aligned start-inclusive/end-exclusive source section."""
+    start_positions = _line_aligned_marker_positions(source_text, selection.start_marker)
+    if len(start_positions) != 1:
         raise CanonicalSourceTextError(
-            f"start marker for {selection.chunk_id!r} must occur exactly once; found {start_count}"
+            f"start marker for {selection.chunk_id!r} must occur exactly once; "
+            f"found {len(start_positions)}"
         )
 
-    start_index = source_text.index(selection.start_marker)
-    end_index = source_text.find(
-        selection.end_marker,
-        start_index + len(selection.start_marker),
+    start_index = start_positions[0]
+    end_positions = _line_aligned_marker_positions(source_text, selection.end_marker)
+    following_end_positions = tuple(
+        position
+        for position in end_positions
+        if position >= start_index + len(selection.start_marker)
     )
-    if end_index < 0:
+    if not following_end_positions:
         raise CanonicalSourceTextError(
             f"end marker for {selection.chunk_id!r} was not found after its start marker"
         )
+    end_index = following_end_positions[0]
 
     selected = source_text[start_index:end_index].strip()
     if not selected:
