@@ -46,6 +46,47 @@ class KnowledgeSourceInvalidResponseError(KnowledgeSourceAcquisitionError):
     reason_code = "invalid_knowledge_source_response"
 
 
+def _require_descriptor(value: object) -> KnowledgeSourceDescriptor:
+    if not isinstance(value, KnowledgeSourceDescriptor):
+        raise KnowledgeSourceInvalidResponseError(
+            "descriptor must be a KnowledgeSourceDescriptor"
+        )
+    return value
+
+
+def _require_body(value: object) -> bytes:
+    if not isinstance(value, bytes) or not value:
+        raise KnowledgeSourceInvalidResponseError("body must contain non-empty bytes")
+    return value
+
+
+def _require_content_type(value: object) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise KnowledgeSourceInvalidResponseError("content_type must not be blank")
+    return value
+
+
+def _require_byte_count(value: object, *, expected: int) -> int:
+    if type(value) is not int or value != expected:
+        raise KnowledgeSourceInvalidResponseError(
+            "byte_count must exactly match the acquired body length"
+        )
+    return value
+
+
+def _require_source_digest(value: object, *, body: bytes) -> str:
+    if not isinstance(value, str):
+        raise KnowledgeSourceInvalidResponseError(
+            "source_bytes_sha256 must be a string"
+        )
+    expected_digest = hashlib.sha256(body).hexdigest()
+    if value != expected_digest:
+        raise KnowledgeSourceInvalidResponseError(
+            "source_bytes_sha256 must exactly match the acquired body"
+        )
+    return value
+
+
 @dataclass(frozen=True, slots=True)
 class KnowledgeSourceHttpConfig:
     """Explicit local bounds for public knowledge-source HTTPS reads."""
@@ -121,23 +162,19 @@ class AcquiredKnowledgeSource:
 
     def __post_init__(self) -> None:
         """Verify that acquisition evidence exactly identifies the admitted bytes."""
-        if not isinstance(self.descriptor, KnowledgeSourceDescriptor):
-            raise KnowledgeSourceInvalidResponseError(
-                "descriptor must be a KnowledgeSourceDescriptor"
-            )
-        if not isinstance(self.body, bytes) or not self.body:
-            raise KnowledgeSourceInvalidResponseError("body must contain non-empty bytes")
-        if not isinstance(self.content_type, str) or not self.content_type.strip():
-            raise KnowledgeSourceInvalidResponseError("content_type must not be blank")
-        if type(self.byte_count) is not int or self.byte_count != len(self.body):
-            raise KnowledgeSourceInvalidResponseError(
-                "byte_count must exactly match the acquired body length"
-            )
-        expected_digest = hashlib.sha256(self.body).hexdigest()
-        if self.source_bytes_sha256 != expected_digest:
-            raise KnowledgeSourceInvalidResponseError(
-                "source_bytes_sha256 must exactly match the acquired body"
-            )
+        descriptor = _require_descriptor(self.descriptor)
+        body = _require_body(self.body)
+        content_type = _require_content_type(self.content_type)
+        byte_count = _require_byte_count(self.byte_count, expected=len(body))
+        source_bytes_sha256 = _require_source_digest(
+            self.source_bytes_sha256,
+            body=body,
+        )
+        object.__setattr__(self, "descriptor", descriptor)
+        object.__setattr__(self, "body", body)
+        object.__setattr__(self, "content_type", content_type)
+        object.__setattr__(self, "byte_count", byte_count)
+        object.__setattr__(self, "source_bytes_sha256", source_bytes_sha256)
 
     @classmethod
     def from_body(
@@ -186,7 +223,13 @@ class BoundedHttpsKnowledgeSource:
             raise KnowledgeSourceInvalidResponseError(
                 "descriptor canonical URI no longer matches its HTTPS host authorization"
             )
-        if parsed.port not in (None, 443):
+        try:
+            port = parsed.port
+        except ValueError as exc:
+            raise KnowledgeSourceInvalidResponseError(
+                "knowledge source canonical URI contains an invalid port"
+            ) from exc
+        if port not in (None, 443):
             raise KnowledgeSourceInvalidResponseError(
                 "knowledge source acquisition allows only the default HTTPS port"
             )
