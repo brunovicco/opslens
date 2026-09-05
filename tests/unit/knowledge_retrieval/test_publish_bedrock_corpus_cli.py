@@ -19,7 +19,7 @@ def test_require_region_accepts_only_frozen_dev_region() -> None:
     """Publication must not silently move the frozen Gate 7.3 workload to another region."""
     assert _require_region("us-east-1") == "us-east-1"
 
-    with pytest.raises(PublicationCliError, match="frozen Gate 7.3 region"):
+    with pytest.raises(PublicationCliError, match=r"frozen Gate 7\.3 region"):
         _require_region("us-west-2")
 
 
