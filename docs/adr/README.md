@@ -28,3 +28,5 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0018](0018-repository-analysis-result-projection.md) | Project the final repository analysis result and defer cache infrastructure | Accepted |
 | [0019](0019-deterministic-risk-policy-v1.md) | Prioritize repository findings with deterministic Risk Policy v1 | Accepted |
 | [0020](0020-no-unrestricted-text-to-sql.md) | Reject unrestricted text-to-SQL in the Semantic Query Layer | Accepted |
+| [0021](0021-bounded-bedrock-semantic-query-planner.md) | Bound Bedrock semantic planning before model invocation | Accepted |
+| [0022](0022-customer-managed-bedrock-kb-with-s3-vectors.md) | Use a customer-managed Bedrock Knowledge Base with S3 Vectors | Accepted |
