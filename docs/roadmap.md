@@ -29,8 +29,8 @@ concept
 | 3 | Vulnerability Correlation Engine | ✅ Complete |
 | 4 | Repository Intelligence | ✅ Complete |
 | 5 | Risk Prioritization Engine | ✅ Complete |
-| 6 | Semantic Query Layer | 🚧 Gate 6.4 implemented; final validation/PR/merge pending |
-| 7 | Knowledge Retrieval with Bedrock | ⏳ Planned |
+| 6 | Semantic Query Layer | ✅ Complete — PR #91 / `95db66e` |
+| 7 | Knowledge Retrieval with Bedrock | 🚧 Gate 7.1 complete; PR #93 merge pending |
 | 8 | Hybrid Retrieval | ⏳ Planned |
 | 9 | Public Analyze Your Repository | ⏳ Planned |
 | 10 | Observability & Operational Excellence | ⏳ Planned |
@@ -123,7 +123,7 @@ P3 < 30
 
 Missing evidence remains `partial` / `review_required`; it does not silently become a confident low-risk result.
 
-## Phase 6 — Semantic Query Layer — CLOSEOUT IN PROGRESS
+## Phase 6 — Semantic Query Layer — COMPLETE
 
 ### Goal
 
@@ -180,8 +180,6 @@ relation:    "opslens_dev"."epss_scores"
 scan cutoff: 10 MiB enforced by workgroup
 ```
 
-Executor controls fixed relation/workgroup, exact compiler-shape admission, validated execution-parameter shapes, bounded polling/pagination/results, metadata validation, and recorded scan/timing evidence.
-
 Real success evidence:
 
 ```text
@@ -226,7 +224,7 @@ ADR: [`adr/0021-bounded-bedrock-semantic-query-planner.md`](adr/0021-bounded-bed
 
 Closeout: [`../labs/phase-6-gate-6-3-planner-contract-evaluation.md`](../labs/phase-6-gate-6-3-planner-contract-evaluation.md).
 
-### Gate 6.4 — Real Bedrock planner invocation — IMPLEMENTED / CLOSEOUT PENDING
+### Gate 6.4 — Real Bedrock planner invocation — COMPLETE
 
 Selected runtime boundary:
 
@@ -251,8 +249,6 @@ ExecuteNaturalLanguageSemanticQuery
 scripts/run_natural_language_semantic_query.py
 ```
 
-The Bedrock adapter is injected with a client, performs one bounded Converse call, requires the expected non-streaming text shape, reparses the model text through `parse_planner_json()`, and records metadata-only invocation evidence. SDK/provider failures are wrapped at the adapter boundary while preserving their cause.
-
 Real supported versioned E2E evidence on 2026-09-04:
 
 ```text
@@ -269,21 +265,7 @@ Athena data scanned:            3,785,003 bytes (~3.61 MiB)
 Athena engine/total:            994 / 1,192 ms
 ```
 
-Real fail-closed versioned evidence:
-
-```text
-question:         Which CVEs have EPSS of at least 0.7?
-decision:         unsupported
-reason:           missing_explicit_snapshot_date
-athena_invoked:   false
-input/output:     933 / 23 tokens
-Bedrock latency:  878 ms
-client elapsed:   2,145 ms
-retries:          0
-estimated cost:   ~$0.00115
-```
-
-A local IAM Identity Center token-expiry failure was also diagnosed before Bedrock invocation and did not reach Athena.
+Real fail-closed evidence also proved a missing explicit snapshot date stops before Athena. A local IAM Identity Center token-expiry failure was separately diagnosed before service invocation.
 
 Closeout: [`../labs/phase-6-gate-6-4-real-bedrock-planner.md`](../labs/phase-6-gate-6-4-real-bedrock-planner.md).
 
@@ -303,20 +285,168 @@ Closeout: [`../labs/phase-6-gate-6-4-real-bedrock-planner.md`](../labs/phase-6-g
 - [x] diagnosable local authentication failure;
 - [x] ADR rejecting unrestricted text-to-SQL;
 - [x] ADR defining bounded planner authority;
-- [ ] final targeted/regression validation + PR + green CI + merge;
+- [x] final validation + green CI + PR #91 + squash merge;
 - [deferred] final deployed runtime IAM least privilege until a runtime identity exists.
 
 The local bootstrap/admin Identity Center profile is lab validation only and does not satisfy the future deployed-runtime IAM criterion.
 
-Do not add RAG, Knowledge Bases, vector search, agents, MCP, or AgentCore to Phase 6.
+## Phase 7 — Knowledge Retrieval with Bedrock — IN PROGRESS
 
-## Next Phase after Phase 6 merge
+### Goal
 
-### Phase 7 — Knowledge Retrieval with Bedrock
+Create a separately testable RAG path for explanatory/remediation knowledge without replacing the structured Phase 6 path.
 
-Add a controlled RAG path for remediation/documentation questions with separately testable retrieval, citations, chunking/metadata decisions, and retrieval-quality evaluation.
+Permanent rules:
 
-This is deliberately separate from the structured Phase 6 path: not every question is RAG.
+> **Not every question is a RAG problem.**
+
+> **Structured facts use structured retrieval.**
+
+> **Retrieval output is evidence, not deterministic truth.**
+
+Target architecture:
+
+```text
+knowledge/remediation question
+ -> bounded RetrievalRequest
+ -> Bedrock Knowledge Base Retrieve
+ -> typed RetrievedChunk[] + provenance
+ -> deterministic validation/context admission
+ -> bounded Bedrock synthesis
+ -> answer + deterministic citations
+```
+
+Structured NVD, CISA KEV, FIRST EPSS, CVSS, GHSA applicability, repository-version, and Risk Policy evidence remain outside the RAG authority boundary.
+
+### Gate 7.1 — Corpus + retrieval contract — COMPLETE / MERGE PENDING
+
+Gate 7.1 remained offline-first and froze provider-independent contracts and evaluation fixtures before any AWS retrieval resource exists.
+
+Frozen contract:
+
+```text
+KnowledgeDocument
+RetrievalRequest
+RetrievedChunk
+RetrievalEvidence
+Citation
+```
+
+Frozen v1 bounds:
+
+```text
+query:         <= 1,000 chars
+top_k:         1..10
+default top_k: 5
+provider DSL:  none
+```
+
+Canonical metadata is allowlisted independently of any future AWS projection. Exact document/chunk SHA-256 identities and HTTPS provenance are validated. Retrieval ranks must be contiguous, chunk IDs unique, and returned chunks cannot exceed `request.top_k`.
+
+Citation provenance is projected from admitted chunks rather than authored by a model.
+
+Golden fixture:
+
+```text
+10 cases
+  8 positive remediation/documentation cases
+  2 negative/out-of-scope cases
+prepared metrics: Recall@K + MRR
+corpus status: planned_for_gate_7_2
+```
+
+Final functional validation:
+
+```text
+workflow: Python CI
+run:      33931113097
+commit:   f882f5df12f20f68b2601bf525a625fe72a36b7b
+
+Knowledge Retrieval Ruff:     PASS
+Knowledge Retrieval Pyright:  0 errors / 0 warnings
+Knowledge Retrieval pytest:   14 passed in 0.08s
+
+Correlation regression:              PASS
+Repository Intelligence regression:  PASS
+Risk Policy regression:              PASS
+Semantic Query regression:           PASS
+```
+
+No Knowledge Base, vector store/index, embedding job, IAM role, retrieval call, synthesis call, or other paid AWS resource/call was introduced.
+
+Closeout: [`../labs/phase-7-gate-7-1-retrieval-contract.md`](../labs/phase-7-gate-7-1-retrieval-contract.md).
+
+### Gate 7.2 — Reproducible canonical corpus — NEXT AFTER PR #93 MERGE
+
+Gate 7.2 is not implemented in the Gate 7.1 branch. After logical merge, its scope is:
+
+- trusted source acquisition;
+- exact source bytes/text;
+- canonical document construction;
+- content addressing;
+- deterministic corpus manifest;
+- no vector infrastructure yet unless explicitly moved to Gate 7.3.
+
+### Gate 7.3 — Knowledge Base + vector infrastructure — PLANNED
+
+Decide using current official AWS documentation and measured needs:
+
+- Bedrock Managed Knowledge Base vs customer-managed configuration;
+- embedding model and dimensions;
+- vector store such as S3 Vectors or OpenSearch Serverless;
+- chunking strategy;
+- metadata projection;
+- IAM/trust boundaries;
+- pricing and idle/runtime cost.
+
+Do not select an AWS service merely because it appears in AIP-C01.
+
+### Gate 7.4 — Real bounded Retrieve adapter — PLANNED
+
+Implement `Retrieve` first, independently from generation, with:
+
+- bounded `top_k`;
+- typed Bedrock adapter boundary;
+- explicit provenance admission;
+- stable provider-error wrapping;
+- intentional failure evidence;
+- no `RetrieveAndGenerate` shortcut for the v1 evaluation path.
+
+### Gate 7.5 — Retrieval evaluation — PLANNED
+
+Measure retrieval separately from synthesis using the frozen golden dataset:
+
+```text
+Recall@1
+Recall@3
+Recall@5
+Recall@10
+MRR
+provenance/source correctness
+latency
+retrieval cost
+```
+
+### Gate 7.6 — Deterministic context assembly + synthesis — PLANNED
+
+Only admitted retrieved chunks may enter model context. Freeze context/token limits, model authority, output contract, runtime evidence, and denial-of-wallet controls before real synthesis is treated as complete.
+
+### Gate 7.7 — Citations + groundedness — PLANNED
+
+Require explicit citations mapped deterministically to admitted evidence and measure citation correctness/coverage plus unsupported claims/groundedness.
+
+### Gate 7.8 — Closeout — PLANNED
+
+Require:
+
+- retrieval + synthesis failure diagnosis;
+- IAM least-privilege review;
+- retrieval/embedding/vector/synthesis cost split;
+- observability evidence;
+- ADRs for material architecture decisions;
+- targeted and regression tests;
+- documentation;
+- PR + green CI + logical merge.
 
 ## Future phases
 

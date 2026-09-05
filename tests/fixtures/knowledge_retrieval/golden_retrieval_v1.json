@@ -1,0 +1,94 @@
+{
+  "dataset_id": "knowledge-retrieval-golden:v1",
+  "purpose": "Offline-first retrieval evaluation contract for explanatory and remediation knowledge.",
+  "authority_boundary": "Expected evidence is explanatory/remediation knowledge only. Structured NVD, KEV, EPSS, CVSS, GHSA applicability, repository versions, and risk scores remain outside this corpus authority.",
+  "corpus_status": "planned_for_gate_7_2",
+  "cases": [
+    {
+      "case_id": "remediation-python-upgrade-01",
+      "question": "How should I safely upgrade a vulnerable Python dependency after a patched version is available?",
+      "relevant_document_ids": ["knowledge-doc:pypa-dependency-management:v1"],
+      "relevant_chunk_ids": ["knowledge-chunk:pypa-dependency-management:upgrade:v1"],
+      "expected_source_types": ["maintainer_documentation"],
+      "should_have_relevant_evidence": true
+    },
+    {
+      "case_id": "remediation-lock-refresh-01",
+      "question": "After changing a direct Python dependency, what should I refresh or verify in the lock file?",
+      "relevant_document_ids": ["knowledge-doc:uv-locking:v1"],
+      "relevant_chunk_ids": ["knowledge-chunk:uv-locking:refresh:v1"],
+      "expected_source_types": ["maintainer_documentation"],
+      "should_have_relevant_evidence": true
+    },
+    {
+      "case_id": "remediation-hash-verification-01",
+      "question": "What supply-chain checks can help verify downloaded Python package artifacts during remediation?",
+      "relevant_document_ids": ["knowledge-doc:pypa-secure-installs:v1"],
+      "relevant_chunk_ids": ["knowledge-chunk:pypa-secure-installs:hashes:v1"],
+      "expected_source_types": ["security_guidance"],
+      "should_have_relevant_evidence": true
+    },
+    {
+      "case_id": "remediation-advisory-guidance-01",
+      "question": "What remediation guidance should I look for in a maintainer or vendor security advisory?",
+      "relevant_document_ids": ["knowledge-doc:vendor-advisory-reading:v1"],
+      "relevant_chunk_ids": ["knowledge-chunk:vendor-advisory-reading:remediation:v1"],
+      "expected_source_types": ["vendor_advisory"],
+      "should_have_relevant_evidence": true
+    },
+    {
+      "case_id": "remediation-transitive-review-01",
+      "question": "After upgrading a vulnerable package, how should I review transitive dependency changes?",
+      "relevant_document_ids": [
+        "knowledge-doc:pypa-dependency-management:v1",
+        "knowledge-doc:uv-locking:v1"
+      ],
+      "relevant_chunk_ids": [
+        "knowledge-chunk:pypa-dependency-management:transitive-review:v1",
+        "knowledge-chunk:uv-locking:diff-review:v1"
+      ],
+      "expected_source_types": ["maintainer_documentation"],
+      "should_have_relevant_evidence": true
+    },
+    {
+      "case_id": "remediation-validation-01",
+      "question": "What should I validate after applying a dependency remediation before I consider the change complete?",
+      "relevant_document_ids": ["knowledge-doc:dependency-remediation-validation:v1"],
+      "relevant_chunk_ids": ["knowledge-chunk:dependency-remediation-validation:post-change:v1"],
+      "expected_source_types": ["security_guidance"],
+      "should_have_relevant_evidence": true
+    },
+    {
+      "case_id": "documentation-version-constraints-01",
+      "question": "How do Python dependency version constraints affect the version that can be selected during remediation?",
+      "relevant_document_ids": ["knowledge-doc:pypa-version-specifiers:v1"],
+      "relevant_chunk_ids": ["knowledge-chunk:pypa-version-specifiers:constraints:v1"],
+      "expected_source_types": ["maintainer_documentation"],
+      "should_have_relevant_evidence": true
+    },
+    {
+      "case_id": "documentation-isolation-01",
+      "question": "Why is it useful to validate a remediated dependency in an isolated environment before deployment?",
+      "relevant_document_ids": ["knowledge-doc:dependency-remediation-validation:v1"],
+      "relevant_chunk_ids": ["knowledge-chunk:dependency-remediation-validation:isolation:v1"],
+      "expected_source_types": ["security_guidance"],
+      "should_have_relevant_evidence": true
+    },
+    {
+      "case_id": "negative-runtime-exposure-01",
+      "question": "How can I prove that this vulnerable library is reachable in the running production process?",
+      "relevant_document_ids": [],
+      "relevant_chunk_ids": [],
+      "expected_source_types": [],
+      "should_have_relevant_evidence": false
+    },
+    {
+      "case_id": "negative-uncovered-ecosystem-01",
+      "question": "What is the recommended remediation workflow for a vulnerable Maven dependency?",
+      "relevant_document_ids": [],
+      "relevant_chunk_ids": [],
+      "expected_source_types": [],
+      "should_have_relevant_evidence": false
+    }
+  ]
+}

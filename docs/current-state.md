@@ -13,24 +13,38 @@ Phase 2    Threat Intelligence Data Lake                       COMPLETE
 Phase 3    Vulnerability Correlation Engine                    COMPLETE
 Phase 4    Repository Intelligence                             COMPLETE
 Phase 5    Risk Prioritization Engine                          COMPLETE
-Phase 6    Semantic Query Layer                                IN PROGRESS
+Phase 6    Semantic Query Layer                                COMPLETE
   Gate 6.1 Typed contract + deterministic SQL compiler         COMPLETE
   Gate 6.2 Bounded read-only Athena execution                  COMPLETE
   Gate 6.3 Bounded planner contract + offline evaluation       COMPLETE
-  Gate 6.4 Real Bedrock planner invocation                     IMPLEMENTED / CLOSEOUT PENDING
+  Gate 6.4 Real Bedrock planner invocation                     COMPLETE
+Phase 7    Knowledge Retrieval with Bedrock                    IN PROGRESS
+  Gate 7.1 Corpus + retrieval contract                         COMPLETE / MERGE PENDING
+  Gate 7.2 Reproducible canonical corpus                       NOT STARTED
 ```
 
-Gate 6.4 implementation and real `dev` evidence are complete on branch:
+Phase 6 was squash-merged through PR #91:
 
 ```text
-feat/phase6-bedrock-runtime-evidence
+commit: 95db66e278059629ce6572b2950e9cca705c6498
+PR:     #91 — feat(semantic-query): close Gate 6.4 with real Bedrock runtime evidence
 ```
 
-Final repository-wide validation, PR creation, green CI, and logical merge are still pending.
+Gate 7.1 is complete on branch/PR:
+
+```text
+branch: feat/phase7-retrieval-contract
+PR:     #93 — feat(knowledge-retrieval): start Phase 7 Gate 7.1 contracts
+status: ready for logical merge after final documentation-only closeout
+```
 
 ## Permanent boundaries
 
 > **Agents reason. Code verifies evidence.**
+
+> **Not every question is a RAG problem.**
+
+> **Structured facts use structured retrieval.**
 
 > **READ, NEVER EXECUTE third-party repository code.**
 
@@ -50,10 +64,11 @@ Deterministic authorities remain responsible for:
 - planner-output parsing and validation;
 - semantic-query validation and SQL compilation;
 - Athena admission, execution bounds, and result validation;
-- evidence validation;
+- retrieval evidence validation and context admission;
+- citation projection from admitted evidence;
 - execution/tool/cost enforcement.
 
-LLMs may classify, plan, synthesize, explain, and route over validated evidence. They do not decide vulnerability applicability and do not receive arbitrary SQL authority.
+LLMs may classify, plan, synthesize, explain, and route over validated evidence. They do not decide vulnerability applicability, receive arbitrary SQL authority, or turn RAG text into a second authority for structured threat facts.
 
 ## Implemented deterministic stack
 
@@ -76,6 +91,10 @@ LLMs may classify, plan, synthesize, explain, and route over validated evidence.
 6. Bounded Bedrock planner
    natural-language request / structured planner proposal /
    deterministic parser / typed runtime evidence / fail-closed composition
+
+7. Knowledge retrieval contract foundation
+   typed knowledge documents / bounded retrieval requests /
+   retrieved chunks + provenance / retrieval evidence / deterministic citations
 ```
 
 ## Repository and risk path
@@ -130,7 +149,7 @@ risk-evaluation:v1@sha256:<digest>
 risk-prioritization:v1@sha256:<digest>
 ```
 
-## Phase 6 — Semantic Query Layer
+## Phase 6 — Semantic Query Layer — COMPLETE
 
 Target architecture:
 
@@ -222,7 +241,7 @@ ADR: [`adr/0021-bounded-bedrock-semantic-query-planner.md`](adr/0021-bounded-bed
 
 Closeout: [`../labs/phase-6-gate-6-3-planner-contract-evaluation.md`](../labs/phase-6-gate-6-3-planner-contract-evaluation.md).
 
-### Gate 6.4 — IMPLEMENTED / CLOSEOUT PENDING
+### Gate 6.4 — COMPLETE
 
 Real model boundary:
 
@@ -236,7 +255,7 @@ temperature:    0.0
 maxTokens:      256
 ```
 
-Production code now contains:
+Production code contains:
 
 - `BedrockPlannerInvocationEvidence` and `BedrockPlannerResult` typed contracts;
 - injected `BedrockConverseClient` Protocol;
@@ -300,11 +319,91 @@ Closeout evidence: [`../labs/phase-6-gate-6-4-real-bedrock-planner.md`](../labs/
 [x] ADR defining bounded planner authority
 [x] production Bedrock runtime adapter and typed invocation evidence
 [x] automated runtime adapter/composition tests
-[ ] final repository validation + PR + green CI + merge
+[x] final repository validation + PR #91 + green CI + squash merge
 [deferred] final deployed runtime IAM least privilege until a runtime identity exists
 ```
 
 The final deployed runtime IAM criterion is explicitly deferred because no deployed semantic-query runtime identity exists yet. The local `opslens-bootstrap` IAM Identity Center profile is lab/bootstrap validation only and is not the final runtime role.
+
+## Phase 7 — Knowledge Retrieval with Bedrock — IN PROGRESS
+
+Phase 7 creates a separate path for explanatory/remediation questions. It does not replace the Phase 6 structured path and does not duplicate NVD, KEV, EPSS, CVSS, GHSA applicability, repository-version, or risk-policy authority through RAG.
+
+Target flow:
+
+```text
+knowledge/remediation question
+ -> bounded RetrievalRequest
+ -> Bedrock Knowledge Base Retrieve
+ -> typed RetrievedChunk[] + provenance
+ -> deterministic validation/context admission
+ -> bounded Bedrock synthesis
+ -> answer + deterministic citations
+```
+
+### Gate 7.1 — Corpus + retrieval contract — COMPLETE / MERGE PENDING
+
+The offline-first contract freezes:
+
+```text
+KnowledgeDocument
+RetrievalRequest
+RetrievedChunk
+RetrievalEvidence
+Citation
+```
+
+Frozen v1 retrieval bounds:
+
+```text
+query:         non-blank, <= 1,000 characters
+top_k:         1..10
+default top_k: 5
+provider DSL:  none
+```
+
+The contract preserves separate logical source identity and exact SHA-256 content identity. Retrieved chunks carry explicit document/source provenance, exact chunk identity, deterministic rank, and an optional finite relevance score that is not interpreted as calibrated confidence.
+
+Citations are projected deterministically from admitted `RetrievedChunk` evidence rather than accepting model-authored provenance.
+
+Canonical metadata is provider-independent. No Bedrock metadata projection, embedding model, chunking strategy, vector store, or Knowledge Base mode was frozen in Gate 7.1.
+
+Offline golden fixture:
+
+```text
+10 total cases
+  8 positive remediation/documentation cases
+  2 negative/out-of-scope cases
+metrics prepared for later: Recall@K + MRR
+corpus status: planned_for_gate_7_2
+```
+
+Final CI evidence for the functional Gate 7.1 commit:
+
+```text
+workflow: Python CI
+run:      33931113097
+commit:   f882f5df12f20f68b2601bf525a625fe72a36b7b
+
+Knowledge Retrieval Ruff:     PASS
+Knowledge Retrieval Pyright:  0 errors / 0 warnings
+Knowledge Retrieval pytest:   14 passed in 0.08s
+
+Correlation regression:              PASS
+Repository Intelligence regression:  PASS
+Risk Policy regression:              PASS
+Semantic Query regression:           PASS
+```
+
+The earlier failing CI runs exposed and resolved two Ruff findings and strict-type runtime-validation findings. Runtime validation was preserved by moving untrusted normalization behind helpers accepting `object` rather than weakening public type annotations.
+
+No AWS resource, Knowledge Base, vector index, embedding job, IAM role, or paid AWS call was added for Gate 7.1.
+
+Closeout evidence: [`../labs/phase-7-gate-7-1-retrieval-contract.md`](../labs/phase-7-gate-7-1-retrieval-contract.md).
+
+### Gate 7.2 — Reproducible canonical corpus — NOT STARTED
+
+Gate 7.2 remains outside PR #93. It may begin only after the Gate 7.1 logical merge, unless that merge is explicitly deferred.
 
 ## AWS foundation
 
@@ -329,21 +428,20 @@ src/opslens/correlation
 src/opslens/repository_intelligence
 src/opslens/risk_policy
 src/opslens/semantic_query
+src/opslens/knowledge_retrieval
 ```
 
 A pre-existing repo-wide Ruff backlog outside these scoped deterministic slices remains separate technical debt.
 
 ## Next action
 
-Before declaring Phase 6 complete:
+Close the Gate 7.1 logical increment:
 
 ```text
-1. remove temporary local Bedrock marketplace-offer material if still present
-2. run final targeted + regression validation
-3. open the Gate 6.4 PR
-4. require green CI
-5. squash merge
-6. update this checkpoint with the merged commit/PR
+1. review PR #93
+2. squash-merge PR #93 into main
+3. confirm the resulting main commit
+4. only then start Gate 7.2 — Reproducible canonical corpus
 ```
 
-Do not add RAG, Knowledge Bases, agents, MCP, or AgentCore to Phase 6.
+Do not create a Knowledge Base, vector store/index, embedding job, IAM role, or paid AWS retrieval/synthesis path as part of the Gate 7.1 PR.
