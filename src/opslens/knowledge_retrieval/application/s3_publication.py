@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from hashlib import sha256
 from typing import Protocol, cast
 
 from opslens.knowledge_retrieval.application.bedrock_publication import (
@@ -28,7 +29,10 @@ def _require_nonblank(value: object, *, field: str) -> str:
 def _require_sha256(value: object, *, field: str) -> str:
     """Require one lowercase SHA-256 digest without importing provider semantics."""
     normalized = _require_nonblank(value, field=field)
-    if len(normalized) != 64 or any(character not in "0123456789abcdef" for character in normalized):
+    invalid_character = any(
+        character not in "0123456789abcdef" for character in normalized
+    )
+    if len(normalized) != 64 or invalid_character:
         raise S3PublicationValidationError(
             f"{field} must be a lowercase 64-hex SHA-256 digest"
         )
@@ -99,8 +103,6 @@ class PublicationPayload:
             self.checksum_sha256,
             field="checksum_sha256",
         )
-        from hashlib import sha256
-
         if sha256(body).hexdigest() != checksum_sha256:
             raise S3PublicationValidationError(
                 "checksum_sha256 must match the exact publication body"
