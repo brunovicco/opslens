@@ -55,7 +55,7 @@ def test_registry_loader_rejects_unknown_schema_keys(tmp_path: Path) -> None:
     mutated = tmp_path / "registry.json"
     _write_json(mutated, raw)
 
-    with pytest.raises(CorpusConfigError, match="unknown=\['unexpected'\]"):
+    with pytest.raises(CorpusConfigError, match=r"unknown=\['unexpected'\]"):
         load_source_registry(mutated)
 
 
@@ -80,5 +80,5 @@ def test_corpus_spec_loader_rejects_unknown_selector_fields(tmp_path: Path) -> N
     mutated = tmp_path / "corpus_spec.json"
     _write_json(mutated, raw)
 
-    with pytest.raises(CorpusConfigError, match="unknown=\['occurrence'\]"):
+    with pytest.raises(CorpusConfigError, match=r"unknown=\['occurrence'\]"):
         load_corpus_spec(mutated)
