@@ -14,6 +14,7 @@ from opslens.knowledge_retrieval.domain import (
     KnowledgeSourceType,
 )
 from opslens.knowledge_retrieval.domain.source_registry import (
+    RAW_GITHUB_HOST,
     SOURCE_REGISTRY_ID,
     KnowledgeSourceDescriptor,
     KnowledgeSourceRegistry,
@@ -40,7 +41,9 @@ def _descriptor(raw: object) -> KnowledgeSourceDescriptor:
         source_id=cast(str, entry["source_id"]),
         source_type=source_type,
         canonical_uri=cast(str, entry["canonical_uri"]),
-        allowed_host=cast(str, entry["allowed_host"]),
+        upstream_repository=cast(str, entry["upstream_repository"]),
+        upstream_commit_sha=cast(str, entry["upstream_commit_sha"]),
+        upstream_path=cast(str, entry["upstream_path"]),
         expected_chunk_ids=chunk_ids,
     )
 
@@ -100,29 +103,42 @@ def test_registry_exactly_covers_positive_golden_documents_and_chunks() -> None:
         assert expected_types_by_document[entry.document_id] == {entry.source_type.value}
 
 
-def test_registry_hosts_are_exactly_bound_to_https_canonical_uris() -> None:
-    """Source authorization is an exact-host HTTPS allowlist, not arbitrary URL fetch authority."""
+def test_registry_pins_official_source_files_to_full_commits() -> None:
+    """Every v1 acquisition URI is derived from repository, commit, and path evidence."""
     registry = _registry()
 
     assert len(registry.entries) == 6
-    assert {entry.allowed_host for entry in registry.entries} == {
-        "cheatsheetseries.owasp.org",
-        "docs.astral.sh",
-        "packaging.python.org",
-        "pip.pypa.io",
-        "www.djangoproject.com",
+    assert {entry.acquisition_host for entry in registry.entries} == {RAW_GITHUB_HOST}
+    assert {entry.upstream_repository for entry in registry.entries} == {
+        "OWASP/CheatSheetSeries",
+        "astral-sh/uv",
+        "django/django",
+        "pypa/packaging.python.org",
+        "pypa/pip",
     }
+    for entry in registry.entries:
+        assert len(entry.upstream_commit_sha) == 40
+        assert entry.acquisition_uri.startswith(
+            f"https://{RAW_GITHUB_HOST}/{entry.upstream_repository}/"
+        )
+        assert entry.upstream_commit_sha in entry.acquisition_uri
 
 
-def test_source_descriptor_rejects_host_mismatch_and_non_https_uri() -> None:
-    """A source cannot redirect the future acquisition boundary to an unapproved origin."""
+def test_source_descriptor_rejects_mutable_or_unsafe_upstream_coordinates() -> None:
+    """The corpus cannot acquire mutable branches or path traversal through registry data."""
     descriptor = _registry().entries[0]
 
     with pytest.raises(
         KnowledgeRetrievalValidationError,
-        match="canonical_uri hostname must exactly match allowed_host",
+        match="full lowercase 40-hex Git SHA",
     ):
-        replace(descriptor, allowed_host="example.com")
+        replace(descriptor, upstream_commit_sha="main")
+
+    with pytest.raises(
+        KnowledgeRetrievalValidationError,
+        match="traversal segments",
+    ):
+        replace(descriptor, upstream_path="docs/../secrets.txt")
 
     with pytest.raises(
         KnowledgeRetrievalValidationError,
