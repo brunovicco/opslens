@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import cast
 
 import pytest
 
@@ -27,6 +28,7 @@ from opslens.knowledge_retrieval.domain import (
     KnowledgeSourceDescriptor,
     KnowledgeSourceRegistry,
     KnowledgeSourceType,
+    MaterializedKnowledgeDocument,
 )
 
 
@@ -82,7 +84,7 @@ def _spec() -> KnowledgeCorpusSpec:
     )
 
 
-def _materialized(*, first_text: str = "alpha"):
+def _materialized(*, first_text: str = "alpha") -> MaterializedKnowledgeDocument:
     """Materialize inert source bytes without any network dependency."""
     body = (
         f"# Guide\n\n## First\n{first_text}\n\n"
@@ -100,22 +102,27 @@ def test_manifest_contains_hash_evidence_and_no_third_party_text() -> None:
     """The checked evidence is sufficient for replay verification without vendored source text."""
     manifest = build_corpus_manifest(_registry(), _spec(), (_materialized(),))
     serialized = serialize_corpus_manifest(manifest)
-    parsed = json.loads(serialized)
+    parsed = cast(dict[str, object], json.loads(serialized))
+    documents = cast(list[dict[str, object]], parsed["documents"])
+    document = documents[0]
+    chunks = cast(list[dict[str, object]], document["chunks"])
 
     assert manifest.manifest_id == CORPUS_MANIFEST_ID
     assert serialized.endswith("\n")
     assert "alpha" not in serialized
     assert "beta" not in serialized
     assert "generated_at" not in serialized
-    document = parsed["documents"][0]
-    assert document["source_byte_count"] > document["content_utf8_byte_count"]
-    assert len(document["source_bytes_sha256"]) == 64
-    assert len(document["content_sha256"]) == 64
-    assert [chunk["chunk_id"] for chunk in document["chunks"]] == [
+    assert cast(int, document["source_byte_count"]) > cast(
+        int,
+        document["content_utf8_byte_count"],
+    )
+    assert len(cast(str, document["source_bytes_sha256"])) == 64
+    assert len(cast(str, document["content_sha256"])) == 64
+    assert [cast(str, chunk["chunk_id"]) for chunk in chunks] == [
         "knowledge-chunk:test:first:v1",
         "knowledge-chunk:test:second:v1",
     ]
-    assert all(len(chunk["chunk_content_sha256"]) == 64 for chunk in document["chunks"])
+    assert all(len(cast(str, chunk["chunk_content_sha256"])) == 64 for chunk in chunks)
 
 
 def test_manifest_serialization_is_byte_for_byte_deterministic() -> None:
