@@ -482,17 +482,17 @@ Completed:
 - [x] checked-in manifest validated by CI;
 - [x] final Gate 7.2 CI green;
 - [x] deterministic regressions green;
+- [x] `current-state.md`, `architecture.md`, and `roadmap.md` synchronized;
 - [x] no AWS resources or paid calls introduced.
 
 Remaining closeout:
 
-- [ ] current-state/architecture/roadmap synchronized;
 - [ ] PR #94 ready for review;
 - [ ] squash merge.
 
 ## Next authorized action
 
-Finish documentation-only closeout, then squash-merge PR #94.
+Mark PR #94 ready for review after the documentation-only head is green, then squash-merge it.
 
 Only after Gate 7.2 is logically merged should Gate 7.3 begin. Gate 7.3 must re-check current official AWS documentation, pricing, IAM requirements, vector-store choices, Knowledge Base modes, embedding options, chunking constraints, observability, and failure behavior before any AWS resource is created.
 
