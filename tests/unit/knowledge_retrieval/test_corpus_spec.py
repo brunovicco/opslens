@@ -87,8 +87,8 @@ def test_all_corpus_selectors_are_explicit_bounded_and_provenanced() -> None:
         for document in documents
         for selection in cast(list[dict[str, object]], document["selections"])
     ]
-    assert len(selectors) == 8
-    assert len({cast(str, selector["chunk_id"]) for selector in selectors}) == 8
+    assert len(selectors) == 9
+    assert len({cast(str, selector["chunk_id"]) for selector in selectors}) == 9
 
     for selector in selectors:
         start_marker = cast(str, selector["start_marker"])
