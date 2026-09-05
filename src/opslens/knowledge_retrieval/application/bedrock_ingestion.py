@@ -12,10 +12,13 @@ _TERMINAL_FAILURE = frozenset({"FAILED", "STOPPED"})
 _ALLOWED_ACTIVE = frozenset({"STARTING", "IN_PROGRESS", "STOPPING"})
 _ALLOWED_STATISTICS = (
     "numberOfDocumentsScanned",
+    "numberOfMetadataDocumentsScanned",
     "numberOfNewDocumentsIndexed",
     "numberOfModifiedDocumentsIndexed",
+    "numberOfMetadataDocumentsModified",
     "numberOfDocumentsDeleted",
     "numberOfDocumentsFailed",
+    "numberOfDocumentsSkipped",
 )
 
 
