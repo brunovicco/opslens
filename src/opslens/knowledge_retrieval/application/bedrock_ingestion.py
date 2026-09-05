@@ -142,7 +142,7 @@ def run_bounded_ingestion(
     knowledge_base_id: str,
     data_source_id: str,
     max_polls: int = 30,
-    poll_interval_seconds: float = 5.0,
+    poll_interval_seconds: object = 5.0,
     sleeper: Callable[[float], None] = time.sleep,
 ) -> IngestionJobEvidence:
     """Start one job and poll serially until success, failure, or budget exhaustion."""
