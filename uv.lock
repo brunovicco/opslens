@@ -153,6 +153,11 @@ dev = [
     { name = "pytest" },
     { name = "ruff" },
 ]
+epss-history-transformer-runtime = [
+    { name = "aws-lambda-powertools", extra = ["tracer"] },
+    { name = "boto3" },
+    { name = "pyarrow" },
+]
 epss-silver-runtime = [
     { name = "pyarrow" },
 ]
@@ -179,6 +184,11 @@ dev = [
     { name = "pyright" },
     { name = "pytest" },
     { name = "ruff" },
+]
+epss-history-transformer-runtime = [
+    { name = "aws-lambda-powertools", extras = ["tracer"], specifier = ">=3.34.0" },
+    { name = "boto3", specifier = ">=1.43.72" },
+    { name = "pyarrow", specifier = "==25.0.*" },
 ]
 epss-silver-runtime = [{ name = "pyarrow", specifier = "==25.0.*" }]
 ghsa-silver-runtime = [{ name = "pyarrow", specifier = "==25.0.*" }]

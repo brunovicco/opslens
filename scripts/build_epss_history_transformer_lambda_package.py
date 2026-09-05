@@ -1,5 +1,6 @@
 """Build deterministic deployment package for the historical EPSS transformer Lambda."""
 
+import csv
 import hashlib
 import shutil
 import stat
@@ -15,10 +16,24 @@ DIST_DIR = PROJECT_ROOT / "dist"
 ARTIFACT_PATH = DIST_DIR / "opslens-epss-history-transformer.zip"
 PYTHON_VERSION = "3.13"
 PYTHON_PLATFORM = "x86_64-manylinux_2_28"
-RUNTIME_DEPENDENCY_GROUP = "epss-silver-runtime"
+RUNTIME_DEPENDENCY_GROUP = "epss-history-transformer-runtime"
 ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
 MEBIBYTE = 1024 * 1024
 LAMBDA_UNZIPPED_LIMIT_BYTES = 250 * MEBIBYTE
+
+REQUIRED_RUNTIME_DISTRIBUTIONS = (
+    "aws-lambda-powertools",
+    "boto3",
+    "pyarrow",
+)
+FORBIDDEN_RUNTIME_DISTRIBUTIONS = (
+    "packaging",
+)
+INSTALLATION_METADATA_FILES = (
+    "INSTALLER",
+    "REQUESTED",
+    "direct_url.json",
+)
 
 SOURCE_MANIFEST = (
     (PROJECT_ROOT / "src" / "opslens" / "__init__.py", Path("opslens/__init__.py")),
@@ -83,22 +98,53 @@ def prepare_directories() -> None:
 
 
 def export_runtime_dependencies() -> None:
-    """Export locked PyArrow runtime dependencies."""
+    """Export only locked historical-transformer runtime dependencies."""
     run_command(
         [
             "uv",
             "export",
             "--locked",
-            "--no-default-groups",
-            "--group",
+            "--only-group",
             RUNTIME_DEPENDENCY_GROUP,
-            "--no-emit-project",
             "--format",
             "requirements.txt",
             "--output-file",
             str(REQUIREMENTS_FILE),
         ]
     )
+
+
+def _exported_requirement_names() -> set[str]:
+    """Return normalized distribution names from the exported requirements file."""
+    names: set[str] = set()
+    for line in REQUIREMENTS_FILE.read_text(encoding="utf-8").splitlines():
+        candidate = line.strip()
+        if not candidate or candidate.startswith(("#", "--")):
+            continue
+        requirement = candidate.split(" ", maxsplit=1)[0]
+        if "==" not in requirement:
+            continue
+        name, _separator, _version = requirement.partition("==")
+        names.add(name.lower().replace("_", "-"))
+    return names
+
+
+def validate_runtime_dependency_export() -> None:
+    """Fail if the dedicated runtime export is missing or leaks unrelated dependencies."""
+    exported = _exported_requirement_names()
+    missing = sorted(set(REQUIRED_RUNTIME_DISTRIBUTIONS) - exported)
+    forbidden = sorted(set(FORBIDDEN_RUNTIME_DISTRIBUTIONS) & exported)
+
+    if missing:
+        raise RuntimeError(
+            "Historical transformer runtime export is missing required distributions: "
+            + ", ".join(missing)
+        )
+    if forbidden:
+        raise RuntimeError(
+            "Historical transformer runtime export contains unrelated project distributions: "
+            + ", ".join(forbidden)
+        )
 
 
 def install_runtime_dependencies() -> None:
@@ -120,6 +166,41 @@ def install_runtime_dependencies() -> None:
             ":all:",
         ]
     )
+
+
+def _is_installation_record_entry(path: str) -> bool:
+    """Return whether one wheel RECORD row points to non-runtime install output."""
+    normalized = path.replace("\\", "/")
+    return normalized.startswith("bin/") or normalized.endswith(
+        tuple(f"/{name}" for name in INSTALLATION_METADATA_FILES)
+    )
+
+
+def normalize_installed_dependencies() -> None:
+    """Remove installer-only output that can vary across build host platforms."""
+    shutil.rmtree(PACKAGE_DIR / "bin", ignore_errors=True)
+
+    for dist_info in sorted(PACKAGE_DIR.glob("*.dist-info")):
+        if not dist_info.is_dir():
+            continue
+
+        for name in INSTALLATION_METADATA_FILES:
+            (dist_info / name).unlink(missing_ok=True)
+
+        record_path = dist_info / "RECORD"
+        if not record_path.is_file():
+            continue
+
+        with record_path.open("r", encoding="utf-8", newline="") as record_file:
+            rows = list(csv.reader(record_file))
+
+        retained_rows = [
+            row for row in rows if row and not _is_installation_record_entry(row[0])
+        ]
+
+        with record_path.open("w", encoding="utf-8", newline="") as record_file:
+            writer = csv.writer(record_file, lineterminator="\n")
+            writer.writerows(retained_rows)
 
 
 def copy_application_source() -> None:
@@ -210,7 +291,9 @@ def main() -> None:
     """Build and report the deterministic historical transformer artifact."""
     prepare_directories()
     export_runtime_dependencies()
+    validate_runtime_dependency_export()
     install_runtime_dependencies()
+    normalize_installed_dependencies()
     copy_application_source()
     remove_generated_bytecode()
     validate_package_contents()
