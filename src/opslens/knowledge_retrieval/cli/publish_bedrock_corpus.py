@@ -85,7 +85,7 @@ def _read_expected_manifest(path: Path) -> str:
     return value
 
 
-def _require_region(value: object) -> str:
+def require_publication_region(value: object) -> str:
     """Require the single frozen Gate 7.3 AWS region."""
     if not isinstance(value, str) or value != _REQUIRED_REGION:
         raise PublicationCliError(
@@ -122,7 +122,7 @@ def _evidence_to_dict(
     }
 
 
-def _serialize_evidence(
+def serialize_publication_evidence(
     evidence: S3PublicationEvidence,
     *,
     bucket: str,
@@ -153,7 +153,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     manifest_path = cast(Path, args.manifest)
 
     try:
-        region = _require_region(args.region)
+        region = require_publication_region(args.region)
         registry = load_source_registry(registry_path)
         spec = load_corpus_spec(spec_path)
         expected_manifest_text = _read_expected_manifest(manifest_path)
@@ -169,18 +169,16 @@ def main(argv: Sequence[str] | None = None) -> int:
             expected_manifest_text=expected_manifest_text,
         )
 
-        client = cast(
-            S3PublicationClient,
-            boto3.client(
-                "s3",
-                region_name=region,
-                config=Config(
-                    connect_timeout=5,
-                    read_timeout=30,
-                    retries={"max_attempts": 3, "mode": "standard"},
-                ),
+        raw_client: object = boto3.client(
+            "s3",
+            region_name=region,
+            config=Config(
+                connect_timeout=5,
+                read_timeout=30,
+                retries={"max_attempts": 3, "mode": "standard"},
             ),
         )
+        client = cast(S3PublicationClient, raw_client)
         target = S3PublicationTarget(
             bucket_name=bucket,
             expected_bucket_owner=expected_bucket_owner,
@@ -207,7 +205,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1
 
     print(
-        _serialize_evidence(
+        serialize_publication_evidence(
             evidence,
             bucket=bucket,
             expected_bucket_owner=expected_bucket_owner,
