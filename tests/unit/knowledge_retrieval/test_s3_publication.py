@@ -21,6 +21,7 @@ from opslens.knowledge_retrieval.application.bedrock_publication import (
 from opslens.knowledge_retrieval.application.s3_publication import (
     CONTENT_APPLICATION_JSON,
     CONTENT_TEXT_PLAIN,
+    PublicationPayload,
     S3PublicationValidationError,
     publish_bedrock_plan,
 )
@@ -107,6 +108,23 @@ class _FakeS3Client:
         }
 
 
+class _ProviderCodeError(RuntimeError):
+    """Small SDK-style exception carrying only a synthetic provider response."""
+
+    def __init__(self, code: str) -> None:
+        super().__init__("synthetic provider failure")
+        self.response: dict[str, object] = {"Error": {"Code": code}}
+
+
+class _FailingPutClient(_FakeS3Client):
+    """Fake S3 client that raises one SDK-style provider code on PutObject."""
+
+    def put_object(self, **kwargs: object) -> object:
+        """Raise one deterministic provider error without storing the object."""
+        _ = kwargs
+        raise _ProviderCodeError("AccessDenied")
+
+
 def _store(client: _FakeS3Client) -> BoundedS3PublicationStore:
     """Return one adapter fixed to the real OpsLens account-shape boundary."""
     return BoundedS3PublicationStore(
@@ -171,3 +189,19 @@ def test_adapter_fails_closed_when_prefix_requires_pagination() -> None:
 
     with pytest.raises(S3PublicationStoreError, match="exceeds"):
         _store(client).list_keys(f"{BEDROCK_PUBLICATION_PREFIX}/")
+
+
+def test_adapter_exposes_only_bounded_provider_error_code() -> None:
+    """Transport diagnostics retain a safe provider code without provider response bodies."""
+    client = _FailingPutClient()
+    payload = PublicationPayload(
+        key=f"{BEDROCK_PUBLICATION_PREFIX}/chunks/example.txt",
+        body=b"example",
+        content_type=CONTENT_TEXT_PLAIN,
+        checksum_sha256=sha256(b"example").hexdigest(),
+    )
+
+    with pytest.raises(S3PublicationStoreError, match="provider_code=AccessDenied") as exc_info:
+        _store(client).put(payload)
+
+    assert "synthetic provider failure" not in str(exc_info.value)
