@@ -63,13 +63,6 @@ def _require_nonnegative_int(value: object, *, field: str) -> int:
     return value
 
 
-def _require_positive_int(value: object, *, field: str) -> int:
-    """Require one positive non-boolean integer."""
-    if type(value) is not int or value <= 0:
-        raise BedrockRetrievalValidationError(f"{field} must be a positive integer")
-    return value
-
-
 def _require_optional_score(value: object) -> float | None:
     """Preserve one finite provider relevance score without confidence semantics."""
     if value is None:
@@ -194,6 +187,15 @@ class BedrockRetrievalPage:
             object.__setattr__(self, "guardrail_action", action)
 
 
+def _require_page(value: object) -> BedrockRetrievalPage:
+    """Validate one runtime provider page after crossing the injected port boundary."""
+    if not isinstance(value, BedrockRetrievalPage):
+        raise BedrockRetrievalValidationError(
+            "retrieval port must return one BedrockRetrievalPage"
+        )
+    return value
+
+
 @dataclass(frozen=True, slots=True)
 class BedrockRetrieveInvocationEvidence:
     """Content-free runtime evidence for one exact Bedrock Retrieve invocation."""
@@ -244,6 +246,24 @@ class BedrockRetrieveInvocationEvidence:
         )
 
 
+def _require_retrieval_evidence(value: object) -> RetrievalEvidence:
+    """Validate one runtime typed retrieval evidence value."""
+    if not isinstance(value, RetrievalEvidence):
+        raise BedrockRetrievalValidationError(
+            "evidence must be one RetrievalEvidence"
+        )
+    return value
+
+
+def _require_invocation(value: object) -> BedrockRetrieveInvocationEvidence:
+    """Validate one runtime Bedrock Retrieve invocation evidence value."""
+    if not isinstance(value, BedrockRetrieveInvocationEvidence):
+        raise BedrockRetrievalValidationError(
+            "invocation must be one BedrockRetrieveInvocationEvidence"
+        )
+    return value
+
+
 @dataclass(frozen=True, slots=True)
 class BedrockRetrieveResult:
     """Admitted typed retrieval evidence plus provider invocation telemetry."""
@@ -253,23 +273,19 @@ class BedrockRetrieveResult:
 
     def __post_init__(self) -> None:
         """Require exact provider/backend consistency."""
-        if not isinstance(self.evidence, RetrievalEvidence):
-            raise BedrockRetrievalValidationError(
-                "evidence must be one RetrievalEvidence"
-            )
-        if not isinstance(self.invocation, BedrockRetrieveInvocationEvidence):
-            raise BedrockRetrievalValidationError(
-                "invocation must be one BedrockRetrieveInvocationEvidence"
-            )
-        if self.evidence.backend is not RetrievalBackend.BEDROCK_KNOWLEDGE_BASE:
+        evidence = _require_retrieval_evidence(self.evidence)
+        invocation = _require_invocation(self.invocation)
+        object.__setattr__(self, "evidence", evidence)
+        object.__setattr__(self, "invocation", invocation)
+        if evidence.backend is not RetrievalBackend.BEDROCK_KNOWLEDGE_BASE:
             raise BedrockRetrievalValidationError(
                 "evidence backend must be bedrock_knowledge_base"
             )
-        if self.evidence.backend_reference != self.invocation.knowledge_base_id:
+        if evidence.backend_reference != invocation.knowledge_base_id:
             raise BedrockRetrievalValidationError(
                 "evidence backend reference must match invocation knowledge base"
             )
-        if len(self.evidence.chunks) != self.invocation.returned_result_count:
+        if len(evidence.chunks) != invocation.returned_result_count:
             raise BedrockRetrievalValidationError(
                 "invocation result count must match admitted chunk count"
             )
@@ -456,15 +472,13 @@ def run_bounded_retrieve(
         max_length=128,
     )
 
-    page = port.retrieve(
-        knowledge_base_id=kb_id,
-        query=typed_request.query,
-        top_k=typed_request.top_k,
-    )
-    if not isinstance(page, BedrockRetrievalPage):
-        raise BedrockRetrievalValidationError(
-            "retrieval port must return one BedrockRetrievalPage"
+    page = _require_page(
+        port.retrieve(
+            knowledge_base_id=kb_id,
+            query=typed_request.query,
+            top_k=typed_request.top_k,
         )
+    )
     if page.next_token is not None:
         raise BedrockRetrievalValidationError(
             "paginated Retrieve responses are not admitted by Gate 7.4 v1"
