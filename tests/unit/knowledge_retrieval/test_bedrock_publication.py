@@ -88,7 +88,11 @@ def _spec(*, title: str = "Security Guide") -> KnowledgeCorpusSpec:
     )
 
 
-def _materialized(*, title: str = "Security Guide", first_text: str = "alpha") -> MaterializedKnowledgeDocument:
+def _materialized(
+    *,
+    title: str = "Security Guide",
+    first_text: str = "alpha",
+) -> MaterializedKnowledgeDocument:
     """Materialize two canonical chunks entirely offline."""
     spec = _spec(title=title)
     body = (
