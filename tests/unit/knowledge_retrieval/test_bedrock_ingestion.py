@@ -135,11 +135,15 @@ def test_ingestion_evidence_rejects_unknown_statistics() -> None:
         )
 
 
+def _empty_call_log() -> list[tuple[str, dict[str, object]]]:
+    return []
+
+
 @dataclass
 class FakeBedrockClient:
     """Small dynamic-client fake preserving exact Bedrock request arguments."""
 
-    calls: list[tuple[str, dict[str, object]]] = field(default_factory=list)
+    calls: list[tuple[str, dict[str, object]]] = field(default_factory=_empty_call_log)
 
     def start_ingestion_job(self, **kwargs: object) -> object:
         """Record and return one STARTING provider response."""
