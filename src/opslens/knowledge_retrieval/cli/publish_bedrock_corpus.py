@@ -9,9 +9,9 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import cast
 
-import boto3
 from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
+from botocore.session import get_session
 
 from opslens.knowledge_retrieval.adapters.http_source import (
     BoundedHttpsKnowledgeSource,
@@ -169,7 +169,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             expected_manifest_text=expected_manifest_text,
         )
 
-        raw_client: object = boto3.client(
+        dynamic_client = get_session().create_client(
             "s3",
             region_name=region,
             config=Config(
@@ -178,7 +178,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 retries={"max_attempts": 3, "mode": "standard"},
             ),
         )
-        client = cast(S3PublicationClient, raw_client)
+        client = cast(S3PublicationClient, dynamic_client)
         target = S3PublicationTarget(
             bucket_name=bucket,
             expected_bucket_owner=expected_bucket_owner,
