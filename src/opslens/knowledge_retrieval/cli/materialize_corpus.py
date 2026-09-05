@@ -7,7 +7,7 @@ import hashlib
 import os
 import sys
 from pathlib import Path
-from typing import Sequence
+from typing import Sequence, cast
 
 from opslens.knowledge_retrieval.adapters.http_source import (
     BoundedHttpsKnowledgeSource,
@@ -96,20 +96,25 @@ def _check_exact(path: Path, expected: str) -> None:
 def main(argv: Sequence[str] | None = None) -> int:
     """Run one bounded serial corpus replay and write or verify only hash evidence."""
     args = _parser().parse_args(argv)
+    registry_path = cast(Path, args.registry)
+    spec_path = cast(Path, args.spec)
+    manifest_path = cast(Path, args.manifest)
+    write_mode = cast(bool, args.write)
+
     try:
-        registry = load_source_registry(args.registry)
-        spec = load_corpus_spec(args.spec)
+        registry = load_source_registry(registry_path)
+        spec = load_corpus_spec(spec_path)
         manifest = materialize_corpus(
             registry,
             spec,
             BoundedHttpsKnowledgeSource(),
         )
         serialized = serialize_corpus_manifest(manifest)
-        if args.write:
-            _write_atomic(args.manifest, serialized)
+        if write_mode:
+            _write_atomic(manifest_path, serialized)
             operation = "wrote"
         else:
-            _check_exact(args.manifest, serialized)
+            _check_exact(manifest_path, serialized)
             operation = "verified"
     except (
         CanonicalSourceTextError,
@@ -127,7 +132,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     chunk_count = sum(len(document.chunks) for document in manifest.documents)
     manifest_sha256 = hashlib.sha256(serialized.encode("utf-8")).hexdigest()
     print(
-        f"{operation} {args.manifest}: documents={document_count} "
+        f"{operation} {manifest_path}: documents={document_count} "
         f"chunks={chunk_count} manifest_sha256={manifest_sha256}"
     )
     return 0
