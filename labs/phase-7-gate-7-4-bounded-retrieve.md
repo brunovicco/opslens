@@ -4,7 +4,7 @@ _Date: 2026-09-05_
 
 ## Status
 
-**IN PROGRESS — ARCHITECTURE FROZEN / IMPLEMENTATION NOT STARTED.**
+**IN PROGRESS — 7.4a–7.4d IMPLEMENTED AND QUALITY-GATED / REAL RETRIEVE PENDING.**
 
 Gate 7.3 was squash-merged to `main` at:
 
@@ -12,7 +12,7 @@ Gate 7.3 was squash-merged to `main` at:
 1337950ddb5948943bf361dba4c3cdc40dafaf2b
 ```
 
-The real dev Knowledge Base is populated with exactly nine canonical chunks.
+The real dev Knowledge Base remains populated with exactly nine canonical chunks:
 
 ```text
 knowledge base id: BTVJ2PBR2A
@@ -25,7 +25,7 @@ chunking:          NONE
 
 ## Goal
 
-Implement the first real retrieval-only runtime for Phase 7.
+Implement and validate the first real retrieval-only runtime for Phase 7.
 
 ```text
 RetrievalRequest
@@ -49,21 +49,22 @@ AWS provides a direct Knowledge Base `Retrieve` operation through the
 synthesis, preserves the Gate 7.5 Recall@K/MRR baseline, and prevents generation
 quality from hiding retrieval defects.
 
-The request surface for OpsLens v1 is intentionally smaller than the provider API:
+The OpsLens v1 request surface is intentionally smaller than the provider API:
 
 ```text
 knowledgeBaseId: fixed configured KB
-retrievalQuery.text: request.query
+retrievalQuery.text: validated request.query
 retrievalConfiguration.vectorSearchConfiguration.numberOfResults: request.top_k
 ```
 
-No provider DSL is accepted from the caller.
+No provider DSL is accepted from the caller. No search-type override, reranking,
+implicit pagination, or generation configuration is sent.
 
 ## Search behavior
 
 OpsLens uses Amazon S3 Vectors, so the v1 baseline is semantic retrieval only.
-AWS documents hybrid search only for specific vector-store configurations with a
-filterable text field; it is not available for the current S3 Vectors path.
+AWS documents hybrid search only for vector-store configurations that support it;
+the current S3 Vectors path remains semantic-only.
 
 Do not send `overrideSearchType=HYBRID`.
 
@@ -80,82 +81,165 @@ source_types:  typed allowlist only
 provider DSL:  none
 ```
 
-The AWS API itself allows a larger `numberOfResults` range. OpsLens intentionally
-retains the stricter `1..10` product boundary already frozen in Gate 7.1.
+The AWS API allows a broader `numberOfResults` range. OpsLens intentionally retains
+the stricter `1..10` product boundary already frozen in Gate 7.1.
 
-## Provider response admission
+The first real vertical slice is unfiltered. If a caller supplies any typed Gate 7.1
+scope (`source_types`, vulnerability IDs, ecosystem, or package name) before a
+reviewed deterministic Bedrock-filter translation exists, the application fails
+**before** the provider call rather than silently discarding that scope.
 
-A Bedrock retrieval result may carry:
+## Implemented deterministic checked-corpus catalog — 7.4b
 
-```text
-content
-location
-metadata
-score
-```
+`application/retrieval_catalog.py` derives runtime lookup authority only from the
+checked Gate 7.2 manifest.
 
-OpsLens must not trust those fields independently.
-
-Admission requires all of the following:
-
-1. result count does not exceed `request.top_k`;
-2. content is text and non-empty;
-3. score is absent or finite numeric evidence;
-4. location is the expected S3 source shape for the frozen dev corpus;
-5. S3 object key belongs to the exact `knowledge/corpus/v1/bedrock/chunks/` prefix;
-6. the object key's content-addressed SHA-256 matches the returned text;
-7. that SHA-256 resolves to exactly one checked Gate 7.2 manifest chunk;
-8. provider metadata contains only admitted canonical fields needed for provenance;
-9. provider metadata values match the checked source registry/spec/manifest authority;
-10. ranks are assigned deterministically from provider response order.
-
-The provider does not get authority to invent `chunk_id`, `document_id`, source URL,
-source type, or document hash.
-
-## Chunk identity resolution
-
-Gate 7.3 deliberately did not invent `chunk_id` as Bedrock metadata.
-
-Published content object keys are content-addressed:
+Published content keys remain content-addressed:
 
 ```text
 knowledge/corpus/v1/bedrock/chunks/<chunk_content_sha256>.txt
 ```
 
-Therefore the retrieval adapter must resolve:
+The catalog resolves:
 
 ```text
 returned S3 object key
  -> expected chunk_content_sha256
  -> checked manifest chunk
- -> checked corpus selection
- -> canonical chunk_id/document_id/source provenance
+ -> canonical chunk_id
+ -> canonical document_id/source_id/source_type/canonical_uri
+ -> canonical document hash/title/section path
 ```
 
-The returned text is independently hashed and must equal the expected chunk hash.
+The catalog requires globally unique content keys, chunk digests, and chunk IDs and
+fails closed on malformed, unknown, out-of-prefix, or ambiguous keys.
 
-This makes the checked corpus artifacts — not Bedrock metadata — the final authority
-for chunk identity.
+## Implemented provider response admission — 7.4c
 
-## Filters
+The application and adapter now admit a Bedrock retrieval result only when all of
+the following hold:
 
-Gate 7.1 already contains typed optional scope fields such as source type,
-vulnerability id, ecosystem, and package name.
+1. result count does not exceed `request.top_k`;
+2. content type is `TEXT` and content is non-empty/bounded;
+3. relevance score is absent or finite numeric evidence;
+4. location is an exact S3 URI in the expected source bucket;
+5. the S3 key has the frozen content-addressed chunk shape;
+6. the key resolves to exactly one checked manifest chunk;
+7. returned UTF-8 text SHA-256 equals the expected canonical chunk hash;
+8. returned UTF-8 byte count equals checked manifest evidence;
+9. required canonical metadata matches checked corpus authority exactly;
+10. unknown non-provider metadata is rejected;
+11. Bedrock-reserved `x-amz-bedrock-kb-*` metadata remains non-authoritative and is
+    cross-checked when it restates source URI or data-source identity;
+12. ranks are assigned deterministically from provider response order.
 
-Gate 7.4 will implement provider filters only after each typed scope can be mapped to
-a deterministic Bedrock filter expression without exposing arbitrary caller DSL.
+Bedrock `documentId` and provider-owned chunk identifiers are not canonical OpsLens
+identity.
 
-The first real vertical slice may use an unfiltered `RetrievalRequest` to prove the
-core response-admission path. Typed filters can then be added incrementally inside
-the same gate with explicit unit tests.
+The provider does not get authority to invent `chunk_id`, `document_id`, source URL,
+source type, document hash, title, or section path.
 
-## Runtime IAM
+### Pagination and guardrail behavior
+
+A v1 request is exactly one bounded `Retrieve` operation. `nextToken` is rejected
+until an explicit pagination budget/contract is introduced.
+
+A response reporting `guardrailAction=INTERVENED` is not silently admitted as
+ordinary retrieval evidence.
+
+## Implemented runtime adapter
+
+`adapters/bedrock_retrieval.py` sends exactly one direct semantic request:
+
+```text
+knowledgeBaseId=<validated configured id>
+retrievalQuery={"text": <validated query>}
+retrievalConfiguration={
+  "vectorSearchConfiguration": {
+    "numberOfResults": <validated top_k>
+  }
+}
+```
+
+It captures bounded provider-neutral runtime evidence:
+
+```text
+provider request id
+SDK retry attempts
+client elapsed milliseconds
+returned result count
+rank + provider relevance score
+```
+
+Provider/transport errors expose only a safe provider code when available, otherwise
+the exception class. Provider response bodies/messages and retrieved content are not
+copied into operational error messages.
+
+## Checked manifest loading for the hot path — 7.4d
+
+The real retrieval CLI does **not** replay six external source repositories before
+every query.
+
+`load_corpus_manifest()` strictly parses the checked hash-only
+`knowledge/corpus/v1/manifest.json` into existing typed manifest contracts. Unknown
+schema fields, invalid types, malformed hashes/identities, and impossible byte counts
+fail closed through the existing domain validation.
+
+This preserves the separation:
+
+```text
+corpus acquisition/replay time
+ -> external immutable pins + deterministic manifest verification
+
+retrieval request time
+ -> checked local manifest + catalog
+ -> one bounded Bedrock Retrieve call
+```
+
+## Real Retrieve CLI
+
+`cli/run_bedrock_retrieve.py` is ready for the first real call.
+
+Required explicit authority:
+
+```text
+query
+knowledge base id
+data source id
+source bucket
+```
+
+The region is frozen to `us-east-1`; the manifest defaults to the checked v1 file;
+`top_k` defaults to 5 and remains bounded to 1..10.
+
+The CLI output intentionally contains **no retrieved chunk text**. It serializes:
+
+```text
+backend
+knowledge base id
+query SHA-256 (not raw query text)
+requested top_k
+provider request id
+retry count
+client elapsed ms
+returned count
+ranked canonical chunk/document/source IDs
+canonical URLs/title/section path
+content hashes
+provider relevance scores
+```
+
+## Runtime IAM boundary
 
 The retrieval caller is a separate responsibility from the Gate 7.3 Knowledge Base
 service role.
 
-The future deployed retrieval identity should require only the Knowledge Base
-runtime action for the exact Knowledge Base. It must not inherit:
+Current AWS IAM documentation allows `bedrock:Retrieve` to be scoped to the exact
+Knowledge Base ARN. A future deployed OpsLens retrieval runtime therefore needs only
+that retrieval authority for this KB; it must not inherit ingestion/vector-write or
+provisioning authority.
+
+It must not receive merely for retrieval:
 
 ```text
 s3:PutObject
@@ -163,50 +247,74 @@ s3:GetObject for source corpus unless separately justified
 s3vectors:PutVectors
 s3vectors:DeleteVectors
 bedrock:StartIngestionJob
-IAM PassRole / provisioning authority
+iam:PassRole
+infrastructure provisioning authority
 ```
 
-For the first local real call, the existing bootstrap Identity Center profile may be
-used only as lab authority. That does not satisfy the final deployed-runtime IAM
-criterion.
+No deployed application runtime principal exists yet. Creating an unattached role or
+policy solely to satisfy a checklist would add dead IAM surface. Therefore the first
+real call uses temporary human/bootstrap Identity Center credentials strictly as lab
+validation authority; this does **not** become the future production runtime
+identity. The exact least-privilege deployed attachment remains deferred until a
+real compute/runtime principal exists.
 
-## Error behavior
+## Error behavior proven offline
 
-Provider/transport failures must be wrapped with bounded, content-free diagnostics.
-
-The adapter must fail closed on at least:
+Tests cover fail-closed behavior for:
 
 ```text
-unknown response fields where the contract requires exactness
-non-text content
-unsupported location type
-unexpected S3 bucket/prefix/key
-content hash mismatch
-metadata/provenance mismatch
-duplicate canonical chunk identity
-more results than request.top_k
+unimplemented typed filters
+nextToken/pagination
+more results than top_k
+non-TEXT result content
+unexpected S3 bucket
+unknown content-addressed key
+content SHA-256 mismatch
+content byte-count mismatch
+canonical metadata mismatch
+unknown non-provider metadata
+reserved source URI / data-source contradiction
 non-finite relevance score
-pagination/nextToken unless explicitly implemented and bounded
+guardrail intervention
+unknown provider response field
+provider AccessDenied-style error diagnostics
+non-service exception diagnostics
 ```
 
-For v1, one request must produce one bounded page. If Bedrock returns a `nextToken`
-for a request already bounded to `top_k <= 10`, treat it as unsupported until an
-explicit pagination contract exists.
+## Quality evidence before the first real call
+
+Functional head before this documentation update:
+
+```text
+9dc5e2d3d6915623dbe2efa992d52719c92765e4
+Python CI #220: SUCCESS
+
+Knowledge Retrieval Ruff:     PASS
+Knowledge Retrieval Pyright:  0 errors / 0 warnings / 0 informations
+Knowledge Retrieval pytest:   91 passed in 0.76s
+
+Correlation regression:              PASS
+Repository Intelligence regression:  PASS
+Risk Policy regression:              PASS
+Semantic Query regression:           PASS
+```
+
+No real `Retrieve` call was made by these tests.
 
 ## Observability
 
-Record provider-neutral runtime evidence sufficient to evaluate retrieval before
-synthesis:
+Gate 7.4 records provider-neutral runtime evidence sufficient to evaluate retrieval
+before synthesis:
 
 ```text
 knowledge base reference
 requested top_k
 returned chunk count
-ranked chunk identities
+ranked checked chunk identities
 provider relevance scores when present
 client elapsed time
-provider request id when safely available
-retry count if exposed by the SDK boundary
+provider request id
+SDK retry count
 failure category
 ```
 
@@ -214,11 +322,11 @@ Do not interpret Bedrock relevance scores as calibrated confidence.
 
 ## Cost
 
-Gate 7.4 adds query cost only. No synthesis-model cost belongs here.
+Gate 7.4 adds retrieval-query cost only. No synthesis-model cost belongs here.
 
-Record the number of real Retrieve calls and use current published S3 Vectors /
-Knowledge Base pricing assumptions for an estimated bounded retrieval cost. Do not
-fabricate an exact per-query bill when AWS does not expose one in the response.
+The closeout will record the exact number of real `Retrieve` calls and current
+published S3 Vectors/Knowledge Base pricing assumptions. An exact per-query bill must
+not be fabricated when the provider response does not expose one.
 
 ## Evaluation handoff
 
@@ -240,13 +348,13 @@ retrieval cost
 ## Increment plan
 
 ```text
-7.4a  freeze direct-Retrieve request/response authority boundary
-7.4b  build deterministic checked-corpus lookup for returned S3 keys
-7.4c  implement Bedrock Retrieve adapter with fake-client tests
-7.4d  implement bounded real CLI/runtime evidence
-7.4e  add least-privilege retrieval IAM boundary
-7.4f  perform real Retrieve success + intentional failure
-7.4g  observability/cost/docs closeout + logical merge
+7.4a  freeze direct-Retrieve request/response authority boundary       COMPLETE
+7.4b  deterministic checked-corpus S3-key lookup                      COMPLETE
+7.4c  Bedrock Retrieve adapter + fake-client admission tests          COMPLETE
+7.4d  bounded real CLI/runtime evidence                               COMPLETE
+7.4e  least-privilege retrieval IAM boundary review                   COMPLETE / ATTACHMENT DEFERRED
+7.4f  real Retrieve success + intentional real failure                NEXT
+7.4g  observability/cost/docs closeout + logical merge                PENDING
 ```
 
 ## Exit criteria
@@ -256,36 +364,50 @@ retrieval cost
 - [x] direct `Retrieve`, not `RetrieveAndGenerate`, retained for the baseline;
 - [x] semantic-only behavior for S3 Vectors recorded;
 - [x] Gate 7.1 `top_k <= 10` retained despite broader provider limits;
-- [ ] checked-corpus lookup maps returned content keys to canonical chunk identity;
-- [ ] Bedrock adapter implemented with no arbitrary provider DSL;
-- [ ] response provenance/content admission is deterministic and fail-closed;
-- [ ] pagination behavior explicitly bounded;
+- [x] checked-corpus lookup maps returned content keys to canonical chunk identity;
+- [x] Bedrock adapter implemented with no arbitrary provider DSL;
+- [x] response provenance/content admission is deterministic and fail-closed;
+- [x] pagination behavior explicitly bounded;
+- [x] checked manifest loader avoids external replay in the retrieval hot path;
+- [x] bounded real CLI emits content-free operational evidence;
+- [x] retrieval-only IAM boundary reviewed;
+- [x] targeted + regression CI green before real invocation;
 - [ ] real Retrieve call succeeds against `BTVJ2PBR2A`;
-- [ ] one intentional real failure is diagnosed;
-- [ ] retrieval-only IAM boundary reviewed;
-- [ ] latency/request/cost evidence recorded;
-- [ ] targeted + regression CI green;
-- [ ] documentation synchronized;
+- [ ] one intentional real provider failure is diagnosed;
+- [ ] real latency/request/cost evidence recorded;
+- [ ] documentation synchronized with real evidence;
+- [ ] final PR CI green;
 - [ ] PR squash-merged.
 
-## Next authorized implementation step
+## Next authorized step
 
-Implement **7.4b only** first:
+Run exactly one real unfiltered semantic `Retrieve` against the existing dev KB with
+`top_k=5` through the versioned CLI. Inspect the provider response through the
+strict admission boundary before changing any response-shape assumption.
 
-> Build an offline deterministic lookup from the checked Gate 7.2 registry/spec/
-> manifest that can resolve a returned content-addressed S3 key to exactly one
-> canonical chunk identity and provenance record.
+If real AWS evidence differs from the documented provider shape, fail closed,
+inspect the exact non-sensitive discrepancy, update the contract deliberately, and
+re-run CI before another real request.
 
-Do not make a real Retrieve call until that admission lookup and fake response tests
-exist.
+Do not start synthesis or Gate 7.5 evaluation yet.
 
 ## Official AWS references revalidated
 
-- Amazon Bedrock — Configure and customize queries and response generation:
+- Amazon Bedrock — Retrieve data and generate AI responses with knowledge bases:
+  https://docs.aws.amazon.com/bedrock/latest/userguide/kb-how-retrieval.html
+- Amazon Bedrock — Test a knowledge base with Retrieve:
+  https://docs.aws.amazon.com/bedrock/latest/userguide/kb-test-retrieve.html
+- Amazon Bedrock — Configure and customize queries:
   https://docs.aws.amazon.com/bedrock/latest/userguide/kb-test-config.html
-- Amazon Bedrock API — KnowledgeBaseRetrievalConfiguration:
-  https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent-runtime_KnowledgeBaseRetrievalConfiguration.html
-- Amazon Bedrock API — KnowledgeBaseVectorSearchConfiguration:
-  https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent-runtime_KnowledgeBaseVectorSearchConfiguration.html
+- Amazon Bedrock API — KnowledgeBaseRetrievalResult:
+  https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent-runtime_KnowledgeBaseRetrievalResult.html
+- Amazon Bedrock API — RetrievalResultLocation:
+  https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent-runtime_RetrievalResultLocation.html
+- Amazon Bedrock API — RetrievalResultS3Location:
+  https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent-runtime_RetrievalResultS3Location.html
+- Amazon Bedrock API — RetrievalResultContent:
+  https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent-runtime_RetrievalResultContent.html
 - Botocore — `bedrock-agent-runtime.retrieve`:
   https://docs.aws.amazon.com/botocore/latest/reference/services/bedrock-agent-runtime/client/retrieve.html
+- Amazon Bedrock — Knowledge Base runtime permissions:
+  https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-prereq-permissions-general.html
