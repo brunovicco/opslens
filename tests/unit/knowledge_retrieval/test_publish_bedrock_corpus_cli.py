@@ -10,17 +10,17 @@ from opslens.knowledge_retrieval.application.s3_publication import (
 )
 from opslens.knowledge_retrieval.cli.publish_bedrock_corpus import (
     PublicationCliError,
-    _require_region,
-    _serialize_evidence,
+    require_publication_region,
+    serialize_publication_evidence,
 )
 
 
 def test_require_region_accepts_only_frozen_dev_region() -> None:
     """Publication must not silently move the frozen Gate 7.3 workload to another region."""
-    assert _require_region("us-east-1") == "us-east-1"
+    assert require_publication_region("us-east-1") == "us-east-1"
 
     with pytest.raises(PublicationCliError, match=r"frozen Gate 7\.3 region"):
-        _require_region("us-west-2")
+        require_publication_region("us-west-2")
 
 
 def test_serialize_evidence_is_hash_only_and_deterministic() -> None:
@@ -47,13 +47,13 @@ def test_serialize_evidence_is_hash_only_and_deterministic() -> None:
         ),
     )
 
-    first = _serialize_evidence(
+    first = serialize_publication_evidence(
         evidence,
         bucket="opslens-dev-data-487757851499-us-east-1",
         expected_bucket_owner="487757851499",
         region="us-east-1",
     )
-    second = _serialize_evidence(
+    second = serialize_publication_evidence(
         evidence,
         bucket="opslens-dev-data-487757851499-us-east-1",
         expected_bucket_owner="487757851499",
