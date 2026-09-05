@@ -15,6 +15,7 @@ on:
       - "src/opslens/knowledge_retrieval/**/*.py"
       - "tests/unit/knowledge_retrieval/**/*.py"
       - "tests/fixtures/knowledge_retrieval/**"
+      - "knowledge/corpus/**"
       - "pyproject.toml"
       - "uv.lock"
       - ".github/workflows/python-ci.yml"
