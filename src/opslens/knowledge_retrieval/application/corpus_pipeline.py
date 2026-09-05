@@ -32,12 +32,12 @@ class CorpusPipelineError(ValueError):
     """Raised when corpus inputs cannot form one complete bounded replay."""
 
 
-def materialize_corpus(
+def materialize_corpus_documents(
     registry: KnowledgeSourceRegistry,
     spec: KnowledgeCorpusSpec,
     acquirer: KnowledgeSourceAcquirer,
-) -> KnowledgeCorpusManifest:
-    """Acquire and materialize authorized documents serially into one hash-only manifest."""
+) -> tuple[MaterializedKnowledgeDocument, ...]:
+    """Acquire and materialize the complete bounded corpus while preserving canonical text."""
     if spec.source_registry_id != registry.registry_id:
         raise CorpusPipelineError("corpus spec must reference the supplied source registry")
     if len(registry.entries) != len(spec.documents):
@@ -62,8 +62,14 @@ def materialize_corpus(
             materialize_knowledge_document(acquired, document_spec)
         )
 
-    return build_corpus_manifest(
-        registry,
-        spec,
-        tuple(materialized),
-    )
+    return tuple(materialized)
+
+
+def materialize_corpus(
+    registry: KnowledgeSourceRegistry,
+    spec: KnowledgeCorpusSpec,
+    acquirer: KnowledgeSourceAcquirer,
+) -> KnowledgeCorpusManifest:
+    """Acquire and materialize authorized documents serially into one hash-only manifest."""
+    materialized = materialize_corpus_documents(registry, spec, acquirer)
+    return build_corpus_manifest(registry, spec, materialized)
