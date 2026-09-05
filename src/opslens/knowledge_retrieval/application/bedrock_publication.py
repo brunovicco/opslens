@@ -47,6 +47,13 @@ def _sha256_text(value: str) -> str:
     return sha256(value.encode("utf-8")).hexdigest()
 
 
+def _require_nonblank_string(value: object, *, field: str) -> str:
+    """Require one exact non-empty string through an untrusted runtime boundary."""
+    if not isinstance(value, str) or not value.strip():
+        raise BedrockPublicationError(f"{field} must be one non-empty string")
+    return value
+
+
 def _require_sha256(value: object, *, field: str) -> str:
     """Require one lowercase SHA-256 digest."""
     if not isinstance(value, str) or _SHA256_PATTERN.fullmatch(value) is None:
@@ -72,6 +79,30 @@ def _require_positive_int(value: object, *, field: str) -> int:
     return value
 
 
+def _require_metadata_json(value: object) -> str:
+    """Require stable JSON sidecar text while retaining exact bytes."""
+    metadata_json = _require_nonblank_string(value, field="metadata_json")
+    if not metadata_json.endswith("\n"):
+        raise BedrockPublicationError("metadata_json must be stable JSON ending with LF")
+    return metadata_json
+
+
+def _require_publication_objects(
+    value: object,
+) -> tuple[BedrockPublicationObject, ...]:
+    """Require a non-empty tuple of typed publication objects at runtime."""
+    if not isinstance(value, tuple):
+        raise BedrockPublicationError("objects must be one non-empty tuple")
+    items = cast(tuple[object, ...], value)
+    if not items:
+        raise BedrockPublicationError("objects must be one non-empty tuple")
+    if any(not isinstance(item, BedrockPublicationObject) for item in items):
+        raise BedrockPublicationError(
+            "objects must contain only BedrockPublicationObject values"
+        )
+    return cast(tuple[BedrockPublicationObject, ...], items)
+
+
 @dataclass(frozen=True, slots=True)
 class BedrockPublicationObject:
     """One canonical chunk and its S3 metadata sidecar before any remote write."""
@@ -89,10 +120,8 @@ class BedrockPublicationObject:
 
     def __post_init__(self) -> None:
         """Reject mismatched content, sidecar identity, or Bedrock metadata budgets."""
-        if not isinstance(self.chunk_id, str) or not self.chunk_id.strip():
-            raise BedrockPublicationError("chunk_id must be one non-empty string")
-        if not isinstance(self.document_id, str) or not self.document_id.strip():
-            raise BedrockPublicationError("document_id must be one non-empty string")
+        chunk_id = _require_nonblank_string(self.chunk_id, field="chunk_id")
+        document_id = _require_nonblank_string(self.document_id, field="document_id")
         content_key = _require_s3_key(self.content_key, field="content_key", suffix=".txt")
         metadata_key = _require_s3_key(
             self.metadata_key,
@@ -103,22 +132,20 @@ class BedrockPublicationObject:
             raise BedrockPublicationError(
                 "metadata_key must equal content_key plus '.metadata.json'"
             )
-        if not isinstance(self.content_text, str) or not self.content_text.strip():
-            raise BedrockPublicationError("content_text must contain canonical chunk text")
+        content_text = _require_nonblank_string(self.content_text, field="content_text")
         content_sha256 = _require_sha256(self.content_sha256, field="content_sha256")
-        if _sha256_text(self.content_text) != content_sha256:
+        if _sha256_text(content_text) != content_sha256:
             raise BedrockPublicationError(
                 "content_sha256 must match the exact publication UTF-8 content"
             )
-        if not isinstance(self.metadata_json, str) or not self.metadata_json.endswith("\n"):
-            raise BedrockPublicationError("metadata_json must be stable JSON ending with LF")
+        metadata_json = _require_metadata_json(self.metadata_json)
         metadata_sha256 = _require_sha256(self.metadata_sha256, field="metadata_sha256")
-        if _sha256_text(self.metadata_json) != metadata_sha256:
+        if _sha256_text(metadata_json) != metadata_sha256:
             raise BedrockPublicationError(
                 "metadata_sha256 must match the exact metadata sidecar UTF-8 content"
             )
         try:
-            parsed = cast(object, json.loads(self.metadata_json))
+            parsed = cast(object, json.loads(metadata_json))
         except json.JSONDecodeError as exc:
             raise BedrockPublicationError("metadata_json must contain valid JSON") from exc
         if not isinstance(parsed, dict):
@@ -140,12 +167,16 @@ class BedrockPublicationObject:
             raise BedrockPublicationError(
                 "custom metadata exceeds the Bedrock + S3 Vectors 35-key limit"
             )
-        if len(self.metadata_json.encode("utf-8")) > MAX_S3_METADATA_SIDECAR_BYTES:
+        if len(metadata_json.encode("utf-8")) > MAX_S3_METADATA_SIDECAR_BYTES:
             raise BedrockPublicationError("metadata sidecar exceeds the S3 10 KB file limit")
 
+        object.__setattr__(self, "chunk_id", chunk_id)
+        object.__setattr__(self, "document_id", document_id)
         object.__setattr__(self, "content_key", content_key)
         object.__setattr__(self, "metadata_key", metadata_key)
+        object.__setattr__(self, "content_text", content_text)
         object.__setattr__(self, "content_sha256", content_sha256)
+        object.__setattr__(self, "metadata_json", metadata_json)
         object.__setattr__(self, "metadata_sha256", metadata_sha256)
         object.__setattr__(
             self,
@@ -177,15 +208,10 @@ class BedrockPublicationPlan:
             self.source_manifest_sha256,
             field="source_manifest_sha256",
         )
-        if not isinstance(self.objects, tuple) or not self.objects:
-            raise BedrockPublicationError("objects must be one non-empty tuple")
-        if any(not isinstance(item, BedrockPublicationObject) for item in self.objects):
-            raise BedrockPublicationError(
-                "objects must contain only BedrockPublicationObject values"
-            )
-        content_keys = [item.content_key for item in self.objects]
-        metadata_keys = [item.metadata_key for item in self.objects]
-        chunk_ids = [item.chunk_id for item in self.objects]
+        objects = _require_publication_objects(self.objects)
+        content_keys = [item.content_key for item in objects]
+        metadata_keys = [item.metadata_key for item in objects]
+        chunk_ids = [item.chunk_id for item in objects]
         for label, values in (
             ("content_key", content_keys),
             ("metadata_key", metadata_keys),
@@ -199,6 +225,7 @@ class BedrockPublicationPlan:
                 "every publication content key must remain inside the frozen chunks prefix"
             )
         object.__setattr__(self, "source_manifest_sha256", source_manifest_sha256)
+        object.__setattr__(self, "objects", objects)
 
 
 def _metadata_attribute_string(value: str) -> dict[str, object]:
