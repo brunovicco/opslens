@@ -11,6 +11,7 @@ from opslens.knowledge_retrieval.adapters.http_source import AcquiredKnowledgeSo
 from opslens.knowledge_retrieval.application.bedrock_publication import (
     BEDROCK_PUBLICATION_PREFIX,
     MAX_BEDROCK_CUSTOM_METADATA_BYTES,
+    MAX_BEDROCK_METADATA_SIDECAR_BYTES,
     BedrockPublicationError,
     build_bedrock_publication_plan,
     serialize_bedrock_publication_plan,
@@ -147,9 +148,10 @@ def test_publication_plan_preserves_exact_chunks_and_sidecars() -> None:
         )
         assert item.metadata_key == f"{item.content_key}.metadata.json"
         assert item.custom_metadata_byte_count <= MAX_BEDROCK_CUSTOM_METADATA_BYTES
+        assert len(item.metadata_json.encode("utf-8")) <= MAX_BEDROCK_METADATA_SIDECAR_BYTES
 
         parsed = cast(dict[str, object], json.loads(item.metadata_json))
-        attributes = cast(dict[str, dict[str, object]], parsed["metadataAttributes"])
+        attributes = cast(dict[str, object], parsed["metadataAttributes"])
         assert set(attributes) == {
             "canonical_uri",
             "content_sha256",
@@ -159,10 +161,8 @@ def test_publication_plan_preserves_exact_chunks_and_sidecars() -> None:
             "source_type",
             "title",
         }
-        assert all(attribute["includeForEmbedding"] is False for attribute in attributes.values())
-        section_value = cast(dict[str, object], attributes["section_path"]["value"])
-        assert section_value["type"] == "STRING_LIST"
-        assert section_value["stringListValue"] == list(chunk.section_path)
+        assert attributes["section_path"] == list(chunk.section_path)
+        assert attributes["source_id"] == "example:test-publication"
 
 
 def test_hash_only_serialization_is_deterministic_and_omits_chunk_text() -> None:
