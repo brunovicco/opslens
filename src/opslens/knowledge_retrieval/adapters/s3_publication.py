@@ -18,6 +18,7 @@ MAX_LIST_KEYS = MAX_PUBLICATION_OBJECTS + 1
 _BUCKET_PATTERN = re.compile(r"^(?!-)[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$", re.ASCII)
 _ACCOUNT_PATTERN = re.compile(r"^[0-9]{12}$", re.ASCII)
 _SAFE_ERROR_CODE_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{1,128}$", re.ASCII)
+_SAFE_EXCEPTION_TYPE_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,127}$", re.ASCII)
 
 
 class S3PublicationClient(Protocol):
@@ -94,10 +95,24 @@ def _safe_provider_error_code(exc: Exception) -> str | None:
     return code
 
 
+def _safe_exception_type(exc: Exception) -> str | None:
+    """Return only one bounded exception class name for content-free diagnostics."""
+    name = type(exc).__name__
+    if _SAFE_EXCEPTION_TYPE_PATTERN.fullmatch(name) is None:
+        return None
+    return name
+
+
 def _transport_error_message(*, operation: str, target: str, exc: Exception) -> str:
-    """Return one content-free provider failure message with an optional safe code."""
+    """Return one content-free provider failure message with bounded diagnostics."""
     code = _safe_provider_error_code(exc)
-    suffix = f" provider_code={code}" if code is not None else ""
+    exception_type = _safe_exception_type(exc)
+    diagnostics: list[str] = []
+    if code is not None:
+        diagnostics.append(f"provider_code={code}")
+    if exception_type is not None:
+        diagnostics.append(f"provider_type={exception_type}")
+    suffix = f" {' '.join(diagnostics)}" if diagnostics else ""
     return f"S3 {operation} failed for {target}{suffix}"
 
 
@@ -211,7 +226,12 @@ class BoundedS3PublicationStore:
         keys: list[str] = []
         for index, raw_item in enumerate(contents):
             item = _require_mapping(raw_item, field=f"Contents[{index}]")
-            keys.append(_require_trimmed_string(item.get("Key"), field=f"Contents[{index}].Key"))
+            keys.append(
+                _require_trimmed_string(
+                    item.get("Key"),
+                    field=f"Contents[{index}].Key",
+                )
+            )
         if len(keys) > MAX_PUBLICATION_OBJECTS:
             raise S3PublicationStoreError(
                 "publication prefix contains more objects than the local safety budget"
