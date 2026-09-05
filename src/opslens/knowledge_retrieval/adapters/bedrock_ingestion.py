@@ -46,7 +46,9 @@ def _optional_statistics(value: object) -> dict[str, int]:
     result: dict[str, int] = {}
     for key, raw_value in parsed.items():
         if type(raw_value) is not int or raw_value < 0:
-            raise BedrockIngestionAdapterError(f"statistics.{key} must be a non-negative integer")
+            raise BedrockIngestionAdapterError(
+                f"statistics.{key} must be a non-negative integer"
+            )
         result[key] = raw_value
     return result
 
@@ -67,9 +69,13 @@ def _parse_job(response: object) -> IngestionJobEvidence:
     parsed = _require_mapping(response, field="Bedrock response")
     job = _require_mapping(parsed.get("ingestionJob"), field="ingestionJob")
     return IngestionJobEvidence(
-        knowledge_base_id=_require_trimmed(job.get("knowledgeBaseId"), field="knowledgeBaseId"),
+        knowledge_base_id=_require_trimmed(
+            job.get("knowledgeBaseId"), field="knowledgeBaseId"
+        ),
         data_source_id=_require_trimmed(job.get("dataSourceId"), field="dataSourceId"),
-        ingestion_job_id=_require_trimmed(job.get("ingestionJobId"), field="ingestionJobId"),
+        ingestion_job_id=_require_trimmed(
+            job.get("ingestionJobId"), field="ingestionJobId"
+        ),
         status=_require_trimmed(job.get("status"), field="status"),
         statistics=_optional_statistics(job.get("statistics")),
         failure_reasons=_optional_failure_reasons(job.get("failureReasons")),
@@ -80,6 +86,7 @@ class BoundedBedrockIngestionControl:
     """Start and inspect exactly one Knowledge Base ingestion job at a time."""
 
     def __init__(self, client: BedrockIngestionClient) -> None:
+        """Bind one injected dynamic client to the bounded adapter surface."""
         self._client = client
 
     def start(self, *, knowledge_base_id: str, data_source_id: str) -> IngestionJobEvidence:
