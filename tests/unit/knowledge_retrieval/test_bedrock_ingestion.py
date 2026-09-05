@@ -52,6 +52,7 @@ class FakeControl:
     get_calls: int = 0
 
     def start(self, *, knowledge_base_id: str, data_source_id: str) -> IngestionJobEvidence:
+        """Return the first deterministic ingestion state."""
         assert knowledge_base_id == KB_ID
         assert data_source_id == DS_ID
         return self.states[0]
@@ -63,6 +64,7 @@ class FakeControl:
         data_source_id: str,
         ingestion_job_id: str,
     ) -> IngestionJobEvidence:
+        """Return the next deterministic ingestion state."""
         assert knowledge_base_id == KB_ID
         assert data_source_id == DS_ID
         assert ingestion_job_id == JOB_ID
@@ -71,7 +73,10 @@ class FakeControl:
 
 
 def test_run_bounded_ingestion_reaches_complete_without_unbounded_polling() -> None:
-    control = FakeControl([_evidence("STARTING"), _evidence("IN_PROGRESS"), _evidence("COMPLETE")])
+    """Stop polling as soon as one COMPLETE state is observed."""
+    control = FakeControl(
+        [_evidence("STARTING"), _evidence("IN_PROGRESS"), _evidence("COMPLETE")]
+    )
     sleeps: list[float] = []
 
     result = run_bounded_ingestion(
@@ -90,6 +95,7 @@ def test_run_bounded_ingestion_reaches_complete_without_unbounded_polling() -> N
 
 
 def test_run_bounded_ingestion_fails_closed_on_failed_terminal_state() -> None:
+    """Surface provider failure reasons instead of accepting a failed job."""
     control = FakeControl([_evidence("FAILED", failed=1)])
 
     with pytest.raises(BedrockIngestionFailed, match="synthetic failure"):
@@ -102,6 +108,7 @@ def test_run_bounded_ingestion_fails_closed_on_failed_terminal_state() -> None:
 
 
 def test_run_bounded_ingestion_times_out_after_exact_poll_budget() -> None:
+    """Reject an ingestion job that exceeds the configured polling budget."""
     control = FakeControl([_evidence("STARTING"), _evidence("IN_PROGRESS")])
 
     with pytest.raises(BedrockIngestionTimeout, match="after 1 polls"):
@@ -117,6 +124,7 @@ def test_run_bounded_ingestion_times_out_after_exact_poll_budget() -> None:
 
 
 def test_ingestion_evidence_rejects_unknown_statistics() -> None:
+    """Reject provider counters outside the admitted Bedrock statistics vocabulary."""
     with pytest.raises(BedrockIngestionValidationError, match="unsupported fields"):
         IngestionJobEvidence(
             knowledge_base_id=KB_ID,
@@ -134,6 +142,7 @@ class FakeBedrockClient:
     calls: list[tuple[str, dict[str, object]]] = field(default_factory=list)
 
     def start_ingestion_job(self, **kwargs: object) -> object:
+        """Record and return one STARTING provider response."""
         self.calls.append(("start", dict(kwargs)))
         return {
             "ingestionJob": {
@@ -146,6 +155,7 @@ class FakeBedrockClient:
         }
 
     def get_ingestion_job(self, **kwargs: object) -> object:
+        """Record and return one COMPLETE provider response."""
         self.calls.append(("get", dict(kwargs)))
         return {
             "ingestionJob": {
@@ -165,6 +175,7 @@ class FakeBedrockClient:
 
 
 def test_bedrock_adapter_uses_exact_identifiers_without_discovery_calls() -> None:
+    """Use only explicit KB, data-source, and ingestion-job identifiers."""
     raw_client = FakeBedrockClient()
     client: BedrockIngestionClient = raw_client
     control = BoundedBedrockIngestionControl(client)
@@ -196,6 +207,7 @@ def test_bedrock_adapter_uses_exact_identifiers_without_discovery_calls() -> Non
 
 
 def test_ingestion_cli_evidence_is_bounded_and_content_free() -> None:
+    """Serialize terminal evidence without including source or chunk content."""
     serialized = serialize_ingestion_evidence(_evidence("COMPLETE"), region="us-east-1")
     parsed = json.loads(serialized)
 
@@ -216,6 +228,7 @@ def test_ingestion_cli_evidence_is_bounded_and_content_free() -> None:
 
 
 def test_ingestion_cli_requires_frozen_region() -> None:
+    """Reject real ingestion outside the frozen Gate 7.3 region."""
     assert require_ingestion_region("us-east-1") == "us-east-1"
-    with pytest.raises(IngestionCliError, match="frozen Gate 7.3 region"):
+    with pytest.raises(IngestionCliError, match=r"frozen Gate 7\.3 region"):
         require_ingestion_region("us-west-2")
