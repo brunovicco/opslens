@@ -1,4 +1,4 @@
-"""Bounded HTTPS acquisition for allowlisted knowledge-corpus sources."""
+"""Bounded HTTPS acquisition for pinned knowledge-corpus source files."""
 
 from __future__ import annotations
 
@@ -9,12 +9,12 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from http.client import HTTPSConnection
 from typing import Protocol, cast
-from urllib.parse import urlsplit
 
 from opslens.knowledge_retrieval.domain import KnowledgeSourceDescriptor
 
 MAX_SOURCE_RESPONSE_BYTES = 2 * 1024 * 1024
 _CONTROL_CHARACTER_PATTERN = re.compile(r"[\x00-\x1f\x7f]", re.ASCII)
+_ADMITTED_SOURCE_MEDIA_TYPES = frozenset({"text/plain", "text/markdown"})
 
 
 class KnowledgeSourceAcquisitionError(RuntimeError):
@@ -24,7 +24,7 @@ class KnowledgeSourceAcquisitionError(RuntimeError):
 
 
 class KnowledgeSourceResponseTooLargeError(KnowledgeSourceAcquisitionError):
-    """Raised when a source response exceeds its explicit byte budget."""
+    """Raised when a source response exceeds an explicit byte budget."""
 
     reason_code = "knowledge_source_response_too_large"
 
@@ -89,7 +89,7 @@ def _require_source_digest(value: object, *, body: bytes) -> str:
 
 @dataclass(frozen=True, slots=True)
 class KnowledgeSourceHttpConfig:
-    """Explicit local bounds for public knowledge-source HTTPS reads."""
+    """Explicit local bounds for public pinned-source HTTPS reads."""
 
     timeout_seconds: float = 10.0
     max_response_bytes: int = MAX_SOURCE_RESPONSE_BYTES
@@ -135,7 +135,7 @@ class KnowledgeHttpsConnection(Protocol):
     """Minimal HTTPS connection surface required by the bounded transport."""
 
     def request(self, method: str, url: str, *, headers: Mapping[str, str]) -> None:
-        """Issue one request to the already authorized source host."""
+        """Issue one request to the already fixed raw-source host."""
         ...
 
     def getresponse(self) -> KnowledgeHttpsResponse:
@@ -204,7 +204,7 @@ def _default_connection_factory(
 
 
 class BoundedHttpsKnowledgeSource:
-    """Acquire one allowlisted public HTML source with no redirects or retries."""
+    """Acquire one commit-pinned raw source with no redirects or retries."""
 
     def __init__(
         self,
@@ -217,35 +217,15 @@ class BoundedHttpsKnowledgeSource:
         self._connection_factory = connection_factory
 
     def acquire(self, descriptor: KnowledgeSourceDescriptor) -> AcquiredKnowledgeSource:
-        """Read exact bytes from the descriptor's already-authorized canonical URI."""
-        parsed = urlsplit(descriptor.canonical_uri)
-        if parsed.scheme != "https" or parsed.hostname != descriptor.allowed_host:
-            raise KnowledgeSourceInvalidResponseError(
-                "descriptor canonical URI no longer matches its HTTPS host authorization"
-            )
-        try:
-            port = parsed.port
-        except ValueError as exc:
-            raise KnowledgeSourceInvalidResponseError(
-                "knowledge source canonical URI contains an invalid port"
-            ) from exc
-        if port not in (None, 443):
-            raise KnowledgeSourceInvalidResponseError(
-                "knowledge source acquisition allows only the default HTTPS port"
-            )
-
-        request_target = parsed.path or "/"
-        if parsed.query:
-            request_target = f"{request_target}?{parsed.query}"
-
+        """Read exact bytes only from the descriptor's derived immutable source target."""
         connection = self._connection_factory(
-            descriptor.allowed_host,
+            descriptor.acquisition_host,
             self._config.timeout_seconds,
         )
         try:
             connection.request(
                 "GET",
-                request_target,
+                descriptor.acquisition_path,
                 headers=self._headers(),
             )
             response = connection.getresponse()
@@ -253,7 +233,7 @@ class BoundedHttpsKnowledgeSource:
                 raise KnowledgeSourceHttpStatusError(response.status)
 
             content_type = response.getheader("Content-Type")
-            if _base_media_type(content_type) != "text/html":
+            if _base_media_type(content_type) not in _ADMITTED_SOURCE_MEDIA_TYPES:
                 raise KnowledgeSourceInvalidResponseError(
                     f"Knowledge source used unexpected Content-Type {content_type!r}."
                 )
@@ -285,7 +265,7 @@ class BoundedHttpsKnowledgeSource:
     def _headers(self) -> dict[str, str]:
         """Build deterministic headers with no credentials or ambient cookies."""
         return {
-            "Accept": "text/html",
+            "Accept": "text/plain, text/markdown;q=0.9",
             "Accept-Encoding": "identity",
             "User-Agent": self._config.user_agent,
         }
