@@ -8,7 +8,10 @@ from typing import cast
 
 from opslens.knowledge_retrieval.domain import (
     ChunkSelectionSpec,
+    CorpusChunkManifestEntry,
+    CorpusDocumentManifestEntry,
     DocumentMaterializationSpec,
+    KnowledgeCorpusManifest,
     KnowledgeCorpusSpec,
     KnowledgeSourceDescriptor,
     KnowledgeSourceRegistry,
@@ -68,6 +71,13 @@ def _require_string(value: object, *, label: str) -> str:
     return value
 
 
+def _require_positive_int(value: object, *, label: str) -> int:
+    """Require one positive non-boolean integer from checked JSON evidence."""
+    if type(value) is not int or value <= 0:
+        raise CorpusConfigError(f"{label} must be a positive integer")
+    return value
+
+
 def _require_list(value: object, *, label: str) -> list[object]:
     """Require one JSON array through an explicit typing boundary."""
     if not isinstance(value, list):
@@ -86,6 +96,14 @@ def _require_string_tuple(value: object, *, label: str) -> tuple[str, ...]:
     """Convert one JSON array of strings to a typed immutable tuple."""
     items = _require_list(value, label=label)
     return tuple(_require_string(item, label=label) for item in items)
+
+
+def _require_source_type(value: object, *, label: str) -> KnowledgeSourceType:
+    """Convert one exact checked source-type string to its frozen enum."""
+    try:
+        return KnowledgeSourceType(_require_string(value, label=label))
+    except ValueError as exc:
+        raise CorpusConfigError(f"{label} contains an unsupported source_type") from exc
 
 
 def load_source_registry(path: Path) -> KnowledgeSourceRegistry:
@@ -127,14 +145,10 @@ def load_source_registry(path: Path) -> KnowledgeSourceRegistry:
             },
             label=f"source entry {index}",
         )
-        try:
-            source_type = KnowledgeSourceType(
-                _require_string(entry["source_type"], label=f"source entry {index} source_type")
-            )
-        except ValueError as exc:
-            raise CorpusConfigError(
-                f"source entry {index} contains an unsupported source_type"
-            ) from exc
+        source_type = _require_source_type(
+            entry["source_type"],
+            label=f"source entry {index} source_type",
+        )
         entries.append(
             KnowledgeSourceDescriptor(
                 document_id=_require_string(
@@ -250,6 +264,163 @@ def load_corpus_spec(path: Path) -> KnowledgeCorpusSpec:
         source_registry_id=_require_string(
             raw["source_registry_id"],
             label="source_registry_id",
+        ),
+        documents=tuple(documents),
+    )
+
+
+def load_corpus_manifest(path: Path) -> KnowledgeCorpusManifest:
+    """Load the exact checked hash-only v1 manifest without replaying external sources."""
+    raw = _load_object(path)
+    _require_exact_keys(
+        raw,
+        expected={
+            "manifest_id",
+            "source_registry_id",
+            "corpus_spec_id",
+            "documents",
+        },
+        label="corpus manifest",
+    )
+
+    documents: list[CorpusDocumentManifestEntry] = []
+    for doc_index, raw_document in enumerate(
+        _require_list(raw["documents"], label="manifest documents")
+    ):
+        document = _require_object(
+            raw_document,
+            label=f"manifest document {doc_index}",
+        )
+        _require_exact_keys(
+            document,
+            expected={
+                "document_id",
+                "source_id",
+                "source_type",
+                "canonical_uri",
+                "acquisition_uri",
+                "upstream_repository",
+                "upstream_commit_sha",
+                "upstream_path",
+                "source_byte_count",
+                "source_bytes_sha256",
+                "title",
+                "content_utf8_byte_count",
+                "content_sha256",
+                "chunks",
+            },
+            label=f"manifest document {doc_index}",
+        )
+
+        chunks: list[CorpusChunkManifestEntry] = []
+        for chunk_index, raw_chunk in enumerate(
+            _require_list(
+                document["chunks"],
+                label=f"manifest document {doc_index} chunks",
+            )
+        ):
+            chunk = _require_object(
+                raw_chunk,
+                label=f"manifest document {doc_index} chunk {chunk_index}",
+            )
+            _require_exact_keys(
+                chunk,
+                expected={
+                    "chunk_id",
+                    "section_path",
+                    "content_utf8_byte_count",
+                    "chunk_content_sha256",
+                },
+                label=f"manifest document {doc_index} chunk {chunk_index}",
+            )
+            chunks.append(
+                CorpusChunkManifestEntry(
+                    chunk_id=_require_string(
+                        chunk["chunk_id"],
+                        label=f"manifest chunk {chunk_index} chunk_id",
+                    ),
+                    section_path=_require_string_tuple(
+                        chunk["section_path"],
+                        label=f"manifest chunk {chunk_index} section_path",
+                    ),
+                    content_utf8_byte_count=_require_positive_int(
+                        chunk["content_utf8_byte_count"],
+                        label=f"manifest chunk {chunk_index} content_utf8_byte_count",
+                    ),
+                    chunk_content_sha256=_require_string(
+                        chunk["chunk_content_sha256"],
+                        label=f"manifest chunk {chunk_index} chunk_content_sha256",
+                    ),
+                )
+            )
+
+        documents.append(
+            CorpusDocumentManifestEntry(
+                document_id=_require_string(
+                    document["document_id"],
+                    label=f"manifest document {doc_index} document_id",
+                ),
+                source_id=_require_string(
+                    document["source_id"],
+                    label=f"manifest document {doc_index} source_id",
+                ),
+                source_type=_require_source_type(
+                    document["source_type"],
+                    label=f"manifest document {doc_index} source_type",
+                ),
+                canonical_uri=_require_string(
+                    document["canonical_uri"],
+                    label=f"manifest document {doc_index} canonical_uri",
+                ),
+                acquisition_uri=_require_string(
+                    document["acquisition_uri"],
+                    label=f"manifest document {doc_index} acquisition_uri",
+                ),
+                upstream_repository=_require_string(
+                    document["upstream_repository"],
+                    label=f"manifest document {doc_index} upstream_repository",
+                ),
+                upstream_commit_sha=_require_string(
+                    document["upstream_commit_sha"],
+                    label=f"manifest document {doc_index} upstream_commit_sha",
+                ),
+                upstream_path=_require_string(
+                    document["upstream_path"],
+                    label=f"manifest document {doc_index} upstream_path",
+                ),
+                source_byte_count=_require_positive_int(
+                    document["source_byte_count"],
+                    label=f"manifest document {doc_index} source_byte_count",
+                ),
+                source_bytes_sha256=_require_string(
+                    document["source_bytes_sha256"],
+                    label=f"manifest document {doc_index} source_bytes_sha256",
+                ),
+                title=_require_string(
+                    document["title"],
+                    label=f"manifest document {doc_index} title",
+                ),
+                content_utf8_byte_count=_require_positive_int(
+                    document["content_utf8_byte_count"],
+                    label=f"manifest document {doc_index} content_utf8_byte_count",
+                ),
+                content_sha256=_require_string(
+                    document["content_sha256"],
+                    label=f"manifest document {doc_index} content_sha256",
+                ),
+                chunks=tuple(chunks),
+            )
+        )
+
+    return KnowledgeCorpusManifest(
+        manifest_id=_require_string(raw["manifest_id"], label="manifest_id"),
+        source_registry_id=_require_string(
+            raw["source_registry_id"],
+            label="manifest source_registry_id",
+        ),
+        corpus_spec_id=_require_string(
+            raw["corpus_spec_id"],
+            label="manifest corpus_spec_id",
         ),
         documents=tuple(documents),
     )
