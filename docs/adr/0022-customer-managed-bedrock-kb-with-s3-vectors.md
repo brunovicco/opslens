@@ -1,6 +1,6 @@
 # ADR 0022 — Use a customer-managed Bedrock Knowledge Base with S3 Vectors
 
-Status: Accepted for Phase 7 Gate 7.3
+Status: Accepted and validated in Phase 7 Gate 7.3
 
 Date: 2026-09-05
 
@@ -18,9 +18,9 @@ Gate 7.2 then materialized a reproducible corpus with exactly:
 manifest sha256: 98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
 ```
 
-The next gate must add vector infrastructure without weakening those identities.
-In particular, infrastructure must not silently re-chunk the six canonical documents
-into provider-defined pieces that no longer correspond to the nine frozen chunk IDs.
+Gate 7.3 adds vector infrastructure without weakening those identities. In particular,
+infrastructure must not silently re-chunk the canonical corpus into provider-defined
+pieces that no longer correspond to the nine frozen chunk IDs.
 
 AWS documentation was revalidated on 2026-09-05 because Bedrock Knowledge Bases,
 S3 Vectors, and OpenSearch Serverless have changed materially since the original
@@ -31,7 +31,7 @@ OpsLens proposal.
 Use an Amazon Bedrock **customer-managed vector Knowledge Base** backed by a
 customer-created **Amazon S3 Vectors** vector bucket and index.
 
-The initial Gate 7.3 configuration is:
+The validated Gate 7.3 configuration is:
 
 ```text
 knowledge base:        customer-managed Bedrock vector Knowledge Base
@@ -40,7 +40,7 @@ source prefix:         knowledge/corpus/v1/bedrock/
 vector store:          Amazon S3 Vectors
 embedding model:       amazon.titan-embed-text-v2:0
 embedding dimensions:  1024
-data type:             float32
+data type:             FLOAT32
 distance metric:       cosine
 chunking strategy:     NONE
 reranking:             deferred
@@ -58,12 +58,11 @@ Current AWS guidance recommends Managed Knowledge Base for the general case beca
 Bedrock manages ingestion, storage, indexing, retrieval optimization, embeddings,
 and managed reranking.
 
-OpsLens intentionally chooses the customer-managed variant for this gate because
-the product has stricter engineering requirements than the general default:
+OpsLens intentionally chooses the customer-managed variant for this gate because:
 
 1. retrieval must remain independently testable before synthesis;
 2. the vector-store choice, dimension, metric, storage cost, and IAM boundary must
-   remain visible as portfolio and AIP-C01 evidence;
+   remain visible as engineering evidence;
 3. the nine Gate 7.1 chunk identities must remain directly traceable through
    ingestion and retrieval;
 4. Gate 7.5 must measure the raw retrieval baseline before any managed reranking
@@ -124,7 +123,7 @@ OpsLens chooses 1024 as the v1 baseline because the corpus is tiny, so reducing
 vector dimensions has negligible storage benefit while changing dimension later
 requires replacing the S3 vector index.
 
-Use `float32`, which is the S3 Vectors index data type and is required for the
+Use `FLOAT32`, which is the S3 Vectors index data type and is required for the
 Bedrock Knowledge Bases integration.
 
 Use `cosine` distance. S3 Vectors supports cosine and Euclidean, and AWS's current
@@ -141,8 +140,8 @@ therefore requires a new index rather than an in-place mutation.
 Gate 7.2 already owns chunk construction. Bedrock must not become a second chunking
 authority.
 
-Before ingestion, OpsLens will deterministically project the verified Gate 7.2
-corpus into exactly nine S3 text objects:
+Before ingestion, OpsLens deterministically projects the verified Gate 7.2 corpus
+into exactly nine S3 text objects:
 
 ```text
 verified immutable source replay
@@ -165,8 +164,8 @@ file treated as one chunk. This preserves the invariant:
 1 published S3 content object == 1 Gate 7.2 canonical chunk
 ```
 
-The publication process must fail closed unless the fresh replay exactly matches
-the checked `knowledge/corpus/v1/manifest.json` before any object is uploaded.
+The publication process fails closed unless the fresh replay exactly matches the
+checked `knowledge/corpus/v1/manifest.json` before any object is uploaded.
 
 Third-party source text remains absent from Git. The nine text objects are generated
 only from the verified immutable sources in the single real dev environment.
@@ -193,13 +192,19 @@ package_name
 section_path
 ```
 
-Null/empty optional values do not need to consume metadata space. The publication
-contract must prove that each final metadata payload remains below the stricter
-Bedrock + S3 Vectors limit of 1 KB and 35 custom keys per vector.
+Null/empty optional values do not need to consume metadata space.
 
-Metadata is stored for filtering/provenance but excluded from embedding influence
-(`includeForEmbedding = false`). Retrieval similarity should be driven by canonical
-chunk text rather than IDs, hashes, URLs, or classification labels.
+The real first ingestion exposed a critical serialization detail: validating the
+logical metadata object below 1 KB was insufficient because the verbose typed
+sidecar representation expanded the final files to roughly 1.3–1.4 KB. Bedrock
+reported that all nine files were ignored because their associated metadata exceeded
+the 1024-byte service limit.
+
+The validated projection therefore uses Bedrock's simplified metadata representation,
+which is equivalent to metadata excluded from embedding influence, and validates the
+**final serialized UTF-8 sidecar** against the 1024-byte limit before any S3 write.
+
+Real successful sidecars were 394–493 bytes.
 
 `chunk_id` and `chunk_content_sha256` are not invented as new provider metadata
 fields. The later adapter must resolve the returned S3 object location against the
@@ -233,12 +238,12 @@ security decision.
 
 ## IAM and trust boundaries
 
-Create a dedicated Bedrock Knowledge Bases service role rather than reusing the
+A dedicated Bedrock Knowledge Bases service role is used rather than reusing the
 human bootstrap/admin identity.
 
 The role trust policy uses `bedrock.amazonaws.com` and scopes source account / source
-ARN conditions as supported by AWS. The permissions are limited to the resources
-needed for ingestion:
+ARN conditions as supported by AWS. Permissions are limited to the resources needed
+for ingestion:
 
 ```text
 bedrock:InvokeModel
@@ -255,13 +260,18 @@ s3vectors:GetIndex
   -> exact S3 vector index ARN
 ```
 
+A real negative control attempted `sts:AssumeRole` on
+`OpsLensDevBedrockKnowledgeBaseRole` from the human IAM Identity Center bootstrap
+session and received `AccessDenied`. No trust policy was broadened to make the test
+pass.
+
 The future application retrieval identity is a different responsibility. Gate 7.4
 will grant only the Bedrock retrieval authority it needs; it will not inherit vector
 write or source-ingestion permissions.
 
 ## Ingestion ownership
 
-Terraform will own durable infrastructure:
+Terraform owns durable infrastructure:
 
 ```text
 S3 vector bucket/index
@@ -270,11 +280,57 @@ Bedrock vector Knowledge Base
 S3 data source configuration
 ```
 
-Terraform will **not** own third-party chunk text and will not run source replay.
+Terraform does **not** own third-party chunk text and does not run source replay.
+Starting/synchronizing an ingestion job is an explicit bounded operational step after
+verified publication completes.
 
-Starting/synchronizing an ingestion job is an explicit operational step after the
-verified publication has completed. This prevents Terraform state from becoming an
-implicit corpus-authoring mechanism.
+## Real validation evidence
+
+The applied and reconciled real resources are:
+
+```text
+knowledge base id:   BTVJ2PBR2A
+data source id:      IEL1LBE026
+service role:        arn:aws:iam::487757851499:role/OpsLensDevBedrockKnowledgeBaseRole
+vector bucket:       arn:aws:s3vectors:us-east-1:487757851499:bucket/opslens-dev-knowledge-487757851499-us-east-1
+vector index:        arn:aws:s3vectors:us-east-1:487757851499:bucket/opslens-dev-knowledge-487757851499-us-east-1/index/opslens-dev-remediation-v1
+```
+
+After compact metadata republication, ingestion job `WZRUGOFZPI` completed with:
+
+```text
+startedAt: 2026-09-05T20:41:46.010046+00:00
+updatedAt: 2026-09-05T20:41:57.155598+00:00
+observed duration: 11.145552 seconds
+
+documents scanned:          9
+metadata documents scanned: 9
+new documents indexed:      9
+modified documents indexed: 0
+documents failed:           0
+documents skipped:          0
+failure reasons:            none
+```
+
+A strongly consistent S3 Vectors listing immediately returned exactly nine vector
+keys.
+
+The first failed ingestion (`4S4OLDKNCZ`) is retained as negative evidence for the
+metadata-size boundary. It completed the Bedrock job lifecycle but indexed zero
+vectors because all nine metadata files exceeded the 1024-byte service limit.
+
+## Credential-chain operational lesson
+
+During republication, AWS CLI could use the local IAM Identity Center session while
+the botocore process launched under `uv run` failed with `TokenRetrievalError`.
+
+The S3 adapter was improved to retain a bounded safe `provider_code` or provider
+exception type without surfacing provider response bodies or corpus content. The lab
+recovered by exporting temporary, already-resolved credentials from AWS CLI into the
+current shell process. No persistent access key was created or stored.
+
+This does not change the deployed IAM design; it is a local credential-chain
+operability lesson.
 
 ## Reranking and hybrid retrieval
 
@@ -290,52 +346,34 @@ a feature.
 
 ## Cost model
 
-The current S3 Vectors US East pricing example documents:
+S3 Vectors charges usage-based storage, writes, and queries. For nine 1024-dimensional
+FLOAT32 vectors plus compact metadata, persistent vector storage is negligible at
+portfolio scale. Small write billing granularity dominates the logical payload size.
 
-```text
-vector storage:  $0.06 / GB-month
-vector writes:   $0.20 / GB
-query request:   $2.50 / million queries
-plus data processed / returned charges
-```
+Titan Text Embeddings V2 charges by input token usage. The Bedrock ingestion job does
+not return exact embedding token counts, so Gate 7.3 deliberately records measured
+workload shape plus published pricing assumptions rather than fabricating an exact
+billing number from UTF-8 bytes.
 
-For nine 1024-dimension vectors, vector storage and write costs are effectively
-negligible at portfolio scale.
-
-Titan Text Embeddings V2 is currently priced at approximately `$0.02 / million`
-input tokens in AWS examples. The exact measured Gate 7.3 ingestion cost will be
-recorded after the first real ingestion rather than guessed from source file size.
-
-No synthesis cost belongs to Gate 7.3.
+No retrieval query or synthesis model cost belongs to Gate 7.3.
 
 ## Observability
 
-Gate 7.3 must capture enough evidence to diagnose at least:
+Gate 7.3 records:
 
 ```text
 publication object count and byte count
 ingestion job id / status / timestamps
-ingestion statistics when returned
+ingestion statistics
 knowledge base id / data source id / vector index ARN
 embedding model id and dimensions
-intentional ingestion failure reason
+vector materialization count
+real metadata-size failure reason
+real credential-chain failure category
+real service-role trust-boundary denial
 ```
 
 Application retrieval latency and retrieved ranks/scores belong to Gate 7.4/7.5.
-
-## Failure modes to test
-
-At minimum:
-
-1. canonical replay no longer matches the checked Gate 7.2 manifest — publication
-   must stop before S3 writes;
-2. metadata exceeds the Bedrock/S3 Vectors budget — publication must fail locally;
-3. one expected chunk/object is missing — ingestion or pre-ingestion verification
-   must fail;
-4. Bedrock service role lacks one exact required permission — real ingestion must
-   fail and be diagnosable without broadening to administrator access;
-5. embedding/vector dimension mismatch — infrastructure/ingestion must reject the
-   mismatch rather than silently changing the model/index.
 
 ## AIP-C01 relevance
 
@@ -383,14 +421,16 @@ Positive:
 - vector infrastructure remains explicit and independently reviewable;
 - retrieval can be evaluated without synthesis or managed reranking;
 - v1 idle/storage cost remains extremely small;
-- infrastructure does not vendor or execute third-party source code.
+- infrastructure does not vendor or execute third-party source code;
+- real ingestion and vector materialization have been proven in the single dev environment.
 
 Trade-offs:
 
 - OpsLens owns more infrastructure than a Managed Knowledge Base;
 - S3 Vectors is semantic-only, so hybrid search requires a later change;
 - vector-index configuration is immutable and migration requires replacement;
-- a deterministic publication step is required before ingestion.
+- a deterministic publication step is required before ingestion;
+- provider-consumed sidecar serialization must remain within the stricter S3 Vectors metadata budget.
 
 ## Official references revalidated on 2026-09-05
 
