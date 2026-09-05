@@ -51,34 +51,6 @@ jobs:
       - name: Build EPSS history transformer Lambda package
         run: uv run python scripts/build_epss_history_transformer_lambda_package.py
 
-      - name: Diagnose EPSS history staging metadata
-        run: |
-          uv run python - <<'PY'
-          from pathlib import Path
-          import hashlib
-
-          root = Path("build/lambda/epss-history-transformer/package")
-          manifest = []
-          diagnostic_names = {"RECORD", "INSTALLER", "REQUESTED", "direct_url.json"}
-
-          for path in sorted(p for p in root.rglob("*") if p.is_file()):
-              data = path.read_bytes()
-              relative = path.relative_to(root).as_posix()
-              line = f"{len(data):10d} {hashlib.sha256(data).hexdigest()} {relative}"
-              manifest.append(line)
-              if path.parent.name.endswith(".dist-info") and path.name in diagnostic_names:
-                  print(line)
-
-          manifest_bytes = ("\n".join(manifest) + "\n").encode("utf-8")
-          print(f"staging_manifest_files={len(manifest)}")
-          print(f"staging_manifest_sha256={hashlib.sha256(manifest_bytes).hexdigest()}")
-
-          record_path = root / "jmespath-1.1.0.dist-info" / "RECORD"
-          print("jmespath_record_begin")
-          print(record_path.read_text(encoding="utf-8"), end="")
-          print("jmespath_record_end")
-          PY
-
       - name: Build KEV Lambda package
         run: uv run python scripts/build_kev_lambda_package.py
 
