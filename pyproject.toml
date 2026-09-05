@@ -21,6 +21,12 @@ epss-silver-runtime = [
     "pyarrow==25.0.*",
 ]
 
+epss-history-transformer-runtime = [
+    "aws-lambda-powertools[tracer]>=3.34.0",
+    "boto3>=1.43.72",
+    "pyarrow==25.0.*",
+]
+
 ghsa-silver-runtime = [
     "pyarrow==25.0.*",
 ]
