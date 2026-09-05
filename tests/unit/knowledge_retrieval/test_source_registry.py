@@ -20,13 +20,18 @@ from opslens.knowledge_retrieval.domain.source_registry import (
     KnowledgeSourceRegistry,
 )
 
-_FIXTURE_DIR = Path(__file__).parents[2] / "fixtures" / "knowledge_retrieval"
-_REGISTRY_FIXTURE = _FIXTURE_DIR / "source_registry_v1.json"
-_GOLDEN_FIXTURE = _FIXTURE_DIR / "golden_retrieval_v1.json"
+_REPO_ROOT = Path(__file__).parents[3]
+_REGISTRY_FILE = _REPO_ROOT / "knowledge" / "corpus" / "v1" / "source_registry.json"
+_GOLDEN_FIXTURE = (
+    Path(__file__).parents[2]
+    / "fixtures"
+    / "knowledge_retrieval"
+    / "golden_retrieval_v1.json"
+)
 
 
 def _load_mapping(path: Path) -> dict[str, object]:
-    """Load a checked-in JSON fixture through one explicit typing boundary."""
+    """Load one checked-in JSON input through an explicit typing boundary."""
     raw = json.loads(path.read_text(encoding="utf-8"))
     return cast(dict[str, object], raw)
 
@@ -49,7 +54,7 @@ def _descriptor(raw: object) -> KnowledgeSourceDescriptor:
 
 
 def _registry() -> KnowledgeSourceRegistry:
-    raw = _load_mapping(_REGISTRY_FIXTURE)
+    raw = _load_mapping(_REGISTRY_FILE)
     entries = tuple(_descriptor(entry) for entry in cast(list[object], raw["entries"]))
     return KnowledgeSourceRegistry(
         registry_id=cast(str, raw["registry_id"]),
@@ -59,7 +64,7 @@ def _registry() -> KnowledgeSourceRegistry:
 
 def test_registry_is_versioned_pre_acquisition_and_non_structured() -> None:
     """The registry authorizes sources without pretending acquisition already happened."""
-    raw = _load_mapping(_REGISTRY_FIXTURE)
+    raw = _load_mapping(_REGISTRY_FILE)
 
     assert raw["registry_id"] == SOURCE_REGISTRY_ID
     assert raw["acquisition_status"] == "not_started"
