@@ -20,8 +20,9 @@ Phase 6    Semantic Query Layer                                COMPLETE
   Gate 6.4 Real Bedrock planner invocation                     COMPLETE
 Phase 7    Knowledge Retrieval with Bedrock                    IN PROGRESS
   Gate 7.1 Corpus + retrieval contract                         COMPLETE
-  Gate 7.2 Reproducible canonical corpus                       COMPLETE / MERGE PENDING
-  Gate 7.3 Knowledge Base + vector infrastructure              NOT STARTED
+  Gate 7.2 Reproducible canonical corpus                       COMPLETE
+  Gate 7.3 Knowledge Base + vector infrastructure              COMPLETE / MERGE PENDING
+  Gate 7.4 Real bounded Retrieve adapter                       NEXT
 ```
 
 Phase 6 was squash-merged through PR #91:
@@ -38,15 +39,15 @@ commit: f2e3b72c31d0713707857bc0867a7f59e667b9dd
 PR:     #93 — feat(knowledge-retrieval): start Phase 7 Gate 7.1 contracts
 ```
 
-Gate 7.2 is complete on branch/PR and awaits only logical merge:
+Gate 7.2 was squash-merged through PR #94. Its frozen corpus identity is:
 
 ```text
-branch: feat/phase7-canonical-corpus
-PR:     #94 — feat(knowledge-retrieval): start Gate 7.2 canonical corpus
-manifest commit: bb61f6766f9c52c167ac7d1a3a8bc734cd1a6307
 manifest sha256: 98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
-status: complete / merge pending
+documents: 6
+chunks: 9
 ```
+
+Gate 7.3 is complete on PR #95 and awaits final green closeout + logical merge.
 
 ## Permanent boundaries
 
@@ -109,6 +110,10 @@ LLMs may classify, plan, synthesize, explain, and route over validated evidence.
 8. Reproducible canonical knowledge corpus
    immutable official source pins / bounded inert-text acquisition /
    deterministic normalization + section selection / content-addressed manifest
+
+9. Bedrock Knowledge Base vector baseline
+   verified S3 publication / Titan Text Embeddings V2 /
+   S3 Vectors / bounded ingestion / real vector materialization evidence
 ```
 
 ## Repository and risk path
@@ -269,19 +274,7 @@ temperature:    0.0
 maxTokens:      256
 ```
 
-Production code contains:
-
-- `BedrockPlannerInvocationEvidence` and `BedrockPlannerResult` typed contracts;
-- injected `BedrockConverseClient` Protocol;
-- `BedrockSemanticPlanner` outbound adapter;
-- strict non-streaming response-shape validation;
-- deterministic `parse_planner_json()` re-entry;
-- provider/SDK failure wrapping while preserving the cause;
-- `ExecuteNaturalLanguageSemanticQuery` application composition;
-- versioned real entrypoint `scripts/run_natural_language_semantic_query.py`;
-- fake-client/unit coverage for supported, unsupported, malformed evidence, and fail-closed behavior.
-
-Real supported versioned E2E evidence on 2026-09-04:
+Real supported E2E evidence:
 
 ```text
 question:                       Which CVEs have EPSS of at least 0.7 on 2026-09-03?
@@ -289,55 +282,15 @@ planner decision:               semantic_query
 model input/output/total:       942 / 79 / 1021 tokens
 Bedrock latency:                1,632 ms
 client elapsed:                 2,894 ms
-retries:                        0
-cache read/write input tokens:  0 / 0
 estimated planner cost:         ~$0.00147
-Athena query_execution_id:      09a32501-a06c-4437-809c-ebcaf350cd1d
 Athena rows:                    20
 Athena data scanned:            3,785,003 bytes (~3.61 MiB)
-Athena engine time:             994 ms
 Athena total time:              1,192 ms
 ```
 
-Real versioned fail-closed semantic evidence:
-
-```text
-question:         Which CVEs have EPSS of at least 0.7?
-decision:         unsupported
-reason:           missing_explicit_snapshot_date
-athena_invoked:   false
-input/output:     933 / 23 tokens
-Bedrock latency:  878 ms
-client elapsed:   2,145 ms
-retries:          0
-estimated cost:   ~$0.00115
-```
-
-A real local IAM Identity Center token-expiry failure was also diagnosed before service invocation. It was an authentication failure during credential retrieval/signing, not a Bedrock model/inference-profile failure.
+Real fail-closed evidence proved a missing explicit snapshot date returns `unsupported` and never invokes Athena.
 
 Closeout evidence: [`../labs/phase-6-gate-6-4-real-bedrock-planner.md`](../labs/phase-6-gate-6-4-real-bedrock-planner.md).
-
-## Phase 6 exit state
-
-```text
-[x] typed SemanticQuery
-[x] explicit metric/dimension/filter allowlists
-[x] invalid/unknown semantics fail closed
-[x] deterministic SQL only
-[x] bounded read-only Athena supported slice
-[x] planner evaluation set with field-level metrics
-[x] natural-language factual question through real model + parser + compiler + Athena
-[x] real model/API/token/latency/cost evidence recorded
-[x] intentional real planner failure diagnosed
-[x] ADR rejecting unrestricted text-to-SQL
-[x] ADR defining bounded planner authority
-[x] production Bedrock runtime adapter and typed invocation evidence
-[x] automated runtime adapter/composition tests
-[x] final repository validation + PR #91 + green CI + squash merge
-[deferred] final deployed runtime IAM least privilege until a runtime identity exists
-```
-
-The final deployed runtime IAM criterion is explicitly deferred because no deployed semantic-query runtime identity exists yet. The local `opslens-bootstrap` IAM Identity Center profile is lab/bootstrap validation only and is not the final runtime role.
 
 ## Phase 7 — Knowledge Retrieval with Bedrock — IN PROGRESS
 
@@ -376,46 +329,9 @@ default top_k: 5
 provider DSL:  none
 ```
 
-The contract preserves separate logical source identity and exact SHA-256 content identity. Retrieved chunks carry explicit document/source provenance, exact chunk identity, deterministic rank, and an optional finite relevance score that is not interpreted as calibrated confidence.
-
 Citations are projected deterministically from admitted `RetrievedChunk` evidence rather than accepting model-authored provenance.
 
-Canonical metadata is provider-independent. No Bedrock metadata projection, embedding model, chunking strategy, vector store, or Knowledge Base mode was frozen in Gate 7.1.
-
-Offline golden fixture:
-
-```text
-10 total cases
-  8 positive remediation/documentation cases
-  2 negative/out-of-scope cases
-metrics prepared for later: Recall@K + MRR
-corpus status at Gate 7.1 freeze: planned_for_gate_7_2
-```
-
-Final CI evidence for the functional Gate 7.1 commit:
-
-```text
-workflow: Python CI
-run:      33931113097
-commit:   f882f5df12f20f68b2601bf525a625fe72a36b7b
-
-Knowledge Retrieval Ruff:     PASS
-Knowledge Retrieval Pyright:  0 errors / 0 warnings
-Knowledge Retrieval pytest:   14 passed in 0.08s
-
-Correlation regression:              PASS
-Repository Intelligence regression:  PASS
-Risk Policy regression:              PASS
-Semantic Query regression:           PASS
-```
-
-No AWS resource, Knowledge Base, vector index, embedding job, IAM role, or paid AWS call was added for Gate 7.1.
-
-Closeout evidence: [`../labs/phase-7-gate-7-1-retrieval-contract.md`](../labs/phase-7-gate-7-1-retrieval-contract.md).
-
-### Gate 7.2 — Reproducible canonical corpus — COMPLETE / MERGE PENDING
-
-Gate 7.2 converts the Gate 7.1 document/chunk identities into a reproducible content-addressed corpus without adding vector infrastructure.
+### Gate 7.2 — Reproducible canonical corpus — COMPLETE
 
 Versioned product inputs:
 
@@ -425,52 +341,79 @@ knowledge/corpus/v1/corpus_spec.json
 knowledge/corpus/v1/manifest.json
 ```
 
-Corpus shape:
+Real corpus shape:
 
 ```text
 6 official pinned source files
 9 canonical chunks
-full 40-hex upstream commit SHAs
-bounded GET-only raw.githubusercontent.com acquisition
-strict UTF-8
-CRLF/CR -> LF only
-exact line-aligned section sentinels
-hash-only manifest; no vendored source/chunk text
-```
-
-The source registry separates human-facing `canonical_uri` provenance from immutable `upstream_repository + upstream_commit_sha + upstream_path` acquisition authority. The acquisition URI is derived by code rather than supplied by a caller.
-
-The first real replay detected an ambiguous PyPA `Version specifiers` selector and failed closed before writing corpus evidence. The selector was made more specific against the exact pinned RST; the uniqueness requirement was not relaxed.
-
-Successful real replay evidence:
-
-```text
-write documents/chunks: 6 / 9
-check documents/chunks: 6 / 9
 manifest sha256: 98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
-manifest commit: bb61f6766f9c52c167ac7d1a3a8bc734cd1a6307
 ```
 
-Final manifest CI:
-
-```text
-workflow: Python CI
-run:      33965739749
-head:     bb61f6766f9c52c167ac7d1a3a8bc734cd1a6307
-
-Knowledge Retrieval Ruff:     PASS
-Knowledge Retrieval Pyright:  0 errors / 0 warnings / 0 informations
-Knowledge Retrieval pytest:   44 passed in 0.25s
-
-Correlation regression:              PASS
-Repository Intelligence regression:  PASS
-Risk Policy regression:              PASS
-Semantic Query regression:           PASS
-```
-
-No AWS resource, model call, embedding job, vector store, Knowledge Base, retrieval call, synthesis call, or new IAM permission was introduced by Gate 7.2.
+No third-party source code is executed and source/chunk text is not vendored into Git.
 
 Closeout evidence: [`../labs/phase-7-gate-7-2-canonical-corpus.md`](../labs/phase-7-gate-7-2-canonical-corpus.md).
+
+### Gate 7.3 — Knowledge Base + vector infrastructure — COMPLETE / MERGE PENDING
+
+Validated architecture:
+
+```text
+KB:                  customer-managed Bedrock vector Knowledge Base
+KB id:               BTVJ2PBR2A
+data source id:      IEL1LBE026
+source prefix:       knowledge/corpus/v1/bedrock/
+chunking:            NONE
+embedding:           amazon.titan-embed-text-v2:0
+embedding dimension: 1024
+vector type:         FLOAT32
+vector store:        S3 Vectors
+distance:            cosine
+```
+
+Real deterministic publication:
+
+```text
+payloads:               18
+content objects:         9
+metadata sidecars:       9
+publication bytes:       14,928
+compact sidecar range:   394..493 bytes
+manifest identity:       98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
+```
+
+The first real ingestion exposed that the original verbose sidecars exceeded Bedrock's 1024-byte S3 Vectors metadata limit. Job `4S4OLDKNCZ` completed but indexed zero vectors and returned an explicit failure reason saying all nine files were ignored because associated metadata was too large.
+
+The deterministic projection was corrected to validate the final serialized sidecar bytes and use the supported compact metadata representation. No KB/vector resource was recreated.
+
+Successful real ingestion:
+
+```text
+job:                              WZRUGOFZPI
+status:                           COMPLETE
+startedAt:                        2026-09-05T20:41:46.010046+00:00
+updatedAt:                        2026-09-05T20:41:57.155598+00:00
+observed duration:                11.145552 s
+numberOfDocumentsScanned:         9
+numberOfNewDocumentsIndexed:      9
+numberOfDocumentsFailed:          0
+numberOfDocumentsSkipped:         0
+vectors materialized:             9
+```
+
+A strongly consistent `s3vectors list-vectors` returned exactly nine keys immediately after ingestion.
+
+Real operational failures retained as evidence:
+
+```text
+oversized Bedrock metadata -> provider failure reason diagnosed
+botocore SSO credential retrieval -> TokenRetrievalError categorized safely
+human sts:AssumeRole on KB service role -> AccessDenied as expected
+```
+
+The service role was not broadened during troubleshooting. The future Gate 7.4 retrieval identity remains separate from ingestion/vector-write authority.
+
+Closeout evidence: [`../labs/phase-7-gate-7-3-kb-vector-infrastructure.md`](../labs/phase-7-gate-7-3-kb-vector-infrastructure.md).
+ADR: [`adr/0022-customer-managed-bedrock-kb-with-s3-vectors.md`](adr/0022-customer-managed-bedrock-kb-with-s3-vectors.md).
 
 ## AWS foundation
 
@@ -504,17 +447,15 @@ A pre-existing repo-wide Ruff backlog outside these scoped deterministic slices 
 
 ## Next action
 
-Close the Gate 7.2 logical increment:
+Close PR #95 as the logical Gate 7.3 increment:
 
 ```text
-1. finish documentation-only synchronization
-2. mark PR #94 ready for review
-3. confirm final CI/mergeability
-4. squash-merge PR #94 into main
+1. require the documentation closeout commit to pass Python/Terraform CI
+2. mark PR #95 ready for review
+3. confirm mergeability and final checks
+4. squash-merge PR #95 into main
 5. confirm resulting main commit
-6. begin Gate 7.3 architecture research only after the merge
+6. begin Gate 7.4 on a new branch/PR
 ```
 
-Gate 7.3 must re-check current official AWS documentation, pricing, IAM requirements, Knowledge Base modes, embedding choices, vector-store choices, chunking/metadata constraints, observability, and failure behavior before selecting or creating resources.
-
-Do not create Bedrock Knowledge Base, embedding, vector, IAM, retrieval, or synthesis infrastructure as part of Gate 7.2.
+Gate 7.4 must implement Amazon Bedrock Knowledge Base `Retrieve` directly, not `RetrieveAndGenerate`, so raw retrieval can be measured independently before synthesis. It must use a separate least-privilege runtime identity and preserve Gate 7.1 typed evidence/citation authority.
