@@ -57,9 +57,7 @@ def _require_exact_or_allowed_keys(
     """Reject undocumented provider fields at this frozen adapter boundary."""
     unknown = set(value) - allowed
     if unknown:
-        raise BedrockRetrievalValidationError(
-            f"{field} contains unsupported fields"
-        )
+        raise BedrockRetrievalValidationError(f"{field} contains unsupported fields")
 
 
 def _require_string(value: object, *, field: str, max_length: int = 4096) -> str:
@@ -238,6 +236,7 @@ class BedrockKnowledgeBaseRetrieveAdapter:
         *,
         clock: Callable[[], float] = time.perf_counter,
     ) -> None:
+        """Create the adapter with an injected runtime client and monotonic clock."""
         self._client = client
         self._clock = clock
 
@@ -272,5 +271,5 @@ class BedrockKnowledgeBaseRetrieveAdapter:
             )
         return _parse_response(
             response,
-            client_elapsed_ms=int(round(elapsed * 1000)),
+            client_elapsed_ms=round(elapsed * 1000),
         )
