@@ -145,6 +145,7 @@ class FakeBedrockRuntimeClient:
         *,
         error: Exception | None = None,
     ) -> None:
+        """Create a fake client with injected response or provider failure."""
         self.response = dict(_response() if response is None else response)
         self.error = error
         self.calls: list[dict[str, object]] = []
