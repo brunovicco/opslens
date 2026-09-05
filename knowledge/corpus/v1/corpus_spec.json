@@ -1,0 +1,105 @@
+{
+  "spec_id": "knowledge-corpus-spec:v1",
+  "source_registry_id": "knowledge-source-registry:v1",
+  "normalization": {
+    "encoding": "utf-8-strict",
+    "newline": "lf",
+    "unicode": "preserve",
+    "bom": "reject",
+    "nul": "reject",
+    "selection": "exact-line-aligned-start-inclusive-end-exclusive",
+    "document_join": "two-lf"
+  },
+  "documents": [
+    {
+      "document_id": "knowledge-doc:pypa-dependency-management:v1",
+      "title": "pip Dependency Resolution",
+      "selections": [
+        {
+          "chunk_id": "knowledge-chunk:pypa-dependency-management:upgrade:v1",
+          "section_path": ["Handling Resolution Too Deep Errors", "Use the --upgrade Flag"],
+          "start_marker": "### Use the `--upgrade` Flag",
+          "end_marker": "### Utilize Constraint Files"
+        },
+        {
+          "chunk_id": "knowledge-chunk:pypa-dependency-management:transitive-review:v1",
+          "section_path": ["Handling Resolution Too Deep Errors", "Utilize Constraint Files"],
+          "start_marker": "### Utilize Constraint Files",
+          "end_marker": "### Use Upper Bounds Sparingly"
+        }
+      ]
+    },
+    {
+      "document_id": "knowledge-doc:uv-locking:v1",
+      "title": "uv Locking and Syncing",
+      "selections": [
+        {
+          "chunk_id": "knowledge-chunk:uv-locking:refresh:v1",
+          "section_path": ["Locking and syncing", "Checking the lockfile"],
+          "start_marker": "## Checking the lockfile",
+          "end_marker": "## Syncing the environment"
+        },
+        {
+          "chunk_id": "knowledge-chunk:uv-locking:diff-review:v1",
+          "section_path": ["Locking and syncing", "Upgrading locked package versions"],
+          "start_marker": "## Upgrading locked package versions",
+          "end_marker": "## Exporting the lockfile"
+        }
+      ]
+    },
+    {
+      "document_id": "knowledge-doc:pypa-secure-installs:v1",
+      "title": "pip Secure Installs",
+      "selections": [
+        {
+          "chunk_id": "knowledge-chunk:pypa-secure-installs:hashes:v1",
+          "section_path": ["Secure installs", "Hash-checking Mode"],
+          "start_marker": "## Hash-checking Mode",
+          "end_marker": "## Repeatable installs"
+        }
+      ]
+    },
+    {
+      "document_id": "knowledge-doc:vendor-advisory-reading:v1",
+      "title": "Django 6.0.8 Release Notes",
+      "selections": [
+        {
+          "chunk_id": "knowledge-chunk:vendor-advisory-reading:remediation:v1",
+          "section_path": ["Django 6.0.8 release notes", "CVE-2026-15307"],
+          "start_marker": "CVE-2026-15307: Server-side file-write and request forgery via spatial lookups",
+          "end_marker": "CVE-2026-15337: Potential denial-of-service vulnerability in ``check_for_language()``"
+        }
+      ]
+    },
+    {
+      "document_id": "knowledge-doc:dependency-remediation-validation:v1",
+      "title": "OWASP Vulnerable Dependency Management Cheat Sheet",
+      "selections": [
+        {
+          "chunk_id": "knowledge-chunk:dependency-remediation-validation:post-change:v1",
+          "section_path": ["Cases", "Case 1", "Approach", "Step 2"],
+          "start_marker": "**Step 2:**\n\nPrior to running the tests, 2 output paths are possible:",
+          "end_marker": "### Case 2"
+        },
+        {
+          "chunk_id": "knowledge-chunk:dependency-remediation-validation:isolation:v1",
+          "section_path": ["Cases", "Case 1", "Approach", "Step 1"],
+          "start_marker": "**Step 1:**\n\nUpdate the version of the dependency in the project on a testing environment.",
+          "end_marker": "**Step 2:**\n\nPrior to running the tests, 2 output paths are possible:"
+        }
+      ]
+    },
+    {
+      "document_id": "knowledge-doc:pypa-version-specifiers:v1",
+      "title": "Python Packaging Version Specifiers",
+      "selections": [
+        {
+          "chunk_id": "knowledge-chunk:pypa-version-specifiers:constraints:v1",
+          "section_path": ["Version specifiers"],
+          "start_marker": "Version specifiers\n==================",
+          "end_marker": ".. _version-specifiers-compatible-release:"
+        }
+      ]
+    }
+  ]
+}
