@@ -96,7 +96,7 @@
         {
           "chunk_id": "knowledge-chunk:pypa-version-specifiers:constraints:v1",
           "section_path": ["Version specifiers"],
-          "start_marker": "Version specifiers\n==================",
+          "start_marker": "Version specifiers\n==================\n\nA version specifier consists of a series of version clauses, separated by\ncommas. For example::",
           "end_marker": ".. _version-specifiers-compatible-release:"
         }
       ]
