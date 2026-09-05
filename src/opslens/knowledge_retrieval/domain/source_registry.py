@@ -81,6 +81,7 @@ class KnowledgeSourceDescriptor:
     expected_chunk_ids: tuple[str, ...]
 
     def __post_init__(self) -> None:
+        """Normalize and fail closed on malformed source authorization."""
         document_id = _require_nonblank(self.document_id, field="document_id")
         source_id = _require_nonblank(self.source_id, field="source_id")
         source_type = _require_source_type(self.source_type)
@@ -117,6 +118,7 @@ class KnowledgeSourceRegistry:
     entries: tuple[KnowledgeSourceDescriptor, ...]
 
     def __post_init__(self) -> None:
+        """Validate registry identity and reject competing source authority."""
         registry_id = _require_nonblank(self.registry_id, field="registry_id")
         if registry_id != SOURCE_REGISTRY_ID:
             raise KnowledgeRetrievalValidationError(
