@@ -1,5 +1,6 @@
 """Build deterministic deployment package for the historical EPSS transformer Lambda."""
 
+import csv
 import hashlib
 import shutil
 import stat
@@ -27,6 +28,11 @@ REQUIRED_RUNTIME_DISTRIBUTIONS = (
 )
 FORBIDDEN_RUNTIME_DISTRIBUTIONS = (
     "packaging",
+)
+INSTALLATION_METADATA_FILES = (
+    "INSTALLER",
+    "REQUESTED",
+    "direct_url.json",
 )
 
 SOURCE_MANIFEST = (
@@ -113,7 +119,7 @@ def _exported_requirement_names() -> set[str]:
     names: set[str] = set()
     for line in REQUIREMENTS_FILE.read_text(encoding="utf-8").splitlines():
         candidate = line.strip()
-        if not candidate or candidate.startswith(('#', '--')):
+        if not candidate or candidate.startswith(("#", "--")):
             continue
         requirement = candidate.split(" ", maxsplit=1)[0]
         if "==" not in requirement:
@@ -160,6 +166,41 @@ def install_runtime_dependencies() -> None:
             ":all:",
         ]
     )
+
+
+def _is_installation_record_entry(path: str) -> bool:
+    """Return whether one wheel RECORD row points to non-runtime install output."""
+    normalized = path.replace("\\", "/")
+    return normalized.startswith("bin/") or normalized.endswith(
+        tuple(f"/{name}" for name in INSTALLATION_METADATA_FILES)
+    )
+
+
+def normalize_installed_dependencies() -> None:
+    """Remove installer-only output that can vary across build host platforms."""
+    shutil.rmtree(PACKAGE_DIR / "bin", ignore_errors=True)
+
+    for dist_info in sorted(PACKAGE_DIR.glob("*.dist-info")):
+        if not dist_info.is_dir():
+            continue
+
+        for name in INSTALLATION_METADATA_FILES:
+            (dist_info / name).unlink(missing_ok=True)
+
+        record_path = dist_info / "RECORD"
+        if not record_path.is_file():
+            continue
+
+        with record_path.open("r", encoding="utf-8", newline="") as record_file:
+            rows = list(csv.reader(record_file))
+
+        retained_rows = [
+            row for row in rows if row and not _is_installation_record_entry(row[0])
+        ]
+
+        with record_path.open("w", encoding="utf-8", newline="") as record_file:
+            writer = csv.writer(record_file, lineterminator="\n")
+            writer.writerows(retained_rows)
 
 
 def copy_application_source() -> None:
@@ -252,6 +293,7 @@ def main() -> None:
     export_runtime_dependencies()
     validate_runtime_dependency_export()
     install_runtime_dependencies()
+    normalize_installed_dependencies()
     copy_application_source()
     remove_generated_bytecode()
     validate_package_contents()
