@@ -14,15 +14,23 @@ from opslens.knowledge_retrieval.domain.models import (
     RetrievalRequest,
     RetrievedChunk,
 )
+from opslens.knowledge_retrieval.domain.source_registry import (
+    SOURCE_REGISTRY_ID,
+    KnowledgeSourceDescriptor,
+    KnowledgeSourceRegistry,
+)
 
 __all__ = [
     "CANONICAL_METADATA_FIELDS",
     "DEFAULT_RETRIEVAL_TOP_K",
     "MAX_RETRIEVAL_QUERY_CHARS",
     "MAX_RETRIEVAL_TOP_K",
+    "SOURCE_REGISTRY_ID",
     "Citation",
     "KnowledgeDocument",
     "KnowledgeRetrievalValidationError",
+    "KnowledgeSourceDescriptor",
+    "KnowledgeSourceRegistry",
     "KnowledgeSourceType",
     "RetrievalBackend",
     "RetrievalEvidence",
