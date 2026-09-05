@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 from urllib.parse import urlparse
 
 from opslens.knowledge_retrieval.domain.errors import KnowledgeRetrievalValidationError
@@ -40,10 +41,32 @@ def _require_host(value: object, *, field: str) -> str:
 def _require_unique_strings(value: object, *, field: str) -> tuple[str, ...]:
     if not isinstance(value, tuple):
         raise KnowledgeRetrievalValidationError(f"{field} must be a tuple")
-    normalized = tuple(_require_nonblank(item, field=field) for item in value)
+    items = cast(tuple[object, ...], value)
+    normalized = tuple(_require_nonblank(item, field=field) for item in items)
     if len(set(normalized)) != len(normalized):
         raise KnowledgeRetrievalValidationError(f"{field} must not contain duplicates")
     return normalized
+
+
+def _require_source_type(value: object) -> KnowledgeSourceType:
+    if not isinstance(value, KnowledgeSourceType):
+        raise KnowledgeRetrievalValidationError(
+            "source_type must be a supported KnowledgeSourceType"
+        )
+    return value
+
+
+def _require_entries(value: object) -> tuple[KnowledgeSourceDescriptor, ...]:
+    if not isinstance(value, tuple):
+        raise KnowledgeRetrievalValidationError("entries must be a tuple")
+    items = cast(tuple[object, ...], value)
+    if not items:
+        raise KnowledgeRetrievalValidationError("entries must not be empty")
+    if any(not isinstance(item, KnowledgeSourceDescriptor) for item in items):
+        raise KnowledgeRetrievalValidationError(
+            "entries must contain only KnowledgeSourceDescriptor values"
+        )
+    return cast(tuple[KnowledgeSourceDescriptor, ...], items)
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,6 +83,7 @@ class KnowledgeSourceDescriptor:
     def __post_init__(self) -> None:
         document_id = _require_nonblank(self.document_id, field="document_id")
         source_id = _require_nonblank(self.source_id, field="source_id")
+        source_type = _require_source_type(self.source_type)
         canonical_uri = _require_https_uri(self.canonical_uri, field="canonical_uri")
         allowed_host = _require_host(self.allowed_host, field="allowed_host")
         expected_chunk_ids = _require_unique_strings(
@@ -67,17 +91,11 @@ class KnowledgeSourceDescriptor:
             field="expected_chunk_ids",
         )
 
-        if not isinstance(self.source_type, KnowledgeSourceType):
-            raise KnowledgeRetrievalValidationError(
-                "source_type must be a supported KnowledgeSourceType"
-            )
-
         canonical_host = urlparse(canonical_uri).hostname
         if canonical_host is None or canonical_host.lower() != allowed_host:
             raise KnowledgeRetrievalValidationError(
                 "canonical_uri hostname must exactly match allowed_host"
             )
-
         if not expected_chunk_ids:
             raise KnowledgeRetrievalValidationError(
                 "expected_chunk_ids must contain at least one chunk"
@@ -85,6 +103,7 @@ class KnowledgeSourceDescriptor:
 
         object.__setattr__(self, "document_id", document_id)
         object.__setattr__(self, "source_id", source_id)
+        object.__setattr__(self, "source_type", source_type)
         object.__setattr__(self, "canonical_uri", canonical_uri)
         object.__setattr__(self, "allowed_host", allowed_host)
         object.__setattr__(self, "expected_chunk_ids", expected_chunk_ids)
@@ -103,21 +122,14 @@ class KnowledgeSourceRegistry:
             raise KnowledgeRetrievalValidationError(
                 f"registry_id must equal {SOURCE_REGISTRY_ID!r}"
             )
-        if not isinstance(self.entries, tuple):
-            raise KnowledgeRetrievalValidationError("entries must be a tuple")
-        if not self.entries:
-            raise KnowledgeRetrievalValidationError("entries must not be empty")
-        if any(not isinstance(entry, KnowledgeSourceDescriptor) for entry in self.entries):
-            raise KnowledgeRetrievalValidationError(
-                "entries must contain only KnowledgeSourceDescriptor values"
-            )
+        entries = _require_entries(self.entries)
 
-        document_ids = [entry.document_id for entry in self.entries]
-        source_ids = [entry.source_id for entry in self.entries]
-        canonical_uris = [entry.canonical_uri for entry in self.entries]
+        document_ids = [entry.document_id for entry in entries]
+        source_ids = [entry.source_id for entry in entries]
+        canonical_uris = [entry.canonical_uri for entry in entries]
         chunk_ids = [
             chunk_id
-            for entry in self.entries
+            for entry in entries
             for chunk_id in entry.expected_chunk_ids
         ]
 
@@ -133,3 +145,4 @@ class KnowledgeSourceRegistry:
                 )
 
         object.__setattr__(self, "registry_id", registry_id)
+        object.__setattr__(self, "entries", entries)
