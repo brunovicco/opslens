@@ -9,6 +9,12 @@ from opslens.knowledge_retrieval.domain.corpus import (
     MaterializedKnowledgeDocument,
 )
 from opslens.knowledge_retrieval.domain.errors import KnowledgeRetrievalValidationError
+from opslens.knowledge_retrieval.domain.manifest import (
+    CORPUS_MANIFEST_ID,
+    CorpusChunkManifestEntry,
+    CorpusDocumentManifestEntry,
+    KnowledgeCorpusManifest,
+)
 from opslens.knowledge_retrieval.domain.models import (
     CANONICAL_METADATA_FIELDS,
     DEFAULT_RETRIEVAL_TOP_K,
@@ -30,6 +36,7 @@ from opslens.knowledge_retrieval.domain.source_registry import (
 
 __all__ = [
     "CANONICAL_METADATA_FIELDS",
+    "CORPUS_MANIFEST_ID",
     "CORPUS_SPEC_ID",
     "DEFAULT_RETRIEVAL_TOP_K",
     "MAX_RETRIEVAL_QUERY_CHARS",
@@ -38,7 +45,10 @@ __all__ = [
     "CanonicalKnowledgeChunk",
     "ChunkSelectionSpec",
     "Citation",
+    "CorpusChunkManifestEntry",
+    "CorpusDocumentManifestEntry",
     "DocumentMaterializationSpec",
+    "KnowledgeCorpusManifest",
     "KnowledgeCorpusSpec",
     "KnowledgeDocument",
     "KnowledgeRetrievalValidationError",
