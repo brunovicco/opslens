@@ -1,0 +1,193 @@
+{
+  "manifest_id": "knowledge-corpus-manifest:v1",
+  "source_registry_id": "knowledge-source-registry:v1",
+  "corpus_spec_id": "knowledge-corpus-spec:v1",
+  "documents": [
+    {
+      "document_id": "knowledge-doc:pypa-dependency-management:v1",
+      "source_id": "pypa:pip-dependency-resolution",
+      "source_type": "maintainer_documentation",
+      "canonical_uri": "https://pip.pypa.io/en/stable/topics/dependency-resolution/",
+      "acquisition_uri": "https://raw.githubusercontent.com/pypa/pip/173eb9b290e2924f0cd42b7714645b38b4df2e81/docs/html/topics/dependency-resolution.md",
+      "upstream_repository": "pypa/pip",
+      "upstream_commit_sha": "173eb9b290e2924f0cd42b7714645b38b4df2e81",
+      "upstream_path": "docs/html/topics/dependency-resolution.md",
+      "source_byte_count": 17383,
+      "source_bytes_sha256": "92c1191ffdc19e45cf6aab455c33188a0907bf9054803d242ec323d4ad305ec8",
+      "title": "pip Dependency Resolution",
+      "content_utf8_byte_count": 735,
+      "content_sha256": "9eca18a9d02b7521cc4941ba174911f57b8dee890c6b18f09b63818b28af1fe2",
+      "chunks": [
+        {
+          "chunk_id": "knowledge-chunk:pypa-dependency-management:upgrade:v1",
+          "section_path": [
+            "Handling Resolution Too Deep Errors",
+            "Use the --upgrade Flag"
+          ],
+          "content_utf8_byte_count": 282,
+          "chunk_content_sha256": "029e8d0df771ca8e6a184761b99e65bf0844d7e0d5c1768be3d9e7984a63735e"
+        },
+        {
+          "chunk_id": "knowledge-chunk:pypa-dependency-management:transitive-review:v1",
+          "section_path": [
+            "Handling Resolution Too Deep Errors",
+            "Utilize Constraint Files"
+          ],
+          "content_utf8_byte_count": 451,
+          "chunk_content_sha256": "b5d7ef3fd01da1ce0613df6dd6681c9b1630507804e1f36805c28bb573a698fb"
+        }
+      ]
+    },
+    {
+      "document_id": "knowledge-doc:uv-locking:v1",
+      "source_id": "astral:uv-project-sync",
+      "source_type": "maintainer_documentation",
+      "canonical_uri": "https://docs.astral.sh/uv/concepts/projects/sync/",
+      "acquisition_uri": "https://raw.githubusercontent.com/astral-sh/uv/3c979abda4530fe9bf3d92e9bcf5c5575e3b3126/docs/concepts/projects/sync.md",
+      "upstream_repository": "astral-sh/uv",
+      "upstream_commit_sha": "3c979abda4530fe9bf3d92e9bcf5c5575e3b3126",
+      "upstream_path": "docs/concepts/projects/sync.md",
+      "source_byte_count": 8386,
+      "source_bytes_sha256": "5c6a534a81111800ff37455f8c547bbb67f304b9d0cb02543c7185266dbef218",
+      "title": "uv Locking and Syncing",
+      "content_utf8_byte_count": 2452,
+      "content_sha256": "9d3bbebe54b6d3836226426bc6bc6e7d1fabfd87e71e571549b3cbfc7b0ab30f",
+      "chunks": [
+        {
+          "chunk_id": "knowledge-chunk:uv-locking:refresh:v1",
+          "section_path": [
+            "Locking and syncing",
+            "Checking the lockfile"
+          ],
+          "content_utf8_byte_count": 1222,
+          "chunk_content_sha256": "b209f142112142405d11481217ffd71bebdca603d48146cbd09346fde7a6f846"
+        },
+        {
+          "chunk_id": "knowledge-chunk:uv-locking:diff-review:v1",
+          "section_path": [
+            "Locking and syncing",
+            "Upgrading locked package versions"
+          ],
+          "content_utf8_byte_count": 1228,
+          "chunk_content_sha256": "477d2d2d9e813efebfa7cad63cfe86067f2a30e7fdde9bcc38363b3d9a8acd6f"
+        }
+      ]
+    },
+    {
+      "document_id": "knowledge-doc:pypa-secure-installs:v1",
+      "source_id": "pypa:pip-secure-installs",
+      "source_type": "security_guidance",
+      "canonical_uri": "https://pip.pypa.io/en/stable/topics/secure-installs/",
+      "acquisition_uri": "https://raw.githubusercontent.com/pypa/pip/173eb9b290e2924f0cd42b7714645b38b4df2e81/docs/html/topics/secure-installs.md",
+      "upstream_repository": "pypa/pip",
+      "upstream_commit_sha": "173eb9b290e2924f0cd42b7714645b38b4df2e81",
+      "upstream_path": "docs/html/topics/secure-installs.md",
+      "source_byte_count": 5468,
+      "source_bytes_sha256": "b145105b41ec1a5e01811b4f8c52bde20352ad114d64e9610a512eec1c6924ff",
+      "title": "pip Secure Installs",
+      "content_utf8_byte_count": 4069,
+      "content_sha256": "2b84ed09274651f4eff6d2132b24273eca5da0535243239d791d378c45f88bbc",
+      "chunks": [
+        {
+          "chunk_id": "knowledge-chunk:pypa-secure-installs:hashes:v1",
+          "section_path": [
+            "Secure installs",
+            "Hash-checking Mode"
+          ],
+          "content_utf8_byte_count": 4069,
+          "chunk_content_sha256": "2b84ed09274651f4eff6d2132b24273eca5da0535243239d791d378c45f88bbc"
+        }
+      ]
+    },
+    {
+      "document_id": "knowledge-doc:vendor-advisory-reading:v1",
+      "source_id": "django:release-note:6.0.8",
+      "source_type": "vendor_advisory",
+      "canonical_uri": "https://docs.djangoproject.com/en/6.0/releases/6.0.8/",
+      "acquisition_uri": "https://raw.githubusercontent.com/django/django/b3f4d83aad7f589f165a6d8b020b7acba4936f35/docs/releases/6.0.8.txt",
+      "upstream_repository": "django/django",
+      "upstream_commit_sha": "b3f4d83aad7f589f165a6d8b020b7acba4936f35",
+      "upstream_path": "docs/releases/6.0.8.txt",
+      "source_byte_count": 4975,
+      "source_bytes_sha256": "416b7962b066dbe26e1a6227d012c1d2b4adba18b6bad7f34ef485374b541252",
+      "title": "Django 6.0.8 Release Notes",
+      "content_utf8_byte_count": 1383,
+      "content_sha256": "0d2139b1ddd6100b5630b3d731548ab5eb734c3d3fadc9711c338f09ac79241e",
+      "chunks": [
+        {
+          "chunk_id": "knowledge-chunk:vendor-advisory-reading:remediation:v1",
+          "section_path": [
+            "Django 6.0.8 release notes",
+            "CVE-2026-15307"
+          ],
+          "content_utf8_byte_count": 1383,
+          "chunk_content_sha256": "0d2139b1ddd6100b5630b3d731548ab5eb734c3d3fadc9711c338f09ac79241e"
+        }
+      ]
+    },
+    {
+      "document_id": "knowledge-doc:dependency-remediation-validation:v1",
+      "source_id": "owasp:vulnerable-dependency-management",
+      "source_type": "security_guidance",
+      "canonical_uri": "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html",
+      "acquisition_uri": "https://raw.githubusercontent.com/OWASP/CheatSheetSeries/8c3ce8eefa4db40dc07dfa3cc70d96873eece144/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.md",
+      "upstream_repository": "OWASP/CheatSheetSeries",
+      "upstream_commit_sha": "8c3ce8eefa4db40dc07dfa3cc70d96873eece144",
+      "upstream_path": "cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.md",
+      "source_byte_count": 23566,
+      "source_bytes_sha256": "f12d388a1dc3286a029928584a14c554f528beeec3067eb86839c838060f8c71",
+      "title": "OWASP Vulnerable Dependency Management Cheat Sheet",
+      "content_utf8_byte_count": 1028,
+      "content_sha256": "28d679ca432bbe0e007bdbad8145093c7f00eadda31050ceb94693b632715d98",
+      "chunks": [
+        {
+          "chunk_id": "knowledge-chunk:dependency-remediation-validation:post-change:v1",
+          "section_path": [
+            "Cases",
+            "Case 1",
+            "Approach",
+            "Step 2"
+          ],
+          "content_utf8_byte_count": 936,
+          "chunk_content_sha256": "b425c13a2000cd9d8352507c61b68a4f714a73b7c669f4a9da0fe2f46f8572ca"
+        },
+        {
+          "chunk_id": "knowledge-chunk:dependency-remediation-validation:isolation:v1",
+          "section_path": [
+            "Cases",
+            "Case 1",
+            "Approach",
+            "Step 1"
+          ],
+          "content_utf8_byte_count": 90,
+          "chunk_content_sha256": "4e6c713bb7026b4e34810b06c6495051aa801432128d3e25cf563cf1da61189d"
+        }
+      ]
+    },
+    {
+      "document_id": "knowledge-doc:pypa-version-specifiers:v1",
+      "source_id": "pypa:version-specifiers",
+      "source_type": "maintainer_documentation",
+      "canonical_uri": "https://packaging.python.org/en/latest/specifications/version-specifiers/",
+      "acquisition_uri": "https://raw.githubusercontent.com/pypa/packaging.python.org/cee95c2c84e988b3e45b3e17dbd7cac04b0ce704/source/specifications/version-specifiers.rst",
+      "upstream_repository": "pypa/packaging.python.org",
+      "upstream_commit_sha": "cee95c2c84e988b3e45b3e17dbd7cac04b0ce704",
+      "upstream_path": "source/specifications/version-specifiers.rst",
+      "source_byte_count": 49400,
+      "source_bytes_sha256": "9a0bbe770971cd769d9cb1e3d30d5e456d82bc1720c209ba1e2b14943ce899c3",
+      "title": "Python Packaging Version Specifiers",
+      "content_utf8_byte_count": 1354,
+      "content_sha256": "f1a34ef090054330e6dc7c78e33c3fdd35c8613093dbd2caff5defb50eaa4e7a",
+      "chunks": [
+        {
+          "chunk_id": "knowledge-chunk:pypa-version-specifiers:constraints:v1",
+          "section_path": [
+            "Version specifiers"
+          ],
+          "content_utf8_byte_count": 1354,
+          "chunk_content_sha256": "f1a34ef090054330e6dc7c78e33c3fdd35c8613093dbd2caff5defb50eaa4e7a"
+        }
+      ]
+    }
+  ]
+}
