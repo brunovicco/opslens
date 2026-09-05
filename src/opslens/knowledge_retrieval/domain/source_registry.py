@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import cast
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 from opslens.knowledge_retrieval.domain.errors import KnowledgeRetrievalValidationError
 from opslens.knowledge_retrieval.domain.models import KnowledgeSourceType
 
 SOURCE_REGISTRY_ID = "knowledge-source-registry:v1"
+RAW_GITHUB_HOST = "raw.githubusercontent.com"
+_GITHUB_REPOSITORY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", re.ASCII)
+_FULL_GIT_SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$", re.ASCII)
+_CONTROL_CHARACTER_PATTERN = re.compile(r"[\x00-\x1f\x7f]", re.ASCII)
 
 
 def _require_nonblank(value: object, *, field: str) -> str:
@@ -31,10 +36,38 @@ def _require_https_uri(value: object, *, field: str) -> str:
     return normalized
 
 
-def _require_host(value: object, *, field: str) -> str:
-    normalized = _require_nonblank(value, field=field).lower()
-    if ":" in normalized or "/" in normalized or "@" in normalized:
-        raise KnowledgeRetrievalValidationError(f"{field} must be a hostname only")
+def _require_repository(value: object) -> str:
+    normalized = _require_nonblank(value, field="upstream_repository")
+    if _GITHUB_REPOSITORY_PATTERN.fullmatch(normalized) is None:
+        raise KnowledgeRetrievalValidationError(
+            "upstream_repository must use the exact owner/repository form"
+        )
+    return normalized
+
+
+def _require_commit_sha(value: object) -> str:
+    normalized = _require_nonblank(value, field="upstream_commit_sha")
+    if _FULL_GIT_SHA_PATTERN.fullmatch(normalized) is None:
+        raise KnowledgeRetrievalValidationError(
+            "upstream_commit_sha must be one full lowercase 40-hex Git SHA"
+        )
+    return normalized
+
+
+def _require_upstream_path(value: object) -> str:
+    normalized = _require_nonblank(value, field="upstream_path")
+    if (
+        normalized.startswith("/")
+        or _CONTROL_CHARACTER_PATTERN.search(normalized) is not None
+    ):
+        raise KnowledgeRetrievalValidationError(
+            "upstream_path must be one clean repository-relative path"
+        )
+    segments = normalized.split("/")
+    if any(segment in {"", ".", ".."} for segment in segments):
+        raise KnowledgeRetrievalValidationError(
+            "upstream_path must not contain empty or traversal segments"
+        )
     return normalized
 
 
@@ -71,32 +104,30 @@ def _require_entries(value: object) -> tuple[KnowledgeSourceDescriptor, ...]:
 
 @dataclass(frozen=True, slots=True)
 class KnowledgeSourceDescriptor:
-    """Pre-acquisition authorization for one canonical knowledge document."""
+    """Pre-acquisition authorization for one pinned canonical knowledge source."""
 
     document_id: str
     source_id: str
     source_type: KnowledgeSourceType
     canonical_uri: str
-    allowed_host: str
+    upstream_repository: str
+    upstream_commit_sha: str
+    upstream_path: str
     expected_chunk_ids: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        """Normalize and fail closed on malformed source authorization."""
+        """Normalize and fail closed on malformed pinned source authorization."""
         document_id = _require_nonblank(self.document_id, field="document_id")
         source_id = _require_nonblank(self.source_id, field="source_id")
         source_type = _require_source_type(self.source_type)
         canonical_uri = _require_https_uri(self.canonical_uri, field="canonical_uri")
-        allowed_host = _require_host(self.allowed_host, field="allowed_host")
+        upstream_repository = _require_repository(self.upstream_repository)
+        upstream_commit_sha = _require_commit_sha(self.upstream_commit_sha)
+        upstream_path = _require_upstream_path(self.upstream_path)
         expected_chunk_ids = _require_unique_strings(
             self.expected_chunk_ids,
             field="expected_chunk_ids",
         )
-
-        canonical_host = urlparse(canonical_uri).hostname
-        if canonical_host is None or canonical_host.lower() != allowed_host:
-            raise KnowledgeRetrievalValidationError(
-                "canonical_uri hostname must exactly match allowed_host"
-            )
         if not expected_chunk_ids:
             raise KnowledgeRetrievalValidationError(
                 "expected_chunk_ids must contain at least one chunk"
@@ -106,13 +137,37 @@ class KnowledgeSourceDescriptor:
         object.__setattr__(self, "source_id", source_id)
         object.__setattr__(self, "source_type", source_type)
         object.__setattr__(self, "canonical_uri", canonical_uri)
-        object.__setattr__(self, "allowed_host", allowed_host)
+        object.__setattr__(self, "upstream_repository", upstream_repository)
+        object.__setattr__(self, "upstream_commit_sha", upstream_commit_sha)
+        object.__setattr__(self, "upstream_path", upstream_path)
         object.__setattr__(self, "expected_chunk_ids", expected_chunk_ids)
+
+    @property
+    def acquisition_host(self) -> str:
+        """Return the only v1 host authorized for pinned source bytes."""
+        return RAW_GITHUB_HOST
+
+    @property
+    def acquisition_path(self) -> str:
+        """Derive the exact raw GitHub request target from pinned source coordinates."""
+        owner, repository = self.upstream_repository.split("/", maxsplit=1)
+        encoded_path = "/".join(
+            quote(segment, safe="-._~") for segment in self.upstream_path.split("/")
+        )
+        return (
+            f"/{quote(owner, safe='-._~')}/{quote(repository, safe='-._~')}"
+            f"/{self.upstream_commit_sha}/{encoded_path}"
+        )
+
+    @property
+    def acquisition_uri(self) -> str:
+        """Return the immutable raw-source URI used by the corpus acquisition adapter."""
+        return f"https://{self.acquisition_host}{self.acquisition_path}"
 
 
 @dataclass(frozen=True, slots=True)
 class KnowledgeSourceRegistry:
-    """Frozen v1 allowlist of trusted inputs for later corpus acquisition."""
+    """Frozen v1 allowlist of trusted pinned inputs for corpus acquisition."""
 
     registry_id: str
     entries: tuple[KnowledgeSourceDescriptor, ...]
@@ -129,6 +184,7 @@ class KnowledgeSourceRegistry:
         document_ids = [entry.document_id for entry in entries]
         source_ids = [entry.source_id for entry in entries]
         canonical_uris = [entry.canonical_uri for entry in entries]
+        acquisition_uris = [entry.acquisition_uri for entry in entries]
         chunk_ids = [
             chunk_id
             for entry in entries
@@ -139,6 +195,7 @@ class KnowledgeSourceRegistry:
             ("document_id", document_ids),
             ("source_id", source_ids),
             ("canonical_uri", canonical_uris),
+            ("acquisition_uri", acquisition_uris),
             ("expected_chunk_ids", chunk_ids),
         ):
             if len(set(values)) != len(values):
