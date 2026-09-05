@@ -123,6 +123,30 @@ def test_run_bounded_ingestion_times_out_after_exact_poll_budget() -> None:
     assert control.get_calls == 1
 
 
+def test_ingestion_evidence_accepts_current_bedrock_statistics_vocabulary() -> None:
+    """Admit every statistics field documented by the current Bedrock API."""
+    statistics = {
+        "numberOfDocumentsScanned": 9,
+        "numberOfMetadataDocumentsScanned": 9,
+        "numberOfNewDocumentsIndexed": 9,
+        "numberOfModifiedDocumentsIndexed": 0,
+        "numberOfMetadataDocumentsModified": 0,
+        "numberOfDocumentsDeleted": 0,
+        "numberOfDocumentsFailed": 0,
+        "numberOfDocumentsSkipped": 0,
+    }
+
+    evidence = IngestionJobEvidence(
+        knowledge_base_id=KB_ID,
+        data_source_id=DS_ID,
+        ingestion_job_id=JOB_ID,
+        status="COMPLETE",
+        statistics=statistics,
+    )
+
+    assert evidence.statistics == statistics
+
+
 def test_ingestion_evidence_rejects_unknown_statistics() -> None:
     """Reject provider counters outside the admitted Bedrock statistics vocabulary."""
     with pytest.raises(BedrockIngestionValidationError, match="unsupported fields"):
@@ -154,7 +178,16 @@ class FakeBedrockClient:
                 "dataSourceId": DS_ID,
                 "ingestionJobId": JOB_ID,
                 "status": "STARTING",
-                "statistics": {"numberOfDocumentsScanned": 0},
+                "statistics": {
+                    "numberOfDocumentsScanned": 9,
+                    "numberOfMetadataDocumentsScanned": 9,
+                    "numberOfNewDocumentsIndexed": 0,
+                    "numberOfModifiedDocumentsIndexed": 0,
+                    "numberOfMetadataDocumentsModified": 0,
+                    "numberOfDocumentsDeleted": 0,
+                    "numberOfDocumentsFailed": 0,
+                    "numberOfDocumentsSkipped": 0,
+                },
             }
         }
 
@@ -169,10 +202,13 @@ class FakeBedrockClient:
                 "status": "COMPLETE",
                 "statistics": {
                     "numberOfDocumentsScanned": 9,
+                    "numberOfMetadataDocumentsScanned": 9,
                     "numberOfNewDocumentsIndexed": 9,
                     "numberOfModifiedDocumentsIndexed": 0,
+                    "numberOfMetadataDocumentsModified": 0,
                     "numberOfDocumentsDeleted": 0,
                     "numberOfDocumentsFailed": 0,
+                    "numberOfDocumentsSkipped": 0,
                 },
             }
         }
@@ -192,6 +228,8 @@ def test_bedrock_adapter_uses_exact_identifiers_without_discovery_calls() -> Non
     )
 
     assert completed.status == "COMPLETE"
+    assert completed.statistics["numberOfMetadataDocumentsScanned"] == 9
+    assert completed.statistics["numberOfDocumentsSkipped"] == 0
     assert raw_client.calls[0] == (
         "start",
         {
