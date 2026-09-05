@@ -17,6 +17,7 @@ from opslens.knowledge_retrieval.application.s3_publication import (
 MAX_LIST_KEYS = MAX_PUBLICATION_OBJECTS + 1
 _BUCKET_PATTERN = re.compile(r"^(?!-)[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$", re.ASCII)
 _ACCOUNT_PATTERN = re.compile(r"^[0-9]{12}$", re.ASCII)
+_SAFE_ERROR_CODE_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{1,128}$", re.ASCII)
 
 
 class S3PublicationClient(Protocol):
@@ -75,6 +76,29 @@ def _require_list(value: object, *, field: str) -> list[object]:
     if not isinstance(value, list):
         raise S3PublicationStoreError(f"{field} must be a list")
     return cast(list[object], value)
+
+
+def _safe_provider_error_code(exc: Exception) -> str | None:
+    """Extract only one bounded provider error code from an SDK-style exception."""
+    response = getattr(exc, "response", None)
+    if not isinstance(response, dict):
+        return None
+    raw_response = cast(dict[object, object], response)
+    error = raw_response.get("Error")
+    if not isinstance(error, dict):
+        return None
+    raw_error = cast(dict[object, object], error)
+    code = raw_error.get("Code")
+    if not isinstance(code, str) or _SAFE_ERROR_CODE_PATTERN.fullmatch(code) is None:
+        return None
+    return code
+
+
+def _transport_error_message(*, operation: str, target: str, exc: Exception) -> str:
+    """Return one content-free provider failure message with an optional safe code."""
+    code = _safe_provider_error_code(exc)
+    suffix = f" provider_code={code}" if code is not None else ""
+    return f"S3 {operation} failed for {target}{suffix}"
 
 
 def _sha256_hex_to_base64(digest: str) -> str:
@@ -149,7 +173,11 @@ class BoundedS3PublicationStore:
             raise
         except Exception as exc:
             raise S3PublicationStoreError(
-                f"S3 PutObject failed for publication key {payload.key!r}"
+                _transport_error_message(
+                    operation="PutObject",
+                    target=f"publication key {payload.key!r}",
+                    exc=exc,
+                )
             ) from exc
 
     def list_keys(self, prefix: str) -> tuple[str, ...]:
@@ -164,7 +192,11 @@ class BoundedS3PublicationStore:
             )
         except Exception as exc:
             raise S3PublicationStoreError(
-                f"S3 ListObjectsV2 failed for publication prefix {normalized_prefix!r}"
+                _transport_error_message(
+                    operation="ListObjectsV2",
+                    target=f"publication prefix {normalized_prefix!r}",
+                    exc=exc,
+                )
             ) from exc
 
         parsed = _require_mapping(response, field="ListObjectsV2 response")
@@ -198,7 +230,11 @@ class BoundedS3PublicationStore:
             )
         except Exception as exc:
             raise S3PublicationStoreError(
-                f"S3 HeadObject failed for publication key {normalized_key!r}"
+                _transport_error_message(
+                    operation="HeadObject",
+                    target=f"publication key {normalized_key!r}",
+                    exc=exc,
+                )
             ) from exc
 
         parsed = _require_mapping(response, field="HeadObject response")
