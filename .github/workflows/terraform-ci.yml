@@ -72,6 +72,11 @@ jobs:
           manifest_bytes = ("\n".join(manifest) + "\n").encode("utf-8")
           print(f"staging_manifest_files={len(manifest)}")
           print(f"staging_manifest_sha256={hashlib.sha256(manifest_bytes).hexdigest()}")
+
+          record_path = root / "jmespath-1.1.0.dist-info" / "RECORD"
+          print("jmespath_record_begin")
+          print(record_path.read_text(encoding="utf-8"), end="")
+          print("jmespath_record_end")
           PY
 
       - name: Build KEV Lambda package
