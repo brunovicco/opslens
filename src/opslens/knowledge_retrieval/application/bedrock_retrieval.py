@@ -344,7 +344,7 @@ def _validate_metadata(
     s3_uri: str,
     expected_data_source_id: str,
 ) -> None:
-    """Require canonical metadata equality while treating provider-reserved keys as non-authority."""
+    """Require canonical equality while provider-reserved keys stay non-authoritative."""
     expected = _expected_metadata(canonical)
     for field in _REQUIRED_CANONICAL_METADATA_FIELDS:
         if field not in metadata:
