@@ -48,17 +48,21 @@ def build_corpus_manifest(
         strict=True,
     ):
         document = materialized.document
-        if descriptor.document_id != document_spec.document_id != document.document_id:
-            raise CorpusManifestError("document identities must remain aligned")
         if not (
             descriptor.document_id
             == document_spec.document_id
             == document.document_id
         ):
             raise CorpusManifestError("document identities must remain aligned")
-        expected_chunk_ids = tuple(selection.chunk_id for selection in document_spec.selections)
+
+        expected_chunk_ids = tuple(
+            selection.chunk_id for selection in document_spec.selections
+        )
         actual_chunk_ids = tuple(chunk.chunk_id for chunk in materialized.chunks)
-        if expected_chunk_ids != descriptor.expected_chunk_ids or actual_chunk_ids != expected_chunk_ids:
+        if (
+            expected_chunk_ids != descriptor.expected_chunk_ids
+            or actual_chunk_ids != expected_chunk_ids
+        ):
             raise CorpusManifestError("chunk identities and order must remain aligned")
 
         chunks = tuple(
