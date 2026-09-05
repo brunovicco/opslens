@@ -25,7 +25,7 @@ The frozen Gate 7.1 golden fixture defines:
 
 An earlier Gate 7.2 checkpoint incorrectly described the positive set as eight chunks. The checked golden fixture, source registry, and corpus spec all contain nine unique chunk identities; the documentation count is corrected here rather than changing the frozen evaluation contract to fit the earlier prose.
 
-Gate 7.2 must materialize those expectations without widening the structured-fact authority boundary.
+Gate 7.2 materializes those expectations without widening the structured-fact authority boundary.
 
 ## Target flow
 
@@ -240,15 +240,31 @@ Serialization is stable JSON with a final LF. Identical pins and identical admit
 
 A replay that still satisfies the markers but changes admitted content is detected by manifest mismatch.
 
+The first real manifest is checked in at:
+
+```text
+knowledge/corpus/v1/manifest.json
+```
+
+Real manifest identity:
+
+```text
+sha256:98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
+documents: 6
+chunks:    9
+```
+
+The manifest contains exact raw-source byte counts and SHA-256 identities for all six pinned inputs plus canonical document/chunk hashes. It does not vendor the selected third-party text.
+
 ## Replay pipeline and CLI
 
 The replay pipeline is serial and bounded. It accepts at most ten documents, while v1 contains six.
 
-The CLI has exactly two modes:
+The repository uses a `src/` layout without installing the project package into the local environment, so the versioned local replay commands are:
 
 ```bash
-uv run python -m opslens.knowledge_retrieval.cli.materialize_corpus --write
-uv run python -m opslens.knowledge_retrieval.cli.materialize_corpus --check
+PYTHONPATH=src uv run python -m opslens.knowledge_retrieval.cli.materialize_corpus --write
+PYTHONPATH=src uv run python -m opslens.knowledge_retrieval.cli.materialize_corpus --check
 ```
 
 `--write`:
@@ -270,7 +286,7 @@ Offline CLI tests replace the real acquirer with a fake transport and prove dete
 
 ## Security boundary
 
-Gate 7.2 code now proves:
+Gate 7.2 code proves:
 
 - exact GitHub `owner/repository` syntax;
 - full immutable commit SHA required; mutable refs such as `main` rejected;
@@ -338,19 +354,104 @@ Risk Policy regression:              PASS
 Semantic Query regression:           PASS
 ```
 
-The earlier CLI runs intentionally exposed and resolved two Ruff findings and one strict-Pyright local-list typing finding. Runtime behavior was not weakened to satisfy static analysis.
+### Real replay failure evidence
 
-## Why the real replay is local rather than CI or this development session
+The first real six-source replay intentionally exercised the fail-closed selector contract and stopped on the PyPA version-specifier source:
+
+```text
+ERROR: start marker for 'knowledge-chunk:pypa-version-specifiers:constraints:v1'
+must occur exactly once; found 2
+```
+
+Inspection of the exact pinned RST showed two `Version specifiers` headings: the document title and the later normative section. The contract was not loosened. The selector was made more specific by including the first normative sentence of the intended section.
+
+Correction:
+
+```text
+commit: 78bfda9763524b6e36b4c2b543ba9fa3e4f0714a
+Python CI run: 33934507567
+all five quality-gate jobs: PASS
+```
+
+This is useful failure evidence: the real replay detected selector ambiguity before any incorrect corpus evidence could be written.
+
+### Successful real replay and exact verification
+
+The corrected corpus spec was replayed in the single local OpsLens development environment.
+
+```text
+write:
+  documents:       6
+  chunks:          9
+  manifest_sha256: 98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
+
+immediate check:
+  documents:       6
+  chunks:          9
+  manifest_sha256: 98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
+
+independent local shasum:
+  98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
+```
+
+The manifest was then committed without manual edits:
+
+```text
+commit: bb61f6766f9c52c167ac7d1a3a8bc734cd1a6307
+```
+
+### Final manifest CI
+
+```text
+workflow: Python CI
+run:      33965739749
+head:     bb61f6766f9c52c167ac7d1a3a8bc734cd1a6307
+
+Knowledge Retrieval Ruff:     PASS
+Knowledge Retrieval Pyright:  0 errors / 0 warnings / 0 informations
+Knowledge Retrieval pytest:   44 passed in 0.25s
+
+Correlation regression:              PASS
+Repository Intelligence regression:  PASS
+Risk Policy regression:              PASS
+Semantic Query regression:           PASS
+```
+
+Earlier incremental runs intentionally exposed and resolved lint, strict-typing, marker strictness, and historical chunk-count issues. Runtime behavior was not weakened to satisfy static analysis or real replay failures.
+
+## Why the real replay is local rather than CI
 
 OpsLens uses one real development environment. CI validates deterministic behavior with fake transport and does not become a second corpus-authoring environment.
 
-The first six-source replay must therefore be executed from the user's normal local OpsLens development environment using the versioned CLI. This also demonstrates that the checked-in pipeline is sufficient to reconstruct the corpus rather than relying on connector/session-specific behavior.
+The first six-source replay was therefore executed from the normal local OpsLens development environment using the versioned CLI. This demonstrates that the checked-in pipeline is sufficient to reconstruct the corpus rather than relying on connector/session-specific behavior.
 
-No third-party source is executed during that replay; the six files are read as inert text only.
+No third-party source was executed during that replay; the six files were read as inert text only.
+
+## AIP-C01 learning mapping
+
+Gate 7.2 exercises certification-relevant concepts without introducing an AWS service merely for exam coverage:
+
+```text
+Security
+  immutable allowlisted origins; no credentials; no source execution;
+  provenance and fail-closed validation
+
+Reliability
+  replayable pinned inputs; deterministic normalization/selection;
+  content addressing and exact verification
+
+Operational Excellence
+  versioned registry/spec/manifest; scoped CI; diagnosable failure evidence
+
+Cost Optimization
+  no AWS resource or paid model/vector/retrieval call in Gate 7.2
+```
+
+AWS pricing/IAM additions are not applicable to this gate because no AWS resource was created.
 
 ## Gate 7.2 status
 
-**IN PROGRESS — REAL REPLAY PENDING.**
+**COMPLETE — MERGE PENDING.**
 
 Completed:
 
@@ -368,42 +469,31 @@ Completed:
 - [x] exact line-aligned curated section-selection plan frozen;
 - [x] canonical `KnowledgeDocument` and chunk content-addressing implemented;
 - [x] marker/content-drift failure path covered offline;
+- [x] real marker ambiguity detected and corrected without weakening fail-closed semantics;
 - [x] fail-closed product config loader implemented;
 - [x] deterministic hash-only manifest contract/serializer/verifier implemented;
 - [x] serial bounded replay pipeline implemented;
 - [x] `--write` / `--check` CLI implemented with offline tests;
-- [x] final pre-replay Ruff/Pyright/pytest green;
+- [x] real acquisition of all six pinned official source files;
+- [x] real `source_bytes_sha256` and byte counts recorded;
+- [x] real canonical document and nine chunk hashes recorded;
+- [x] immediate second `--check` proved exact manifest reproducibility;
+- [x] independent local manifest SHA-256 matched CLI output;
+- [x] checked-in manifest validated by CI;
+- [x] final Gate 7.2 CI green;
 - [x] deterministic regressions green;
 - [x] no AWS resources or paid calls introduced.
 
-Still required before Gate 7.2 can close:
+Remaining closeout:
 
-- [ ] real acquisition of the six pinned official source files in the single local dev environment;
-- [ ] real `source_bytes_sha256` and byte counts recorded in `knowledge/corpus/v1/manifest.json`;
-- [ ] real canonical document + nine chunk hashes recorded;
-- [ ] immediate second `--check` replay proves exact manifest reproducibility;
-- [ ] checked-in manifest schema/content validated in CI;
-- [ ] final Gate 7.2 CI after the real manifest commit;
-- [ ] current-state/architecture/roadmap closeout;
-- [ ] PR #94 ready for review + squash merge.
+- [ ] current-state/architecture/roadmap synchronized;
+- [ ] PR #94 ready for review;
+- [ ] squash merge.
 
 ## Next authorized action
 
-From the local OpsLens repository on `feat/phase7-canonical-corpus`, update the branch and run:
+Finish documentation-only closeout, then squash-merge PR #94.
 
-```bash
-uv run python -m opslens.knowledge_retrieval.cli.materialize_corpus --write
-uv run python -m opslens.knowledge_retrieval.cli.materialize_corpus --check
-git status --short
-```
+Only after Gate 7.2 is logically merged should Gate 7.3 begin. Gate 7.3 must re-check current official AWS documentation, pricing, IAM requirements, vector-store choices, Knowledge Base modes, embedding options, chunking constraints, observability, and failure behavior before any AWS resource is created.
 
-Expected successful shape:
-
-```text
-wrote knowledge/corpus/v1/manifest.json: documents=6 chunks=9 manifest_sha256=<sha256>
-verified knowledge/corpus/v1/manifest.json: documents=6 chunks=9 manifest_sha256=<same-sha256>
-```
-
-If a pinned source no longer satisfies its exact selector or transport contract, the command must fail non-zero. Do not loosen selection or acquisition heuristically; inspect the exact pinned evidence and make a reviewed deterministic change.
-
-Do not create Bedrock Knowledge Base, embedding, vector, IAM, retrieval, or synthesis infrastructure yet.
+Do not create Bedrock Knowledge Base, embedding, vector, IAM, retrieval, or synthesis infrastructure as part of Gate 7.2.
