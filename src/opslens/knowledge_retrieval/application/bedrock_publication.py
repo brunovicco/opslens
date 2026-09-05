@@ -22,6 +22,7 @@ from opslens.knowledge_retrieval.domain import (
 BEDROCK_PUBLICATION_PREFIX = "knowledge/corpus/v1/bedrock"
 MAX_BEDROCK_CUSTOM_METADATA_BYTES = 1_024
 MAX_BEDROCK_CUSTOM_METADATA_KEYS = 35
+MAX_BEDROCK_METADATA_SIDECAR_BYTES = 1_024
 MAX_S3_METADATA_SIDECAR_BYTES = 10 * 1_024
 
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$", re.ASCII)
@@ -167,7 +168,12 @@ class BedrockPublicationObject:
             raise BedrockPublicationError(
                 "custom metadata exceeds the Bedrock + S3 Vectors 35-key limit"
             )
-        if len(metadata_json.encode("utf-8")) > MAX_S3_METADATA_SIDECAR_BYTES:
+        metadata_byte_count = len(metadata_json.encode("utf-8"))
+        if metadata_byte_count > MAX_BEDROCK_METADATA_SIDECAR_BYTES:
+            raise BedrockPublicationError(
+                "metadata sidecar exceeds the Bedrock + S3 Vectors 1 KB limit"
+            )
+        if metadata_byte_count > MAX_S3_METADATA_SIDECAR_BYTES:
             raise BedrockPublicationError("metadata sidecar exceeds the S3 10 KB file limit")
 
         object.__setattr__(self, "chunk_id", chunk_id)
@@ -228,22 +234,6 @@ class BedrockPublicationPlan:
         object.__setattr__(self, "objects", objects)
 
 
-def _metadata_attribute_string(value: str) -> dict[str, object]:
-    """Encode one string attribute explicitly without embedding influence."""
-    return {
-        "value": {"type": "STRING", "stringValue": value},
-        "includeForEmbedding": False,
-    }
-
-
-def _metadata_attribute_string_list(values: tuple[str, ...]) -> dict[str, object]:
-    """Encode one string-list attribute explicitly without embedding influence."""
-    return {
-        "value": {"type": "STRING_LIST", "stringListValue": list(values)},
-        "includeForEmbedding": False,
-    }
-
-
 def _build_metadata_values(
     materialized: MaterializedKnowledgeDocument,
     *,
@@ -280,7 +270,7 @@ def _build_metadata_values(
 
 
 def _serialize_metadata(values: dict[str, str | list[str]]) -> tuple[str, int]:
-    """Serialize one Bedrock S3 metadata sidecar and return logical metadata bytes."""
+    """Serialize compact Bedrock metadata while enforcing the effective 1 KB budget."""
     logical_json = json.dumps(
         values,
         ensure_ascii=False,
@@ -297,21 +287,18 @@ def _serialize_metadata(values: dict[str, str | list[str]]) -> tuple[str, int]:
             "custom metadata exceeds the Bedrock + S3 Vectors 35-key limit"
         )
 
-    attributes: dict[str, object] = {}
-    for key in sorted(values):
-        value = values[key]
-        if isinstance(value, str):
-            attributes[key] = _metadata_attribute_string(value)
-        else:
-            attributes[key] = _metadata_attribute_string_list(tuple(value))
-
     serialized = json.dumps(
-        {"metadataAttributes": attributes},
-        indent=2,
+        {"metadataAttributes": values},
         ensure_ascii=False,
+        separators=(",", ":"),
         sort_keys=True,
     ) + "\n"
-    if len(serialized.encode("utf-8")) > MAX_S3_METADATA_SIDECAR_BYTES:
+    metadata_byte_count = len(serialized.encode("utf-8"))
+    if metadata_byte_count > MAX_BEDROCK_METADATA_SIDECAR_BYTES:
+        raise BedrockPublicationError(
+            "metadata sidecar exceeds the Bedrock + S3 Vectors 1 KB limit"
+        )
+    if metadata_byte_count > MAX_S3_METADATA_SIDECAR_BYTES:
         raise BedrockPublicationError("metadata sidecar exceeds the S3 10 KB file limit")
     return serialized, logical_byte_count
 
