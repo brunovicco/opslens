@@ -6,8 +6,10 @@ import argparse
 import hashlib
 import os
 import sys
+from collections.abc import Sequence
+from contextlib import suppress
 from pathlib import Path
-from typing import Sequence, cast
+from typing import cast
 
 from opslens.knowledge_retrieval.adapters.http_source import (
     BoundedHttpsKnowledgeSource,
@@ -75,10 +77,8 @@ def _write_atomic(path: Path, content: str) -> None:
             os.fsync(handle.fileno())
         os.replace(temporary, path)
     finally:
-        try:
+        with suppress(OSError):
             temporary.unlink(missing_ok=True)
-        except OSError:
-            pass
 
 
 def _check_exact(path: Path, expected: str) -> None:
