@@ -1,10 +1,10 @@
 # OpsLens Architecture
 
-_Last updated: 2026-09-03_
+_Last updated: 2026-09-05_
 
-This document is the accumulated architecture baseline after completion of **Phase 5 — Risk Prioritization Engine**.
+This document is the accumulated architecture baseline through **Phase 7 — Gate 7.2: Reproducible Canonical Corpus**.
 
-The next roadmap boundary is **Phase 6 — Semantic Query Layer**.
+The next roadmap boundary is **Phase 7 — Gate 7.3: Knowledge Base + vector infrastructure**.
 
 ## 1. Purpose
 
@@ -14,7 +14,7 @@ The product goal is:
 
 > Given the software I actually use, which vulnerabilities affect it, what exact evidence proves that, and which findings should I prioritize?
 
-The architecture deliberately establishes trustworthy deterministic evidence and policy enforcement before adding semantic, generative, or agentic reasoning.
+The architecture deliberately establishes trustworthy deterministic evidence and policy enforcement before adding semantic, generative, retrieval, or agentic reasoning.
 
 Core invariant:
 
@@ -22,9 +22,15 @@ Core invariant:
 
 Additional permanent boundaries:
 
+> **Not every question is a RAG problem.**
+
+> **Structured facts use structured retrieval.**
+
 > **READ, NEVER EXECUTE third-party repository code.**
 
 > **Repository Risk != Runtime Exposure.**
+
+> **No unrestricted text-to-SQL.**
 
 ## 2. Permanent architectural principles
 
@@ -40,12 +46,15 @@ Unless changed by an explicit ADR:
 - KEV/EPSS/CVSS evidence remains deterministic and source-preserving;
 - risk policy evaluation remains deterministic;
 - semantic-query validation and SQL compilation remain deterministic;
-- evidence validation remains deterministic;
+- canonical corpus normalization, selection, and hashing remain deterministic;
+- retrieval evidence validation and context admission remain deterministic;
+- citation projection remains deterministic from admitted evidence;
 - execution/tool/cost enforcement remains deterministic;
-- LLMs may later classify, plan, route, synthesize, and explain over validated evidence;
-- LLMs do not replace package applicability, source evidence, or risk-policy enforcement;
+- LLMs may classify, plan, route, synthesize, and explain over validated evidence;
+- LLMs do not replace package applicability, structured source evidence, or risk-policy enforcement;
 - natural-language planning never receives unrestricted SQL authority;
-- third-party repository content is untrusted data to inspect, never code to execute;
+- retrieved explanatory text never becomes a second authority for structured threat facts;
+- third-party repository/source content is untrusted data to inspect, never code to execute;
 - Repository Risk is not Runtime Exposure;
 - missing evidence is not silently converted into benign evidence;
 - duplicate delivery is expected and replay must be safe;
@@ -57,7 +66,7 @@ Unless changed by an explicit ADR:
 
 ## 3. Current system shape
 
-The implemented system now has four deterministic layers.
+The implemented system now separates structured deterministic truth, bounded model planning, and canonical explanatory knowledge.
 
 ```text
 THREAT INTELLIGENCE DATA
@@ -82,18 +91,34 @@ versioned Risk Policy v1 + factor evidence + deterministic ranking
 RiskPrioritizationResult
 ```
 
-Phase 6 will add a constrained semantic-planning layer **above** these deterministic authorities:
+The implemented Phase 6 semantic path is separate and bounded:
 
 ```text
-natural-language question
- -> Bedrock planner
+natural-language factual question
+ -> bounded Bedrock planner
+ -> structured proposal
+ -> deterministic parser
  -> typed SemanticQuery
- -> deterministic validation
- -> deterministic SQL compiler
- -> bounded Athena
+ -> deterministic validation + SQL compiler
+ -> bounded read-only Athena
+ -> structured result evidence
 ```
 
-The planner will not receive direct arbitrary SQL authority.
+The planner has no arbitrary SQL authority.
+
+The implemented Phase 7 knowledge foundation is also separate:
+
+```text
+explicitly authorized official sources
+ -> immutable repository/commit/path pins
+ -> bounded GET-only inert-text acquisition
+ -> deterministic UTF-8/newline normalization
+ -> exact line-aligned section selection
+ -> content-addressed KnowledgeDocument + canonical chunks
+ -> deterministic hash-only manifest
+```
+
+No vector infrastructure or live semantic retrieval exists yet. Gate 7.3 will decide that infrastructure only after current AWS architecture research.
 
 ## 4. AWS foundation
 
@@ -137,7 +162,7 @@ Athena workgroup: opslens-dev
 scan cutoff:      10,485,760 bytes
 ```
 
-Phase 3, Phase 4, and Phase 5 introduced no additional AWS resources or IAM permissions.
+Phase 3, Phase 4, Phase 5, Gate 7.1, and Gate 7.2 introduced no additional AWS resources or IAM permissions. Gate 7.2 introduced no AWS calls at all.
 
 ## 5. Threat Intelligence Data Lake — Phase 2
 
@@ -564,7 +589,155 @@ asset criticality
 
 A future policy version may use them only after upstream evidence contracts exist.
 
-## 9. Evidence and cache boundary
+## 9. Semantic Query Layer — Phase 6
+
+Phase 6 adds bounded natural-language planning without giving a model deterministic fact authority or unrestricted SQL access.
+
+### 9.1 Authority boundary
+
+```text
+User question
+ -> bounded Bedrock planner
+ -> structured planner proposal
+ -> deterministic planner-output parser
+ -> typed SemanticQuery
+ -> deterministic validator
+ -> deterministic SQL compiler
+ -> exact compiler-shape admission
+ -> bounded read-only Athena workgroup
+ -> structured result evidence
+```
+
+The first supported factual slice is EPSS-by-explicit-snapshot-date over CVE dimension.
+
+The model proposes semantics only. Application code owns the schema, allowlists, dates, thresholds, order, row limit, SQL shape, database/table/column names, Athena workgroup, and admission bounds.
+
+### 9.2 Real model boundary
+
+```text
+model_id:       us.anthropic.claude-haiku-4-5-20251001-v1:0
+client Region:  us-east-1
+inference mode: US Geographic system-defined inference profile
+streaming:      disabled
+tools:          disabled
+temperature:    0.0
+maxTokens:      256
+```
+
+A supported real E2E question passed through Bedrock planner -> deterministic parser/compiler -> bounded Athena. A missing explicit date returned `unsupported` and never invoked Athena.
+
+The local IAM Identity Center profile used for lab validation is not the future deployed runtime identity.
+
+### 9.3 ADRs
+
+```text
+0020 No unrestricted text-to-SQL
+0021 Bounded Bedrock semantic-query planner
+```
+
+Permanent guardrail:
+
+> **No unrestricted text-to-SQL.**
+
+## 10. Knowledge Retrieval foundation — Phase 7 through Gate 7.2
+
+Phase 7 creates a distinct explanatory/remediation path. It does not replace the structured Phase 6 path.
+
+### 10.1 Gate 7.1 provider-independent retrieval contract
+
+Gate 7.1 froze:
+
+```text
+KnowledgeDocument
+RetrievalRequest
+RetrievedChunk
+RetrievalEvidence
+Citation
+```
+
+Retrieval bounds:
+
+```text
+query:         non-blank, <= 1,000 chars
+top_k:         1..10
+default top_k: 5
+provider DSL:  none
+```
+
+Canonical metadata and citation provenance remain provider-independent. Citations are projected from admitted chunks rather than accepted from model-authored URLs/source IDs.
+
+### 10.2 Gate 7.2 canonical corpus authority
+
+Gate 7.2 authorizes six explanatory/remediation sources through a checked-in registry and pins each source to:
+
+```text
+upstream_repository
+full 40-hex upstream_commit_sha
+upstream_path
+```
+
+Human-facing `canonical_uri` is provenance only. Acquisition authority is derived by code as:
+
+```text
+https://raw.githubusercontent.com/<owner>/<repo>/<commit>/<path>
+```
+
+Mutable refs, alternate hosts, redirects, path traversal, unexpected media types, compressed responses, empty responses, oversized responses, and ambiguous/missing section markers fail closed.
+
+### 10.3 Deterministic canonicalization
+
+Frozen v1 policy:
+
+```text
+UTF-8:        strict
+BOM:          reject
+NUL:          reject
+newlines:     CRLF/CR -> LF
+Unicode:      preserve
+selection:    exact line-aligned start-inclusive/end-exclusive markers
+document join: two LF
+```
+
+No HTML parser, semantic cleanup, Unicode normalization, or LLM transformation participates in corpus truth.
+
+### 10.4 Content addressing and manifest
+
+The checked-in manifest stores only provenance and hashes, not third-party source/chunk text.
+
+```text
+manifest_id: knowledge-corpus-manifest:v1
+documents:   6
+chunks:      9
+manifest sha256:
+98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
+```
+
+For each document the manifest preserves exact source byte count/SHA-256, canonical document UTF-8 byte count/SHA-256, and ordered chunk byte counts/SHA-256 values.
+
+### 10.5 Replay semantics
+
+The serial replay pipeline has explicit write/check modes:
+
+```bash
+PYTHONPATH=src uv run python -m opslens.knowledge_retrieval.cli.materialize_corpus --write
+PYTHONPATH=src uv run python -m opslens.knowledge_retrieval.cli.materialize_corpus --check
+```
+
+`--check` regenerates the manifest from the same immutable pins and requires byte-for-byte equality without overwriting recorded evidence.
+
+The first real replay found a duplicate PyPA section heading and failed closed. The selector was made more specific against the exact pinned source; uniqueness validation was preserved.
+
+The corrected real replay wrote and immediately re-verified the same manifest SHA-256. CI then validated the committed manifest with Ruff, strict Pyright, 44 Knowledge Retrieval tests, and all existing regression jobs.
+
+### 10.6 Retrieval-content trust boundary
+
+A source being authorized and pinned does not turn its text into trusted instructions.
+
+Later retrieval/context assembly must treat chunk text as untrusted evidence and must prevent retrieved instructions from changing system/tool/policy authority.
+
+Structured NVD, KEV, EPSS, CVSS, GHSA applicability, repository-version, and Risk Policy truth remain outside RAG authority.
+
+## 11. Evidence and cache boundary
 
 Content-addressed analysis and prioritization identities include the selected threat-intelligence evidence.
 
@@ -579,9 +752,11 @@ same repository commit
 
 A repository commit alone is not a safe cache key.
 
-No cache backend exists yet because a measured runtime workload has not justified storage cost, invalidation semantics, IAM, observability, failure recovery, and retention policy.
+Likewise, canonical knowledge identity is not just a human-facing URL. It depends on exact pinned source bytes, deterministic selection policy, and canonical content hashes.
 
-## 10. Security boundaries
+No runtime cache backend exists yet because a measured workload has not justified storage cost, invalidation semantics, IAM, observability, failure recovery, and retention policy.
+
+## 12. Security boundaries
 
 ```text
 Human administration
@@ -603,11 +778,23 @@ Repository Intelligence
 Risk Policy
  -> pure deterministic Phase 4 evidence input
  -> no network/model authority
+
+Semantic Query planner
+ -> bounded Bedrock planning authority only
+ -> deterministic parser/compiler owns query truth
+ -> bounded read-only Athena execution
+
+Canonical Knowledge Corpus
+ -> immutable allowlisted official source pins
+ -> bounded GET-only raw-source acquisition
+ -> inert untrusted text only
+ -> deterministic normalization/selection/hashing
+ -> no model or AWS authority
 ```
 
 A deterministic repository priority remains a **repository-risk policy result**. Runtime Exposure remains a later independent evidence domain.
 
-## 11. Cost discipline
+## 13. Cost discipline
 
 Current examples:
 
@@ -615,13 +802,16 @@ Current examples:
 - no DynamoDB repository cache before measured reuse;
 - no Step Functions unless workflow semantics justify it;
 - no Iceberg requirement yet;
-- no vector database before retrieval work begins;
+- no vector database before Gate 7.3 architecture selection;
 - no Bedrock call for deterministic applicability or risk prioritization;
-- Athena dev workgroup enforces a 10 MiB scan cutoff.
+- Athena dev workgroup enforces a 10 MiB scan cutoff;
+- Gate 7.2 adds `$0` AWS cost because it creates no AWS resource or call.
 
-Phase 5 incremental AWS cost is `$0`.
+Phase 5 incremental AWS cost is `$0`. Gate 7.1 and Gate 7.2 incremental AWS cost is also `$0`.
 
-## 12. Quality gates
+Phase 6 model/Athena usage is bounded and records tokens, latency, bytes scanned, and estimated cost as runtime evidence.
+
+## 14. Quality gates
 
 Dedicated deterministic CI slices exist for:
 
@@ -629,23 +819,32 @@ Dedicated deterministic CI slices exist for:
 Correlation
 Repository Intelligence
 Risk Policy
+Semantic Query
+Knowledge Retrieval
 ```
 
-Phase 5 closeout:
+The Python workflow also watches `knowledge/corpus/**`, so corpus registry/spec/manifest changes cannot bypass the Knowledge Retrieval gate.
+
+Gate 7.2 final manifest validation:
 
 ```text
-Risk Policy Ruff:                 PASS
-Risk Policy Pyright:              0 errors / 0 warnings
-Risk Policy pytest:               31 passed
-Repository Intelligence pytest:   174 passed
-Correlation pytest:               116 passed
+Python CI run: 33965739749
+manifest commit: bb61f6766f9c52c167ac7d1a3a8bc734cd1a6307
+
+Knowledge Retrieval Ruff:     PASS
+Knowledge Retrieval Pyright:  0 errors / 0 warnings / 0 informations
+Knowledge Retrieval pytest:   44 passed in 0.25s
+Correlation regression:              PASS
+Repository Intelligence regression:  PASS
+Risk Policy regression:              PASS
+Semantic Query regression:           PASS
 ```
 
 AWS-bearing changes additionally use Terraform fmt/validate, TFLint, Checkov, canonical plan review, deployment verification, and post-apply convergence checks.
 
-## 13. ADR baseline through Phase 5
+## 15. ADR baseline through Phase 7 Gate 7.2
 
-The ADR series now includes:
+The ADR series currently includes:
 
 ```text
 0001 Terraform state strategy
@@ -667,11 +866,15 @@ The ADR series now includes:
 0017 repository EPSS snapshot enrichment
 0018 repository analysis result projection
 0019 deterministic Risk Policy v1
+0020 no unrestricted text-to-SQL
+0021 bounded Bedrock semantic-query planner
 ```
+
+Gate 7.1/7.2 did not require a new AWS architecture ADR because they intentionally froze provider-independent contracts and a deterministic local corpus before selecting Knowledge Base/vector infrastructure. Gate 7.3 must create/update ADRs for material AWS architecture choices.
 
 `docs/adr/README.md` is the canonical ADR index.
 
-## 14. Explicit non-goals at the current boundary
+## 16. Explicit non-goals at the current boundary
 
 The implemented system does not yet provide:
 
@@ -682,33 +885,49 @@ The implemented system does not yet provide:
 - reachability analysis;
 - business/asset criticality evidence;
 - unrestricted text-to-SQL;
-- RAG/vector retrieval;
+- live vector/semantic knowledge retrieval;
+- Bedrock Knowledge Base integration;
+- retrieval-driven synthesis;
 - autonomous remediation;
 - agent authority over deterministic evidence;
 - arbitrary MCP/tool execution.
 
-## 15. Next boundary — Phase 6 Semantic Query Layer
+## 17. Next boundary — Gate 7.3 Knowledge Base + vector infrastructure
 
-Phase 6 introduces the first natural-language planner in the current roadmap sequence.
+Gate 7.3 must connect the already frozen provider-independent retrieval/corpus contracts to AWS retrieval infrastructure without changing structured-truth authority.
 
-Target architecture:
+Target decision flow:
 
 ```text
-User question
- -> Amazon Bedrock planner
- -> typed SemanticQuery
- -> deterministic validator
- -> deterministic SQL compiler
- -> bounded read-only Athena workgroup
- -> structured result evidence
+canonical corpus v1
+ -> choose Bedrock Knowledge Base mode
+ -> choose embedding model/dimensions
+ -> choose vector store
+ -> choose ingestion/chunking strategy
+ -> project allowlisted provenance metadata
+ -> define KB service role
+ -> define separate future retrieval runtime identity
+ -> provision minimal dev resources
+ -> ingest/sync
+ -> verify exact corpus/provenance mapping
 ```
 
-Permanent guardrail:
+Before implementation, current official AWS documentation must be re-checked for:
 
-> **No unrestricted text-to-SQL.**
+- Managed vs customer-managed Knowledge Base behavior;
+- `Retrieve` APIs and result/provenance shape;
+- current embedding models, dimensions, Regions, quotas, and pricing;
+- S3 Vectors vs OpenSearch Serverless capabilities and cost model;
+- chunking strategy constraints and immutability after data-source creation;
+- metadata size/filter limits;
+- service-role trust and least-privilege permissions;
+- encryption/network requirements;
+- ingestion/sync behavior, failure recovery, and rebuild semantics;
+- observability and throttling;
+- idle, ingestion, storage, and retrieval costs.
 
-The model may propose a typed semantic intent. Application code owns allowlists, validation, SQL compilation, query bounds, and execution authority.
+Candidate decisions from earlier research are **not pre-approved**. Gate 7.3 must revalidate them against current official documentation and measured OpsLens needs.
 
-Before Phase 6 implementation, current official Amazon Bedrock and Athena documentation must be checked for APIs, model availability, IAM behavior, limits, and pricing.
+The first v1 retrieval path should prefer `Retrieve` independently from generation so retrieval quality can be evaluated before synthesis.
 
-The first Phase 6 gate should freeze one narrow factual question, the typed query contract, and the compiler boundary before adding API/UI/RAG/agent integration.
+Do not use `RetrieveAndGenerate` as a shortcut for the initial evaluation path.
