@@ -1,6 +1,6 @@
 # OpsLens — Incremental Roadmap
 
-_Last updated: 2026-09-04_
+_Last updated: 2026-09-05_
 
 OpsLens advances in small, demonstrable, observable, and reversible gates.
 
@@ -30,7 +30,7 @@ concept
 | 4 | Repository Intelligence | ✅ Complete |
 | 5 | Risk Prioritization Engine | ✅ Complete |
 | 6 | Semantic Query Layer | ✅ Complete — PR #91 / `95db66e` |
-| 7 | Knowledge Retrieval with Bedrock | 🚧 Gate 7.1 complete; PR #93 merge pending |
+| 7 | Knowledge Retrieval with Bedrock | 🚧 Gate 7.1 complete; Gate 7.2 complete / PR #94 merge pending |
 | 8 | Hybrid Retrieval | ⏳ Planned |
 | 9 | Public Analyze Your Repository | ⏳ Planned |
 | 10 | Observability & Operational Excellence | ⏳ Planned |
@@ -318,7 +318,7 @@ knowledge/remediation question
 
 Structured NVD, CISA KEV, FIRST EPSS, CVSS, GHSA applicability, repository-version, and Risk Policy evidence remain outside the RAG authority boundary.
 
-### Gate 7.1 — Corpus + retrieval contract — COMPLETE / MERGE PENDING
+### Gate 7.1 — Corpus + retrieval contract — COMPLETE
 
 Gate 7.1 remained offline-first and froze provider-independent contracts and evaluation fixtures before any AWS retrieval resource exists.
 
@@ -352,7 +352,7 @@ Golden fixture:
   8 positive remediation/documentation cases
   2 negative/out-of-scope cases
 prepared metrics: Recall@K + MRR
-corpus status: planned_for_gate_7_2
+corpus status at Gate 7.1 freeze: planned_for_gate_7_2
 ```
 
 Final functional validation:
@@ -376,30 +376,78 @@ No Knowledge Base, vector store/index, embedding job, IAM role, retrieval call, 
 
 Closeout: [`../labs/phase-7-gate-7-1-retrieval-contract.md`](../labs/phase-7-gate-7-1-retrieval-contract.md).
 
-### Gate 7.2 — Reproducible canonical corpus — NEXT AFTER PR #93 MERGE
+Gate 7.1 was squash-merged through PR #93 at `f2e3b72c31d0713707857bc0867a7f59e667b9dd`.
 
-Gate 7.2 is not implemented in the Gate 7.1 branch. After logical merge, its scope is:
+### Gate 7.2 — Reproducible canonical corpus — COMPLETE / MERGE PENDING
 
-- trusted source acquisition;
-- exact source bytes/text;
-- canonical document construction;
-- content addressing;
-- deterministic corpus manifest;
-- no vector infrastructure yet unless explicitly moved to Gate 7.3.
+Gate 7.2 converts the frozen document/chunk identities into a real reproducible corpus before any vector service exists.
 
-### Gate 7.3 — Knowledge Base + vector infrastructure — PLANNED
+Implemented scope:
+
+- six explicitly authorized official documentation/security/advisory source files;
+- full immutable upstream Git commit pins;
+- separate human-facing provenance and acquisition authority;
+- bounded GET-only acquisition from derived `raw.githubusercontent.com` paths;
+- strict UTF-8 and deterministic LF normalization;
+- exact line-aligned section selection with ambiguity/drift fail-closed semantics;
+- provider-independent canonical document/chunk identities;
+- deterministic source/document/chunk SHA-256 evidence;
+- hash-only manifest with no vendored third-party text;
+- serial bounded replay pipeline;
+- explicit `--write` and exact `--check` modes;
+- scoped offline tests and real local replay evidence.
+
+Real corpus shape:
+
+```text
+documents: 6
+chunks:    9
+manifest:  knowledge/corpus/v1/manifest.json
+sha256:    98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
+```
+
+The first real replay detected an ambiguous PyPA `Version specifiers` selector and failed closed. Inspection of the exact pinned source showed two headings with that name. The selector was made more specific; uniqueness validation was preserved rather than relaxed.
+
+Final manifest CI:
+
+```text
+workflow: Python CI
+run:      33965739749
+commit:   bb61f6766f9c52c167ac7d1a3a8bc734cd1a6307
+
+Knowledge Retrieval Ruff:     PASS
+Knowledge Retrieval Pyright:  0 errors / 0 warnings / 0 informations
+Knowledge Retrieval pytest:   44 passed in 0.25s
+
+Correlation regression:              PASS
+Repository Intelligence regression:  PASS
+Risk Policy regression:              PASS
+Semantic Query regression:           PASS
+```
+
+No AWS resource, Knowledge Base, vector index, embedding job, IAM role, retrieval call, synthesis call, or paid AWS call was introduced by Gate 7.2.
+
+Closeout: [`../labs/phase-7-gate-7-2-canonical-corpus.md`](../labs/phase-7-gate-7-2-canonical-corpus.md).
+
+### Gate 7.3 — Knowledge Base + vector infrastructure — NEXT AFTER PR #94 MERGE
+
+Gate 7.3 must begin with fresh architecture research against current official AWS documentation before any resource is selected or created.
 
 Decide using current official AWS documentation and measured needs:
 
 - Bedrock Managed Knowledge Base vs customer-managed configuration;
 - embedding model and dimensions;
 - vector store such as S3 Vectors or OpenSearch Serverless;
-- chunking strategy;
-- metadata projection;
-- IAM/trust boundaries;
-- pricing and idle/runtime cost.
+- chunking strategy and compatibility with the deterministic canonical chunks;
+- metadata projection and provenance limits;
+- Knowledge Base service role vs OpsLens retrieval runtime identity;
+- IAM/trust boundaries and least privilege;
+- pricing, idle cost, ingestion cost, retrieval cost, and operational complexity;
+- observability, throttling, quotas, failure behavior, backup/rebuild implications.
 
 Do not select an AWS service merely because it appears in AIP-C01.
+
+Do not create Gate 7.3 resources until Gate 7.2 is squash-merged and the architecture decision is documented.
 
 ### Gate 7.4 — Real bounded Retrieve adapter — PLANNED
 
