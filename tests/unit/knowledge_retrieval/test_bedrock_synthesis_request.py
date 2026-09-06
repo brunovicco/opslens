@@ -90,7 +90,8 @@ def test_bedrock_request_keeps_trusted_control_separate_from_untrusted_data() ->
 
     messages = request["messages"]
     assert isinstance(messages, list)
-    user_message = messages[0]
+    typed_messages = cast(list[object], messages)
+    user_message = typed_messages[0]
     assert isinstance(user_message, dict)
     typed_user_message = cast(dict[object, object], user_message)
     assert typed_user_message["role"] == "user"
