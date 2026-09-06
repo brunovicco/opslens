@@ -14,7 +14,7 @@ issue:  #111
 branch: feat/phase8-hybrid-evaluation-fixture
 ```
 
-Gate 8.1 and Gate 8.2 are already merged. No AWS or model execution is required for this gate.
+Gate 8.1 and Gate 8.2 were already merged. No AWS or model execution was required for this gate.
 
 ## Frozen dataset
 
@@ -82,13 +82,13 @@ Therefore a successful envelope is not a groundedness result.
 Frozen dimensions:
 
 ```text
-route_accuracy                gate_8_3_offline  ratio
+route_accuracy                gate_8_3_offline   ratio
 structured_fact_correctness   gate_8_4_synthesis ratio
 semantic_groundedness         gate_8_4_synthesis ratio
 citation_correctness          gate_8_4_synthesis ratio
 abstention                    gate_8_4_synthesis ratio
-latency                       runtime            milliseconds
-cost                          runtime            usd
+latency                       runtime             milliseconds
+cost                          runtime             usd
 ```
 
 There is no composite score.
@@ -118,7 +118,16 @@ HybridEvaluationCase
  -> HybridOfflineBaseline
 ```
 
-The current implementation is tested against expected route and expected envelope behavior only. It does not call a model and does not pre-implement Gate 8.4 output scoring.
+The Gate 8.3 implementation evaluates expected route and expected envelope behavior only. It does not call a model and does not pre-implement Gate 8.4 output scoring.
+
+Frozen offline baseline:
+
+```text
+route_accuracy:              1.0
+evidence_admission_accuracy: 1.0
+```
+
+These results establish deterministic contract behavior only. They are not model-quality, retrieval-quality, latency, cost, factual-correctness, groundedness, citation, or abstention claims.
 
 ## Fail-closed fixture admission
 
@@ -138,7 +147,7 @@ The loader rejects:
 
 ## Quality gates
 
-The existing CI slice already includes both executable and fixture paths:
+The existing CI slice includes both executable and fixture paths:
 
 ```text
 src/opslens/hybrid_retrieval/**/*.py
@@ -155,7 +164,39 @@ Pyright strict
 pytest tests/unit/hybrid_retrieval
 ```
 
-Final CI run and exact validated head are pending until the draft PR is opened.
+Exact executable PR head:
+
+```text
+356b0ccf4d5205d4abd8dab52179423bb2b139e6
+```
+
+Python CI #306 / run `34050330182` completed successfully across all six repository slice jobs. Dedicated hybrid retrieval gate:
+
+```text
+uv lock --check     PASS
+Ruff                PASS
+Pyright strict      PASS — 0 errors, 0 warnings
+pytest hybrid slice PASS — 49 passed
+```
+
+Correction history remained quality-gate driven:
+
+- the initial PR run exposed Ruff findings for nested conditionals and import ordering;
+- a later run exposed one strict Pyright redundant integer `cast`;
+- all were corrected directly with no `noqa`, `type: ignore`, lint suppression, or weakened type-checking rule.
+
+The frozen dataset hash and authority semantics were not changed to make CI pass.
+
+## Merge checkpoint
+
+PR #112 was promoted from draft only after CI #306 succeeded on the exact executable head above, then squash-merged with that SHA as the expected head.
+
+```text
+PR:           #112
+issue:        #111 — CLOSED / COMPLETED
+validated:    356b0ccf4d5205d4abd8dab52179423bb2b139e6
+merge commit: 5c2e3b1caf4b56657ae0e840a35db46df44feaa5
+```
 
 ## AWS / IAM / cost
 
@@ -168,7 +209,7 @@ S3 Vectors calls:      0
 model calls:           0
 ```
 
-Because no runtime request occurs, latency and cost remain unmeasured rather than being fabricated.
+Because no runtime request occurred, latency and cost remain unmeasured rather than being fabricated.
 
 ## Architecture record
 
@@ -180,6 +221,8 @@ docs/adr/0027-frozen-hybrid-evaluation-contract.md
 
 ## Next authorized work
 
-Do not start Gate 8.4 until this frozen fixture, strict loader/evaluator, tests, and documentation are CI-green and squash-merged.
+Gate 8.3 is complete and merged. **Gate 8.4 — First bounded hybrid synthesis** is now the next authorized Phase 8 step.
 
-Gate 8.4 must consume `hybrid-evaluation-golden:v1` as frozen input. Observed model behavior may populate the synthesis metrics; it must not rewrite the benchmark to improve its own score.
+Gate 8.4 must consume `hybrid-evaluation-golden:v1` unchanged as its frozen input. Observed model behavior may populate the synthesis metrics; it must not rewrite the benchmark to improve its own score.
+
+The model may synthesize from an already-admitted typed hybrid envelope, but deterministic code must continue to own structured truth, evidence completeness, canonical provenance, output admission, and evaluation metric computation.
