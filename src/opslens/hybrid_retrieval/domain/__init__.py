@@ -1,6 +1,24 @@
-"""Domain surface for OpsLens hybrid retrieval authority and evidence."""
+"""Domain surface for OpsLens hybrid retrieval authority, evidence, and evaluation."""
 
 from opslens.hybrid_retrieval.domain.errors import HybridRetrievalValidationError
+from opslens.hybrid_retrieval.domain.evaluation import (
+    HYBRID_EVALUATION_DATASET_ID,
+    HYBRID_EVALUATION_DATASET_SHA256,
+    ExpectedStructuredFact,
+    HybridEvaluationCase,
+    HybridEvaluationCaseType,
+    HybridEvaluationDataset,
+    HybridExpectedAnswerBehavior,
+    HybridExpectedEnvelope,
+    HybridMeasurementStatus,
+    HybridMetricDimension,
+    HybridMetricMeasurement,
+    HybridMetricSpec,
+    HybridMetricStage,
+    HybridMetricUnit,
+    HybridOfflineBaseline,
+    HybridOfflineCaseResult,
+)
 from opslens.hybrid_retrieval.domain.evidence import (
     HYBRID_EVIDENCE_CONTRACT_VERSION,
     EvidenceClassProvenance,
@@ -23,13 +41,29 @@ from opslens.hybrid_retrieval.domain.models import (
 )
 
 __all__ = [
+    "HYBRID_EVALUATION_DATASET_ID",
+    "HYBRID_EVALUATION_DATASET_SHA256",
     "HYBRID_EVIDENCE_CONTRACT_VERSION",
     "HYBRID_ROUTING_CONTRACT_VERSION",
     "CompletenessSemantics",
     "EvidenceClass",
     "EvidenceClassProvenance",
     "EvidenceNeed",
+    "ExpectedStructuredFact",
+    "HybridEvaluationCase",
+    "HybridEvaluationCaseType",
+    "HybridEvaluationDataset",
     "HybridEvidenceEnvelope",
+    "HybridExpectedAnswerBehavior",
+    "HybridExpectedEnvelope",
+    "HybridMeasurementStatus",
+    "HybridMetricDimension",
+    "HybridMetricMeasurement",
+    "HybridMetricSpec",
+    "HybridMetricStage",
+    "HybridMetricUnit",
+    "HybridOfflineBaseline",
+    "HybridOfflineCaseResult",
     "HybridRetrievalValidationError",
     "HybridRoute",
     "HybridRouteDecision",
