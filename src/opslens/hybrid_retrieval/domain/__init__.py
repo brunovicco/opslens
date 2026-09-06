@@ -1,5 +1,6 @@
 """Domain surface for OpsLens hybrid retrieval authority and evidence."""
 
+from opslens.hybrid_retrieval.domain.errors import HybridRetrievalValidationError
 from opslens.hybrid_retrieval.domain.evidence import (
     HYBRID_EVIDENCE_CONTRACT_VERSION,
     EvidenceClassProvenance,
@@ -10,7 +11,6 @@ from opslens.hybrid_retrieval.domain.evidence import (
     StructuredEvidenceRow,
     StructuredScalar,
 )
-from opslens.hybrid_retrieval.domain.errors import HybridRetrievalValidationError
 from opslens.hybrid_retrieval.domain.models import (
     HYBRID_ROUTING_CONTRACT_VERSION,
     CompletenessSemantics,
