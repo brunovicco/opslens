@@ -35,3 +35,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0025](0025-deterministic-hybrid-routing-authority.md) | Freeze deterministic hybrid routing and authority semantics | Accepted |
 | [0026](0026-deterministic-hybrid-evidence-envelope.md) | Preserve authority classes in deterministic hybrid evidence | Accepted |
 | [0027](0027-frozen-hybrid-evaluation-contract.md) | Freeze hybrid evaluation cases and independent metric dimensions before synthesis | Accepted |
+| [0028](0028-bounded-route-aware-hybrid-synthesis.md) | Bound model synthesis behind deterministic hybrid route/evidence authority | Accepted |

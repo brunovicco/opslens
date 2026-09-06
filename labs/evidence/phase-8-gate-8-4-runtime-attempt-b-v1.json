@@ -1,0 +1,84 @@
+{
+  "cases": [
+    {
+      "application_complete": true,
+      "case_id": "hybrid-structured-factual-01",
+      "expected_answer_behavior": "answer",
+      "expected_citation_chunk_ids": [],
+      "expected_supported_chunk_ids": [],
+      "failure_category": null,
+      "failure_diagnostic": null,
+      "failure_request_id": null,
+      "failure_stop_reason": null,
+      "model_required": false,
+      "observed_answer_behavior": "answer",
+      "route": "structured",
+      "structured_facts": [
+        {
+          "authority": "repository_analysis",
+          "evidence_id": "hybrid-structured:v1:79dbd8123a3ba1cd92af0e84a5e590a0e669665f1d5ace044ff49b6bb6c46c1c",
+          "fact_id": "F1",
+          "field_name": "affected",
+          "value": true
+        },
+        {
+          "authority": "repository_analysis",
+          "evidence_id": "hybrid-structured:v1:79dbd8123a3ba1cd92af0e84a5e590a0e669665f1d5ace044ff49b6bb6c46c1c",
+          "fact_id": "F2",
+          "field_name": "dependency_name",
+          "value": "demo-pkg"
+        },
+        {
+          "authority": "repository_analysis",
+          "evidence_id": "hybrid-structured:v1:79dbd8123a3ba1cd92af0e84a5e590a0e669665f1d5ace044ff49b6bb6c46c1c",
+          "fact_id": "F3",
+          "field_name": "ghsa_id",
+          "value": "GHSA-aaaa-bbbb-cccc"
+        },
+        {
+          "authority": "repository_analysis",
+          "evidence_id": "hybrid-structured:v1:79dbd8123a3ba1cd92af0e84a5e590a0e669665f1d5ace044ff49b6bb6c46c1c",
+          "fact_id": "F4",
+          "field_name": "installed_version",
+          "value": "1.2.3"
+        }
+      ],
+      "synthesis": null,
+      "synthesis_invocation_attempted": false
+    },
+    {
+      "application_complete": false,
+      "case_id": "hybrid-semantic-remediation-01",
+      "expected_answer_behavior": "answer",
+      "expected_citation_chunk_ids": [
+        "fixture-chunk:remediation-lock-review:01"
+      ],
+      "expected_supported_chunk_ids": [
+        "fixture-chunk:remediation-lock-review:01"
+      ],
+      "failure_category": "provider_invocation",
+      "failure_diagnostic": "Bedrock hybrid Converse synthesis failed provider_type=RuntimeError",
+      "failure_request_id": null,
+      "failure_stop_reason": null,
+      "model_required": true,
+      "observed_answer_behavior": null,
+      "route": "semantic",
+      "structured_facts": [],
+      "synthesis": null,
+      "synthesis_invocation_attempted": true
+    }
+  ],
+  "complete": false,
+  "dataset_id": "hybrid-evaluation-golden:v1",
+  "dataset_sha256": "68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1",
+  "expected_dataset_id": "hybrid-evaluation-golden:v1",
+  "expected_dataset_sha256": "68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1",
+  "fixture_support_targets_frozen": true,
+  "measurements": null,
+  "model_call_count": 0,
+  "model_call_count_semantics": "admitted_model_executions",
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "planned_case_count": 6,
+  "region": "us-east-1",
+  "synthesis_invocation_attempt_count": 1
+}
