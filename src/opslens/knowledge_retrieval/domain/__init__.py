@@ -24,6 +24,14 @@ from opslens.knowledge_retrieval.domain.corpus import (
     MaterializedKnowledgeDocument,
 )
 from opslens.knowledge_retrieval.domain.errors import KnowledgeRetrievalValidationError
+from opslens.knowledge_retrieval.domain.grounding import (
+    GROUNDED_SYNTHESIS_CONTRACT_ID,
+    MAX_GROUNDED_CLAIM_CHARS,
+    MAX_GROUNDED_CLAIMS,
+    GroundedClaim,
+    GroundedSynthesisRequest,
+    GroundedSynthesisResult,
+)
 from opslens.knowledge_retrieval.domain.manifest import (
     CORPUS_MANIFEST_ID,
     CorpusChunkManifestEntry,
@@ -69,8 +77,11 @@ __all__ = [
     "DEFAULT_CONTEXT_MAX_UTF8_BYTES",
     "DEFAULT_RETRIEVAL_TOP_K",
     "DEFAULT_SYNTHESIS_MAX_OUTPUT_CHARS",
+    "GROUNDED_SYNTHESIS_CONTRACT_ID",
     "MAX_CONTEXT_CHUNKS",
     "MAX_CONTEXT_UTF8_BYTES",
+    "MAX_GROUNDED_CLAIM_CHARS",
+    "MAX_GROUNDED_CLAIMS",
     "MAX_RETRIEVAL_QUERY_CHARS",
     "MAX_RETRIEVAL_TOP_K",
     "MAX_SYNTHESIS_MODEL_CALLS",
@@ -88,6 +99,9 @@ __all__ = [
     "CorpusChunkManifestEntry",
     "CorpusDocumentManifestEntry",
     "DocumentMaterializationSpec",
+    "GroundedClaim",
+    "GroundedSynthesisRequest",
+    "GroundedSynthesisResult",
     "KnowledgeCorpusManifest",
     "KnowledgeCorpusSpec",
     "KnowledgeDocument",
