@@ -50,6 +50,18 @@ def _require_nonnegative_int(value: object, *, field: str) -> int:
     return value
 
 
+def _require_optional_score(value: object) -> float | None:
+    """Require one absent or finite numeric provider relevance score."""
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise RetrievalEvaluationError("relevance_score must be numeric")
+    score = float(value)
+    if not math.isfinite(score):
+        raise RetrievalEvaluationError("relevance_score must be finite")
+    return score
+
+
 def _require_string_tuple(
     value: object,
     *,
@@ -291,15 +303,25 @@ class RankedEvaluationChunk:
             "source_type",
             _require_trimmed(self.source_type, field="source_type"),
         )
-        if self.relevance_score is not None:
-            if isinstance(self.relevance_score, bool) or not isinstance(
-                self.relevance_score, (int, float)
-            ):
-                raise RetrievalEvaluationError("relevance_score must be numeric")
-            score = float(self.relevance_score)
-            if not math.isfinite(score):
-                raise RetrievalEvaluationError("relevance_score must be finite")
-            object.__setattr__(self, "relevance_score", score)
+        object.__setattr__(
+            self,
+            "relevance_score",
+            _require_optional_score(self.relevance_score),
+        )
+
+
+def _require_ranked_chunks(value: object) -> tuple[RankedEvaluationChunk, ...]:
+    """Require one bounded tuple of admitted ranked evaluation chunks."""
+    if not isinstance(value, tuple):
+        raise RetrievalEvaluationError("returned_chunks must be a tuple")
+    items = cast(tuple[object, ...], value)
+    if any(not isinstance(item, RankedEvaluationChunk) for item in items):
+        raise RetrievalEvaluationError(
+            "returned_chunks must contain only RankedEvaluationChunk values"
+        )
+    if len(items) > 10:
+        raise RetrievalEvaluationError("returned_chunks must contain at most 10 results")
+    return cast(tuple[RankedEvaluationChunk, ...], items)
 
 
 @dataclass(frozen=True, slots=True)
@@ -316,6 +338,8 @@ class RetrievalCaseObservation:
     def __post_init__(self) -> None:
         """Require bounded unique ranked output or one explicit failure category."""
         object.__setattr__(self, "case_id", _require_trimmed(self.case_id, field="case_id"))
+        returned_chunks = _require_ranked_chunks(self.returned_chunks)
+        object.__setattr__(self, "returned_chunks", returned_chunks)
         object.__setattr__(
             self,
             "client_elapsed_ms",
@@ -338,13 +362,11 @@ class RetrievalCaseObservation:
                 "failure_category",
                 _require_trimmed(self.failure_category, field="failure_category"),
             )
-            if self.returned_chunks:
+            if returned_chunks:
                 raise RetrievalEvaluationError(
                     "failed observations must not contain admitted returned chunks"
                 )
-        if len(self.returned_chunks) > 10:
-            raise RetrievalEvaluationError("returned_chunks must contain at most 10 results")
-        ids = tuple(chunk.chunk_id for chunk in self.returned_chunks)
+        ids = tuple(chunk.chunk_id for chunk in returned_chunks)
         if len(set(ids)) != len(ids):
             raise RetrievalEvaluationError("returned chunk identities must be unique")
 
@@ -411,7 +433,7 @@ def aggregate_retrieval_evaluation(
         )
 
     catalog_by_id = {chunk.chunk_id: chunk for chunk in catalog.chunks}
-    recall_hits = {cutoff: 0 for cutoff in _EVALUATION_CUTOFFS}
+    recall_hits = dict.fromkeys(_EVALUATION_CUTOFFS, 0)
     reciprocal_ranks: list[float] = []
     relevant_hit_count = 0
     provenance_correct_count = 0
@@ -456,12 +478,11 @@ def aggregate_retrieval_evaluation(
             reciprocal_ranks.append(
                 0.0 if first_relevant_rank is None else 1.0 / first_relevant_rank
             )
-        else:
-            if observation.returned_chunks:
-                negative_nonempty += 1
-                rank1_score = observation.returned_chunks[0].relevance_score
-                if rank1_score is not None:
-                    negative_rank1_scores.append(rank1_score)
+        elif observation.returned_chunks:
+            negative_nonempty += 1
+            rank1_score = observation.returned_chunks[0].relevance_score
+            if rank1_score is not None:
+                negative_rank1_scores.append(rank1_score)
 
     latencies = tuple(observation.client_elapsed_ms for observation in observations)
     return RetrievalEvaluationSummary(
@@ -477,9 +498,7 @@ def aggregate_retrieval_evaluation(
         relevant_hit_count=relevant_hit_count,
         relevant_hit_provenance_correct_count=provenance_correct_count,
         relevant_hit_provenance_correct_rate=(
-            1.0
-            if relevant_hit_count == 0
-            else provenance_correct_count / relevant_hit_count
+            1.0 if relevant_hit_count == 0 else provenance_correct_count / relevant_hit_count
         ),
         negative_nonempty_retrieval_rate=negative_nonempty / len(negatives),
         negative_rank1_scores=tuple(negative_rank1_scores),
