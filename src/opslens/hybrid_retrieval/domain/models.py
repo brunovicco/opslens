@@ -54,6 +54,15 @@ class RouteReason(StrEnum):
     RUNTIME_EXPOSURE_AUTHORITY_UNAVAILABLE = "runtime_exposure_authority_unavailable"
 
 
+STRUCTURED_EVIDENCE_NEEDS = frozenset(
+    {
+        EvidenceNeed.VULNERABILITY_FACTS,
+        EvidenceNeed.RISK_PRIORITY,
+    }
+)
+SEMANTIC_EVIDENCE_NEEDS = frozenset({EvidenceNeed.REMEDIATION_GUIDANCE})
+UNSUPPORTED_EVIDENCE_NEEDS = frozenset({EvidenceNeed.RUNTIME_EXPOSURE})
+
 _EVIDENCE_CLASS_ORDER = {
     EvidenceClass.STRUCTURED: 0,
     EvidenceClass.SEMANTIC: 1,
@@ -158,7 +167,8 @@ class HybridRouteDecision:
         object.__setattr__(self, "evidence_needs", normalized_needs)
         object.__setattr__(self, "required_evidence_classes", normalized_classes)
 
-        has_runtime_exposure = EvidenceNeed.RUNTIME_EXPOSURE in normalized_needs
+        need_set = frozenset(normalized_needs)
+        has_runtime_exposure = bool(need_set & UNSUPPORTED_EVIDENCE_NEEDS)
         if self.route is HybridRoute.UNSUPPORTED:
             if not has_runtime_exposure:
                 raise HybridRetrievalValidationError(
@@ -187,15 +197,35 @@ class HybridRouteDecision:
                 "supported Phase 8 v1 routes must use ALL_REQUIRED completeness."
             )
 
+        structured_needs = need_set & STRUCTURED_EVIDENCE_NEEDS
+        semantic_needs = need_set & SEMANTIC_EVIDENCE_NEEDS
+        classified_needs = structured_needs | semantic_needs
+        if classified_needs != need_set:
+            raise HybridRetrievalValidationError(
+                "supported route contains evidence needs without a v1 authority mapping."
+            )
+
         expected_classes: tuple[EvidenceClass, ...]
         expected_reason: RouteReason
         if self.route is HybridRoute.STRUCTURED:
+            if not structured_needs or semantic_needs:
+                raise HybridRetrievalValidationError(
+                    "structured routes may contain only structured evidence needs."
+                )
             expected_classes = (EvidenceClass.STRUCTURED,)
             expected_reason = RouteReason.STRUCTURED_EVIDENCE_REQUIRED
         elif self.route is HybridRoute.SEMANTIC:
+            if not semantic_needs or structured_needs:
+                raise HybridRetrievalValidationError(
+                    "semantic routes may contain only semantic evidence needs."
+                )
             expected_classes = (EvidenceClass.SEMANTIC,)
             expected_reason = RouteReason.SEMANTIC_EVIDENCE_REQUIRED
         elif self.route is HybridRoute.HYBRID:
+            if not structured_needs or not semantic_needs:
+                raise HybridRetrievalValidationError(
+                    "hybrid routes require both structured and semantic evidence needs."
+                )
             expected_classes = (EvidenceClass.STRUCTURED, EvidenceClass.SEMANTIC)
             expected_reason = RouteReason.ALL_REQUIRED_HYBRID_EVIDENCE
         else:
