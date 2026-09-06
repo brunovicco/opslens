@@ -176,7 +176,6 @@ def test_grounded_request_metadata_is_content_free_and_grounded_request_specific
 
 def test_grounded_bedrock_request_rejects_wrong_runtime_type() -> None:
     """Provider request construction accepts only the frozen grounded prompt type."""
+    wrong_type = cast(GroundedSynthesisPromptEnvelope, object())
     with pytest.raises(TypeError, match="GroundedSynthesisPromptEnvelope"):
-        build_bedrock_grounded_synthesis_converse_request(  # type: ignore[arg-type]
-            object()
-        )
+        build_bedrock_grounded_synthesis_converse_request(wrong_type)
