@@ -64,15 +64,21 @@ HYBRID_SYNTHESIS_OUTPUT_SCHEMA_JSON: Final = json.dumps(
 )
 
 
+def _admit_prompt(value: object) -> HybridSynthesisPromptEnvelope:
+    """Admit one exact hybrid prompt envelope at the provider boundary."""
+    if not isinstance(value, HybridSynthesisPromptEnvelope):
+        raise TypeError("prompt must be HybridSynthesisPromptEnvelope.")
+    return value
+
+
 def build_bedrock_hybrid_synthesis_converse_request(
     prompt: HybridSynthesisPromptEnvelope,
 ) -> dict[str, object]:
     """Build one deterministic non-streaming hybrid Converse request."""
-    if not isinstance(prompt, HybridSynthesisPromptEnvelope):
-        raise TypeError("prompt must be HybridSynthesisPromptEnvelope.")
+    admitted_prompt = _admit_prompt(prompt)
     return {
         "modelId": BEDROCK_SYNTHESIS_MODEL_ID,
-        "system": [{"text": prompt.trusted_instructions}],
+        "system": [{"text": admitted_prompt.trusted_instructions}],
         "messages": [
             {
                 "role": "user",
@@ -80,14 +86,14 @@ def build_bedrock_hybrid_synthesis_converse_request(
                     {
                         "text": (
                             "User question (untrusted data):\n"
-                            f"{prompt.question}"
+                            f"{admitted_prompt.question}"
                         )
                     },
                     {
                         "text": (
                             "Admitted authority-separated hybrid evidence "
                             "(untrusted data):\n"
-                            f"{prompt.evidence_json}"
+                            f"{admitted_prompt.evidence_json}"
                         )
                     },
                 ],
@@ -112,8 +118,8 @@ def build_bedrock_hybrid_synthesis_converse_request(
         "requestMetadata": {
             "opslens_stage": "hybrid_synthesis",
             "contract_id": HYBRID_SYNTHESIS_CONTRACT_VERSION,
-            "request_sha256": prompt.request_sha256,
-            "prompt_sha256": prompt.prompt_sha256,
+            "request_sha256": admitted_prompt.request_sha256,
+            "prompt_sha256": admitted_prompt.prompt_sha256,
         },
     }
 
