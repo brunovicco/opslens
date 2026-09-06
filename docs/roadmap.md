@@ -2,7 +2,7 @@
 
 _Last updated: 2026-09-06_
 
-OpsLens advances in small, demonstrable, observable, and reversible gates.
+OpsLens advances in small, demonstrable, observable, reversible gates.
 
 Default engineering loop:
 
@@ -30,7 +30,7 @@ concept
 | 4 | Repository Intelligence | ✅ Complete |
 | 5 | Risk Prioritization Engine | ✅ Complete |
 | 6 | Semantic Query Layer | ✅ Complete — PR #91 |
-| 7 | Knowledge Retrieval with Bedrock | 🚧 Gates 7.1–7.5 merged; Gate 7.6 complete through 7.6f on PR #99 |
+| 7 | Knowledge Retrieval with Bedrock | 🚧 Gates 7.1–7.7 complete; Gate 7.8 next |
 | 8 | Hybrid Retrieval | ⏳ Planned |
 | 9 | Public Analyze Your Repository | ⏳ Planned |
 | 10 | Observability & Operational Excellence | ⏳ Planned |
@@ -108,7 +108,9 @@ Permanent rules:
 
 > **Retrieval output is evidence, not deterministic truth.**
 
-Target path:
+> **A valid citation ID is not proof that a claim is supported.**
+
+Current path:
 
 ```text
 knowledge/remediation question
@@ -118,7 +120,10 @@ knowledge/remediation question
  -> bounded deterministic context assembly
  -> deterministic pre-model authority decision
  -> bounded Bedrock synthesis
- -> deterministic citations + groundedness evaluation
+ -> deterministic citation catalog
+ -> grounded claim/citation proposal
+ -> explicit support judgments
+ -> deterministic groundedness metrics
 ```
 
 Structured NVD, KEV, EPSS, CVSS, GHSA applicability, repository-version, runtime-exposure, and Risk Policy evidence remain outside the RAG authority boundary.
@@ -135,8 +140,6 @@ Provider-independent `KnowledgeDocument`, `RetrievalRequest`, `RetrievedChunk`, 
 manifest sha256:
 98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
 ```
-
-Acquisition is bounded GET-only inert text; normalization, exact selection, and hashing are deterministic.
 
 ### Gate 7.3 — Knowledge Base + vector infrastructure — COMPLETE / MERGED
 
@@ -156,34 +159,11 @@ ADR 0022 records the customer-managed Bedrock Knowledge Base + S3 Vectors decisi
 
 ### Gate 7.4 — Real bounded Retrieve adapter — COMPLETE / MERGED
 
-Direct `Retrieve`, not `RetrieveAndGenerate`, so retrieval remains independently testable.
-
-Real success:
-
-```text
-requested top_k:     5
-returned/admitted:   5
-client elapsed:      1257 ms
-SDK retries:         0
-rank 1:              knowledge-chunk:pypa-secure-installs:hashes:v1
-rank 1 score:        0.8649594783782959
-```
-
-A nonexistent KB is safely categorized as provider failure without leaking response bodies.
+Direct `Retrieve`, not `RetrieveAndGenerate`, keeps retrieval independently testable and measurable.
 
 ### Gate 7.5 — Retrieval evaluation — COMPLETE / MERGED
 
-Frozen fixture:
-
-```text
-knowledge-retrieval-golden:v1
-10 cases
-8 positive
-2 negative/out-of-authority
-one real top_k=10 call per case
-```
-
-Measured baseline:
+Frozen 10-case baseline:
 
 ```text
 Recall@1:   0.375
@@ -194,176 +174,151 @@ MRR:        0.5699404761904762
 provenance correctness: 1.0
 ```
 
-Latency:
+Negative/out-of-authority cases proved that vector similarity cannot silently become answerability or routing authority.
+
+### Gate 7.6 — Deterministic context assembly + synthesis — COMPLETE / MERGED
+
+Squash merge through PR #99:
 
 ```text
-min: 532 ms
-max: 1728 ms
-mean: 720.0 ms
-p50: 616 ms
-p95: 1728 ms
-SDK retries: 0
+cc8097b3e2e9b048ca069e961736788de0a79f0d
 ```
 
-Both negative cases returned non-empty nearest-neighbor results with rank-1 scores near `0.689`, overlapping legitimate positive evidence. No global relevance-score threshold is invented.
+Gate 7.6 established contiguous whole-chunk rank-prefix context assembly, deterministic `SUPPORTED | UNSUPPORTED` pre-model authority, bounded `ANSWER | INSUFFICIENT_EVIDENCE` synthesis, one non-streaming Claude Haiku 4.5 US Geo Converse call maximum, strict provider/output admission, and content-addressed runtime evidence.
 
-### Gate 7.6 — Deterministic context assembly + synthesis — COMPLETE THROUGH 7.6f / PR #99
-
-Gate 7.6 separates evidence selection, model authority, provider transport, and output validation.
-
-#### 7.6a — Deterministic context assembly — COMPLETE
-
-```text
-RetrievalEvidence
- -> whole contiguous rank prefix
- -> ContextEvidenceBlock[]
- -> AssembledContext
-```
-
-Bounds:
-
-```text
-default max chunks:      5
-hard max chunks:         10
-max admitted text bytes: 16,384 UTF-8 bytes
-```
-
-No truncation, no backfill, no score-derived authority.
-
-#### 7.6b — Synthesis request/output + abstention — COMPLETE
-
-Deterministic pre-model authority:
-
-```text
-SUPPORTED
-UNSUPPORTED
-```
-
-Allowed model decisions only after admission:
-
-```text
-ANSWER
-INSUFFICIENT_EVIDENCE
-```
-
-Prompt trust classes remain distinct: trusted system instructions, untrusted user question, untrusted but source-verified retrieved evidence.
-
-#### 7.6c — Bedrock model/API/IAM/cost selection — COMPLETE
-
-ADR 0023 freezes:
-
-```text
-Region:             us-east-1
-endpoint/API:       bedrock-runtime / Converse
-model/profile:      us.anthropic.claude-haiku-4-5-20251001-v1:0
-streaming:          no
-temperature:        0.0
-maxTokens:          2048
-model calls:        1 maximum
-tools:              none
-structured output:  JSON Schema
-```
-
-No deployed runtime principal exists yet, so no synthetic application IAM role is created.
-
-#### 7.6d — Offline provider adapter — COMPLETE
-
-Exactly one non-streaming `converse()` invocation, strict `end_turn`/assistant-text/usage/latency evidence admission, deterministic model-output parsing, and explicit provider/response/stop/output/timing failure categories.
-
-#### 7.6e — First bounded real synthesis — COMPLETE
-
-Exactly one supported real run completed successfully:
+First preserved real run:
 
 ```text
 retrieval request id: 4835c5d0-4a4e-4f47-9610-482ab6ec1103
-retrieval latency:    1463 ms
+retrieval elapsed:    1463 ms
 retrieval retries:    0
 retrieved/selected:   5 / 5
 context bytes:        5828
-context stop:         exhausted_retrieval
 
 synthesis request id: eee2a118-f806-40d5-8f53-57c88da8ad16
 model decision:       answer
-answer chars:         1751
 input tokens:         2671
 output tokens:        491
-total tokens:         3162
 Bedrock latency:      7217 ms
 client elapsed:       7983 ms
 synthesis retries:    0
-stop reason:          end_turn
 ```
 
-No replay was performed.
+Directly computable first-run cost components total `$0.0056411`; unexposed Titan/S3 Vectors billable units are not fabricated.
 
-#### 7.6f — Quality / latency / token / cost analysis — COMPLETE
+### Gate 7.7 — Deterministic Citations + Groundedness — COMPLETE / PR #100
 
-Manual comparison against the exact frozen PyPA `Hash-checking Mode` source slice found the seven substantive answer items supported by admitted evidence. This is a single-answer manual supportedness review, not a groundedness benchmark.
-
-The source-supported pip 26.2+ `--no-require-hashes` escape hatch is retained as a quality nuance: it weakens global enforcement and should be treated as an explicit compatibility exception, not the default secure posture.
-
-Observed model cost:
+Gate 7.7 adds deterministic citation authority without letting the model author provenance.
 
 ```text
-input:        $0.0029381
-output:       $0.0027005
-model total:  $0.0056386
+AssembledContext
+ -> C1..Cn catalog
+ -> structured claims + citation IDs
+ -> explicit human support labels
+ -> deterministic groundedness metrics
 ```
 
-One S3 Vectors query-request component:
+Frozen provider-independent output:
+
+```json
+{
+  "decision": "answer",
+  "claims": [
+    {"text": "...", "citation_ids": ["C1"]}
+  ]
+}
+```
+
+or:
+
+```json
+{"decision": "insufficient_evidence", "claims": []}
+```
+
+Frozen evaluation dataset:
 
 ```text
-$0.0000025
+knowledge-grounding-golden:v1
+4 cases
+3 expected answers
+1 expected insufficient-evidence
 ```
 
-Directly computable total:
+The first real four-case run was executed once from validated head `507fe04f963c7eeb49748eb950101ea2fc55e14f` with all four application attempts complete, zero SDK retries, and all grounded Converse calls ending with `end_turn`.
+
+Observed runtime totals:
 
 ```text
-$0.0056411
+input tokens:            11,734
+output tokens:           645
+total tokens:            12,379
+retrieval mean:          790.0 ms
+Bedrock mean:            3396.5 ms
+client synthesis mean:   3743.25 ms
 ```
 
-Titan query embedding and S3 Vectors data-processed/data-returned components remain uncomputed because Bedrock `Retrieve` does not expose the required billable units.
-
-The first structured-output synthesis is not treated as warmed steady-state latency because first-use grammar compilation may contribute to the observed `7217 ms` Bedrock latency.
-
-#### 7.6g — Closeout + merge — IN PROGRESS
-
-Required:
+Human-reviewed support evidence is preserved as content-addressed metadata:
 
 ```text
-[x] synchronize Gate 7.6 lab/current-state/roadmap/architecture
-[ ] final CI green on exact closeout head
-[ ] mark PR #99 ready
-[ ] squash merge against validated head SHA
+labs/evidence/phase-7-gate-7-7-first-run-review-v1.json
 ```
 
-### Gate 7.7 — Citations + groundedness — NEXT AFTER 7.6 MERGE
-
-Add deterministic citation projection from admitted evidence and measure:
+Frozen metrics:
 
 ```text
-citation correctness
-citation coverage
-unsupported claims / groundedness
-answer supportedness
-abstention behavior
+decision accuracy:          1.0
+citation target precision:  0.2857142857142857
+citation target recall:     0.5
+claim supportedness:        0.8461538461538461
+unsupported claim rate:     0.15384615384615385
+citation correctness:       0.8461538461538461
+abstention precision:       1.0
+abstention recall:          1.0
 ```
 
-Model-authored URLs or source IDs must never become citation authority.
+Key finding: the isolation case retrieved its frozen target at rank 1, yet the model cited the adjacent post-change chunk for both claims. Strict exact-chunk review marked both pairs unsupported. This isolates a citation-attribution failure from retrieval availability and provides a useful baseline for future optimization.
 
-### Gate 7.8 — Phase 7 closeout — PLANNED
+The exact-TLS-cipher case correctly abstained despite non-empty vector retrieval.
 
-Review retrieval/synthesis failure diagnosis, least-privilege runtime IAM strategy, retrieval/embedding/vector/synthesis cost split, observability evidence, ADRs, regressions, and phase documentation.
+Directly computable four-case cost:
+
+```text
+model input:             $0.0129074
+model output:            $0.0035475
+model subtotal:          $0.0164549
+S3 Vectors requests:     $0.0000100
+computable total:        $0.0164649
+```
+
+No new AWS resource or IAM entitlement was added.
+
+### Gate 7.8 — Phase 7 closeout — NEXT
+
+Gate 7.8 is not a prompt-optimization gate. It consolidates the evidence and operating boundaries learned through Gates 7.1–7.7 before Phase 8.
+
+Required closeout work:
+
+```text
+1. failure taxonomy across retrieval, admission, context, synthesis, citations, and groundedness
+2. least-privilege application runtime IAM strategy for the future deployed compute principal
+3. cost-accounting map for embedding, vector storage/query, retrieval, and synthesis
+4. observability map: current evidence versus missing production telemetry
+5. ADR / architecture / roadmap consistency review
+6. regression and quality-evidence inventory
+7. explicit Phase 8 entry criteria and deferred optimization list
+```
+
+Gate 7.8 must preserve the Gate 7.7 first-run weakness. Any citation-selection improvement requires a separately versioned prompt/schema/evaluation change rather than silently modifying the frozen baseline.
 
 ## Future phases
 
 ### Phase 8 — Hybrid Retrieval
 
-Combine deterministic structured threat intelligence with semantic retrieval only where evaluation demonstrates value.
+Combine deterministic structured threat intelligence with semantic retrieval only where evaluation demonstrates value. Entry requires Phase 7 closeout and a clear routing/authority contract between structured and semantic evidence.
 
 ### Phase 9 — Public Analyze Your Repository
 
-Expose a bounded public demo only after repository intelligence, risk policy, structured query, and retrieval boundaries are stable.
+Expose a bounded public demo only after repository intelligence, risk policy, structured query, retrieval, synthesis, and groundedness boundaries are stable.
 
 ### Phase 10 — Observability & Operational Excellence
 

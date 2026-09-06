@@ -1,5 +1,10 @@
 """Public domain surface for bounded knowledge retrieval."""
 
+from opslens.knowledge_retrieval.domain.citations import (
+    CITATION_CATALOG_ID,
+    CitationCatalog,
+    ProjectedCitation,
+)
 from opslens.knowledge_retrieval.domain.context import (
     DEFAULT_CONTEXT_MAX_CHUNKS,
     DEFAULT_CONTEXT_MAX_UTF8_BYTES,
@@ -19,6 +24,14 @@ from opslens.knowledge_retrieval.domain.corpus import (
     MaterializedKnowledgeDocument,
 )
 from opslens.knowledge_retrieval.domain.errors import KnowledgeRetrievalValidationError
+from opslens.knowledge_retrieval.domain.grounding import (
+    GROUNDED_SYNTHESIS_CONTRACT_ID,
+    MAX_GROUNDED_CLAIM_CHARS,
+    MAX_GROUNDED_CLAIMS,
+    GroundedClaim,
+    GroundedSynthesisRequest,
+    GroundedSynthesisResult,
+)
 from opslens.knowledge_retrieval.domain.manifest import (
     CORPUS_MANIFEST_ID,
     CorpusChunkManifestEntry,
@@ -57,14 +70,18 @@ from opslens.knowledge_retrieval.domain.synthesis import (
 
 __all__ = [
     "CANONICAL_METADATA_FIELDS",
+    "CITATION_CATALOG_ID",
     "CORPUS_MANIFEST_ID",
     "CORPUS_SPEC_ID",
     "DEFAULT_CONTEXT_MAX_CHUNKS",
     "DEFAULT_CONTEXT_MAX_UTF8_BYTES",
     "DEFAULT_RETRIEVAL_TOP_K",
     "DEFAULT_SYNTHESIS_MAX_OUTPUT_CHARS",
+    "GROUNDED_SYNTHESIS_CONTRACT_ID",
     "MAX_CONTEXT_CHUNKS",
     "MAX_CONTEXT_UTF8_BYTES",
+    "MAX_GROUNDED_CLAIMS",
+    "MAX_GROUNDED_CLAIM_CHARS",
     "MAX_RETRIEVAL_QUERY_CHARS",
     "MAX_RETRIEVAL_TOP_K",
     "MAX_SYNTHESIS_MODEL_CALLS",
@@ -75,12 +92,16 @@ __all__ = [
     "CanonicalKnowledgeChunk",
     "ChunkSelectionSpec",
     "Citation",
+    "CitationCatalog",
     "ContextAssemblyLimits",
     "ContextAssemblyStopReason",
     "ContextEvidenceBlock",
     "CorpusChunkManifestEntry",
     "CorpusDocumentManifestEntry",
     "DocumentMaterializationSpec",
+    "GroundedClaim",
+    "GroundedSynthesisRequest",
+    "GroundedSynthesisResult",
     "KnowledgeCorpusManifest",
     "KnowledgeCorpusSpec",
     "KnowledgeDocument",
@@ -89,6 +110,7 @@ __all__ = [
     "KnowledgeSourceRegistry",
     "KnowledgeSourceType",
     "MaterializedKnowledgeDocument",
+    "ProjectedCitation",
     "RetrievalBackend",
     "RetrievalEvidence",
     "RetrievalRequest",
