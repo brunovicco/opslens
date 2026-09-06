@@ -18,7 +18,6 @@ from opslens.hybrid_retrieval.adapters.bedrock_synthesis import (
     BedrockHybridSynthesizer,
 )
 from opslens.hybrid_retrieval.application.bedrock_synthesis import (
-    BEDROCK_SYNTHESIS_MODEL_ID,
     BEDROCK_SYNTHESIS_REGION,
 )
 from opslens.hybrid_retrieval.application.evaluation import (
