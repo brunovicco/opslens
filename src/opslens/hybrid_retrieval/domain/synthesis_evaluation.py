@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass
 from typing import cast
 
@@ -16,6 +17,18 @@ from opslens.hybrid_retrieval.domain.evaluation import (
     HybridMetricMeasurement,
 )
 
+_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _require_runtime_instance(
+    value: object,
+    expected_type: type[object],
+    label: str,
+) -> None:
+    """Validate runtime values without weakening public annotations."""
+    if not isinstance(value, expected_type):
+        raise HybridRetrievalValidationError(f"{label} has an unsupported value.")
+
 
 def _normalize_required_text(value: object, label: str) -> str:
     """Return one normalized non-empty string."""
@@ -24,6 +37,14 @@ def _normalize_required_text(value: object, label: str) -> str:
     normalized = value.strip()
     if not normalized:
         raise HybridRetrievalValidationError(f"{label} cannot be blank.")
+    return normalized
+
+
+def _normalize_sha256(value: object, label: str) -> str:
+    """Return one lowercase SHA-256 digest."""
+    normalized = _normalize_required_text(value, label)
+    if _SHA256_PATTERN.fullmatch(normalized) is None:
+        raise HybridRetrievalValidationError(f"{label} must be a lowercase SHA-256 digest.")
     return normalized
 
 
@@ -78,6 +99,7 @@ class HybridSynthesisCaseEvaluation:
     model_result_sha256: str | None
     request_sha256: str | None
     structured_fact_correct: bool | None
+    semantic_groundedness_correct: bool | None
     citation_correct: bool | None
     cited_chunk_ids: tuple[str, ...]
 
@@ -88,10 +110,16 @@ class HybridSynthesisCaseEvaluation:
             "case_id",
             _normalize_required_text(self.case_id, "case_id"),
         )
-        if not isinstance(self.expected_behavior, HybridExpectedAnswerBehavior):
-            raise HybridRetrievalValidationError("expected_behavior is invalid.")
-        if not isinstance(self.observed_behavior, HybridExpectedAnswerBehavior):
-            raise HybridRetrievalValidationError("observed_behavior is invalid.")
+        _require_runtime_instance(
+            self.expected_behavior,
+            HybridExpectedAnswerBehavior,
+            "expected_behavior",
+        )
+        _require_runtime_instance(
+            self.observed_behavior,
+            HybridExpectedAnswerBehavior,
+            "observed_behavior",
+        )
         if self.behavior_correct != (self.expected_behavior is self.observed_behavior):
             raise HybridRetrievalValidationError("behavior_correct is inconsistent.")
         cited = _normalize_string_tuple(self.cited_chunk_ids, "cited_chunk_ids")
@@ -104,23 +132,24 @@ class HybridSynthesisCaseEvaluation:
             object.__setattr__(
                 self,
                 "model_result_sha256",
-                _normalize_required_text(
-                    self.model_result_sha256,
-                    "model_result_sha256",
-                ),
+                _normalize_sha256(self.model_result_sha256, "model_result_sha256"),
             )
             object.__setattr__(
                 self,
                 "request_sha256",
-                _normalize_required_text(self.request_sha256, "request_sha256"),
+                _normalize_sha256(self.request_sha256, "request_sha256"),
             )
-            if self.citation_correct is None:
+            if self.semantic_groundedness_correct is None or self.citation_correct is None:
                 raise HybridRetrievalValidationError(
-                    "model-required cases must expose citation correctness."
+                    "model-required cases must expose semantic and citation correctness."
                 )
         elif self.model_result_sha256 is not None or self.request_sha256 is not None:
             raise HybridRetrievalValidationError(
                 "model-free cases cannot carry model request/result identities."
+            )
+        if self.semantic_groundedness_correct is None and cited:
+            raise HybridRetrievalValidationError(
+                "unscored semantic cases cannot carry cited chunk IDs."
             )
         if self.citation_correct is None and cited:
             raise HybridRetrievalValidationError(
