@@ -30,7 +30,7 @@ concept
 | 4 | Repository Intelligence | ✅ Complete |
 | 5 | Risk Prioritization Engine | ✅ Complete |
 | 6 | Semantic Query Layer | ✅ Complete — PR #91 |
-| 7 | Knowledge Retrieval with Bedrock | 🚧 Gates 7.1–7.4 merged; Gate 7.5 closeout pending |
+| 7 | Knowledge Retrieval with Bedrock | 🚧 Gates 7.1–7.5 merged; Gate 7.6 in progress |
 | 8 | Hybrid Retrieval | ⏳ Planned |
 | 9 | Public Analyze Your Repository | ⏳ Planned |
 | 10 | Observability & Operational Excellence | ⏳ Planned |
@@ -104,7 +104,7 @@ Permanent guardrail:
 
 ### Goal
 
-Create a separately testable explanatory/remediation retrieval path without replacing the structured Phase 6 path.
+Create a separately testable explanatory/remediation retrieval and synthesis path without replacing the structured Phase 6 path.
 
 Permanent rules:
 
@@ -190,9 +190,15 @@ RetrievalRequest
 
 A real provider representation mismatch for `section_path` failed closed and was normalized only after metadata-only diagnosis proved the exact JSON-quoted representation.
 
-Real admitted retrieval returned the expected pip hash-checking chunk at rank 1. A nonexistent KB produced a safely categorized `ResourceNotFoundException` negative control.
+A nonexistent KB produced a safely categorized `ResourceNotFoundException` negative control.
 
-### Gate 7.5 — Retrieval evaluation — COMPLETE / CLOSEOUT PENDING
+### Gate 7.5 — Retrieval evaluation — COMPLETE / MERGED
+
+Squash-merged through PR #98 at:
+
+```text
+b30af10a568cefa7175c253120499939f9ca18d8
+```
 
 Frozen evaluation:
 
@@ -252,32 +258,85 @@ Processed-data, returned-data, and query-embedding components are not fabricated
 
 Closeout: [`../labs/phase-7-gate-7-5-retrieval-evaluation.md`](../labs/phase-7-gate-7-5-retrieval-evaluation.md).
 
-Remaining Gate 7.5 work:
+### Gate 7.6 — Deterministic context assembly + synthesis — IN PROGRESS / PR #99
+
+Gate 7.6 deliberately separates deterministic context authority from model generation.
+
+#### 7.6a — Deterministic context assembly — COMPLETE
+
+Frozen path:
 
 ```text
-final closeout CI
-confirm mergeability
-ready for review
-squash merge PR #98
+RetrievalEvidence
+ -> deterministic contiguous retrieval-rank prefix
+ -> whole ContextEvidenceBlock[]
+ -> AssembledContext
+ -> future synthesis adapter
 ```
 
-### Gate 7.6 — Deterministic context assembly + synthesis — NEXT AFTER 7.5 MERGE
+Frozen application bounds:
 
-Only admitted retrieved chunks may enter model context.
+```text
+default max chunks:      5
+hard max chunks:         10
+max admitted text bytes: 16,384 UTF-8 bytes
+```
 
-Before implementation, freeze:
+Rules:
 
-- retrieval candidate/context limits;
-- deterministic context ordering and formatting;
-- handling when relevant evidence is missing or authority is unsupported;
-- synthesis model and invocation API;
-- max input/output/token/call budgets;
-- model output contract;
-- runtime token/latency/request evidence;
-- prompt-injection boundary for retrieved text;
-- failure/abstention semantics.
+- only Gate 7.4-admitted retrieval evidence may enter context;
+- whole chunks only; never truncate source text;
+- preserve retrieval order as one contiguous prefix from rank 1;
+- stop at the first non-fitting block rather than skipping it and backfilling a lower-ranked chunk;
+- empty evidence and an oversized rank-1 block fail closed;
+- provider relevance score is deliberately excluded from synthesis context;
+- query and context operational identities use deterministic SHA-256 evidence;
+- retrieved text remains untrusted data, not instructions.
 
-Gate 7.5 evidence must inform the design, but the golden test set must not be used for ad-hoc outcome-driven tuning.
+The `16,384` byte ceiling is a model-independent denial-of-wallet/input-growth bound. It is not treated as a tokenizer estimate or model context-window size.
+
+No AWS resource, IAM policy, network call, or model invocation is added by 7.6a.
+
+Quality evidence:
+
+```text
+Python CI #245: SUCCESS
+Ruff:             PASS
+Pyright strict:   PASS
+pytest:            PASS
+regressions:      PASS
+```
+
+Lab: [`../labs/phase-7-gate-7-6-context-synthesis.md`](../labs/phase-7-gate-7-6-context-synthesis.md).
+
+#### 7.6b — Synthesis request/output + abstention contract — NEXT
+
+Before any real generation call, freeze offline:
+
+- synthesis request/output types;
+- unsupported vs insufficient-evidence behavior;
+- trusted instructions vs untrusted retrieved-context serialization;
+- application-level output/call bounds;
+- generation evidence required for observability;
+- model output validation/failure semantics.
+
+#### 7.6c — Bedrock model/API selection — PENDING
+
+Only after 7.6b is deterministic and CI-green:
+
+- compare current supported Bedrock inference APIs/models using official AWS documentation;
+- justify the selected model/API operationally, not for certification coverage;
+- document IAM action/resource scope;
+- freeze input/output token limits, timeout, retry, observability, and cost assumptions.
+
+#### 7.6d–7.6g — PENDING
+
+```text
+7.6d offline provider adapter tests
+7.6e bounded real synthesis success/failure evidence
+7.6f quality/latency/token/cost analysis
+7.6g docs/state closeout + final CI + squash merge
+```
 
 ### Gate 7.7 — Citations + groundedness — PLANNED
 
