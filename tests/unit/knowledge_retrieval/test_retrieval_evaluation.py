@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import replace
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -62,7 +63,7 @@ def _ordered_results_for_case(
         after = tuple(
             chunk for chunk in catalog.chunks if chunk not in before and chunk != relevant[0]
         )
-        selected = before + (relevant[0],) + after
+        selected = (*before, relevant[0], *after)
     return tuple(
         _ranked(chunk, score=1.0 - (index * 0.05))
         for index, chunk in enumerate(selected, start=1)
@@ -146,8 +147,10 @@ def test_aggregate_metrics_follow_frozen_recall_mrr_and_latency_definitions() ->
 
 def test_fixture_loader_rejects_unreviewed_schema_fields(tmp_path: Path) -> None:
     """Golden labels cannot silently gain behavior outside the frozen v1 schema."""
-    raw = json.loads(_FIXTURE.read_text(encoding="utf-8"))
-    assert isinstance(raw, dict)
+    raw = cast(
+        dict[str, object],
+        json.loads(_FIXTURE.read_text(encoding="utf-8")),
+    )
     raw["unexpected"] = "authority"
     mutated = tmp_path / "golden.json"
     mutated.write_text(json.dumps(raw), encoding="utf-8")
@@ -164,7 +167,7 @@ def test_catalog_validation_rejects_unknown_positive_chunk_label() -> None:
         first,
         relevant_chunk_ids=("knowledge-chunk:invented:v1",),
     )
-    mutated = replace(dataset, cases=(mutated_case,) + dataset.cases[1:])
+    mutated = replace(dataset, cases=(mutated_case, *dataset.cases[1:]))
 
     with pytest.raises(RetrievalEvaluationError, match="unknown canonical chunk"):
         validate_dataset_catalog(mutated, _catalog())
@@ -195,7 +198,7 @@ def test_observation_provenance_must_match_checked_catalog() -> None:
     forged = replace(first_result, document_id="knowledge-doc:forged:v1")
     observations[0] = replace(
         observations[0],
-        returned_chunks=(forged,) + observations[0].returned_chunks[1:],
+        returned_chunks=(forged, *observations[0].returned_chunks[1:]),
     )
 
     with pytest.raises(RetrievalEvaluationError, match="provenance disagrees"):
