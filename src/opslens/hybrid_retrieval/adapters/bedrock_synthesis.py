@@ -66,6 +66,29 @@ class BedrockHybridConverseClient(Protocol):
         ...
 
 
+def _admit_synthesis_result(value: object) -> HybridSynthesisResult:
+    """Admit one hybrid result at the runtime evidence binding boundary."""
+    if not isinstance(value, HybridSynthesisResult):
+        raise TypeError("result must be HybridSynthesisResult.")
+    return value
+
+
+def _admit_invocation_evidence(
+    value: object,
+) -> BedrockHybridSynthesisInvocationEvidence:
+    """Admit one runtime metadata record at the execution binding boundary."""
+    if not isinstance(value, BedrockHybridSynthesisInvocationEvidence):
+        raise TypeError("evidence must be BedrockHybridSynthesisInvocationEvidence.")
+    return value
+
+
+def _admit_synthesis_request(value: object) -> HybridSynthesisRequest:
+    """Admit one exact request before invoking the provider."""
+    if not isinstance(value, HybridSynthesisRequest):
+        raise TypeError("request must be HybridSynthesisRequest.")
+    return value
+
+
 def _normalized_text(value: object, *, field: str) -> str:
     """Require one normalized non-empty provider metadata string."""
     if not isinstance(value, str) or not value.strip() or value.strip() != value:
@@ -289,11 +312,9 @@ class BedrockHybridSynthesisExecution:
 
     def __post_init__(self) -> None:
         """Keep output and provider evidence bound to the same exact request."""
-        if not isinstance(self.result, HybridSynthesisResult):
-            raise TypeError("result must be HybridSynthesisResult.")
-        if not isinstance(self.evidence, BedrockHybridSynthesisInvocationEvidence):
-            raise TypeError("evidence must be BedrockHybridSynthesisInvocationEvidence.")
-        if self.result.request_sha256 != self.evidence.request_sha256:
+        result = _admit_synthesis_result(self.result)
+        evidence = _admit_invocation_evidence(self.evidence)
+        if result.request_sha256 != evidence.request_sha256:
             raise ValueError("result and invocation evidence must reference the same request.")
 
 
@@ -367,9 +388,8 @@ class BedrockHybridSynthesizer:
         request: HybridSynthesisRequest,
     ) -> BedrockHybridSynthesisExecution:
         """Invoke Bedrock once and admit only exact bounded hybrid output."""
-        if not isinstance(request, HybridSynthesisRequest):
-            raise TypeError("request must be HybridSynthesisRequest.")
-        prompt = build_hybrid_synthesis_prompt(request)
+        admitted_request = _admit_synthesis_request(request)
+        prompt = build_hybrid_synthesis_prompt(admitted_request)
         payload = build_bedrock_hybrid_synthesis_converse_request(prompt)
         started = self._clock()
         try:
@@ -392,7 +412,7 @@ class BedrockHybridSynthesizer:
         stop_reason = _stop_reason(response, request_id=request_id)
         evidence = _parse_invocation_evidence(
             response,
-            request=request,
+            request=admitted_request,
             prompt_sha256=prompt.prompt_sha256,
             request_id=request_id,
             stop_reason=stop_reason,
@@ -401,7 +421,10 @@ class BedrockHybridSynthesizer:
         )
         output = _extract_single_text_output(response)
         try:
-            result = parse_hybrid_synthesis_output(output, request=request)
+            result = parse_hybrid_synthesis_output(
+                output,
+                request=admitted_request,
+            )
         except HybridSynthesisOutputError as exc:
             raise BedrockHybridSynthesisRuntimeError(
                 "Bedrock hybrid output violated deterministic output admission.",
