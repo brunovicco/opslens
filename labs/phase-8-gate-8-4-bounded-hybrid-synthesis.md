@@ -77,7 +77,7 @@ max semantic chunks:               10
 max canonical evidence JSON:       24 KiB
 ```
 
-A model answer is admitted only when it satisfies the exact structured-output contract. Every answer claim requires at least one allowlisted semantic `S` citation. Unknown `S`/`F` IDs, malformed JSON, extra keys, excessive output, invalid route references, provider failure, or non-`end_turn` stop reason fail closed.
+Every admitted answer claim requires at least one allowlisted semantic `S` citation. Unknown `S`/`F` IDs, malformed JSON, extra keys, excessive output, invalid route references, provider failure, or non-`end_turn` stop reason fail closed.
 
 ## Prompt-injection boundary
 
@@ -197,8 +197,6 @@ Input branch head:
 7d06bdb87830f32bb1fc848c9580f8575e52895c
 ```
 
-The run was executed in a clean credential subshell with `AWS_PROFILE=opslens-bootstrap` after removing stale environment credentials.
-
 Observed operator result:
 
 ```text
@@ -255,7 +253,7 @@ hybrid-true-hybrid-01
   client_elapsed_ms: 1932
   bedrock_latency_ms: 1772
   tokens: 1595 input / 81 output / 1676 total
-  deterministic structured facts: priority_score=95, priority_tier=P0, review_required=false
+  deterministic facts: priority_score=95, priority_tier=P0, review_required=false
   semantic target: isolated-validation:01
   observed citation: isolated-validation:01
   result: grounded/citation-correct
@@ -267,10 +265,10 @@ hybrid-semantic-noise-01
   expected support/citation target: S2 / transitive-lock-review:01
   observed claim 1: S2 / transitive-lock-review:01
   observed claim 2: S1 / clean-environment-noise:01
-  result: output admitted, but semantic_groundedness=false and citation_correctness=false for this case
+  result: output admitted, semantic_groundedness=false and citation_correctness=false for this case
 ```
 
-The noise case is the critical measured result. The model correctly used the rank-two supporting chunk for one claim but also introduced an additional claim grounded in an admitted yet fixture-adjudicated non-target neighbor. This demonstrates the frozen distinction:
+The noise case is the critical measured result. The model correctly used the rank-two supporting chunk for one claim but also introduced an additional claim grounded in an admitted yet fixture-adjudicated non-target neighbor. This demonstrates:
 
 ```text
 admission != semantic support
@@ -278,7 +276,34 @@ retrieval rank != groundedness
 allowlisted citation != correct citation target
 ```
 
-The application correctly did not reinterpret the model's extra admitted citation as deterministic truth. Instead, the independent evaluation metrics degraded to `2/3` while routing, structured truth, and abstention remained perfect.
+The system did not promote the model's extra citation into deterministic truth. Instead, the independent metrics degraded to `2/3` while routing, structured correctness, and abstention remained perfect.
+
+## Final CI and merge
+
+Final PR head:
+
+```text
+b37865c59cd32dd7a50a7b44de0dcc86a54da1b1
+```
+
+Python CI #336 / run `34064224132` passed all six repository slice jobs.
+
+Hybrid retrieval quality gate:
+
+```text
+uv lock --check     PASS
+Ruff                PASS
+Pyright strict      PASS — 0 errors, 0 warnings
+pytest              PASS — 66 passed
+```
+
+PR #115 was promoted from draft and protected-squash-merged with:
+
+```text
+expected_head_sha: b37865c59cd32dd7a50a7b44de0dcc86a54da1b1
+merge SHA:         bce7d4ea596c37e55f14f2e02df58b8d40ed8c2d
+issue #114:        CLOSED / COMPLETED
+```
 
 ## Gate 8.4 review
 
@@ -286,21 +311,21 @@ Gate 8.4 exit criteria are satisfied:
 
 - provider-independent bounded synthesis contract exists;
 - structured routes bypass the LLM;
-- unsupported and incomplete evidence fail without model calls;
+- unsupported and incomplete evidence make zero model calls;
 - semantic and hybrid calls are bounded to one invocation per eligible case;
 - canonical structured truth remains deterministic;
 - citation IDs are allowlisted and mapped back to canonical evidence;
 - first complete Bedrock baseline exists with exact provenance and runtime evidence;
 - quality metrics are measured independently;
 - cost remains explicitly unmeasured rather than fabricated;
-- the semantic-noise case produced a real, observable quality failure without violating the output-admission boundary.
+- the semantic-noise case produced a real observable quality weakness without violating output admission.
 
-The `2/3` semantic-groundedness and citation-correctness values are not Gate 8.4 implementation failures. They are the measured baseline that Gate 8.5 may use to decide whether an optimization experiment is justified. Gate 8.4 must not tune the prompt or retrieval after observing this baseline.
+The `2/3` semantic-groundedness and citation-correctness values are the frozen measured baseline for Gate 8.5, not a reason to silently tune Gate 8.4.
 
 ## AIP-C01 learning points
 
 - AWS credential-provider precedence can override an explicitly named profile;
-- authentication success in the CLI does not prove an SDK is using the intended credential source;
+- CLI SSO login does not prove an SDK selected the SSO credential provider;
 - provider invocation belongs downstream of deterministic authorization and evidence admission;
 - structured factual authority can bypass LLM synthesis entirely;
 - retrieved context is untrusted data;
@@ -314,7 +339,13 @@ The `2/3` semantic-groundedness and citation-correctness values are not Gate 8.4
 ## Gate status
 
 ```text
-COMPLETE — pending final exact-head CI and protected squash merge
+COMPLETE / MERGED
 ```
 
-Gate 8.5 optimization remains out of scope until PR #115 is revalidated and merged.
+Next authorized Phase 8 step:
+
+```text
+Gate 8.5 — Measured optimization decision
+```
+
+No Gate 8.5 optimization was included in Gate 8.4.
