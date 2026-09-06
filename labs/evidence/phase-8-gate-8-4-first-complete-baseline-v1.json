@@ -1,0 +1,340 @@
+{
+  "cases": [
+    {
+      "application_complete": true,
+      "case_id": "hybrid-structured-factual-01",
+      "expected_answer_behavior": "answer",
+      "expected_citation_chunk_ids": [],
+      "expected_supported_chunk_ids": [],
+      "failure_category": null,
+      "failure_diagnostic": null,
+      "failure_request_id": null,
+      "failure_stop_reason": null,
+      "model_required": false,
+      "observed_answer_behavior": "answer",
+      "route": "structured",
+      "structured_facts": [
+        {
+          "authority": "repository_analysis",
+          "evidence_id": "hybrid-structured:v1:79dbd8123a3ba1cd92af0e84a5e590a0e669665f1d5ace044ff49b6bb6c46c1c",
+          "fact_id": "F1",
+          "field_name": "affected",
+          "value": true
+        },
+        {
+          "authority": "repository_analysis",
+          "evidence_id": "hybrid-structured:v1:79dbd8123a3ba1cd92af0e84a5e590a0e669665f1d5ace044ff49b6bb6c46c1c",
+          "fact_id": "F2",
+          "field_name": "dependency_name",
+          "value": "demo-pkg"
+        },
+        {
+          "authority": "repository_analysis",
+          "evidence_id": "hybrid-structured:v1:79dbd8123a3ba1cd92af0e84a5e590a0e669665f1d5ace044ff49b6bb6c46c1c",
+          "fact_id": "F3",
+          "field_name": "ghsa_id",
+          "value": "GHSA-aaaa-bbbb-cccc"
+        },
+        {
+          "authority": "repository_analysis",
+          "evidence_id": "hybrid-structured:v1:79dbd8123a3ba1cd92af0e84a5e590a0e669665f1d5ace044ff49b6bb6c46c1c",
+          "fact_id": "F4",
+          "field_name": "installed_version",
+          "value": "1.2.3"
+        }
+      ],
+      "synthesis": null,
+      "synthesis_invocation_attempted": false
+    },
+    {
+      "application_complete": true,
+      "case_id": "hybrid-semantic-remediation-01",
+      "expected_answer_behavior": "answer",
+      "expected_citation_chunk_ids": [
+        "fixture-chunk:remediation-lock-review:01"
+      ],
+      "expected_supported_chunk_ids": [
+        "fixture-chunk:remediation-lock-review:01"
+      ],
+      "failure_category": null,
+      "failure_diagnostic": null,
+      "failure_request_id": null,
+      "failure_stop_reason": null,
+      "model_required": true,
+      "observed_answer_behavior": "answer",
+      "route": "semantic",
+      "structured_facts": [],
+      "synthesis": {
+        "bedrock_latency_ms": 3915,
+        "cache_read_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "claims": [
+          {
+            "claim_index": 1,
+            "semantic_chunk_ids": [
+              "fixture-chunk:remediation-lock-review:01"
+            ],
+            "semantic_citation_ids": [
+              "S1"
+            ],
+            "structured_fact_ids": [],
+            "text": "After selecting a patched dependency version, regenerate the lockfile to ensure all transitive dependencies are properly resolved with the updated version."
+          },
+          {
+            "claim_index": 2,
+            "semantic_chunk_ids": [
+              "fixture-chunk:remediation-lock-review:01"
+            ],
+            "semantic_citation_ids": [
+              "S1"
+            ],
+            "structured_fact_ids": [],
+            "text": "Review the resulting dependency diff before deployment to verify that the patch update does not introduce unexpected changes to your dependency tree."
+          }
+        ],
+        "client_elapsed_ms": 5313,
+        "decision": "answer",
+        "envelope_sha256": "5d30c3a5f25e858245f4d07f96e547981c8f00b01f868bb583a1192f9c6126fc",
+        "input_tokens": 1157,
+        "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "output_tokens": 109,
+        "prompt_sha256": "7c240b766adeee0fa100b1658b6e1bf4a26c2cc0bf6ff820e87aaade2a5a24af",
+        "provider_request_id": "120069e7-f754-4ea1-97b7-22d67e957c66",
+        "request_sha256": "51979ad13e869347b2f3be7538a920dba782fe26033840f0a71747005a4b2b05",
+        "result_sha256": "3e6c8880ed23a71f44503ea68e4c32df3a5dd99ac2924794f4f35a9e2f10cf32",
+        "retry_attempts": 0,
+        "semantic_catalog_sha256": "9cd92682c10939a6edda73eb590799eb9a3fd59af1e768f0a7059b02e578351e",
+        "stop_reason": "end_turn",
+        "structured_catalog_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "total_tokens": 1266
+      },
+      "synthesis_invocation_attempted": true
+    },
+    {
+      "application_complete": true,
+      "case_id": "hybrid-true-hybrid-01",
+      "expected_answer_behavior": "answer",
+      "expected_citation_chunk_ids": [
+        "fixture-chunk:isolated-validation:01"
+      ],
+      "expected_supported_chunk_ids": [
+        "fixture-chunk:isolated-validation:01"
+      ],
+      "failure_category": null,
+      "failure_diagnostic": null,
+      "failure_request_id": null,
+      "failure_stop_reason": null,
+      "model_required": true,
+      "observed_answer_behavior": "answer",
+      "route": "hybrid",
+      "structured_facts": [
+        {
+          "authority": "risk_policy",
+          "evidence_id": "hybrid-structured:v1:8f9c308d4825d4bb6db85dc9342948d3838b3057b86754070a8507392f0661c1",
+          "fact_id": "F1",
+          "field_name": "priority_score",
+          "value": 95
+        },
+        {
+          "authority": "risk_policy",
+          "evidence_id": "hybrid-structured:v1:8f9c308d4825d4bb6db85dc9342948d3838b3057b86754070a8507392f0661c1",
+          "fact_id": "F2",
+          "field_name": "priority_tier",
+          "value": "P0"
+        },
+        {
+          "authority": "risk_policy",
+          "evidence_id": "hybrid-structured:v1:8f9c308d4825d4bb6db85dc9342948d3838b3057b86754070a8507392f0661c1",
+          "fact_id": "F3",
+          "field_name": "review_required",
+          "value": false
+        }
+      ],
+      "synthesis": {
+        "bedrock_latency_ms": 1772,
+        "cache_read_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "claims": [
+          {
+            "claim_index": 1,
+            "semantic_chunk_ids": [
+              "fixture-chunk:isolated-validation:01"
+            ],
+            "semantic_citation_ids": [
+              "S1"
+            ],
+            "structured_fact_ids": [
+              "F1",
+              "F2",
+              "F3"
+            ],
+            "text": "To preserve the deterministic risk priority of this P0 finding (priority score 95), validate the updated application in an isolated environment and run the relevant test suite before deployment."
+          }
+        ],
+        "client_elapsed_ms": 1932,
+        "decision": "answer",
+        "envelope_sha256": "24e70c5e05d80808db0b718b741a4c81946a310ec61a69ac2790dcf7625c03d3",
+        "input_tokens": 1595,
+        "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "output_tokens": 81,
+        "prompt_sha256": "1319b042fc6c9006a8fc4eeb98abe8cec43d1cbaff51de912638deb05435c277",
+        "provider_request_id": "99d70bce-68fe-4828-95b4-29b772eb7f06",
+        "request_sha256": "acf536c2be1c8cbede8a56211fedd4786ecba006b390eff734cba44f839add54",
+        "result_sha256": "86cb84468316685f96ece51ac19ee29bd5784665f759c71e597668e591727d40",
+        "retry_attempts": 0,
+        "semantic_catalog_sha256": "5b55473c8db4dc6150435c526d2a61704eab87ad54d5ccf1de5f25aba4d0d1ef",
+        "stop_reason": "end_turn",
+        "structured_catalog_sha256": "df9007ffa2d410dea535e4a68666a51d0126c5850c7a67ae4bb6b45482b26696",
+        "total_tokens": 1676
+      },
+      "synthesis_invocation_attempted": true
+    },
+    {
+      "application_complete": true,
+      "case_id": "hybrid-unsupported-runtime-exposure-01",
+      "expected_answer_behavior": "abstain",
+      "expected_citation_chunk_ids": [],
+      "expected_supported_chunk_ids": [],
+      "failure_category": null,
+      "failure_diagnostic": null,
+      "failure_request_id": null,
+      "failure_stop_reason": null,
+      "model_required": false,
+      "observed_answer_behavior": "abstain",
+      "route": "unsupported",
+      "structured_facts": [],
+      "synthesis": null,
+      "synthesis_invocation_attempted": false
+    },
+    {
+      "application_complete": true,
+      "case_id": "hybrid-partial-structured-01",
+      "expected_answer_behavior": "reject_before_synthesis",
+      "expected_citation_chunk_ids": [],
+      "expected_supported_chunk_ids": [],
+      "failure_category": null,
+      "failure_diagnostic": null,
+      "failure_request_id": null,
+      "failure_stop_reason": null,
+      "model_required": false,
+      "observed_answer_behavior": "reject_before_synthesis",
+      "route": "structured",
+      "structured_facts": [],
+      "synthesis": null,
+      "synthesis_invocation_attempted": false
+    },
+    {
+      "application_complete": true,
+      "case_id": "hybrid-semantic-noise-01",
+      "expected_answer_behavior": "answer",
+      "expected_citation_chunk_ids": [
+        "fixture-chunk:transitive-lock-review:01"
+      ],
+      "expected_supported_chunk_ids": [
+        "fixture-chunk:transitive-lock-review:01"
+      ],
+      "failure_category": null,
+      "failure_diagnostic": null,
+      "failure_request_id": null,
+      "failure_stop_reason": null,
+      "model_required": true,
+      "observed_answer_behavior": "answer",
+      "route": "semantic",
+      "structured_facts": [],
+      "synthesis": {
+        "bedrock_latency_ms": 1426,
+        "cache_read_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "claims": [
+          {
+            "claim_index": 1,
+            "semantic_chunk_ids": [
+              "fixture-chunk:transitive-lock-review:01"
+            ],
+            "semantic_citation_ids": [
+              "S2"
+            ],
+            "structured_fact_ids": [],
+            "text": "Review the lockfile diff after the upgrade to detect unexpected transitive dependency changes before deployment."
+          },
+          {
+            "claim_index": 2,
+            "semantic_chunk_ids": [
+              "fixture-chunk:clean-environment-noise:01"
+            ],
+            "semantic_citation_ids": [
+              "S1"
+            ],
+            "structured_fact_ids": [],
+            "text": "Use a clean virtual environment when testing dependency changes so local packages do not mask missing or incompatible dependencies."
+          }
+        ],
+        "client_elapsed_ms": 1633,
+        "decision": "answer",
+        "envelope_sha256": "672762a82f80eff2bedc212edcdbbebf4d6ff8bb996df54c44f81fb3e6488ce3",
+        "input_tokens": 1398,
+        "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "output_tokens": 99,
+        "prompt_sha256": "50527cd3bbc05027848d2f94f8085540ac584add1deff78f071124c767260a1c",
+        "provider_request_id": "e84c267a-15bd-4b92-8f5c-2e11f07fd151",
+        "request_sha256": "e67222bafb251f962c697ce20d990d63825462bca06e45a3713a6ef434dfcf73",
+        "result_sha256": "faf760e56399363fdcc160981fa4225b6d814e64edf7dd895662928523919228",
+        "retry_attempts": 0,
+        "semantic_catalog_sha256": "b136a01908240d58b852e60335cd773a4e1ffa0969ce7976d7195e6d2d4c5e38",
+        "stop_reason": "end_turn",
+        "structured_catalog_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "total_tokens": 1497
+      },
+      "synthesis_invocation_attempted": true
+    }
+  ],
+  "complete": true,
+  "dataset_id": "hybrid-evaluation-golden:v1",
+  "dataset_sha256": "68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1",
+  "expected_dataset_id": "hybrid-evaluation-golden:v1",
+  "expected_dataset_sha256": "68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1",
+  "fixture_support_targets_frozen": true,
+  "measurements": {
+    "abstention": {
+      "status": "measured",
+      "unit": "ratio",
+      "value": 1.0
+    },
+    "citation_correctness": {
+      "status": "measured",
+      "unit": "ratio",
+      "value": 0.6666666666666666
+    },
+    "cost": {
+      "status": "unmeasured",
+      "unit": "usd",
+      "value": null
+    },
+    "latency": {
+      "status": "measured",
+      "unit": "milliseconds",
+      "value": 2959.3333333333335
+    },
+    "route_accuracy": {
+      "status": "measured",
+      "unit": "ratio",
+      "value": 1.0
+    },
+    "semantic_groundedness": {
+      "status": "measured",
+      "unit": "ratio",
+      "value": 0.6666666666666666
+    },
+    "structured_fact_correctness": {
+      "status": "measured",
+      "unit": "ratio",
+      "value": 1.0
+    }
+  },
+  "model_call_count": 3,
+  "model_call_count_semantics": "admitted_model_executions",
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "planned_case_count": 6,
+  "region": "us-east-1",
+  "synthesis_invocation_attempt_count": 3
+}
