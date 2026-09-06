@@ -26,6 +26,31 @@ class HybridSynthesisOutputError(ValueError):
     """Raised when untrusted hybrid model output violates deterministic admission."""
 
 
+def _admit_envelope(value: object) -> HybridEvidenceEnvelope:
+    """Admit one runtime evidence envelope without weakening public annotations."""
+    if not isinstance(value, HybridEvidenceEnvelope):
+        raise HybridSynthesisOutputError(
+            "envelope must be one admitted HybridEvidenceEnvelope"
+        )
+    return value
+
+
+def _admit_payload(value: object) -> str:
+    """Admit one runtime provider payload as text."""
+    if not isinstance(value, str):
+        raise HybridSynthesisOutputError("payload must be a string")
+    return value
+
+
+def _admit_request(value: object) -> HybridSynthesisRequest:
+    """Admit one exact hybrid synthesis request at the output boundary."""
+    if not isinstance(value, HybridSynthesisRequest):
+        raise HybridSynthesisOutputError(
+            "request must be an admitted HybridSynthesisRequest"
+        )
+    return value
+
+
 def build_hybrid_synthesis_request(
     *,
     question: str,
@@ -49,21 +74,18 @@ def project_deterministic_structured_answer(
     envelope: HybridEvidenceEnvelope,
 ) -> tuple[HybridStructuredFactProjection, ...]:
     """Expose exact structured facts without giving their truth authority to a model."""
-    if not isinstance(envelope, HybridEvidenceEnvelope):
-        raise HybridSynthesisOutputError(
-            "envelope must be one admitted HybridEvidenceEnvelope"
-        )
-    if envelope.authority_decision.route not in {
+    admitted_envelope = _admit_envelope(envelope)
+    if admitted_envelope.authority_decision.route not in {
         HybridRoute.STRUCTURED,
         HybridRoute.HYBRID,
     }:
-        if envelope.structured_evidence:
+        if admitted_envelope.structured_evidence:
             raise HybridSynthesisOutputError(
                 "structured evidence is inconsistent with the admitted route"
             )
         return ()
     try:
-        return project_hybrid_structured_facts(envelope)
+        return project_hybrid_structured_facts(admitted_envelope)
     except HybridRetrievalValidationError as exc:
         raise HybridSynthesisOutputError(
             "structured answer projection violates the deterministic evidence contract"
@@ -142,18 +164,14 @@ def parse_hybrid_synthesis_output(
     request: HybridSynthesisRequest,
 ) -> HybridSynthesisResult:
     """Parse exact JSON and reject invented facts, citations, or extra output fields."""
-    if not isinstance(payload, str):
-        raise HybridSynthesisOutputError("payload must be a string")
-    if not isinstance(request, HybridSynthesisRequest):
-        raise HybridSynthesisOutputError(
-            "request must be an admitted HybridSynthesisRequest"
-        )
-    if len(payload) > MAX_HYBRID_PROVIDER_RESPONSE_CHARS:
+    admitted_payload = _admit_payload(payload)
+    admitted_request = _admit_request(request)
+    if len(admitted_payload) > MAX_HYBRID_PROVIDER_RESPONSE_CHARS:
         raise HybridSynthesisOutputError(
             "hybrid model output exceeds the hard response-size bound"
         )
     try:
-        parsed: object = json.loads(payload)
+        parsed: object = json.loads(admitted_payload)
     except json.JSONDecodeError as exc:
         raise HybridSynthesisOutputError(
             "hybrid model output must be one JSON object"
@@ -188,14 +206,14 @@ def parse_hybrid_synthesis_output(
             _parse_claim(
                 item,
                 claim_index=index,
-                request=request,
+                request=admitted_request,
             )
             for index, item in enumerate(claim_values, start=1)
         )
 
     try:
         return HybridSynthesisResult.create(
-            request=request,
+            request=admitted_request,
             decision=decision,
             claims=claims,
         )
