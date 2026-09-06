@@ -447,7 +447,7 @@ class ClaimCitationSupportJudgment:
         source: GroundingSupportJudgmentSource = (
             GroundingSupportJudgmentSource.HUMAN_REVIEWED
         ),
-    ) -> "ClaimCitationSupportJudgment":
+    ) -> ClaimCitationSupportJudgment:
         """Create one content-addressed semantic support label."""
         normalized_claim = _require_sha256(
             claim_sha256,
