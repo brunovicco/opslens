@@ -4,23 +4,16 @@ from __future__ import annotations
 
 from opslens.hybrid_retrieval.domain.errors import HybridRetrievalValidationError
 from opslens.hybrid_retrieval.domain.models import (
+    SEMANTIC_EVIDENCE_NEEDS,
+    STRUCTURED_EVIDENCE_NEEDS,
+    UNSUPPORTED_EVIDENCE_NEEDS,
     CompletenessSemantics,
     EvidenceClass,
-    EvidenceNeed,
     HybridRoute,
     HybridRouteDecision,
     HybridRoutingRequest,
     RouteReason,
 )
-
-STRUCTURED_EVIDENCE_NEEDS = frozenset(
-    {
-        EvidenceNeed.VULNERABILITY_FACTS,
-        EvidenceNeed.RISK_PRIORITY,
-    }
-)
-SEMANTIC_EVIDENCE_NEEDS = frozenset({EvidenceNeed.REMEDIATION_GUIDANCE})
-UNSUPPORTED_EVIDENCE_NEEDS = frozenset({EvidenceNeed.RUNTIME_EXPOSURE})
 
 
 def route_evidence_request(request: HybridRoutingRequest) -> HybridRouteDecision:
