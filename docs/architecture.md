@@ -2,9 +2,9 @@
 
 _Last updated: 2026-09-06_
 
-This document is the accumulated architecture baseline through **Phase 7 — Gate 7.4: Real bounded Retrieve adapter**.
+This document is the accumulated architecture baseline through **Phase 7 — Gate 7.5: Retrieval evaluation**.
 
-The next architecture boundary is **Phase 7 — Gate 7.5: Retrieval evaluation**.
+The next architecture boundary is **Phase 7 — Gate 7.6: Deterministic context assembly + synthesis**.
 
 ## 1. Purpose
 
@@ -39,7 +39,7 @@ Unless changed by an explicit ADR:
 - package identity normalization, version/range matching, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS evidence, and Risk Policy remain deterministic;
 - semantic-query validation and SQL compilation remain deterministic;
 - canonical corpus normalization, selection, hashing, and checked manifest identity remain deterministic;
-- retrieval evidence admission and citation projection remain deterministic;
+- retrieval evidence admission, evaluation, context admission, and citation projection remain deterministic;
 - provider/model outputs are evidence or proposals, not authority over structured truth;
 - LLMs may classify, plan, route, synthesize, and explain only over validated evidence;
 - retrieved explanatory text never becomes a second authority for structured threat facts;
@@ -78,7 +78,7 @@ natural-language factual question
 
 The planner has no arbitrary SQL authority.
 
-### Phase 7 explanatory/remediation path through Gate 7.4
+### Phase 7 explanatory/remediation path through Gate 7.5
 
 ```text
 explicitly authorized official sources
@@ -97,9 +97,10 @@ explicitly authorized official sources
  -> checked-corpus S3/hash/metadata reconciliation
  -> RetrievedChunk[]
  -> RetrievalEvidence
+ -> deterministic retrieval evaluation
 ```
 
-Retrieval is now real and independently measurable. Synthesis remains a later authority.
+Retrieval is real and independently measured. Synthesis remains a later authority.
 
 ## 4. AWS foundation
 
@@ -205,7 +206,7 @@ ADRs:
 0021 Bounded Bedrock semantic-query planner
 ```
 
-## 10. Knowledge Retrieval — Phase 7 through Gate 7.4
+## 10. Knowledge Retrieval — Phase 7 through Gate 7.5
 
 ### 10.1 Provider-independent retrieval contract
 
@@ -293,7 +294,7 @@ total bytes:          14,928
 metadata sidecars:    394..493 bytes
 ```
 
-The first ingestion revealed that the final serialized associated metadata, not merely logical custom metadata, must fit Bedrock/S3 Vectors' effective 1024-byte limit. The publisher now validates the final serialized sidecar bytes.
+The first ingestion revealed that the final serialized associated metadata, not merely logical custom metadata, must fit Bedrock/S3 Vectors' effective 1024-byte limit. The publisher validates final serialized sidecar bytes.
 
 Successful ingestion:
 
@@ -308,9 +309,7 @@ documents skipped:                0
 vectors materialized:             9
 ```
 
-A strongly consistent S3 Vectors listing returned exactly nine vector keys.
-
-### 10.4 Gate 7.4 direct retrieval baseline — COMPLETE
+### 10.4 Gate 7.4 direct retrieval baseline — COMPLETE / MERGED
 
 Gate 7.4 deliberately uses direct `Retrieve`, not `RetrieveAndGenerate`, so raw retrieval quality/latency/provenance/cost remain independently measurable.
 
@@ -346,25 +345,9 @@ Typed Gate 7.1 filters fail before the provider call until a reviewed determinis
 
 `nextToken` and guardrail intervention fail closed in v1.
 
-### 10.5 Real provider compatibility evidence
+The first real call exposed `section_path` elements represented as JSON-quoted scalars. The adapter normalizes only that empirically proven representation and still requires exact equality with checked manifest evidence.
 
-The first real call reached Bedrock but admission rejected `section_path` because Bedrock returned each path element as a JSON-quoted scalar inside the list.
-
-Observed shape:
-
-```text
-["\"Secure installs\"", "\"Hash-checking Mode\""]
-```
-
-Canonical manifest shape:
-
-```text
-["Secure installs", "Hash-checking Mode"]
-```
-
-The adapter normalizes only this empirically observed case: quoted elements must parse as exactly one JSON string and the decoded value must equal checked manifest evidence. Plain canonical strings remain valid; malformed or mismatching values fail closed.
-
-### 10.6 Real admitted retrieval evidence
+Real admitted retrieval:
 
 ```text
 knowledge base:         BTVJ2PBR2A
@@ -378,39 +361,121 @@ rank 1 chunk:           knowledge-chunk:pypa-secure-installs:hashes:v1
 rank 1 score:           0.8649594783782959
 ```
 
-All five results passed deterministic S3 location, content hash, byte-count, metadata, and checked-corpus provenance admission.
-
-The CLI emits no retrieved source text and no raw query; operational evidence is hash/identity/rank/score/latency/request metadata only.
-
-### 10.7 Real failure evidence
-
-One intentional read-only request used a nonexistent syntactically valid KB ID:
+Intentional read-only provider failure:
 
 ```text
-ZZZZZZZZZZ
+nonexistent KB: ZZZZZZZZZZ
+provider_code: ResourceNotFoundException
 ```
 
-Observed safe diagnostic:
+Gate 7.4 was squash-merged through PR #97 at:
 
 ```text
-provider_code=ResourceNotFoundException
+7c25877e0ae9541a4f20b8537e4f77c88ee776a5
 ```
 
-No provider response body, corpus text, or credential material was copied into the operational error.
-
-### 10.8 IAM separation
+### 10.5 IAM separation
 
 The Knowledge Base service role owns ingestion/storage integration and is trusted by `bedrock.amazonaws.com`, not humans.
 
 Retrieval is a separate runtime responsibility. A future deployed retrieval principal should be scoped to the exact KB retrieval action and must not inherit source writes, vector writes/deletes, ingestion, PassRole, or Terraform provisioning authority merely to retrieve.
 
-No application runtime principal exists yet, so final retrieval-role attachment is deferred until there is an actual compute principal. Creating an unattached role would add dead IAM surface.
+No application runtime principal exists yet, so final retrieval-role attachment is deferred until there is an actual compute principal.
 
-### 10.9 Retrieval-content trust boundary
+### 10.6 Retrieval-content trust boundary
 
 Authorized/pinned text remains untrusted instruction content.
 
 Retrieved text may become explanatory evidence only after deterministic admission. It cannot change system prompts, IAM, tool policies, vulnerability applicability, structured source facts, or Risk Policy.
+
+### 10.7 Gate 7.5 evaluation contract
+
+Gate 7.5 freezes evaluation over `knowledge-retrieval-golden:v1`:
+
+```text
+10 cases
+8 positive
+2 negative/out-of-authority
+one real top_k=10 ranking per case
+```
+
+Metrics are deterministic over admitted results:
+
+```text
+Recall@1
+Recall@3
+Recall@5
+Recall@10
+MRR
+relevant-hit provenance correctness
+negative non-empty retrieval evidence
+latency distribution
+retry counts
+```
+
+Provider/runtime failures are not converted into retrieval misses. Aggregate quality is withheld if the run is incomplete.
+
+### 10.8 Gate 7.5 real baseline
+
+All ten real calls completed successfully with zero SDK retries.
+
+```text
+Recall@1:   0.375
+Recall@3:   0.750
+Recall@5:   0.875
+Recall@10:  1.000
+MRR:        0.5699404761904762
+provenance correctness: 1.0
+```
+
+Latency:
+
+```text
+min:   532 ms
+max:   1728 ms
+mean:  720.0 ms
+p50:   616 ms
+p95:   1728 ms
+```
+
+The expected vendor-advisory remediation chunk was the weakest positive target at rank 7. This is retained as baseline evidence and is not fixed by relabeling or post-hoc test-set tuning.
+
+`Recall@10=1.0` is intentionally not treated as a strong production claim because the corpus contains only nine vectors. `Recall@3`, `Recall@5`, and MRR better expose ranking behavior.
+
+### 10.9 Negative retrieval conclusion
+
+Both out-of-authority cases returned nine nearest-neighbor results:
+
+```text
+negative_nonempty_retrieval_rate = 1.0
+rank-1 scores ~= 0.689
+```
+
+The negative scores overlap scores from legitimate positive retrieval evidence. Therefore:
+
+- non-empty vector retrieval is not an authority decision;
+- Bedrock relevance score is not a calibrated probability;
+- Gate 7.5 provides no evidence for a global score threshold;
+- route/authority validation must precede synthesis;
+- runtime exposure cannot be answered merely because remediation text is semantically nearby.
+
+This measurement reinforces both `Not every question is a RAG problem` and `Repository Risk != Runtime Exposure`.
+
+### 10.10 Gate 7.6 design consequence
+
+Gate 7.6 must not blindly pass every retrieved candidate into synthesis.
+
+The next contract must freeze deterministic context admission/assembly independently of model generation, including:
+
+- candidate retrieval bound vs context bound;
+- deterministic ordering/formatting;
+- explicit unsupported/insufficient-evidence behavior;
+- context token/byte limits;
+- treatment of untrusted retrieved instructions;
+- model input/output and call budgets;
+- generation evidence required for troubleshooting.
+
+Gate 7.5's frozen golden set is evidence for architectural decisions, not a dataset for ad-hoc tuning.
 
 ## 11. Evidence and cache boundary
 
@@ -460,6 +525,12 @@ Retrieval runtime
  -> checked-corpus admission
  -> no ingestion/vector-write authority
  -> final deployed principal deferred until actual runtime exists
+
+Retrieval evaluation
+ -> checked admitted chunks only
+ -> deterministic metrics
+ -> provider scores remain non-authoritative
+ -> no synthesis/model authority
 ```
 
 Runtime Exposure remains a later independent evidence domain and is not inferred from repository risk.
@@ -479,9 +550,17 @@ Examples of deliberate non-adoption:
 
 Gate 7.3 uses only nine vectors.
 
-Gate 7.4 observed three searches against the populated index. At current S3 Vectors request pricing of `$2.50 / 1,000,000 queries`, the request-fee component is approximately `$0.0000075`, plus negligible processed-data cost for this tiny index and query-embedding model usage. Exact query billing is not inferred from provider telemetry that does not expose billable vector bytes or embedding token usage.
+Gate 7.4 observed three populated-index searches.
 
-Gate 7.5 will measure full-fixture query count, latency distribution, quality, and bounded cost assumptions.
+Gate 7.5 observed ten populated-index searches. At the published S3 Vectors request price of `$2.50 / 1,000,000 queries`, the exact request-fee component is:
+
+```text
+$0.000025
+```
+
+The S3 Vectors pricing model also includes data processed and data returned. The customer-managed KB also uses Titan Text Embeddings V2 for query embeddings. Bedrock `Retrieve` does not expose the exact billable vector bytes or query-embedding token count required to reconstruct those components, so OpsLens does not fabricate a full bill from incomplete telemetry.
+
+AWS now documents both Managed and Customer-managed Knowledge Bases. OpsLens uses the customer-managed form with S3 Vectors and a selected embedding model; pricing examples for the newer fully managed KB must not be applied blindly to this architecture.
 
 ## 14. Quality gates
 
@@ -508,22 +587,23 @@ Real AWS evidence complements but does not replace offline tests, strict typing,
 0022 Customer-managed Bedrock Knowledge Base with S3 Vectors
 ```
 
-## 16. Next architecture decision — Gate 7.5
+## 16. Next architecture decision — Gate 7.6
 
-Gate 7.5 must evaluate the raw semantic retrieval baseline before synthesis, reranking, hybrid search, or additional filter behavior changes.
+After Gate 7.5 is squash-merged, freeze deterministic context assembly before adding generation.
 
-Required evaluation dimensions:
+Required decisions:
 
 ```text
-Recall@1
-Recall@3
-Recall@5
-Recall@10
-MRR
-provenance/source correctness
-latency distribution
-retrieval-call count
-bounded retrieval cost assumptions
+retrieval candidate bound
+context admission bound
+context token/byte budget
+ordering and formatting
+unsupported / insufficient-evidence behavior
+synthesis model + runtime API
+input/output token limits
+retry and timeout policy
+prompt-injection treatment
+runtime evidence contract
 ```
 
-The evaluation must use the frozen Gate 7.1/7.2 fixture and Gate 7.4 direct-Retrieve runtime. Provider relevance scores remain uncalibrated evidence, not confidence probabilities.
+Generation must consume only admitted evidence. Retrieval relevance scores remain observational signals and do not become authority or confidence probabilities.
