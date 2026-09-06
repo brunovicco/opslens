@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from hashlib import sha256
 from typing import cast
 
 from opslens.knowledge_retrieval.domain import (
+    MAX_RETRIEVAL_QUERY_CHARS,
+    MAX_SYNTHESIS_OUTPUT_CHARS,
     SYNTHESIS_CONTRACT_ID,
     AssembledContext,
     SynthesisAuthorityDecision,
@@ -18,7 +21,7 @@ from opslens.knowledge_retrieval.domain import (
 )
 from opslens.knowledge_retrieval.domain.errors import KnowledgeRetrievalValidationError
 
-MAX_SYNTHESIS_PROVIDER_RESPONSE_CHARS = 4_512
+MAX_SYNTHESIS_PROVIDER_RESPONSE_CHARS = 65_536
 
 TRUSTED_SYNTHESIS_INSTRUCTIONS_V1 = (
     "You are the OpsLens knowledge synthesis component. Use only the supplied admitted "
@@ -32,6 +35,8 @@ TRUSTED_SYNTHESIS_INSTRUCTIONS_V1 = (
     "only {\"decision\":\"answer\",\"answer\":\"...\"}. Do not add markdown, citations, "
     "or extra JSON keys."
 )
+
+_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 
 class SynthesisAdmissionError(ValueError):
@@ -56,6 +61,24 @@ def _require_runtime_instance(value: object, expected_type: type[object], label:
     """Reject an untrusted runtime value outside the application contract."""
     if not _is_runtime_instance(value, expected_type):
         raise SynthesisOutputError(f"{label} has an unsupported runtime value")
+
+
+def _normalize_required_text(value: object, label: str) -> str:
+    """Return one trimmed non-empty string or reject the envelope."""
+    if not isinstance(value, str):
+        raise SynthesisOutputError(f"{label} must be a string")
+    normalized = value.strip()
+    if not normalized:
+        raise SynthesisOutputError(f"{label} cannot be blank")
+    return normalized
+
+
+def _validate_sha256(value: object, label: str) -> str:
+    """Require one lowercase hexadecimal SHA-256 digest."""
+    normalized = _normalize_required_text(value, label)
+    if _SHA256_PATTERN.fullmatch(normalized) is None:
+        raise SynthesisOutputError(f"{label} must be one lowercase SHA-256 digest")
+    return normalized
 
 
 def _canonical_json(value: object) -> str:
@@ -97,6 +120,55 @@ class SynthesisPromptEnvelope:
     evidence_sha256: str
     prompt_sha256: str
 
+    def __post_init__(self) -> None:
+        """Fail closed if serialized prompt evidence or its content identity is altered."""
+        request_sha256 = _validate_sha256(self.request_sha256, "request_sha256")
+        object.__setattr__(self, "request_sha256", request_sha256)
+
+        trusted_instructions = _normalize_required_text(
+            self.trusted_instructions,
+            "trusted_instructions",
+        )
+        if trusted_instructions != TRUSTED_SYNTHESIS_INSTRUCTIONS_V1:
+            raise SynthesisOutputError("trusted_instructions must match the frozen v1 contract")
+        object.__setattr__(self, "trusted_instructions", trusted_instructions)
+
+        question = _normalize_required_text(self.question, "question")
+        if len(question) > MAX_RETRIEVAL_QUERY_CHARS:
+            raise SynthesisOutputError(
+                f"question cannot exceed {MAX_RETRIEVAL_QUERY_CHARS} characters"
+            )
+        object.__setattr__(self, "question", question)
+
+        evidence_json = _normalize_required_text(self.evidence_json, "evidence_json")
+        try:
+            parsed_evidence: object = json.loads(evidence_json)
+        except json.JSONDecodeError as exc:
+            raise SynthesisOutputError("evidence_json must be valid JSON") from exc
+        if not isinstance(parsed_evidence, dict):
+            raise SynthesisOutputError("evidence_json must be one JSON object")
+        if evidence_json != _canonical_json(parsed_evidence):
+            raise SynthesisOutputError("evidence_json must use canonical serialization")
+        object.__setattr__(self, "evidence_json", evidence_json)
+
+        evidence_sha256 = _validate_sha256(self.evidence_sha256, "evidence_sha256")
+        if evidence_sha256 != sha256(evidence_json.encode("utf-8")).hexdigest():
+            raise SynthesisOutputError("evidence_sha256 must match exact evidence_json bytes")
+        object.__setattr__(self, "evidence_sha256", evidence_sha256)
+
+        prompt_sha256 = _validate_sha256(self.prompt_sha256, "prompt_sha256")
+        expected_prompt_sha256 = sha256(
+            _prompt_fingerprint_payload(
+                request_sha256=request_sha256,
+                trusted_instructions=trusted_instructions,
+                question=question,
+                evidence_json=evidence_json,
+            )
+        ).hexdigest()
+        if prompt_sha256 != expected_prompt_sha256:
+            raise SynthesisOutputError("prompt_sha256 must match exact prompt-envelope evidence")
+        object.__setattr__(self, "prompt_sha256", prompt_sha256)
+
 
 def build_synthesis_request(
     *,
@@ -112,15 +184,12 @@ def build_synthesis_request(
         raise SynthesisAdmissionError(authority_decision)
 
     resolved_limits = limits if limits is not None else SynthesisLimits()
-    try:
-        return SynthesisRequest.create(
-            question=question,
-            context=context,
-            authority_decision=authority_decision,
-            limits=resolved_limits,
-        )
-    except KnowledgeRetrievalValidationError:
-        raise
+    return SynthesisRequest.create(
+        question=question,
+        context=context,
+        authority_decision=authority_decision,
+        limits=resolved_limits,
+    )
 
 
 def build_synthesis_prompt(request: SynthesisRequest) -> SynthesisPromptEnvelope:
@@ -210,6 +279,8 @@ def parse_synthesis_output(
             raise SynthesisOutputError("answer decision requires non-blank answer text")
         if len(answer) > request.limits.max_output_chars:
             raise SynthesisOutputError("answer exceeds the admitted request output bound")
+        if len(answer) > MAX_SYNTHESIS_OUTPUT_CHARS:
+            raise SynthesisOutputError("answer exceeds the hard synthesis output bound")
 
     try:
         return SynthesisResult.create(
