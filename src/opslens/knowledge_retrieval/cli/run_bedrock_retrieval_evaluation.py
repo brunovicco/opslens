@@ -21,6 +21,7 @@ from opslens.knowledge_retrieval.adapters.bedrock_retrieval import (
 from opslens.knowledge_retrieval.application.bedrock_retrieval import (
     BedrockRetrievalProviderError,
     BedrockRetrievalValidationError,
+    BedrockRetrieveResult,
     run_bounded_retrieve,
 )
 from opslens.knowledge_retrieval.application.corpus_config import (
@@ -41,7 +42,10 @@ from opslens.knowledge_retrieval.application.retrieval_evaluation_runner import 
     RetrievalEvaluationExecution,
     run_retrieval_evaluation,
 )
-from opslens.knowledge_retrieval.domain import KnowledgeRetrievalValidationError
+from opslens.knowledge_retrieval.domain import (
+    KnowledgeRetrievalValidationError,
+    RetrievalRequest,
+)
 
 _REQUIRED_REGION = "us-east-1"
 _DEFAULT_MANIFEST = Path("knowledge/corpus/v1/manifest.json")
@@ -236,7 +240,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         client = cast(BedrockAgentRuntimeClient, dynamic_client)
         adapter = BedrockKnowledgeBaseRetrieveAdapter(client)
 
-        def retrieve(request):
+        def retrieve(request: RetrievalRequest) -> BedrockRetrieveResult:
+            """Run one already-bounded Gate 7.4 request for the evaluator."""
             return run_bounded_retrieve(
                 adapter,
                 request=request,
