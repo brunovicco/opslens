@@ -34,3 +34,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0024](0024-phase7-runtime-iam-boundary.md) | Freeze the future least-privilege Phase 7 application runtime IAM boundary | Accepted |
 | [0025](0025-deterministic-hybrid-routing-authority.md) | Freeze deterministic hybrid routing and authority semantics | Accepted |
 | [0026](0026-deterministic-hybrid-evidence-envelope.md) | Preserve authority classes in deterministic hybrid evidence | Accepted |
+| [0027](0027-frozen-hybrid-evaluation-contract.md) | Freeze hybrid evaluation cases and independent metric dimensions before synthesis | Accepted |
