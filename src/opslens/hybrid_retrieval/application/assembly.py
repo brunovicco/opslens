@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+from opslens.hybrid_retrieval.domain.errors import HybridRetrievalValidationError
 from opslens.hybrid_retrieval.domain.evidence import (
     HybridEvidenceEnvelope,
     SemanticEvidenceChunk,
     StructuredEvidenceRow,
 )
-from opslens.hybrid_retrieval.domain.errors import HybridRetrievalValidationError
 from opslens.hybrid_retrieval.domain.models import HybridRouteDecision
 from opslens.knowledge_retrieval.domain import RetrievalEvidence, RetrievedChunk
 
