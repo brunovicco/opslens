@@ -23,17 +23,19 @@ Phase 7    Knowledge Retrieval with Bedrock                    COMPLETE
   Gate 7.6 Context assembly + synthesis                        COMPLETE / MERGED
   Gate 7.7 Citations + groundedness                            COMPLETE / MERGED
   Gate 7.8 Phase 7 closeout                                    COMPLETE / MERGED
-Phase 8    Hybrid Retrieval                                    NEXT
+Phase 8    Hybrid Retrieval                                    IN PROGRESS
+  Gate 8.1 Offline hybrid routing + authority contract         COMPLETE / MERGED
+  Gate 8.2 Deterministic hybrid evidence envelope              NEXT
 ```
 
 Latest merged checkpoint:
 
 ```text
-Phase 7 Gate 7.8 / PR #102
-16dcb98ac16e692e3eec647dcd44592497533d88
+Phase 8 Gate 8.1 / PR #105
+d234f6a18af1cbbeafe6e6cb0693a9d42e58742d
 ```
 
-Gate 7.8 tracking issue #101 is closed as completed.
+Gate 8.1 tracking issue #104 is closed as completed.
 
 ## Permanent boundaries
 
@@ -49,9 +51,11 @@ Gate 7.8 tracking issue #101 is closed as completed.
 
 > **No unrestricted text-to-SQL.**
 
-Deterministic authorities own package normalization, version/range matching, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS evidence, Risk Policy, semantic-query validation and SQL compilation, canonical corpus construction, retrieval evidence admission, context assembly, citation authority, output admission, and evaluation metric computation.
+> **Intent classification != execution authority.**
 
-LLMs may classify, plan, synthesize, explain, route, and select among already-admitted citation IDs. They do not replace structured truth or invent source authority.
+Deterministic authorities own package normalization, version/range matching, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS evidence, Risk Policy, semantic-query validation and SQL compilation, canonical corpus construction, retrieval evidence admission, context assembly, citation authority, output admission, evaluation metric computation, hybrid route authorization, and execution limits.
+
+LLMs may classify, plan, synthesize, explain, route proposals, and select among already-admitted citation IDs. They do not replace structured truth, invent source authority, or directly authorize structured/semantic execution.
 
 ## Implemented system
 
@@ -75,9 +79,15 @@ Controlled Knowledge Corpus
  -> grounded claim/citation output contract
  -> explicit human support judgments
  -> deterministic groundedness metrics
+
+Typed EvidenceNeed proposal
+ -> HybridRoutingRequest admission
+ -> deterministic route_evidence_request
+ -> HybridRouteDecision
+ -> STRUCTURED | SEMANTIC | HYBRID | UNSUPPORTED
 ```
 
-The structured and semantic paths are complementary. Structured vulnerability/risk facts remain outside RAG authority.
+The structured and semantic paths are complementary. Structured vulnerability/risk facts remain outside RAG authority. Gate 8.1 authorizes evidence classes only; it does not execute Athena, Bedrock Retrieve, S3 Vectors, a model, or hybrid synthesis.
 
 ## Phase 7 AWS baseline
 
@@ -273,25 +283,122 @@ Current lab evidence includes provider request IDs, retrieval ranks/scores, prov
 
 Phase 7 does not claim production SLOs, high-volume percentiles, end-user trace correlation, production alerts, or full per-request bill attribution without a deployed workload.
 
-## Phase 8 entry criteria
+## Phase 8 Gate 8.1 — Offline hybrid routing + authority contract
 
-Phase 8 starts from these frozen assumptions:
+Gate 8.1 froze the provider-independent contract before any new provider integration.
+
+Contract version:
+
+```text
+hybrid-routing:v1
+```
+
+Recognized evidence needs:
+
+```text
+vulnerability_facts
+risk_priority
+remediation_guidance
+runtime_exposure
+```
+
+Deterministic v1 policy:
+
+```text
+vulnerability_facts and/or risk_priority
+ -> STRUCTURED
+ -> required evidence: STRUCTURED
+ -> completeness: ALL_REQUIRED
+
+remediation_guidance
+ -> SEMANTIC
+ -> required evidence: SEMANTIC
+ -> completeness: ALL_REQUIRED
+
+structured need + remediation_guidance
+ -> HYBRID
+ -> required evidence: STRUCTURED + SEMANTIC
+ -> completeness: ALL_REQUIRED
+
+runtime_exposure, alone or mixed
+ -> UNSUPPORTED
+ -> required evidence: none
+ -> completeness: NOT_APPLICABLE
+```
+
+A true hybrid route is intentionally `ALL_REQUIRED`: semantic retrieval cannot substitute structured truth, and structured evidence cannot pretend to contain explanatory/remediation guidance.
+
+`runtime_exposure` is recognized but unavailable until actual runtime authority is implemented in the later Amazon Inspector phase. Repository risk is not promoted into runtime exposure.
+
+Route decisions carry stable reason codes, canonical evidence-need ordering, required evidence classes, completeness semantics, and a versioned content-addressed SHA-256 identity.
+
+ADR:
+
+```text
+docs/adr/0025-deterministic-hybrid-routing-authority.md
+```
+
+Lab record:
+
+```text
+labs/phase-8-gate-8-1-hybrid-routing-contract.md
+```
+
+### Gate 8.1 validation
+
+Final executable PR head:
+
+```text
+2d73b03030b3a2b0334fbd15dcfba798661f49c4
+```
+
+Python CI #298 / run `34047512871` passed all six jobs, including the new explicit `Hybrid retrieval quality gates` slice:
+
+```text
+uv lock --check  PASS
+Ruff             PASS
+Pyright strict   PASS
+pytest           PASS
+```
+
+An earlier run failed strict Pyright because direct runtime `isinstance` checks on statically typed parameters triggered `reportUnnecessaryIsInstance`. The fix preserved runtime validation behind `object`-typed admission helpers; no `type: ignore` or weakened type-checking rule was introduced.
+
+Gate 8.1 created:
+
+```text
+AWS resources: 0
+IAM changes:   0
+Athena calls:  0
+Bedrock calls: 0
+S3 Vectors calls: 0
+model calls:   0
+```
+
+The frozen Phase 7 Gate 7.5 and Gate 7.7 quality baselines were not modified.
+
+## Gate 8.2 entry criteria
+
+Gate 8.2 starts from these frozen assumptions:
 
 ```text
 1. structured vulnerability/risk truth remains deterministic authority
 2. semantic retrieval remains explanatory/remediation evidence
-3. routing between evidence classes is explicit and typed
-4. combined answers preserve provenance by evidence class
-5. Gate 7.7 baseline remains immutable
-6. prompt/reranker/retrieval changes are separately versioned and reevaluated
-7. no new AWS service is added without a measured requirement
-8. quality, cost, failure, and observability remain separately measurable
+3. intent classification is a proposal, not execution authority
+4. the Gate 8.1 route decision authorizes evidence classes deterministically
+5. HYBRID v1 requires all required evidence classes
+6. runtime_exposure remains unsupported without runtime authority
+7. combined evidence must preserve provenance by evidence class
+8. Gate 7.7 baseline remains immutable
+9. no new AWS service is added without a measured requirement
+10. quality, cost, failure, and observability remain separately measurable
 ```
 
 ## Validation note
 
-PR #102 changed documentation/ADR files only. The repository `Python CI` pull-request workflow intentionally filters to executable Python/tests/fixtures/corpus/build paths, so the documentation-only closeout did not schedule a new Python run. The executable Gate 7.7 baseline immediately preceding the closeout passed **Python CI #295** successfully.
+PR #105 was squash-merged only after Python CI #298 passed against exact executable head `2d73b03030b3a2b0334fbd15dcfba798661f49c4`. The merge used that SHA as the expected head and produced main commit `d234f6a18af1cbbeafe6e6cb0693a9d42e58742d`.
+
+This post-merge state synchronization changes documentation only. The repository `Python CI` pull-request workflow intentionally filters away documentation-only changes, so no new executable validation is expected for this state-only update.
 
 ## Next action
 
-Begin **Phase 8 — Gate 8.1: Offline Hybrid Routing + Authority Contract** from the merged Gate 7.8 main checkpoint. Do not add AWS resources or make model calls in Gate 8.1.
+Begin **Phase 8 — Gate 8.2: Deterministic Hybrid Evidence Envelope** from merged Gate 8.1 main. Do not flatten structured and semantic provenance into one undifferentiated evidence authority.
