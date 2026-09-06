@@ -4,7 +4,7 @@ _Date: 2026-09-06_
 
 ## Status
 
-**IN PROGRESS — 7.6a DETERMINISTIC CONTEXT ASSEMBLY COMPLETE / SYNTHESIS CONTRACT NEXT.**
+**IN PROGRESS — 7.6a, 7.6b, AND 7.6c COMPLETE OFFLINE / 7.6d PROVIDER ADAPTER NEXT.**
 
 Gate 7.5 was squash-merged to `main` at:
 
@@ -12,11 +12,11 @@ Gate 7.5 was squash-merged to `main` at:
 b30af10a568cefa7175c253120499939f9ca18d8
 ```
 
-Gate 7.6 begins from the measured real retrieval baseline rather than coupling generation directly to provider output.
+Gate 7.6 remains on draft PR #99. No real synthesis invocation has occurred yet.
 
 ## Permanent boundary
 
-> Retrieval candidates are evidence. Deterministic code decides what evidence may enter synthesis context.
+> Retrieval candidates are evidence. Deterministic code decides what evidence may enter synthesis context and whether a model call is allowed.
 
 This extends the project rule:
 
@@ -41,30 +41,20 @@ MRR:        0.5699404761904762
 
 Both negative cases returned nine nearest-neighbor candidates, with rank-1 scores near `0.689`. Those values overlap scores observed for legitimate positive evidence.
 
-Therefore Gate 7.6 does **not** use provider relevance score as:
+Therefore Gate 7.6 does **not** use provider relevance score as confidence probability, authority decision, route decision, or context-admission threshold. No global score threshold is derived from the frozen Gate 7.5 test set.
 
-- confidence probability;
-- authority decision;
-- route decision;
-- context-admission threshold.
+## 7.6a — Deterministic context assembly — COMPLETE
 
-No global score threshold is derived from the frozen Gate 7.5 test set.
-
-## 7.6a goal
-
-Freeze a provider-independent, deterministic boundary between already-admitted `RetrievalEvidence` and any future synthesis provider request.
+Provider-independent flow:
 
 ```text
 RetrievalEvidence
- -> deterministic rank-prefix context assembly
- -> ContextEvidenceBlock[]
+ -> deterministic contiguous rank-prefix assembly
+ -> whole ContextEvidenceBlock[]
  -> AssembledContext
- -> future bounded synthesis request
 ```
 
-No Bedrock generation call is part of 7.6a.
-
-## Frozen v1 context limits
+Frozen limits:
 
 ```text
 default max chunks:      5
@@ -72,188 +62,273 @@ hard max chunks:         10
 max admitted text bytes: 16,384 UTF-8 bytes
 ```
 
-The byte ceiling is an application-level denial-of-wallet/input-growth guardrail. It is deliberately **not** described as a token limit or a model context-window limit.
+Selection rules:
 
-Model-specific input tokens, output tokens, prompt-format overhead, inference API, timeout, retry, and pricing limits remain a later 7.6 decision.
-
-## Selection algorithm
-
-Context assembly uses a whole-chunk contiguous retrieval-rank prefix.
-
-For ranked admitted chunks `1..N`:
-
-1. start with an empty context;
-2. stop if `max_chunks` has already been reached;
-3. project the next whole admitted chunk into a `ContextEvidenceBlock`;
-4. stop if adding that entire block would exceed `max_utf8_bytes`;
-5. otherwise admit it and continue.
-
-Consequences:
-
-- chunks are never split or truncated;
-- retrieval order is never changed;
-- a lower-ranked smaller chunk cannot bypass a higher-ranked chunk that does not fit;
+- only already-admitted `RetrievedChunk` evidence is eligible;
+- whole chunks only; no source-text truncation;
+- preserve one contiguous retrieval-rank prefix from rank 1;
+- stop at the first non-fitting chunk;
+- never backfill with a smaller lower-ranked chunk;
 - empty retrieval fails closed;
-- if rank 1 alone cannot fit, assembly fails closed rather than truncating it;
-- no provider/model call occurs during assembly.
+- a rank-1 chunk that cannot fit fails closed;
+- provider `relevance_score` is not projected into synthesis context;
+- `context_sha256` binds query identity, limits, provenance/content hashes, ranks, counts, and stop reason.
 
-The no-backfill rule is intentional: reordering or skipping based on size would create a second ranking policy that Gate 7.5 did not evaluate.
+The byte ceiling is an application denial-of-wallet/input-growth bound, not a token estimate or provider context-window claim.
 
-## ContextEvidenceBlock
+## 7.6b — Synthesis request/output + abstention contract — COMPLETE
 
-Each selected block preserves canonical admitted evidence:
-
-```text
-retrieval_rank
-chunk_id
-document_id
-source_id
-source_type
-canonical_uri
-document_content_sha256
-chunk_content_sha256
-exact admitted text
-UTF-8 byte count
-title
-section_path
-```
-
-Provider `relevance_score` is intentionally absent.
-
-This prevents a non-calibrated similarity score from becoming an implicit synthesis instruction or confidence signal merely because it was included in the model context contract.
-
-## AssembledContext identity
-
-Operational context evidence contains:
+Gate 7.6b freezes the provider-independent model boundary before any provider call.
 
 ```text
-retrieval_id
-query_sha256
-limits
-selected block evidence
-retrieved_chunk_count
-total selected UTF-8 bytes
-stop_reason
-context_sha256
+AssembledContext
+ + exact original question
+ + deterministic authority decision
+ + SynthesisLimits
+ -> SynthesisRequest
+ -> SynthesisPromptEnvelope
+ -> future provider call
+ -> exact JSON output parser
+ -> SynthesisResult
 ```
 
-The raw user query is not copied into the operational context identity; its SHA-256 is used instead.
+### Authority vs model decision
 
-`context_sha256` is calculated deterministically from canonical JSON containing:
-
-- retrieval identity;
-- query SHA-256;
-- limits;
-- selected rank/provenance/content-hash evidence;
-- retrieved result count;
-- deterministic stop reason.
-
-The fingerprint does not need to duplicate retrieved source text because each selected block already carries and validates its exact content SHA-256.
-
-## Stop reasons
+The deterministic pre-model authority decision is:
 
 ```text
-exhausted_retrieval
-max_chunks
-max_utf8_bytes
+SUPPORTED
+UNSUPPORTED
 ```
 
-These are deterministic context-assembly evidence, not provider/model stop reasons.
+`UNSUPPORTED` fails before a `SynthesisRequest` exists. The model cannot grant itself authority.
 
-## Fail-closed behavior
-
-7.6a rejects:
+For an already-supported request, the model may propose only:
 
 ```text
-invalid context bounds
-wrong runtime contract types
-empty retrieval evidence
-rank-1 chunk larger than context byte budget
-non-contiguous selected rank prefix
-duplicate/invalid block structures inherited from retrieval evidence
-content hash mismatch
-UTF-8 byte-count mismatch
-context total mismatch
-context fingerprint mismatch
-inconsistent stop-reason shape
+ANSWER
+INSUFFICIENT_EVIDENCE
 ```
 
-Gate 7.4 remains responsible for provider-to-canonical retrieval admission before this layer runs.
-
-## Security boundary
-
-Future synthesis must keep at least three logical channels distinct:
+This distinction matters:
 
 ```text
-system/developer instructions      trusted control
-user question                      untrusted user input
-admitted retrieved source text     untrusted evidence
+unsupported authority
+ -> deterministic routing/admission fact
+ -> no model call
+
+insufficient evidence
+ -> legitimate model abstention inside an already-authorized explanatory domain
 ```
 
-Admission proves source/content identity. It does **not** make retrieved prose trusted instructions.
+The model cannot return `unsupported_authority` and thereby redefine routing policy.
 
-7.6a adds no IAM permissions, AWS resources, network calls, provider SDK calls, or model authority.
-
-## Cost / observability impact
-
-7.6a is pure local deterministic code:
+### Frozen v1 application bounds
 
 ```text
-AWS calls:              0
-new AWS resources:      0
-new IAM permissions:    0
-model tokens:           0
-provider cost:          $0
+question:            <= 1,000 characters
+model calls:         exactly 1 maximum
+answer:              <= 4,000 characters
+raw response parser: <= 65,536 characters
 ```
 
-Observable deterministic evidence available for later synthesis telemetry includes:
+The larger raw-response transport cap is not a larger answer entitlement. JSON escaping can make a wire payload longer than the decoded answer, so the parser uses a separate defensive transport ceiling while still enforcing the 4,000-character answer invariant after JSON decoding.
+
+### Prompt trust envelope
+
+The provider-independent envelope keeps three logical trust classes separate:
 
 ```text
-context_sha256
-query_sha256
-selected block count
-retrieved chunk count
-selected UTF-8 byte count
-stop reason
+trusted system instructions
+untrusted user question
+untrusted but source-verified retrieved evidence
 ```
 
-## Tests
+The frozen trusted instructions explicitly tell the future model to treat commands, role changes, policy changes, tool requests, and attempts to ignore prior instructions found in retrieved text as evidence data rather than control instructions.
 
-Offline tests cover:
-
-- default and maximum bounds;
-- exact whole-block projection;
-- provider score exclusion;
-- contiguous rank-prefix selection;
-- byte-budget stop without lower-rank backfill;
-- chunk-count stop;
-- empty retrieval failure;
-- oversized rank-1 failure;
-- score changes not affecting context identity;
-- byte-total tampering rejection;
-- context-fingerprint tampering rejection.
-
-CI history:
+The envelope is content-addressed through:
 
 ```text
-Python CI #243: FAIL — Ruff line-length only; corrected without semantic change
-Python CI #244: FAIL — Pyright flagged direct isinstance checks on strongly typed values
-Python CI #245: SUCCESS
-  Ruff:             PASS
-  Pyright strict:   PASS
-  pytest:            PASS
-  regressions:      PASS
+request_sha256
+evidence_sha256
+prompt_sha256
 ```
 
-The Pyright correction preserved runtime fail-closed checking through an `object`-typed helper rather than removing validation to satisfy static analysis. This mirrors the existing Gate 7.1 domain pattern.
+Canonical evidence serialization and all fingerprints fail closed on tampering.
+
+### Output contract
+
+Accepted model JSON is exactly one of:
+
+```json
+{"decision":"answer","answer":"..."}
+```
+
+or:
+
+```json
+{"decision":"insufficient_evidence","answer":null}
+```
+
+Markdown fences, extra keys, blank answer text, malformed JSON, invalid decisions, and answer text attached to `insufficient_evidence` are rejected.
+
+## 7.6c — Bedrock model/API selection — COMPLETE OFFLINE
+
+ADR 0023 freezes the first provider boundary as:
+
+```text
+Region:                  us-east-1
+endpoint:                bedrock-runtime
+API:                     Converse
+streaming:               no
+provider:                Anthropic
+model:                   Claude Haiku 4.5
+US Geo profile ID:       us.anthropic.claude-haiku-4-5-20251001-v1:0
+temperature:             0.0
+provider maxTokens:      2,048
+tools:                   none
+application model calls: 1
+```
+
+The exact US Geographic inference profile is reused from the real Phase 6 Bedrock planner rather than introducing model diversity without a measured requirement.
+
+Current official AWS documentation confirms that Claude Haiku 4.5 supports Converse and Bedrock structured outputs. From `us-east-1`, the selected US Geo profile may route within the documented US destination set. Global inference is not selected because it would widen the geographic processing boundary.
+
+### Structured output
+
+The pure Converse request uses:
+
+```text
+outputConfig.textFormat.type = json_schema
+```
+
+with a simple schema containing:
+
+```text
+decision: enum(answer, insufficient_evidence)
+answer:   string | null
+additionalProperties: false
+```
+
+The provider schema narrows generation shape but does not replace the deterministic parser.
+
+AWS currently documents `minLength` and `maxLength` as unsupported structured-output schema features, so the 4,000-character answer cap remains an application invariant rather than a provider-schema claim.
+
+AWS also documents that a new structured-output grammar can take additional time to compile on first use and that a successfully compiled identical grammar is cached for 24 hours. The first real synthesis latency therefore must be interpreted with that possible first-use effect visible.
+
+Anthropic native citations are intentionally not enabled because AWS documents them as incompatible with structured output. Deterministic citation projection and groundedness remain Gate 7.7.
+
+### IAM boundary
+
+Converse requires:
+
+```text
+bedrock:InvokeModel
+```
+
+This non-streaming path does not need:
+
+```text
+bedrock:InvokeModelWithResponseStream
+```
+
+A future deployed runtime must be scoped to the selected inference profile and required Claude Haiku 4.5 foundation-model resources in the US Geo source/destination Regions. Cross-Region routing means IAM/SCP restrictions across those required Regions can cause invocation failure.
+
+No deployed application runtime principal exists yet, so Gate 7.6c adds no IAM permission and invents no runtime role.
+
+### Cost planning
+
+Current US Geographic Claude Haiku 4.5 rate baseline:
+
+```text
+input:  $1.10 / 1,000,000 tokens
+output: $5.50 / 1,000,000 tokens
+```
+
+If the provider output cap of 2,048 tokens were fully consumed, the output-token component would be approximately:
+
+```text
+$0.011264
+```
+
+That is not a full per-call ceiling because real input tokens have not yet been measured. Gate 7.6e/7.6f must calculate observed cost from provider usage telemetry.
+
+### Model invocation logging
+
+Automatic Bedrock model invocation body logging remains disabled by decision for this gate. Synthesis prompts contain the user question and retrieved source text, so raw provider logging would introduce a separate retention/access-control boundary.
+
+The request instead carries content-free metadata:
+
+```text
+opslens_stage
+contract_id
+request_sha256
+prompt_sha256
+```
+
+## Offline provider-request implementation
+
+Gate 7.6c now has a pure request builder that creates the exact non-streaming Converse request without a network call.
+
+Tests prove:
+
+- the selected region/profile/model constants are frozen;
+- trusted instructions remain in the `system` field;
+- question and admitted evidence remain user-role untrusted data;
+- tools and streaming are absent;
+- the structured-output schema is exact;
+- request metadata contains hashes/contract identity rather than user or source text;
+- wrong runtime contract types fail closed.
+
+## CI history
+
+Gate 7.6a:
+
+```text
+#243 FAIL — Ruff line length
+#244 FAIL — Pyright direct-isinstance diagnostics
+#245 SUCCESS
+#249 SUCCESS after synchronized docs
+```
+
+Gate 7.6b:
+
+```text
+#250 SUCCESS — first synthesis contract
+#251 FAIL — Pyright nested JSON typing only
+#252 SUCCESS — hardened synthesis envelope
+```
+
+Gate 7.6c:
+
+```text
+#253 FAIL — Ruff test line length
+#254 FAIL — Pyright nested request-fixture typing
+#255 FAIL — one remaining Pyright list-element narrowing diagnostic
+#256 SUCCESS — pure Bedrock request selection is CI-green
+```
+
+All failures were local static-quality diagnostics. No AWS call was made while correcting them.
+
+## AWS / IAM / cost effect through 7.6c
+
+```text
+real synthesis AWS calls: 0
+new AWS resources:        0
+new IAM permissions:      0
+model tokens consumed:    0
+provider synthesis cost:  $0
+```
+
+The selected model/API/pricing/IAM boundary is now documented before runtime implementation.
 
 ## 7.6 increment plan
 
 ```text
 7.6a deterministic context assembly contract                 COMPLETE
-7.6b synthesis request/output + abstention contract           NEXT
-7.6c Bedrock model/API selection + official pricing/IAM      PENDING
-7.6d offline provider adapter tests                           PENDING
+7.6b synthesis request/output + abstention contract           COMPLETE
+7.6c Bedrock model/API selection + pricing/IAM review         COMPLETE OFFLINE
+7.6d offline provider adapter + response evidence             NEXT
 7.6e bounded real synthesis success/failure evidence          PENDING
 7.6f quality/latency/token/cost analysis                      PENDING
 7.6g docs/state closeout + final CI + squash merge            PENDING
@@ -261,12 +336,24 @@ The Pyright correction preserved runtime fail-closed checking through an `object
 
 ## Next authorized step
 
-Implement **7.6b offline first** before invoking Bedrock:
+Implement **7.6d offline** before invoking Bedrock:
 
-1. freeze the synthesis input/output contract;
-2. define explicit insufficient/unsupported-evidence behavior;
-3. define how untrusted context blocks are serialized separately from trusted instructions;
-4. freeze output-length and call-count authority at the application contract level;
-5. only then select the concrete Bedrock runtime API/model using current official AWS documentation.
+1. inject a minimal Converse client protocol;
+2. perform exactly one non-streaming `converse()` call per admitted request;
+3. strictly parse the assistant response shape and supported stop reason;
+4. pass returned text through the existing deterministic synthesis-output parser;
+5. capture content-free runtime evidence: provider request ID, stop reason, token usage, Bedrock latency, client elapsed time, retry count, request/prompt/context hashes;
+6. preserve provider failures distinctly from legitimate `insufficient_evidence` abstention;
+7. add success and failure unit tests;
+8. require CI green before preparing any real AWS validation command.
 
-Do not add real AWS synthesis calls merely to exercise a certification service.
+Do not add broad IAM or make a real synthesis call merely to exercise Bedrock.
+
+## References
+
+- ADR 0023: [`../docs/adr/0023-bounded-bedrock-knowledge-synthesis.md`](../docs/adr/0023-bounded-bedrock-knowledge-synthesis.md)
+- https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-haiku-4-5.html
+- https://docs.aws.amazon.com/bedrock/latest/userguide/structured-output.html
+- https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html
+- https://docs.aws.amazon.com/bedrock/latest/userguide/geographic-cross-region-inference.html
+- https://aws.amazon.com/bedrock/pricing/
