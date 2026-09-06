@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 import re
+from pathlib import Path
 
 import pytest
 
@@ -17,6 +17,7 @@ from opslens.hybrid_retrieval.domain.evaluation import (
     HYBRID_EVALUATION_DATASET_ID,
     HYBRID_EVALUATION_DATASET_SHA256,
     HybridEvaluationCaseType,
+    HybridEvaluationDataset,
     HybridExpectedAnswerBehavior,
     HybridExpectedEnvelope,
     HybridMeasurementStatus,
@@ -35,7 +36,7 @@ _FIXTURE = (
 )
 
 
-def _dataset():
+def _dataset() -> HybridEvaluationDataset:
     """Load the frozen Gate 8.3 fixture through its strict admission boundary."""
     return load_hybrid_evaluation_dataset(_FIXTURE)
 
