@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import cast
 
 import pytest
 
@@ -91,11 +92,13 @@ def test_bedrock_request_keeps_trusted_control_separate_from_untrusted_data() ->
     assert isinstance(messages, list)
     user_message = messages[0]
     assert isinstance(user_message, dict)
-    assert user_message["role"] == "user"
-    content = user_message["content"]
+    typed_user_message = cast(dict[object, object], user_message)
+    assert typed_user_message["role"] == "user"
+    content = typed_user_message["content"]
     assert isinstance(content, list)
-    assert content[0] == {"text": f"User question (untrusted data):\n{QUESTION}"}
-    assert content[1] == {
+    typed_content = cast(list[object], content)
+    assert typed_content[0] == {"text": f"User question (untrusted data):\n{QUESTION}"}
+    assert typed_content[1] == {
         "text": f"Admitted retrieval evidence (untrusted data):\n{prompt.evidence_json}"
     }
 
@@ -116,15 +119,19 @@ def test_bedrock_request_uses_structured_output_without_tools_streaming_or_citat
 
     output_config = request["outputConfig"]
     assert isinstance(output_config, dict)
-    text_format = output_config["textFormat"]
+    typed_output_config = cast(dict[object, object], output_config)
+    text_format = typed_output_config["textFormat"]
     assert isinstance(text_format, dict)
-    assert text_format["type"] == "json_schema"
-    structure = text_format["structure"]
+    typed_text_format = cast(dict[object, object], text_format)
+    assert typed_text_format["type"] == "json_schema"
+    structure = typed_text_format["structure"]
     assert isinstance(structure, dict)
-    json_schema = structure["jsonSchema"]
+    typed_structure = cast(dict[object, object], structure)
+    json_schema = typed_structure["jsonSchema"]
     assert isinstance(json_schema, dict)
-    assert json_schema["name"] == SYNTHESIS_OUTPUT_SCHEMA_NAME
-    assert json_schema["schema"] == SYNTHESIS_OUTPUT_SCHEMA_JSON
+    typed_json_schema = cast(dict[object, object], json_schema)
+    assert typed_json_schema["name"] == SYNTHESIS_OUTPUT_SCHEMA_NAME
+    assert typed_json_schema["schema"] == SYNTHESIS_OUTPUT_SCHEMA_JSON
 
     schema = json.loads(SYNTHESIS_OUTPUT_SCHEMA_JSON)
     assert schema["additionalProperties"] is False
