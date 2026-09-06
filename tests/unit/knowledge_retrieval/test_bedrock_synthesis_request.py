@@ -33,7 +33,10 @@ from opslens.knowledge_retrieval.domain import (
 QUESTION = "How should I make dependency installation safer?"
 
 
-def _prompt(*, text: str = "Require hashes for every dependency artifact.") -> SynthesisPromptEnvelope:
+def _prompt(
+    *,
+    text: str = "Require hashes for every dependency artifact.",
+) -> SynthesisPromptEnvelope:
     """Build one valid prompt envelope from already-admitted offline evidence."""
     chunk = RetrievedChunk.from_text(
         chunk_id="knowledge-chunk:test:bedrock-synthesis:v1",
