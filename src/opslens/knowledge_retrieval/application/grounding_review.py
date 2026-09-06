@@ -23,6 +23,11 @@ from opslens.knowledge_retrieval.application.retrieval_catalog import (
 from opslens.knowledge_retrieval.domain import SynthesisDecision
 
 
+def _is_runtime_instance(value: object, expected_type: type[object]) -> bool:
+    """Check untrusted runtime values without weakening public annotations."""
+    return isinstance(value, expected_type)
+
+
 def _safe_rate(numerator: int, denominator: int) -> float | None:
     """Return one bounded ratio or None when the denominator is zero."""
     if denominator == 0:
@@ -45,7 +50,7 @@ class ReviewedCitationSelection:
         for field_name, max_length in (("citation_id", 8), ("chunk_id", 256)):
             value = getattr(self, field_name)
             if (
-                not isinstance(value, str)
+                not _is_runtime_instance(value, str)
                 or not value
                 or value != value.strip()
                 or len(value) > max_length
@@ -69,15 +74,15 @@ class ReviewedGroundingCase:
 
     def __post_init__(self) -> None:
         """Require counts and human judgments to cover the preserved runtime exactly."""
-        if not isinstance(self.case_id, str) or not self.case_id.strip():
+        if not _is_runtime_instance(self.case_id, str) or not self.case_id.strip():
             raise GroundingEvaluationError("case_id must be a non-empty string")
         if (
-            not isinstance(self.question_sha256, str)
+            not _is_runtime_instance(self.question_sha256, str)
             or len(self.question_sha256) != 64
             or any(ch not in "0123456789abcdef" for ch in self.question_sha256)
         ):
             raise GroundingEvaluationError("question_sha256 must be lowercase SHA-256")
-        if not isinstance(self.actual_decision, SynthesisDecision):
+        if not _is_runtime_instance(self.actual_decision, SynthesisDecision):
             raise GroundingEvaluationError(
                 "actual_decision must be one SynthesisDecision"
             )
@@ -91,11 +96,11 @@ class ReviewedGroundingCase:
                     f"{field_name} must be a non-negative integer"
                 )
 
-        if not isinstance(self.selected_citations, tuple):
+        if not _is_runtime_instance(self.selected_citations, tuple):
             raise GroundingEvaluationError("selected_citations must be a tuple")
         raw_selections = cast(tuple[object, ...], self.selected_citations)
         if any(
-            not isinstance(item, ReviewedCitationSelection)
+            not _is_runtime_instance(item, ReviewedCitationSelection)
             for item in raw_selections
         ):
             raise GroundingEvaluationError(
@@ -107,11 +112,11 @@ class ReviewedGroundingCase:
         if len({item.chunk_id for item in selections}) != len(selections):
             raise GroundingEvaluationError("selected citation chunks must be unique")
 
-        if not isinstance(self.support_judgments, tuple):
+        if not _is_runtime_instance(self.support_judgments, tuple):
             raise GroundingEvaluationError("support_judgments must be a tuple")
         raw_judgments = cast(tuple[object, ...], self.support_judgments)
         if any(
-            not isinstance(item, ClaimCitationSupportJudgment)
+            not _is_runtime_instance(item, ClaimCitationSupportJudgment)
             for item in raw_judgments
         ):
             raise GroundingEvaluationError(
@@ -324,10 +329,13 @@ def evaluate_reviewed_grounding_run(
     reviews: tuple[ReviewedGroundingCase, ...],
 ) -> GroundingEvaluationReport:
     """Evaluate exact first-run metadata without retaining model/source text."""
-    if not isinstance(reviews, tuple):
+    if not _is_runtime_instance(reviews, tuple):
         raise GroundingEvaluationError("reviews must be a tuple")
     raw_reviews = cast(tuple[object, ...], reviews)
-    if any(not isinstance(item, ReviewedGroundingCase) for item in raw_reviews):
+    if any(
+        not _is_runtime_instance(item, ReviewedGroundingCase)
+        for item in raw_reviews
+    ):
         raise GroundingEvaluationError(
             "reviews must contain ReviewedGroundingCase values"
         )
