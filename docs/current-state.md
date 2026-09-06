@@ -15,14 +15,19 @@ Phase 4    Repository Intelligence                             COMPLETE
 Phase 5    Risk Prioritization Engine                          COMPLETE
 Phase 6    Semantic Query Layer                                COMPLETE
 Phase 7    Knowledge Retrieval with Bedrock                    IN PROGRESS
-  Gate 7.1 Corpus + retrieval contract                         COMPLETE
-  Gate 7.2 Reproducible canonical corpus                       COMPLETE
+  Gate 7.1 Corpus + retrieval contract                         COMPLETE / MERGED
+  Gate 7.2 Reproducible canonical corpus                       COMPLETE / MERGED
   Gate 7.3 Knowledge Base + vector infrastructure              COMPLETE / MERGED
   Gate 7.4 Real bounded Retrieve adapter                       COMPLETE / MERGED
   Gate 7.5 Retrieval evaluation                                COMPLETE / MERGED
-  Gate 7.6 Context assembly + synthesis                        IN PROGRESS
-    7.6a deterministic context assembly                        COMPLETE / PR #99
-    7.6b synthesis request/output + abstention contract         NEXT
+  Gate 7.6 Context assembly + synthesis                        COMPLETE THROUGH 7.6f / PR #99
+    7.6a deterministic context assembly                        COMPLETE
+    7.6b synthesis request/output + abstention contract         COMPLETE
+    7.6c Bedrock model/API/IAM/cost selection                  COMPLETE
+    7.6d offline synthesis provider adapter                    COMPLETE
+    7.6e first bounded real synthesis                          COMPLETE
+    7.6f quality/latency/token/cost analysis                   COMPLETE
+    7.6g docs closeout + final CI + squash merge               IN PROGRESS
 ```
 
 Recent logical merges:
@@ -35,7 +40,8 @@ Gate 7.1 / PR #93
 f2e3b72c31d0713707857bc0867a7f59e667b9dd
 
 Gate 7.2 / PR #94
-manifest sha256: 98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
+manifest sha256:
+98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
 
 Gate 7.3 / PR #95
 1337950ddb5948943bf361dba4c3cdc40dafaf2b
@@ -47,7 +53,7 @@ Gate 7.5 / PR #98
 b30af10a568cefa7175c253120499939f9ca18d8
 ```
 
-Gate 7.6 is active on draft PR #99 from the Gate 7.5 merge. The first increment is deliberately offline-only; no synthesis model call or new AWS/IAM surface exists yet.
+Gate 7.6 remains on PR #99 until its documentation-closeout head is CI-green and squash-merged.
 
 ## Permanent boundaries
 
@@ -63,9 +69,9 @@ Gate 7.6 is active on draft PR #99 from the Gate 7.5 merge. The first increment 
 
 > **No unrestricted text-to-SQL.**
 
-Deterministic authorities own package normalization, vulnerable-range matching, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS evidence, Risk Policy, canonical corpus construction, semantic-query validation/SQL compilation, retrieval evidence admission, context assembly, citation projection, and execution/tool/cost enforcement.
+Deterministic authorities own package normalization, vulnerable-range matching, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS evidence, Risk Policy, canonical corpus construction, semantic-query validation/SQL compilation, retrieval evidence admission, context assembly, synthesis admission, citation projection, and execution/tool/cost enforcement.
 
-LLMs may classify, plan, synthesize, explain, and route over validated evidence. They do not replace deterministic structured truth.
+LLMs may classify, plan, synthesize, explain, and route over validated evidence. They do not replace deterministic structured truth or grant themselves routing/tool/SQL authority.
 
 ## Implemented system
 
@@ -84,11 +90,14 @@ Controlled Knowledge Corpus
  -> deterministic checked-corpus admission
  -> retrieval evaluation
  -> deterministic bounded context assembly
+ -> deterministic synthesis admission
+ -> bounded Bedrock Converse synthesis
+ -> typed SynthesisResult + runtime evidence
 ```
 
-Bedrock synthesis is deliberately not implemented yet.
+Citations and groundedness measurement remain Gate 7.7 rather than model-authored authority.
 
-## Phase 7 current runtime
+## Phase 7 runtime baseline
 
 ```text
 knowledge base id:     BTVJ2PBR2A
@@ -121,28 +130,13 @@ skipped:                0
 vectors materialized:   9
 ```
 
-## Gate 7.4 — Real bounded Retrieve adapter — COMPLETE / MERGED
+## Gate 7.4 — Direct bounded retrieval — COMPLETE / MERGED
 
-Gate 7.4 uses direct `bedrock-agent-runtime:Retrieve`, not `RetrieveAndGenerate`, so retrieval remains independently measurable.
+Direct `bedrock-agent-runtime:Retrieve` remains separate from generation.
 
-Runtime authority:
-
-```text
-RetrievalRequest
- -> exact configured KB
- -> direct semantic Retrieve
- -> strict provider parser
- -> exact S3 content-addressed key reconciliation
- -> returned-text SHA-256 + byte-count validation
- -> canonical metadata comparison
- -> RetrievedChunk[]
- -> RetrievalEvidence
-```
-
-Real admitted retrieval:
+Real admitted baseline:
 
 ```text
-query sha256:           5b398fe871d0cb51eaacb4f42a11b2ec402b5fdb4c523d2b7bca85e84dff3d0d
 requested top_k:        5
 returned/admitted:      5
 provider request id:    e92d67f1-18fa-4537-8ff4-c2e02ab813e0
@@ -152,14 +146,7 @@ rank 1:                 knowledge-chunk:pypa-secure-installs:hashes:v1
 rank 1 score:           0.8649594783782959
 ```
 
-Intentional provider failure:
-
-```text
-nonexistent KB: ZZZZZZZZZZ
-provider_code: ResourceNotFoundException
-```
-
-Gate 7.4 was squash-merged through PR #97 at `7c25877e0ae9541a4f20b8537e4f77c88ee776a5`.
+Intentional provider failure through nonexistent KB safely produced `ResourceNotFoundException`.
 
 ## Gate 7.5 — Retrieval evaluation — COMPLETE / MERGED
 
@@ -172,9 +159,7 @@ knowledge-retrieval-golden:v1
 2 negative/out-of-authority
 ```
 
-Exactly one real `top_k=10` Retrieve request was executed for each case. All ten completed successfully and no SDK retry occurred.
-
-Aggregate quality:
+Exactly one real `top_k=10` Retrieve request was executed for each case.
 
 ```text
 Recall@1:   0.375
@@ -182,14 +167,7 @@ Recall@3:   0.750
 Recall@5:   0.875
 Recall@10:  1.000
 MRR:        0.5699404761904762
-```
-
-Provenance:
-
-```text
-relevant hits:      9
-correct provenance: 9
-correctness rate:   1.0
+provenance correctness: 1.0
 ```
 
 Latency:
@@ -200,57 +178,29 @@ max:   1728 ms
 mean:  720.0 ms
 p50:   616 ms
 p95:   1728 ms
-retries: 0
+SDK retries: 0
 ```
 
-Negative evidence:
+Both negative/out-of-authority cases returned non-empty retrieval with rank-1 scores near `0.689`, overlapping legitimate evidence. Provider similarity score therefore remains evidence, not probability, authority, or a global answerability threshold.
 
-```text
-negative_nonempty_retrieval_rate: 1.0
-rank-1 scores: 0.6890382468700409, 0.6880056560039520
-rank-1 chunk for both negatives:
-knowledge-chunk:dependency-remediation-validation:post-change:v1
-```
+## Gate 7.6 — Deterministic context assembly + synthesis — COMPLETE THROUGH 7.6f
 
-The negative scores overlap the score range of legitimate evidence. Gate 7.5 therefore does not create an arbitrary score threshold. Vector similarity is evidence, not a calibrated confidence probability or an authority/route decision.
-
-The weakest positive case retrieved the expected vendor-advisory remediation chunk at rank 7. `Recall@10=1.0` is not treated as a production-quality claim because the corpus contains only nine vectors. `Recall@3`, `Recall@5`, and MRR expose the ranking weakness more clearly.
-
-Current runtime default `top_k=5` would contain expected evidence for seven of eight positive cases in this frozen fixture. Gate 7.5 records this baseline and does not tune against the test set.
-
-Observed real calls:
-
-```text
-10 populated-index searches
-```
-
-At the published S3 Vectors request rate of `$2.50 / 1,000,000 queries`, the exact request-fee component is:
-
-```text
-$0.000025
-```
-
-This is not presented as the complete retrieval bill. Bedrock `Retrieve` does not expose exact S3 Vectors processed/returned billable bytes or Titan query-embedding token counts, so those components are not fabricated.
-
-Gate 7.5 was squash-merged through PR #98 at `b30af10a568cefa7175c253120499939f9ca18d8`.
-
-Closeout lab: [`../labs/phase-7-gate-7-5-retrieval-evaluation.md`](../labs/phase-7-gate-7-5-retrieval-evaluation.md).
-
-## Gate 7.6 — Context assembly + synthesis — IN PROGRESS
-
-### 7.6a — Deterministic context assembly — COMPLETE / PR #99
-
-Current provider-independent path:
+### Context and authority
 
 ```text
 RetrievalEvidence
- -> deterministic contiguous rank-prefix assembly
- -> whole ContextEvidenceBlock[]
+ -> whole contiguous rank-prefix context assembly
  -> AssembledContext
- -> future bounded synthesis adapter
+ -> deterministic authority decision
+ -> SynthesisRequest
+ -> trusted/untrusted prompt envelope
+ -> exactly one bounded model call
+ -> strict provider response parser
+ -> deterministic synthesis-output parser
+ -> SynthesisResult
 ```
 
-Frozen v1 limits:
+Context bounds:
 
 ```text
 default max chunks:      5
@@ -258,45 +208,162 @@ hard max chunks:         10
 max admitted text bytes: 16,384 UTF-8 bytes
 ```
 
-The byte limit is an application-level denial-of-wallet/input-growth guardrail, not a token estimate or provider context-window claim.
-
-Context selection is intentionally simple and reproducible:
-
-- only already-admitted `RetrievedChunk` values are eligible;
-- whole chunks only; no text truncation;
-- preserve one contiguous retrieval-rank prefix from rank 1;
-- stop at the first non-fitting chunk; do not backfill lower-ranked smaller chunks;
-- empty retrieval fails closed;
-- if rank 1 alone exceeds the byte budget, assembly fails closed;
-- provider relevance score is not projected into synthesis context;
-- raw query is represented operationally by SHA-256 rather than copied into context evidence;
-- deterministic `context_sha256` covers query identity, limits, selected provenance/content hashes, counts, and stop reason.
-
-The no-score rule follows directly from Gate 7.5: negative/out-of-authority queries produced similarity scores overlapping valid retrieval evidence, so provider score cannot silently become context authority.
-
-7.6a adds no AWS resources, IAM permissions, network calls, or model calls.
-
-Quality evidence:
+Synthesis bounds:
 
 ```text
-Python CI #243: FAIL — Ruff line length only; fixed without semantic change
-Python CI #244: FAIL — Pyright direct-isinstance diagnostics; runtime checks retained via helper
-Python CI #245: SUCCESS
-  Ruff:             PASS
-  Pyright strict:   PASS
-  pytest:            PASS
-  regressions:      PASS
+question:            <= 1,000 characters
+model calls:         exactly 1 maximum
+answer:              <= 4,000 characters
+raw response parser: <= 65,536 characters
 ```
 
-Lab: [`../labs/phase-7-gate-7-6-context-synthesis.md`](../labs/phase-7-gate-7-6-context-synthesis.md).
+Pre-model authority is deterministic:
 
-## IAM boundary
+```text
+SUPPORTED
+UNSUPPORTED
+```
 
-The Knowledge Base service role remains an ingestion/storage integration identity trusted by Bedrock.
+The model can only return:
 
-Retrieval is a separate runtime responsibility. No deployed application compute principal exists yet, so final least-privilege retrieval-role attachment remains deferred until a real runtime principal exists.
+```text
+ANSWER
+INSUFFICIENT_EVIDENCE
+```
 
-7.6a requires no AWS or IAM change. Synthesis permissions must not be added before a concrete runtime/model boundary is selected and justified.
+after deterministic admission. `UNSUPPORTED` cannot invoke AWS/model code.
+
+Retrieved source text is always untrusted instruction content. Canonical provenance proves source/content identity, not permission to alter system instructions, policies, tools, IAM, or structured vulnerability truth.
+
+### Frozen Bedrock synthesis boundary
+
+ADR 0023 selects:
+
+```text
+Region:                  us-east-1
+endpoint:                bedrock-runtime
+API:                     Converse
+streaming:               no
+provider/model:          Anthropic Claude Haiku 4.5
+US Geo profile:          us.anthropic.claude-haiku-4-5-20251001-v1:0
+temperature:             0.0
+provider maxTokens:      2,048
+model calls:             1 maximum
+tools:                   none
+structured output:       JSON Schema
+```
+
+Automatic model-invocation body logging remains disabled. Content-free hashes and provider metadata are captured instead.
+
+No deployed runtime principal exists yet, so Gate 7.6 does not add an invented application IAM role. A future runtime principal must receive only the exact retrieval/inference actions and resources it actually requires.
+
+### First real Gate 7.6e run — SUCCESS
+
+The first supported end-to-end lab run was executed once and completed successfully.
+
+Retrieval:
+
+```text
+provider request id:    4835c5d0-4a4e-4f47-9610-482ab6ec1103
+requested/returned:     5 / 5
+client elapsed:         1463 ms
+SDK retries:            0
+rank 1:                 knowledge-chunk:pypa-secure-installs:hashes:v1
+rank 1 score:           0.8649594783782959
+```
+
+Context:
+
+```text
+selected chunks:        5
+selected UTF-8 bytes:   5828
+stop reason:            exhausted_retrieval
+context sha256:         bba245b46a1f8cbb2c42010b61e1ef397b2cde9c92fc0439ee0dc03197788445
+```
+
+Synthesis:
+
+```text
+decision:               answer
+answer characters:      1751
+stop reason:            end_turn
+input tokens:           2671
+output tokens:          491
+total tokens:           3162
+Bedrock latency:        7217 ms
+client elapsed:         7983 ms
+SDK retries:            0
+provider request id:    eee2a118-f806-40d5-8f53-57c88da8ad16
+request sha256:         b25eb13aa908d7aa7cb614d4e0e2123aeb68fc0648d4394e16bdb450b7d44d35
+prompt sha256:          4e6aad47a03946fad02356198f95e094256cceb1807e4c78fe249e3f9934bbc2
+answer sha256:          eee35e23c7fa58502f871e3fb7df8e48664c7dd8350073fc3a58feba7bbf987a
+result sha256:          675d661d73ac3844a2e4f53c24f2b919ab909953ee0af29c5912409d93bf792f
+```
+
+No replay was performed.
+
+### Gate 7.6f quality review
+
+The rank-1 evidence is the frozen PyPA `Hash-checking Mode` slice from exact upstream commit:
+
+```text
+pypa/pip
+173eb9b290e2924f0cd42b7714645b38b4df2e81
+docs/html/topics/secure-installs.md
+```
+
+A manual comparison found the generated answer's seven substantive guidance items supported by that admitted source slice. No structured NVD/KEV/EPSS/CVSS/applicability/runtime-exposure/Risk Policy claim was introduced.
+
+The `--no-require-hashes` pip 26.2+ behavior is source-supported but weakens all-or-nothing enforcement; the answer correctly framed it as optional/selective compatibility behavior rather than the default secure posture.
+
+This is a one-answer manual supportedness review, not a groundedness benchmark. Gate 7.7 will measure deterministic citation correctness/coverage and unsupported claims.
+
+### Observed cost
+
+Using the frozen Claude Haiku 4.5 US Geo rates:
+
+```text
+input component:   $0.0029381
+output component:  $0.0027005
+model total:       $0.0056386
+```
+
+One S3 Vectors query request contributes:
+
+```text
+$0.0000025
+```
+
+Directly computable first-run components:
+
+```text
+$0.0056411
+```
+
+This is not the full bill. Bedrock `Retrieve` does not expose the exact Titan query-embedding units or S3 Vectors data-processed/data-returned billable units needed to reconstruct those components, so they are not fabricated.
+
+### Latency interpretation
+
+```text
+retrieval client elapsed: 1463 ms
+Bedrock model latency:    7217 ms
+synthesis client elapsed: 7983 ms
+```
+
+The simple sequential client-stage sum is `9446 ms`, but no outer stopwatch was recorded. The synthesis run was also the first use of this structured-output grammar; AWS documents possible first-use grammar compilation latency, so this is not represented as warmed steady-state latency.
+
+## Current quality boundary
+
+Latest pre-closeout CI evidence:
+
+```text
+Python CI #264: SUCCESS
+head: 6b1be075c35120d4cebce97ee0591287ed7ccae5
+```
+
+Ruff, Pyright strict, Knowledge Retrieval pytest, and cross-slice regressions were green.
+
+The documentation-closeout commit requires a new final green CI before PR #99 can be marked ready and squash-merged.
 
 ## AWS foundation
 
@@ -312,31 +379,16 @@ analytics:               AWS Glue + Amazon Athena
 
 Persistent AWS access keys are not stored in GitHub.
 
-## Current quality boundary
-
-Dedicated CI slices cover:
-
-```text
-Correlation
-Repository Intelligence
-Risk Policy
-Semantic Query
-Knowledge Retrieval
-Terraform static/security checks
-```
-
-Knowledge Retrieval CI also watches `knowledge/corpus/**` so corpus authority changes cannot bypass its gate.
-
 ## Next action
 
-Continue Gate 7.6 inside draft PR #99 with **7.6b offline first**:
+Complete Gate 7.6g:
 
 ```text
-1. freeze synthesis request/output contract
-2. freeze unsupported / insufficient-evidence behavior
-3. define trusted-instruction vs untrusted-context serialization boundary
-4. freeze application call/output bounds
-5. only then select Bedrock runtime API/model from current official AWS documentation
+1. synchronize Gate 7.6 lab/current-state/roadmap/architecture
+2. require final CI green on the exact documentation-closeout head
+3. mark PR #99 ready
+4. squash merge only against the validated head SHA
+5. begin Gate 7.7 citations + groundedness only after merge
 ```
 
-Do not make a real synthesis call until the request/output/abstention contract is deterministic and CI-green.
+Gate 7.7 must project citations from admitted evidence deterministically rather than trust model-authored URLs or source IDs.

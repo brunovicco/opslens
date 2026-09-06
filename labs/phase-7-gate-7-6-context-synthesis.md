@@ -4,46 +4,25 @@ _Date: 2026-09-06_
 
 ## Status
 
-**IN PROGRESS — 7.6a–7.6d COMPLETE AND CI-GREEN / 7.6e REAL-RUN ENTRYPOINT READY, NOT YET EXECUTED.**
+**COMPLETE THROUGH 7.6f — REAL RETRIEVAL + SYNTHESIS SUCCESSFUL / 7.6g CLOSEOUT CI + MERGE PENDING.**
 
-Gate 7.5 was squash-merged to `main` at:
+Gate 7.6 runs on PR #99 from merged Gate 7.5 main:
 
 ```text
 b30af10a568cefa7175c253120499939f9ca18d8
 ```
 
-Gate 7.6 remains on draft PR #99. No real synthesis model invocation has occurred yet.
+Permanent boundary:
 
-## Permanent boundary
+> **Retrieval candidates are evidence. Deterministic code decides what evidence may enter synthesis context and whether a model call is allowed.**
 
-> Retrieval candidates are evidence. Deterministic code decides what evidence may enter synthesis context and whether a model call is allowed.
-
-This extends the project rule:
+This extends:
 
 > **Agents reason. Code verifies evidence.**
 
-Retrieved text remains untrusted instruction content even after source identity, hash, bytes, and canonical provenance have been admitted.
-
-## Gate 7.5 evidence that constrains synthesis
-
-Frozen real retrieval baseline:
-
-```text
-10 real Retrieve calls
-8 positive cases
-2 negative/out-of-authority cases
-Recall@1:   0.375
-Recall@3:   0.750
-Recall@5:   0.875
-Recall@10:  1.000
-MRR:        0.5699404761904762
-```
-
-Both negative cases returned non-empty nearest-neighbor results with rank-1 scores near `0.689`, overlapping legitimate positive evidence. Gate 7.6 therefore does not treat provider relevance score as confidence probability, routing authority, source authority, or a synthesis-admission threshold.
+Retrieved text remains untrusted instruction content even after canonical source, content hash, byte count, and provenance admission.
 
 ## 7.6a — Deterministic context assembly — COMPLETE
-
-Provider-independent flow:
 
 ```text
 RetrievalEvidence
@@ -52,7 +31,7 @@ RetrievalEvidence
  -> AssembledContext
 ```
 
-Frozen limits:
+Frozen bounds:
 
 ```text
 default max chunks:      5
@@ -62,66 +41,39 @@ max admitted text bytes: 16,384 UTF-8 bytes
 
 Rules:
 
-- only already-admitted `RetrievedChunk` evidence is eligible;
-- whole chunks only; no source-text truncation;
-- preserve one contiguous retrieval-rank prefix from rank 1;
+- only Gate 7.4-admitted `RetrievedChunk` evidence may enter context;
+- whole chunks only; never truncate source evidence;
+- preserve one contiguous rank prefix from rank 1;
 - stop at the first non-fitting chunk;
 - never backfill with a smaller lower-ranked chunk;
-- empty retrieval fails closed;
-- a rank-1 chunk that cannot fit fails closed;
+- empty evidence fails closed;
+- an oversized rank-1 chunk fails closed;
 - provider relevance score is not projected into synthesis context;
-- `context_sha256` binds query identity, limits, selected canonical provenance/content hashes, ranks, counts, and stop reason.
+- `context_sha256` binds query identity, limits, selected ranks, canonical provenance/content hashes, counts, and stop reason.
 
-The byte ceiling is an application denial-of-wallet/input-growth bound, not a token estimate or provider context-window claim.
+The byte limit is an application denial-of-wallet/input-growth bound, not a token estimate or model context-window claim.
 
-## 7.6b — Synthesis request/output + abstention contract — COMPLETE
+## 7.6b — Synthesis contract + abstention — COMPLETE
 
-Provider-independent model boundary:
-
-```text
-AssembledContext
- + exact original question
- + deterministic authority decision
- + SynthesisLimits
- -> SynthesisRequest
- -> SynthesisPromptEnvelope
- -> provider call
- -> exact JSON output parser
- -> SynthesisResult
-```
-
-### Authority vs model decision
-
-Deterministic pre-model authority:
+Pre-model authority is deterministic:
 
 ```text
 SUPPORTED
 UNSUPPORTED
 ```
 
-`UNSUPPORTED` cannot form a `SynthesisRequest`. It fails before any model call.
+`UNSUPPORTED` cannot form a `SynthesisRequest` and therefore cannot invoke the model.
 
-For an already-supported request, the model may propose only:
+For an already-supported request the model can only propose:
 
 ```text
 ANSWER
 INSUFFICIENT_EVIDENCE
 ```
 
-This preserves the distinction:
+This keeps routing authority out of the model. `insufficient_evidence` is an allowed abstention inside an already-authorized explanatory/remediation domain.
 
-```text
-unsupported authority
- -> routing/admission fact owned by deterministic code
- -> zero model calls
-
-insufficient evidence
- -> legitimate model abstention inside an already-authorized explanatory domain
-```
-
-The model cannot grant itself authority or redefine routing policy.
-
-### Frozen v1 application bounds
+Frozen application bounds:
 
 ```text
 question:            <= 1,000 characters
@@ -130,11 +82,7 @@ answer:              <= 4,000 characters
 raw response parser: <= 65,536 characters
 ```
 
-The transport parser ceiling is deliberately larger than the answer entitlement because JSON escaping may make the wire payload longer than the decoded answer. The deterministic parser still enforces the 4,000-character answer invariant after decoding.
-
-### Prompt trust envelope
-
-The prompt keeps three logical trust classes separate:
+Prompt trust classes remain structurally distinct:
 
 ```text
 trusted system instructions
@@ -142,17 +90,7 @@ untrusted user question
 untrusted but source-verified retrieved evidence
 ```
 
-The frozen trusted instructions explicitly tell the model to treat commands, role changes, policy changes, tool requests, and attempts to ignore prior instructions found in retrieved evidence as data rather than control instructions.
-
-The envelope is content-addressed through:
-
-```text
-request_sha256
-evidence_sha256
-prompt_sha256
-```
-
-Accepted model JSON is exactly one of:
+The model output parser accepts exactly:
 
 ```json
 {"decision":"answer","answer":"..."}
@@ -164,107 +102,45 @@ or:
 {"decision":"insufficient_evidence","answer":null}
 ```
 
-Markdown fences, extra keys, blank answer text, malformed JSON, invalid decisions, and answer text attached to `insufficient_evidence` are rejected.
+Extra keys, malformed JSON, blank answers, invalid decisions, markdown wrappers, and answer text attached to `insufficient_evidence` fail closed.
 
-## 7.6c — Bedrock model/API selection — COMPLETE OFFLINE
+## 7.6c — Bedrock model/API selection — COMPLETE
 
-ADR 0023 freezes the first provider boundary as:
+ADR 0023 freezes:
 
 ```text
 Region:                  us-east-1
 endpoint:                bedrock-runtime
 API:                     Converse
 streaming:               no
-provider:                Anthropic
-model:                   Claude Haiku 4.5
-US Geo profile ID:       us.anthropic.claude-haiku-4-5-20251001-v1:0
+provider/model:          Anthropic Claude Haiku 4.5
+US Geo profile:          us.anthropic.claude-haiku-4-5-20251001-v1:0
 temperature:             0.0
 provider maxTokens:      2,048
+application model calls: 1 maximum
 tools:                   none
-application model calls: 1
+structured output:       JSON Schema
 ```
 
-The exact US Geographic inference profile is reused from the real Phase 6 planner rather than introducing model diversity without a measured requirement.
+The US Geographic profile may route from `us-east-1` to documented US destination Regions. Global inference is intentionally not selected.
 
-Current official AWS documentation confirms that Claude Haiku 4.5 supports Converse and Bedrock structured outputs. From `us-east-1`, the selected US Geo profile may route within the documented US destination set. Global inference is not selected because it would widen the geographic processing boundary.
+Converse requires `bedrock:InvokeModel`. The non-streaming path does not require `bedrock:InvokeModelWithResponseStream`.
 
-### Structured output
+No deployed application runtime principal exists yet, so this gate does not create a synthetic runtime role merely for certification coverage.
 
-The Converse request uses:
+Pricing baseline used for the measured call:
 
 ```text
-outputConfig.textFormat.type = json_schema
+Claude Haiku 4.5 US Geo input:  $1.10 / 1,000,000 tokens
+Claude Haiku 4.5 US Geo output: $5.50 / 1,000,000 tokens
+S3 Vectors request component:   $2.50 / 1,000,000 queries
 ```
 
-with:
+## 7.6d — Offline provider adapter — COMPLETE
 
-```text
-decision: enum(answer, insufficient_evidence)
-answer:   string | null
-additionalProperties: false
-```
+`BedrockKnowledgeSynthesizer` executes exactly one injected non-streaming `converse()` call and accepts only a complete `stopReason=end_turn` assistant text response that survives deterministic output parsing.
 
-Provider schema narrows generation shape but does not replace deterministic parsing. AWS currently documents `minLength` and `maxLength` as unsupported structured-output schema features, so the 4,000-character answer cap remains an application invariant.
-
-AWS also documents first-use structured-output grammar compilation latency and caching for an identical successfully compiled grammar. First real synthesis latency must therefore be interpreted as first-run evidence rather than a warmed steady-state latency claim.
-
-Anthropic native citations are not enabled because AWS documents them as incompatible with structured output. Deterministic citation projection and groundedness remain Gate 7.7.
-
-### IAM boundary
-
-Converse requires:
-
-```text
-bedrock:InvokeModel
-```
-
-The non-streaming path does not require:
-
-```text
-bedrock:InvokeModelWithResponseStream
-```
-
-A future deployed runtime must be scoped to the selected inference profile and required foundation-model resources in the US Geo source/destination Regions. No deployed application runtime principal exists yet, so Gate 7.6 introduces no synthetic runtime role merely for certification coverage.
-
-### Cost planning
-
-Current US Geographic Claude Haiku 4.5 rate baseline used for this gate:
-
-```text
-input:  $1.10 / 1,000,000 tokens
-output: $5.50 / 1,000,000 tokens
-```
-
-If the provider output cap of 2,048 tokens were fully consumed, the output-token component alone would be approximately `$0.011264`. This is not a full per-call ceiling because input tokens are not known until real runtime telemetry exists.
-
-Automatic Bedrock model invocation body logging remains disabled. The provider request carries content-free metadata only:
-
-```text
-opslens_stage
-contract_id
-request_sha256
-prompt_sha256
-```
-
-## 7.6d — Offline provider adapter + response evidence — COMPLETE
-
-`BedrockKnowledgeSynthesizer` is an outbound adapter over an injected minimal `BedrockConverseClient` Protocol.
-
-Responsibilities:
-
-```text
-SynthesisRequest
- -> deterministic prompt envelope
- -> frozen Converse request
- -> exactly one converse() invocation
- -> require provider identity + usage/latency metadata
- -> require stopReason=end_turn
- -> require exactly one assistant text block
- -> deterministic synthesis-output parser
- -> SynthesisResult + BedrockSynthesisInvocationEvidence
-```
-
-Successful invocation evidence is content-free:
+Successful runtime evidence is content-free and records:
 
 ```text
 model/profile id
@@ -281,140 +157,193 @@ prompt_sha256
 context_sha256
 ```
 
-The adapter fails closed for provider invocation failures, missing/invalid metadata, non-`end_turn` stop reasons, wrong role, multiple/non-text blocks, malformed or semantically invalid JSON output, inconsistent token totals, clock regression, and request/evidence identity mismatch.
+Provider failures, missing/invalid metadata, non-end-turn stop reasons, wrong roles, multiple/non-text content blocks, malformed output, inconsistent token totals, timing drift, and request/evidence identity mismatch fail closed.
 
-`insufficient_evidence` is preserved as a valid typed model abstention rather than misclassified as provider failure.
+`insufficient_evidence` remains a valid synthesis outcome rather than a provider error.
 
-Offline tests cover successful answers, abstention, provider AccessDenied-like errors, non-accepted stop reasons, malformed response unions, invalid model JSON, metadata failure, token inconsistency, and timing drift.
+## 7.6e — First bounded real retrieval + synthesis — SUCCESS
 
-Gate 7.6d CI evidence:
+The first supported run was executed exactly once against the existing dev Knowledge Base and the frozen Claude Haiku 4.5 US Geo profile.
 
-```text
-Python CI #260: SUCCESS
-Ruff:             PASS
-Pyright strict:   PASS
-pytest:            PASS
-regressions:      PASS
-```
-
-## 7.6e — Bounded real synthesis runner — READY / NOT EXECUTED
-
-The real-run composition root is:
+Execution result:
 
 ```text
-python -m opslens.knowledge_retrieval.cli.run_bedrock_synthesis
+exit code:              0
+execution_complete:     true
+authority_decision:     supported
+retrieval_invoked:      true
+model_invoked:          true
+region:                 us-east-1
 ```
 
-The lab runner requires an explicit authority decision. This is test-harness/operator input, not an LLM classification.
-
-### Unsupported control
+### Retrieval
 
 ```text
-authority=unsupported
- -> validate bounded query
- -> emit content-free refusal evidence
- -> no manifest read required
- -> no AWS session/client creation
- -> 0 Retrieve calls
- -> 0 Converse calls
+knowledge base:         BTVJ2PBR2A
+requested top_k:        5
+returned/admitted:      5
+provider request id:    4835c5d0-4a4e-4f47-9610-482ab6ec1103
+client elapsed:         1463 ms
+SDK retries:            0
+rank 1 chunk:           knowledge-chunk:pypa-secure-installs:hashes:v1
+rank 1 score:           0.8649594783782959
 ```
 
-A unit test replaces AWS session creation with a forbidden function and proves this path exits successfully without touching AWS.
+All five results passed the existing checked-corpus location/hash/byte-count/metadata admission boundary.
 
-### Supported real path
+### Context assembly
 
 ```text
-authority=supported
- -> exactly one Bedrock KB Retrieve
- -> deterministic checked-corpus admission
- -> deterministic bounded context assembly
- -> exactly one Bedrock Converse synthesis invocation
- -> strict stop-reason/response/output admission
- -> one captured JSON evidence record
+retrieved chunks:       5
+selected chunks:        5
+selected UTF-8 bytes:   5828
+stop reason:            exhausted_retrieval
+context sha256:         bba245b46a1f8cbb2c42010b61e1ef397b2cde9c92fc0439ee0dc03197788445
 ```
 
-The evidence record includes the synthesized answer for first-run quality analysis, plus answer hash/length. It does not echo the raw user query or retrieved source text. Retrieval/context metadata and provider request metadata remain content-addressed and provenance-oriented.
+All five retrieved chunks fit under the 16,384-byte application ceiling. The rank prefix was preserved exactly and no provider relevance score entered the synthesis context contract.
 
-Transport configuration:
+### Synthesis
 
 ```text
-Retrieve:
-  connect_timeout: 5s
-  read_timeout:    30s
-  retries:         standard, max_attempts=3
+model/profile:
+  us.anthropic.claude-haiku-4-5-20251001-v1:0
 
-Synthesis:
-  connect_timeout: 5s
-  read_timeout:    90s
-  retries:         standard, max_attempts=3
+decision:               answer
+answer characters:      1751
+stop reason:            end_turn
+input tokens:           2671
+output tokens:          491
+total tokens:           3162
+cache read tokens:      0
+cache write tokens:     0
+Bedrock latency:        7217 ms
+client elapsed:         7983 ms
+SDK retries:            0
+provider request id:    eee2a118-f806-40d5-8f53-57c88da8ad16
+request sha256:         b25eb13aa908d7aa7cb614d4e0e2123aeb68fc0648d4394e16bdb450b7d44d35
+prompt sha256:          4e6aad47a03946fad02356198f95e094256cceb1807e4c78fe249e3f9934bbc2
+answer sha256:          eee35e23c7fa58502f871e3fb7df8e48664c7dd8350073fc3a58feba7bbf987a
+result sha256:          675d661d73ac3844a2e4f53c24f2b919ab909953ee0af29c5912409d93bf792f
 ```
 
-The longer synthesis read timeout is still bounded and only accommodates possible first-use structured-output grammar compilation latency. It does not grant iterative model-call authority.
+The response stayed below the 4,000-character application limit and the 2,048-token provider output ceiling.
 
-Runner CI history:
+No replay was performed after the successful first call.
+
+## 7.6f — Quality, latency, token, and cost analysis — COMPLETE
+
+### Manual single-run quality review
+
+The question asks how to make pip dependency installation more secure using hashes. The highest-ranked evidence is the exact pinned PyPA `Hash-checking Mode` slice from:
 
 ```text
-Python CI #262: FAIL — Ruff required explicit raw regex in one test only
-Python CI #263: SUCCESS
-  Ruff:             PASS
-  Pyright strict:   PASS
-  pytest:            PASS
-  regressions:      PASS
+upstream repository: pypa/pip
+commit:              173eb9b290e2924f0cd42b7714645b38b4df2e81
+path:                docs/html/topics/secure-installs.md
+chunk:               knowledge-chunk:pypa-secure-installs:hashes:v1
 ```
 
-Latest CI-green real-run preparation head:
+A manual comparison against that exact frozen source found the generated answer's seven substantive guidance items supported by the admitted rank-1 chunk:
+
+- per-requirement `--hash` usage;
+- SHA-256 recommendation and exclusion of weaker algorithms in hash-checking mode;
+- hashes for all requirements and all dependencies;
+- pinning through URL/path/`==`;
+- `--require-hashes` enforcement;
+- multiple hashes per package;
+- pip 26.2+ `--no-require-hashes` selective-hashing compatibility escape hatch.
+
+No structured vulnerability, repository exposure, KEV, EPSS, CVSS, or Risk Policy claim was introduced.
+
+One quality nuance is intentionally retained rather than post-hoc tuned: `--no-require-hashes` weakens global hash enforcement and should be understood as an explicit compatibility exception, not the default secure posture. The model labeled it optional, and the underlying pinned PyPA source explicitly describes that behavior.
+
+This is a **manual one-answer supportedness review**, not a groundedness benchmark. Gate 7.7 remains responsible for deterministic citations and measured citation correctness/coverage plus unsupported-claim evaluation.
+
+### Latency
+
+Measured components:
 
 ```text
-511dd4367c3a2e595aab9bbb74a0b0348d765541
+retrieval client elapsed:  1463 ms
+Bedrock model latency:     7217 ms
+synthesis client elapsed:  7983 ms
 ```
 
-No real model call was made while implementing or correcting the runner.
+A simple sequential sum of the two client-side stages is `9446 ms`; this is a derived stage sum, not a separately measured outer end-to-end stopwatch.
 
-## AWS / IAM / cost effect before the real 7.6e run
+The first synthesis used a structured-output grammar. AWS documents possible additional first-use grammar compilation latency, so this first-run latency is preserved as observed evidence and is not represented as warmed steady-state performance. No extra call was made merely to improve the latency number.
+
+### Observed model cost
+
+At the frozen rate baseline:
 
 ```text
-real synthesis AWS calls: 0
-new AWS resources:        0
-new IAM permissions:      0
-model tokens consumed:    0
-provider synthesis cost:  $0
+input:  2671 * $1.10 / 1,000,000 = $0.0029381
+output:  491 * $5.50 / 1,000,000 = $0.0027005
+model total:                         $0.0056386
 ```
 
-The existing human lab identity is used only for explicit local validation. It is not the final deployed runtime IAM boundary.
-
-## 7.6 increment plan
+One populated-index S3 Vectors request contributes exactly:
 
 ```text
-7.6a deterministic context assembly contract                 COMPLETE
-7.6b synthesis request/output + abstention contract           COMPLETE
-7.6c Bedrock model/API selection + pricing/IAM review         COMPLETE OFFLINE
-7.6d offline provider adapter + response evidence             COMPLETE
-7.6e bounded real synthesis success/failure evidence          RUNNER READY / REAL RUN NEXT
-7.6f quality/latency/token/cost analysis                      PENDING
-7.6g docs/state closeout + final CI + squash merge            PENDING
+1 * $2.50 / 1,000,000 = $0.0000025
 ```
 
-## Next authorized step
-
-Execute the first supported 7.6e lab run exactly once against the existing dev Knowledge Base and frozen Claude Haiku 4.5 US Geo profile. Capture stdout, stderr, and exit code before considering any replay.
-
-The first intended question is the already-proven Gate 7.4 retrieval case:
+Directly computable first-run components therefore total:
 
 ```text
-How can I make pip dependency installation more secure using hashes?
+$0.0056411
 ```
 
-This query is selected because Gate 7.4 already demonstrated the expected PyPA hash-checking evidence at retrieval rank 1. Reusing it isolates synthesis behavior rather than intentionally introducing a new retrieval-quality variable during the first generation call.
+This is **not** presented as the complete bill. Bedrock Knowledge Base `Retrieve` does not expose the exact Titan query-embedding units or S3 Vectors data-processed/data-returned billable units needed to reconstruct those components. OpsLens does not fabricate them.
 
-If the first provider attempt fails, preserve that failure evidence and diagnose before deciding whether a versioned rerun is justified. Do not silently replace the first run.
+### Retry and failure evidence
 
-After a successful preserved real run, Gate 7.6f will calculate answer quality, retrieval/context behavior, latency, token usage, retries, and observed model cost. Then synchronize current-state/roadmap/architecture, run final CI, mark PR #99 ready, and squash merge only against the validated head SHA.
+```text
+retrieval SDK retries: 0
+synthesis SDK retries: 0
+provider failures:     0
+output admission:      success
+```
 
-## References
+The offline adapter suite already preserves provider, response-contract, stop-reason, output-contract, and timing failure categories separately. A successful first real call does not eliminate those failure paths.
 
-- ADR 0023: [`../docs/adr/0023-bounded-bedrock-knowledge-synthesis.md`](../docs/adr/0023-bounded-bedrock-knowledge-synthesis.md)
-- https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-haiku-4-5.html
-- https://docs.aws.amazon.com/bedrock/latest/userguide/structured-output.html
-- https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html
-- https://docs.aws.amazon.com/bedrock/latest/userguide/geographic-cross-region-inference.html
-- https://aws.amazon.com/bedrock/pricing/
+## CI evidence
+
+Implementation checkpoints:
+
+```text
+Python CI #245: SUCCESS — context assembly
+Python CI #252: SUCCESS — synthesis contract
+Python CI #256: SUCCESS — Bedrock request selection
+Python CI #260: SUCCESS — offline synthesis adapter
+Python CI #263: SUCCESS — real-run CLI
+Python CI #264: SUCCESS — pre-run documentation head
+```
+
+The 7.6g documentation closeout commit must receive its own green final CI before PR #99 is marked ready and squash-merged.
+
+## Gate checklist
+
+```text
+[x] 7.6a deterministic context assembly
+[x] 7.6b synthesis request/output + abstention
+[x] 7.6c Bedrock API/model/IAM/cost decision
+[x] 7.6d offline provider adapter + failure tests
+[x] 7.6e first supported real retrieval + synthesis run
+[x] 7.6f quality/latency/token/cost analysis
+[ ] 7.6g synchronized docs/state + final CI
+[ ] mark PR #99 ready
+[ ] squash merge against validated head SHA
+```
+
+## Next after Gate 7.6 merge
+
+Gate 7.7 adds deterministic citation projection and groundedness evaluation. It must not trust model-authored URLs or source IDs and must not retroactively tune Gate 7.6 against this single successful answer.
+
+References:
+
+- ADR 0023: `../docs/adr/0023-bounded-bedrock-knowledge-synthesis.md`
+- frozen source registry: `../knowledge/corpus/v1/source_registry.json`
+- frozen corpus spec: `../knowledge/corpus/v1/corpus_spec.json`
