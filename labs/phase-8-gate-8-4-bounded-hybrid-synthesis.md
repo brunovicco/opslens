@@ -171,23 +171,96 @@ Unit tests exercise:
 - incomplete structured evidence rejected before synthesis;
 - semantic-noise case selecting `S2` rather than rank-one `S1`;
 - malformed output, unknown references, stop-reason failure, and provider failure;
+- bounded provider diagnostics that retain only category/type/code and never provider message content;
+- distinct synthesis-invocation-attempt count versus admitted model execution count;
 - metrics remaining independent;
 - cost remaining explicitly unmeasured.
 
-CI evidence will be recorded here after the final executable head is green.
+CI evidence is recorded only for exact executable heads.
 
-## First real runtime command
+## First runtime preflight
 
-Run only after the final executable PR head is green. The command uses the normal botocore credential chain and therefore honors an already-authorized `AWS_PROFILE` if one is set in the shell.
+The first local command on head:
+
+```text
+efe3bb266baf61687fe51fb7f026e67dbf032535
+```
+
+failed during Python module initialization because `application/__init__.py` eagerly re-exported the runtime evaluator while the evaluator imported the Bedrock adapter. The process emitted zero JSON bytes and never reached the runtime client boundary. This was a preflight/import defect, not a Bedrock baseline.
+
+The package-level re-export was removed and a fresh-interpreter CLI import regression was added. Head `7b06e559cdfe3c8dbb074609faf5dcfbbf2533cd` then passed Python CI #327 / run `34063047945`, including 65 hybrid tests.
+
+## Runtime attempt A — partial provider-path evidence
+
+After the preflight fix, the authorized local run on:
+
+```text
+head:       7b06e559cdfe3c8dbb074609faf5dcfbbf2533cd
+exit_code:  1
+stderr:     empty
+JSON bytes: 2626
+```
+
+produced partial deterministic/runtime evidence:
+
+```text
+case 1: hybrid-structured-factual-01
+route:  STRUCTURED
+status: complete
+model:  not required
+result: deterministic answer projection
+
+case 2: hybrid-semantic-remediation-01
+route:  SEMANTIC
+status: incomplete
+model:  required
+failure_category: BedrockHybridSynthesisRuntimeError
+synthesis: null
+```
+
+The serializer also emitted:
+
+```text
+model_call_count: 0
+measurements:      null
+complete:          false
+```
+
+A telemetry ambiguity was discovered here: at this head, `model_call_count` counted only successfully admitted `BedrockHybridSynthesisExecution` objects. Therefore `model_call_count = 0` proves that no model output/runtime evidence was admitted, but it **does not prove that the Bedrock client boundary was never attempted**. The generic `BedrockHybridSynthesisRuntimeError` string had also been reduced to its Python class name, hiding the already-bounded adapter category such as `provider_invocation`, `response_contract`, `stop_reason`, `output_contract`, or `clock`.
+
+This distinction is now part of the Gate 8.4 observability contract:
+
+```text
+synthesis_invocation_attempt_count
+  != admitted_model_execution_count
+```
+
+The runtime evaluator now preserves only bounded failure evidence:
+
+```text
+failure_category
+failure_diagnostic
+failure_request_id
+failure_stop_reason
+synthesis_invocation_attempted
+```
+
+For provider invocation failures, `failure_diagnostic` is intentionally restricted to provider error code or exception type. Provider error messages, prompt bodies, and model output bodies are not persisted in failure evidence.
+
+Attempt A is retained as immutable partial evidence. It is not a completed baseline and does not authorize Gate 8.5 optimization.
+
+## First complete runtime command
+
+Run only after the diagnostic correction is green on the exact PR head. The command uses the normal botocore credential chain and the already-authorized SSO profile explicitly.
 
 ```bash
+AWS_PROFILE=opslens-bootstrap \
 PYTHONPATH=src uv run python -m opslens.hybrid_retrieval.cli.run_bedrock_hybrid_synthesis_evaluation \
   --region us-east-1 \
   > /tmp/opslens-gate84-hybrid-synthesis.json \
   2> /tmp/opslens-gate84-hybrid-synthesis.stderr
 
 exit_code=$?
-
 echo "exit_code=$exit_code"
 echo
 echo "STDERR:"
@@ -201,22 +274,25 @@ Expected application-call budget for a complete run:
 
 ```text
 6 fixture cases
-3 Bedrock Converse calls maximum
+3 bounded synthesis invocation attempts maximum
 0 calls for STRUCTURED
 0 calls for UNSUPPORTED
 0 calls for incomplete evidence
 1 call for each SEMANTIC/HYBRID eligible case
 ```
 
-Do not rerun adaptively to improve the first baseline. If the command exits non-zero, preserve both output files and review the partial evidence first.
+Do not rerun adaptively to improve model quality. If the command exits non-zero, preserve both output files and review the bounded failure evidence before deciding whether another execution is justified.
 
 ## Real baseline status
 
 ```text
-PENDING — must be executed with the existing authorized local AWS credentials after final CI.
+PARTIAL — attempt A reached the model-required path but did not complete.
+DIAGNOSTIC CORRECTION — pending exact-head CI before one justified retry.
 ```
 
-The gate is not complete and PR #115 must remain draft until this first runtime evidence is reviewed.
+No synthesis quality metric is computed from the partial attempt. The frozen fixture remains unchanged.
+
+The gate is not complete and PR #115 must remain draft until a complete runtime execution is reviewed.
 
 ## Architecture record
 
@@ -237,11 +313,13 @@ This gate exercises several certification-relevant distinctions:
 - citation allowlists and canonical provenance are application responsibilities;
 - retrieval rank is not groundedness;
 - evaluation dimensions should remain independently observable;
+- invocation attempts and admitted model executions are different observability signals;
+- fail-closed errors still need bounded diagnostics or operators cannot distinguish IAM, SDK, provider, response, and output-contract failures;
 - token/runtime evidence is not automatically cost without a pricing contract;
 - Bedrock transport selection does not imply that Bedrock owns business-policy authority.
 
 ## Next step
 
-Complete CI on the exact executable PR head, execute the one first real Bedrock baseline, record the immutable observations without changing the frozen fixture, and only then decide whether Gate 8.4 satisfies its exit criteria.
+Validate the diagnostic correction on the exact executable PR head. If green, execute one justified diagnostic/baseline retry, inspect the now-bounded failure category or complete three-call result, and record the immutable observation without changing the frozen fixture.
 
-Gate 8.5 optimization is explicitly out of scope until this baseline exists.
+Gate 8.5 optimization is explicitly out of scope until a complete Gate 8.4 baseline exists.
