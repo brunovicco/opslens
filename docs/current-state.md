@@ -20,14 +20,11 @@ Phase 7    Knowledge Retrieval with Bedrock                    IN PROGRESS
   Gate 7.3 Knowledge Base + vector infrastructure              COMPLETE / MERGED
   Gate 7.4 Real bounded Retrieve adapter                       COMPLETE / MERGED
   Gate 7.5 Retrieval evaluation                                COMPLETE / MERGED
-  Gate 7.6 Context assembly + synthesis                        COMPLETE THROUGH 7.6f / PR #99
-    7.6a deterministic context assembly                        COMPLETE
-    7.6b synthesis request/output + abstention contract         COMPLETE
-    7.6c Bedrock model/API/IAM/cost selection                  COMPLETE
-    7.6d offline synthesis provider adapter                    COMPLETE
-    7.6e first bounded real synthesis                          COMPLETE
-    7.6f quality/latency/token/cost analysis                   COMPLETE
-    7.6g docs closeout + final CI + squash merge               IN PROGRESS
+  Gate 7.6 Context assembly + synthesis                        COMPLETE / MERGED
+  Gate 7.7 Citations + groundedness                            IN PROGRESS / PR #100
+    7.7a deterministic citation catalog                        COMPLETE
+    7.7b grounded claim-to-citation contract                   COMPLETE
+    7.7c frozen evaluation fixture + metrics                   NEXT
 ```
 
 Recent logical merges:
@@ -51,9 +48,12 @@ Gate 7.4 / PR #97
 
 Gate 7.5 / PR #98
 b30af10a568cefa7175c253120499939f9ca18d8
+
+Gate 7.6 / PR #99
+cc8097b3e2e9b048ca069e961736788de0a79f0d
 ```
 
-Gate 7.6 remains on PR #99 until its documentation-closeout head is CI-green and squash-merged.
+Gate 7.7 is active on draft PR #100 from the exact Gate 7.6 merge.
 
 ## Permanent boundaries
 
@@ -69,9 +69,9 @@ Gate 7.6 remains on PR #99 until its documentation-closeout head is CI-green and
 
 > **No unrestricted text-to-SQL.**
 
-Deterministic authorities own package normalization, vulnerable-range matching, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS evidence, Risk Policy, canonical corpus construction, semantic-query validation/SQL compilation, retrieval evidence admission, context assembly, synthesis admission, citation projection, and execution/tool/cost enforcement.
+Deterministic authorities own package normalization, vulnerable-range matching, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS evidence, Risk Policy, canonical corpus construction, semantic-query validation/SQL compilation, retrieval evidence admission, context assembly, synthesis admission, citation authority, output admission, and metric computation.
 
-LLMs may classify, plan, synthesize, explain, and route over validated evidence. They do not replace deterministic structured truth or grant themselves routing/tool/SQL authority.
+LLMs may classify, plan, synthesize, explain, route, and later propose citation references from an allowlisted deterministic catalog. They do not replace structured truth or invent source authority.
 
 ## Implemented system
 
@@ -93,9 +93,9 @@ Controlled Knowledge Corpus
  -> deterministic synthesis admission
  -> bounded Bedrock Converse synthesis
  -> typed SynthesisResult + runtime evidence
+ -> deterministic citation catalog
+ -> grounded claim/citation output contract
 ```
-
-Citations and groundedness measurement remain Gate 7.7 rather than model-authored authority.
 
 ## Phase 7 runtime baseline
 
@@ -132,7 +132,7 @@ vectors materialized:   9
 
 ## Gate 7.4 — Direct bounded retrieval — COMPLETE / MERGED
 
-Direct `bedrock-agent-runtime:Retrieve` remains separate from generation.
+Direct `bedrock-agent-runtime:Retrieve` stays separately observable from generation.
 
 Real admitted baseline:
 
@@ -146,8 +146,6 @@ rank 1:                 knowledge-chunk:pypa-secure-installs:hashes:v1
 rank 1 score:           0.8649594783782959
 ```
 
-Intentional provider failure through nonexistent KB safely produced `ResourceNotFoundException`.
-
 ## Gate 7.5 — Retrieval evaluation — COMPLETE / MERGED
 
 Frozen dataset:
@@ -159,7 +157,7 @@ knowledge-retrieval-golden:v1
 2 negative/out-of-authority
 ```
 
-Exactly one real `top_k=10` Retrieve request was executed for each case.
+Measured baseline:
 
 ```text
 Recall@1:   0.375
@@ -170,33 +168,31 @@ MRR:        0.5699404761904762
 provenance correctness: 1.0
 ```
 
-Latency:
-
 ```text
-min:   532 ms
-max:   1728 ms
-mean:  720.0 ms
-p50:   616 ms
-p95:   1728 ms
-SDK retries: 0
+latency min:  532 ms
+latency mean: 720.0 ms
+latency p50:  616 ms
+latency p95:  1728 ms
+latency max:  1728 ms
+SDK retries:  0
 ```
 
-Both negative/out-of-authority cases returned non-empty retrieval with rank-1 scores near `0.689`, overlapping legitimate evidence. Provider similarity score therefore remains evidence, not probability, authority, or a global answerability threshold.
+Both negative/out-of-authority cases returned non-empty nearest-neighbor results with rank-1 scores near `0.689`, overlapping legitimate evidence. Provider similarity therefore remains evidence, not probability, answerability, or routing authority.
 
-## Gate 7.6 — Deterministic context assembly + synthesis — COMPLETE THROUGH 7.6f
+## Gate 7.6 — Deterministic context assembly + synthesis — COMPLETE / MERGED
 
-### Context and authority
+Gate 7.6 established:
 
 ```text
 RetrievalEvidence
- -> whole contiguous rank-prefix context assembly
+ -> contiguous whole-chunk rank-prefix context assembly
  -> AssembledContext
- -> deterministic authority decision
- -> SynthesisRequest
+ -> deterministic SUPPORTED / UNSUPPORTED authority
+ -> bounded SynthesisRequest
  -> trusted/untrusted prompt envelope
- -> exactly one bounded model call
- -> strict provider response parser
- -> deterministic synthesis-output parser
+ -> one non-streaming Bedrock Converse call maximum
+ -> strict provider evidence admission
+ -> deterministic ANSWER / INSUFFICIENT_EVIDENCE parsing
  -> SynthesisResult
 ```
 
@@ -217,49 +213,20 @@ answer:              <= 4,000 characters
 raw response parser: <= 65,536 characters
 ```
 
-Pre-model authority is deterministic:
-
-```text
-SUPPORTED
-UNSUPPORTED
-```
-
-The model can only return:
-
-```text
-ANSWER
-INSUFFICIENT_EVIDENCE
-```
-
-after deterministic admission. `UNSUPPORTED` cannot invoke AWS/model code.
-
-Retrieved source text is always untrusted instruction content. Canonical provenance proves source/content identity, not permission to alter system instructions, policies, tools, IAM, or structured vulnerability truth.
-
-### Frozen Bedrock synthesis boundary
-
-ADR 0023 selects:
+Bedrock provider boundary:
 
 ```text
 Region:                  us-east-1
-endpoint:                bedrock-runtime
-API:                     Converse
+endpoint/API:            bedrock-runtime / Converse
 streaming:               no
-provider/model:          Anthropic Claude Haiku 4.5
-US Geo profile:          us.anthropic.claude-haiku-4-5-20251001-v1:0
+model/profile:           us.anthropic.claude-haiku-4-5-20251001-v1:0
 temperature:             0.0
 provider maxTokens:      2,048
-model calls:             1 maximum
 tools:                   none
 structured output:       JSON Schema
 ```
 
-Automatic model-invocation body logging remains disabled. Content-free hashes and provider metadata are captured instead.
-
-No deployed runtime principal exists yet, so Gate 7.6 does not add an invented application IAM role. A future runtime principal must receive only the exact retrieval/inference actions and resources it actually requires.
-
-### First real Gate 7.6e run — SUCCESS
-
-The first supported end-to-end lab run was executed once and completed successfully.
+First supported real run completed once without replay.
 
 Retrieval:
 
@@ -286,84 +253,103 @@ Synthesis:
 ```text
 decision:               answer
 answer characters:      1751
-stop reason:            end_turn
 input tokens:           2671
 output tokens:          491
 total tokens:           3162
 Bedrock latency:        7217 ms
 client elapsed:         7983 ms
 SDK retries:            0
+stop reason:            end_turn
 provider request id:    eee2a118-f806-40d5-8f53-57c88da8ad16
-request sha256:         b25eb13aa908d7aa7cb614d4e0e2123aeb68fc0648d4394e16bdb450b7d44d35
-prompt sha256:          4e6aad47a03946fad02356198f95e094256cceb1807e4c78fe249e3f9934bbc2
-answer sha256:          eee35e23c7fa58502f871e3fb7df8e48664c7dd8350073fc3a58feba7bbf987a
-result sha256:          675d661d73ac3844a2e4f53c24f2b919ab909953ee0af29c5912409d93bf792f
 ```
 
-No replay was performed.
+Manual review against the exact frozen PyPA `Hash-checking Mode` slice found the seven substantive answer items supported by admitted evidence. This is a one-answer supportedness review, not a groundedness benchmark.
 
-### Gate 7.6f quality review
-
-The rank-1 evidence is the frozen PyPA `Hash-checking Mode` slice from exact upstream commit:
+Directly computable cost components:
 
 ```text
-pypa/pip
-173eb9b290e2924f0cd42b7714645b38b4df2e81
-docs/html/topics/secure-installs.md
+model input:            $0.0029381
+model output:           $0.0027005
+model total:            $0.0056386
+S3 Vectors request:     $0.0000025
+computable total:       $0.0056411
 ```
 
-A manual comparison found the generated answer's seven substantive guidance items supported by that admitted source slice. No structured NVD/KEV/EPSS/CVSS/applicability/runtime-exposure/Risk Policy claim was introduced.
+Titan query-embedding and S3 Vectors data-processed/data-returned units are not exposed by `Retrieve` and are not fabricated.
 
-The `--no-require-hashes` pip 26.2+ behavior is source-supported but weakens all-or-nothing enforcement; the answer correctly framed it as optional/selective compatibility behavior rather than the default secure posture.
-
-This is a one-answer manual supportedness review, not a groundedness benchmark. Gate 7.7 will measure deterministic citation correctness/coverage and unsupported claims.
-
-### Observed cost
-
-Using the frozen Claude Haiku 4.5 US Geo rates:
+Final Gate 7.6 CI:
 
 ```text
-input component:   $0.0029381
-output component:  $0.0027005
-model total:       $0.0056386
+Python CI #265: SUCCESS
+validated PR head: 60c2384e9e902326a1cb7fa6c1ca8028132ecfa9
+squash merge:      cc8097b3e2e9b048ca069e961736788de0a79f0d
 ```
 
-One S3 Vectors query request contributes:
+## Gate 7.7 — Deterministic citations + groundedness — IN PROGRESS
+
+### 7.7a — Citation catalog — COMPLETE
 
 ```text
-$0.0000025
+AssembledContext
+ -> exact selected blocks only
+ -> deterministic C1..Cn
+ -> ProjectedCitation[]
+ -> CitationCatalog
 ```
 
-Directly computable first-run components:
+Rules:
+
+- retrieval chunks excluded from `AssembledContext` cannot become citation authority;
+- citation IDs follow selected retrieval rank deterministically;
+- canonical URI/source/document/chunk identity is projected from admitted evidence;
+- document/chunk content hashes remain bound to each citation;
+- provider relevance score is absent;
+- each citation and the catalog are content-addressed;
+- source text is not duplicated into citation operational identity.
+
+A future model may reference `C1`, but cannot redefine what `C1` means.
+
+### 7.7b — Grounded claim/citation contract — COMPLETE
+
+Citation-aware provider-independent output is frozen as:
+
+```json
+{
+  "decision": "answer",
+  "claims": [
+    {"text": "...", "citation_ids": ["C1"]}
+  ]
+}
+```
+
+or:
+
+```json
+{"decision": "insufficient_evidence", "claims": []}
+```
+
+The model cannot author claim IDs, URLs, source IDs, document IDs, chunk IDs, or hashes. Deterministic code assigns claim indices, validates every citation ID against the exact catalog, canonicalizes citation order, rejects extra provenance fields, and renders the final answer only from cited claims.
+
+Grounded bounds:
 
 ```text
-$0.0056411
+max claims:             16
+max characters/claim:  1,000
+rendered answer:        <= original Gate 7.6 max_output_chars
+raw response:           <= 65,536 characters
 ```
 
-This is not the full bill. Bedrock `Retrieve` does not expose the exact Titan query-embedding units or S3 Vectors data-processed/data-returned billable units needed to reconstruct those components, so they are not fabricated.
+Every answer claim must contain at least one valid citation ID. This proves syntactic citation coverage only; it does not prove semantic support.
 
-### Latency interpretation
+CI:
 
 ```text
-retrieval client elapsed: 1463 ms
-Bedrock model latency:    7217 ms
-synthesis client elapsed: 7983 ms
+Python CI #266: SUCCESS — citation catalog
+Python CI #267: FAIL — Ruff __all__ ordering only
+Python CI #268: SUCCESS — grounded claim/citation contract
 ```
 
-The simple sequential client-stage sum is `9446 ms`, but no outer stopwatch was recorded. The synthesis run was also the first use of this structured-output grammar; AWS documents possible first-use grammar compilation latency, so this is not represented as warmed steady-state latency.
-
-## Current quality boundary
-
-Latest pre-closeout CI evidence:
-
-```text
-Python CI #264: SUCCESS
-head: 6b1be075c35120d4cebce97ee0591287ed7ccae5
-```
-
-Ruff, Pyright strict, Knowledge Retrieval pytest, and cross-slice regressions were green.
-
-The documentation-closeout commit requires a new final green CI before PR #99 can be marked ready and squash-merged.
+No AWS/model call has occurred in Gate 7.7.
 
 ## AWS foundation
 
@@ -381,14 +367,15 @@ Persistent AWS access keys are not stored in GitHub.
 
 ## Next action
 
-Complete Gate 7.6g:
+Continue Gate 7.7c **offline before any citation-aware Bedrock call**:
 
 ```text
-1. synchronize Gate 7.6 lab/current-state/roadmap/architecture
-2. require final CI green on the exact documentation-closeout head
-3. mark PR #99 ready
-4. squash merge only against the validated head SHA
-5. begin Gate 7.7 citations + groundedness only after merge
+1. freeze evaluation questions/expected evidence before prompt tuning
+2. define citation target precision/recall separately from claim groundedness
+3. define explicit support-judgment provenance
+4. compute all metrics deterministically from typed observations
+5. preserve unsupported-claim and abstention metrics separately
+6. require CI green before modifying Bedrock grounded-output request/schema
 ```
 
-Gate 7.7 must project citations from admitted evidence deterministically rather than trust model-authored URLs or source IDs.
+A valid citation ID is not itself proof that the cited evidence supports the claim.
