@@ -4,7 +4,7 @@ _Date: 2026-09-06_
 
 ## Status
 
-**IN PROGRESS — REAL RETRIEVE SUCCESS PROVEN / INTENTIONAL PROVIDER FAILURE + CLOSEOUT PENDING.**
+**COMPLETE — REAL DIRECT RETRIEVE + FAIL-CLOSED PROVIDER EVIDENCE RECORDED.**
 
 Gate 7.3 was squash-merged to `main` at:
 
@@ -12,11 +12,12 @@ Gate 7.3 was squash-merged to `main` at:
 1337950ddb5948943bf361dba4c3cdc40dafaf2b
 ```
 
-The real dev Knowledge Base remains populated with exactly nine canonical chunks:
+Real dev target:
 
 ```text
 knowledge base id: BTVJ2PBR2A
 data source id:    IEL1LBE026
+source bucket:     opslens-dev-data-487757851499-us-east-1
 vector count:      9
 embedding model:   amazon.titan-embed-text-v2:0
 vector store:      Amazon S3 Vectors
@@ -25,7 +26,7 @@ chunking:          NONE
 
 ## Goal
 
-Implement and validate the first real retrieval-only runtime for Phase 7.
+Implement and validate the first real retrieval-only runtime for Phase 7:
 
 ```text
 RetrievalRequest
@@ -36,20 +37,15 @@ RetrievalRequest
  -> RetrievalEvidence
 ```
 
-This gate does **not** generate answers and does **not** use `RetrieveAndGenerate`.
+This gate intentionally does **not** use `RetrieveAndGenerate` and does not synthesize an answer.
 
 Permanent rule:
 
 > Retrieval output is evidence, not deterministic truth.
 
-## Why Retrieve directly
+## Frozen request boundary
 
-AWS provides a direct Knowledge Base `Retrieve` operation through the
-`bedrock-agent-runtime` client. This keeps retrieval independently measurable from
-synthesis, preserves the Gate 7.5 Recall@K/MRR baseline, and prevents generation
-quality from hiding retrieval defects.
-
-The OpsLens v1 request surface is intentionally smaller than the provider API:
+OpsLens sends only:
 
 ```text
 knowledgeBaseId: fixed configured KB
@@ -57,231 +53,248 @@ retrievalQuery.text: validated request.query
 retrievalConfiguration.vectorSearchConfiguration.numberOfResults: request.top_k
 ```
 
-No provider DSL is accepted from the caller. No search-type override, reranking,
-implicit pagination, or generation configuration is sent.
-
-## Search behavior
-
-OpsLens uses Amazon S3 Vectors, so the v1 baseline is semantic retrieval only.
-Do not send `overrideSearchType=HYBRID` and do not add reranking before Gate 7.5
-measures the raw semantic baseline.
-
-## Boundaries inherited from Gate 7.1
+Product bounds remain stricter than the provider:
 
 ```text
 query:         non-blank, <= 1,000 chars
 top_k:         1..10
 default top_k: 5
-source_types:  typed allowlist only
 provider DSL:  none
+search mode:   semantic-only baseline
+reranking:     disabled
+synthesis:     absent
+pagination:    not admitted in v1
 ```
 
-The AWS API allows a broader `numberOfResults` range. OpsLens intentionally retains
-the stricter `1..10` product boundary already frozen in Gate 7.1.
+Typed Gate 7.1 filters fail before the provider call until an explicit deterministic Bedrock-filter translation exists. They are never silently ignored.
 
-The first real vertical slice is unfiltered. If a caller supplies any typed Gate 7.1
-scope before a reviewed deterministic Bedrock-filter translation exists, the
-application fails before the provider call rather than silently discarding scope.
+## Deterministic checked-corpus authority
 
-## Deterministic checked-corpus catalog — 7.4b COMPLETE
-
-`application/retrieval_catalog.py` derives runtime lookup authority only from the
-checked Gate 7.2 manifest.
-
-Published content keys remain content-addressed:
+`application/retrieval_catalog.py` resolves provider-returned S3 content keys only against the checked Gate 7.2 manifest:
 
 ```text
-knowledge/corpus/v1/bedrock/chunks/<chunk_content_sha256>.txt
+returned S3 key
+ -> content-addressed chunk SHA-256
+ -> checked manifest chunk
+ -> canonical chunk_id
+ -> canonical document/source provenance
 ```
 
-The catalog resolves a returned S3 object key to checked chunk/document/source
-identity and fails closed on malformed, unknown, out-of-prefix, or ambiguous keys.
-Canonical content keys, chunk digests, and chunk IDs must be globally unique.
-
-## Provider response admission — 7.4c COMPLETE
+The provider does not own canonical `chunk_id`, `document_id`, source URL, source type, document hash, title, or section path.
 
 Admission requires:
 
-1. result count <= `request.top_k`;
-2. `TEXT` content only;
-3. finite relevance score when present;
+1. result count `<= request.top_k`;
+2. text content only;
+3. finite score when present;
 4. exact expected S3 bucket and content-addressed key;
-5. key resolution to exactly one checked manifest chunk;
-6. exact returned UTF-8 text SHA-256 and byte count;
-7. required canonical metadata equality against checked corpus authority;
-8. unknown non-provider metadata rejection;
-9. Bedrock-reserved metadata treated as non-authoritative and cross-checked when it
-   restates source/data-source identity;
-10. deterministic rank assignment from provider response order.
+5. returned text SHA-256 equals the checked chunk hash;
+6. returned UTF-8 byte count equals checked manifest evidence;
+7. canonical metadata matches checked corpus authority;
+8. unknown non-provider metadata is rejected;
+9. Bedrock-reserved metadata remains non-authoritative and is cross-checked when it restates configured identity;
+10. ranks are assigned deterministically from provider order;
+11. `nextToken` and guardrail intervention fail closed in v1.
 
-Bedrock `documentId` and provider-owned chunk identifiers are not canonical OpsLens
-identity.
+## Runtime provider compatibility finding
 
-`nextToken` and guardrail intervention fail closed in v1.
+The first real call reached Bedrock successfully but local admission failed closed on `section_path`.
 
-## Real provider metadata discrepancy discovered and bounded
-
-The first real provider response failed closed before admission with:
+Observed provider representation:
 
 ```text
-retrieval metadata field 'section_path' disagrees with checked corpus evidence
+["\"Secure installs\"", "\"Hash-checking Mode\""]
 ```
 
-A metadata-only diagnostic call showed that Bedrock preserved `section_path` as a
-list but returned each string as a JSON-quoted scalar. Example provider shape:
-
-```json
-{
-  "section_path": [
-    "\"Secure installs\"",
-    "\"Hash-checking Mode\""
-  ]
-}
-```
-
-The checked manifest authority is:
-
-```json
-{
-  "section_path": [
-    "Secure installs",
-    "Hash-checking Mode"
-  ]
-}
-```
-
-The adapter now normalizes **only** this empirically observed representation: a
-quoted element must parse as one JSON string and the decoded value must then equal
-the checked manifest value exactly. Plain canonical strings remain valid. Malformed
-quoted strings, non-string values, extra nesting, or decoded mismatches still fail
-closed.
-
-The real response also exposed the Bedrock-reserved metadata field
-`x-amz-bedrock-kb-source-file-modality=TEXT`; provider-reserved fields remain
-non-authoritative.
-
-Regression tests cover the observed quoted `section_path` representation.
-
-## Runtime adapter and CLI — 7.4d COMPLETE
-
-`adapters/bedrock_retrieval.py` sends exactly one direct semantic request and captures
-provider request ID, retry attempts, client elapsed milliseconds, result count,
-ranks, and provider relevance scores.
-
-`cli/run_bedrock_retrieve.py` uses the checked local hash-only manifest rather than
-replaying external sources in the retrieval hot path. Region is frozen to
-`us-east-1`; `top_k` remains 1..10.
-
-CLI output intentionally contains no retrieved source text and no raw query. It emits
-query SHA-256, KB/request telemetry, ranked canonical IDs/hashes/provenance, and
-provider relevance scores.
-
-## First real admitted Retrieve — SUCCESS
-
-Real query used:
+Checked manifest authority:
 
 ```text
-How can I make pip dependency installation more secure using hashes?
+["Secure installs", "Hash-checking Mode"]
 ```
 
-Operational evidence:
+The adapter was changed only for this empirically observed representation. A section element is normalized only when it is a valid JSON-quoted string; the decoded value must still exactly equal the checked manifest value. Plain canonical strings remain valid, malformed quoting fails closed, and decoded mismatches fail closed.
+
+The real response also exposed `x-amz-bedrock-kb-source-file-modality=TEXT`; it remains provider-reserved, non-authoritative evidence.
+
+Regression tests cover the observed provider shape.
+
+## Real admitted Retrieve — SUCCESS
+
+Query SHA-256:
 
 ```text
-knowledge base:         BTVJ2PBR2A
-region:                 us-east-1
-requested top_k:        5
-returned/admitted:      5
-provider request id:    e92d67f1-18fa-4537-8ff4-c2e02ab813e0
-retrieval id:           bedrock-retrieve:e92d67f1-18fa-4537-8ff4-c2e02ab813e0
-query sha256:           5b398fe871d0cb51eaacb4f42a11b2ec402b5fdb4c523d2b7bca85e84dff3d0d
-client elapsed:         1257 ms
-SDK retry attempts:     0
+5b398fe871d0cb51eaacb4f42a11b2ec402b5fdb4c523d2b7bca85e84dff3d0d
 ```
 
-Ranked admitted evidence:
+Runtime evidence:
 
 ```text
-1  knowledge-chunk:pypa-secure-installs:hashes:v1
-   score 0.8649594783782959
-
-2  knowledge-chunk:pypa-dependency-management:transitive-review:v1
-   score 0.6561284065246582
-
-3  knowledge-chunk:pypa-dependency-management:upgrade:v1
-   score 0.6397770941257477
-
-4  knowledge-chunk:dependency-remediation-validation:isolation:v1
-   score 0.6031656265258789
-
-5  knowledge-chunk:dependency-remediation-validation:post-change:v1
-   score 0.5829733312129974
+provider request id: e92d67f1-18fa-4537-8ff4-c2e02ab813e0
+requested top_k:     5
+returned/admitted:   5
+client elapsed:      1257 ms
+SDK retries:         0
 ```
 
-The query's directly relevant secure-installs/hash-checking chunk was rank 1. This is
-useful single-query evidence only; aggregate retrieval quality conclusions belong to
-Gate 7.5.
-
-All five provider results passed deterministic S3 location, content hash, byte count,
-metadata, and checked-corpus provenance admission.
-
-## Runtime IAM boundary — 7.4e REVIEW COMPLETE / ATTACHMENT DEFERRED
-
-Current AWS documentation allows `bedrock:Retrieve` to be scoped to the exact
-Knowledge Base ARN:
+Ranked admitted chunks:
 
 ```text
-arn:aws:bedrock:us-east-1:487757851499:knowledge-base/BTVJ2PBR2A
+1  knowledge-chunk:pypa-secure-installs:hashes:v1                  0.8649594783782959
+2  knowledge-chunk:pypa-dependency-management:transitive-review:v1 0.6561284065246582
+3  knowledge-chunk:pypa-dependency-management:upgrade:v1           0.6397770941257477
+4  knowledge-chunk:dependency-remediation-validation:isolation:v1  0.6031656265258789
+5  knowledge-chunk:dependency-remediation-validation:post-change:v1 0.5829733312129974
 ```
 
-A future deployed OpsLens retrieval runtime should receive only the retrieval
-authority it needs and must not inherit source writes, vector writes/deletes,
-ingestion, PassRole, or infrastructure provisioning permissions merely for retrieval.
+The expected secure-install/hash-checking chunk was rank 1. This is single-query evidence only; aggregate Recall@K and MRR belong to Gate 7.5.
 
-No deployed application runtime principal exists yet. Creating an unattached role or
-policy solely to satisfy this gate would add dead IAM surface, so the final runtime
-attachment remains deferred until a real compute/runtime principal exists. The real
-lab call uses temporary Identity Center/bootstrap authority and is not the production
-runtime identity.
+The CLI emitted no retrieved chunk text and no raw query text. It emitted only query hash, configured identifiers, provider request telemetry, ranked canonical identities/provenance, hashes, section paths, and provider relevance scores.
 
-## Error behavior proven offline
+## Intentional real provider failure — SUCCESS
 
-Tests cover fail-closed behavior for unimplemented typed filters, pagination, result
-breadth, non-text content, wrong bucket/key, content hash/byte-count mismatch,
-canonical metadata mismatch, unknown non-provider metadata, reserved metadata
-contradictions, non-finite scores, guardrail intervention, unknown provider fields,
-and bounded provider error diagnostics.
+One read-only negative control used a deliberately nonexistent but syntactically valid Knowledge Base ID:
+
+```text
+knowledge base id: ZZZZZZZZZZ
+top_k:             1
+```
+
+Observed result:
+
+```text
+ERROR: Bedrock Retrieve failed provider_code=ResourceNotFoundException
+```
+
+The adapter exposed only the safe provider error code. It did not copy provider response bodies, corpus text, or sensitive credential material into the operational error.
+
+No AWS resource was mutated for this failure test.
+
+## IAM boundary
+
+Retrieval is a separate responsibility from Gate 7.3 ingestion/storage integration.
+
+A future deployed OpsLens retrieval principal should receive only the exact Knowledge Base runtime authority required for retrieval and must not inherit merely for this path:
+
+```text
+s3:PutObject
+s3vectors:PutVectors
+s3vectors:DeleteVectors
+bedrock:StartIngestionJob
+iam:PassRole
+Terraform/provisioning authority
+```
+
+No deployed application runtime principal exists yet. Creating an unattached role solely to satisfy this gate would add dead IAM surface, so the final attachment is deferred until a real compute/runtime principal exists. Temporary Identity Center/bootstrap credentials were used only as lab authority.
+
+## Observability evidence
+
+The runtime records content-free provider-neutral evidence:
+
+```text
+knowledge base reference
+query SHA-256
+requested top_k
+returned/admitted count
+ranked checked chunk identities
+provider relevance scores
+provider request id
+SDK retry count
+client elapsed milliseconds
+safe failure category
+```
+
+Bedrock relevance scores are evidence, not calibrated probabilities.
+
+## Cost evidence
+
+Gate 7.4 incurred retrieval-only cost; no synthesis-model cost exists in this gate.
+
+Observed real calls against the populated KB:
+
+```text
+1  first Retrieve: provider success, local section_path admission failed closed
+1  diagnostic Retrieve: metadata-only inspection
+1  admitted Retrieve: success
+--------------------------------
+3  real searches against the populated KB
+```
+
+The intentional nonexistent-KB failure is excluded from the S3 Vectors search estimate because it did not resolve to the configured vector index.
+
+Current AWS S3 Vectors pricing for US East (N. Virginia) includes:
+
+```text
+query request fee:       $2.50 per 1,000,000 queries
+first index tier:        $0.004 / TB of data processed
+returned data:           first 512 KB per query free
+```
+
+For three populated-index searches, the request-fee component is therefore approximately:
+
+```text
+3 / 1,000,000 * $2.50 = $0.0000075
+```
+
+The additional processed-data component is negligible for this nine-vector laboratory index, but an exact total is intentionally not fabricated because the provider response does not expose billable query bytes or query-embedding token usage.
+
+Knowledge Base retrieval also uses the configured embedding model to embed the query; model usage and S3 Vectors usage remain separate cost dimensions. Gate 7.5 will measure query volume/latency over the full fixture and report bounded assumptions rather than infer a billing total from incomplete telemetry.
+
+Official pricing references:
+
+- https://aws.amazon.com/s3/pricing/
+- https://aws.amazon.com/bedrock/pricing/
 
 ## Quality evidence
 
-The provider-compatibility regression head is:
+Provider-compatibility fix head:
 
 ```text
 c08234167ca3101fa144b59715c02909ccdc585d
 Python CI #224: SUCCESS
-Ruff: PASS
-Pyright strict: PASS
-pytest: PASS
-regressions: PASS
+Ruff:             PASS
+Pyright strict:   PASS
+pytest:            PASS
+regressions:      PASS
 ```
 
-## Observability
+The final documentation closeout commit must pass the same required PR checks before merge.
 
-Gate 7.4 records provider-neutral retrieval evidence sufficient for evaluation before
-synthesis: knowledge base reference, requested top-k, returned count, ranked checked
-chunk identities, provider relevance scores, client elapsed time, provider request
-ID, SDK retry count, and bounded failure category.
+## Increment status
 
-Provider scores are evidence only and are not interpreted as calibrated confidence.
+```text
+7.4a  direct-Retrieve authority boundary                         COMPLETE
+7.4b  deterministic checked-corpus S3-key lookup                COMPLETE
+7.4c  Bedrock Retrieve adapter + fake-client admission tests    COMPLETE
+7.4d  checked runtime manifest + bounded real CLI               COMPLETE
+7.4e  least-privilege retrieval IAM review                      COMPLETE / ATTACHMENT DEFERRED
+7.4f  real Retrieve success + intentional provider failure      COMPLETE
+7.4g  observability/cost/docs closeout                           COMPLETE / FINAL CI PENDING
+```
 
-## Cost
+## Exit criteria
 
-Gate 7.4 adds retrieval-query cost only; no synthesis-model cost belongs here. The
-closeout records the number of real provider calls and current published pricing
-assumptions without fabricating an exact per-query charge not exposed in the response.
+- [x] Gate 7.3 squash-merged before implementation;
+- [x] direct `Retrieve`, not `RetrieveAndGenerate`, retained for the baseline;
+- [x] semantic-only S3 Vectors baseline retained;
+- [x] Gate 7.1 `top_k <= 10` retained;
+- [x] checked-corpus lookup resolves provider S3 keys to canonical identity;
+- [x] provider response admission is deterministic and fail-closed;
+- [x] checked manifest loader avoids external corpus replay in the hot path;
+- [x] pagination behavior explicitly bounded;
+- [x] bounded CLI emits content-free operational evidence;
+- [x] retrieval IAM responsibility boundary reviewed;
+- [x] real provider metadata representation diagnosed and regression-tested;
+- [x] real Retrieve succeeded against `BTVJ2PBR2A`;
+- [x] real rank/score/request-id/retry/latency evidence recorded;
+- [x] intentional real provider failure categorized safely;
+- [x] retrieval cost assumptions recorded without fabricated billing precision;
+- [x] documentation closeout prepared;
+- [ ] final PR checks green;
+- [ ] PR squash-merged.
 
-## Evaluation handoff
+## Handoff to Gate 7.5
 
-Gate 7.5 owns aggregate quality measurement over the frozen fixture:
+Gate 7.5 owns aggregate retrieval quality evaluation over the frozen golden fixture:
 
 ```text
 Recall@1
@@ -291,54 +304,12 @@ Recall@10
 MRR
 provenance/source correctness
 latency distribution
-retrieval cost
+retrieval-call count / bounded cost assumptions
 ```
 
-## Increment plan
+Do not add synthesis, reranking, hybrid search, or arbitrary provider filters before the raw semantic baseline is measured.
 
-```text
-7.4a  freeze direct-Retrieve request/response authority boundary       COMPLETE
-7.4b  deterministic checked-corpus S3-key lookup                      COMPLETE
-7.4c  Bedrock Retrieve adapter + fake-client admission tests          COMPLETE
-7.4d  bounded real CLI/runtime evidence                               COMPLETE
-7.4e  least-privilege retrieval IAM boundary review                   COMPLETE / ATTACHMENT DEFERRED
-7.4f  real Retrieve success + intentional real failure                SUCCESS PROVEN / FAILURE NEXT
-7.4g  observability/cost/docs closeout + logical merge                PENDING
-```
-
-## Exit criteria
-
-- [x] Gate 7.3 squash-merged before implementation;
-- [x] current official AWS Retrieve documentation revalidated;
-- [x] direct `Retrieve`, not `RetrieveAndGenerate`, retained for the baseline;
-- [x] semantic-only S3 Vectors behavior recorded;
-- [x] Gate 7.1 `top_k <= 10` retained;
-- [x] checked-corpus lookup maps returned content keys to canonical identity;
-- [x] Bedrock adapter implemented with no arbitrary provider DSL;
-- [x] response provenance/content admission deterministic and fail-closed;
-- [x] pagination behavior explicitly bounded;
-- [x] checked manifest loader avoids external replay in the retrieval hot path;
-- [x] bounded real CLI emits content-free operational evidence;
-- [x] retrieval-only IAM boundary reviewed;
-- [x] provider-specific `section_path` representation diagnosed and bounded;
-- [x] real Retrieve call succeeds against `BTVJ2PBR2A`;
-- [x] first real success latency/request/rank/score evidence recorded;
-- [ ] one intentional real provider failure is diagnosed;
-- [ ] retrieval cost assumptions recorded;
-- [ ] project state/docs synchronized with real evidence;
-- [ ] final PR CI green;
-- [ ] PR squash-merged.
-
-## Next authorized step
-
-Run one intentional, read-only provider failure through the same bounded CLI using a
-deliberately nonexistent but syntactically valid Knowledge Base ID. The purpose is to
-prove real provider error categorization without changing IAM or AWS resources.
-
-Do not repeat the failure call, mutate IAM, start synthesis, or begin Gate 7.5 until
-that evidence is inspected.
-
-## Official AWS references revalidated
+## Official AWS references
 
 - Amazon Bedrock — Retrieve data and generate AI responses with knowledge bases:
   https://docs.aws.amazon.com/bedrock/latest/userguide/kb-how-retrieval.html
@@ -352,3 +323,7 @@ that evidence is inspected.
   https://docs.aws.amazon.com/botocore/latest/reference/services/bedrock-agent-runtime/client/retrieve.html
 - Amazon Bedrock — Knowledge Base runtime permissions:
   https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-prereq-permissions-general.html
+- Amazon S3 pricing — S3 Vectors:
+  https://aws.amazon.com/s3/pricing/
+- Amazon Bedrock pricing:
+  https://aws.amazon.com/bedrock/pricing/
