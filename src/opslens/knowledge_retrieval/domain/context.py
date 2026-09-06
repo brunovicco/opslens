@@ -26,6 +26,11 @@ DEFAULT_CONTEXT_MAX_UTF8_BYTES = MAX_CONTEXT_UTF8_BYTES
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 
+def _is_runtime_instance(value: object, expected_type: type[object]) -> bool:
+    """Check untrusted runtime values without weakening public annotations."""
+    return isinstance(value, expected_type)
+
+
 def _normalize_required_text(value: object, label: str) -> str:
     """Return one trimmed non-empty string or fail closed."""
     if not isinstance(value, str):
@@ -141,7 +146,7 @@ class ContextEvidenceBlock:
             _normalize_required_text(self.document_id, "document_id"),
         )
         object.__setattr__(self, "source_id", _normalize_required_text(self.source_id, "source_id"))
-        if not isinstance(self.source_type, KnowledgeSourceType):
+        if not _is_runtime_instance(self.source_type, KnowledgeSourceType):
             raise KnowledgeRetrievalValidationError("source_type has an unsupported value.")
         object.__setattr__(
             self,
@@ -175,7 +180,7 @@ class ContextEvidenceBlock:
     @classmethod
     def from_chunk(cls, chunk: RetrievedChunk) -> Self:
         """Project one admitted chunk without provider score evidence."""
-        if not isinstance(chunk, RetrievedChunk):
+        if not _is_runtime_instance(chunk, RetrievedChunk):
             raise KnowledgeRetrievalValidationError("chunk must be a RetrievedChunk value.")
         return cls(
             retrieval_rank=chunk.rank,
@@ -268,7 +273,7 @@ class AssembledContext:
         object.__setattr__(self, "retrieval_id", retrieval_id)
         query_sha256 = _validate_sha256(self.query_sha256, "query_sha256")
         object.__setattr__(self, "query_sha256", query_sha256)
-        if not isinstance(self.limits, ContextAssemblyLimits):
+        if not _is_runtime_instance(self.limits, ContextAssemblyLimits):
             raise KnowledgeRetrievalValidationError("limits must be a ContextAssemblyLimits value.")
         blocks = _normalize_blocks(self.blocks)
         if not blocks:
@@ -301,7 +306,7 @@ class AssembledContext:
             raise KnowledgeRetrievalValidationError(
                 "assembled context cannot exceed limits.max_utf8_bytes."
             )
-        if not isinstance(self.stop_reason, ContextAssemblyStopReason):
+        if not _is_runtime_instance(self.stop_reason, ContextAssemblyStopReason):
             raise KnowledgeRetrievalValidationError(
                 "stop_reason must be a ContextAssemblyStopReason value."
             )

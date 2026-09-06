@@ -15,16 +15,21 @@ class ContextAssemblyError(ValueError):
     """Raised when admitted retrieval evidence cannot form bounded synthesis context."""
 
 
+def _is_runtime_instance(value: object, expected_type: type[object]) -> bool:
+    """Check untrusted runtime values without weakening public annotations."""
+    return isinstance(value, expected_type)
+
+
 def assemble_retrieval_context(
     evidence: RetrievalEvidence,
     *,
     limits: ContextAssemblyLimits | None = None,
 ) -> AssembledContext:
     """Select whole chunks as one contiguous rank prefix under deterministic limits."""
-    if not isinstance(evidence, RetrievalEvidence):
+    if not _is_runtime_instance(evidence, RetrievalEvidence):
         raise ContextAssemblyError("evidence must be a RetrievalEvidence value")
     resolved_limits = limits if limits is not None else ContextAssemblyLimits()
-    if not isinstance(resolved_limits, ContextAssemblyLimits):
+    if not _is_runtime_instance(resolved_limits, ContextAssemblyLimits):
         raise ContextAssemblyError("limits must be a ContextAssemblyLimits value")
     if not evidence.chunks:
         raise ContextAssemblyError(
