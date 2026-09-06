@@ -151,7 +151,7 @@ def _require_int(value: object, label: str) -> int:
     """Return an actual integer, rejecting booleans."""
     if type(value) is not int:
         raise HybridRetrievalValidationError(f"{label} must be an integer.")
-    return cast(int, value)
+    return value
 
 
 def _require_optional_number(value: object, label: str) -> float | None:
