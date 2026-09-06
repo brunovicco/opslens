@@ -14,37 +14,24 @@ Phase 3    Vulnerability Correlation Engine                    COMPLETE
 Phase 4    Repository Intelligence                             COMPLETE
 Phase 5    Risk Prioritization Engine                          COMPLETE
 Phase 6    Semantic Query Layer                                COMPLETE
-Phase 7    Knowledge Retrieval with Bedrock                    IN PROGRESS
+Phase 7    Knowledge Retrieval with Bedrock                    COMPLETE
   Gate 7.1 Corpus + retrieval contract                         COMPLETE / MERGED
   Gate 7.2 Reproducible canonical corpus                       COMPLETE / MERGED
   Gate 7.3 Knowledge Base + vector infrastructure              COMPLETE / MERGED
   Gate 7.4 Real bounded Retrieve adapter                       COMPLETE / MERGED
   Gate 7.5 Retrieval evaluation                                COMPLETE / MERGED
   Gate 7.6 Context assembly + synthesis                        COMPLETE / MERGED
-  Gate 7.7 Citations + groundedness                            COMPLETE / PR #100
-  Gate 7.8 Phase 7 closeout                                    NEXT
+  Gate 7.7 Citations + groundedness                            COMPLETE / MERGED
+  Gate 7.8 Phase 7 closeout                                    COMPLETE / CLOSEOUT PR
+Phase 8    Hybrid Retrieval                                    NEXT
 ```
 
-Recent logical merges:
+Latest merged implementation checkpoint before Gate 7.8 documentation closeout:
 
 ```text
-Phase 6 / PR #91
-95db66e278059629ce6572b2950e9cca705c6498
-
-Gate 7.3 / PR #95
-1337950ddb5948943bf361dba4c3cdc40dafaf2b
-
-Gate 7.4 / PR #97
-7c25877e0ae9541a4f20b8537e4f77c88ee776a5
-
-Gate 7.5 / PR #98
-b30af10a568cefa7175c253120499939f9ca18d8
-
-Gate 7.6 / PR #99
-cc8097b3e2e9b048ca069e961736788de0a79f0d
+Phase 7 Gate 7.7 / PR #100
+928f9b6173fba67778c3ee9f104aa250d108cf50
 ```
-
-Gate 7.7 is complete on PR #100 and awaits the protected squash-merge closeout after final CI.
 
 ## Permanent boundaries
 
@@ -60,7 +47,7 @@ Gate 7.7 is complete on PR #100 and awaits the protected squash-merge closeout a
 
 > **No unrestricted text-to-SQL.**
 
-Deterministic authorities own package normalization, vulnerable-range matching, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS evidence, Risk Policy, canonical corpus construction, semantic-query validation/SQL compilation, retrieval evidence admission, context assembly, synthesis admission, citation authority, output admission, and evaluation metric computation.
+Deterministic authorities own package normalization, version/range matching, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS evidence, Risk Policy, semantic-query validation and SQL compilation, canonical corpus construction, retrieval evidence admission, context assembly, citation authority, output admission, and evaluation metric computation.
 
 LLMs may classify, plan, synthesize, explain, route, and select among already-admitted citation IDs. They do not replace structured truth or invent source authority.
 
@@ -81,13 +68,15 @@ Controlled Knowledge Corpus
  -> deterministic checked-corpus admission
  -> retrieval evaluation
  -> deterministic bounded context assembly
- -> deterministic synthesis admission
+ -> deterministic pre-model authority decision
  -> bounded Bedrock Converse synthesis
  -> deterministic citation catalog
  -> grounded claim/citation output contract
- -> explicit support judgments
+ -> explicit human support judgments
  -> deterministic groundedness metrics
 ```
+
+The structured and semantic paths are complementary. Structured vulnerability/risk facts remain outside RAG authority.
 
 ## Phase 7 infrastructure baseline
 
@@ -123,25 +112,7 @@ skipped:                0
 vectors materialized:   9
 ```
 
-## Gate 7.4 — Direct bounded retrieval
-
-Direct `bedrock-agent-runtime:Retrieve` stays separately observable from generation.
-
-Initial real admitted baseline:
-
-```text
-requested top_k:        5
-returned/admitted:      5
-provider request id:    e92d67f1-18fa-4537-8ff4-c2e02ab813e0
-client elapsed:         1257 ms
-SDK retries:            0
-rank 1:                 knowledge-chunk:pypa-secure-installs:hashes:v1
-rank 1 score:           0.8649594783782959
-```
-
-Provider similarity is retained as evidence, never silently converted to confidence or authority.
-
-## Gate 7.5 — Retrieval evaluation
+## Gate 7.5 retrieval baseline
 
 Frozen dataset:
 
@@ -152,7 +123,7 @@ knowledge-retrieval-golden:v1
 2 negative/out-of-authority
 ```
 
-Measured baseline:
+Measured result:
 
 ```text
 Recall@1:   0.375
@@ -161,26 +132,18 @@ Recall@5:   0.875
 Recall@10:  1.000
 MRR:        0.5699404761904762
 provenance correctness: 1.0
+
+latency min:   532 ms
+latency mean:  720.0 ms
+latency p50:   616 ms
+latency p95:   1728 ms
+latency max:   1728 ms
+SDK retries:   0
 ```
 
-```text
-latency min:  532 ms
-latency mean: 720.0 ms
-latency p50:  616 ms
-latency p95:  1728 ms
-latency max:  1728 ms
-SDK retries:  0
-```
+Both negative/out-of-authority cases returned non-empty nearest-neighbor results with rank-1 scores around `0.689`, overlapping legitimate evidence. Retrieval existence or score does not establish answerability.
 
-Both negative/out-of-authority cases returned non-empty nearest-neighbor results with rank-1 scores near `0.689`, overlapping legitimate evidence. Retrieval existence or score therefore does not establish answerability.
-
-## Gate 7.6 — Deterministic context assembly + synthesis
-
-Merged through PR #99 at:
-
-```text
-cc8097b3e2e9b048ca069e961736788de0a79f0d
-```
+## Gate 7.6 synthesis baseline
 
 Context bounds:
 
@@ -226,44 +189,11 @@ client elapsed:          7983 ms
 SDK retries:             0
 ```
 
-Directly computable first-run cost components total `$0.0056411`; unexposed Titan/S3 Vectors billable units were not fabricated.
+Directly computable cost components total `$0.0056411`; unexposed query-embedding and S3 Vectors processed/returned units were not fabricated.
 
-## Gate 7.7 — Deterministic citations + groundedness — COMPLETE
+## Gate 7.7 groundedness baseline
 
-### Citation authority
-
-```text
-AssembledContext
- -> selected blocks only
- -> deterministic C1..Cn
- -> ProjectedCitation[]
- -> CitationCatalog
-```
-
-A model may reference `C1`; it cannot redefine the URL/source/document/chunk/hash behind `C1`.
-
-### Grounded output
-
-```json
-{
-  "decision": "answer",
-  "claims": [
-    {"text": "...", "citation_ids": ["C1"]}
-  ]
-}
-```
-
-or:
-
-```json
-{"decision": "insufficient_evidence", "claims": []}
-```
-
-Every admitted answer claim contains at least one valid citation ID. This gives syntactic citation coverage, not semantic proof.
-
-### Frozen evaluation
-
-Dataset:
+Frozen dataset:
 
 ```text
 knowledge-grounding-golden:v1
@@ -285,22 +215,18 @@ application complete:              true
 cases completed:                   4 / 4
 real Retrieve calls:               4
 real grounded Converse calls:      4
-retries:                           0
+SDK retries:                       0
 all Converse stop reasons:         end_turn
+
+input tokens:                      11,734
+output tokens:                     645
+total tokens:                      12,379
+retrieval latency mean:            790.0 ms
+Bedrock latency mean:              3396.5 ms
+client synthesis mean:             3743.25 ms
 ```
 
-Tokens and latency:
-
-```text
-input tokens:                       11,734
-output tokens:                      645
-total tokens:                       12,379
-retrieval latency mean:             790.0 ms
-Bedrock latency mean:               3396.5 ms
-client synthesis mean:              3743.25 ms
-```
-
-Human-reviewed support evidence is preserved without model/source text duplication at:
+Human-reviewed support evidence is preserved at:
 
 ```text
 labs/evidence/phase-7-gate-7-7-first-run-review-v1.json
@@ -319,11 +245,11 @@ abstention precision:              1.0
 abstention recall:                 1.0
 ```
 
-The key failure signal is the isolation case: the correct isolation chunk was retrieved at rank 1, but both claims cited the adjacent post-change chunk instead. Under strict exact-chunk review both claim/citation pairs were unsupported. This is an attribution/grounding failure, not a retrieval-availability failure.
+The key preserved weakness is the isolation case: the expected isolation chunk was retrieved at rank 1, but both generated claims cited the adjacent post-change chunk. Under strict exact-chunk review both claim/citation pairs were unsupported. This is a citation-attribution/grounding failure, not retrieval unavailability.
 
-The exact TLS-cipher case correctly abstained even though vector retrieval returned five neighbors, reinforcing that non-empty retrieval does not equal answerability.
+The exact TLS-cipher case correctly abstained despite five retrieved neighbors.
 
-Directly computable Gate 7.7 first-run cost:
+Directly computable four-case cost:
 
 ```text
 model input:              $0.0129074
@@ -333,18 +259,93 @@ model subtotal:           $0.0164549
 computable total:         $0.0164649
 ```
 
-This is not represented as the complete AWS bill because exact Titan query-embedding and S3 Vectors processed/returned units are not exposed by the runtime evidence.
+## Gate 7.8 closeout decisions
 
-Relevant CI:
+Gate 7.8 consolidates architecture rather than optimizing the measured baseline.
+
+### Failure taxonomy
 
 ```text
-Python CI #279: SUCCESS — real-evaluation harness
-Python CI #280: SUCCESS — validated pre-run head
-Python CI #283: FAIL    — strict typing diagnostics in reviewed projection only
-Python CI #284: SUCCESS — reviewed evidence + deterministic metrics
+1. route / authority failure
+2. provider retrieval failure
+3. retrieval evidence-admission failure
+4. retrieval relevance / coverage failure
+5. context-assembly failure
+6. synthesis transport failure
+7. synthesis output-admission failure
+8. answerability / decision failure
+9. citation-authority failure
+10. citation-attribution failure
+11. semantic groundedness failure
 ```
 
-Gate 7.7 introduced no AWS resource and no IAM permission.
+These classes must remain diagnosable separately. A downstream failure must not be rewritten as a retrieval miss or model hallucination when the evidence indicates a different stage.
+
+### Future application runtime IAM
+
+No application compute principal exists yet and no role is created in Gate 7.8.
+
+The future deployed runtime entitlement is frozen conceptually as:
+
+```text
+bedrock:Retrieve
+ -> exact Knowledge Base ARN only
+
+bedrock:InvokeModel
+ -> exact US Geographic inference profile
+ -> exact Claude Haiku 4.5 foundation-model ARNs required in
+    us-east-1, us-east-2, us-west-2
+ -> foundation-model access conditioned on the exact inference profile ARN
+```
+
+Not required by the proven runtime path:
+
+```text
+bedrock:RetrieveAndGenerate
+bedrock:InvokeModelWithResponseStream
+Knowledge Base administration/data-source management
+S3 Vectors direct application access
+broad Bedrock wildcard administration
+```
+
+See ADR 0024.
+
+### Cost-accounting boundary
+
+Phase 7 separates:
+
+```text
+ingestion-time embedding / vector-write costs
+vector storage costs
+query-time embedding costs
+S3 Vectors query request / processed / returned costs
+model input/output token costs
+```
+
+Only values directly supported by runtime/provider evidence are reported as computed cost. Cost Explorer remains the bill-level reconciliation source.
+
+### Observability boundary
+
+Current lab evidence includes provider request IDs, ranks/scores, result counts, context/catalog/request/result hashes, model/profile ID, token counts, provider/client latency, retries, stop reason, decisions, claim/citation mappings, and human judgment hashes.
+
+Phase 7 does **not** claim production SLOs, high-volume latency distributions, end-user trace correlation, or production alert thresholds. Those require deployed runtime telemetry.
+
+## Phase 8 entry criteria
+
+Phase 8 may begin only from these frozen assumptions:
+
+```text
+1. structured vulnerability/risk truth remains deterministic authority
+2. semantic retrieval remains explanatory/remediation evidence
+3. routing between evidence classes is explicit and typed
+4. combined answers preserve provenance by evidence class
+5. Gate 7.7 baseline remains immutable
+6. any prompt/reranker/retrieval change is separately versioned and reevaluated
+7. no new AWS service is added without a measured requirement
+8. quality, cost, failure, and observability dimensions remain separately measurable
+```
+
+Phase 8 must not begin by blindly concatenating Athena rows and vector chunks.
 
 ## AWS foundation
 
@@ -362,18 +363,4 @@ Persistent AWS access keys are not stored in GitHub.
 
 ## Next action
 
-Proceed to **Gate 7.8 — Phase 7 closeout** only after PR #100 final CI and squash merge.
-
-Gate 7.8 should consolidate:
-
-```text
-retrieval / synthesis / citation failure diagnosis
-least-privilege application runtime IAM strategy
-retrieval / vector / embedding / model cost accounting boundaries
-observability evidence and missing production telemetry
-Phase 7 ADR and architecture consistency
-regression and evaluation evidence
-explicit Phase 8 entry criteria
-```
-
-Do not optimize the Gate 7.7 prompt against the preserved four-case output inside the same baseline gate. Any citation-attribution improvement must be separately versioned and reevaluated.
+After Gate 7.8 closeout CI and merge, begin **Phase 8 — Hybrid Retrieval** with an offline-first routing/authority contract before any new AWS resource, reranker, hybrid search mode, or model call is introduced.

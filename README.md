@@ -4,21 +4,33 @@
 
 # OpsLens
 
-### Deterministic Software Supply Chain & Threat Intelligence on AWS
+### Verifiable Software Supply Chain & Threat Intelligence on AWS
 
-**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Deterministic Evidence · AWS Serverless**
+**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Deterministic Evidence**
 
 </div>
 
-OpsLens is an open-source software supply chain intelligence platform built on AWS.
+OpsLens is an open-source software supply-chain intelligence platform built on AWS.
 
 It is designed to answer:
 
-> Given the software I actually use, which vulnerabilities affect it, what evidence proves that, and which findings should I prioritize?
+> Given the software I actually use, which vulnerabilities affect it, what exact evidence proves that, which findings should I prioritize, and what verified guidance can help me act on them?
 
-The project deliberately establishes deterministic evidence, provenance, package/version correlation, risk-policy enforcement, least-privilege boundaries, observability, failure recovery, and cost controls before introducing semantic, generative, or agentic reasoning.
+The project deliberately keeps deterministic truth separate from model reasoning.
 
 > **Agents reason. Code verifies evidence.**
+
+Additional permanent boundaries:
+
+> **Not every question is a RAG problem.**
+
+> **Structured facts use structured retrieval.**
+
+> **READ, NEVER EXECUTE third-party repository code.**
+
+> **Repository Risk != Runtime Exposure.**
+
+> **No unrestricted text-to-SQL.**
 
 ## Current status
 
@@ -30,19 +42,19 @@ The project deliberately establishes deterministic evidence, provenance, package
 | Phase 3 | Vulnerability Correlation Engine | ✅ Complete |
 | Phase 4 | Repository Intelligence | ✅ Complete |
 | Phase 5 | Risk Prioritization Engine | ✅ Complete |
-| Phase 6 | Semantic Query Layer | 🚧 Next |
+| Phase 6 | Semantic Query Layer | ✅ Complete |
+| Phase 7 | Knowledge Retrieval with Bedrock | ✅ Complete |
+| Phase 8 | Hybrid Retrieval | ⏳ Next |
 
-Latest implementation checkpoint before the Phase 5 documentation closeout:
+Phase 7 completed at the measured Gate 7.7 baseline and Gate 7.8 architecture closeout. The closeout intentionally does **not** tune the prompt against the observed baseline.
 
-```text
-81a2e78a3e8329aa811c20012bc565f35f1a87e5
-```
+See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), and [Architecture](docs/architecture.md).
 
-See [Current State](docs/current-state.md) and [Roadmap](docs/roadmap.md) for detailed status.
+## Implemented system
 
-## What OpsLens can do today
+OpsLens now has two complementary evidence paths.
 
-The current deterministic path can analyze a supported public GitHub repository snapshot without executing repository code, correlate locked PyPI dependencies to exact GHSA vulnerable ranges, enrich affected findings with source-preserving threat intelligence, and prioritize them through an explicit versioned policy.
+### Structured authority path
 
 ```text
 NVD / CVE -----------+
@@ -55,257 +67,141 @@ public GitHub repository
  -> immutable repository snapshot
  -> bounded GET-only acquisition
  -> exact inert uv.lock evidence
- -> deterministic tomllib parsing
- -> PyPI / PEP 440 / purl normalization
- -> GHSA vulnerable-range applicability
- -> exact NVD/CVSS enrichment
- -> complete-snapshot CISA KEV evidence
- -> explicit FIRST EPSS snapshot evidence
+ -> deterministic PyPI / PEP 440 / purl normalization
+ -> deterministic vulnerable-range applicability
+ -> NVD/CVSS + CISA KEV + FIRST EPSS enrichment
  -> content-addressed RepositoryAnalysisResult
  -> deterministic Risk Policy v1
- -> factor contributions
- -> priority score / tier / completeness
- -> content-addressed RiskPrioritizationResult
+ -> bounded SemanticQuery planning
+ -> deterministic SQL compilation
+ -> bounded read-only Athena
 ```
 
-No third-party repository code is executed.
+The model never decides vulnerability applicability, risk-policy truth, or arbitrary SQL.
 
-## Core invariants
-
-- Deterministic evidence and correlation first; model reasoning later.
-- **No LLM decides vulnerability applicability.**
-- **Risk policy evaluation is deterministic.**
-- Raw source evidence is preserved before transformation.
-- Exact source versions and content hashes participate in evidence identity.
-- Unsupported or malformed semantics fail closed.
-- Third-party repository code is never executed during analysis.
-- Repository Risk is not Runtime Exposure.
-- Missing evidence is not silently interpreted as benign evidence.
-- Duplicate delivery is expected and replay must be safe.
-- IAM least privilege and responsibility separation are architectural requirements.
-- AWS services are introduced only for demonstrated requirements.
-- Natural-language planning never receives unrestricted SQL authority.
-
-## Threat Intelligence Data Lake — Phase 2
-
-Phase 2 provides the deterministic threat-intelligence evidence consumed by later phases.
-
-### FIRST EPSS
+### Explanatory / remediation knowledge path
 
 ```text
-FIRST EPSS
- -> EventBridge Scheduler
- -> Lambda ingestion
- -> S3 Bronze
- -> deterministic Silver / Parquet
- -> Glue Data Catalog
- -> Athena
+immutable official source pins
+ -> deterministic canonical corpus
+ -> customer-managed Amazon Bedrock Knowledge Base
+ -> Titan Text Embeddings V2
+ -> Amazon S3 Vectors
+ -> direct bounded Retrieve
+ -> deterministic checked-corpus admission
+ -> bounded deterministic context assembly
+ -> one bounded Bedrock Converse synthesis
+ -> deterministic C1..Cn citation authority
+ -> structured claim/citation proposal
+ -> human-reviewed support evidence
+ -> deterministic groundedness metrics
 ```
 
-The canonical Silver relation also contains the completed historical interval from `2021-04-14` through `2026-08-13` under a pinned historical archive commit.
+`RetrieveAndGenerate` is deliberately not used. Retrieval and generation remain separately observable and separately testable.
 
-### CISA KEV
+## Phase 7 measured baseline
+
+### Retrieval quality
+
+Frozen `knowledge-retrieval-golden:v1`:
 
 ```text
-CISA KEV
- -> bounded ingestion
- -> immutable Bronze
- -> deterministic Silver
- -> Parquet
- -> Glue
- -> Athena
+10 cases: 8 positive + 2 negative/out-of-authority
+Recall@1:   0.375
+Recall@3:   0.750
+Recall@5:   0.875
+Recall@10:  1.000
+MRR:        0.5699404761904762
+provenance correctness: 1.0
 ```
 
-KEV presence or absence is meaningful only against an explicitly selected, fully validated catalog snapshot.
+Both negative cases still returned vector neighbors. Similarity score or non-empty retrieval is therefore evidence, not answerability authority.
 
-### NVD / CVE
+### Groundedness / citation quality
+
+Frozen `knowledge-grounding-golden:v1`:
 
 ```text
-NVD yearly feeds + CVE API 2.0
- -> immutable Bronze
- -> deterministic versioned Silver
- -> Silver COMPLETE
- -> authoritative watermark
- -> permanent analytics projection
- -> Glue / Athena
+decision accuracy:          1.0
+citation target precision:  0.2857142857142857
+citation target recall:     0.5
+claim supportedness:        0.8461538461538461
+unsupported claim rate:     0.15384615384615385
+citation correctness:       0.8461538461538461
+abstention precision:       1.0
+abstention recall:          1.0
 ```
 
-Authority remains explicit:
+The most useful failure was preserved: one case retrieved the correct evidence at rank 1, yet the model cited an adjacent chunk. OpsLens treats this as a citation-attribution / groundedness failure rather than hiding it behind retrieval success.
 
-```text
-bronze_complete
-    !=
-silver_complete
-    !=
-watermark_committed
-    -> analytics_eligible
-    -> analytics_projected
-```
+The exact out-of-evidence TLS-cipher case correctly returned `insufficient_evidence` despite non-empty vector retrieval.
 
-### GitHub Security Advisories
-
-```text
-GitHub reviewed advisories
- -> versioned Bronze pages + COMPLETE
- -> deterministic advisory normalization
- -> immutable advisory-version Silver
- -> Silver COMPLETE
- -> Glue / Athena
-```
-
-GHSA package/range/fix evidence remains source-local even when the same CVE is independently observed by NVD.
-
-## Vulnerability Correlation Engine — Phase 3
-
-Phase 3 is complete for the first supported ecosystem: **PyPI**.
-
-Implemented semantics include:
-
-```text
-PyPA package normalization
-PEP 440 concrete versions
-canonical PyPI purl
-GHSA range operators: = < <= > >=
-affected | not_affected | unsupported
-first-patched-version evidence
-exact GHSA occurrence provenance
-CVE/GHSA/NVD reconciliation
-correlation:v1@sha256:<digest>
-```
-
-`first_patched_version` is remediation evidence. It never replaces vulnerable-range applicability.
-
-See [Phase 3 correlation closeout](docs/labs/phase-3-correlation-engine-closeout.md).
-
-## Repository Intelligence — Phase 4
-
-The v1 repository scope is intentionally narrow:
-
-```text
-provider:        public GitHub
-repository file: root-level uv.lock
-supported deps:  canonical PyPI records
-transport:       read only
-code execution:  never
-```
-
-The repository authority is an immutable GitHub numeric repository identity plus exact commit SHA. Dependency reads are bound to that commit, not to a moving branch name.
-
-The final Phase 4 aggregate identity is:
-
-```text
-repository-analysis:v1@sha256:<digest>
-```
-
-A repository commit alone is not a safe future cache key because selected KEV/EPSS evidence is temporal. Phase 4 therefore deferred cache infrastructure until a measured workload justifies storage, invalidation, IAM, observability, and cost.
-
-See [Phase 4 Repository Intelligence closeout](docs/labs/phase-4-repository-intelligence-closeout.md).
-
-## Risk Prioritization Engine — Phase 5
-
-Phase 5 is complete with a separate deterministic **Risk Policy v1**.
-
-The policy consumes only facts already established by Phase 4:
-
-```text
-KEV present                         +40
-EPSS >= 0.70 / 0.30 / 0.10          +30 / +20 / +10
-max supported CVSS >= 9 / 7 / 4     +20 / +10 / +5
-known fixed version                 +10
-maximum                              100
-```
-
-Priority tiers:
-
-```text
-P0 >= 80
-P1 >= 60
-P2 >= 30
-P3 < 30
-```
-
-This is an OpsLens **priority score**. It is not exploit probability, a CVSS replacement, a KEV/EPSS rewrite, or a runtime-exposure score.
-
-The CVSS maximum is an explicit downstream policy aggregation. Original NVD CVSS observations remain preserved.
-
-Missing evidence remains explicit:
-
-```text
-complete negative evidence
-  KEV absent in complete catalog
-  EPSS score absent in complete snapshot
-
-partial / review_required
-  CVE unavailable
-  no supported CVSS evidence
-  unsupported future CVSS family
-```
-
-Content-addressed policy identities:
-
-```text
-risk-policy:v1@sha256:<digest>
-risk-evaluation:v1@sha256:<digest>
-risk-prioritization:v1@sha256:<digest>
-```
-
-Equal-score findings use a stable opaque ID only as a deterministic tie breaker; the tie breaker carries no risk semantics.
-
-Phase 5 added **zero AWS resources, zero IAM permissions, and zero model calls**.
-
-See [Phase 5 Risk Policy closeout](docs/labs/phase-5-risk-policy-closeout.md) and [ADR 0019](docs/adr/0019-deterministic-risk-policy-v1.md).
-
-## AWS foundation
+## Phase 7 AWS baseline
 
 ```text
 environment:             dev
-primary workload Region: us-east-1
-Infrastructure as Code:  Terraform
-human access:            AWS IAM Identity Center
-CI/CD identity:          GitHub Actions OIDC -> AWS STS
-Terraform state:         Amazon S3
-observability:           CloudWatch + X-Ray
-analytics:               AWS Glue + Amazon Athena
+Region:                  us-east-1
+knowledge base:          BTVJ2PBR2A
+data source:             IEL1LBE026
+vector store:            Amazon S3 Vectors
+embedding model:         amazon.titan-embed-text-v2:0
+dimensions:              1024
+chunking:                NONE
+canonical chunks:        9
+synthesis API:           bedrock-runtime / Converse
+synthesis profile:       us.anthropic.claude-haiku-4-5-20251001-v1:0
+streaming:               no
+tools:                   none
 ```
 
-GitHub Actions stores no persistent AWS access keys. Deployment identities remain separate from runtime identities.
+No Phase 7 application runtime role has been created. The future runtime IAM boundary is documented before compute exists: direct `bedrock:Retrieve` is scoped to the specific Knowledge Base, while non-streaming model invocation uses the exact US Geographic inference profile and its required regional foundation-model resources. `RetrieveAndGenerate`, streaming inference, Knowledge Base administration, and direct vector-store access are not part of the runtime entitlement.
 
-## Cost and security discipline
+See [ADR 0024](docs/adr/0024-phase7-runtime-iam-boundary.md).
 
-The architecture deliberately avoids services that have not yet solved a measured requirement.
+## Security and authority invariants
 
-Examples:
+- Raw third-party evidence is preserved before transformation.
+- Exact source versions and hashes participate in evidence identity.
+- Package normalization, version/range matching, vulnerability applicability, KEV/EPSS/CVSS evidence, and Risk Policy remain deterministic.
+- Third-party repository code is never executed.
+- Natural-language planning cannot emit unrestricted SQL authority.
+- Retrieval output is evidence, not deterministic truth.
+- Retrieved text remains untrusted instruction content even after provenance validation.
+- Citation IDs come only from already-admitted context.
+- A valid citation ID proves citation coverage, not semantic support.
+- Missing evidence is not silently interpreted as benign evidence.
+- First-run evaluation evidence is preserved before optimization.
+- IAM least privilege, observability, failure diagnosis, and cost accounting are architecture requirements.
 
-- no Glue crawler where explicit schemas are sufficient;
-- no Step Functions merely for orchestration aesthetics;
-- no DynamoDB/cache backend before a demonstrated reuse workload;
-- no Iceberg requirement yet;
-- no vector database before a retrieval phase needs one;
-- no Bedrock call in deterministic applicability or prioritization;
-- no unrestricted text-to-SQL;
-- Athena dev workgroup enforces a `10,485,760` byte scan cutoff.
+## Cost discipline
+
+OpsLens does not invent costs that runtime evidence cannot support.
+
+The first four-case grounded evaluation directly accounted for:
+
+```text
+model input:             $0.0129074
+model output:            $0.0035475
+model subtotal:          $0.0164549
+4 S3 Vectors requests:   $0.0000100
+computable total:        $0.0164649
+```
+
+This is deliberately not called the full AWS bill because query-embedding and S3 Vectors data-processed/data-returned units are not exposed by the runtime artifact.
 
 ## Quality gates
 
-Dedicated deterministic CI slices now cover:
+Dedicated Python CI slices cover:
 
 ```text
 Correlation
 Repository Intelligence
 Risk Policy
+Semantic Query
+Knowledge Retrieval
 ```
 
-Phase 5 closeout validation:
-
-```text
-Risk Policy Ruff:                 PASS
-Risk Policy Pyright:              0 errors / 0 warnings
-Risk Policy pytest:               31 passed
-Repository Intelligence pytest:   174 passed
-Correlation pytest:               116 passed
-```
-
-AWS-bearing changes additionally use Terraform fmt/validate, TFLint, Checkov, canonical plans, deployment verification, and post-apply convergence checks.
+The project uses Ruff, strict Pyright, pytest, and regression slices. AWS-bearing changes additionally use Terraform validation, TFLint, Checkov, canonical plans, deployment verification, and post-apply convergence checks.
 
 ## Repository structure
 
@@ -321,14 +217,16 @@ AWS-bearing changes additionally use Terraform fmt/validate, TFLint, Checkov, ca
 │   ├── roadmap.md
 │   └── README.md
 ├── infra/
-│   ├── bootstrap/
-│   └── environments/dev/
+├── knowledge/
+├── labs/
+│   └── evidence/
 ├── scripts/
-├── src/
-│   └── opslens/
-│       ├── correlation/
-│       ├── repository_intelligence/
-│       └── risk_policy/
+├── src/opslens/
+│   ├── correlation/
+│   ├── repository_intelligence/
+│   ├── risk_policy/
+│   ├── semantic_query/
+│   └── knowledge_retrieval/
 ├── tests/
 ├── README.md
 ├── README.pt-br.md
@@ -343,27 +241,22 @@ AWS-bearing changes additionally use Terraform fmt/validate, TFLint, Checkov, ca
 - [Architecture — English](docs/architecture.md)
 - [Architecture — Português](docs/architecture.pt-br.md)
 - [ADR index](docs/adr/README.md)
-- [Labs and operational evidence](docs/README.md)
+- [Documentation index](docs/README.md)
+- [Phase 7 Gate 7.8 closeout](labs/phase-7-gate-7-8-closeout.md)
 
-## Next — Phase 6: Semantic Query Layer
+## Next — Phase 8: Hybrid Retrieval
 
-Phase 6 introduces the first FM planner in the current roadmap sequence:
+Phase 8 will not mean “concatenate SQL rows and vector chunks.” It begins by freezing an explicit routing and authority contract between structured evidence and semantic evidence.
+
+The starting rule is:
 
 ```text
-User question
- -> Bedrock planner
- -> typed SemanticQuery
- -> deterministic validation
- -> deterministic SQL compiler
- -> bounded read-only Athena
- -> structured evidence
+structured vulnerability/risk facts -> structured deterministic authority
+explanatory/remediation guidance    -> bounded semantic retrieval
+combined answer                     -> explicit provenance by evidence class
 ```
 
-Permanent guardrail:
-
-> **No unrestricted text-to-SQL.**
-
-Before Phase 6 code is written, current official Amazon Bedrock and Athena documentation must be checked for APIs, model availability, IAM behavior, limits, and pricing. The first implementation should freeze a deliberately small typed semantic-query contract before any API, UI, RAG, or agent integration.
+Any new reranker, keyword/vector hybrid mode, extra vector technology, or prompt change must be justified by a measured quality/cost/failure requirement rather than certification coverage.
 
 ---
 

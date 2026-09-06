@@ -29,9 +29,9 @@ concept
 | 3 | Vulnerability Correlation Engine | ✅ Complete |
 | 4 | Repository Intelligence | ✅ Complete |
 | 5 | Risk Prioritization Engine | ✅ Complete |
-| 6 | Semantic Query Layer | ✅ Complete — PR #91 |
-| 7 | Knowledge Retrieval with Bedrock | 🚧 Gates 7.1–7.7 complete; Gate 7.8 next |
-| 8 | Hybrid Retrieval | ⏳ Planned |
+| 6 | Semantic Query Layer | ✅ Complete |
+| 7 | Knowledge Retrieval with Bedrock | ✅ Complete |
+| 8 | Hybrid Retrieval | ⏳ Next |
 | 9 | Public Analyze Your Repository | ⏳ Planned |
 | 10 | Observability & Operational Excellence | ⏳ Planned |
 | 11 | Single-Agent Baseline | ⏳ Planned |
@@ -96,7 +96,7 @@ Permanent rule:
 
 > **No unrestricted text-to-SQL.**
 
-## Phase 7 — Knowledge Retrieval with Bedrock — IN PROGRESS
+## Phase 7 — Knowledge Retrieval with Bedrock — COMPLETE
 
 Goal: create a separately measurable explanatory/remediation RAG path without replacing the structured Phase 6 authority boundary.
 
@@ -110,7 +110,7 @@ Permanent rules:
 
 > **A valid citation ID is not proof that a claim is supported.**
 
-Current path:
+Final path:
 
 ```text
 knowledge/remediation question
@@ -128,11 +128,11 @@ knowledge/remediation question
 
 Structured NVD, KEV, EPSS, CVSS, GHSA applicability, repository-version, runtime-exposure, and Risk Policy evidence remain outside the RAG authority boundary.
 
-### Gate 7.1 — Corpus + retrieval contract — COMPLETE / MERGED
+### Gate 7.1 — Corpus + retrieval contract — COMPLETE
 
-Provider-independent `KnowledgeDocument`, `RetrievalRequest`, `RetrievedChunk`, `RetrievalEvidence`, and `Citation` contracts with explicit query/top-k/provenance bounds.
+Provider-independent retrieval contracts with bounded query/top-k/provenance semantics.
 
-### Gate 7.2 — Reproducible canonical corpus — COMPLETE / MERGED
+### Gate 7.2 — Reproducible canonical corpus — COMPLETE
 
 ```text
 6 immutable official source pins
@@ -141,7 +141,7 @@ manifest sha256:
 98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
 ```
 
-### Gate 7.3 — Knowledge Base + vector infrastructure — COMPLETE / MERGED
+### Gate 7.3 — Knowledge Base + vector infrastructure — COMPLETE
 
 ```text
 KB id:                BTVJ2PBR2A
@@ -157,13 +157,13 @@ vectors materialized: 9
 
 ADR 0022 records the customer-managed Bedrock Knowledge Base + S3 Vectors decision.
 
-### Gate 7.4 — Real bounded Retrieve adapter — COMPLETE / MERGED
+### Gate 7.4 — Real bounded Retrieve adapter — COMPLETE
 
 Direct `Retrieve`, not `RetrieveAndGenerate`, keeps retrieval independently testable and measurable.
 
-### Gate 7.5 — Retrieval evaluation — COMPLETE / MERGED
+### Gate 7.5 — Retrieval evaluation — COMPLETE
 
-Frozen 10-case baseline:
+Frozen baseline:
 
 ```text
 Recall@1:   0.375
@@ -176,22 +176,15 @@ provenance correctness: 1.0
 
 Negative/out-of-authority cases proved that vector similarity cannot silently become answerability or routing authority.
 
-### Gate 7.6 — Deterministic context assembly + synthesis — COMPLETE / MERGED
+### Gate 7.6 — Deterministic context assembly + synthesis — COMPLETE
 
-Squash merge through PR #99:
-
-```text
-cc8097b3e2e9b048ca069e961736788de0a79f0d
-```
-
-Gate 7.6 established contiguous whole-chunk rank-prefix context assembly, deterministic `SUPPORTED | UNSUPPORTED` pre-model authority, bounded `ANSWER | INSUFFICIENT_EVIDENCE` synthesis, one non-streaming Claude Haiku 4.5 US Geo Converse call maximum, strict provider/output admission, and content-addressed runtime evidence.
+Established contiguous whole-chunk context assembly, deterministic pre-model authority, bounded `ANSWER | INSUFFICIENT_EVIDENCE` synthesis, one non-streaming Claude Haiku 4.5 US Geo Converse call maximum, strict provider/output admission, and content-addressed runtime evidence.
 
 First preserved real run:
 
 ```text
 retrieval request id: 4835c5d0-4a4e-4f47-9610-482ab6ec1103
 retrieval elapsed:    1463 ms
-retrieval retries:    0
 retrieved/selected:   5 / 5
 context bytes:        5828
 
@@ -201,14 +194,9 @@ input tokens:         2671
 output tokens:        491
 Bedrock latency:      7217 ms
 client elapsed:       7983 ms
-synthesis retries:    0
 ```
 
-Directly computable first-run cost components total `$0.0056411`; unexposed Titan/S3 Vectors billable units are not fabricated.
-
-### Gate 7.7 — Deterministic Citations + Groundedness — COMPLETE / PR #100
-
-Gate 7.7 adds deterministic citation authority without letting the model author provenance.
+### Gate 7.7 — Deterministic citations + groundedness — COMPLETE
 
 ```text
 AssembledContext
@@ -218,24 +206,7 @@ AssembledContext
  -> deterministic groundedness metrics
 ```
 
-Frozen provider-independent output:
-
-```json
-{
-  "decision": "answer",
-  "claims": [
-    {"text": "...", "citation_ids": ["C1"]}
-  ]
-}
-```
-
-or:
-
-```json
-{"decision": "insufficient_evidence", "claims": []}
-```
-
-Frozen evaluation dataset:
+Frozen evaluation:
 
 ```text
 knowledge-grounding-golden:v1
@@ -244,26 +215,7 @@ knowledge-grounding-golden:v1
 1 expected insufficient-evidence
 ```
 
-The first real four-case run was executed once from validated head `507fe04f963c7eeb49748eb950101ea2fc55e14f` with all four application attempts complete, zero SDK retries, and all grounded Converse calls ending with `end_turn`.
-
-Observed runtime totals:
-
-```text
-input tokens:            11,734
-output tokens:           645
-total tokens:            12,379
-retrieval mean:          790.0 ms
-Bedrock mean:            3396.5 ms
-client synthesis mean:   3743.25 ms
-```
-
-Human-reviewed support evidence is preserved as content-addressed metadata:
-
-```text
-labs/evidence/phase-7-gate-7-7-first-run-review-v1.json
-```
-
-Frozen metrics:
+Measured baseline:
 
 ```text
 decision accuracy:          1.0
@@ -276,53 +228,142 @@ abstention precision:       1.0
 abstention recall:          1.0
 ```
 
-Key finding: the isolation case retrieved its frozen target at rank 1, yet the model cited the adjacent post-change chunk for both claims. Strict exact-chunk review marked both pairs unsupported. This isolates a citation-attribution failure from retrieval availability and provides a useful baseline for future optimization.
+The isolation case preserved a useful failure: correct evidence retrieved at rank 1, but the model cited the adjacent chunk. The TLS-cipher case correctly abstained despite non-empty retrieval.
 
-The exact-TLS-cipher case correctly abstained despite non-empty vector retrieval.
+### Gate 7.8 — Phase 7 closeout — COMPLETE
 
-Directly computable four-case cost:
+Gate 7.8 intentionally does not optimize the measured Gate 7.7 result.
 
-```text
-model input:             $0.0129074
-model output:            $0.0035475
-model subtotal:          $0.0164549
-S3 Vectors requests:     $0.0000100
-computable total:        $0.0164649
-```
-
-No new AWS resource or IAM entitlement was added.
-
-### Gate 7.8 — Phase 7 closeout — NEXT
-
-Gate 7.8 is not a prompt-optimization gate. It consolidates the evidence and operating boundaries learned through Gates 7.1–7.7 before Phase 8.
-
-Required closeout work:
+It freezes:
 
 ```text
-1. failure taxonomy across retrieval, admission, context, synthesis, citations, and groundedness
-2. least-privilege application runtime IAM strategy for the future deployed compute principal
-3. cost-accounting map for embedding, vector storage/query, retrieval, and synthesis
-4. observability map: current evidence versus missing production telemetry
-5. ADR / architecture / roadmap consistency review
-6. regression and quality-evidence inventory
-7. explicit Phase 8 entry criteria and deferred optimization list
+failure taxonomy across the complete RAG path
+future least-privilege application runtime IAM strategy
+cost-accounting boundaries
+current versus missing production observability
+README / docs / ADR consistency
+quality and regression evidence inventory
+Phase 8 entry criteria
+future optimization backlog
 ```
 
-Gate 7.8 must preserve the Gate 7.7 first-run weakness. Any citation-selection improvement requires a separately versioned prompt/schema/evaluation change rather than silently modifying the frozen baseline.
+Future application runtime IAM is documented in ADR 0024 but no runtime principal is created until real compute exists.
+
+## Phase 8 — Hybrid Retrieval — NEXT
+
+### Goal
+
+Combine structured evidence and semantic evidence without weakening their different authority semantics.
+
+Hybrid Retrieval in OpsLens means **hybrid evidence routing**, not automatically “hybrid keyword + vector search.” Keyword/vector hybrid search, reranking, or another vector technology may be evaluated later, but none is assumed at Phase 8 entry.
+
+### Permanent Phase 8 authority rule
+
+```text
+structured vulnerability/risk facts
+ -> deterministic structured authority
+
+explanatory/remediation guidance
+ -> bounded semantic retrieval evidence
+
+combined response
+ -> explicit evidence-class provenance
+ -> no authority laundering between the two paths
+```
+
+### Gate 8.1 — Offline routing and authority contract
+
+Before any new AWS API call:
+
+```text
+user request
+ -> typed question intent / evidence need
+ -> deterministic route eligibility
+ -> STRUCTURED | SEMANTIC | HYBRID | UNSUPPORTED
+ -> typed evidence plan
+```
+
+The first contract must define:
+
+- which question classes require structured evidence;
+- which question classes allow semantic evidence;
+- when both evidence classes are allowed;
+- what happens when one path is unavailable or incomplete;
+- how provenance remains separated in a combined result;
+- what the model may propose versus what deterministic code must verify.
+
+### Gate 8.2 — Deterministic hybrid evidence envelope
+
+Build a provider-independent envelope that can carry already-validated structured rows and already-admitted semantic chunks without flattening them into a single authority class.
+
+Expected conceptual shape:
+
+```text
+HybridEvidence
+  structured_evidence[]
+  semantic_evidence[]
+  authority_decision
+  provenance_by_class
+  completeness
+```
+
+No model call is required for this gate.
+
+### Gate 8.3 — Frozen hybrid evaluation fixture
+
+Freeze evaluation cases before tuning. Include at minimum:
+
+```text
+structured-only factual case
+semantic-only remediation case
+true hybrid case requiring both evidence classes
+unsupported/out-of-authority case
+partial structured evidence case
+semantic retrieval noise case
+```
+
+Metrics should keep route accuracy, structured fact correctness, semantic groundedness, citation correctness, abstention, latency, and cost separate.
+
+### Gate 8.4 — First bounded hybrid synthesis
+
+Only after Gates 8.1–8.3 are CI-green should a model receive the typed hybrid evidence envelope.
+
+The model must not:
+
+- rewrite structured facts into a new truth source;
+- convert vector similarity into applicability or risk truth;
+- author canonical provenance;
+- broaden tool/SQL authority;
+- silently answer when required evidence is missing.
+
+### Gate 8.5 — Measured optimization decision
+
+Use the frozen hybrid baseline to decide whether any of the following is actually justified:
+
+```text
+larger retrieval candidate budget
+reranking
+keyword + vector hybrid search
+metadata filtering changes
+prompt/schema revision
+alternative embedding or vector technology
+```
+
+Any accepted change requires a versioned hypothesis, before/after evaluation, cost impact, failure impact, and rollback path.
+
+### Gate 8.6 — Phase 8 closeout
+
+Reconcile architecture, cost, IAM, observability, evaluation, README/docs, and the next public-demo entry boundary before Phase 9.
 
 ## Future phases
 
-### Phase 8 — Hybrid Retrieval
-
-Combine deterministic structured threat intelligence with semantic retrieval only where evaluation demonstrates value. Entry requires Phase 7 closeout and a clear routing/authority contract between structured and semantic evidence.
-
 ### Phase 9 — Public Analyze Your Repository
 
-Expose a bounded public demo only after repository intelligence, risk policy, structured query, retrieval, synthesis, and groundedness boundaries are stable.
+Expose a bounded public demo only after structured query, retrieval, synthesis, groundedness, and hybrid authority boundaries are stable.
 
 ### Phase 10 — Observability & Operational Excellence
 
-Make the system diagnosable through stage latency, errors, throttling, Athena bytes, model tokens/latency, retrieval latency, and estimated investigation cost.
+Make the deployed system diagnosable through stage latency, errors, throttling, Athena bytes, model tokens/latency, retrieval latency, route decisions, groundedness signals, and estimated investigation cost.
 
 ### Phase 11 — Single-Agent Baseline
 
