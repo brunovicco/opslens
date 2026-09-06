@@ -2,9 +2,9 @@
 
 _Last updated: 2026-09-06_
 
-This document is the accumulated architecture baseline through **Phase 7 — Gate 7.5: Retrieval evaluation**.
+This document is the accumulated architecture baseline through **Phase 7 — Gate 7.6f: measured bounded Bedrock synthesis**.
 
-The next architecture boundary is **Phase 7 — Gate 7.6: Deterministic context assembly + synthesis**.
+The next architecture boundary is **Phase 7 — Gate 7.7: deterministic citations + groundedness evaluation**.
 
 ## 1. Purpose
 
@@ -32,25 +32,26 @@ Additional permanent boundaries:
 
 ## 2. Permanent architectural principles
 
-Unless changed by an explicit ADR:
+Unless changed by explicit ADR:
 
 - raw third-party evidence is preserved before enrichment or interpretation;
 - exact source versions and content hashes participate in provenance;
 - package identity normalization, version/range matching, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS evidence, and Risk Policy remain deterministic;
 - semantic-query validation and SQL compilation remain deterministic;
 - canonical corpus normalization, selection, hashing, and checked manifest identity remain deterministic;
-- retrieval evidence admission, evaluation, context admission, and citation projection remain deterministic;
+- retrieval evidence admission, evaluation, context assembly, synthesis admission, citation projection, and evidence validation remain deterministic;
 - provider/model outputs are evidence or proposals, not authority over structured truth;
-- LLMs may classify, plan, route, synthesize, and explain only over validated evidence;
+- LLMs may classify, plan, route, synthesize, and explain only inside explicitly bounded authority;
 - retrieved explanatory text never becomes a second authority for structured threat facts;
-- third-party repository/source content is untrusted data to inspect, never code to execute;
+- source/repository content remains untrusted data to inspect, never code to execute;
+- admission proves source/content identity, not trusted-instruction status;
 - schema, provenance, authority, or exact-evidence mismatches fail closed;
 - IAM uses least privilege and responsibility separation;
 - AWS services are introduced only for concrete requirements;
 - cost and observability are architectural requirements;
 - one real `dev` environment is preferred over fictional portfolio environments.
 
-## 3. Current system shape
+## 3. System shape
 
 ### Structured vulnerability/risk path
 
@@ -63,7 +64,7 @@ NVD + CISA KEV + FIRST EPSS + GitHub Security Advisories
  -> RiskPrioritizationResult
 ```
 
-### Phase 6 structured semantic-query path
+### Structured natural-language query path
 
 ```text
 natural-language factual question
@@ -78,29 +79,37 @@ natural-language factual question
 
 The planner has no arbitrary SQL authority.
 
-### Phase 7 explanatory/remediation path through Gate 7.5
+### Explanatory/remediation knowledge path through Gate 7.6f
 
 ```text
 explicitly authorized official sources
  -> immutable repository/commit/path pins
  -> bounded GET-only inert-text acquisition
  -> deterministic normalization + exact section selection
- -> 9 content-addressed canonical chunks
- -> checked hash-only manifest
+ -> content-addressed canonical chunks
+ -> checked hash/provenance manifest
  -> deterministic S3 publication
- -> Bedrock S3 data source / chunking NONE
+ -> Bedrock Knowledge Base ingestion
  -> Titan Text Embeddings V2 / 1024 / FLOAT32
  -> Amazon S3 Vectors / cosine
- -> customer-managed Bedrock Knowledge Base
- -> bounded direct Retrieve
+ -> direct bounded Retrieve
  -> strict provider parser
  -> checked-corpus S3/hash/metadata reconciliation
  -> RetrievedChunk[]
  -> RetrievalEvidence
- -> deterministic retrieval evaluation
+ -> deterministic rank-prefix context assembly
+ -> AssembledContext
+ -> deterministic pre-model authority decision
+ -> SynthesisRequest
+ -> trusted/untrusted prompt envelope
+ -> exactly one bounded Bedrock Converse call
+ -> strict provider response evidence admission
+ -> deterministic synthesis output parser
+ -> SynthesisResult
+ -> future deterministic citation projection
 ```
 
-Retrieval is real and independently measured. Synthesis remains a later authority.
+Retrieval and synthesis remain separately observable and measurable. `RetrieveAndGenerate` is deliberately not used.
 
 ## 4. AWS foundation
 
@@ -117,7 +126,7 @@ analytics:               AWS Glue + Amazon Athena
 
 Only one real environment exists: `dev`.
 
-Human administration uses temporary IAM Identity Center credentials. GitHub Actions assumes deployment roles through OIDC; persistent AWS access keys are not stored in GitHub.
+Human administration uses temporary IAM Identity Center credentials. GitHub Actions uses OIDC; persistent AWS access keys are not stored in GitHub.
 
 Primary storage:
 
@@ -135,46 +144,43 @@ Athena workgroup: opslens-dev
 scan cutoff:      10,485,760 bytes
 ```
 
-Phase 7 owns a dedicated S3 Vectors bucket/index separate from the general-purpose S3 source-data bucket.
+Phase 7 owns a dedicated S3 Vectors bucket/index separate from the general-purpose source-data bucket.
 
-## 5. Threat Intelligence Data Lake — Phase 2
+## 5. Deterministic structured authorities
 
-Phase 2 preserves source-local authority rather than flattening NVD, KEV, EPSS, and GHSA into one lossy universal record.
+### Threat Intelligence Data Lake — Phase 2
 
-Key properties include explicit EPSS snapshot dates, CISA KEV complete-catalog semantics, NVD source provenance/watermarking, and exact GHSA source evidence.
+NVD, KEV, EPSS, and GHSA remain source-local deterministic evidence with explicit provenance and time semantics.
 
-## 6. Vulnerability Correlation Engine — Phase 3
+### Vulnerability Correlation — Phase 3
 
 ```text
 package/version/purl
- + exact GHSA vulnerable-range evidence
+ + exact vulnerable-range evidence
  -> deterministic PEP 440 evaluation
  -> affected | not_affected | unsupported
  -> CVE/GHSA/NVD reconciliation
- -> content-addressed correlation evidence
+ -> content-addressed evidence
 ```
-
-Permanent rule:
 
 > **No LLM decides vulnerability applicability.**
 
-## 7. Repository Intelligence — Phase 4
+### Repository Intelligence — Phase 4
 
 ```text
 public repository
  -> immutable repository/commit/tree identity
- -> bounded GET-only GitHub acquisition
- -> exact inert root uv.lock bytes
+ -> bounded GitHub read-only acquisition
+ -> inert uv.lock bytes
  -> deterministic TOML parsing
- -> canonical PyPI dependencies
+ -> canonical dependencies
  -> deterministic vulnerability applicability
- -> NVD/CVSS + KEV + EPSS evidence
  -> RepositoryAnalysisResult
 ```
 
-Repository findings prove repository-risk evidence for an immutable snapshot. They do not prove runtime presence or exploitability.
+Repository findings do not prove runtime presence or exploitability.
 
-## 8. Risk Prioritization Engine — Phase 5
+### Risk Prioritization — Phase 5
 
 ```text
 RepositoryAnalysisResult
@@ -182,12 +188,11 @@ RepositoryAnalysisResult
  -> factor contributions
  -> priority score + tier
  -> completeness / review_required
- -> deterministic aggregate ranking
 ```
 
 The priority value is an OpsLens policy score, not exploit probability, CVSS, EPSS, or runtime exposure.
 
-## 9. Semantic Query Layer — Phase 6
+### Semantic Query — Phase 6
 
 ```text
 question
@@ -196,7 +201,6 @@ question
  -> typed SemanticQuery
  -> deterministic SQL compiler
  -> bounded Athena execution
- -> structured evidence
 ```
 
 ADRs:
@@ -206,36 +210,13 @@ ADRs:
 0021 Bounded Bedrock semantic-query planner
 ```
 
-## 10. Knowledge Retrieval — Phase 7 through Gate 7.5
+## 6. Knowledge corpus authority — Phase 7
 
-### 10.1 Provider-independent retrieval contract
+Gate 7.1 froze provider-independent retrieval contracts and bounded query/top-k semantics.
 
-Gate 7.1 froze:
+Gate 7.2 authorizes six official source files through immutable repository/commit/path pins and deterministically materializes nine chunks.
 
-```text
-KnowledgeDocument
-RetrievalRequest
-RetrievedChunk
-RetrievalEvidence
-Citation
-```
-
-Bounds:
-
-```text
-query:         non-blank, <= 1,000 chars
-top_k:         1..10
-default top_k: 5
-provider DSL:  none
-```
-
-Citation provenance is projected from admitted chunks, never trusted from model-authored URLs/source IDs.
-
-### 10.2 Canonical corpus authority
-
-Gate 7.2 authorizes six official source files through immutable repository/commit/path pins.
-
-Frozen corpus identity:
+Frozen corpus:
 
 ```text
 manifest id: knowledge-corpus-manifest:v1
@@ -244,13 +225,13 @@ chunks:      9
 sha256:      98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
 ```
 
-The checked manifest stores provenance/hashes, not third-party source/chunk text.
+The checked manifest stores provenance/hashes, not third-party source text.
 
-### 10.3 Gate 7.3 vector baseline — COMPLETE
+Authorized source text is still untrusted instruction content.
+
+## 7. Vector Knowledge Base — Gate 7.3
 
 ADR 0022 selects a customer-managed Bedrock vector Knowledge Base backed by S3 Vectors.
-
-Validated configuration:
 
 ```text
 knowledge base id:     BTVJ2PBR2A
@@ -266,52 +247,13 @@ reranking:             deferred
 hybrid search:         deferred
 ```
 
-Real resource ARNs:
+Successful ingestion materialized exactly nine vectors.
 
-```text
-KB:
-arn:aws:bedrock:us-east-1:487757851499:knowledge-base/BTVJ2PBR2A
+The dedicated Knowledge Base service role owns only the ingestion/storage integration responsibility; it is not a human or future application runtime identity.
 
-service role:
-arn:aws:iam::487757851499:role/OpsLensDevBedrockKnowledgeBaseRole
+## 8. Direct retrieval — Gates 7.4–7.5
 
-vector bucket:
-arn:aws:s3vectors:us-east-1:487757851499:bucket/opslens-dev-knowledge-487757851499-us-east-1
-
-vector index:
-arn:aws:s3vectors:us-east-1:487757851499:bucket/opslens-dev-knowledge-487757851499-us-east-1/index/opslens-dev-remediation-v1
-```
-
-Deterministic publication is authorized only after fresh corpus replay exactly matches the checked manifest.
-
-Real publication:
-
-```text
-objects:             18
-content:              9
-metadata:             9
-total bytes:          14,928
-metadata sidecars:    394..493 bytes
-```
-
-The first ingestion revealed that the final serialized associated metadata, not merely logical custom metadata, must fit Bedrock/S3 Vectors' effective 1024-byte limit. The publisher validates final serialized sidecar bytes.
-
-Successful ingestion:
-
-```text
-job id:                           WZRUGOFZPI
-status:                           COMPLETE
-observed duration:                11.145552 s
-documents scanned:                9
-new documents indexed:            9
-documents failed:                 0
-documents skipped:                0
-vectors materialized:             9
-```
-
-### 10.4 Gate 7.4 direct retrieval baseline — COMPLETE / MERGED
-
-Gate 7.4 deliberately uses direct `Retrieve`, not `RetrieveAndGenerate`, so raw retrieval quality/latency/provenance/cost remain independently measurable.
+Gate 7.4 uses direct Knowledge Base `Retrieve` so retrieval quality, latency, provenance, and failure behavior remain independently measurable.
 
 Runtime request authority is limited to:
 
@@ -321,103 +263,32 @@ retrievalQuery.text
 retrievalConfiguration.vectorSearchConfiguration.numberOfResults
 ```
 
-No arbitrary provider DSL, hybrid override, reranking, generation, or implicit pagination is accepted.
+No arbitrary provider DSL, reranking, generation, or implicit pagination is accepted.
 
-Runtime path:
+Admission path:
 
 ```text
-RetrievalRequest
- -> exact configured KB
- -> Bedrock Knowledge Base Retrieve
- -> strict provider response parser
- -> expected S3 bucket + content-addressed key
+provider result
+ -> exact expected S3 location
  -> checked manifest lookup
- -> independent returned-text SHA-256 + UTF-8 byte-count validation
+ -> returned-text SHA-256 + byte-count validation
  -> canonical metadata reconciliation
- -> deterministic rank assignment
- -> RetrievedChunk[]
- -> RetrievalEvidence
+ -> deterministic rank
+ -> RetrievedChunk
 ```
 
-Provider-owned `documentId`/chunk IDs do not become OpsLens canonical identity.
+Provider-owned IDs do not become canonical OpsLens identity.
 
-Typed Gate 7.1 filters fail before the provider call until a reviewed deterministic provider-filter translation exists.
+### Retrieval evaluation baseline
 
-`nextToken` and guardrail intervention fail closed in v1.
-
-The first real call exposed `section_path` elements represented as JSON-quoted scalars. The adapter normalizes only that empirically proven representation and still requires exact equality with checked manifest evidence.
-
-Real admitted retrieval:
-
-```text
-knowledge base:         BTVJ2PBR2A
-query sha256:           5b398fe871d0cb51eaacb4f42a11b2ec402b5fdb4c523d2b7bca85e84dff3d0d
-requested top_k:        5
-returned/admitted:      5
-provider request id:    e92d67f1-18fa-4537-8ff4-c2e02ab813e0
-client elapsed:         1257 ms
-SDK retries:            0
-rank 1 chunk:           knowledge-chunk:pypa-secure-installs:hashes:v1
-rank 1 score:           0.8649594783782959
-```
-
-Intentional read-only provider failure:
-
-```text
-nonexistent KB: ZZZZZZZZZZ
-provider_code: ResourceNotFoundException
-```
-
-Gate 7.4 was squash-merged through PR #97 at:
-
-```text
-7c25877e0ae9541a4f20b8537e4f77c88ee776a5
-```
-
-### 10.5 IAM separation
-
-The Knowledge Base service role owns ingestion/storage integration and is trusted by `bedrock.amazonaws.com`, not humans.
-
-Retrieval is a separate runtime responsibility. A future deployed retrieval principal should be scoped to the exact KB retrieval action and must not inherit source writes, vector writes/deletes, ingestion, PassRole, or Terraform provisioning authority merely to retrieve.
-
-No application runtime principal exists yet, so final retrieval-role attachment is deferred until there is an actual compute principal.
-
-### 10.6 Retrieval-content trust boundary
-
-Authorized/pinned text remains untrusted instruction content.
-
-Retrieved text may become explanatory evidence only after deterministic admission. It cannot change system prompts, IAM, tool policies, vulnerability applicability, structured source facts, or Risk Policy.
-
-### 10.7 Gate 7.5 evaluation contract
-
-Gate 7.5 freezes evaluation over `knowledge-retrieval-golden:v1`:
+Frozen real Gate 7.5 dataset:
 
 ```text
 10 cases
 8 positive
 2 negative/out-of-authority
-one real top_k=10 ranking per case
+one top_k=10 ranking per case
 ```
-
-Metrics are deterministic over admitted results:
-
-```text
-Recall@1
-Recall@3
-Recall@5
-Recall@10
-MRR
-relevant-hit provenance correctness
-negative non-empty retrieval evidence
-latency distribution
-retry counts
-```
-
-Provider/runtime failures are not converted into retrieval misses. Aggregate quality is withheld if the run is incomplete.
-
-### 10.8 Gate 7.5 real baseline
-
-All ten real calls completed successfully with zero SDK retries.
 
 ```text
 Recall@1:   0.375
@@ -428,68 +299,246 @@ MRR:        0.5699404761904762
 provenance correctness: 1.0
 ```
 
-Latency:
+Both negative cases returned non-empty nearest-neighbor results with rank-1 scores near `0.689`, overlapping legitimate evidence.
+
+Therefore:
+
+- vector retrieval existence is not an authority decision;
+- provider relevance score is not calibrated confidence;
+- no global similarity threshold is justified by this fixture;
+- authority/routing must precede synthesis;
+- `Repository Risk != Runtime Exposure` remains enforceable outside RAG.
+
+## 9. Deterministic context assembly — Gate 7.6a
+
+Provider-independent contracts:
 
 ```text
-min:   532 ms
-max:   1728 ms
-mean:  720.0 ms
-p50:   616 ms
-p95:   1728 ms
+ContextAssemblyLimits
+ContextEvidenceBlock
+AssembledContext
+ContextAssemblyStopReason
 ```
 
-The expected vendor-advisory remediation chunk was the weakest positive target at rank 7. This is retained as baseline evidence and is not fixed by relabeling or post-hoc test-set tuning.
-
-`Recall@10=1.0` is intentionally not treated as a strong production claim because the corpus contains only nine vectors. `Recall@3`, `Recall@5`, and MRR better expose ranking behavior.
-
-### 10.9 Negative retrieval conclusion
-
-Both out-of-authority cases returned nine nearest-neighbor results:
+Bounds:
 
 ```text
-negative_nonempty_retrieval_rate = 1.0
-rank-1 scores ~= 0.689
+default max chunks:      5
+hard max chunks:         10
+max admitted text bytes: 16,384 UTF-8 bytes
 ```
 
-The negative scores overlap scores from legitimate positive retrieval evidence. Therefore:
+Algorithm:
 
-- non-empty vector retrieval is not an authority decision;
-- Bedrock relevance score is not a calibrated probability;
-- Gate 7.5 provides no evidence for a global score threshold;
-- route/authority validation must precede synthesis;
-- runtime exposure cannot be answered merely because remediation text is semantically nearby.
+```text
+RetrievalEvidence
+ -> preserve rank order
+ -> admit whole next chunk if it fits
+ -> stop at max chunks or first non-fitting whole chunk
+ -> never truncate
+ -> never skip and backfill lower ranks
+ -> AssembledContext
+```
 
-This measurement reinforces both `Not every question is a RAG problem` and `Repository Risk != Runtime Exposure`.
+Provider relevance score is intentionally absent from `ContextEvidenceBlock`.
 
-### 10.10 Gate 7.6 design consequence
+`context_sha256` binds query identity, context limits, selected canonical provenance/content hashes, ranks, counts, and stop reason.
 
-Gate 7.6 must not blindly pass every retrieved candidate into synthesis.
+## 10. Synthesis authority contract — Gate 7.6b
 
-The next contract must freeze deterministic context admission/assembly independently of model generation, including:
+Pre-model authority is deterministic:
 
-- candidate retrieval bound vs context bound;
-- deterministic ordering/formatting;
-- explicit unsupported/insufficient-evidence behavior;
-- context token/byte limits;
-- treatment of untrusted retrieved instructions;
-- model input/output and call budgets;
-- generation evidence required for troubleshooting.
+```text
+SUPPORTED
+UNSUPPORTED
+```
 
-Gate 7.5's frozen golden set is evidence for architectural decisions, not a dataset for ad-hoc tuning.
+`UNSUPPORTED` cannot form a `SynthesisRequest` and cannot create an AWS client/model call.
 
-## 11. Evidence and cache boundary
+Allowed model decisions after admission:
 
-Threat-intelligence identities include temporal/source evidence; a repository commit alone is not a safe cache key.
+```text
+ANSWER
+INSUFFICIENT_EVIDENCE
+```
 
-Likewise, knowledge identity depends on exact pinned source bytes, deterministic section selection, canonical content hashes, and admitted provider projection.
+The model cannot redefine routing authority.
 
-No runtime cache backend exists yet because a measured workload has not justified storage cost, invalidation semantics, IAM, observability, failure recovery, or retention policy.
+Application bounds:
 
-## 12. Security boundaries
+```text
+question:            <= 1,000 characters
+model calls:         exactly 1 maximum
+answer:              <= 4,000 characters
+raw response parser: <= 65,536 characters
+```
+
+Prompt trust classes remain separate:
+
+```text
+trusted system instructions
+untrusted user question
+untrusted but source-verified retrieved evidence
+```
+
+The trusted instructions explicitly reject commands, role changes, policy changes, tool requests, and attempts to ignore control instructions found inside retrieved evidence.
+
+Prompt/request/result identities use deterministic SHA-256 evidence.
+
+## 11. Bedrock synthesis provider boundary — Gates 7.6c–7.6d
+
+ADR 0023 freezes:
+
+```text
+Region:                  us-east-1
+endpoint:                bedrock-runtime
+API:                     Converse
+streaming:               no
+provider/model:          Anthropic Claude Haiku 4.5
+US Geo inference profile: us.anthropic.claude-haiku-4-5-20251001-v1:0
+temperature:             0.0
+provider maxTokens:      2,048
+tools:                   none
+application calls:       1 maximum
+structured output:       JSON Schema
+```
+
+The US Geographic profile may route from `us-east-1` to the documented US destination Regions. Global inference is intentionally not selected.
+
+Converse requires `bedrock:InvokeModel`; the non-streaming path does not require `bedrock:InvokeModelWithResponseStream`.
+
+No application runtime principal exists yet. Final least-privilege IAM attachment is deferred until a real compute principal exists rather than creating unused role surface.
+
+`BedrockKnowledgeSynthesizer` performs exactly one injected `converse()` call and requires:
+
+```text
+provider request identity
+stopReason=end_turn
+exactly one assistant text block
+usage counters
+token-total consistency
+provider latency
+client elapsed time
+retry count
+valid deterministic synthesis JSON
+request/prompt/context identity consistency
+```
+
+Provider/runtime failures and legitimate `insufficient_evidence` abstention remain separate typed outcomes.
+
+Automatic Bedrock model-invocation body logging remains disabled because the prompt contains user/source text. Content-free metadata/hashes are recorded instead.
+
+## 12. First real bounded synthesis — Gate 7.6e
+
+Exactly one supported lab execution completed successfully.
+
+Retrieval:
+
+```text
+provider request id:  4835c5d0-4a4e-4f47-9610-482ab6ec1103
+requested/returned:   5 / 5
+client elapsed:       1463 ms
+SDK retries:          0
+rank 1:               knowledge-chunk:pypa-secure-installs:hashes:v1
+rank 1 score:         0.8649594783782959
+```
+
+Context:
+
+```text
+selected chunks:      5
+selected UTF-8 bytes: 5828
+stop reason:          exhausted_retrieval
+context sha256:       bba245b46a1f8cbb2c42010b61e1ef397b2cde9c92fc0439ee0dc03197788445
+```
+
+Synthesis:
+
+```text
+provider request id: eee2a118-f806-40d5-8f53-57c88da8ad16
+decision:            answer
+answer chars:        1751
+input tokens:        2671
+output tokens:       491
+total tokens:        3162
+Bedrock latency:     7217 ms
+client elapsed:      7983 ms
+SDK retries:         0
+stop reason:         end_turn
+```
+
+The exact answer is content-addressed through its result evidence. No replay was performed.
+
+## 13. Gate 7.6f quality interpretation
+
+The rank-1 evidence is the frozen PyPA `Hash-checking Mode` section pinned to:
+
+```text
+repository: pypa/pip
+commit:     173eb9b290e2924f0cd42b7714645b38b4df2e81
+path:       docs/html/topics/secure-installs.md
+```
+
+A manual single-answer review found the generated answer's substantive guidance supported by that admitted source slice. No structured vulnerability, runtime-exposure, or Risk Policy claim was introduced.
+
+The source-supported pip 26.2+ `--no-require-hashes` behavior is an explicit compatibility exception because it weakens global enforcement. The answer framed it as optional/selective behavior; Gate 7.6 does not post-hoc tune the prompt from this single observation.
+
+This is not a production groundedness metric. Gate 7.7 must evaluate unsupported claims and citation correctness/coverage systematically.
+
+## 14. Cost discipline
+
+Deliberate non-adoption remains part of the architecture:
+
+- no Bedrock model for deterministic applicability or Risk Policy;
+- no OpenSearch Serverless before a measured hybrid-search requirement;
+- no runtime cache before measured reuse/invalidation requirements;
+- no invented runtime IAM role before actual compute exists;
+- no `RetrieveAndGenerate` when direct retrieval and synthesis need independent observability;
+- no extra model call merely to improve a benchmark number.
+
+Gate 7.6 first-run model usage:
+
+```text
+2671 input tokens * $1.10 / 1M = $0.0029381
+491 output tokens * $5.50 / 1M = $0.0027005
+model total                       = $0.0056386
+```
+
+One S3 Vectors query-request component:
+
+```text
+$0.0000025
+```
+
+Directly computable components total:
+
+```text
+$0.0056411
+```
+
+This is not a full bill. Bedrock `Retrieve` does not expose exact Titan query-embedding billable units or S3 Vectors data-processed/data-returned units, so OpsLens does not fabricate them.
+
+## 15. Latency and observability
+
+Measured first-run stages:
+
+```text
+retrieval client elapsed: 1463 ms
+Bedrock model latency:    7217 ms
+synthesis client elapsed: 7983 ms
+```
+
+The simple sequential client-stage sum is `9446 ms`, but there was no separate outer stopwatch.
+
+AWS documents possible first-use structured-output grammar compilation latency, so the first `7217 ms` model latency is preserved as first-run evidence rather than treated as warmed steady-state SLA.
+
+Operational evidence includes provider request IDs, retry counts, token usage, model/profile ID, stage latency, context/request/prompt/result hashes, and deterministic provenance. Raw model-invocation body logging is not enabled.
+
+## 16. Security boundaries
 
 ```text
 Human administration
- -> AWS IAM Identity Center
+ -> IAM Identity Center
 
 GitHub Actions
  -> OIDC
@@ -497,74 +546,59 @@ GitHub Actions
  -> Terraform-managed AWS changes
 
 Repository Intelligence
- -> bounded public GitHub read-only authority
+ -> bounded read-only GitHub authority
  -> inert evidence only
  -> no third-party code execution
 
-Risk Policy
- -> pure deterministic evidence input
- -> no network/model authority
-
-Semantic Query planner
- -> bounded Bedrock planning authority
- -> deterministic parser/compiler owns query truth
+Semantic Query
+ -> bounded Bedrock planning proposal
+ -> deterministic parser/compiler authority
  -> bounded read-only Athena
 
 Canonical Knowledge Corpus
- -> immutable allowlisted official source pins
- -> bounded GET-only raw-source acquisition
+ -> immutable official source pins
  -> inert untrusted text
  -> deterministic normalization/selection/hashing
 
 Knowledge Base ingestion
- -> dedicated Bedrock service role
+ -> dedicated service role
  -> exact source prefix + embedding model + vector index
 
 Retrieval runtime
- -> direct bounded Bedrock Retrieve
+ -> direct bounded Retrieve
  -> checked-corpus admission
- -> no ingestion/vector-write authority
- -> final deployed principal deferred until actual runtime exists
+ -> provider score non-authoritative
 
-Retrieval evaluation
- -> checked admitted chunks only
- -> deterministic metrics
- -> provider scores remain non-authoritative
- -> no synthesis/model authority
+Context assembly
+ -> admitted retrieval evidence only
+ -> whole contiguous rank prefix
+ -> deterministic chunk/byte bounds
+
+Synthesis admission
+ -> deterministic supported/unsupported authority
+ -> unsupported means zero model calls
+
+Synthesis runtime
+ -> exactly one bounded Converse call
+ -> no tools / no streaming
+ -> retrieved text remains untrusted data
+ -> strict response/output evidence admission
 ```
 
-Runtime Exposure remains a later independent evidence domain and is not inferred from repository risk.
+Runtime Exposure remains a later independent evidence domain and cannot be inferred from repository risk or vector similarity.
 
-## 13. Cost discipline
-
-Examples of deliberate non-adoption:
-
-- no Glue crawler where explicit schemas suffice;
-- no DynamoDB repository cache before measured reuse;
-- no Step Functions unless workflow semantics justify it;
-- no Iceberg requirement yet;
-- no OpenSearch Serverless before hybrid/search requirements justify it;
-- no Bedrock call for deterministic applicability or Risk Policy;
-- no synthesis model before retrieval is independently evaluated;
-- Athena dev workgroup enforces a 10 MiB scan cutoff.
-
-Gate 7.3 uses only nine vectors.
-
-Gate 7.4 observed three populated-index searches.
-
-Gate 7.5 observed ten populated-index searches. At the published S3 Vectors request price of `$2.50 / 1,000,000 queries`, the exact request-fee component is:
+## 17. ADR index
 
 ```text
-$0.000025
+0020 No unrestricted text-to-SQL
+0021 Bounded Bedrock semantic-query planner
+0022 Customer-managed Bedrock Knowledge Base with S3 Vectors
+0023 Bounded Bedrock knowledge synthesis
 ```
 
-The S3 Vectors pricing model also includes data processed and data returned. The customer-managed KB also uses Titan Text Embeddings V2 for query embeddings. Bedrock `Retrieve` does not expose the exact billable vector bytes or query-embedding token count required to reconstruct those components, so OpsLens does not fabricate a full bill from incomplete telemetry.
+## 18. Quality gates
 
-AWS now documents both Managed and Customer-managed Knowledge Bases. OpsLens uses the customer-managed form with S3 Vectors and a selected embedding model; pricing examples for the newer fully managed KB must not be applied blindly to this architecture.
-
-## 14. Quality gates
-
-Dedicated CI slices exist for:
+Dedicated CI slices cover:
 
 ```text
 Correlation
@@ -575,35 +609,23 @@ Knowledge Retrieval
 Terraform static/security checks
 ```
 
-Knowledge Retrieval CI also watches `knowledge/corpus/**`, so corpus authority changes cannot bypass the gate.
+Real AWS evidence complements but does not replace offline tests, strict typing, linting, deterministic regressions, and IaC security validation.
 
-Real AWS evidence complements but does not replace offline tests, strict typing, linting, Terraform validation, TFLint, and Checkov.
+## 19. Next architecture decision — Gate 7.7
 
-## 15. ADR index
+Add deterministic citations and groundedness evaluation without granting citation authority to the model.
 
-```text
-0020 No unrestricted text-to-SQL
-0021 Bounded Bedrock semantic-query planner
-0022 Customer-managed Bedrock Knowledge Base with S3 Vectors
-```
-
-## 16. Next architecture decision — Gate 7.6
-
-After Gate 7.5 is squash-merged, freeze deterministic context assembly before adding generation.
-
-Required decisions:
+Required boundary:
 
 ```text
-retrieval candidate bound
-context admission bound
-context token/byte budget
-ordering and formatting
-unsupported / insufficient-evidence behavior
-synthesis model + runtime API
-input/output token limits
-retry and timeout policy
-prompt-injection treatment
-runtime evidence contract
+SynthesisResult
+ + admitted AssembledContext
+ -> deterministic citation projection
+ -> answer with canonical citations
+ -> citation correctness/coverage evaluation
+ -> unsupported-claim / groundedness evaluation
 ```
 
-Generation must consume only admitted evidence. Retrieval relevance scores remain observational signals and do not become authority or confidence probabilities.
+Model-authored URLs, document IDs, chunk IDs, or source IDs must never become canonical citation authority.
+
+Gate 7.7 should build a versioned evaluation fixture before any post-hoc prompt tuning and should keep answer quality, citation correctness, citation coverage, abstention, and unsupported claims separately measurable.
