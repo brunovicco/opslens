@@ -31,3 +31,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0021](0021-bounded-bedrock-semantic-query-planner.md) | Bound Bedrock semantic planning before model invocation | Accepted |
 | [0022](0022-customer-managed-bedrock-kb-with-s3-vectors.md) | Use a customer-managed Bedrock Knowledge Base with S3 Vectors | Accepted |
 | [0023](0023-bounded-bedrock-knowledge-synthesis.md) | Bound Bedrock knowledge synthesis after deterministic context admission | Accepted |
+| [0024](0024-phase7-runtime-iam-boundary.md) | Freeze the future least-privilege Phase 7 application runtime IAM boundary | Accepted |
