@@ -133,6 +133,7 @@ class _Clock:
 
 
 def test_structured_only_route_is_deterministic_and_never_forms_model_request() -> None:
+    """Structured-only truth must bypass model execution entirely."""
     case = _case(HybridEvaluationCaseType.STRUCTURED_ONLY_FACTUAL)
     envelope = _envelope(HybridEvaluationCaseType.STRUCTURED_ONLY_FACTUAL)
 
@@ -150,6 +151,7 @@ def test_structured_only_route_is_deterministic_and_never_forms_model_request() 
 
 
 def test_semantic_request_has_only_semantic_allowlist() -> None:
+    """Semantic-only synthesis must not expose a structured fact catalog."""
     request = _request(HybridEvaluationCaseType.SEMANTIC_ONLY_REMEDIATION)
 
     assert request.envelope.authority_decision.route is HybridRoute.SEMANTIC
@@ -160,6 +162,7 @@ def test_semantic_request_has_only_semantic_allowlist() -> None:
 
 
 def test_true_hybrid_request_preserves_separate_fact_and_citation_catalogs() -> None:
+    """True hybrid input must retain separate structured and semantic authority."""
     request = _request(HybridEvaluationCaseType.TRUE_HYBRID)
 
     assert request.envelope.authority_decision.route is HybridRoute.HYBRID
@@ -174,6 +177,7 @@ def test_true_hybrid_request_preserves_separate_fact_and_citation_catalogs() -> 
 
 
 def test_hybrid_prompt_separates_trusted_control_from_untrusted_evidence() -> None:
+    """Prompt construction must preserve control/data separation and exact identity."""
     request = _request(HybridEvaluationCaseType.TRUE_HYBRID)
 
     prompt = build_hybrid_synthesis_prompt(request)
@@ -191,6 +195,7 @@ def test_hybrid_prompt_separates_trusted_control_from_untrusted_evidence() -> No
 
 
 def test_bedrock_request_is_non_streaming_tool_free_and_structured() -> None:
+    """The provider request must remain one bounded tool-free Converse call."""
     prompt = build_hybrid_synthesis_prompt(
         _request(HybridEvaluationCaseType.TRUE_HYBRID)
     )
@@ -208,6 +213,7 @@ def test_bedrock_request_is_non_streaming_tool_free_and_structured() -> None:
 
 
 def test_output_admission_accepts_only_allowlisted_semantic_and_structured_refs() -> None:
+    """Model references must resolve inside the exact admitted hybrid request."""
     request = _request(HybridEvaluationCaseType.TRUE_HYBRID)
     payload = json.dumps(
         {
@@ -239,6 +245,7 @@ def test_output_admission_accepts_only_allowlisted_semantic_and_structured_refs(
 
 
 def test_semantic_only_output_cannot_reference_structured_fact_ids() -> None:
+    """A semantic-only request cannot launder nonexistent structured authority."""
     request = _request(HybridEvaluationCaseType.SEMANTIC_ONLY_REMEDIATION)
     payload = json.dumps(
         {
@@ -258,6 +265,7 @@ def test_semantic_only_output_cannot_reference_structured_fact_ids() -> None:
 
 
 def test_semantic_noise_remains_admitted_but_does_not_change_output_authority() -> None:
+    """Admission of a noisy neighbor must not convert it into semantic support."""
     request = _request(HybridEvaluationCaseType.SEMANTIC_RETRIEVAL_NOISE)
     case = _case(HybridEvaluationCaseType.SEMANTIC_RETRIEVAL_NOISE)
 
@@ -267,6 +275,7 @@ def test_semantic_noise_remains_admitted_but_does_not_change_output_authority() 
 
 
 def test_insufficient_evidence_requires_empty_claims() -> None:
+    """Abstention output must not smuggle explanatory claims into the result."""
     request = _request(HybridEvaluationCaseType.SEMANTIC_RETRIEVAL_NOISE)
 
     result = parse_hybrid_synthesis_output(
@@ -280,6 +289,7 @@ def test_insufficient_evidence_requires_empty_claims() -> None:
 
 
 def test_output_admission_rejects_extra_keys_and_uncited_claims() -> None:
+    """Extra output fields and uncited model claims must fail closed."""
     request = _request(HybridEvaluationCaseType.SEMANTIC_ONLY_REMEDIATION)
 
     with pytest.raises(HybridSynthesisOutputError):
@@ -307,6 +317,7 @@ def test_output_admission_rejects_extra_keys_and_uncited_claims() -> None:
 
 
 def test_bedrock_adapter_invokes_exactly_once_and_binds_runtime_evidence() -> None:
+    """A successful adapter call must be singular and content-addressed."""
     request = _request(HybridEvaluationCaseType.TRUE_HYBRID)
     output = json.dumps(
         {
@@ -340,6 +351,7 @@ def test_bedrock_adapter_invokes_exactly_once_and_binds_runtime_evidence() -> No
 
 
 def test_bedrock_adapter_fails_closed_on_stop_reason_output_and_provider_errors() -> None:
+    """Provider, completion, and output-contract failures must remain fail closed."""
     request = _request(HybridEvaluationCaseType.SEMANTIC_ONLY_REMEDIATION)
     valid_output = json.dumps(
         {
