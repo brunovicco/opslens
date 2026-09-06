@@ -100,6 +100,7 @@ def _synthesis_execution(
     index: int,
 ) -> BedrockGroundedSynthesisExecution:
     """Return one valid grounded answer or abstention for a frozen case."""
+    payload: dict[str, object]
     if "TLS cipher suite" in request.synthesis_request.question:
         payload = {"decision": "insufficient_evidence", "claims": []}
     else:
