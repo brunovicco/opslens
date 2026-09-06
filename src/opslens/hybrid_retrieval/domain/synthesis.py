@@ -90,6 +90,16 @@ def _normalize_id_tuple(
     return normalized
 
 
+def _normalize_section_path(value: object) -> tuple[str, ...]:
+    """Validate one immutable semantic section path at the runtime boundary."""
+    if not isinstance(value, tuple):
+        raise HybridRetrievalValidationError("section_path must be a tuple.")
+    raw = cast(tuple[object, ...], value)
+    return tuple(
+        _normalize_required_text(item, "section_path item") for item in raw
+    )
+
+
 def _id_number(value: str) -> int:
     """Return the numeric suffix of one validated F/S identifier."""
     return int(value[1:])
@@ -235,12 +245,11 @@ class HybridSemanticCitationProjection:
                 "title",
                 _normalize_required_text(self.title, "title"),
             )
-        if not isinstance(self.section_path, tuple) or any(
-            not isinstance(item, str) or not item.strip() for item in self.section_path
-        ):
-            raise HybridRetrievalValidationError(
-                "section_path must contain only non-empty strings."
-            )
+        object.__setattr__(
+            self,
+            "section_path",
+            _normalize_section_path(self.section_path),
+        )
 
     def to_prompt_payload(self) -> dict[str, object]:
         """Return canonical model-visible semantic evidence as untrusted data."""
@@ -557,6 +566,18 @@ class HybridSynthesisClaim:
         )
 
 
+def _normalize_claims(value: object) -> tuple[HybridSynthesisClaim, ...]:
+    """Validate one immutable claim tuple at the runtime boundary."""
+    if not isinstance(value, tuple):
+        raise HybridRetrievalValidationError("claims must be a tuple.")
+    raw = cast(tuple[object, ...], value)
+    if any(not isinstance(item, HybridSynthesisClaim) for item in raw):
+        raise HybridRetrievalValidationError(
+            "claims must contain only HybridSynthesisClaim values."
+        )
+    return cast(tuple[HybridSynthesisClaim, ...], raw)
+
+
 @dataclass(frozen=True, slots=True)
 class HybridSynthesisResult:
     """Provider-independent admitted model result; structured truth remains separate."""
@@ -572,13 +593,7 @@ class HybridSynthesisResult:
         request_digest = _validate_sha256(self.request_sha256, "request_sha256")
         object.__setattr__(self, "request_sha256", request_digest)
         _require_runtime_instance(self.decision, HybridSynthesisDecision, "decision")
-        if not isinstance(self.claims, tuple) or any(
-            not isinstance(item, HybridSynthesisClaim) for item in self.claims
-        ):
-            raise HybridRetrievalValidationError(
-                "claims must contain only HybridSynthesisClaim values."
-            )
-        claims = cast(tuple[HybridSynthesisClaim, ...], self.claims)
+        claims = _normalize_claims(self.claims)
         if any(item.request_sha256 != request_digest for item in claims):
             raise HybridRetrievalValidationError(
                 "all claims must reference the exact hybrid synthesis request."
@@ -638,31 +653,28 @@ class HybridSynthesisResult:
         """Create one admitted hybrid model result under exact request limits."""
         _require_runtime_instance(request, HybridSynthesisRequest, "request")
         _require_runtime_instance(decision, HybridSynthesisDecision, "decision")
-        if not isinstance(claims, tuple) or any(
-            not isinstance(item, HybridSynthesisClaim) for item in claims
-        ):
-            raise HybridRetrievalValidationError(
-                "claims must contain only HybridSynthesisClaim values."
-            )
-        if len(claims) > MAX_HYBRID_SYNTHESIS_CLAIMS:
+        admitted_claims = _normalize_claims(claims)
+        if len(admitted_claims) > MAX_HYBRID_SYNTHESIS_CLAIMS:
             raise HybridRetrievalValidationError("too many hybrid synthesis claims.")
-        if any(item.request_sha256 != request.request_sha256 for item in claims):
+        if any(
+            item.request_sha256 != request.request_sha256 for item in admitted_claims
+        ):
             raise HybridRetrievalValidationError(
                 "claims do not belong to the admitted hybrid synthesis request."
             )
         rendered: str | None
         if decision is HybridSynthesisDecision.ANSWER:
-            if not claims:
+            if not admitted_claims:
                 raise HybridRetrievalValidationError(
                     "answer decision requires at least one explanatory claim."
                 )
-            rendered = "\n\n".join(item.text for item in claims)
+            rendered = "\n\n".join(item.text for item in admitted_claims)
             if len(rendered) > request.limits.max_output_chars:
                 raise HybridRetrievalValidationError(
                     "hybrid explanation exceeds the admitted output bound."
                 )
         else:
-            if claims:
+            if admitted_claims:
                 raise HybridRetrievalValidationError(
                     "insufficient_evidence cannot contain explanatory claims."
                 )
@@ -676,7 +688,7 @@ class HybridSynthesisResult:
                         "structured_fact_ids": list(item.structured_fact_ids),
                         "text": item.text,
                     }
-                    for item in claims
+                    for item in admitted_claims
                 ],
                 "decision": decision.value,
                 "request_sha256": request.request_sha256,
@@ -685,7 +697,7 @@ class HybridSynthesisResult:
         return cls(
             request_sha256=request.request_sha256,
             decision=decision,
-            claims=claims,
+            claims=admitted_claims,
             rendered_explanation=rendered,
             result_sha256=result_digest,
         )
