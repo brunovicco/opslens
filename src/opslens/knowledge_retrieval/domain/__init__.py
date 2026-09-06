@@ -1,5 +1,10 @@
 """Public domain surface for bounded knowledge retrieval."""
 
+from opslens.knowledge_retrieval.domain.citations import (
+    CITATION_CATALOG_ID,
+    CitationCatalog,
+    ProjectedCitation,
+)
 from opslens.knowledge_retrieval.domain.context import (
     DEFAULT_CONTEXT_MAX_CHUNKS,
     DEFAULT_CONTEXT_MAX_UTF8_BYTES,
@@ -57,6 +62,7 @@ from opslens.knowledge_retrieval.domain.synthesis import (
 
 __all__ = [
     "CANONICAL_METADATA_FIELDS",
+    "CITATION_CATALOG_ID",
     "CORPUS_MANIFEST_ID",
     "CORPUS_SPEC_ID",
     "DEFAULT_CONTEXT_MAX_CHUNKS",
@@ -75,6 +81,7 @@ __all__ = [
     "CanonicalKnowledgeChunk",
     "ChunkSelectionSpec",
     "Citation",
+    "CitationCatalog",
     "ContextAssemblyLimits",
     "ContextAssemblyStopReason",
     "ContextEvidenceBlock",
@@ -89,6 +96,7 @@ __all__ = [
     "KnowledgeSourceRegistry",
     "KnowledgeSourceType",
     "MaterializedKnowledgeDocument",
+    "ProjectedCitation",
     "RetrievalBackend",
     "RetrievalEvidence",
     "RetrievalRequest",
