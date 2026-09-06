@@ -1,0 +1,168 @@
+{
+  "artifact_id": "knowledge-grounding-first-run-review:v1",
+  "cases": [
+    {
+      "actual_decision": "answer",
+      "case_id": "grounding-hash-verification-01",
+      "citation_catalog_sha256": "45e66275d81b5685a87e655a9570f49c9e22c050976bf9f244af314d366b8acc",
+      "grounded_request_sha256": "cf9bc14625aef50745e4c0b28338621cceb29ecbb7fdbeba116375d93fbc22fd",
+      "question_sha256": "3cb70fec98f7a79338b47d2abeabd068444e25ec5bf77b5872f41ac0afff9e76",
+      "result_sha256": "0779a3d8f1032c5e4050c7d9a02b2445342bd0fd320005b7bb67b6e2140a1feb",
+      "runtime_claim_citation_pair_count": 6,
+      "runtime_claim_count": 6,
+      "selected_citations": [
+        {
+          "chunk_id": "knowledge-chunk:pypa-secure-installs:hashes:v1",
+          "citation_id": "C1"
+        },
+        {
+          "chunk_id": "knowledge-chunk:uv-locking:refresh:v1",
+          "citation_id": "C4"
+        }
+      ],
+      "support_judgments": [
+        {
+          "citation_id": "C1",
+          "claim_sha256": "99f583f44d2082c1a12adbfd00f340406c1ab9d864152e6d3bae5f5c1d8aee32",
+          "judgment_sha256": "8feaac70eaee4f6c6d8b731aed6d3f9d2bb2c0463ca503f3b9da7b8d1cf0589e",
+          "supports_claim": true
+        },
+        {
+          "citation_id": "C1",
+          "claim_sha256": "5fc67d92612400988d44ee9d19bffc92b88dd6a54a0217b3f60912daf54636f9",
+          "judgment_sha256": "94cb548344a85e33d00bf16cff4a4c594d2ebdf378dcab24dcea0792b57102ab",
+          "supports_claim": true
+        },
+        {
+          "citation_id": "C1",
+          "claim_sha256": "24ffe8a2565288d3c0b8cb639c551d1aa831f3f583ff1688fdf45c0435f557bb",
+          "judgment_sha256": "09cffd4f4fd5f1b23cdbc6b0ad9604374316f8e6e86c538b66d3e3d542306aa5",
+          "supports_claim": true
+        },
+        {
+          "citation_id": "C1",
+          "claim_sha256": "4091de9d6977b8756a62f6d9c052424d64a3b5d5430e8b91762c5c7af39d8e34",
+          "judgment_sha256": "fd8f97095c281dee53500921cdef47e4b82f771ace01796e2229602d7839917c",
+          "supports_claim": true
+        },
+        {
+          "citation_id": "C1",
+          "claim_sha256": "18d243909a98658503f7b86733a52024cc2b67635e6e39e5bc7503a41dfa2664",
+          "judgment_sha256": "600ff200a42ce3db5045fccf6696a4519629a150501aa4f9f97651fa32659c7e",
+          "supports_claim": true
+        },
+        {
+          "citation_id": "C4",
+          "claim_sha256": "24ffebabdf8f79fece9bee1e8993ff157c92571ecb5dbd9922291fbd2346695b",
+          "judgment_sha256": "0ac48dd1256ff1443d34f3a01b0089836fb5469a0c14b3a2bda13d0281dc9578",
+          "supports_claim": true
+        }
+      ]
+    },
+    {
+      "actual_decision": "answer",
+      "case_id": "grounding-transitive-review-01",
+      "citation_catalog_sha256": "b6ba737d362bef54809a416f92a240399b0a601399343930ff55c091f3ffc16a",
+      "grounded_request_sha256": "cdc666aaad176f5d502b9a67d6be4fb4c4d9e368e409f45621cf7020224575d0",
+      "question_sha256": "f567094ad29e0fd179b695d608a3d713bc2789b06f02cb7eeea34bc9ede10e0c",
+      "result_sha256": "13d6aba965db29cdbac3c25566e5b82eef21e2fd0036984dd33ec74b1f021bd2",
+      "runtime_claim_citation_pair_count": 5,
+      "runtime_claim_count": 5,
+      "selected_citations": [
+        {
+          "chunk_id": "knowledge-chunk:dependency-remediation-validation:post-change:v1",
+          "citation_id": "C1"
+        },
+        {
+          "chunk_id": "knowledge-chunk:dependency-remediation-validation:isolation:v1",
+          "citation_id": "C2"
+        },
+        {
+          "chunk_id": "knowledge-chunk:pypa-dependency-management:transitive-review:v1",
+          "citation_id": "C4"
+        },
+        {
+          "chunk_id": "knowledge-chunk:uv-locking:refresh:v1",
+          "citation_id": "C5"
+        }
+      ],
+      "support_judgments": [
+        {
+          "citation_id": "C2",
+          "claim_sha256": "e7f3d64ae84454ea00e3d3c94143e79a4cb4559e496c696d6811fc0333eaf67a",
+          "judgment_sha256": "692ae057386936cb77bb1f01f3977144491cc1cd03e8f40d3fd7fc07407b0114",
+          "supports_claim": true
+        },
+        {
+          "citation_id": "C1",
+          "claim_sha256": "1bf0d803467bce026c759c3bf0c6b9955b0be152e755b7074f9e85080aa43800",
+          "judgment_sha256": "d42d3db8cc4ec64f2c0ae5df3f07e132f929e9a4af9bc47695a4673c69856da3",
+          "supports_claim": true
+        },
+        {
+          "citation_id": "C1",
+          "claim_sha256": "97bc656d078cb94a6dc07db0eb79ff54bdd664190572a4c7c9859311fba7d1d2",
+          "judgment_sha256": "6ababc1ac86c8eab18062c21c2235cc3b7e8cf1f43dad1e20af79256f7398afa",
+          "supports_claim": true
+        },
+        {
+          "citation_id": "C4",
+          "claim_sha256": "9be4e925e1b9dca0f8acd0c818bba9386c9a2ae61da62e62b3339b9bd5cb7cad",
+          "judgment_sha256": "a7592844ab549afc04b16f9575c0da7090749c28d3a970cce7d381c521dc04ed",
+          "supports_claim": true
+        },
+        {
+          "citation_id": "C5",
+          "claim_sha256": "2b5cb75ab353fec16b0702d16f853c843cbbfc9402f4e8616154ef13d7cc6d86",
+          "judgment_sha256": "dcb12f6bb36fa371c55a3deea9095495fe40689788b7590e28c5237a71ab680c",
+          "supports_claim": true
+        }
+      ]
+    },
+    {
+      "actual_decision": "answer",
+      "case_id": "grounding-isolation-01",
+      "citation_catalog_sha256": "2e4ec97bf2fd5767cbad47f62436ec3a326e99b735c2d178b748aa8448c12bb4",
+      "grounded_request_sha256": "9696bb21b92c5be1fa1a643ce5b00ed5ae1879b698987287ada783a16775c4a9",
+      "question_sha256": "7f574dea024c2f6a3166860997cace3d2f345b213ffa2f4cb1a229413a64239b",
+      "result_sha256": "2c8d9f226635b14d5e8872af6016d1937c57d211f5e9937ddd25f52cb354e2c3",
+      "runtime_claim_citation_pair_count": 2,
+      "runtime_claim_count": 2,
+      "selected_citations": [
+        {
+          "chunk_id": "knowledge-chunk:dependency-remediation-validation:post-change:v1",
+          "citation_id": "C2"
+        }
+      ],
+      "support_judgments": [
+        {
+          "citation_id": "C2",
+          "claim_sha256": "0301bcade8972c8ad113ad3de8503d719fcb90fe9c4eca7ef8d1060278e9bb01",
+          "judgment_sha256": "487323fd6aaf8876ebd9a950c2eb3c047bfcb0c01456f66cf2709fcd59b62150",
+          "supports_claim": false
+        },
+        {
+          "citation_id": "C2",
+          "claim_sha256": "e62d7405706ed6de30b5fb23156b86ebdd900df5bd4619b2662c37f11d94c177",
+          "judgment_sha256": "460a886a3267d313173dfdf152f2098adacf4ab4fe1d32329b9ae76145d69828",
+          "supports_claim": false
+        }
+      ]
+    },
+    {
+      "actual_decision": "insufficient_evidence",
+      "case_id": "grounding-insufficient-pip-tls-cipher-01",
+      "citation_catalog_sha256": "4a3c9d49802009122afda7ff63cd2af9e55b68109b209e995600c8a98763db52",
+      "grounded_request_sha256": "a0d3ab5400e13cf0ca1e71a0d99b7222a359dff570185baf609c95f81df2200b",
+      "question_sha256": "403f000642067a34f610629d7006d5fcef702d866baf42435a1fadc827d1af8f",
+      "result_sha256": "d235ea3dd02a05a518aac2789d05970b1f0c12370ff5a7d77c77a3ee0c8848cf",
+      "runtime_claim_citation_pair_count": 0,
+      "runtime_claim_count": 0,
+      "selected_citations": [],
+      "support_judgments": []
+    }
+  ],
+  "dataset_id": "knowledge-grounding-golden:v1",
+  "judgment_authority": "human_reviewed_claim_citation_pairs_v1",
+  "run_head_sha": "507fe04f963c7eeb49748eb950101ea2fc55e14f"
+}
