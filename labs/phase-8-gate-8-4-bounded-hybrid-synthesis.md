@@ -19,11 +19,10 @@ Frozen input:
 
 ```text
 dataset_id: hybrid-evaluation-golden:v1
-sha256:
-68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1
+sha256:     68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1
 ```
 
-The fixture is consumed unchanged.
+The fixture was consumed unchanged.
 
 ## Authority-preserving execution
 
@@ -59,7 +58,7 @@ incomplete evidence
  -> 0 model calls
 ```
 
-The model never owns the structured values. Its only positive authority is bounded explanatory synthesis over admitted semantic evidence, with optional references to already-admitted structured `F` handles.
+The model never owns canonical structured values. Its positive authority is limited to explanatory synthesis over admitted semantic evidence, with optional references to already-admitted structured `F` handles.
 
 ## Provider-independent synthesis contract
 
@@ -78,25 +77,13 @@ max semantic chunks:               10
 max canonical evidence JSON:       24 KiB
 ```
 
-A model answer is admitted only when it is exact JSON with:
+A model answer is admitted only when it satisfies the exact structured-output contract. Every answer claim requires at least one allowlisted semantic `S` citation. Unknown `S`/`F` IDs, malformed JSON, extra keys, excessive output, invalid route references, provider failure, or non-`end_turn` stop reason fail closed.
 
-```text
-decision: answer | insufficient_evidence
-claims[]:
-  text
-  semantic_citation_ids[]
-  structured_fact_ids[]
-```
+## Prompt-injection boundary
 
-Every answer claim requires at least one allowlisted semantic `S` citation. Unknown `S`/`F` IDs, extra keys, malformed JSON, excessive output, invalid route references, provider failure, or non-`end_turn` stop reason fail closed.
-
-## Prompt injection boundary
-
-Trusted instructions are separated from user question, structured fields, and semantic chunk text. All question/evidence content remains untrusted data. Retrieved instructions cannot change policy, request tools, request SQL, broaden evidence authority, or turn similarity rank into truth.
+Trusted instructions are serialized separately from the user question and admitted evidence. Question and evidence text remain untrusted data. Retrieved instructions cannot change policy, request tools or SQL, broaden evidence authority, or turn similarity/rank into truth.
 
 ## Bedrock runtime profile
-
-Gate 8.4 reuses the Phase 7 bounded synthesis transport profile:
 
 ```text
 region:      us-east-1
@@ -107,151 +94,227 @@ temperature: 0.0
 maxTokens:   2048
 ```
 
-No AWS infrastructure or IAM change is introduced by this gate.
+No AWS infrastructure or IAM resource change was introduced by Gate 8.4.
 
-## Frozen metric semantics
-
-The Gate 8.3 metric dimensions remain independent:
-
-- `route_accuracy`: deterministic Gate 8.3 route metric;
-- `structured_fact_correctness`: frozen structured targets must be present unchanged in deterministic `F` projection;
-- `semantic_groundedness`: every admitted explanatory claim must cite only fixture-adjudicated supporting chunks;
-- `citation_correctness`: exact canonical citation-target set equality;
-- `abstention`: exact expected non-answer behavior, preserving `abstain` vs `reject_before_synthesis`;
-- `latency`: arithmetic mean of successful model-call client elapsed milliseconds only;
-- `cost`: `UNMEASURED` until a deterministic versioned pricing contract exists.
-
-There is no composite score.
-
-## Semantic-noise proof
-
-```text
-S1 / rank 1 -> admitted clean-environment neighbor -> NOT support target
-S2 / rank 2 -> transitive lockfile review       -> expected support/citation target
-```
-
-Admission and retrieval rank do not establish semantic support.
-
-## Offline validation
-
-Fake-client tests cover zero/one-call route behavior, malformed/unknown output, stop-reason/provider failure, metric independence, semantic-noise citation selection, CLI import isolation, and bounded runtime failure evidence.
-
-## Runtime evidence
+## Runtime-history evidence
 
 ### Preflight — import defect
 
-Validated head:
+Head:
 
 ```text
 efe3bb266baf61687fe51fb7f026e67dbf032535
 ```
 
-The first local command failed during Python module initialization with a circular import before the runtime client path. It emitted `0` JSON bytes. This is preflight evidence, not a Bedrock baseline. The import boundary was corrected and covered by a fresh-process CLI import regression.
+The first command failed during Python module initialization because of an eager package re-export circular import. It emitted zero JSON bytes and did not reach the provider path. A fresh-interpreter CLI import regression was added.
 
 ### Attempt A — ambiguous provider-path failure
 
-Validated head:
+Head:
 
 ```text
 7b06e559cdfe3c8dbb074609faf5dcfbbf2533cd
 ```
 
-Observed local result:
+Observed:
 
 ```text
 exit_code: 1
-stderr:    empty
-JSON:      2626 bytes
 complete:  false
+JSON:      2626 bytes
 ```
 
-The deterministic structured case completed with `F1..F4`. The first semantic case failed with `BedrockHybridSynthesisRuntimeError`; no admitted synthesis execution existed. The old `model_call_count = 0` counted only admitted executions and therefore could not prove whether the provider boundary had been attempted.
+The deterministic structured case completed, while the first semantic case failed with `BedrockHybridSynthesisRuntimeError`. The original `model_call_count` counted only successfully admitted executions, so the attempt exposed an observability ambiguity.
 
-This led to a bounded observability correction. Runtime evidence now separates:
+### Attempt B — bounded failure-observability retry
 
-```text
-synthesis_invocation_attempt_count
-admitted_model_execution_count
-```
-
-and preserves only bounded failure diagnostics (`failure_category`, bounded diagnostic, optional request ID/stop reason, and invocation-attempt flag). Provider message bodies, prompts, rejected model output, and unrelated metadata are not serialized.
-
-### Attempt B — diagnostic retry after observability correction
-
-Exact validated head:
+Head:
 
 ```text
 e2cbaa234edd8f4252f7a7610b1067115edcb55f
 ```
 
-Python CI #332 / run `34063537197` passed all six repository slices. Hybrid retrieval gates passed `uv lock --check`, Ruff, strict Pyright (`0 errors, 0 warnings`), and `66` tests.
+CI #332 / run `34063537197` passed all six repository slices. Hybrid retrieval gates passed lock check, Ruff, strict Pyright, and 66 tests.
 
-The single justified diagnostic retry used a new output file and did not change the frozen fixture, prompt, model, output contract, retrieval behavior, or authority policy.
-
-Observed local result supplied by the operator:
+Observed:
 
 ```text
 exit_code:                           1
-stderr:                              empty
-JSON bytes:                          3079
 complete:                            false
-planned_case_count:                  6
 synthesis_invocation_attempt_count:  1
 admitted_model_execution_count:      0
+failure_category:                    provider_invocation
+failure_diagnostic:                  provider_type=RuntimeError
+provider_request_id:                 null
 ```
 
-Case observations:
+This established that the synthesis invocation path was entered but no model execution was admitted.
+
+## Root-cause diagnostic — AWS credential precedence
+
+A zero-model-call diagnostic reproduced the failure while resolving credentials:
 
 ```text
-hybrid-structured-factual-01
-  route: structured
-  application_complete: true
-  synthesis_invocation_attempted: false
-  deterministic F1..F4 projection preserved
-
-hybrid-semantic-remediation-01
-  route: semantic
-  application_complete: false
-  synthesis_invocation_attempted: true
-  failure_category: provider_invocation
-  failure_diagnostic: Bedrock hybrid Converse synthesis failed provider_type=RuntimeError
-  failure_request_id: null
-  failure_stop_reason: null
-  synthesis: null
+botocore_version=1.43.72
+profile=opslens-bootstrap
+credential_object=RefreshableCredentials
+credential_method=env
+credential_resolution=error
+exception_type=RuntimeError
+exception_marker=credentials_refreshed_still_expired
 ```
 
-Interpretation is deliberately narrow: one synthesis invocation path was entered, zero model executions were admitted, and no Bedrock request ID was recovered. `provider_type=RuntimeError` alone is insufficient to identify whether the failure occurred during credential refresh, local SDK request processing, or another pre-response runtime path. No further model invocation is authorized until this pre-response failure is diagnosed without calling the model again.
+The shell contained expired AWS credential environment variables:
 
-The frozen dataset identity remained exact:
+```text
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+AWS_SESSION_TOKEN
+AWS_CREDENTIAL_EXPIRATION
+```
+
+Those environment credentials had precedence over the requested SSO profile.
+
+A clean subshell removed the stale variables and proved the intended chain without invoking a model:
+
+```text
+profile=opslens-bootstrap
+credential_object=DeferredRefreshableCredentials
+credential_method=sso
+credential_resolution=ok
+sts_signed_request=ok
+local_converse_output_config=supported
+diagnostic=PASS
+```
+
+No prompt, fixture, model, retrieval logic, authority rule, or synthesis-output rule was changed to obtain the complete baseline.
+
+## First complete real Bedrock baseline
+
+Input branch head:
+
+```text
+7d06bdb87830f32bb1fc848c9580f8575e52895c
+```
+
+The run was executed in a clean credential subshell with `AWS_PROFILE=opslens-bootstrap` after removing stale environment credentials.
+
+Observed operator result:
+
+```text
+exit_code:                           0
+stderr:                              empty
+JSON bytes:                          12632
+complete:                            true
+planned_case_count:                  6
+synthesis_invocation_attempt_count:  3
+admitted_model_execution_count:      3
+```
+
+Immutable evidence:
+
+```text
+labs/evidence/phase-8-gate-8-4-first-complete-baseline-v1.json
+```
+
+Frozen identity remained exact:
 
 ```text
 hybrid-evaluation-golden:v1
 68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1
 ```
 
-Synthesis-quality metrics remain unmeasured because the runtime did not complete.
+### Independent metrics
 
-## Next diagnostic step
+```text
+route_accuracy:               1.0
+structured_fact_correctness:  1.0
+semantic_groundedness:        0.6666666666666666
+citation_correctness:         0.6666666666666666
+abstention:                   1.0
+latency_ms:                   2959.3333333333335
+cost:                         UNMEASURED / null
+```
 
-Use the same locked Python environment and AWS profile to resolve credentials without invoking Bedrock. This is a credential/runtime preflight, not a model-quality retry. If credential resolution succeeds, inspect the SDK request path next; if it reproduces `RuntimeError`, correct the credential/runtime boundary before any additional synthesis attempt.
+No composite score is introduced.
+
+### Runtime observations
+
+Three eligible cases reached Bedrock, all with `retry_attempts = 0` and `stop_reason = end_turn`.
+
+```text
+hybrid-semantic-remediation-01
+  client_elapsed_ms: 5313
+  bedrock_latency_ms: 3915
+  tokens: 1157 input / 109 output / 1266 total
+  citation target: remediation-lock-review:01
+  observed citations: remediation-lock-review:01
+  result: grounded/citation-correct
+
+hybrid-true-hybrid-01
+  client_elapsed_ms: 1932
+  bedrock_latency_ms: 1772
+  tokens: 1595 input / 81 output / 1676 total
+  deterministic structured facts: priority_score=95, priority_tier=P0, review_required=false
+  semantic target: isolated-validation:01
+  observed citation: isolated-validation:01
+  result: grounded/citation-correct
+
+hybrid-semantic-noise-01
+  client_elapsed_ms: 1633
+  bedrock_latency_ms: 1426
+  tokens: 1398 input / 99 output / 1497 total
+  expected support/citation target: S2 / transitive-lock-review:01
+  observed claim 1: S2 / transitive-lock-review:01
+  observed claim 2: S1 / clean-environment-noise:01
+  result: output admitted, but semantic_groundedness=false and citation_correctness=false for this case
+```
+
+The noise case is the critical measured result. The model correctly used the rank-two supporting chunk for one claim but also introduced an additional claim grounded in an admitted yet fixture-adjudicated non-target neighbor. This demonstrates the frozen distinction:
+
+```text
+admission != semantic support
+retrieval rank != groundedness
+allowlisted citation != correct citation target
+```
+
+The application correctly did not reinterpret the model's extra admitted citation as deterministic truth. Instead, the independent evaluation metrics degraded to `2/3` while routing, structured truth, and abstention remained perfect.
+
+## Gate 8.4 review
+
+Gate 8.4 exit criteria are satisfied:
+
+- provider-independent bounded synthesis contract exists;
+- structured routes bypass the LLM;
+- unsupported and incomplete evidence fail without model calls;
+- semantic and hybrid calls are bounded to one invocation per eligible case;
+- canonical structured truth remains deterministic;
+- citation IDs are allowlisted and mapped back to canonical evidence;
+- first complete Bedrock baseline exists with exact provenance and runtime evidence;
+- quality metrics are measured independently;
+- cost remains explicitly unmeasured rather than fabricated;
+- the semantic-noise case produced a real, observable quality failure without violating the output-admission boundary.
+
+The `2/3` semantic-groundedness and citation-correctness values are not Gate 8.4 implementation failures. They are the measured baseline that Gate 8.5 may use to decide whether an optimization experiment is justified. Gate 8.4 must not tune the prompt or retrieval after observing this baseline.
 
 ## AIP-C01 learning points
 
-- model invocation belongs downstream of deterministic authorization and evidence admission;
+- AWS credential-provider precedence can override an explicitly named profile;
+- authentication success in the CLI does not prove an SDK is using the intended credential source;
+- provider invocation belongs downstream of deterministic authorization and evidence admission;
 - structured factual authority can bypass LLM synthesis entirely;
 - retrieved context is untrusted data;
-- structured output constrains syntax but does not establish truth;
-- citation allowlists and canonical provenance are application responsibilities;
+- structured output constrains syntax but does not establish semantic truth;
+- citation allowlisting is output admission, not semantic correctness;
 - retrieval rank is not groundedness;
-- evaluation dimensions should remain independently observable;
-- invocation attempts and successfully admitted executions are different observability concepts;
-- missing provider request ID is meaningful pre-response evidence but does not by itself identify the failing subsystem;
-- token/runtime evidence is not authoritative cost without a pricing contract.
+- runtime invocation attempts and admitted model executions are distinct observability concepts;
+- evaluation dimensions should remain independent;
+- token/runtime evidence is not authoritative cost without a versioned pricing contract.
 
 ## Gate status
 
 ```text
-IN PROGRESS
+COMPLETE — pending final exact-head CI and protected squash merge
 ```
 
-PR #115 remains draft. Gate 8.5 optimization is explicitly out of scope until Gate 8.4 produces a complete reviewed baseline.
+Gate 8.5 optimization remains out of scope until PR #115 is revalidated and merged.
