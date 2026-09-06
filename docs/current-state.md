@@ -19,8 +19,10 @@ Phase 7    Knowledge Retrieval with Bedrock                    IN PROGRESS
   Gate 7.2 Reproducible canonical corpus                       COMPLETE
   Gate 7.3 Knowledge Base + vector infrastructure              COMPLETE / MERGED
   Gate 7.4 Real bounded Retrieve adapter                       COMPLETE / MERGED
-  Gate 7.5 Retrieval evaluation                                COMPLETE / CLOSEOUT PENDING
-  Gate 7.6 Context assembly + synthesis                        NEXT AFTER 7.5 MERGE
+  Gate 7.5 Retrieval evaluation                                COMPLETE / MERGED
+  Gate 7.6 Context assembly + synthesis                        IN PROGRESS
+    7.6a deterministic context assembly                        COMPLETE / PR #99
+    7.6b synthesis request/output + abstention contract         NEXT
 ```
 
 Recent logical merges:
@@ -40,9 +42,12 @@ Gate 7.3 / PR #95
 
 Gate 7.4 / PR #97
 7c25877e0ae9541a4f20b8537e4f77c88ee776a5
+
+Gate 7.5 / PR #98
+b30af10a568cefa7175c253120499939f9ca18d8
 ```
 
-Gate 7.5 is implemented on PR #98. The real ten-case evaluation completed successfully; final closeout CI and squash merge remain.
+Gate 7.6 is active on draft PR #99 from the Gate 7.5 merge. The first increment is deliberately offline-only; no synthesis model call or new AWS/IAM surface exists yet.
 
 ## Permanent boundaries
 
@@ -58,7 +63,7 @@ Gate 7.5 is implemented on PR #98. The real ten-case evaluation completed succes
 
 > **No unrestricted text-to-SQL.**
 
-Deterministic authorities own package normalization, vulnerable-range matching, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS evidence, Risk Policy, canonical corpus construction, semantic-query validation/SQL compilation, retrieval evidence admission, citation projection, and execution/tool/cost enforcement.
+Deterministic authorities own package normalization, vulnerable-range matching, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS evidence, Risk Policy, canonical corpus construction, semantic-query validation/SQL compilation, retrieval evidence admission, context assembly, citation projection, and execution/tool/cost enforcement.
 
 LLMs may classify, plan, synthesize, explain, and route over validated evidence. They do not replace deterministic structured truth.
 
@@ -78,9 +83,10 @@ Controlled Knowledge Corpus
  -> direct bounded Retrieve
  -> deterministic checked-corpus admission
  -> retrieval evaluation
+ -> deterministic bounded context assembly
 ```
 
-Synthesis is deliberately not implemented yet.
+Bedrock synthesis is deliberately not implemented yet.
 
 ## Phase 7 current runtime
 
@@ -155,7 +161,7 @@ provider_code: ResourceNotFoundException
 
 Gate 7.4 was squash-merged through PR #97 at `7c25877e0ae9541a4f20b8537e4f77c88ee776a5`.
 
-## Gate 7.5 — Retrieval evaluation — COMPLETE / CLOSEOUT PENDING
+## Gate 7.5 — Retrieval evaluation — COMPLETE / MERGED
 
 Frozen dataset:
 
@@ -226,13 +232,71 @@ $0.000025
 
 This is not presented as the complete retrieval bill. Bedrock `Retrieve` does not expose exact S3 Vectors processed/returned billable bytes or Titan query-embedding token counts, so those components are not fabricated.
 
+Gate 7.5 was squash-merged through PR #98 at `b30af10a568cefa7175c253120499939f9ca18d8`.
+
 Closeout lab: [`../labs/phase-7-gate-7-5-retrieval-evaluation.md`](../labs/phase-7-gate-7-5-retrieval-evaluation.md).
+
+## Gate 7.6 — Context assembly + synthesis — IN PROGRESS
+
+### 7.6a — Deterministic context assembly — COMPLETE / PR #99
+
+Current provider-independent path:
+
+```text
+RetrievalEvidence
+ -> deterministic contiguous rank-prefix assembly
+ -> whole ContextEvidenceBlock[]
+ -> AssembledContext
+ -> future bounded synthesis adapter
+```
+
+Frozen v1 limits:
+
+```text
+default max chunks:      5
+hard max chunks:         10
+max admitted text bytes: 16,384 UTF-8 bytes
+```
+
+The byte limit is an application-level denial-of-wallet/input-growth guardrail, not a token estimate or provider context-window claim.
+
+Context selection is intentionally simple and reproducible:
+
+- only already-admitted `RetrievedChunk` values are eligible;
+- whole chunks only; no text truncation;
+- preserve one contiguous retrieval-rank prefix from rank 1;
+- stop at the first non-fitting chunk; do not backfill lower-ranked smaller chunks;
+- empty retrieval fails closed;
+- if rank 1 alone exceeds the byte budget, assembly fails closed;
+- provider relevance score is not projected into synthesis context;
+- raw query is represented operationally by SHA-256 rather than copied into context evidence;
+- deterministic `context_sha256` covers query identity, limits, selected provenance/content hashes, counts, and stop reason.
+
+The no-score rule follows directly from Gate 7.5: negative/out-of-authority queries produced similarity scores overlapping valid retrieval evidence, so provider score cannot silently become context authority.
+
+7.6a adds no AWS resources, IAM permissions, network calls, or model calls.
+
+Quality evidence:
+
+```text
+Python CI #243: FAIL — Ruff line length only; fixed without semantic change
+Python CI #244: FAIL — Pyright direct-isinstance diagnostics; runtime checks retained via helper
+Python CI #245: SUCCESS
+  Ruff:             PASS
+  Pyright strict:   PASS
+  pytest:            PASS
+  regressions:      PASS
+```
+
+Lab: [`../labs/phase-7-gate-7-6-context-synthesis.md`](../labs/phase-7-gate-7-6-context-synthesis.md).
 
 ## IAM boundary
 
 The Knowledge Base service role remains an ingestion/storage integration identity trusted by Bedrock.
 
-Retrieval is a separate runtime responsibility. No deployed application compute principal exists yet, so final least-privilege retrieval-role attachment remains deferred until a real runtime principal exists. Gate 7.5 required no IAM widening.
+Retrieval is a separate runtime responsibility. No deployed application compute principal exists yet, so final least-privilege retrieval-role attachment remains deferred until a real runtime principal exists.
+
+7.6a requires no AWS or IAM change. Synthesis permissions must not be added before a concrete runtime/model boundary is selected and justified.
 
 ## AWS foundation
 
@@ -265,16 +329,14 @@ Knowledge Retrieval CI also watches `knowledge/corpus/**` so corpus authority ch
 
 ## Next action
 
-Finish PR #98 only:
+Continue Gate 7.6 inside draft PR #99 with **7.6b offline first**:
 
 ```text
-1. run final CI on the Gate 7.5 closeout commit
-2. confirm mergeability
-3. mark PR #98 ready for review
-4. squash-merge into main
-5. confirm resulting main commit
+1. freeze synthesis request/output contract
+2. freeze unsupported / insufficient-evidence behavior
+3. define trusted-instruction vs untrusted-context serialization boundary
+4. freeze application call/output bounds
+5. only then select Bedrock runtime API/model from current official AWS documentation
 ```
 
-Do not start Gate 7.6 inside PR #98.
-
-After merge, Gate 7.6 will freeze deterministic context admission/assembly and bounded Bedrock synthesis over admitted retrieval evidence.
+Do not make a real synthesis call until the request/output/abstention contract is deterministic and CI-green.
