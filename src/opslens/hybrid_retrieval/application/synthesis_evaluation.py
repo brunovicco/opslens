@@ -61,6 +61,10 @@ class HybridRuntimeCaseExecution:
     synthesis: BedrockHybridSynthesisExecution | None
     observed_behavior: HybridExpectedAnswerBehavior | None
     failure_category: str | None = None
+    failure_diagnostic: str | None = None
+    failure_request_id: str | None = None
+    failure_stop_reason: str | None = None
+    synthesis_invocation_attempted: bool = False
 
     @property
     def complete(self) -> bool:
@@ -85,10 +89,30 @@ class HybridRuntimeExecution:
             and all(attempt.complete for attempt in self.attempts)
         )
 
+    @property
+    def synthesis_invocation_attempt_count(self) -> int:
+        """Count bounded synthesizer invocations, including failed provider boundaries."""
+        return sum(attempt.synthesis_invocation_attempted for attempt in self.attempts)
 
-def _failure_category(exc: Exception) -> str:
-    """Return one content-free runtime/application failure category."""
-    return type(exc).__name__
+    @property
+    def admitted_model_execution_count(self) -> int:
+        """Count model executions that produced admitted runtime evidence and output."""
+        return sum(attempt.synthesis is not None for attempt in self.attempts)
+
+
+def _failure_observation(
+    exc: Exception,
+) -> tuple[str, str | None, str | None, str | None, bool]:
+    """Return bounded diagnostics while keeping provider content outside evidence."""
+    if isinstance(exc, BedrockHybridSynthesisRuntimeError):
+        return (
+            exc.category.value,
+            str(exc),
+            exc.request_id,
+            exc.stop_reason,
+            True,
+        )
+    return type(exc).__name__, None, None, None, False
 
 
 def _observed_model_behavior(
@@ -168,11 +192,13 @@ def run_hybrid_synthesis_runtime_evaluation(
             )
             continue
 
+        synthesis_invocation_attempted = False
         try:
             request = build_hybrid_synthesis_request(
                 question=case.question,
                 envelope=envelope,
             )
+            synthesis_invocation_attempted = True
             synthesis = synthesize(request)
             if synthesis.result.request_sha256 != request.request_sha256:
                 raise HybridSynthesisOutputError(
@@ -183,6 +209,13 @@ def run_hybrid_synthesis_runtime_evaluation(
             HybridRetrievalValidationError,
             HybridSynthesisOutputError,
         ) as exc:
+            (
+                failure_category,
+                failure_diagnostic,
+                failure_request_id,
+                failure_stop_reason,
+                provider_boundary_reached,
+            ) = _failure_observation(exc)
             attempts.append(
                 HybridRuntimeCaseExecution(
                     case=case,
@@ -192,7 +225,13 @@ def run_hybrid_synthesis_runtime_evaluation(
                     request=request,
                     synthesis=synthesis,
                     observed_behavior=None,
-                    failure_category=_failure_category(exc),
+                    failure_category=failure_category,
+                    failure_diagnostic=failure_diagnostic,
+                    failure_request_id=failure_request_id,
+                    failure_stop_reason=failure_stop_reason,
+                    synthesis_invocation_attempted=(
+                        synthesis_invocation_attempted or provider_boundary_reached
+                    ),
                 )
             )
             break
@@ -206,6 +245,7 @@ def run_hybrid_synthesis_runtime_evaluation(
                 request=request,
                 synthesis=synthesis,
                 observed_behavior=_observed_model_behavior(synthesis),
+                synthesis_invocation_attempted=True,
             )
         )
 
