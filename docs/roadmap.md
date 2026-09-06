@@ -1,6 +1,6 @@
 # OpsLens — Incremental Roadmap
 
-_Last updated: 2026-09-05_
+_Last updated: 2026-09-06_
 
 OpsLens advances in small, demonstrable, observable, and reversible gates.
 
@@ -30,7 +30,7 @@ concept
 | 4 | Repository Intelligence | ✅ Complete |
 | 5 | Risk Prioritization Engine | ✅ Complete |
 | 6 | Semantic Query Layer | ✅ Complete — PR #91 |
-| 7 | Knowledge Retrieval with Bedrock | 🚧 Gates 7.1–7.3 complete; PR #95 merge pending |
+| 7 | Knowledge Retrieval with Bedrock | 🚧 Gates 7.1–7.4 complete; PR #97 merge pending |
 | 8 | Hybrid Retrieval | ⏳ Planned |
 | 9 | Public Analyze Your Repository | ⏳ Planned |
 | 10 | Observability & Operational Excellence | ⏳ Planned |
@@ -51,8 +51,6 @@ Established the real `dev` environment, Terraform remote state, IAM Identity Cen
 
 ### Phase 1 — EPSS Vertical Slice
 
-Implemented:
-
 ```text
 FIRST EPSS
  -> EventBridge Scheduler
@@ -65,11 +63,11 @@ FIRST EPSS
 
 ### Phase 2 — Threat Intelligence Data Lake
 
-Completed NVD/CVE, CISA KEV, FIRST EPSS current/historical, and GitHub Security Advisory source-local deterministic evidence while preserving explicit provenance and time coordinates.
+Completed NVD/CVE, CISA KEV, FIRST EPSS current/historical, and GitHub Security Advisory source-local deterministic evidence while preserving provenance and time coordinates.
 
 ### Phase 3 — Vulnerability Correlation Engine
 
-Completed deterministic PyPI v1 applicability with canonical package identity, PEP 440 range evaluation, GHSA/CVE/NVD reconciliation, and content-addressed correlation evidence.
+Completed deterministic PyPI v1 applicability with canonical package identity, PEP 440 range evaluation, GHSA/CVE/NVD reconciliation, and content-addressed evidence.
 
 Permanent rule:
 
@@ -77,19 +75,17 @@ Permanent rule:
 
 ### Phase 4 — Repository Intelligence
 
-Completed the read-only public GitHub repository slice using immutable repository snapshots and inert `uv.lock` evidence. Third-party repository code is never executed.
+Completed read-only public GitHub repository analysis using immutable snapshots and inert `uv.lock` evidence. Third-party repository code is never executed.
 
 ### Phase 5 — Risk Prioritization Engine
 
-Completed deterministic Risk Policy v1 over Phase 4 evidence with explicit factor contributions, priority tiers, completeness semantics, and content-addressed results.
+Completed deterministic Risk Policy v1 with explicit factor contributions, priority tiers, completeness semantics, and content-addressed results.
 
 ## Phase 6 — Semantic Query Layer — COMPLETE
 
 Goal:
 
 > Convert bounded natural-language factual questions into typed semantic queries and deterministic Athena SQL without giving a model unrestricted SQL authority.
-
-Target flow:
 
 ```text
 User question
@@ -114,8 +110,6 @@ Completed gates:
 6.3 Bounded planner contract + offline evaluation            COMPLETE
 6.4 Real Bedrock planner invocation                          COMPLETE
 ```
-
-Real Phase 6 evidence includes bounded planner tokens/latency/cost, Athena bytes/latency, supported E2E execution, unsupported fail-closed behavior, and diagnosed IAM Identity Center credential failure.
 
 ## Phase 7 — Knowledge Retrieval with Bedrock — IN PROGRESS
 
@@ -147,7 +141,7 @@ Structured NVD, KEV, EPSS, CVSS, GHSA applicability, repository-version, and Ris
 
 ### Gate 7.1 — Corpus + retrieval contract — COMPLETE
 
-Frozen provider-independent contracts:
+Frozen contracts:
 
 ```text
 KnowledgeDocument
@@ -166,11 +160,9 @@ default top_k: 5
 provider DSL:  none
 ```
 
-Citations are projected from admitted retrieval evidence rather than model-authored URLs/source IDs.
+Citations are projected from admitted evidence rather than model-authored source IDs or URLs.
 
 ### Gate 7.2 — Reproducible canonical corpus — COMPLETE
-
-Corpus shape:
 
 ```text
 6 official immutable source pins
@@ -179,14 +171,19 @@ manifest sha256:
 98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
 ```
 
-Acquisition is bounded GET-only inert text. Canonical normalization/selection/hashing is deterministic. Third-party text is not vendored into Git.
+Acquisition is bounded GET-only inert text. Canonical normalization, selection, and hashing are deterministic.
 
-### Gate 7.3 — Knowledge Base + vector infrastructure — COMPLETE / PR #95 MERGE PENDING
+### Gate 7.3 — Knowledge Base + vector infrastructure — COMPLETE / MERGED
 
-Validated architecture:
+Merged through PR #95:
 
 ```text
-KB mode:              customer-managed Bedrock vector Knowledge Base
+1337950ddb5948943bf361dba4c3cdc40dafaf2b
+```
+
+Validated baseline:
+
+```text
 KB id:                BTVJ2PBR2A
 data source id:       IEL1LBE026
 vector store:         Amazon S3 Vectors
@@ -198,65 +195,90 @@ chunking:             NONE
 source prefix:        knowledge/corpus/v1/bedrock/
 ```
 
-Real publication evidence:
-
-```text
-18 verified S3 objects
-9 canonical text objects
-9 compact metadata sidecars
-14,928 total bytes
-394..493 sidecar bytes
-```
-
 Real successful ingestion:
 
 ```text
-job:                           WZRUGOFZPI
-status:                        COMPLETE
-observed duration:             11.145552 seconds
-documents scanned:             9
-new documents indexed:         9
-documents failed:              0
-documents skipped:             0
-vectors materialized:          9
+job:                    WZRUGOFZPI
+status:                 COMPLETE
+duration:               11.145552 s
+documents scanned:      9
+new documents indexed:  9
+failed:                 0
+skipped:                0
+vectors materialized:   9
 ```
 
-Real failure evidence retained:
-
-- first ingestion ignored all nine files because verbose metadata sidecars exceeded the 1024-byte Bedrock/S3 Vectors limit;
-- local botocore SSO credential resolution produced a safely categorized `TokenRetrievalError` while AWS CLI credentials remained usable;
-- direct human `sts:AssumeRole` on the Bedrock KB service role returned expected `AccessDenied`.
-
-No failure was fixed by broadening the KB service role or OIDC trust.
+Real failure evidence included oversized metadata sidecars, a safely categorized botocore SSO credential failure, and an expected human `AssumeRole` denial on the Bedrock service role. None was fixed by broadening IAM.
 
 ADR: [`adr/0022-customer-managed-bedrock-kb-with-s3-vectors.md`](adr/0022-customer-managed-bedrock-kb-with-s3-vectors.md).
+
 Closeout: [`../labs/phase-7-gate-7-3-kb-vector-infrastructure.md`](../labs/phase-7-gate-7-3-kb-vector-infrastructure.md).
 
-### Gate 7.4 — Real bounded Retrieve adapter — NEXT
+### Gate 7.4 — Real bounded Retrieve adapter — COMPLETE / PR #97 MERGE PENDING
 
-Implement Amazon Bedrock Knowledge Base `Retrieve` directly, independently from generation.
+Implemented direct Amazon Bedrock Knowledge Base `Retrieve`, independently from generation.
 
-Required properties:
+Frozen runtime path:
 
-- consume the frozen `RetrievalRequest` contract;
-- bounded `top_k` only;
-- exact Knowledge Base ID configured outside model authority;
-- provider-neutral adapter Protocol;
-- typed Bedrock response parsing;
-- reject malformed/extra/untrusted provider evidence;
-- map returned S3 location/content/metadata back to the frozen publication/corpus identity;
-- independently validate returned chunk text/hash before admitting `RetrievedChunk`;
-- preserve deterministic rank and provenance;
-- bounded provider errors and retry behavior;
-- separate least-privilege retrieval runtime IAM identity;
-- intentional real failure evidence;
-- no `RetrieveAndGenerate` shortcut.
+```text
+RetrievalRequest
+ -> exact configured KB
+ -> direct semantic Retrieve
+ -> strict provider parser
+ -> checked S3 content-addressed key resolution
+ -> independent returned-text hash + byte-count validation
+ -> canonical metadata reconciliation
+ -> RetrievedChunk[]
+ -> RetrievalEvidence
+```
 
-Exit evidence should include a first real retrieval request, returned ranks/scores/provenance, latency, request bounds, IAM/failure evidence, and query-cost rationale.
+Provider authority is deliberately smaller than the product contract:
 
-### Gate 7.5 — Retrieval evaluation — PLANNED
+- no arbitrary provider DSL;
+- no hybrid override;
+- no reranking;
+- no synthesis;
+- no implicit pagination;
+- typed filters fail before the provider call until deterministic translation exists.
 
-Use the frozen golden dataset to measure retrieval separately from synthesis:
+The first real call correctly failed closed because Bedrock represented `section_path` elements as JSON-quoted strings. A metadata-only diagnostic proved the exact provider shape; the adapter now decodes only valid JSON-quoted string scalars and still requires exact equality with the checked manifest. Regression CI is green.
+
+Real admitted Retrieve:
+
+```text
+query sha256:         5b398fe871d0cb51eaacb4f42a11b2ec402b5fdb4c523d2b7bca85e84dff3d0d
+knowledge base:       BTVJ2PBR2A
+requested top_k:      5
+returned/admitted:    5
+provider request id:  e92d67f1-18fa-4537-8ff4-c2e02ab813e0
+client elapsed:       1257 ms
+SDK retries:          0
+rank 1:               knowledge-chunk:pypa-secure-installs:hashes:v1
+rank 1 score:         0.8649594783782959
+```
+
+Intentional real provider failure:
+
+```text
+nonexistent KB: ZZZZZZZZZZ
+provider_code: ResourceNotFoundException
+```
+
+The failure was read-only and exposed only a safe provider code.
+
+IAM review concluded that retrieval must remain separate from ingestion/vector-write authority. Final role attachment is deferred until a real application runtime principal exists rather than creating unused IAM surface.
+
+Observed populated-index search count for this gate: `3`.
+
+At current S3 Vectors request pricing of `$2.50 / 1,000,000 queries`, the request-fee component for those three searches is approximately `$0.0000075`, plus negligible processed-data cost for the nine-vector laboratory index and query-embedding model usage. Exact provider billing is not inferred from incomplete telemetry.
+
+Closeout: [`../labs/phase-7-gate-7-4-bounded-retrieve.md`](../labs/phase-7-gate-7-4-bounded-retrieve.md).
+
+### Gate 7.5 — Retrieval evaluation — NEXT
+
+Measure the frozen raw semantic baseline before adding synthesis, reranking, hybrid search, or arbitrary provider filters.
+
+Required metrics:
 
 ```text
 Recall@1
@@ -265,13 +287,16 @@ Recall@5
 Recall@10
 MRR
 provenance/source correctness
-latency
-retrieval cost
+latency distribution
+retrieval-call count
+bounded retrieval cost assumptions
 ```
+
+Evaluation must use the frozen Gate 7.1/7.2 fixture and the Gate 7.4 direct-Retrieve runtime. Provider relevance scores are evidence only, not calibrated confidence.
 
 ### Gate 7.6 — Deterministic context assembly + synthesis — PLANNED
 
-Only admitted retrieved chunks may enter model context. Freeze context/token limits, synthesis model authority, output contract, runtime evidence, and denial-of-wallet controls before treating synthesis as complete.
+Only admitted retrieved chunks may enter model context. Freeze token/context limits, synthesis model authority, output contract, runtime evidence, and denial-of-wallet controls before treating synthesis as complete.
 
 ### Gate 7.7 — Citations + groundedness — PLANNED
 
@@ -305,7 +330,7 @@ Introduce specialization only where it demonstrably improves the single-agent ba
 
 ### Phase 13 — MCP
 
-Expose bounded internal tools through explicit MCP contracts only after their deterministic authorities are stable.
+Expose bounded internal tools through explicit MCP contracts only after deterministic authorities are stable.
 
 ### Phase 14 — Amazon Bedrock AgentCore
 
