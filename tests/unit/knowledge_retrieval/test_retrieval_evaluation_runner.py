@@ -36,6 +36,7 @@ _KB_ID = "BTVJ2PBR2A"
 
 
 def _catalog() -> CanonicalRetrievalCatalog:
+    """Build the checked product retrieval catalog for runner tests."""
     return build_retrieval_catalog(load_corpus_manifest(_MANIFEST))
 
 
@@ -46,6 +47,7 @@ def _result_for_request(
     chunk_id: str,
     request_number: int,
 ) -> BedrockRetrieveResult:
+    """Build one already-admitted synthetic Gate 7.4 result."""
     canonical = next(chunk for chunk in catalog.chunks if chunk.chunk_id == chunk_id)
     chunk = RetrievedChunk.from_text(
         chunk_id=canonical.chunk_id,
@@ -78,6 +80,7 @@ def _result_for_request(
 
 
 def test_runner_makes_exactly_one_top_k_10_attempt_per_fixture_case() -> None:
+    """Every frozen case receives one request and all cutoffs share its top-k=10 ranking."""
     dataset = load_golden_retrieval_dataset(_FIXTURE)
     catalog = _catalog()
     calls: list[RetrievalRequest] = []
@@ -115,6 +118,7 @@ def test_runner_makes_exactly_one_top_k_10_attempt_per_fixture_case() -> None:
 
 
 def test_runner_records_safe_case_failure_and_continues_remaining_cases() -> None:
+    """One safe provider failure is recorded while the remaining frozen cases still run once."""
     dataset = load_golden_retrieval_dataset(_FIXTURE)
     catalog = _catalog()
     calls: list[RetrievalRequest] = []
