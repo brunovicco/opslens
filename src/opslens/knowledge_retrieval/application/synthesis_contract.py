@@ -147,7 +147,8 @@ class SynthesisPromptEnvelope:
             raise SynthesisOutputError("evidence_json must be valid JSON") from exc
         if not isinstance(parsed_evidence, dict):
             raise SynthesisOutputError("evidence_json must be one JSON object")
-        if evidence_json != _canonical_json(parsed_evidence):
+        typed_evidence = cast(dict[object, object], parsed_evidence)
+        if evidence_json != _canonical_json(typed_evidence):
             raise SynthesisOutputError("evidence_json must use canonical serialization")
         object.__setattr__(self, "evidence_json", evidence_json)
 
