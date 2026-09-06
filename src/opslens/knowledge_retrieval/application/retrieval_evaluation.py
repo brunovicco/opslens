@@ -144,6 +144,18 @@ class GoldenRetrievalCase:
             )
 
 
+def _require_golden_cases(value: object) -> tuple[GoldenRetrievalCase, ...]:
+    """Require one tuple containing only typed golden retrieval cases."""
+    if not isinstance(value, tuple):
+        raise RetrievalEvaluationError("dataset cases must be a tuple")
+    items = cast(tuple[object, ...], value)
+    if any(not isinstance(item, GoldenRetrievalCase) for item in items):
+        raise RetrievalEvaluationError(
+            "dataset cases must contain only GoldenRetrievalCase values"
+        )
+    return cast(tuple[GoldenRetrievalCase, ...], items)
+
+
 @dataclass(frozen=True, slots=True)
 class GoldenRetrievalDataset:
     """Frozen Gate 7.5 evaluation dataset."""
@@ -155,23 +167,21 @@ class GoldenRetrievalDataset:
         """Require the exact v1 case cardinality and unique identities."""
         if self.dataset_id != _DATASET_ID:
             raise RetrievalEvaluationError(f"dataset_id must equal {_DATASET_ID!r}")
-        if len(self.cases) != _EXPECTED_CASE_COUNT:
+        cases = _require_golden_cases(self.cases)
+        object.__setattr__(self, "cases", cases)
+        if len(cases) != _EXPECTED_CASE_COUNT:
             raise RetrievalEvaluationError(
                 f"dataset must contain exactly {_EXPECTED_CASE_COUNT} cases"
             )
-        if any(not isinstance(case, GoldenRetrievalCase) for case in self.cases):
-            raise RetrievalEvaluationError(
-                "dataset cases must contain only GoldenRetrievalCase values"
-            )
-        ids = tuple(case.case_id for case in self.cases)
+        ids = tuple(case.case_id for case in cases)
         if len(set(ids)) != len(ids):
             raise RetrievalEvaluationError("dataset case_id values must be unique")
-        positive = sum(case.should_have_relevant_evidence for case in self.cases)
+        positive = sum(case.should_have_relevant_evidence for case in cases)
         if positive != _EXPECTED_POSITIVE_CASE_COUNT:
             raise RetrievalEvaluationError(
                 f"dataset must contain exactly {_EXPECTED_POSITIVE_CASE_COUNT} positive cases"
             )
-        if len(self.cases) - positive != _EXPECTED_NEGATIVE_CASE_COUNT:
+        if len(cases) - positive != _EXPECTED_NEGATIVE_CASE_COUNT:
             raise RetrievalEvaluationError(
                 f"dataset must contain exactly {_EXPECTED_NEGATIVE_CASE_COUNT} negative cases"
             )
