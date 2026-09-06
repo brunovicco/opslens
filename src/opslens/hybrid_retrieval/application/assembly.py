@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import cast
-
 from opslens.hybrid_retrieval.domain.evidence import (
     HybridEvidenceEnvelope,
     SemanticEvidenceChunk,
@@ -14,14 +12,22 @@ from opslens.hybrid_retrieval.domain.models import HybridRouteDecision
 from opslens.knowledge_retrieval.domain import RetrievalEvidence, RetrievedChunk
 
 
-def _require_runtime_instance(
-    value: object,
-    expected_type: type[object],
-    label: str,
-) -> None:
-    """Validate untrusted application inputs without weakening public annotations."""
-    if not isinstance(value, expected_type):
-        raise HybridRetrievalValidationError(f"{label} has an unsupported value.")
+def _admit_retrieval_evidence(value: object) -> RetrievalEvidence:
+    """Reject values that bypass the Phase 7 retrieval evidence contract."""
+    if not isinstance(value, RetrievalEvidence):
+        raise HybridRetrievalValidationError(
+            "retrieval evidence must be an admitted RetrievalEvidence."
+        )
+    return value
+
+
+def _admit_authority_decision(value: object) -> HybridRouteDecision:
+    """Reject values that bypass the Gate 8.1 routing authority contract."""
+    if not isinstance(value, HybridRouteDecision):
+        raise HybridRetrievalValidationError(
+            "authority_decision must be an admitted HybridRouteDecision."
+        )
+    return value
 
 
 def _project_retrieved_chunk(*, retrieval_id: str, chunk: RetrievedChunk) -> SemanticEvidenceChunk:
@@ -47,14 +53,13 @@ def project_semantic_retrieval_evidence(
     evidence: RetrievalEvidence,
 ) -> tuple[SemanticEvidenceChunk, ...]:
     """Project one admitted retrieval operation into provider-independent semantic evidence."""
-    _require_runtime_instance(evidence, RetrievalEvidence, "retrieval evidence")
-    typed_evidence = cast(RetrievalEvidence, evidence)
+    admitted_evidence = _admit_retrieval_evidence(evidence)
     return tuple(
         _project_retrieved_chunk(
-            retrieval_id=typed_evidence.retrieval_id,
+            retrieval_id=admitted_evidence.retrieval_id,
             chunk=chunk,
         )
-        for chunk in typed_evidence.chunks
+        for chunk in admitted_evidence.chunks
     )
 
 
@@ -65,9 +70,9 @@ def assemble_hybrid_evidence(
     semantic_evidence: tuple[SemanticEvidenceChunk, ...] = (),
 ) -> HybridEvidenceEnvelope:
     """Assemble only evidence that exactly satisfies one deterministic authority decision."""
-    _require_runtime_instance(authority_decision, HybridRouteDecision, "authority_decision")
+    admitted_decision = _admit_authority_decision(authority_decision)
     return HybridEvidenceEnvelope(
-        authority_decision=authority_decision,
+        authority_decision=admitted_decision,
         structured_evidence=structured_evidence,
         semantic_evidence=semantic_evidence,
     )
