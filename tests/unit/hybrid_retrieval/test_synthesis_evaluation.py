@@ -9,6 +9,7 @@ from pathlib import Path
 from opslens.hybrid_retrieval.adapters.bedrock_synthesis import BedrockHybridSynthesizer
 from opslens.hybrid_retrieval.application.evaluation import load_hybrid_evaluation_dataset
 from opslens.hybrid_retrieval.application.synthesis_evaluation import (
+    HybridRuntimeExecution,
     evaluate_hybrid_synthesis_runtime,
     run_hybrid_synthesis_runtime_evaluation,
 )
@@ -89,7 +90,10 @@ class _Clock:
         return next(self._values)
 
 
-def _run(*, noisy_citation: str = "S2"):
+def _run(
+    *,
+    noisy_citation: str = "S2",
+) -> tuple[HybridRuntimeExecution, _SequenceConverseClient]:
     """Execute all six fixture cases with exactly three fake model calls."""
     client = _SequenceConverseClient(
         (
