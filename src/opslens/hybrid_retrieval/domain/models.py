@@ -69,6 +69,12 @@ _EVIDENCE_CLASS_ORDER = {
 }
 
 
+def _require_runtime_instance(value: object, expected_type: type[object], label: str) -> None:
+    """Validate untrusted runtime values without weakening public annotations."""
+    if not isinstance(value, expected_type):
+        raise HybridRetrievalValidationError(f"{label} has an unsupported value.")
+
+
 def _canonical_sha256(payload: object) -> str:
     """Hash one canonical JSON payload with stable ordering and separators."""
     canonical = json.dumps(
@@ -151,14 +157,9 @@ class HybridRouteDecision:
 
     def __post_init__(self) -> None:
         """Reject internally inconsistent route/authority combinations."""
-        if not isinstance(self.route, HybridRoute):
-            raise HybridRetrievalValidationError("route must be a HybridRoute value.")
-        if not isinstance(self.completeness, CompletenessSemantics):
-            raise HybridRetrievalValidationError(
-                "completeness must be a CompletenessSemantics value."
-            )
-        if not isinstance(self.reason, RouteReason):
-            raise HybridRetrievalValidationError("reason must be a RouteReason value.")
+        _require_runtime_instance(self.route, HybridRoute, "route")
+        _require_runtime_instance(self.completeness, CompletenessSemantics, "completeness")
+        _require_runtime_instance(self.reason, RouteReason, "reason")
 
         normalized_needs = _normalize_evidence_needs(self.evidence_needs)
         normalized_classes = _normalize_required_evidence_classes(
