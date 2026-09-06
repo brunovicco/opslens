@@ -190,5 +190,5 @@ def test_unsupported_authority_main_exits_before_any_aws_client_creation(
 
 def test_synthesis_runner_rejects_region_drift() -> None:
     """The first real synthesis path cannot silently switch Regions."""
-    with pytest.raises(cli.SynthesisCliError, match="frozen Gate 7.6 region"):
+    with pytest.raises(cli.SynthesisCliError, match=r"frozen Gate 7.6 region"):
         cli.require_synthesis_region("us-west-2")
