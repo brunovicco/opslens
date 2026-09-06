@@ -8,7 +8,7 @@ import re
 from dataclasses import dataclass
 from enum import StrEnum
 from hashlib import sha256
-from typing import TypeAlias, cast
+from typing import cast
 from urllib.parse import urlparse
 
 from opslens.hybrid_retrieval.domain.errors import HybridRetrievalValidationError
@@ -24,7 +24,7 @@ HYBRID_EVIDENCE_CONTRACT_VERSION = "hybrid-evidence:v1"
 
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
-StructuredScalar: TypeAlias = str | int | float | bool | None
+type StructuredScalar = str | int | float | bool | None
 
 
 class StructuredEvidenceAuthority(StrEnum):
@@ -188,7 +188,9 @@ def _normalize_structured_fields(value: object) -> tuple[StructuredEvidenceField
         raise HybridRetrievalValidationError("fields must be a tuple.")
     raw_values = cast(tuple[object, ...], value)
     if not raw_values:
-        raise HybridRetrievalValidationError("structured evidence rows require at least one field.")
+        raise HybridRetrievalValidationError(
+            "structured evidence rows require at least one field."
+        )
     if any(not isinstance(item, StructuredEvidenceField) for item in raw_values):
         raise HybridRetrievalValidationError(
             "fields must contain only StructuredEvidenceField values."
@@ -411,7 +413,12 @@ def _normalize_semantic_chunks(value: object) -> tuple[SemanticEvidenceChunk, ..
     return tuple(
         sorted(
             typed_values,
-            key=lambda item: (item.retrieval_id, item.rank, item.chunk_id, item.evidence_id),
+            key=lambda item: (
+                item.retrieval_id,
+                item.rank,
+                item.chunk_id,
+                item.evidence_id,
+            ),
         )
     )
 
@@ -516,7 +523,9 @@ class HybridEvidenceEnvelope:
             provenance.append(
                 EvidenceClassProvenance(
                     evidence_class=EvidenceClass.STRUCTURED,
-                    evidence_ids=tuple(item.evidence_id for item in self.structured_evidence),
+                    evidence_ids=tuple(
+                        item.evidence_id for item in self.structured_evidence
+                    ),
                 )
             )
         if self.semantic_evidence:
