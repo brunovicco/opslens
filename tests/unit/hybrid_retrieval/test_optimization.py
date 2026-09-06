@@ -8,9 +8,9 @@ from pathlib import Path
 
 from opslens.hybrid_retrieval.adapters.bedrock_synthesis import (
     BedrockHybridConverseClient,
-    BedrockHybridSynthesizer,
     BedrockHybridSynthesisExecution,
     BedrockHybridSynthesisInvocationEvidence,
+    BedrockHybridSynthesizer,
 )
 from opslens.hybrid_retrieval.application.assembly import assemble_hybrid_evidence
 from opslens.hybrid_retrieval.application.bedrock_synthesis import (
