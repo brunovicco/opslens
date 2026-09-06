@@ -1,0 +1,43 @@
+{
+  "dataset_id": "knowledge-grounding-golden:v1",
+  "purpose": "Pre-provider citation-target and groundedness evaluation contract for Gate 7.7.",
+  "authority_boundary": "Every case is pre-authorized explanatory/remediation knowledge. Structured vulnerability truth, risk policy, and runtime exposure remain outside this synthesis authority.",
+  "judgment_authority": "human_reviewed_claim_citation_pairs_v1",
+  "cases": [
+    {
+      "case_id": "grounding-hash-verification-01",
+      "question": "What supply-chain checks can help verify downloaded Python package artifacts during remediation?",
+      "authority_decision": "supported",
+      "expected_decision": "answer",
+      "expected_citation_chunk_ids": [
+        "knowledge-chunk:pypa-secure-installs:hashes:v1"
+      ]
+    },
+    {
+      "case_id": "grounding-transitive-review-01",
+      "question": "After upgrading a vulnerable package, how should I review transitive dependency changes?",
+      "authority_decision": "supported",
+      "expected_decision": "answer",
+      "expected_citation_chunk_ids": [
+        "knowledge-chunk:pypa-dependency-management:transitive-review:v1",
+        "knowledge-chunk:uv-locking:diff-review:v1"
+      ]
+    },
+    {
+      "case_id": "grounding-isolation-01",
+      "question": "Why is it useful to validate a remediated dependency in an isolated environment before deployment?",
+      "authority_decision": "supported",
+      "expected_decision": "answer",
+      "expected_citation_chunk_ids": [
+        "knowledge-chunk:dependency-remediation-validation:isolation:v1"
+      ]
+    },
+    {
+      "case_id": "grounding-insufficient-pip-tls-cipher-01",
+      "question": "Which exact TLS cipher suite does pip require when downloading a dependency during remediation?",
+      "authority_decision": "supported",
+      "expected_decision": "insufficient_evidence",
+      "expected_citation_chunk_ids": []
+    }
+  ]
+}
