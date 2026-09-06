@@ -25,17 +25,18 @@ Phase 7    Knowledge Retrieval with Bedrock                    COMPLETE
   Gate 7.8 Phase 7 closeout                                    COMPLETE / MERGED
 Phase 8    Hybrid Retrieval                                    IN PROGRESS
   Gate 8.1 Offline hybrid routing + authority contract         COMPLETE / MERGED
-  Gate 8.2 Deterministic hybrid evidence envelope              NEXT
+  Gate 8.2 Deterministic hybrid evidence envelope              COMPLETE / MERGED
+  Gate 8.3 Frozen hybrid evaluation fixture                    NEXT
 ```
 
-Latest merged checkpoint:
+Latest merged executable checkpoint:
 
 ```text
-Phase 8 Gate 8.1 / PR #105
-d234f6a18af1cbbeafe6e6cb0693a9d42e58742d
+Phase 8 Gate 8.2 / PR #109
+aea3b66b83bee5d06bc4efab06538dc094df51e6
 ```
 
-Gate 8.1 tracking issue #104 is closed as completed.
+Gate 8.2 tracking issue #107 is closed as completed.
 
 ## Permanent boundaries
 
@@ -53,9 +54,9 @@ Gate 8.1 tracking issue #104 is closed as completed.
 
 > **Intent classification != execution authority.**
 
-Deterministic authorities own package normalization, version/range matching, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS evidence, Risk Policy, semantic-query validation and SQL compilation, canonical corpus construction, retrieval evidence admission, context assembly, citation authority, output admission, evaluation metric computation, hybrid route authorization, and execution limits.
+Deterministic authorities own package normalization, version/range matching, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS evidence, Risk Policy, semantic-query validation and SQL compilation, canonical corpus construction, retrieval evidence admission, context assembly, citation authority, output admission, evaluation metric computation, hybrid route authorization, hybrid evidence admission/completeness, canonical evidence identity, and execution limits.
 
-LLMs may classify, plan, synthesize, explain, route proposals, and select among already-admitted citation IDs. They do not replace structured truth, invent source authority, or directly authorize structured/semantic execution.
+LLMs may classify, plan, synthesize, explain, propose routes, and select among already-admitted citation IDs. They do not replace structured truth, invent source authority, directly authorize structured/semantic execution, or manufacture hybrid evidence completeness.
 
 ## Implemented system
 
@@ -85,9 +86,12 @@ Typed EvidenceNeed proposal
  -> deterministic route_evidence_request
  -> HybridRouteDecision
  -> STRUCTURED | SEMANTIC | HYBRID | UNSUPPORTED
+ -> deterministic evidence projection/admission
+ -> need-level + class-level ALL_REQUIRED verification
+ -> HybridEvidenceEnvelope
 ```
 
-The structured and semantic paths are complementary. Structured vulnerability/risk facts remain outside RAG authority. Gate 8.1 authorizes evidence classes only; it does not execute Athena, Bedrock Retrieve, S3 Vectors, a model, or hybrid synthesis.
+The structured and semantic paths are complementary. Structured vulnerability/risk facts remain outside RAG authority. Phase 8 now has deterministic routing and evidence composition, but it has not introduced hybrid model synthesis.
 
 ## Phase 7 AWS baseline
 
@@ -352,53 +356,184 @@ Final executable PR head:
 2d73b03030b3a2b0334fbd15dcfba798661f49c4
 ```
 
-Python CI #298 / run `34047512871` passed all six jobs, including the new explicit `Hybrid retrieval quality gates` slice:
-
-```text
-uv lock --check  PASS
-Ruff             PASS
-Pyright strict   PASS
-pytest           PASS
-```
+Python CI #298 / run `34047512871` passed all six jobs, including the explicit `Hybrid retrieval quality gates` slice.
 
 An earlier run failed strict Pyright because direct runtime `isinstance` checks on statically typed parameters triggered `reportUnnecessaryIsInstance`. The fix preserved runtime validation behind `object`-typed admission helpers; no `type: ignore` or weakened type-checking rule was introduced.
 
-Gate 8.1 created:
+## Phase 8 Gate 8.2 — Deterministic hybrid evidence envelope
+
+Gate 8.2 froze deterministic composition after routing and before any future hybrid synthesis.
+
+Contract version:
 
 ```text
-AWS resources: 0
-IAM changes:   0
-Athena calls:  0
-Bedrock calls: 0
-S3 Vectors calls: 0
-model calls:   0
+hybrid-evidence:v1
 ```
 
-The frozen Phase 7 Gate 7.5 and Gate 7.7 quality baselines were not modified.
-
-## Gate 8.2 entry criteria
-
-Gate 8.2 starts from these frozen assumptions:
+Core composition:
 
 ```text
-1. structured vulnerability/risk truth remains deterministic authority
-2. semantic retrieval remains explanatory/remediation evidence
-3. intent classification is a proposal, not execution authority
-4. the Gate 8.1 route decision authorizes evidence classes deterministically
-5. HYBRID v1 requires all required evidence classes
+HybridRouteDecision
+ + StructuredEvidenceRow[]
+ + SemanticEvidenceChunk[]
+ -> HybridEvidenceEnvelope
+```
+
+The envelope deliberately keeps structured and semantic evidence in separate collections. It is a composition artifact, not a new undifferentiated source of truth.
+
+### Structured authority
+
+The deliberately small v1 authority map is:
+
+```text
+vulnerability_facts
+ -> repository_analysis
+ -> semantic_query
+
+risk_priority
+ -> risk_policy
+```
+
+`semantic_query` here is the existing Phase 6 bounded structured-query subsystem. Its admitted factual output remains structured evidence because deterministic query validation and SQL compilation own the authority boundary; the name does not make it vector/RAG evidence.
+
+Structured evidence binds:
+
+```text
+evidence need
+authority
+source artifact ID
+source artifact SHA-256
+row key
+canonical scalar fields
+content-addressed evidence ID
+```
+
+Risk Policy evidence cannot be relabeled as vulnerability applicability, repository-analysis evidence cannot be relabeled as `risk_priority`, and structured evidence cannot satisfy `remediation_guidance`.
+
+### Semantic evidence
+
+Gate 8.2 projects already-admitted Phase 7 retrieval evidence without promoting similarity into factual authority. The projection preserves retrieval ID, rank, chunk/document/source IDs, source type, canonical URI, exact content hashes/text, optional relevance score, title, and section path.
+
+For v1, one envelope semantic set must come from exactly one admitted retrieval operation and keep contiguous ranks from 1.
+
+A provider relevance score remains provenance/measurement evidence only. It does not establish applicability, risk, answerability, or authority.
+
+### Need-level completeness
+
+Class-level presence is necessary but insufficient.
+
+For example:
+
+```text
+requested needs:
+  vulnerability_facts
+  risk_priority
+
+required class:
+  STRUCTURED
+```
+
+One arbitrary structured row does not satisfy both needs. A successful v1 envelope requires:
+
+```text
+satisfied_evidence_needs
+ ==
+authority_decision.evidence_needs
+```
+
+Evidence for an unrequested class or need is also rejected. Successful envelopes are therefore complete by construction under `ALL_REQUIRED`; partial/best-effort envelopes are not a normal success state in v1.
+
+### Deterministic identity and provenance
+
+Canonical ordering applies to structured fields, structured evidence rows, semantic chunks, and class provenance memberships. Structured rows, semantic chunks, and the final envelope all receive content-addressed identities.
+
+The envelope identity binds:
+
+```text
+hybrid-evidence contract version
+exact Gate 8.1 authority decision ID
+ALL_REQUIRED completeness
+exact satisfied evidence needs
+exact structured evidence IDs
+exact semantic evidence IDs
+```
+
+This supports reproducible evaluation/audit without converting a hash into semantic truth or confidence.
+
+ADR:
+
+```text
+docs/adr/0026-deterministic-hybrid-evidence-envelope.md
+```
+
+Lab record:
+
+```text
+labs/phase-8-gate-8-2-hybrid-evidence-envelope.md
+```
+
+### Gate 8.2 validation
+
+Final executable PR head:
+
+```text
+70ef54a0a56844b6429c0b8a739352b31d076580
+```
+
+Python CI #302 / run `34048762536` passed all six jobs. The dedicated hybrid slice passed:
+
+```text
+uv lock --check        PASS
+Ruff                   PASS
+Pyright strict         PASS — 0 errors, 0 warnings
+pytest hybrid slice    PASS — 39 passed
+```
+
+The initial PR run exposed lint-only defects: import ordering and Python 3.13's preferred PEP 695 `type` alias syntax. They were corrected directly. No lint suppression, `type: ignore`, weakened strictness, or semantic workaround was introduced.
+
+PR #109 was then squash-merged using exact validated expected head `70ef54a0a56844b6429c0b8a739352b31d076580`, producing:
+
+```text
+aea3b66b83bee5d06bc4efab06538dc094df51e6
+```
+
+Gate 8.2 created/executed:
+
+```text
+AWS resources:     0
+IAM changes:       0
+Athena calls:      0
+Bedrock calls:     0
+S3 Vectors calls:  0
+model calls:       0
+```
+
+The Phase 7 Gate 7.5/Gate 7.7 baselines and Gate 8.1 routing semantics remain unchanged.
+
+## Gate 8.3 entry criteria
+
+Gate 8.3 starts from these frozen assumptions:
+
+```text
+1. Gate 8.1 owns deterministic evidence-class routing authority
+2. Gate 8.2 owns deterministic admitted evidence composition
+3. structured and semantic provenance remain distinguishable end to end
+4. hybrid v1 remains ALL_REQUIRED by class and exact evidence need
+5. successful retrieval/relevance scores do not establish structured truth
 6. runtime_exposure remains unsupported without runtime authority
-7. combined evidence must preserve provenance by evidence class
+7. partial/best-effort hybrid envelopes are not a v1 success state
 8. Gate 7.7 baseline remains immutable
-9. no new AWS service is added without a measured requirement
-10. quality, cost, failure, and observability remain separately measurable
+9. Gate 8.3 must freeze evaluation cases/metrics before model synthesis
+10. no new AWS service is added without a measured requirement
+11. no Gate 8.4 synthesis is allowed before the Gate 8.3 fixture is merged
 ```
 
 ## Validation note
 
-PR #105 was squash-merged only after Python CI #298 passed against exact executable head `2d73b03030b3a2b0334fbd15dcfba798661f49c4`. The merge used that SHA as the expected head and produced main commit `d234f6a18af1cbbeafe6e6cb0693a9d42e58742d`.
+PR #109 changed executable hybrid-retrieval code and was squash-merged only after Python CI #302 passed against exact executable head `70ef54a0a56844b6429c0b8a739352b31d076580`.
 
 This post-merge state synchronization changes documentation only. The repository `Python CI` pull-request workflow intentionally filters away documentation-only changes, so no new executable validation is expected for this state-only update.
 
 ## Next action
 
-Begin **Phase 8 — Gate 8.2: Deterministic Hybrid Evidence Envelope** from merged Gate 8.1 main. Do not flatten structured and semantic provenance into one undifferentiated evidence authority.
+Begin **Phase 8 — Gate 8.3: Frozen Hybrid Evaluation Fixture** from merged Gate 8.2 main. Freeze cases and deterministic metrics before any Gate 8.4 hybrid model synthesis or optimization.
