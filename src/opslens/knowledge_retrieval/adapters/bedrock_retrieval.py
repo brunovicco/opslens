@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import time
 from collections.abc import Callable, Mapping
 from typing import Protocol, cast
@@ -106,6 +107,48 @@ def _provider_diagnostic(exc: Exception) -> str:
     return f"provider_type={type(exc).__name__}"
 
 
+def _normalize_section_path_item(value: object) -> str:
+    """Normalize the observed Bedrock JSON-quoted string representation only."""
+    item = _require_string(
+        value,
+        field="retrieval_result.metadata.section_path item",
+        max_length=4096,
+    )
+    if not item.startswith('"') and not item.endswith('"'):
+        return item
+    if not item.startswith('"') or not item.endswith('"'):
+        raise BedrockRetrievalValidationError(
+            "retrieval_result.metadata.section_path item has malformed quoting"
+        )
+    try:
+        decoded = cast(object, json.loads(item))
+    except json.JSONDecodeError as exc:
+        raise BedrockRetrievalValidationError(
+            "retrieval_result.metadata.section_path item must contain valid JSON quoting"
+        ) from exc
+    if not isinstance(decoded, str) or not decoded or decoded != decoded.strip():
+        raise BedrockRetrievalValidationError(
+            "retrieval_result.metadata.section_path decoded item must be a trimmed string"
+        )
+    return decoded
+
+
+def _normalize_metadata(metadata: Mapping[str, object]) -> Mapping[str, object]:
+    """Normalize only provider representation drift observed in the real Gate 7.4 call."""
+    section_path = metadata.get("section_path")
+    if section_path is None:
+        return metadata
+    if not isinstance(section_path, list):
+        raise BedrockRetrievalValidationError(
+            "retrieval_result.metadata.section_path must be a list"
+        )
+    normalized = dict(metadata)
+    normalized["section_path"] = [
+        _normalize_section_path_item(item) for item in cast(list[object], section_path)
+    ]
+    return normalized
+
+
 def _parse_candidate(value: object) -> BedrockRetrievalCandidate:
     """Extract one text/S3 candidate without granting provider provenance authority."""
     result = _require_mapping(value, field="retrieval_result")
@@ -159,9 +202,11 @@ def _parse_candidate(value: object) -> BedrockRetrievalCandidate:
         max_length=4096,
     )
 
-    metadata = _require_mapping(
-        result.get("metadata"),
-        field="retrieval_result.metadata",
+    metadata = _normalize_metadata(
+        _require_mapping(
+            result.get("metadata"),
+            field="retrieval_result.metadata",
+        )
     )
     score = result.get("score")
     return BedrockRetrievalCandidate(
