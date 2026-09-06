@@ -4,7 +4,7 @@ _Date: 2026-09-06_
 
 ## Status
 
-**IN PROGRESS — EVALUATION CONTRACT FROZEN / METRIC IMPLEMENTATION NEXT.**
+**COMPLETE — REAL EVALUATION RECORDED / FINAL CI + SQUASH MERGE PENDING.**
 
 Gate 7.4 was squash-merged to `main` at:
 
@@ -12,45 +12,23 @@ Gate 7.4 was squash-merged to `main` at:
 7c25877e0ae9541a4f20b8537e4f77c88ee776a5
 ```
 
-The evaluation reuses the real direct-Retrieve runtime proven in Gate 7.4.
-
-## Goal
-
-Measure the raw semantic retrieval baseline independently from synthesis, reranking, hybrid search, and agentic behavior.
+Gate 7.5 measures the real direct-Retrieve runtime from Gate 7.4 before synthesis, reranking, hybrid search, or agentic behavior.
 
 Permanent rule:
 
 > Retrieval output is evidence, not deterministic truth.
 
-Gate 7.5 answers:
-
-> Given the frozen canonical corpus and frozen golden questions, how often does the correct explanatory/remediation evidence appear near the top of the real Bedrock Knowledge Base ranking?
-
 ## Frozen evaluation dataset
 
-Fixture:
-
 ```text
-tests/fixtures/knowledge_retrieval/golden_retrieval_v1.json
-```
-
-Dataset ID:
-
-```text
-knowledge-retrieval-golden:v1
-```
-
-Shape:
-
-```text
-10 total cases
- 8 positive cases with one or more relevant canonical chunk IDs
- 2 negative/out-of-authority cases with no relevant canonical chunk IDs
+fixture:    tests/fixtures/knowledge_retrieval/golden_retrieval_v1.json
+dataset id: knowledge-retrieval-golden:v1
+cases:      10 total / 8 positive / 2 negative-out-of-authority
 ```
 
 The fixture authority remains explanatory/remediation knowledge only. Structured NVD, KEV, EPSS, CVSS, GHSA applicability, repository versions, risk scores, and runtime exposure remain outside the corpus authority.
 
-Do not relabel cases after observing real retrieval results. Any future label change requires an explicit versioned dataset change.
+No labels were changed after observing provider outcomes.
 
 ## Real runtime under evaluation
 
@@ -66,255 +44,236 @@ reranking:         disabled
 synthesis:         absent
 ```
 
-The evaluation uses the Gate 7.4 checked-corpus admission path. Provider-returned results count only after deterministic location/hash/byte-count/metadata/provenance validation succeeds.
+Provider results count only after Gate 7.4 deterministic location/hash/byte-count/metadata/provenance admission succeeds.
 
 ## Bounded query strategy
 
-Run exactly one real Retrieve request per fixture case with:
+Exactly one real request was executed per fixture case:
 
 ```text
 top_k = 10
+real attempts = 10
+application-level replay = 0
 ```
 
-Why one call per case:
+`Recall@1`, `@3`, `@5`, and `@10` are derived from the same ranking. The corpus contains nine vectors, so Bedrock validly returned nine results for each `top_k=10` request.
 
-- `Recall@1`, `@3`, `@5`, and `@10` can be derived from the same ranking;
-- avoids 4x provider calls merely to change the cutoff;
-- preserves one ranking per question;
-- keeps query cost and rate pressure bounded;
-- corpus contains only nine vectors, so a `top_k=10` request may validly return nine results.
+This keeps evaluation cost bounded and avoids comparing different provider rankings merely because K changed.
 
-Expected real-call budget for the full fixture:
+## Real execution
+
+The first shell attempt never reached application code because the repository uses a `src/` layout without installing the project package into the `uv run` environment. The failure was:
 
 ```text
-10 Retrieve calls total
+ModuleNotFoundError: No module named 'opslens'
 ```
 
-Do not retry evaluation cases automatically in v1. A provider/runtime failure is recorded as a failed case with its safe failure category; rerunning requires an explicit operator decision so transient failures are not silently erased from evidence.
+No AWS retrieval call occurred in that attempt.
 
-## Positive-case metrics
+The operational invocation was corrected without changing project packaging:
 
-Positive cases are those with:
+```bash
+PYTHONPATH=src uv run python -m opslens.knowledge_retrieval.cli.run_bedrock_retrieval_evaluation \
+  --knowledge-base-id BTVJ2PBR2A \
+  --data-source-id IEL1LBE026 \
+  --source-bucket opslens-dev-data-487757851499-us-east-1 \
+  --region us-east-1
+```
+
+Changing packaging/build metadata solely for this gate would be unrelated scope. The lab therefore documents the explicit `PYTHONPATH=src` requirement.
+
+Real execution result:
 
 ```text
-should_have_relevant_evidence = true
+exit code:          0
+complete:           true
+real attempts:      10
+successful cases:   10
+provider failures:  0
+admission failures: 0
+SDK retries:        0
+results per case:   9
 ```
 
-### Recall@K
+The emitted evidence contained no raw question text and no retrieved source text.
 
-For one positive case and cutoff `K`:
+## Aggregate retrieval quality
 
 ```text
-Recall@K(case) = 1
-  if at least one fixture relevant_chunk_id appears in ranks 1..K
-else 0
+Recall@1:   0.375  (3 / 8 positive cases)
+Recall@3:   0.750  (6 / 8)
+Recall@5:   0.875  (7 / 8)
+Recall@10:  1.000  (8 / 8)
+MRR:        0.5699404761904762
 ```
 
-Aggregate:
+Relevant-hit provenance:
 
 ```text
-Recall@K = sum(case hits) / number of positive cases
+relevant hits:       9
+provenance correct:  9
+correctness rate:    1.0
 ```
 
-Frozen cutoffs:
+All relevant hits used canonical checked-corpus document/source identities rather than provider-owned identity.
+
+### Positive-case ranks
+
+| Case | First relevant rank | RR | Latency ms |
+| --- | ---: | ---: | ---: |
+| `remediation-python-upgrade-01` | 3 | 0.333333 | 1728 |
+| `remediation-lock-refresh-01` | 1 | 1.000000 | 627 |
+| `remediation-hash-verification-01` | 1 | 1.000000 | 566 |
+| `remediation-advisory-guidance-01` | 7 | 0.142857 | 700 |
+| `remediation-transitive-review-01` | 3 | 0.333333 | 617 |
+| `remediation-validation-01` | 2 | 0.500000 | 559 |
+| `documentation-version-constraints-01` | 4 | 0.250000 | 665 |
+| `documentation-isolation-01` | 1 | 1.000000 | 532 |
+
+The weakest positive case is `remediation-advisory-guidance-01`: the expected vendor-advisory remediation chunk appeared only at rank 7. This is preserved as baseline evidence rather than relabeled after observation.
+
+`Recall@10 = 1.0` must not be overinterpreted. With only nine vectors and `top_k=10`, it mainly proves that every positive target exists somewhere in the full returned corpus ranking. `Recall@3`, `Recall@5`, and MRR are more useful baseline ranking signals.
+
+The current runtime default remains `top_k=5`. The evaluation shows that this would contain relevant evidence for seven of eight positive cases, while the vendor-advisory case would be missed. Gate 7.5 records the weakness; it does not tune retrieval after seeing the test set.
+
+## Negative/out-of-authority evidence
+
+Both negative cases returned nine nearest-neighbor candidates:
 
 ```text
-K = 1, 3, 5, 10
+negative_nonempty_retrieval_rate = 1.0
 ```
 
-Because the current corpus contains nine vectors, `Recall@10` means “relevant evidence appears anywhere in the provider ranking returned for the bounded top_k=10 request.”
+| Case | Rank-1 chunk | Rank-1 score | Latency ms |
+| --- | --- | ---: | ---: |
+| `negative-runtime-exposure-01` | `knowledge-chunk:dependency-remediation-validation:post-change:v1` | 0.6890382468700409 | 590 |
+| `negative-uncovered-ecosystem-01` | `knowledge-chunk:dependency-remediation-validation:post-change:v1` | 0.6880056560039520 | 616 |
 
-### Reciprocal rank / MRR
+This is expected behavior for nearest-neighbor search and is architecturally important:
 
-For one positive case:
+- non-empty retrieval does not prove the corpus has authority to answer the question;
+- provider relevance scores are not calibrated probabilities;
+- the negative rank-1 scores overlap scores observed for valid positive evidence;
+- an arbitrary global score threshold would therefore be unsupported by this fixture;
+- routing/authority checks must happen before synthesis rather than relying on vector score as an abstention oracle.
+
+This reinforces the OpsLens rule:
+
+> Not every question is a RAG problem.
+
+The runtime-exposure negative case especially reinforces:
+
+> Repository Risk != Runtime Exposure.
+
+## Latency and retry evidence
 
 ```text
-RR(case) = 1 / rank_of_first_relevant_chunk
+count:    10
+min:      532 ms
+max:      1728 ms
+mean:     720.0 ms
+p50:      616 ms
+p95:      1728 ms
+total SDK retries: 0
 ```
 
-If no relevant chunk is returned:
+Percentiles use the frozen nearest-rank definition.
+
+The first request was the 1728 ms maximum while the remaining requests were 532–700 ms. The fixture is too small to claim warm-up causality or a production SLO, so this remains observational lab evidence only.
+
+## Provider request IDs
 
 ```text
-RR(case) = 0
+remediation-python-upgrade-01:         481b1c21-a362-4314-a187-ea0f7ed527e2
+remediation-lock-refresh-01:           50e8f5c8-7cdb-4efb-9b4b-3b58c896f4c7
+remediation-hash-verification-01:      6a16159f-fd08-44c9-b594-f8d0940f437b
+remediation-advisory-guidance-01:      d16dcec5-a5ea-4882-982d-090e4a21ac7a
+remediation-transitive-review-01:      fd91b242-6b9d-44d8-9e5e-8804ca8a2b1b
+remediation-validation-01:             a967e17d-654f-4250-b35a-a3955df37d5e
+documentation-version-constraints-01:  9914d48e-92b5-4b3f-a6e7-26a9269ea913
+documentation-isolation-01:            734bc5e9-c41c-43b7-a21b-03ef51d2a06c
+negative-runtime-exposure-01:          cd2f7eb0-2115-4fab-a3ff-2f41d85d7d7a
+negative-uncovered-ecosystem-01:       84617a01-f1b7-4f67-b97a-26a068f88c67
 ```
-
-Aggregate:
-
-```text
-MRR = mean(RR over all positive cases)
-```
-
-For cases with multiple relevant chunk IDs, the first relevant result defines reciprocal rank.
-
-## Provenance/source correctness
-
-The Gate 7.4 admission boundary already guarantees that admitted chunk provenance comes from the checked manifest rather than provider-invented identity.
-
-Gate 7.5 additionally compares relevant hits with the fixture labels:
-
-```text
-chunk_id in relevant_chunk_ids
-canonical document_id in relevant_document_ids
-source_type in expected_source_types
-```
-
-Record:
-
-```text
-relevant_hit_count
-relevant_hit_provenance_correct_count
-relevant_hit_provenance_correct_rate
-```
-
-A provider score does not override a fixture/provenance mismatch.
-
-## Negative-case evidence
-
-Negative cases have:
-
-```text
-should_have_relevant_evidence = false
-relevant_chunk_ids = []
-```
-
-A nearest-neighbor vector search is not expected to abstain automatically. Therefore Gate 7.5 does **not** invent a score threshold or treat an empty fixture label as proof that Bedrock should return zero candidates.
-
-For each negative case record observational evidence:
-
-```text
-returned_result_count
-rank-1 chunk identity
-rank-1 relevance score when present
-maximum relevance score when present
-minimum relevance score when present
-```
-
-Aggregate:
-
-```text
-negative_nonempty_retrieval_rate
-negative_rank1_score distribution
-```
-
-This evidence informs later routing/abstention/context-admission decisions. Provider relevance scores remain uncalibrated evidence and are not interpreted as probabilities.
-
-## Latency metrics
-
-Use Gate 7.4 `client_elapsed_ms` per real Retrieve call.
-
-Record:
-
-```text
-count
-min
-max
-mean
-p50
-p95
-```
-
-Percentiles use the deterministic nearest-rank definition over the sorted observed values:
-
-```text
-rank = ceil(p * N)
-value = sorted_values[rank - 1]
-```
-
-With only ten cases, latency percentiles are laboratory evidence, not a production SLO claim.
 
 ## Cost evidence
 
-Count actual real Retrieve attempts and successful populated-index searches.
+OpsLens uses a **customer-managed Bedrock Knowledge Base** with S3 Vectors, not the newer Bedrock Managed Knowledge Base product. The two architectures have different pricing surfaces and must not be conflated.
 
-For the planned ten-case run, use current published pricing assumptions and report components separately:
+For S3 Vectors, current AWS pricing separates query cost into request, data-processed, and data-returned components.
+
+Observed populated-index searches:
 
 ```text
-S3 Vectors query request component
-S3 Vectors processed-data component when estimable
-query embedding model usage when provider telemetry supports it
+10
 ```
 
-Do not fabricate exact query-embedding token counts or billable vector bytes when the response does not expose them.
+Published S3 Vectors query-request rate used by this lab:
 
-At the current S3 Vectors request fee of `$2.50 / 1,000,000 queries`, ten populated-index searches have a request-fee component of approximately:
+```text
+$2.50 / 1,000,000 queries
+```
+
+Request-fee component:
 
 ```text
 10 / 1,000,000 * $2.50 = $0.000025
 ```
 
-This excludes data-processed and embedding-model components.
+Do not treat `$0.000025` as the full retrieval bill. Exact S3 Vectors processed/returned bytes and Titan query-embedding token counts are not exposed by the Bedrock `Retrieve` response, so the lab does not fabricate those components. For this nine-vector fixture they are expected to be small, but only the request-fee component is calculated exactly from observed call count.
 
-## Output evidence contract
+Official references:
 
-The evaluation runner must emit deterministic JSON/Markdown evidence without retrieved source text.
+- Amazon S3 pricing — S3 Vectors: https://aws.amazon.com/s3/pricing/
+- Amazon Bedrock pricing: https://aws.amazon.com/bedrock/pricing/
+- Bedrock Knowledge Bases types: https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html
 
-Per-case evidence:
+## Security / authority conclusions
 
-```text
-case_id
-question_sha256
-should_have_relevant_evidence
-relevant_chunk_ids from frozen fixture
-returned canonical chunk IDs by rank
-provider scores by rank when present
-client_elapsed_ms
-provider_request_id
-retry_attempts
-success/failure category
-positive hit cutoffs / reciprocal rank when applicable
-negative observational fields when applicable
-```
+Gate 7.5 did not widen IAM or provider authority.
 
-Aggregate evidence:
+The evaluation proves:
 
 ```text
-dataset_id
-knowledge_base_id
-case count / positive count / negative count
-Recall@1 / Recall@3 / Recall@5 / Recall@10
-MRR
-provenance correctness
-latency summary
-provider retry/failure counts
-real call count
-bounded cost assumptions
+provider ranking
+ -> deterministic checked-corpus admission
+ -> deterministic evaluation
 ```
 
-Raw query text may remain in the checked fixture but should not be duplicated into runtime operational output; use `question_sha256` in emitted evidence.
-
-Retrieved source text must not be emitted by the evaluation artifact.
-
-## Failure behavior
-
-Fail closed before or during aggregation on:
+It does not prove:
 
 ```text
-unknown fixture schema fields
-missing/duplicate case IDs
-invalid should_have_relevant_evidence values
-positive case with no relevant chunk IDs
-negative case with any relevant chunk/document/source labels
-fixture chunk ID not present in checked canonical catalog
-returned chunk identity not admitted by Gate 7.4
-more returned results than request top_k
-non-finite provider score
-provider/runtime failure without safe categorization
-case-count mismatch
-attempt to aggregate two records for one case
+provider score -> truth
+provider score -> confidence probability
+non-empty retrieval -> question is in corpus authority
+Recall@10 -> production-quality ranking
 ```
 
-Provider/runtime failures are recorded as case failures and must not be silently converted into retrieval misses.
+No synthesis, reranking, hybrid search, arbitrary provider filter, or runtime IAM expansion was introduced.
+
+## AIP-C01 learning conclusions
+
+Reusable rules from this gate:
+
+1. Evaluate retrieval independently from generation when diagnosing RAG quality.
+2. Derive multiple Recall@K cutoffs from one ranking when possible to reduce calls and variance.
+3. MRR exposes ranking weakness that Recall@large-K can hide.
+4. Vector similarity scores require calibration before they can support thresholds or abstention.
+5. Negative/out-of-domain examples are necessary even when a vector store always returns nearest neighbors.
+6. Retrieval provenance correctness is separate from retrieval relevance.
+7. Small-sample latency percentiles are troubleshooting evidence, not production SLOs.
+8. Customer-managed and managed Knowledge Bases have different infrastructure and cost responsibilities.
 
 ## Increment plan
 
 ```text
 7.5a  freeze metric + evidence contract                         COMPLETE
-7.5b  strict golden-fixture loader                              NEXT
-7.5c  deterministic offline metric aggregation                  PENDING
-7.5d  bounded real evaluation runner                            PENDING
-7.5e  execute exactly one top_k=10 run per fixture case         PENDING
-7.5f  analyze metrics/latency/cost + negative evidence          PENDING
-7.5g  docs/state closeout + final CI + squash merge             PENDING
+7.5b  strict golden-fixture loader                              COMPLETE
+7.5c  deterministic offline metric aggregation                  COMPLETE
+7.5d  bounded real evaluation runner                            COMPLETE
+7.5e  execute exactly one top_k=10 run per fixture case         COMPLETE
+7.5f  analyze metrics/latency/cost + negative evidence          COMPLETE
+7.5g  docs/state closeout + final CI + squash merge             IN PROGRESS
 ```
 
 ## Exit criteria
@@ -322,36 +281,21 @@ Provider/runtime failures are recorded as case failures and must not be silently
 - [x] Gate 7.4 squash-merged before evaluation work;
 - [x] frozen ten-case fixture reused without outcome-driven relabeling;
 - [x] one-call-per-case `top_k=10` strategy frozen;
-- [x] Recall@1/@3/@5/@10 definitions frozen;
-- [x] MRR definition frozen;
-- [x] provenance/source correctness definition frozen;
-- [x] negative-case evidence explicitly observational, not an invented confidence threshold;
-- [x] latency percentile definition frozen;
-- [x] cost accounting boundaries frozen;
-- [ ] strict fixture loader implemented;
-- [ ] deterministic metric aggregator implemented and unit-tested;
-- [ ] bounded real runner implemented and CI green;
-- [ ] ten real fixture cases executed once each;
-- [ ] aggregate retrieval metrics recorded;
-- [ ] failure/retry/latency/cost evidence recorded;
-- [ ] docs/current state/roadmap/architecture synchronized;
-- [ ] PR squash-merged.
+- [x] strict fixture loader implemented;
+- [x] deterministic Recall/MRR/provenance/latency metric core implemented and unit-tested;
+- [x] bounded real runner implemented;
+- [x] ten real fixture cases executed exactly once each;
+- [x] aggregate retrieval metrics recorded;
+- [x] negative/out-of-authority evidence recorded;
+- [x] provider request IDs, latency, retries, and bounded cost evidence recorded;
+- [x] relevance scores kept non-authoritative and uncalibrated;
+- [x] current-state/roadmap/architecture closeout prepared;
+- [ ] final CI green after closeout docs;
+- [ ] PR #98 ready for review;
+- [ ] PR #98 squash-merged.
 
-## Next authorized implementation step
+## Next authorized step
 
-Implement **7.5b + 7.5c offline only**:
+Run final CI on the closeout commit. If green, confirm mergeability, mark PR #98 ready for review, and squash-merge Gate 7.5.
 
-1. strict loader for `golden_retrieval_v1.json`;
-2. validate every positive fixture chunk against the checked Gate 7.2 catalog;
-3. deterministic per-case Recall/RR and aggregate Recall@K/MRR/provenance metrics;
-4. negative-case observational aggregation;
-5. unit tests with no AWS calls.
-
-Do not run the ten-case real evaluation until the evaluator is deterministic and CI-green.
-
-## Official pricing references
-
-- Amazon S3 pricing — S3 Vectors:
-  https://aws.amazon.com/s3/pricing/
-- Amazon Bedrock pricing:
-  https://aws.amazon.com/bedrock/pricing/
+Do not start Gate 7.6 inside PR #98.
