@@ -125,6 +125,18 @@ def _normalize_structured_scalar(value: object) -> StructuredScalar:
     )
 
 
+def _normalize_relevance_score(value: object) -> float | None:
+    """Normalize one optional provider score without granting authority semantics."""
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise HybridRetrievalValidationError("relevance_score must be numeric.")
+    normalized_score = float(value)
+    if not math.isfinite(normalized_score):
+        raise HybridRetrievalValidationError("relevance_score must be finite.")
+    return normalized_score
+
+
 def _normalize_section_path(value: object) -> tuple[str, ...]:
     """Validate one ordered section path without silently inventing hierarchy."""
     if not isinstance(value, tuple):
@@ -136,6 +148,21 @@ def _normalize_section_path(value: object) -> tuple[str, ...]:
     if len(set(normalized)) != len(normalized):
         raise HybridRetrievalValidationError("section_path cannot contain duplicates.")
     return normalized
+
+
+def _normalize_evidence_ids(value: object) -> tuple[str, ...]:
+    """Validate one non-empty tuple of unique evidence identities."""
+    if not isinstance(value, tuple):
+        raise HybridRetrievalValidationError("evidence_ids must be a tuple.")
+    raw_ids = cast(tuple[object, ...], value)
+    normalized_ids = tuple(
+        _normalize_required_text(item, "evidence_id") for item in raw_ids
+    )
+    if not normalized_ids:
+        raise HybridRetrievalValidationError("evidence class provenance cannot be empty.")
+    if len(set(normalized_ids)) != len(normalized_ids):
+        raise HybridRetrievalValidationError("evidence class provenance IDs must be unique.")
+    return tuple(sorted(normalized_ids))
 
 
 @dataclass(frozen=True, slots=True)
@@ -255,18 +282,31 @@ class SemanticEvidenceChunk:
 
     def __post_init__(self) -> None:
         """Reject malformed semantic provenance, content identity, rank, or score."""
-        for field_name in (
+        object.__setattr__(
+            self,
             "retrieval_id",
+            _normalize_required_text(self.retrieval_id, "retrieval_id"),
+        )
+        object.__setattr__(
+            self,
             "chunk_id",
+            _normalize_required_text(self.chunk_id, "chunk_id"),
+        )
+        object.__setattr__(
+            self,
             "document_id",
+            _normalize_required_text(self.document_id, "document_id"),
+        )
+        object.__setattr__(
+            self,
             "source_id",
+            _normalize_required_text(self.source_id, "source_id"),
+        )
+        object.__setattr__(
+            self,
             "source_type",
-        ):
-            object.__setattr__(
-                self,
-                field_name,
-                _normalize_required_text(getattr(self, field_name), field_name),
-            )
+            _normalize_required_text(self.source_type, "source_type"),
+        )
         object.__setattr__(
             self,
             "canonical_uri",
@@ -286,15 +326,11 @@ class SemanticEvidenceChunk:
         object.__setattr__(self, "chunk_content_sha256", chunk_digest)
         if type(self.rank) is not int or self.rank < 1:
             raise HybridRetrievalValidationError("semantic chunk rank must be positive.")
-        if self.relevance_score is not None:
-            if isinstance(self.relevance_score, bool) or not isinstance(
-                self.relevance_score, (int, float)
-            ):
-                raise HybridRetrievalValidationError("relevance_score must be numeric.")
-            normalized_score = float(self.relevance_score)
-            if not math.isfinite(normalized_score):
-                raise HybridRetrievalValidationError("relevance_score must be finite.")
-            object.__setattr__(self, "relevance_score", normalized_score)
+        object.__setattr__(
+            self,
+            "relevance_score",
+            _normalize_relevance_score(self.relevance_score),
+        )
         object.__setattr__(self, "title", _normalize_optional_text(self.title, "title"))
         object.__setattr__(self, "section_path", _normalize_section_path(self.section_path))
 
@@ -390,17 +426,7 @@ class EvidenceClassProvenance:
     def __post_init__(self) -> None:
         """Require one recognized class and one non-empty unique evidence-ID tuple."""
         _require_runtime_instance(self.evidence_class, EvidenceClass, "evidence_class")
-        if not isinstance(self.evidence_ids, tuple):
-            raise HybridRetrievalValidationError("evidence_ids must be a tuple.")
-        raw_ids = cast(tuple[object, ...], self.evidence_ids)
-        normalized_ids = tuple(
-            _normalize_required_text(item, "evidence_id") for item in raw_ids
-        )
-        if not normalized_ids:
-            raise HybridRetrievalValidationError("evidence class provenance cannot be empty.")
-        if len(set(normalized_ids)) != len(normalized_ids):
-            raise HybridRetrievalValidationError("evidence class provenance IDs must be unique.")
-        object.__setattr__(self, "evidence_ids", tuple(sorted(normalized_ids)))
+        object.__setattr__(self, "evidence_ids", _normalize_evidence_ids(self.evidence_ids))
 
 
 @dataclass(frozen=True, slots=True)
@@ -500,7 +526,12 @@ class HybridEvidenceEnvelope:
                     evidence_ids=tuple(item.evidence_id for item in self.semantic_evidence),
                 )
             )
-        return tuple(sorted(provenance, key=lambda item: _EVIDENCE_CLASS_ORDER[item.evidence_class]))
+        return tuple(
+            sorted(
+                provenance,
+                key=lambda item: _EVIDENCE_CLASS_ORDER[item.evidence_class],
+            )
+        )
 
     @property
     def identity_sha256(self) -> str:
