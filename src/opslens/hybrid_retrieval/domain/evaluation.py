@@ -131,6 +131,22 @@ def _require_runtime_instance(
         raise HybridRetrievalValidationError(f"{label} has an unsupported value.")
 
 
+def _require_tuple_of[T](
+    value: object,
+    expected_type: type[T],
+    label: str,
+) -> tuple[T, ...]:
+    """Return an immutable tuple whose members have one exact runtime contract."""
+    if not isinstance(value, tuple):
+        raise HybridRetrievalValidationError(f"{label} must be a tuple.")
+    raw = cast(tuple[object, ...], value)
+    if any(not isinstance(item, expected_type) for item in raw):
+        raise HybridRetrievalValidationError(
+            f"{label} contains a value outside its frozen contract."
+        )
+    return cast(tuple[T, ...], raw)
+
+
 def _normalize_required_text(value: object, label: str) -> str:
     """Return one non-empty stripped string."""
     if not isinstance(value, str):
@@ -143,12 +159,8 @@ def _normalize_required_text(value: object, label: str) -> str:
 
 def _normalize_string_tuple(value: object, label: str) -> tuple[str, ...]:
     """Validate one duplicate-free tuple of non-empty strings."""
-    if not isinstance(value, tuple):
-        raise HybridRetrievalValidationError(f"{label} must be a tuple.")
-    raw_values = cast(tuple[object, ...], value)
-    normalized = tuple(
-        _normalize_required_text(item, f"{label} item") for item in raw_values
-    )
+    raw = _require_tuple_of(value, str, label)
+    normalized = tuple(_normalize_required_text(item, f"{label} item") for item in raw)
     if len(set(normalized)) != len(normalized):
         raise HybridRetrievalValidationError(f"{label} cannot contain duplicates.")
     return normalized
@@ -156,103 +168,12 @@ def _normalize_string_tuple(value: object, label: str) -> tuple[str, ...]:
 
 def _normalize_evidence_needs(value: object) -> tuple[EvidenceNeed, ...]:
     """Validate and canonically order one evidence-need tuple."""
-    if not isinstance(value, tuple):
-        raise HybridRetrievalValidationError("evidence_needs must be a tuple.")
-    raw = cast(tuple[object, ...], value)
-    if not raw or any(not isinstance(item, EvidenceNeed) for item in raw):
-        raise HybridRetrievalValidationError(
-            "evidence_needs must be a non-empty tuple of EvidenceNeed values."
-        )
-    typed = cast(tuple[EvidenceNeed, ...], raw)
+    typed = _require_tuple_of(value, EvidenceNeed, "evidence_needs")
+    if not typed:
+        raise HybridRetrievalValidationError("evidence_needs cannot be empty.")
     if len(set(typed)) != len(typed):
         raise HybridRetrievalValidationError("evidence_needs cannot contain duplicates.")
     return tuple(sorted(typed, key=lambda item: item.value))
-
-
-def _normalize_structured_rows(value: object) -> tuple[StructuredEvidenceRow, ...]:
-    """Validate one immutable structured-evidence tuple."""
-    if not isinstance(value, tuple):
-        raise HybridRetrievalValidationError("structured_evidence must be a tuple.")
-    raw = cast(tuple[object, ...], value)
-    if any(not isinstance(item, StructuredEvidenceRow) for item in raw):
-        raise HybridRetrievalValidationError(
-            "structured_evidence must contain only StructuredEvidenceRow values."
-        )
-    return cast(tuple[StructuredEvidenceRow, ...], raw)
-
-
-def _normalize_semantic_chunks(value: object) -> tuple[SemanticEvidenceChunk, ...]:
-    """Validate one immutable semantic-evidence tuple."""
-    if not isinstance(value, tuple):
-        raise HybridRetrievalValidationError("semantic_evidence must be a tuple.")
-    raw = cast(tuple[object, ...], value)
-    if any(not isinstance(item, SemanticEvidenceChunk) for item in raw):
-        raise HybridRetrievalValidationError(
-            "semantic_evidence must contain only SemanticEvidenceChunk values."
-        )
-    return cast(tuple[SemanticEvidenceChunk, ...], raw)
-
-
-def _normalize_expected_facts(value: object) -> tuple[ExpectedStructuredFact, ...]:
-    """Validate one immutable expected-fact tuple."""
-    if not isinstance(value, tuple):
-        raise HybridRetrievalValidationError(
-            "expected_structured_facts must be a tuple."
-        )
-    raw = cast(tuple[object, ...], value)
-    if any(not isinstance(item, ExpectedStructuredFact) for item in raw):
-        raise HybridRetrievalValidationError(
-            "expected_structured_facts must contain only ExpectedStructuredFact values."
-        )
-    return cast(tuple[ExpectedStructuredFact, ...], raw)
-
-
-def _normalize_metric_specs(value: object) -> tuple[HybridMetricSpec, ...]:
-    """Validate one immutable metric-spec tuple."""
-    if not isinstance(value, tuple):
-        raise HybridRetrievalValidationError("metric_specs must be a tuple.")
-    raw = cast(tuple[object, ...], value)
-    if any(not isinstance(item, HybridMetricSpec) for item in raw):
-        raise HybridRetrievalValidationError(
-            "metric_specs must contain only HybridMetricSpec values."
-        )
-    return cast(tuple[HybridMetricSpec, ...], raw)
-
-
-def _normalize_cases(value: object) -> tuple[HybridEvaluationCase, ...]:
-    """Validate one immutable evaluation-case tuple."""
-    if not isinstance(value, tuple):
-        raise HybridRetrievalValidationError("cases must be a tuple.")
-    raw = cast(tuple[object, ...], value)
-    if any(not isinstance(item, HybridEvaluationCase) for item in raw):
-        raise HybridRetrievalValidationError(
-            "cases must contain only HybridEvaluationCase values."
-        )
-    return cast(tuple[HybridEvaluationCase, ...], raw)
-
-
-def _normalize_case_results(value: object) -> tuple[HybridOfflineCaseResult, ...]:
-    """Validate one immutable offline-result tuple."""
-    if not isinstance(value, tuple):
-        raise HybridRetrievalValidationError("case_results must be a tuple.")
-    raw = cast(tuple[object, ...], value)
-    if any(not isinstance(item, HybridOfflineCaseResult) for item in raw):
-        raise HybridRetrievalValidationError(
-            "case_results must contain only HybridOfflineCaseResult values."
-        )
-    return cast(tuple[HybridOfflineCaseResult, ...], raw)
-
-
-def _normalize_measurements(value: object) -> tuple[HybridMetricMeasurement, ...]:
-    """Validate one immutable measurement tuple."""
-    if not isinstance(value, tuple):
-        raise HybridRetrievalValidationError("measurements must be a tuple.")
-    raw = cast(tuple[object, ...], value)
-    if any(not isinstance(item, HybridMetricMeasurement) for item in raw):
-        raise HybridRetrievalValidationError(
-            "measurements must contain only HybridMetricMeasurement values."
-        )
-    return cast(tuple[HybridMetricMeasurement, ...], raw)
 
 
 def _scalar_identity(value: StructuredScalar) -> tuple[str, StructuredScalar]:
@@ -285,8 +206,7 @@ class HybridMetricSpec:
         _require_runtime_instance(self.metric, HybridMetricDimension, "metric")
         _require_runtime_instance(self.stage, HybridMetricStage, "stage")
         _require_runtime_instance(self.unit, HybridMetricUnit, "unit")
-        expected = _EXPECTED_METRIC_SHAPE.get(self.metric)
-        if expected != (self.stage, self.unit):
+        if _EXPECTED_METRIC_SHAPE.get(self.metric) != (self.stage, self.unit):
             raise HybridRetrievalValidationError(
                 "metric stage/unit does not match the frozen hybrid evaluation contract."
             )
@@ -324,7 +244,7 @@ class HybridEvaluationCase:
     expected_citation_chunk_ids: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        """Freeze fixture invariants without evaluating current implementation behavior."""
+        """Freeze fixture invariants without evaluating implementation behavior."""
         object.__setattr__(
             self,
             "case_id",
@@ -347,26 +267,30 @@ class HybridEvaluationCase:
             HybridExpectedAnswerBehavior,
             "expected_answer_behavior",
         )
+
         object.__setattr__(
             self,
             "evidence_needs",
             _normalize_evidence_needs(self.evidence_needs),
         )
-        object.__setattr__(
-            self,
+        structured = _require_tuple_of(
+            self.structured_evidence,
+            StructuredEvidenceRow,
             "structured_evidence",
-            _normalize_structured_rows(self.structured_evidence),
         )
-        object.__setattr__(
-            self,
+        semantic = _require_tuple_of(
+            self.semantic_evidence,
+            SemanticEvidenceChunk,
             "semantic_evidence",
-            _normalize_semantic_chunks(self.semantic_evidence),
         )
-        object.__setattr__(
-            self,
+        facts = _require_tuple_of(
+            self.expected_structured_facts,
+            ExpectedStructuredFact,
             "expected_structured_facts",
-            _normalize_expected_facts(self.expected_structured_facts),
         )
+        object.__setattr__(self, "structured_evidence", structured)
+        object.__setattr__(self, "semantic_evidence", semantic)
+        object.__setattr__(self, "expected_structured_facts", facts)
 
         supported_ids = _normalize_string_tuple(
             self.expected_supported_chunk_ids,
@@ -379,7 +303,7 @@ class HybridEvaluationCase:
         object.__setattr__(self, "expected_supported_chunk_ids", supported_ids)
         object.__setattr__(self, "expected_citation_chunk_ids", citation_ids)
 
-        semantic_chunk_ids = {item.chunk_id for item in self.semantic_evidence}
+        semantic_chunk_ids = {item.chunk_id for item in semantic}
         if not set(supported_ids).issubset(semantic_chunk_ids):
             raise HybridRetrievalValidationError(
                 "expected supported chunks must exist in semantic fixture evidence."
@@ -391,14 +315,11 @@ class HybridEvaluationCase:
 
         available_facts = {
             (field.name, _scalar_identity(field.value))
-            for row in self.structured_evidence
+            for row in structured
             for field in row.fields
         }
-        for expected_fact in self.expected_structured_facts:
-            candidate = (
-                expected_fact.name,
-                _scalar_identity(expected_fact.value),
-            )
+        for expected_fact in facts:
+            candidate = (expected_fact.name, _scalar_identity(expected_fact.value))
             if candidate not in available_facts:
                 raise HybridRetrievalValidationError(
                     "expected structured fact must exist in fixture structured evidence."
@@ -407,40 +328,84 @@ class HybridEvaluationCase:
         self._validate_case_type_contract()
 
     def _validate_case_type_contract(self) -> None:
-        """Enforce scenario-specific semantics frozen for the six-case v1 dataset."""
-        if self.case_type is HybridEvaluationCaseType.UNSUPPORTED_OUT_OF_AUTHORITY:
-            if (
-                self.expected_route is not HybridRoute.UNSUPPORTED
-                or self.expected_envelope is not HybridExpectedEnvelope.NOT_APPLICABLE
-                or self.expected_answer_behavior
-                is not HybridExpectedAnswerBehavior.ABSTAIN
-                or self.structured_evidence
-                or self.semantic_evidence
-            ):
-                raise HybridRetrievalValidationError(
-                    "unsupported fixture case must abstain with no evidence envelope."
-                )
+        """Enforce scenario semantics frozen for the six-case v1 dataset."""
+        if self.case_type is HybridEvaluationCaseType.STRUCTURED_ONLY_FACTUAL and (
+            self.expected_route is not HybridRoute.STRUCTURED
+            or self.expected_envelope is not HybridExpectedEnvelope.ADMIT
+            or self.expected_answer_behavior is not HybridExpectedAnswerBehavior.ANSWER
+            or not self.structured_evidence
+            or bool(self.semantic_evidence)
+        ):
+            raise HybridRetrievalValidationError(
+                "structured-only case must admit structured evidence and answer."
+            )
 
-        if self.case_type is HybridEvaluationCaseType.PARTIAL_STRUCTURED_EVIDENCE:
-            if (
-                self.expected_envelope is not HybridExpectedEnvelope.REJECT
-                or self.expected_answer_behavior
-                is not HybridExpectedAnswerBehavior.REJECT_BEFORE_SYNTHESIS
-            ):
-                raise HybridRetrievalValidationError(
-                    "partial structured case must reject before synthesis."
-                )
+        if self.case_type is HybridEvaluationCaseType.SEMANTIC_ONLY_REMEDIATION and (
+            self.expected_route is not HybridRoute.SEMANTIC
+            or self.expected_envelope is not HybridExpectedEnvelope.ADMIT
+            or self.expected_answer_behavior is not HybridExpectedAnswerBehavior.ANSWER
+            or bool(self.structured_evidence)
+            or not self.semantic_evidence
+        ):
+            raise HybridRetrievalValidationError(
+                "semantic-only case must admit semantic evidence and answer."
+            )
+
+        if self.case_type is HybridEvaluationCaseType.TRUE_HYBRID and (
+            self.expected_route is not HybridRoute.HYBRID
+            or self.expected_envelope is not HybridExpectedEnvelope.ADMIT
+            or self.expected_answer_behavior is not HybridExpectedAnswerBehavior.ANSWER
+            or not self.structured_evidence
+            or not self.semantic_evidence
+        ):
+            raise HybridRetrievalValidationError(
+                "true-hybrid case must admit both evidence classes and answer."
+            )
+
+        if self.case_type is HybridEvaluationCaseType.UNSUPPORTED_OUT_OF_AUTHORITY and (
+            self.expected_route is not HybridRoute.UNSUPPORTED
+            or self.expected_envelope is not HybridExpectedEnvelope.NOT_APPLICABLE
+            or self.expected_answer_behavior is not HybridExpectedAnswerBehavior.ABSTAIN
+            or bool(self.structured_evidence)
+            or bool(self.semantic_evidence)
+        ):
+            raise HybridRetrievalValidationError(
+                "unsupported fixture case must abstain with no evidence envelope."
+            )
+
+        if self.case_type is HybridEvaluationCaseType.PARTIAL_STRUCTURED_EVIDENCE and (
+            self.expected_route is not HybridRoute.STRUCTURED
+            or self.expected_envelope is not HybridExpectedEnvelope.REJECT
+            or self.expected_answer_behavior
+            is not HybridExpectedAnswerBehavior.REJECT_BEFORE_SYNTHESIS
+            or not self.structured_evidence
+            or bool(self.semantic_evidence)
+        ):
+            raise HybridRetrievalValidationError(
+                "partial structured case must reject before synthesis."
+            )
 
         if self.case_type is HybridEvaluationCaseType.SEMANTIC_RETRIEVAL_NOISE:
-            if len(self.semantic_evidence) < 2 or not self.expected_supported_chunk_ids:
-                raise HybridRetrievalValidationError(
-                    "semantic-noise case requires multiple chunks and explicit support targets."
-                )
-            rank_one = min(self.semantic_evidence, key=lambda item: item.rank)
-            if rank_one.chunk_id in self.expected_supported_chunk_ids:
-                raise HybridRetrievalValidationError(
-                    "semantic-noise case must preserve a non-supporting rank-one chunk."
-                )
+            self._validate_semantic_noise_case()
+
+    def _validate_semantic_noise_case(self) -> None:
+        """Require admitted noise to remain distinct from support/citation targets."""
+        if (
+            self.expected_route is not HybridRoute.SEMANTIC
+            or self.expected_envelope is not HybridExpectedEnvelope.ADMIT
+            or self.expected_answer_behavior is not HybridExpectedAnswerBehavior.ANSWER
+            or bool(self.structured_evidence)
+            or len(self.semantic_evidence) < 2
+            or not self.expected_supported_chunk_ids
+        ):
+            raise HybridRetrievalValidationError(
+                "semantic-noise case must admit multiple semantic chunks and answer."
+            )
+        rank_one = min(self.semantic_evidence, key=lambda item: item.rank)
+        if rank_one.chunk_id in self.expected_supported_chunk_ids:
+            raise HybridRetrievalValidationError(
+                "semantic-noise case must preserve a non-supporting rank-one chunk."
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -455,7 +420,7 @@ class HybridEvaluationDataset:
     cases: tuple[HybridEvaluationCase, ...]
 
     def __post_init__(self) -> None:
-        """Require exact v1 case/metric coverage and the frozen content identity."""
+        """Require exact v1 case/metric coverage and frozen content identity."""
         if self.dataset_id != HYBRID_EVALUATION_DATASET_ID:
             raise HybridRetrievalValidationError("unexpected hybrid evaluation dataset ID.")
         object.__setattr__(
@@ -473,15 +438,17 @@ class HybridEvaluationDataset:
                 "hybrid evaluation fixture content hash does not match frozen v1."
             )
 
-        specs = _normalize_metric_specs(self.metric_specs)
+        specs = _require_tuple_of(self.metric_specs, HybridMetricSpec, "metric_specs")
         object.__setattr__(self, "metric_specs", specs)
         metrics = tuple(item.metric for item in specs)
-        if len(set(metrics)) != len(metrics) or set(metrics) != set(_EXPECTED_METRIC_SHAPE):
+        if len(set(metrics)) != len(metrics) or set(metrics) != set(
+            _EXPECTED_METRIC_SHAPE
+        ):
             raise HybridRetrievalValidationError(
                 "hybrid evaluation dataset must contain every frozen metric exactly once."
             )
 
-        cases = _normalize_cases(self.cases)
+        cases = _require_tuple_of(self.cases, HybridEvaluationCase, "cases")
         object.__setattr__(self, "cases", cases)
         case_ids = tuple(item.case_id for item in cases)
         if len(set(case_ids)) != len(case_ids):
@@ -518,8 +485,7 @@ class HybridMetricMeasurement:
         _require_runtime_instance(self.metric, HybridMetricDimension, "metric")
         _require_runtime_instance(self.unit, HybridMetricUnit, "unit")
         _require_runtime_instance(self.status, HybridMeasurementStatus, "status")
-        expected_unit = _EXPECTED_METRIC_SHAPE[self.metric][1]
-        if self.unit is not expected_unit:
+        if self.unit is not _EXPECTED_METRIC_SHAPE[self.metric][1]:
             raise HybridRetrievalValidationError("metric measurement unit is inconsistent.")
         if self.status is HybridMeasurementStatus.UNMEASURED:
             if self.value is not None:
@@ -607,7 +573,11 @@ class HybridOfflineBaseline:
         if self.dataset_sha256 != HYBRID_EVALUATION_DATASET_SHA256:
             raise HybridRetrievalValidationError("offline baseline dataset hash is invalid.")
 
-        results = _normalize_case_results(self.case_results)
+        results = _require_tuple_of(
+            self.case_results,
+            HybridOfflineCaseResult,
+            "case_results",
+        )
         object.__setattr__(self, "case_results", results)
         if not results:
             raise HybridRetrievalValidationError("offline baseline requires case results.")
@@ -622,25 +592,39 @@ class HybridOfflineBaseline:
                 "evidence_admission_accuracy must be between zero and one."
             )
 
-        measurements = _normalize_measurements(self.measurements)
+        measurements = _require_tuple_of(
+            self.measurements,
+            HybridMetricMeasurement,
+            "measurements",
+        )
         object.__setattr__(self, "measurements", measurements)
-        if len(measurements) != len(_EXPECTED_METRIC_SHAPE):
-            raise HybridRetrievalValidationError(
-                "offline baseline must expose every frozen metric dimension."
-            )
         by_metric = {item.metric: item for item in measurements}
-        if set(by_metric) != set(_EXPECTED_METRIC_SHAPE):
-            raise HybridRetrievalValidationError(
-                "offline baseline metric dimensions are incomplete."
-            )
-        route = by_metric[HybridMetricDimension.ROUTE_ACCURACY]
         if (
-            route.status is not HybridMeasurementStatus.MEASURED
-            or route.value is None
+            len(measurements) != len(_EXPECTED_METRIC_SHAPE)
+            or set(by_metric) != set(_EXPECTED_METRIC_SHAPE)
         ):
+            raise HybridRetrievalValidationError(
+                "offline baseline must expose every frozen metric exactly once."
+            )
+
+        route = by_metric[HybridMetricDimension.ROUTE_ACCURACY]
+        if route.status is not HybridMeasurementStatus.MEASURED or route.value is None:
             raise HybridRetrievalValidationError(
                 "route_accuracy must be measured in Gate 8.3."
             )
+        expected_route_accuracy = sum(item.route_correct for item in results) / len(results)
+        if route.value != expected_route_accuracy:
+            raise HybridRetrievalValidationError(
+                "route_accuracy must equal the deterministic case-result ratio."
+            )
+        expected_admission_accuracy = sum(item.envelope_correct for item in results) / len(
+            results
+        )
+        if self.evidence_admission_accuracy != expected_admission_accuracy:
+            raise HybridRetrievalValidationError(
+                "evidence_admission_accuracy must equal the case-result ratio."
+            )
+
         for metric, measurement in by_metric.items():
             if metric is HybridMetricDimension.ROUTE_ACCURACY:
                 continue
