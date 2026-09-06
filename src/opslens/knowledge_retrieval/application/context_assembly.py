@@ -27,7 +27,9 @@ def assemble_retrieval_context(
     if not isinstance(resolved_limits, ContextAssemblyLimits):
         raise ContextAssemblyError("limits must be a ContextAssemblyLimits value")
     if not evidence.chunks:
-        raise ContextAssemblyError("cannot assemble synthesis context from empty retrieval evidence")
+        raise ContextAssemblyError(
+            "cannot assemble synthesis context from empty retrieval evidence"
+        )
 
     selected: list[ContextEvidenceBlock] = []
     total_utf8_bytes = 0

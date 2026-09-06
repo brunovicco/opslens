@@ -61,7 +61,10 @@ def _evidence(*chunks: RetrievedChunk) -> RetrievalEvidence:
     """Build one valid retrieval operation around the supplied contiguous chunks."""
     return RetrievalEvidence(
         retrieval_id="retrieval:gate-7-6a-test",
-        request=RetrievalRequest(query="How should I remediate this dependency?", top_k=len(chunks) or 1),
+        request=RetrievalRequest(
+            query="How should I remediate this dependency?",
+            top_k=len(chunks) or 1,
+        ),
         chunks=tuple(chunks),
         backend=RetrievalBackend.OFFLINE_GOLDEN,
     )
@@ -83,7 +86,7 @@ def test_context_limits_are_explicit_and_bounded() -> None:
 
 
 def test_context_block_projects_whole_admitted_chunk_without_provider_score() -> None:
-    """Synthesis context keeps exact source text/provenance but excludes score-as-confidence cues."""
+    """Context keeps exact text/provenance but excludes score-as-confidence cues."""
     chunk = _chunk(rank=1, text="Use a patched dependency version.", relevance_score=1.37)
 
     block = ContextEvidenceBlock.from_chunk(chunk)
@@ -177,7 +180,7 @@ def test_provider_score_changes_do_not_change_synthesis_context_identity() -> No
 
 
 def test_assembled_context_fingerprint_and_totals_fail_closed_on_tampering() -> None:
-    """Operational context identity covers query, limits, provenance, rank prefix, and content hashes."""
+    """Context identity covers query, limits, provenance, rank prefix, and content hashes."""
     context = assemble_retrieval_context(
         _evidence(_chunk(rank=1, text="evidence")),
         limits=ContextAssemblyLimits(max_chunks=1, max_utf8_bytes=64),

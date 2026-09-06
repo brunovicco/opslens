@@ -127,7 +127,10 @@ class ContextEvidenceBlock:
 
     def __post_init__(self) -> None:
         """Validate exact content identity and canonical provenance without provider scores."""
-        if type(self.retrieval_rank) is not int or not 1 <= self.retrieval_rank <= MAX_CONTEXT_CHUNKS:
+        if (
+            type(self.retrieval_rank) is not int
+            or not 1 <= self.retrieval_rank <= MAX_CONTEXT_CHUNKS
+        ):
             raise KnowledgeRetrievalValidationError(
                 f"retrieval_rank must be an integer from 1 to {MAX_CONTEXT_CHUNKS}."
             )
@@ -171,7 +174,7 @@ class ContextEvidenceBlock:
 
     @classmethod
     def from_chunk(cls, chunk: RetrievedChunk) -> Self:
-        """Project one already-admitted chunk while intentionally omitting provider score evidence."""
+        """Project one admitted chunk without provider score evidence."""
         if not isinstance(chunk, RetrievedChunk):
             raise KnowledgeRetrievalValidationError("chunk must be a RetrievedChunk value.")
         return cls(
@@ -269,7 +272,9 @@ class AssembledContext:
             raise KnowledgeRetrievalValidationError("limits must be a ContextAssemblyLimits value.")
         blocks = _normalize_blocks(self.blocks)
         if not blocks:
-            raise KnowledgeRetrievalValidationError("assembled context must contain at least one block.")
+            raise KnowledgeRetrievalValidationError(
+                "assembled context must contain at least one block."
+            )
         object.__setattr__(self, "blocks", blocks)
         if len(blocks) > self.limits.max_chunks:
             raise KnowledgeRetrievalValidationError(
