@@ -40,7 +40,13 @@ class _AccessDeniedConverseClient:
                     "Code": "AccessDeniedException",
                     "Message": "provider detail that must not be serialized",
                 },
-                "ResponseMetadata": {"RequestId": "provider-request-secret"},
+                "ResponseMetadata": {
+                    "RequestId": "provider-request-secret",
+                    "HostId": "provider-host-secret",
+                    "HTTPStatusCode": 403,
+                    "HTTPHeaders": {},
+                    "RetryAttempts": 0,
+                },
             },
             operation_name="Converse",
         )
@@ -95,3 +101,4 @@ def test_provider_failure_preserves_category_without_provider_content() -> None:
     assert payload["cases"][-1]["synthesis_invocation_attempted"] is True
     assert "provider detail that must not be serialized" not in serialized
     assert "provider-request-secret" not in serialized
+    assert "provider-host-secret" not in serialized
