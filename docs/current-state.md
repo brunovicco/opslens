@@ -1,6 +1,6 @@
 # OpsLens — Current State
 
-_Last updated: 2026-09-05_
+_Last updated: 2026-09-06_
 
 This document is the public implementation checkpoint for the OpsLens repository.
 
@@ -21,33 +21,28 @@ Phase 6    Semantic Query Layer                                COMPLETE
 Phase 7    Knowledge Retrieval with Bedrock                    IN PROGRESS
   Gate 7.1 Corpus + retrieval contract                         COMPLETE
   Gate 7.2 Reproducible canonical corpus                       COMPLETE
-  Gate 7.3 Knowledge Base + vector infrastructure              COMPLETE / MERGE PENDING
-  Gate 7.4 Real bounded Retrieve adapter                       NEXT
+  Gate 7.3 Knowledge Base + vector infrastructure              COMPLETE / MERGED
+  Gate 7.4 Real bounded Retrieve adapter                       COMPLETE / MERGE PENDING
+  Gate 7.5 Retrieval evaluation                                NEXT
 ```
 
-Phase 6 was squash-merged through PR #91:
+Recent logical merges:
 
 ```text
-commit: 95db66e278059629ce6572b2950e9cca705c6498
-PR:     #91 — feat(semantic-query): close Gate 6.4 with real Bedrock runtime evidence
-```
+Phase 6 / PR #91
+95db66e278059629ce6572b2950e9cca705c6498
 
-Gate 7.1 was squash-merged through PR #93:
+Gate 7.1 / PR #93
+f2e3b72c31d0713707857bc0867a7f59e667b9dd
 
-```text
-commit: f2e3b72c31d0713707857bc0867a7f59e667b9dd
-PR:     #93 — feat(knowledge-retrieval): start Phase 7 Gate 7.1 contracts
-```
-
-Gate 7.2 was squash-merged through PR #94. Its frozen corpus identity is:
-
-```text
+Gate 7.2 / PR #94
 manifest sha256: 98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
-documents: 6
-chunks: 9
+
+Gate 7.3 / PR #95
+1337950ddb5948943bf361dba4c3cdc40dafaf2b
 ```
 
-Gate 7.3 is complete on PR #95 and awaits final green closeout + logical merge.
+Gate 7.4 is complete on PR #97 and awaits final green closeout + squash merge.
 
 ## Permanent boundaries
 
@@ -63,25 +58,11 @@ Gate 7.3 is complete on PR #95 and awaits final green closeout + logical merge.
 
 > **No unrestricted text-to-SQL.**
 
-Deterministic authorities remain responsible for:
+Deterministic authorities own package normalization, vulnerable-range matching, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS evidence, Risk Policy, canonical corpus construction, semantic-query validation/SQL compilation, retrieval evidence admission, citation projection, and execution/tool/cost enforcement.
 
-- package identity normalization;
-- version parsing and vulnerable-range matching;
-- vulnerability applicability;
-- CVE/GHSA/NVD alias reconciliation;
-- KEV, EPSS, and CVSS evidence;
-- risk policy evaluation;
-- canonical evidence serialization and content addressing;
-- planner-output parsing and validation;
-- semantic-query validation and SQL compilation;
-- Athena admission, execution bounds, and result validation;
-- retrieval evidence validation and context admission;
-- citation projection from admitted evidence;
-- execution/tool/cost enforcement.
+LLMs may classify, plan, synthesize, explain, and route over validated evidence. They do not replace deterministic structured truth.
 
-LLMs may classify, plan, synthesize, explain, and route over validated evidence. They do not decide vulnerability applicability, receive arbitrary SQL authority, or turn RAG text into a second authority for structured threat facts.
-
-## Implemented deterministic stack
+## Implemented stack
 
 ```text
 1. Threat Intelligence Data Lake
@@ -91,212 +72,67 @@ LLMs may classify, plan, synthesize, explain, and route over validated evidence.
    PyPI identity / PEP 440 applicability / GHSA / CVE-NVD evidence
 
 3. Repository Intelligence
-   immutable public GitHub snapshot / inert uv.lock / repository findings
+   immutable public GitHub snapshot / inert uv.lock / no code execution
 
 4. Risk Prioritization Engine
    deterministic Risk Policy v1 / factor explanations / ranking
 
-5. Semantic Query deterministic boundary
-   typed SemanticQuery / allowlists / deterministic SQL / bounded Athena
+5. Semantic Query Layer
+   bounded Bedrock planner / typed SemanticQuery / deterministic SQL /
+   bounded read-only Athena
 
-6. Bounded Bedrock planner
-   natural-language request / structured planner proposal /
-   deterministic parser / typed runtime evidence / fail-closed composition
+6. Canonical Knowledge Corpus
+   immutable official pins / bounded inert-text acquisition /
+   deterministic normalization + selection / hash-only manifest
 
-7. Knowledge retrieval contract foundation
-   typed knowledge documents / bounded retrieval requests /
-   retrieved chunks + provenance / retrieval evidence / deterministic citations
+7. Bedrock Knowledge Base Vector Baseline
+   deterministic S3 publication / Titan Text Embeddings V2 /
+   S3 Vectors / bounded ingestion / nine real vectors
 
-8. Reproducible canonical knowledge corpus
-   immutable official source pins / bounded inert-text acquisition /
-   deterministic normalization + section selection / content-addressed manifest
-
-9. Bedrock Knowledge Base vector baseline
-   verified S3 publication / Titan Text Embeddings V2 /
-   S3 Vectors / bounded ingestion / real vector materialization evidence
-```
-
-## Repository and risk path
-
-```text
-public GitHub repository
- -> immutable repository identity
- -> exact commit + tree SHA
- -> bounded GET-only GitHub REST acquisition
- -> exact inert uv.lock bytes
- -> deterministic TOML parsing
- -> PyPI package/version/purl normalization
- -> GHSA vulnerable-range applicability
- -> CVE/GHSA/NVD evidence reconciliation
- -> NVD/CVSS enrichment
- -> complete-snapshot CISA KEV evidence
- -> explicit-date FIRST EPSS evidence
- -> content-addressed RepositoryAnalysisResult
- -> deterministic Risk Policy v1
- -> priority score + tier + completeness
- -> content-addressed RiskPrioritizationResult
-```
-
-No third-party repository code is executed.
-
-## Risk Policy v1
-
-```text
-KEV present                         +40
-EPSS >= 0.70 / 0.30 / 0.10          +30 / +20 / +10
-max supported CVSS >= 9 / 7 / 4     +20 / +10 / +5
-known fixed version                 +10
-maximum                              100
-```
-
-Priority tiers:
-
-```text
-P0 >= 80
-P1 >= 60
-P2 >= 30
-P3 < 30
-```
-
-This is an OpsLens priority score, not exploit probability, source severity, or runtime exposure.
-
-Deterministic identities:
-
-```text
-risk-policy:v1@sha256:<digest>
-risk-evaluation:v1@sha256:<digest>
-risk-prioritization:v1@sha256:<digest>
+8. Real Bounded Retrieval
+   direct Bedrock Knowledge Base Retrieve / strict provider parser /
+   checked-corpus reconciliation / content/hash admission /
+   content-free operational evidence
 ```
 
 ## Phase 6 — Semantic Query Layer — COMPLETE
 
-Target architecture:
+Target path:
 
 ```text
-User question
+natural-language factual question
  -> bounded Bedrock planner
  -> structured planner proposal
- -> deterministic planner-output parser
+ -> deterministic parser
  -> typed SemanticQuery
- -> deterministic validation
  -> deterministic SQL compiler
- -> exact compiler-shape admission
- -> bounded read-only Athena workgroup
+ -> bounded read-only Athena
  -> structured result evidence
 ```
 
-### Gate 6.1 — COMPLETE
+The planner has no unrestricted SQL authority.
 
-First supported factual slice:
-
-> Which CVEs have EPSS of at least 0.7 on an explicit snapshot date?
-
-Contract:
+Real Gate 6.4 supported evidence:
 
 ```text
-metric:       epss_score
-dimension:    cve
-filters:      explicit snapshot_date, optional minimum_score
-order:        epss_score ASC|DESC, deterministic cve ASC tie break
-limit:        1..100, default 20
+question:                     Which CVEs have EPSS of at least 0.7 on 2026-09-03?
+planner decision:             semantic_query
+model input/output/total:     942 / 79 / 1021 tokens
+Bedrock latency:              1,632 ms
+client elapsed:               2,894 ms
+estimated planner cost:       ~$0.00147
+Athena rows:                  20
+Athena data scanned:          3,785,003 bytes (~3.61 MiB)
+Athena total time:            1,192 ms
 ```
 
-The compiler owns database/table/columns/predicates/order/limit. Filter values become validated positional Athena execution parameters.
-
-ADR: [`adr/0020-no-unrestricted-text-to-sql.md`](adr/0020-no-unrestricted-text-to-sql.md).
-
-### Gate 6.2 — COMPLETE
-
-Bounded real Athena boundary:
-
-```text
-database:    opslens_dev
-workgroup:   opslens-dev
-relation:    "opslens_dev"."epss_scores"
-scan cutoff: 10 MiB via enforced workgroup configuration
-```
-
-Real Gate 6.2 evidence:
-
-```text
-query_execution_id:         958fb573-1a69-4ce6-8a36-d9be45e71c79
-row_count:                  20
-data_scanned_bytes:         3,785,003 (~3.61 MiB)
-engine_execution_time_ms:   973
-total_execution_time_ms:    1,128
-```
-
-Intentional `limit=101` fails before Athena.
-
-Closeout: [`../labs/phase-6-gate-6-2-athena-readonly-execution.md`](../labs/phase-6-gate-6-2-athena-readonly-execution.md).
-
-### Gate 6.3 — COMPLETE
-
-Frozen bounded planner contract:
-
-```text
-question length: <= 1,000 chars
-planner decisions: semantic_query | unsupported
-supported metric: epss_score
-supported dimension: exactly [cve]
-required time: explicit YYYY-MM-DD
-threshold semantics: inclusive >= only
-order: epss_score asc|desc
-limit: 1..100
-SQL authority: none
-```
-
-The deterministic parser rejects extra/missing fields, invalid/relative dates, unsupported values, invalid score/limit values, and injected SQL before reconstructing the existing `SemanticQuery`.
-
-Golden offline fixture:
-
-```text
-18 total cases
-  8 supported
- 10 fail-closed unsupported
-```
-
-ADR: [`adr/0021-bounded-bedrock-semantic-query-planner.md`](adr/0021-bounded-bedrock-semantic-query-planner.md).
-
-Closeout: [`../labs/phase-6-gate-6-3-planner-contract-evaluation.md`](../labs/phase-6-gate-6-3-planner-contract-evaluation.md).
-
-### Gate 6.4 — COMPLETE
-
-Real model boundary:
-
-```text
-model_id:       us.anthropic.claude-haiku-4-5-20251001-v1:0
-client Region:  us-east-1
-inference mode: US Geographic system-defined inference profile
-streaming:      disabled
-tools:          disabled
-temperature:    0.0
-maxTokens:      256
-```
-
-Real supported E2E evidence:
-
-```text
-question:                       Which CVEs have EPSS of at least 0.7 on 2026-09-03?
-planner decision:               semantic_query
-model input/output/total:       942 / 79 / 1021 tokens
-Bedrock latency:                1,632 ms
-client elapsed:                 2,894 ms
-estimated planner cost:         ~$0.00147
-Athena rows:                    20
-Athena data scanned:            3,785,003 bytes (~3.61 MiB)
-Athena total time:              1,192 ms
-```
-
-Real fail-closed evidence proved a missing explicit snapshot date returns `unsupported` and never invokes Athena.
-
-Closeout evidence: [`../labs/phase-6-gate-6-4-real-bedrock-planner.md`](../labs/phase-6-gate-6-4-real-bedrock-planner.md).
+A missing explicit snapshot date returns `unsupported` and never invokes Athena.
 
 ## Phase 7 — Knowledge Retrieval with Bedrock — IN PROGRESS
 
-Phase 7 creates a separate path for explanatory/remediation questions. It does not replace the Phase 6 structured path and does not duplicate NVD, KEV, EPSS, CVSS, GHSA applicability, repository-version, or risk-policy authority through RAG.
+Phase 7 is a separate explanatory/remediation path. It does not duplicate or replace NVD, KEV, EPSS, CVSS, GHSA applicability, repository-version, or Risk Policy authority.
 
-Target flow:
+Target path:
 
 ```text
 knowledge/remediation question
@@ -310,7 +146,7 @@ knowledge/remediation question
 
 ### Gate 7.1 — Corpus + retrieval contract — COMPLETE
 
-The offline-first contract freezes:
+Frozen provider-independent contracts:
 
 ```text
 KnowledgeDocument
@@ -320,100 +156,147 @@ RetrievalEvidence
 Citation
 ```
 
-Frozen v1 retrieval bounds:
+Bounds:
 
 ```text
-query:         non-blank, <= 1,000 characters
+query:         non-blank, <= 1,000 chars
 top_k:         1..10
 default top_k: 5
 provider DSL:  none
 ```
 
-Citations are projected deterministically from admitted `RetrievedChunk` evidence rather than accepting model-authored provenance.
+Citations are projected deterministically from admitted evidence rather than model-authored URLs/source IDs.
 
 ### Gate 7.2 — Reproducible canonical corpus — COMPLETE
 
-Versioned product inputs:
-
 ```text
-knowledge/corpus/v1/source_registry.json
-knowledge/corpus/v1/corpus_spec.json
-knowledge/corpus/v1/manifest.json
-```
-
-Real corpus shape:
-
-```text
-6 official pinned source files
+6 official immutable source pins
 9 canonical chunks
-manifest sha256: 98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
+manifest sha256:
+98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
 ```
 
-No third-party source code is executed and source/chunk text is not vendored into Git.
+Acquisition is bounded GET-only inert text. Third-party source/chunk text is not vendored into Git and no third-party code is executed.
 
-Closeout evidence: [`../labs/phase-7-gate-7-2-canonical-corpus.md`](../labs/phase-7-gate-7-2-canonical-corpus.md).
+### Gate 7.3 — Knowledge Base + vector infrastructure — COMPLETE / MERGED
 
-### Gate 7.3 — Knowledge Base + vector infrastructure — COMPLETE / MERGE PENDING
-
-Validated architecture:
+Merged through PR #95:
 
 ```text
-KB:                  customer-managed Bedrock vector Knowledge Base
-KB id:               BTVJ2PBR2A
-data source id:      IEL1LBE026
-source prefix:       knowledge/corpus/v1/bedrock/
-chunking:            NONE
-embedding:           amazon.titan-embed-text-v2:0
-embedding dimension: 1024
-vector type:         FLOAT32
-vector store:        S3 Vectors
-distance:            cosine
+commit: 1337950ddb5948943bf361dba4c3cdc40dafaf2b
 ```
 
-Real deterministic publication:
+Validated real configuration:
 
 ```text
-payloads:               18
-content objects:         9
-metadata sidecars:       9
-publication bytes:       14,928
-compact sidecar range:   394..493 bytes
-manifest identity:       98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
+knowledge base id:     BTVJ2PBR2A
+data source id:        IEL1LBE026
+source prefix:         knowledge/corpus/v1/bedrock/
+chunking:              NONE
+embedding model:       amazon.titan-embed-text-v2:0
+embedding dimensions:  1024
+embedding data type:   FLOAT32
+vector store:          Amazon S3 Vectors
+distance:              cosine
 ```
 
-The first real ingestion exposed that the original verbose sidecars exceeded Bedrock's 1024-byte S3 Vectors metadata limit. Job `4S4OLDKNCZ` completed but indexed zero vectors and returned an explicit failure reason saying all nine files were ignored because associated metadata was too large.
-
-The deterministic projection was corrected to validate the final serialized sidecar bytes and use the supported compact metadata representation. No KB/vector resource was recreated.
-
-Successful real ingestion:
+Real publication:
 
 ```text
-job:                              WZRUGOFZPI
-status:                           COMPLETE
-startedAt:                        2026-09-05T20:41:46.010046+00:00
-updatedAt:                        2026-09-05T20:41:57.155598+00:00
-observed duration:                11.145552 s
-numberOfDocumentsScanned:         9
-numberOfNewDocumentsIndexed:      9
-numberOfDocumentsFailed:          0
-numberOfDocumentsSkipped:         0
-vectors materialized:             9
+18 verified S3 objects
+9 canonical text objects
+9 metadata sidecars
+14,928 total bytes
+394..493 bytes per compact sidecar
 ```
 
-A strongly consistent `s3vectors list-vectors` returned exactly nine keys immediately after ingestion.
+The first ingestion exposed the Bedrock/S3 Vectors 1024-byte associated-metadata limit. The deterministic publisher was fixed to validate final serialized sidecar bytes; no KB/vector resource or IAM role was broadened.
 
-Real operational failures retained as evidence:
+Successful ingestion:
 
 ```text
-oversized Bedrock metadata -> provider failure reason diagnosed
-botocore SSO credential retrieval -> TokenRetrievalError categorized safely
-human sts:AssumeRole on KB service role -> AccessDenied as expected
+job:                           WZRUGOFZPI
+status:                        COMPLETE
+observed duration:             11.145552 s
+documents scanned:             9
+new documents indexed:         9
+documents failed:              0
+documents skipped:             0
+vectors materialized:          9
 ```
 
-The service role was not broadened during troubleshooting. The future Gate 7.4 retrieval identity remains separate from ingestion/vector-write authority.
+A strongly consistent S3 Vectors listing returned exactly nine vectors.
 
-Closeout evidence: [`../labs/phase-7-gate-7-3-kb-vector-infrastructure.md`](../labs/phase-7-gate-7-3-kb-vector-infrastructure.md).
+Real failure evidence retained:
+
+```text
+oversized metadata sidecars -> all nine ignored, zero vectors
+botocore SSO path           -> TokenRetrievalError categorized safely
+human AssumeRole on KB role -> AccessDenied as expected
+```
+
+Closeout: [`../labs/phase-7-gate-7-3-kb-vector-infrastructure.md`](../labs/phase-7-gate-7-3-kb-vector-infrastructure.md).
+
 ADR: [`adr/0022-customer-managed-bedrock-kb-with-s3-vectors.md`](adr/0022-customer-managed-bedrock-kb-with-s3-vectors.md).
+
+### Gate 7.4 — Real bounded Retrieve adapter — COMPLETE / MERGE PENDING
+
+Gate 7.4 uses direct `bedrock-agent-runtime:Retrieve`, not `RetrieveAndGenerate`, so retrieval remains independently measurable before synthesis.
+
+Runtime authority:
+
+```text
+RetrievalRequest
+ -> exact configured KB
+ -> direct semantic Retrieve
+ -> strict provider response parser
+ -> exact S3 content-addressed key reconciliation
+ -> independent text SHA-256 + byte-count validation
+ -> canonical metadata comparison
+ -> RetrievedChunk[]
+ -> RetrievalEvidence
+```
+
+Provider metadata does not define canonical chunk/source identity. The checked Gate 7.2 manifest remains authoritative.
+
+The first real provider response exposed `section_path` values as JSON-quoted strings inside a list. The adapter initially failed closed, a metadata-only diagnostic proved the exact shape, and normalization was added only for valid JSON-quoted string elements that decode to the exact checked manifest values. Malformed or mismatching values remain rejected.
+
+Real admitted retrieval:
+
+```text
+knowledge base:         BTVJ2PBR2A
+query sha256:           5b398fe871d0cb51eaacb4f42a11b2ec402b5fdb4c523d2b7bca85e84dff3d0d
+requested top_k:        5
+returned/admitted:      5
+provider request id:    e92d67f1-18fa-4537-8ff4-c2e02ab813e0
+client elapsed:         1257 ms
+SDK retries:            0
+rank 1:                 knowledge-chunk:pypa-secure-installs:hashes:v1
+rank 1 score:           0.8649594783782959
+```
+
+All five returned chunks passed deterministic location, hash, byte-count, metadata, and provenance admission.
+
+Intentional real negative control:
+
+```text
+nonexistent KB id: ZZZZZZZZZZ
+result: ERROR: Bedrock Retrieve failed provider_code=ResourceNotFoundException
+```
+
+The failure was read-only and emitted only a safe provider code.
+
+Retrieval runtime IAM is deliberately separate from ingestion/vector-write authority. No deployed application runtime principal exists yet, so final least-privilege role attachment is deferred until a real compute principal exists rather than creating dead IAM surface.
+
+Observed populated-index calls for this gate:
+
+```text
+3 real searches against the populated KB
+```
+
+At current S3 Vectors request pricing of $2.50 per million queries, the request-fee component for those three searches is approximately `$0.0000075`, plus negligible data-processed cost for the nine-vector lab index and query-embedding model usage. An exact bill is not fabricated from incomplete provider telemetry.
+
+Closeout: [`../labs/phase-7-gate-7-4-bounded-retrieve.md`](../labs/phase-7-gate-7-4-bounded-retrieve.md).
 
 ## AWS foundation
 
@@ -431,31 +314,41 @@ Persistent AWS access keys are not stored in GitHub.
 
 ## Current quality boundary
 
-Dedicated Python CI slices exist for:
+Dedicated CI slices cover:
 
 ```text
-src/opslens/correlation
-src/opslens/repository_intelligence
-src/opslens/risk_policy
-src/opslens/semantic_query
-src/opslens/knowledge_retrieval
+Correlation
+Repository Intelligence
+Risk Policy
+Semantic Query
+Knowledge Retrieval
+Terraform static/security checks
 ```
 
-The workflow also watches `knowledge/corpus/**`, so corpus authority/spec/manifest changes cannot bypass the Knowledge Retrieval gate.
-
-A pre-existing repo-wide Ruff backlog outside these scoped deterministic slices remains separate technical debt.
+Knowledge Retrieval CI also watches `knowledge/corpus/**` so corpus authority changes cannot bypass its gate.
 
 ## Next action
 
-Close PR #95 as the logical Gate 7.3 increment:
+Close PR #97 as the logical Gate 7.4 increment:
 
 ```text
-1. require the documentation closeout commit to pass Python/Terraform CI
-2. mark PR #95 ready for review
-3. confirm mergeability and final checks
-4. squash-merge PR #95 into main
+1. require final documentation closeout checks to pass
+2. confirm PR mergeability
+3. mark PR #97 ready for review
+4. squash-merge into main
 5. confirm resulting main commit
-6. begin Gate 7.4 on a new branch/PR
+6. begin Gate 7.5 on a new branch/PR
 ```
 
-Gate 7.4 must implement Amazon Bedrock Knowledge Base `Retrieve` directly, not `RetrieveAndGenerate`, so raw retrieval can be measured independently before synthesis. It must use a separate least-privilege runtime identity and preserve Gate 7.1 typed evidence/citation authority.
+Gate 7.5 must measure the raw semantic retrieval baseline before synthesis, reranking, hybrid search, or arbitrary provider filters:
+
+```text
+Recall@1
+Recall@3
+Recall@5
+Recall@10
+MRR
+provenance/source correctness
+latency distribution
+retrieval-call count / bounded cost assumptions
+```
