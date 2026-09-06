@@ -71,6 +71,15 @@ def _require_sha256(value: object, *, field: str) -> str:
     return normalized
 
 
+def _admit_request(value: object) -> HybridSynthesisRequest:
+    """Admit one exact hybrid synthesis request at the prompt boundary."""
+    if not isinstance(value, HybridSynthesisRequest):
+        raise HybridSynthesisPromptError(
+            "request must be one admitted HybridSynthesisRequest"
+        )
+    return value
+
+
 def _fingerprint_payload(
     *,
     request_sha256: str,
@@ -193,11 +202,8 @@ def build_hybrid_synthesis_prompt(
     request: HybridSynthesisRequest,
 ) -> HybridSynthesisPromptEnvelope:
     """Build one deterministic prompt from an admitted semantic/hybrid request."""
-    if not isinstance(request, HybridSynthesisRequest):
-        raise HybridSynthesisPromptError(
-            "request must be one admitted HybridSynthesisRequest"
-        )
-    evidence_json = _hybrid_evidence_json(request)
+    admitted_request = _admit_request(request)
+    evidence_json = _hybrid_evidence_json(admitted_request)
     if len(evidence_json.encode("utf-8")) > MAX_HYBRID_SYNTHESIS_EVIDENCE_BYTES:
         raise HybridSynthesisPromptError(
             "hybrid evidence exceeds the Gate 8.4 prompt byte bound"
@@ -205,16 +211,16 @@ def build_hybrid_synthesis_prompt(
     evidence_sha256 = sha256(evidence_json.encode("utf-8")).hexdigest()
     prompt_sha256 = sha256(
         _fingerprint_payload(
-            request_sha256=request.request_sha256,
+            request_sha256=admitted_request.request_sha256,
             trusted_instructions=TRUSTED_HYBRID_SYNTHESIS_INSTRUCTIONS_V1,
-            question=request.question,
+            question=admitted_request.question,
             evidence_json=evidence_json,
         )
     ).hexdigest()
     return HybridSynthesisPromptEnvelope(
-        request_sha256=request.request_sha256,
+        request_sha256=admitted_request.request_sha256,
         trusted_instructions=TRUSTED_HYBRID_SYNTHESIS_INSTRUCTIONS_V1,
-        question=request.question,
+        question=admitted_request.question,
         evidence_json=evidence_json,
         evidence_sha256=evidence_sha256,
         prompt_sha256=prompt_sha256,
