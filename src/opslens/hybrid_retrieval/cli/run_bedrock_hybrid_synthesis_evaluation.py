@@ -130,6 +130,9 @@ def _attempt_payload(attempt: HybridRuntimeCaseExecution) -> dict[str, object]:
         "expected_citation_chunk_ids": list(attempt.case.expected_citation_chunk_ids),
         "expected_supported_chunk_ids": list(attempt.case.expected_supported_chunk_ids),
         "failure_category": attempt.failure_category,
+        "failure_diagnostic": attempt.failure_diagnostic,
+        "failure_request_id": attempt.failure_request_id,
+        "failure_stop_reason": attempt.failure_stop_reason,
         "model_required": attempt.request is not None,
         "observed_answer_behavior": (
             attempt.observed_behavior.value
@@ -148,6 +151,7 @@ def _attempt_payload(attempt: HybridRuntimeCaseExecution) -> dict[str, object]:
             for item in attempt.structured_facts
         ],
         "synthesis": _synthesis_payload(attempt),
+        "synthesis_invocation_attempted": attempt.synthesis_invocation_attempted,
     }
 
 
@@ -181,12 +185,14 @@ def serialize_hybrid_runtime_execution(
             "measurements": (
                 _measurement_payload(baseline) if baseline is not None else None
             ),
-            "model_call_count": sum(
-                attempt.synthesis is not None for attempt in execution.attempts
-            ),
+            "model_call_count": execution.admitted_model_execution_count,
+            "model_call_count_semantics": "admitted_model_executions",
             "model_id": BEDROCK_SYNTHESIS_MODEL_ID,
             "planned_case_count": execution.planned_case_count,
             "region": region,
+            "synthesis_invocation_attempt_count": (
+                execution.synthesis_invocation_attempt_count
+            ),
             "cases": [_attempt_payload(attempt) for attempt in execution.attempts],
         },
         indent=2,
