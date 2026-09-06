@@ -68,6 +68,7 @@ class BedrockHybridConverseClient(Protocol):
 
 
 def _admit_synthesis_result(value: object) -> HybridSynthesisResult:
+    """Admit one hybrid result at the runtime evidence binding boundary."""
     if not isinstance(value, HybridSynthesisResult):
         raise TypeError("result must be HybridSynthesisResult.")
     return value
@@ -76,24 +77,28 @@ def _admit_synthesis_result(value: object) -> HybridSynthesisResult:
 def _admit_invocation_evidence(
     value: object,
 ) -> BedrockHybridSynthesisInvocationEvidence:
+    """Admit one runtime metadata record at the execution binding boundary."""
     if not isinstance(value, BedrockHybridSynthesisInvocationEvidence):
         raise TypeError("evidence must be BedrockHybridSynthesisInvocationEvidence.")
     return value
 
 
 def _admit_synthesis_request(value: object) -> HybridSynthesisRequest:
+    """Admit one exact request before invoking the provider."""
     if not isinstance(value, HybridSynthesisRequest):
         raise TypeError("request must be HybridSynthesisRequest.")
     return value
 
 
 def _admit_prompt_policy(value: object) -> HybridSynthesisPromptPolicy:
+    """Admit one exact versioned prompt policy before provider execution."""
     if not isinstance(value, HybridSynthesisPromptPolicy):
         raise TypeError("prompt_policy must be HybridSynthesisPromptPolicy.")
     return value
 
 
 def _normalized_text(value: object, *, field: str) -> str:
+    """Require one normalized non-empty provider metadata string."""
     if not isinstance(value, str) or not value.strip() or value.strip() != value:
         raise BedrockHybridSynthesisRuntimeError(
             f"{field} must be a normalized non-empty string.",
@@ -103,6 +108,7 @@ def _normalized_text(value: object, *, field: str) -> str:
 
 
 def _non_negative_int(value: object, *, field: str) -> int:
+    """Require one non-negative integer without accepting bool."""
     if type(value) is not int or value < 0:
         raise BedrockHybridSynthesisRuntimeError(
             f"{field} must be a non-negative integer.",
@@ -131,6 +137,7 @@ def _required_mapping(
     *,
     context: str,
 ) -> Mapping[str, object]:
+    """Read one required mapping from a Converse response."""
     value = mapping.get(key)
     if not isinstance(value, Mapping):
         raise BedrockHybridSynthesisRuntimeError(
@@ -152,6 +159,7 @@ def _required_sequence(
     *,
     context: str,
 ) -> Sequence[object]:
+    """Read one required non-string sequence from a Converse response."""
     value = mapping.get(key)
     if not isinstance(value, Sequence) or isinstance(
         value,
@@ -165,6 +173,7 @@ def _required_sequence(
 
 
 def _provider_identity(response: Mapping[str, object]) -> tuple[str, int]:
+    """Extract exact request ID and SDK retry evidence."""
     metadata = _required_mapping(
         response,
         "ResponseMetadata",
@@ -182,6 +191,7 @@ def _provider_identity(response: Mapping[str, object]) -> tuple[str, int]:
 
 
 def _stop_reason(response: Mapping[str, object], *, request_id: str) -> str:
+    """Accept only natural end-of-turn completion."""
     reason = _normalized_text(
         response.get("stopReason"),
         field="Converse response.stopReason",
@@ -197,6 +207,7 @@ def _stop_reason(response: Mapping[str, object], *, request_id: str) -> str:
 
 
 def _extract_single_text_output(response: Mapping[str, object]) -> str:
+    """Require exactly one assistant text block and no tool/citation union."""
     output = _required_mapping(response, "output", context="Converse response")
     message = _required_mapping(
         output,
@@ -266,6 +277,7 @@ class BedrockHybridSynthesisInvocationEvidence:
     semantic_catalog_sha256: str
 
     def __post_init__(self) -> None:
+        """Reject partial or forged runtime evidence."""
         if self.model_id != BEDROCK_SYNTHESIS_MODEL_ID:
             raise ValueError("model_id must match the frozen Phase 7 synthesis profile.")
         if self.region != BEDROCK_SYNTHESIS_REGION:
@@ -307,6 +319,7 @@ class BedrockHybridSynthesisExecution:
     evidence: BedrockHybridSynthesisInvocationEvidence
 
     def __post_init__(self) -> None:
+        """Keep output and provider evidence bound to the same exact request."""
         result = _admit_synthesis_result(self.result)
         evidence = _admit_invocation_evidence(self.evidence)
         if result.request_sha256 != evidence.request_sha256:
@@ -323,6 +336,7 @@ def _parse_invocation_evidence(
     retry_attempts: int,
     client_elapsed_ms: int,
 ) -> BedrockHybridSynthesisInvocationEvidence:
+    """Translate bounded Converse metadata into content-free runtime evidence."""
     usage = _required_mapping(response, "usage", context="Converse response")
     metrics = _required_mapping(response, "metrics", context="Converse response")
     return BedrockHybridSynthesisInvocationEvidence(
@@ -443,9 +457,9 @@ class BedrockHybridSynthesizer:
 
 __all__ = [
     "BedrockHybridConverseClient",
-    "BedrockHybridSynthesizer",
     "BedrockHybridSynthesisExecution",
     "BedrockHybridSynthesisFailureCategory",
     "BedrockHybridSynthesisInvocationEvidence",
     "BedrockHybridSynthesisRuntimeError",
+    "BedrockHybridSynthesizer",
 ]
