@@ -155,7 +155,7 @@ def test_fixture_loader_rejects_unreviewed_schema_fields(tmp_path: Path) -> None
     mutated = tmp_path / "golden.json"
     mutated.write_text(json.dumps(raw), encoding="utf-8")
 
-    with pytest.raises(RetrievalEvaluationError, match="unknown=\['unexpected'\]"):
+    with pytest.raises(RetrievalEvaluationError, match=r"unknown=\['unexpected'\]"):
         load_golden_retrieval_dataset(mutated)
 
 
