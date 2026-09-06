@@ -229,6 +229,32 @@ def test_bounded_retrieve_sends_exact_semantic_request_and_admits_checked_eviden
     assert result.invocation.returned_result_count == 1
 
 
+def test_real_bedrock_json_quoted_section_path_is_normalized_before_admission() -> None:
+    """Observed S3 Vectors metadata quoting is decoded without weakening canonical equality."""
+    metadata = _metadata()
+    metadata["section_path"] = ['"Guide"', '"Upgrade"']
+    metadata["x-amz-bedrock-kb-source-file-modality"] = "TEXT"
+    client = FakeBedrockRuntimeClient(
+        _response(results=[_provider_result(metadata=metadata)])
+    )
+
+    result = _run(client)
+
+    assert result.evidence.chunks[0].section_path == ("Guide", "Upgrade")
+
+
+def test_malformed_bedrock_section_path_quoting_fails_closed() -> None:
+    """Only valid JSON-quoted strings may use the observed provider normalization path."""
+    metadata = _metadata()
+    metadata["section_path"] = ['"Guide"', '"Upgrade']
+    client = FakeBedrockRuntimeClient(
+        _response(results=[_provider_result(metadata=metadata)])
+    )
+
+    with pytest.raises(BedrockRetrievalValidationError, match="malformed quoting"):
+        _run(client)
+
+
 def test_typed_filters_fail_before_provider_call_in_first_slice() -> None:
     """Gate 7.1 scope cannot be silently discarded before filter translation exists."""
     client = FakeBedrockRuntimeClient()
