@@ -26,17 +26,18 @@ Phase 7    Knowledge Retrieval with Bedrock                    COMPLETE
 Phase 8    Hybrid Retrieval                                    IN PROGRESS
   Gate 8.1 Offline hybrid routing + authority contract         COMPLETE / MERGED
   Gate 8.2 Deterministic hybrid evidence envelope              COMPLETE / MERGED
-  Gate 8.3 Frozen hybrid evaluation fixture                    NEXT
+  Gate 8.3 Frozen hybrid evaluation fixture                    COMPLETE / MERGED
+  Gate 8.4 First bounded hybrid synthesis                      NEXT
 ```
 
 Latest merged executable checkpoint:
 
 ```text
-Phase 8 Gate 8.2 / PR #109
-aea3b66b83bee5d06bc4efab06538dc094df51e6
+Phase 8 Gate 8.3 / PR #112
+5c2e3b1caf4b56657ae0e840a35db46df44feaa5
 ```
 
-Gate 8.2 tracking issue #107 is closed as completed.
+Gate 8.3 tracking issue #111 is closed as completed.
 
 ## Permanent boundaries
 
@@ -56,7 +57,7 @@ Gate 8.2 tracking issue #107 is closed as completed.
 
 Deterministic authorities own package normalization, version/range matching, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS evidence, Risk Policy, semantic-query validation and SQL compilation, canonical corpus construction, retrieval evidence admission, context assembly, citation authority, output admission, evaluation metric computation, hybrid route authorization, hybrid evidence admission/completeness, canonical evidence identity, and execution limits.
 
-LLMs may classify, plan, synthesize, explain, propose routes, and select among already-admitted citation IDs. They do not replace structured truth, invent source authority, directly authorize structured/semantic execution, or manufacture hybrid evidence completeness.
+LLMs may classify, plan, synthesize, explain, propose routes, and select among already-admitted citation IDs. They do not replace structured truth, invent source authority, directly authorize structured/semantic execution, manufacture hybrid evidence completeness, or own evaluation metric computation.
 
 ## Implemented system
 
@@ -89,9 +90,11 @@ Typed EvidenceNeed proposal
  -> deterministic evidence projection/admission
  -> need-level + class-level ALL_REQUIRED verification
  -> HybridEvidenceEnvelope
+ -> frozen hybrid evaluation fixture
+ -> offline route + evidence-admission baseline
 ```
 
-The structured and semantic paths are complementary. Structured vulnerability/risk facts remain outside RAG authority. Phase 8 now has deterministic routing and evidence composition, but it has not introduced hybrid model synthesis.
+The structured and semantic paths are complementary. Structured vulnerability/risk facts remain outside RAG authority. Phase 8 now has deterministic routing, deterministic evidence composition, and a frozen pre-synthesis hybrid evaluation contract. It has not yet introduced hybrid model synthesis.
 
 ## Phase 7 AWS baseline
 
@@ -510,30 +513,155 @@ model calls:       0
 
 The Phase 7 Gate 7.5/Gate 7.7 baselines and Gate 8.1 routing semantics remain unchanged.
 
-## Gate 8.3 entry criteria
+## Phase 8 Gate 8.3 — Frozen hybrid evaluation fixture
 
-Gate 8.3 starts from these frozen assumptions:
+Gate 8.3 froze the hybrid benchmark before any hybrid model synthesis or tuning.
+
+Frozen dataset:
+
+```text
+dataset_id: hybrid-evaluation-golden:v1
+sha256:     68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1
+```
+
+The dataset requires exactly six scenario classes:
+
+```text
+structured_only_factual
+semantic_only_remediation
+true_hybrid
+unsupported_out_of_authority
+partial_structured_evidence
+semantic_retrieval_noise
+```
+
+The semantic-noise case deliberately admits a non-supporting rank-1 neighbor while freezing a rank-2 chunk as the expected support/citation target. This preserves the distinction:
+
+```text
+retrieved
+!= admitted
+!= semantically supporting
+!= correctly cited
+```
+
+### Frozen metric dimensions
+
+```text
+route_accuracy
+structured_fact_correctness
+semantic_groundedness
+citation_correctness
+abstention
+latency
+cost
+```
+
+There is no aggregate hybrid-quality score that may hide authority-specific failure.
+
+At Gate 8.3 only `route_accuracy` is a legitimately measured member of the seven frozen response/runtime dimensions. Envelope outcome agreement is recorded separately as deterministic `evidence_admission_accuracy`.
+
+Frozen offline baseline:
+
+```text
+route_accuracy:              1.0
+evidence_admission_accuracy: 1.0
+```
+
+All synthesis/runtime dimensions that do not yet exist remain explicitly `UNMEASURED` with `null` values. Missing model/provider execution is not fabricated as zero latency, zero cost, or perfect correctness.
+
+### Gate 8.3 evaluation path
+
+```text
+HybridEvaluationCase
+ -> HybridRoutingRequest
+ -> route_evidence_request
+ -> HybridRouteDecision
+ -> assemble_hybrid_evidence when supported
+ -> HybridOfflineCaseResult
+ -> HybridOfflineBaseline
+```
+
+The fixture loader validates exact keys, Gate 8.2 evidence contracts, six-case coverage, seven-metric coverage, metric stage/unit semantics, expected structured facts, semantic support/citation targets, and canonical dataset identity fail-closed.
+
+ADR:
+
+```text
+docs/adr/0027-frozen-hybrid-evaluation-contract.md
+```
+
+Lab record:
+
+```text
+labs/phase-8-gate-8-3-hybrid-evaluation-fixture.md
+```
+
+### Gate 8.3 validation
+
+Exact executable PR head:
+
+```text
+356b0ccf4d5205d4abd8dab52179423bb2b139e6
+```
+
+Python CI #306 / run `34050330182` passed all six jobs. Dedicated hybrid slice:
+
+```text
+uv lock --check     PASS
+Ruff                PASS
+Pyright strict      PASS — 0 errors, 0 warnings
+pytest hybrid slice PASS — 49 passed
+```
+
+The correction cycle exposed Ruff style/import findings and one strict Pyright redundant integer cast. They were fixed directly without `noqa`, `type: ignore`, lint suppression, or weakened strictness.
+
+PR #112 was promoted from draft only after the exact head above was green, then squash-merged with expected-head protection, producing:
+
+```text
+5c2e3b1caf4b56657ae0e840a35db46df44feaa5
+```
+
+Issue #111 closed automatically as completed.
+
+Gate 8.3 created/executed:
+
+```text
+AWS resources:     0
+IAM changes:       0
+Athena calls:      0
+Bedrock calls:     0
+S3 Vectors calls:  0
+model calls:       0
+```
+
+The Phase 7 Gate 7.5/Gate 7.7 baselines and Gate 8.1/Gate 8.2 authority semantics remain unchanged.
+
+## Gate 8.4 entry criteria
+
+Gate 8.4 starts from these frozen assumptions:
 
 ```text
 1. Gate 8.1 owns deterministic evidence-class routing authority
 2. Gate 8.2 owns deterministic admitted evidence composition
-3. structured and semantic provenance remain distinguishable end to end
-4. hybrid v1 remains ALL_REQUIRED by class and exact evidence need
-5. successful retrieval/relevance scores do not establish structured truth
-6. runtime_exposure remains unsupported without runtime authority
-7. partial/best-effort hybrid envelopes are not a v1 success state
-8. Gate 7.7 baseline remains immutable
-9. Gate 8.3 must freeze evaluation cases/metrics before model synthesis
-10. no new AWS service is added without a measured requirement
-11. no Gate 8.4 synthesis is allowed before the Gate 8.3 fixture is merged
+3. Gate 8.3 owns the frozen evaluation fixture and metric dimensions
+4. structured and semantic provenance remain distinguishable end to end
+5. hybrid v1 remains ALL_REQUIRED by class and exact evidence need
+6. successful retrieval/relevance scores do not establish structured truth
+7. runtime_exposure remains unsupported without runtime authority
+8. missing required evidence must fail before synthesis
+9. hybrid-evaluation-golden:v1 is immutable input to the first synthesis baseline
+10. observed model behavior may populate metrics but may not rewrite the fixture
+11. structured fact correctness, semantic groundedness, citation correctness, and abstention remain independent
+12. no new AWS service is added without a measured requirement
 ```
+
+The first bounded hybrid synthesis may let a model reason over an already-admitted typed envelope. It must not rewrite structured facts into a new truth source, convert vector similarity into applicability/risk truth, author canonical provenance, broaden SQL/tool authority, or silently answer with incomplete evidence.
 
 ## Validation note
 
-PR #109 changed executable hybrid-retrieval code and was squash-merged only after Python CI #302 passed against exact executable head `70ef54a0a56844b6429c0b8a739352b31d076580`.
+PR #112 changed executable hybrid-retrieval code and was squash-merged only after Python CI #306 passed against exact executable head `356b0ccf4d5205d4abd8dab52179423bb2b139e6`.
 
 This post-merge state synchronization changes documentation only. The repository `Python CI` pull-request workflow intentionally filters away documentation-only changes, so no new executable validation is expected for this state-only update.
 
 ## Next action
 
-Begin **Phase 8 — Gate 8.3: Frozen Hybrid Evaluation Fixture** from merged Gate 8.2 main. Freeze cases and deterministic metrics before any Gate 8.4 hybrid model synthesis or optimization.
+Begin **Phase 8 — Gate 8.4: First Bounded Hybrid Synthesis** from merged Gate 8.3 main. Consume the frozen `hybrid-evaluation-golden:v1` fixture unchanged, add the smallest bounded synthesis surface, and measure the synthesis-specific dimensions without weakening deterministic authority boundaries.
