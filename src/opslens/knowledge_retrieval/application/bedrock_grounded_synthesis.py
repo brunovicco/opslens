@@ -8,7 +8,6 @@ from typing import Final
 from opslens.knowledge_retrieval.application.bedrock_synthesis import (
     BEDROCK_SYNTHESIS_MAX_TOKENS,
     BEDROCK_SYNTHESIS_MODEL_ID,
-    BEDROCK_SYNTHESIS_REGION,
     BEDROCK_SYNTHESIS_TEMPERATURE,
 )
 from opslens.knowledge_retrieval.application.grounded_synthesis_prompt import (
