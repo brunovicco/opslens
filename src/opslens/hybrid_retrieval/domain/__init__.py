@@ -54,6 +54,10 @@ from opslens.hybrid_retrieval.domain.synthesis import (
     project_hybrid_semantic_citations,
     project_hybrid_structured_facts,
 )
+from opslens.hybrid_retrieval.domain.synthesis_evaluation import (
+    HybridSynthesisBaseline,
+    HybridSynthesisCaseEvaluation,
+)
 
 __all__ = [
     "HYBRID_EVALUATION_DATASET_ID",
@@ -89,6 +93,8 @@ __all__ = [
     "HybridRoutingRequest",
     "HybridSemanticCitationProjection",
     "HybridStructuredFactProjection",
+    "HybridSynthesisBaseline",
+    "HybridSynthesisCaseEvaluation",
     "HybridSynthesisClaim",
     "HybridSynthesisDecision",
     "HybridSynthesisLimits",
