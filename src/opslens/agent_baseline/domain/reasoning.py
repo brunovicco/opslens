@@ -143,7 +143,10 @@ class AgentReasoningInvocationEvidence:
                 "evidence_sha256 must match canonical reasoning invocation semantics"
             )
         expected_id = f"{SINGLE_AGENT_REASONING_CONTRACT_VERSION}:invocation:{expected}"
-        if self.evidence_id != expected_id or _EVIDENCE_ID_PATTERN.fullmatch(self.evidence_id) is None:
+        if (
+            self.evidence_id != expected_id
+            or _EVIDENCE_ID_PATTERN.fullmatch(self.evidence_id) is None
+        ):
             raise AgentReasoningValidationError(
                 "evidence_id must match content-addressed invocation semantics"
             )
@@ -265,7 +268,10 @@ class AgentReasoningResult:
             raise AgentReasoningValidationError(
                 "failure_category must be AgentReasoningFailureCategory or null"
             )
-        if self.authorization_evidence_id is not None and type(self.authorization_evidence_id) is not str:
+        if (
+            self.authorization_evidence_id is not None
+            and type(self.authorization_evidence_id) is not str
+        ):
             raise AgentReasoningValidationError(
                 "authorization_evidence_id must be a string or null"
             )
@@ -369,10 +375,10 @@ __all__ = [
     "MAX_AGENT_REASONING_INVOCATIONS_PER_TASK",
     "MAX_AGENT_REASONING_OUTPUT_UTF8_BYTES",
     "SINGLE_AGENT_REASONING_CONTRACT_VERSION",
+    "AgentCapability",
+    "AgentDecision",
     "AgentReasoningAuthorizationOutcome",
     "AgentReasoningFailureCategory",
     "AgentReasoningInvocationEvidence",
     "AgentReasoningResult",
-    "AgentCapability",
-    "AgentDecision",
 ]
