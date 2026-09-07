@@ -40,6 +40,11 @@ from opslens.agent_baseline.domain import (
 from opslens.agent_baseline.ports import AgentReasoningModelResponse
 
 
+def _empty_requests() -> list[dict[str, object]]:
+    """Return an explicitly typed request recorder for strict Pyright."""
+    return []
+
+
 @dataclass(slots=True)
 class _FakeReasoningModel:
     """Return one fixed model response and count application-level invocations."""
@@ -60,7 +65,7 @@ class _FakeBedrockClient:
 
     response: Mapping[str, object] | None
     error: Exception | None = None
-    requests: list[dict[str, object]] = field(default_factory=list)
+    requests: list[dict[str, object]] = field(default_factory=_empty_requests)
 
     def converse(self, **request: object) -> Mapping[str, object]:
         """Record one request before returning or raising."""
@@ -281,18 +286,14 @@ def test_cross_task_invocation_evidence_fails_before_model_output_is_admitted() 
 def test_reasoning_result_does_not_persist_raw_model_output() -> None:
     """Keep arbitrary model/provider content transient instead of admitting it as evidence."""
     task = _task(AgentCapability.KNOWLEDGE_GUIDANCE)
-    secret_marker = "synthetic-secret-never-persist"
-    response_text = (
-        '{"decision":"act","capability":"knowledge_guidance"}'
-        + (" " * 2)
-    )
+    response_text = '{"decision":"act","capability":"knowledge_guidance"}  '
     model = _FakeReasoningModel(
         AgentReasoningModelResponse(output_text=response_text, evidence=_evidence(task))
     )
 
     result = reason_about_task(task=task, model=model)
 
-    assert secret_marker not in repr(result)
+    assert response_text not in repr(result)
     assert not hasattr(result, "output_text")
 
 
