@@ -38,6 +38,9 @@ jobs:
       - name: Sync locked dependencies
         run: uv sync --frozen
 
+      - name: Smoke local reasoning entrypoint
+        run: PYTHONPATH=src uv run python scripts/run_single_agent_reasoning_baseline.py --help
+
       - name: Ruff single-agent slice
         run: >-
           uv run ruff check
