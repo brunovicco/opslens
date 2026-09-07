@@ -21,7 +21,8 @@ Phase 10   Observability & Operational Excellence              COMPLETE
 Phase 11   Single-Agent Baseline                               IN PROGRESS
   Gate 11.1 Bounded capability authorization contract          COMPLETE / MERGED
   Gate 11.2 Typed capability bindings + offline executor       COMPLETE / MERGED
-  Gate 11.3 Frozen single-agent evaluation fixture             NEXT
+  Gate 11.3 Frozen single-agent evaluation fixture             COMPLETE / MERGED
+  Gate 11.4 First bounded model reasoning baseline             NEXT
 Phase 12   Multi-Agent Architecture                            PLANNED
 Phase 13   MCP                                                 PLANNED
 Phase 14   Amazon Bedrock AgentCore                            PLANNED
@@ -34,22 +35,24 @@ Phase 18   Evaluation, Cost & Portfolio Readiness              PLANNED
 Latest merged project checkpoint:
 
 ```text
-Phase 11 Gate 11.2 / PR #150
-0fb70ace5bd544c6ef5f17f1030bdbcbeb8063b7
+Phase 11 Gate 11.3 / PR #154
+b1b2f4e45005f1d55a017f4761f3b7e061f8a070
 ```
 
-Gate 11.2 exact validation:
+Gate 11.3 exact validation:
 
 ```text
-issue #149:              CLOSED / COMPLETED
-PR #150 final head:      1f2dae3ece3b4a2dc9280575fd5a1a3c315751f4
-Single-Agent CI:         34155862646 / run #11 / PASS
-PR merge test commit:    0262b66b97323bda5ecd397c0b292fd961e88f8a
+issue #153:              CLOSED / COMPLETED
+PR #154 final head:      2dcc7abfc559a8a0b053278a68c926b5dc38d694
+Single-Agent CI:         34163023511 / run #14 / PASS
+job:                     101868535029
+PR merge test commit:    96628ebc2bb5acffa6e27446de28e1073e9d6100
 uv lock --check:         PASS
 Ruff:                    PASS
 Pyright strict:          0 errors / 0 warnings / 0 informations
-pytest:                  31 passed in 0.44s
-PR #150 merge SHA:       0fb70ace5bd544c6ef5f17f1030bdbcbeb8063b7
+pytest:                  37 passed in 0.54s
+PR #154 merge SHA:       b1b2f4e45005f1d55a017f4761f3b7e061f8a070
+post-merge workflow:     NONE — Single-Agent CI is pull_request/workflow_dispatch only
 ```
 
 ## Permanent architecture boundaries
@@ -71,16 +74,17 @@ PR #150 merge SHA:       0fb70ace5bd544c6ef5f17f1030bdbcbeb8063b7
 Phase 11 permanently adds:
 
 ```text
-agent action proposal != capability authorization != execution result
+agent action proposal != capability authorization != execution result != evaluation score
 AuthorizedAgentAction != capability invocation
 capability invocation != execution result
+evaluation evidence != operational telemetry
 agent reasoning may select/use already-authorized capabilities
 agent reasoning does not acquire deterministic truth or execution authority
 ```
 
-Deterministic code continues to own package/version semantics, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS/Risk Policy facts, `SemanticQuery` validation and SQL compilation, retrieval/evidence admission, hybrid route/completeness, canonical evidence/citation identity, output admission, evaluation metrics, execution limits, public request admission, immutable repository evidence binding, public-v1 scope admission, public handoff identity, operational telemetry admission/projection semantics, provider-specific telemetry document admission, agent task admission, capability allowlists, capability authorization, typed capability invocation admission, downstream result binding, and agent execution identity.
+Deterministic code continues to own package/version semantics, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS/Risk Policy facts, `SemanticQuery` validation and SQL compilation, retrieval/evidence admission, hybrid route/completeness, canonical evidence/citation identity, output admission, evaluation metrics, execution limits, public request admission, immutable repository evidence binding, public-v1 scope admission, public handoff identity, operational telemetry admission/projection semantics, provider-specific telemetry document admission, agent task admission, capability allowlists, capability authorization, typed capability invocation admission, downstream result binding, agent execution identity, evaluation-fixture admission, evaluation expectation semantics, execution-bound scoring, and content-addressed evaluation report identity.
 
-LLMs may classify, plan, propose, synthesize, explain, select already-admitted citation IDs, and later propose one capability selection. They do not own structured truth, repository truth, runtime exposure, SQL authority, hybrid route authority, evidence completeness, canonical provenance, capability allowlists, capability authorization, executable argument authority, provider/model selection, retry/fallback policy, arbitrary tool execution, or telemetry authority.
+LLMs may classify, plan, propose, synthesize, explain, select already-admitted citation IDs, and propose one capability selection. They do not own structured truth, repository truth, runtime exposure, SQL authority, hybrid route authority, evidence completeness, canonical provenance, capability allowlists, capability authorization, executable argument authority, provider/model selection, retry/fallback policy, arbitrary tool execution, evaluation metric computation, or telemetry authority.
 
 ## Implemented governed path
 
@@ -129,7 +133,7 @@ Operational evidence
  -> cloudwatch-emf:v1 representation
  -> STOP
 
-Single-agent authority + execution
+Single-agent authority + execution + evaluation
  -> bounded SingleAgentTask
  -> code-owned AgentCapability allowlist
  -> untrusted AgentActionProposal
@@ -139,10 +143,13 @@ Single-agent authority + execution
  -> capability-specific executor port
  -> one-attempt typed result admission
  -> content-addressed AgentCapabilityExecution
+ -> strict golden AgentEvaluationDataset
+ -> deterministic decomposed evaluation metrics
+ -> content-addressed AgentEvaluationReport
  -> STOP
 ```
 
-The final `STOP` is material. OpsLens now has a validated offline single-agent authorization and execution boundary, but it still has no reasoning-model loop, deployed agent runtime, public agent endpoint, AgentCore runtime, MCP, or A2A execution.
+The final `STOP` is material. OpsLens now has validated offline single-agent authorization, typed execution, and deterministic evaluation boundaries, but it still has no real single-agent reasoning baseline, deployed agent runtime, public agent endpoint, AgentCore runtime, MCP, or A2A execution.
 
 ## Frozen Phase 7 / 8 quality
 
@@ -349,6 +356,56 @@ No runtime cost is measured because no real runtime/provider execution occurs.
 
 Gate 11.2 also does not mutate `operational-telemetry:v1`; future agent execution telemetry requires a separately versioned contract.
 
+## Gate 11.3 — Frozen Single-Agent Evaluation Fixture
+
+Frozen contract:
+
+```text
+single-agent-evaluation:v1
+```
+
+The strict golden corpus contains six deterministic cases covering:
+
+```text
+authorized capability without execution
+explicit abstention
+unauthorized capability rejection
+admitted typed execution
+executor failure
+result-contract failure
+```
+
+The evaluator replays the already-frozen Gate 11.1 authorization boundary and, where explicitly requested by the case, the Gate 11.2 typed execution boundary. It does not grant capability authority, repair result bindings, retry failed execution, or use an LLM as judge.
+
+Decomposed deterministic metrics:
+
+```text
+total_cases
+passed_cases
+authorization_matches
+capability_matches
+execution_matches
+failure_category_matches
+bounds_compliant_cases
+```
+
+Case results and the complete report are content-addressed. Executor exception text is discarded before evaluation evidence admission. Report serialization excludes raw task text and arbitrary provider/executor messages.
+
+Gate 11.3 runtime boundary:
+
+```text
+real reasoning model calls:   0
+real AWS calls:               0
+new AWS resources:            0
+new IAM roles/policies:       0
+AgentCore runtime:            0
+MCP:                          0
+A2A:                          0
+gateway integration:          0
+```
+
+No inference cost, latency, token use, or model quality is claimed for Gate 11.3. Absence of a call is not a measured zero-cost observation.
+
 ## Deferred Governed LLM Gateway integration
 
 Long-lived PR #89 remains open/draft for **Phase 14 — Case 3 of the separate `brunovicco/governed-llm-gateway` project**. It remains deferred and must be re-evaluated against the current OpsLens architecture before any merge.
@@ -356,22 +413,11 @@ Long-lived PR #89 remains open/draft for **Phase 14 — Case 3 of the separate `
 ## Next authorized step
 
 ```text
-Phase 11 Gate 11.3 — Frozen Single-Agent Evaluation Fixture
+Phase 11 Gate 11.4 — First Bounded Model Reasoning Baseline
 ```
 
-Gate 11.3 must remain offline and deterministic. It must freeze evaluation cases and independent metrics over the already-merged `single-agent-authority:v1` and `single-agent-execution:v1` contracts before a reasoning model is allowed into Gate 11.4.
+Gate 11.4 is now the first gate allowed to introduce a real reasoning-model call, but only against the frozen Gate 11.1–11.3 contracts. The model may produce an untrusted capability-selection proposal; deterministic code must continue to own task admission, capability allowlists, authorization, typed execution admission, result binding, evaluation metrics, and report identity.
 
-Required rules:
+Before implementation, Gate 11.4 must choose the smallest provider-neutral reasoning port and an explicitly justified first runtime/provider adapter. It must preserve one proposal per task, no adaptive retry/fallback, and no expansion to AgentCore, MCP, A2A, public runtime, or runtime-exposure authority.
 
-```text
-1. evaluate proposal/authorization/execution as separate stages.
-2. include allowlisted ACT, ABSTAIN, denied capability, malformed/tampered identity, and result-binding failure cases.
-3. freeze expected capability selection separately from execution/result correctness.
-4. keep deterministic authority/admission metrics separate from future model quality metrics.
-5. record execution-attempt budget and abstention/denial behavior explicitly.
-6. do not fabricate latency/cost/model-quality values before a real model baseline exists.
-7. no real model, AWS, AgentCore, MCP, or A2A calls in Gate 11.3.
-8. existing Phase 10 telemetry contract remains unchanged.
-9. Repository Risk != Runtime Exposure remains frozen.
-10. PR #89 remains deferred.
-```
+Measured model quality, latency, token usage, and cost may become real evidence only when actually observed by the Gate 11.4 baseline. PR #89 remains deferred and `operational-telemetry:v1` remains unchanged unless a separately versioned agent-specific telemetry contract is justified.
