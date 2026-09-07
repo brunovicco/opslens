@@ -50,7 +50,7 @@ class PublicRepositoryTarget:
 
     def __post_init__(self) -> None:
         """Reuse the Phase 4 GitHub coordinate/ref authority contract."""
-        if not isinstance(self.owner, str) or not isinstance(self.name, str):
+        if type(self.owner) is not str or type(self.name) is not str:
             raise PublicAnalysisValidationError(
                 "repository owner and name must be strings"
             )
@@ -65,7 +65,7 @@ class PublicRepositoryTarget:
 
         requested_ref = self.requested_ref
         if requested_ref is not None:
-            if not isinstance(requested_ref, str):
+            if type(requested_ref) is not str:
                 raise PublicAnalysisValidationError(
                     "requested_ref must be a string or null"
                 )
@@ -93,7 +93,7 @@ class PublicAnalysisRequest:
 
     def __post_init__(self) -> None:
         """Reject forged identities or values outside the v1 public contract."""
-        if not isinstance(self.target, PublicRepositoryTarget):
+        if type(self.target) is not PublicRepositoryTarget:
             raise PublicAnalysisValidationError(
                 "target must be one admitted PublicRepositoryTarget"
             )
@@ -101,7 +101,7 @@ class PublicAnalysisRequest:
             _canonical_json(_request_identity_payload(self.target))
         ).hexdigest()
         if (
-            not isinstance(self.request_sha256, str)
+            type(self.request_sha256) is not str
             or _SHA256_PATTERN.fullmatch(self.request_sha256) is None
             or self.request_sha256 != expected_sha256
         ):
@@ -121,7 +121,7 @@ def create_public_analysis_request(
     target: PublicRepositoryTarget,
 ) -> PublicAnalysisRequest:
     """Create one deterministic request from already-validated GitHub coordinates."""
-    if not isinstance(target, PublicRepositoryTarget):
+    if type(target) is not PublicRepositoryTarget:
         raise PublicAnalysisValidationError(
             "target must be one admitted PublicRepositoryTarget"
         )
