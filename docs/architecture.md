@@ -2,13 +2,13 @@
 
 _Last updated: 2026-09-06_
 
-This document is the accumulated architecture baseline through **Phase 7 — Knowledge Retrieval with Bedrock: COMPLETE**.
+This document is the accumulated architecture baseline through **Phase 8 — Hybrid Retrieval: COMPLETE**.
 
-The next architecture boundary is **Phase 8 — Hybrid Retrieval**.
+The next product boundary is **Phase 9 — Public Analyze Your Repository**.
 
 ## 1. Purpose
 
-OpsLens is an open-source software supply-chain and threat-intelligence platform on AWS.
+OpsLens is an open-source software-supply-chain and threat-intelligence platform on AWS.
 
 Product goal:
 
@@ -18,7 +18,7 @@ Core invariant:
 
 > **Agents reason. Code verifies evidence.**
 
-Additional permanent boundaries:
+Permanent boundaries:
 
 > **Not every question is a RAG problem.**
 
@@ -28,43 +28,51 @@ Additional permanent boundaries:
 
 > **Repository Risk != Runtime Exposure.**
 
+> **Intent classification != execution authority.**
+
 > **No unrestricted text-to-SQL.**
 
-## 2. Permanent architectural principles
+## 2. Architectural principles
 
 Unless changed by explicit ADR:
 
 - raw third-party evidence is preserved before enrichment or interpretation;
-- exact source versions and content hashes participate in provenance;
-- package identity normalization, vulnerable-range matching, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS evidence, and Risk Policy remain deterministic;
-- semantic-query validation and SQL compilation remain deterministic;
-- canonical corpus normalization, selection, hashing, and checked-manifest identity remain deterministic;
-- retrieval admission, context assembly, citation authority, synthesis output admission, support-evidence validation, and metric computation remain deterministic;
-- model outputs are proposals/evidence, not authority over structured truth;
-- a model may select among allowlisted citation IDs but may not author canonical source identity;
-- syntactically valid citation coverage does not prove semantic support;
-- retrieved/source content remains untrusted instruction content after provenance admission;
-- schema, provenance, authority, exact-evidence, or content-addressed identity mismatches fail closed;
-- IAM uses least privilege and responsibility separation;
-- AWS services are introduced only for concrete measured requirements;
+- exact source versions, immutable snapshots, and hashes participate in provenance;
+- package normalization, version/range evaluation, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV, EPSS, CVSS, and Risk Policy facts remain deterministic;
+- natural-language planners produce bounded proposals, never query/execution authority;
+- SemanticQuery validation and SQL compilation remain deterministic;
+- canonical corpus construction and checked-manifest identity remain deterministic;
+- route authorization, evidence admission, required-evidence completeness, context assembly, canonical citation identity, output admission, and evaluation metric computation remain deterministic;
+- retrieved text remains untrusted instruction content after provenance admission;
+- model output is a proposal over already-admitted evidence, never a new structured truth source;
+- syntactically valid citation identity does not prove semantic support;
+- structured and semantic evidence remain different authority classes;
+- runtime exposure is not inferred from repository risk;
+- schema, provenance, authority, completeness, or content-addressed identity mismatches fail closed;
+- IAM follows least privilege and real runtime responsibility boundaries;
+- AWS services are introduced only for concrete requirements, not certification coverage;
 - cost and observability are architecture requirements;
-- one real `dev` environment is preferred over fictional portfolio environments;
-- first-run evaluation evidence is preserved before optimization.
+- first-run evidence is preserved before optimization;
+- a negative experiment is preserved rather than tuned until it passes.
 
-## 3. System shape
+## 3. Current system shape
 
-### Structured vulnerability/risk path
+### 3.1 Structured vulnerability and risk authority
 
 ```text
 NVD + CISA KEV + FIRST EPSS + GitHub Security Advisories
- -> deterministic correlation
- -> immutable Repository Intelligence
+ -> source-preserving threat evidence
+ -> deterministic PyPI identity / PEP 440 applicability
+ -> immutable repository snapshot + inert uv.lock evidence
+ -> deterministic vulnerability correlation
  -> RepositoryAnalysisResult
  -> deterministic Risk Policy v1
  -> RiskPrioritizationResult
 ```
 
-### Structured natural-language query path
+No LLM decides vulnerability applicability, KEV/EPSS/CVSS truth, risk score/tier, or runtime exposure.
+
+### 3.2 Structured natural-language query path
 
 ```text
 natural-language factual question
@@ -77,35 +85,45 @@ natural-language factual question
  -> structured result evidence
 ```
 
-The planner has no arbitrary SQL authority.
+The planner has no arbitrary SQL authority. ADRs 0020 and 0021 freeze this boundary.
 
-### Explanatory/remediation knowledge path
+### 3.3 Explanatory / remediation semantic path
 
 ```text
-explicitly authorized official sources
- -> immutable repository/commit/path pins
- -> bounded GET-only inert-text acquisition
- -> deterministic normalization + exact section selection
- -> content-addressed canonical chunks
- -> checked hash/provenance manifest
+explicitly authorized official source pins
+ -> deterministic canonical corpus
  -> deterministic S3 publication
  -> customer-managed Bedrock Knowledge Base ingestion
  -> Titan Text Embeddings V2 / 1024 / FLOAT32
  -> Amazon S3 Vectors / cosine
  -> direct bounded Retrieve
- -> checked-corpus S3/hash/metadata reconciliation
- -> RetrievedChunk[]
- -> deterministic contiguous rank-prefix context assembly
- -> deterministic pre-model authority decision
- -> one bounded non-streaming Bedrock Converse call
- -> deterministic synthesis output admission
- -> deterministic C1..Cn citation catalog
- -> structured claim + citation-ID proposal
- -> human-reviewed pair-level support evidence
- -> deterministic groundedness/citation metrics
+ -> checked-corpus provenance/hash admission
+ -> bounded deterministic context assembly
+ -> deterministic pre-model authority
+ -> bounded non-streaming Bedrock Converse synthesis
+ -> deterministic citation identity
+ -> explicit support / groundedness evaluation
 ```
 
-Retrieval and synthesis remain separately observable. `RetrieveAndGenerate` remains deliberately unused.
+`RetrieveAndGenerate` remains deliberately unused so retrieval and synthesis stay separately measurable.
+
+### 3.4 Hybrid evidence path
+
+```text
+EvidenceNeed[] proposal
+ -> deterministic hybrid route authority
+ -> STRUCTURED | SEMANTIC | HYBRID | UNSUPPORTED
+ -> deterministic evidence-class acquisition/admission
+ -> need-level ALL_REQUIRED completeness
+ -> HybridEvidenceEnvelope
+ -> deterministic F* structured-fact projection
+ -> deterministic S* semantic-citation projection
+ -> route-aware bounded synthesis
+ -> deterministic output admission
+ -> independent quality/runtime metrics
+```
+
+Hybrid Retrieval means hybrid **evidence routing and composition**. It does not imply keyword + vector search.
 
 ## 4. AWS foundation
 
@@ -119,8 +137,6 @@ CI/CD identity:          GitHub Actions OIDC -> AWS STS
 observability:           CloudWatch + X-Ray
 analytics:               AWS Glue + Amazon Athena
 ```
-
-Human administration uses temporary IAM Identity Center credentials. GitHub Actions uses OIDC; persistent AWS access keys are not stored in GitHub.
 
 Primary storage:
 
@@ -138,7 +154,9 @@ Athena workgroup: opslens-dev
 scan cutoff:      10,485,760 bytes
 ```
 
-## 5. Structured deterministic authorities — Phases 2–6
+Human administration uses temporary IAM Identity Center credentials. GitHub Actions uses OIDC; persistent AWS access keys are not stored in GitHub.
+
+## 5. Deterministic structured authorities — Phases 2–6
 
 ### Threat Intelligence Data Lake
 
@@ -155,8 +173,6 @@ package/version/purl
  -> content-addressed evidence
 ```
 
-> **No LLM decides vulnerability applicability.**
-
 ### Repository Intelligence
 
 ```text
@@ -166,7 +182,7 @@ public repository
  -> inert uv.lock bytes
  -> deterministic TOML parsing
  -> canonical dependencies
- -> deterministic vulnerability applicability
+ -> deterministic applicability
  -> RepositoryAnalysisResult
 ```
 
@@ -195,13 +211,9 @@ question
  -> bounded Athena execution
 ```
 
-ADRs 0020 and 0021 preserve the no-unrestricted-text-to-SQL boundary.
+No unrestricted text-to-SQL is allowed.
 
-## 6. Phase 7 controlled corpus and vector Knowledge Base
-
-Gate 7.1 froze provider-independent retrieval contracts.
-
-Gate 7.2 authorized six official source files through immutable repository/commit/path pins and deterministically materialized nine chunks.
+## 6. Phase 7 controlled Knowledge Retrieval
 
 Frozen corpus:
 
@@ -212,50 +224,25 @@ chunks:      9
 sha256:      98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
 ```
 
-Gate 7.3 selected a customer-managed Bedrock vector Knowledge Base backed by S3 Vectors:
+Knowledge Base baseline:
 
 ```text
 knowledge base id:     BTVJ2PBR2A
 data source id:        IEL1LBE026
-source prefix:         knowledge/corpus/v1/bedrock/
 chunking:              NONE
 embedding model:       amazon.titan-embed-text-v2:0
 embedding dimensions:  1024
 embedding data type:   FLOAT32
 vector store:          Amazon S3 Vectors
 distance:              cosine
-reranking:             deferred
-hybrid search:         deferred
+canonical vectors:     9
 ```
 
-Successful ingestion materialized exactly nine vectors.
+Direct retrieval admission verifies expected source location, canonical manifest identity, text hash/byte count, metadata, and deterministic rank before a `RetrievedChunk` exists.
 
-The Knowledge Base service role is an ingestion/vector integration identity, not a human or application runtime identity.
-
-## 7. Direct retrieval and deterministic admission
-
-Gate 7.4 uses direct Knowledge Base `Retrieve`.
-
-Admission path:
+Frozen retrieval baseline:
 
 ```text
-provider result
- -> exact expected S3 location
- -> checked manifest lookup
- -> returned-text SHA-256 + byte-count validation
- -> canonical metadata reconciliation
- -> deterministic rank
- -> RetrievedChunk
-```
-
-Provider-owned IDs do not become canonical OpsLens identity.
-
-Frozen Gate 7.5 baseline:
-
-```text
-10 cases
-8 positive
-2 negative/out-of-authority
 Recall@1:   0.375
 Recall@3:   0.750
 Recall@5:   0.875
@@ -264,57 +251,27 @@ MRR:        0.5699404761904762
 provenance correctness: 1.0
 ```
 
-Both negative cases returned nearest-neighbor results. Vector similarity and non-empty retrieval are therefore evidence, not routing/answerability authority.
-
-## 8. Context assembly and synthesis
-
-Provider-independent context bounds:
+Both negative cases still returned vector neighbors, proving:
 
 ```text
-default max chunks:      5
-hard max chunks:         10
-max admitted text bytes: 16,384 UTF-8 bytes
+non-empty retrieval != sufficient evidence != authority to answer
 ```
 
-Algorithm:
+## 7. Phase 7 bounded synthesis and citation authority
+
+Synthesis profile:
 
 ```text
-RetrievalEvidence
- -> preserve rank order
- -> admit whole next chunk if it fits
- -> stop at max chunks or first non-fitting whole chunk
- -> never truncate
- -> never skip/backfill lower ranks
- -> AssembledContext
+Region:              us-east-1
+API:                 bedrock-runtime / Converse
+model/profile:       us.anthropic.claude-haiku-4-5-20251001-v1:0
+streaming:           no
+temperature:         0.0
+provider maxTokens:  2048
+tools:               none
 ```
 
-Pre-model authority is deterministic:
-
-```text
-SUPPORTED
-UNSUPPORTED
-```
-
-`UNSUPPORTED` cannot form a synthesis request.
-
-Synthesis boundary from ADR 0023:
-
-```text
-question:                 <= 1,000 characters
-model calls/application:  1 maximum
-answer:                   <= 4,000 characters
-raw response parser:      <= 65,536 characters
-Region:                   us-east-1
-API:                      bedrock-runtime / Converse
-model/profile:            us.anthropic.claude-haiku-4-5-20251001-v1:0
-streaming:                no
-temperature:              0.0
-provider maxTokens:       2,048
-tools:                    none
-structured output:        JSON Schema
-```
-
-Prompt trust classes remain separated:
+Prompt trust classes stay separated:
 
 ```text
 trusted system instructions
@@ -322,25 +279,9 @@ untrusted user question
 untrusted but source-verified retrieved evidence
 ```
 
-Automatic model-invocation body logging remains disabled because prompts contain user/source text. Content-free metadata and hashes are recorded instead.
+Citation IDs are projected only from admitted evidence. The model may select them; it may not author canonical source identity.
 
-## 9. Deterministic citation authority and groundedness
-
-```text
-AssembledContext
- -> selected ContextEvidenceBlock[] only
- -> deterministic C1..Cn
- -> CitationCatalog
- -> GroundedSynthesisRequest
- -> structured claims + citation IDs
- -> deterministic output admission
-```
-
-Canonical URI/source/document/chunk/hash identity is projected from admitted evidence, never accepted from model output.
-
-A valid citation ID guarantees syntactic citation coverage only.
-
-Frozen `knowledge-grounding-golden:v1` baseline:
+Frozen Gate 7.7 baseline:
 
 ```text
 decision accuracy:                 1.0
@@ -353,243 +294,370 @@ abstention precision:              1.0
 abstention recall:                 1.0
 ```
 
-Human-reviewed support evidence is preserved as content-addressed metadata:
+The preserved isolation failure demonstrates:
 
 ```text
-labs/evidence/phase-7-gate-7-7-first-run-review-v1.json
+retrieval success != citation attribution success != semantic groundedness
 ```
 
-### Architecture lesson: retrieval success != groundedness
+## 8. Phase 8 deterministic hybrid routing
 
-The isolation target was retrieved at rank 1 and became `C1`, yet the model cited `C2` for both claims. Strict exact-chunk review marked both pairs unsupported.
+ADR 0025 freezes `hybrid-routing:v1`.
+
+Recognized needs:
 
 ```text
-retrieval success
- != citation attribution success
- != claim groundedness
+vulnerability_facts
+risk_priority
+remediation_guidance
+runtime_exposure
 ```
 
-### Architecture lesson: retrieval existence != answerability
-
-The TLS-cipher case returned five vector neighbors but correctly produced `insufficient_evidence`.
+Policy:
 
 ```text
-non-empty vector retrieval
- != sufficient evidence
- != authority to answer
+vulnerability_facts and/or risk_priority -> STRUCTURED
+remediation_guidance                      -> SEMANTIC
+structured + remediation                 -> HYBRID
+runtime_exposure, alone or mixed         -> UNSUPPORTED
 ```
 
-The Gate 7.7 weakness remains frozen. Any prompt or citation-selection change requires a new version and a new evaluation.
+Intent/evidence-need classification may be a proposal. The route decision is deterministic authority.
 
-## 10. Phase 7 failure taxonomy
+Supported routes require `ALL_REQUIRED` evidence. Runtime exposure is valid-but-unavailable rather than mapped to repository risk.
 
-Gate 7.8 freezes failure diagnosis by stage:
+## 9. Phase 8 deterministic hybrid evidence
+
+ADR 0026 freezes `hybrid-evidence:v1`.
+
+The envelope retains separate collections:
 
 ```text
-1. route / authority failure
-   wrong evidence path or unsupported request admitted
-
-2. provider retrieval failure
-   Bedrock Retrieve timeout/throttle/provider error
-
-3. retrieval evidence-admission failure
-   wrong S3 key/bucket, hash/byte mismatch, invalid metadata/provenance
-
-4. retrieval relevance / coverage failure
-   provider call succeeds but required evidence is outside admitted results
-
-5. context-assembly failure
-   deterministic bounds prevent sufficient whole-chunk context
-
-6. synthesis transport failure
-   Converse timeout/throttle/provider error
-
-7. synthesis output-admission failure
-   invalid schema, unexpected block/stop reason, invalid counts/bounds
-
-8. answerability / decision failure
-   incorrect ANSWER vs INSUFFICIENT_EVIDENCE decision
-
-9. citation-authority failure
-   unknown/duplicate/out-of-catalog citation identity
-
-10. citation-attribution failure
-    selected valid citation points to the wrong evidence chunk
-
-11. semantic groundedness failure
-    cited evidence does not support the emitted claim
+structured_evidence[]
+semantic_evidence[]
+authority_decision
+provenance_by_class
+satisfied_needs
+completeness
+content-addressed identity
 ```
 
-These categories are intentionally separate. A citation-attribution failure must not be mislabeled as a retrieval miss, and provider success must not hide semantic failure.
+No generic `Evidence[]` erases authority class.
 
-## 11. Future application runtime IAM boundary
+Structured evidence may satisfy only supported structured needs. Semantic evidence may satisfy only remediation guidance. Extra/unrequested evidence, duplicates, malformed ranks, or incomplete required classes are rejected.
 
-No application compute principal exists yet. Gate 7.8 documents the future entitlement before a role is created.
+Semantic rank/score are provenance and measurement data, never truth.
 
-### Retrieval runtime entitlement
+## 10. Phase 8 frozen evaluation contract
 
-The proven runtime requires only:
+ADR 0027 freezes:
 
 ```text
-Action:   bedrock:Retrieve
-Resource: arn:aws:bedrock:us-east-1:487757851499:knowledge-base/BTVJ2PBR2A
+hybrid-evaluation-golden:v1
+68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1
 ```
 
-The application does not need `RetrieveAndGenerate`, data-source management, Knowledge Base administration, or direct S3 Vectors access for the proven path.
-
-### Synthesis runtime entitlement
-
-The application calls non-streaming `Converse`. Bedrock authorizes this through `bedrock:InvokeModel`.
-
-The selected US Geographic inference profile is:
+Case types:
 
 ```text
-us.anthropic.claude-haiku-4-5-20251001-v1:0
+structured_only_factual
+semantic_only_remediation
+true_hybrid
+unsupported_out_of_authority
+partial_structured_evidence
+semantic_retrieval_noise
 ```
 
-For requests sourced from `us-east-1`, AWS documents destination Regions:
+Metric dimensions:
 
 ```text
-us-east-1
-us-east-2
-us-west-2
+route_accuracy
+structured_fact_correctness
+semantic_groundedness
+citation_correctness
+abstention
+latency
+cost
 ```
 
-The future role therefore needs `bedrock:InvokeModel` on:
+No composite score is allowed.
+
+The semantic-noise case intentionally places a non-supporting admitted chunk at rank 1 and the expected support target at rank 2.
+
+## 11. Phase 8 route-aware bounded synthesis
+
+ADR 0028 freezes `hybrid-synthesis:v1`.
 
 ```text
-exact inference-profile ARN in us-east-1
-exact Claude Haiku 4.5 foundation-model ARN in us-east-1
-exact Claude Haiku 4.5 foundation-model ARN in us-east-2
-exact Claude Haiku 4.5 foundation-model ARN in us-west-2
+STRUCTURED
+ -> deterministic F1/F2/... facts
+ -> 0 model calls
+
+SEMANTIC
+ -> admitted S1/S2/... evidence
+ -> <=1 model call
+
+HYBRID
+ -> deterministic facts + admitted semantic evidence
+ -> <=1 model call
+
+UNSUPPORTED
+ -> explicit abstention
+ -> 0 model calls
+
+incomplete evidence
+ -> reject_before_synthesis
+ -> 0 model calls
 ```
 
-Foundation-model permissions should be conditioned on the exact `bedrock:InferenceProfileArn`.
+Structured facts remain code-owned. The model cannot alter them or promote authored values into canonical facts.
 
-Streaming permission (`bedrock:InvokeModelWithResponseStream`) is intentionally absent because the Phase 7 contract is non-streaming.
+Every model explanatory claim must reference at least one admitted S citation ID. Optional F IDs provide structured context only. Unknown IDs fail closed.
 
-See ADR 0024 for the policy shape and rationale.
+The runtime adapter preserves bounded failure categories for provider invocation, response contract, stop reason, output contract, and clock anomalies.
 
-## 12. Cost-accounting boundary
+## 12. Gate 8.4 real hybrid baseline
 
-Phase 7 separates cost drivers instead of reporting a fabricated single number:
+Immutable evidence:
 
 ```text
-ingestion-time model embedding
-S3 Vectors storage
-S3 Vectors writes
-query-time embedding
-S3 Vectors query request fee
-S3 Vectors data processed
-S3 Vectors data returned
-synthesis input tokens
-synthesis output tokens
+labs/evidence/phase-8-gate-8-4-first-complete-baseline-v1.json
 ```
 
-The first four-case grounded run directly computed:
+Measured execution:
 
 ```text
-model input:             $0.0129074
-model output:            $0.0035475
-model subtotal:          $0.0164549
-4 S3 Vectors requests:   $0.0000100
-computable total:        $0.0164649
+complete:                            true
+planned_case_count:                  6
+synthesis_invocation_attempt_count:  3
+admitted_model_execution_count:      3
+route_accuracy:                      1.0
+structured_fact_correctness:         1.0
+semantic_groundedness:               0.6666666666666666
+citation_correctness:                0.6666666666666666
+abstention:                          1.0
+latency_ms:                          2959.3333333333335
+cost:                                UNMEASURED / null
 ```
 
-This is not represented as the complete AWS bill because exact query-embedding consumption and S3 Vectors processed/returned units are not exposed by the runtime evidence.
-
-Cost Explorer/billing remains the source for bill-level reconciliation.
-
-## 13. Observability boundary
-
-Current lab/runtime evidence captures:
+Token totals:
 
 ```text
-provider request IDs
-retrieval result counts/ranks/scores
-canonical provenance hashes
-context/catalog/request/result hashes
-model/profile identity
-input/output/total/cache tokens
-Bedrock latency
-client elapsed time
-SDK retry count
+input:   4150
+output:   289
+total:   4439
+```
+
+The semantic-noise case emitted the correct rank-two S2 claim and an ancillary rank-one S1 claim. Output admission accepted both because both IDs were admitted; independent evaluation correctly reduced question-specific groundedness/citation correctness.
+
+## 13. Gate 8.5 measured optimization governance
+
+H8.5-01 was a single predeclared prompt-only candidate:
+
+```text
+experiment: hybrid-optimization:h8.5-01-v1
+candidate:  hybrid-synthesis-prompt:h8.5-01-v1
+```
+
+It changed only trusted synthesis instructions about minimal sufficient answers and direct question relevance.
+
+All upstream/downstream authority contracts, fixture targets, semantic evidence, model profile, Region, inference settings, output schema, and call budget remained unchanged.
+
+Real-run evidence:
+
+```text
+labs/evidence/phase-8-gate-8-5-h85-01-first-run-v1.json
+```
+
+Result:
+
+```text
+route_accuracy:               1.0
+structured_fact_correctness:  1.0
+semantic_groundedness:        0.6666666666666666
+citation_correctness:         0.6666666666666666
+abstention:                   1.0
+latency_ms:                   2997.0
+cost:                         UNMEASURED / null
+```
+
+The exact semantic-noise weakness persisted. Decision:
+
+```text
+H8.5-01 = REJECT
+```
+
+The candidate also increased input tokens by 306 and total tokens by 280 while reducing output tokens by 26.
+
+The default therefore remains:
+
+```text
+HybridSynthesisPromptPolicy.GATE_8_4_V1
+hybrid-synthesis-prompt:v1
+```
+
+No second run or post-result mutation of H8.5-01 is authorized. A materially different intervention requires a new hypothesis and predeclared acceptance rule.
+
+## 14. Failure taxonomy
+
+Current diagnosis is stage-oriented:
+
+```text
+routing / authority failure
+structured evidence failure
+semantic provider retrieval failure
+semantic evidence-admission failure
+hybrid completeness failure
+structured fact projection failure
+semantic relevance / selection failure
+synthesis provider invocation failure
+synthesis response-contract failure
+synthesis stop-reason failure
+synthesis output-admission failure
+citation-attribution failure
+semantic groundedness failure
+optimization-decision failure
+```
+
+Provider success must not hide semantic failure, and a retrieval/citation issue must not be mislabeled as a structured-authority failure.
+
+## 15. Runtime IAM boundary
+
+No deployed public application compute principal exists at Phase 8 closeout.
+
+Therefore Phase 8 creates no speculative runtime role.
+
+For the already-proven semantic path, ADR 0024 records the future least-privilege shape:
+
+```text
+bedrock:Retrieve
+ -> exact Knowledge Base BTVJ2PBR2A
+
+bedrock:InvokeModel
+ -> exact approved inference profile and required foundation-model resources
+```
+
+Hybrid route/evidence/projection logic itself requires no broader Bedrock entitlement.
+
+The structured path retains bounded read-only Athena authority. Runtime-exposure IAM is deferred because runtime exposure remains unsupported.
+
+The policy must be revalidated against current AWS documentation immediately before real Phase 9 deployment.
+
+## 16. Cost-accounting boundary
+
+Cost drivers remain separate:
+
+```text
+structured Athena execution / bytes scanned
+query-time embeddings
+S3 Vectors request / processed / returned units
+model input tokens
+model output tokens
+```
+
+Gate 8.4 and Gate 8.5 correctly report `cost = UNMEASURED / null`. Token evidence is not a complete AWS bill.
+
+Any future USD estimate must use an explicit versioned pricing contract or bill-level reconciliation rather than silently mixing stale rates with runtime data.
+
+## 17. Observability boundary
+
+Current hybrid lab/runtime evidence captures:
+
+```text
+route and case identity
+expected/observed behavior
+synthesis invocation attempt
+bounded failure category/diagnostic
+provider request ID
+model/profile and Region
+token/cache counts
+Bedrock latency and client elapsed time
+SDK retries
 stop reason
-answer/abstention decision
-claim/citation mappings
-human support-judgment hashes
+request/prompt/envelope/catalog/result hashes
+structured F projections
+semantic S citation/chunk mappings
+independent quality metrics
+optimization decision/rejection reasons
 ```
 
-Phase 7 does not claim:
+Phase 8 does not claim:
 
 ```text
 production SLOs
-continuous deployed application metrics for the RAG path
-end-user trace correlation across a deployed runtime
+continuous deployed hybrid metrics
+public-user distributed traces
 production alert thresholds
-high-volume cost or latency distributions
+high-volume percentiles/error rates
+complete request-level AWS bill attribution
 ```
 
-Those require a real deployed runtime and measured workload.
+Those require a deployed public runtime and measured workload.
 
-## 14. Phase 8 entry boundary
+Automatic model-invocation content logging remains inappropriate because prompts contain user/source text; content-free metadata and hashes are preferred.
 
-Hybrid Retrieval must not simply concatenate Athena rows and vector chunks.
+## 18. Phase 9 entry boundary
 
-Phase 8 begins from an explicit evidence-class routing contract:
+Public Analyze Your Repository may begin only with these invariants frozen:
 
 ```text
-structured vulnerability/risk facts
- -> deterministic structured authority
-
-explanatory/remediation guidance
- -> bounded semantic retrieval evidence
-
-combined response
- -> provenance remains explicit by evidence class
- -> no authority laundering
+1. public repository acquisition stays bounded GET-only; repository code is never executed
+2. immutable repository snapshot identity precedes dependency analysis
+3. vulnerability applicability and risk remain deterministic structured truth
+4. hybrid route authority remains deterministic
+5. supported routes require ALL_REQUIRED evidence
+6. runtime exposure remains explicit UNSUPPORTED until a separate runtime authority exists
+7. model synthesis receives only admitted evidence and cannot author canonical provenance/structured truth
+8. structured-only, unsupported, and incomplete cases preserve zero-model-call behavior
+9. hybrid-synthesis-prompt:v1 remains the runtime default; H8.5-01 stays rejected evidence
+10. public inputs, request size, provider calls, output size, timeout, concurrency, and cost budgets are bounded
+11. provider/evidence/output/citation failures remain fail closed
+12. telemetry avoids automatic user/source prompt-content logging
+13. abuse/rate/cost controls exist before public launch
+14. production SLOs/alerts are based on deployed workload, not lab samples
+15. a runtime IAM identity is created only when the Phase 9 compute boundary is concrete
+16. new prompt/retrieval/reranking/vector changes require new versioned hypotheses
 ```
 
-Entry criteria:
+Phase 9 should expose the already-governed evidence system rather than introducing agentic complexity by default.
+
+## 19. Deferred decisions
+
+Not adopted merely because Phase 8 is complete:
 
 ```text
-1. Gate 7.7 baseline remains immutable
-2. route eligibility is explicit and typed
-3. structured truth remains authoritative for vulnerability/risk facts
-4. semantic evidence remains bounded explanatory/remediation evidence
-5. combined evidence preserves provenance by class
-6. missing required evidence causes explicit partial/unsupported behavior
-7. quality, cost, failures, and observability remain independently measurable
-8. new AWS services/rerankers/search modes require measured justification
+reranking
+keyword + vector hybrid search
+OpenSearch Serverless
+alternative embeddings/vector store
+runtime cache
+similarity thresholds
+new synthesis policy
+agents
+MCP
+AgentCore
+A2A
+runtime exposure / Inspector integration
 ```
 
-Phase 8 starts offline-first with the routing and authority contract before introducing any new AWS resource or model call.
+These remain future phases or separately measured hypotheses.
 
-## 15. Deliberate non-adoption at Phase 7 closeout
+The long-lived Governed LLM Gateway PR #89 remains deferred for the later Phase 14 Case 3 integration and is not part of Phase 8.
 
-- no OpenSearch Serverless before a measured requirement;
-- no reranker before a measured relevance/groundedness hypothesis;
-- no keyword/vector hybrid mode merely because it exists;
-- no runtime cache before reuse/invalidation requirements are measured;
-- no application IAM role before actual compute exists;
-- no provider-generated canonical citations;
-- no post-hoc similarity threshold derived from the small fixture;
-- no prompt tuning inside the frozen Gate 7.7 baseline.
+## 20. Architecture records
 
-## 16. Architecture records
-
-Relevant current ADRs:
+Key current ADRs:
 
 ```text
-0020 No unrestricted text-to-SQL
-0021 Bounded Bedrock semantic-query planner
-0022 Customer-managed Bedrock KB with S3 Vectors
-0023 Bounded Bedrock knowledge synthesis
-0024 Phase 7 future application runtime IAM boundary
+0020 no unrestricted text-to-SQL
+0021 bounded Bedrock Semantic Query planner
+0022 customer-managed Bedrock Knowledge Base with S3 Vectors
+0023 bounded Bedrock knowledge synthesis
+0024 future Phase 7/runtime IAM boundary
+0025 deterministic hybrid routing authority
+0026 deterministic hybrid evidence envelope
+0027 frozen hybrid evaluation contract
+0028 bounded route-aware hybrid synthesis
 ```
 
-Phase 7 closeout evidence is recorded in:
-
-```text
-labs/phase-7-gate-7-8-closeout.md
-```
+Historical implementation details and exact runtime evidence remain in `labs/` and `labs/evidence/` rather than being rewritten into the current architecture baseline.
