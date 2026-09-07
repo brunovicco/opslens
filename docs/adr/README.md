@@ -40,3 +40,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0030](0030-public-semantic-planning-authority.md) | Keep public semantic planning proposal-only and deterministic-scope admitted | Accepted |
 | [0031](0031-phase9-public-analysis-closeout.md) | Close Phase 9 at the governed application boundary, not a fictional public runtime | Accepted |
 | [0032](0032-content-minimized-operational-telemetry-contract.md) | Treat operational telemetry as content-minimized evidence, not execution authority | Accepted |
+| [0033](0033-governed-operational-orchestration-instrumentation.md) | Instrument governed public analysis without moving deterministic authority | Accepted |
