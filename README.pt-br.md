@@ -6,7 +6,7 @@
 
 ### Software Supply Chain e Threat Intelligence Verificáveis na AWS
 
-**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Public Analysis Admission · Operational Evidence · Autoridade Determinística**
+**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Public Analysis · Operational Evidence · Autoridade Determinística**
 
 </div>
 
@@ -48,28 +48,23 @@ Boundaries permanentes:
 | Phase 7 | Knowledge Retrieval with Bedrock | ✅ Concluída |
 | Phase 8 | Hybrid Retrieval | ✅ Concluída |
 | Phase 9 | Public Analyze Your Repository | ✅ Concluída |
-| Phase 10 | Observability & Operational Excellence | 🚧 Em andamento — Gates 10.1–10.2 concluídas |
+| Phase 10 | Observability & Operational Excellence | ✅ Concluída |
+| Phase 11 | Single-Agent Baseline | ▶️ Próxima |
 
-A Phase 9 encerra em um **boundary governado de aplicação**, e não em um deployment de produção fictício. O OpsLens possui admissão limitada do request público, orchestration imutável da evidência de repositório, semantic planning proposal-only e handoff determinístico através da autoridade híbrida já existente da Phase 8.
-
-A Phase 10 agora adiciona um contrato provider-neutral e content-minimized de operational evidence e instrumentação determinística do caminho governado da Phase 9. Isso não significa que um runtime HTTP público ou backend de telemetry de produção já foi implantado.
+A Phase 9 encerra em um **boundary governado de aplicação**, e não em um deployment fictício de produção. A Phase 10 torna esse boundary diagnosticável e adiciona uma representação de telemetry nativa da AWS sem afirmar que existe runtime público implantado ou ingestão real no CloudWatch.
 
 ```text
+application boundary validated != public runtime deployed
 telemetry evidence != business truth
 telemetry evidence != route authority
-telemetry failure != permission to bypass fail-closed application contracts
-telemetry delivery accounting != permission to invent evidence identities
+EMF document created != CloudWatch ingestion proven
 ```
 
-Compute público, runtime IAM, controles de rate/abuse, entrega de telemetry de produção e SLOs derivados de workload continuam trabalho explícito posterior.
-
-Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), o [closeout da Phase 9](labs/phase-9-gate-9-4-closeout.md), a [Gate 10.1](labs/phase-10-gate-10-1-operational-telemetry-contract.md) e a [Gate 10.2](labs/phase-10-gate-10-2-governed-orchestration-instrumentation.md).
+Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md) e o [closeout da Phase 10](labs/phase-10-gate-10-4-closeout.md).
 
 ## Sistema implementado
 
-O OpsLens possui caminhos governados estruturados, semânticos, híbridos, de public admission e de operational evidence sem misturar níveis de autoridade.
-
-### 1. Autoridade estruturada de vulnerabilidade / risco
+### 1. Autoridade estruturada de vulnerabilidade e risco
 
 ```text
 NVD / CVE -----------+
@@ -91,7 +86,7 @@ repositório público GitHub
 
 O modelo nunca decide aplicabilidade de vulnerabilidade, verdade da Risk Policy, fatos de KEV/EPSS/CVSS ou runtime exposure.
 
-### 2. Caminho estruturado de perguntas em linguagem natural
+### 2. Caminho estruturado de linguagem natural
 
 ```text
 pergunta factual em linguagem natural
@@ -104,64 +99,65 @@ pergunta factual em linguagem natural
  -> evidência estruturada
 ```
 
-O planner não recebe autoridade para SQL arbitrário.
+O planner nunca recebe autoridade para SQL arbitrário.
 
-### 3. Caminho semântico explicativo / remediação
+### 3. Grounded knowledge retrieval
 
 ```text
 source pins oficiais e imutáveis
  -> corpus canônico determinístico
- -> Amazon Bedrock Knowledge Base customer-managed
+ -> Amazon Bedrock Knowledge Base
  -> Titan Text Embeddings V2
  -> Amazon S3 Vectors
- -> Retrieve direto e limitado
+ -> Retrieve limitado
  -> admissão determinística contra corpus verificado
  -> montagem limitada de contexto
- -> síntese limitada e não-streaming via Bedrock Converse
- -> identidade determinística de citações
- -> avaliação explícita de suporte / groundedness
+ -> síntese limitada via Bedrock Converse
+ -> identidade determinística de citação
+ -> avaliação explícita de groundedness
 ```
 
-`RetrieveAndGenerate` não é usado. Retrieval e geração permanecem testáveis e observáveis separadamente.
+`RetrieveAndGenerate` não é usado deliberadamente. Retrieval, admissão de contexto, síntese, citações e avaliação permanecem testáveis separadamente.
 
-### 4. Boundary público de análise
+### 4. Autoridade de evidência híbrida
+
+```text
+EvidenceNeed[]
+ -> autoridade determinística de route
+ -> STRUCTURED | SEMANTIC | HYBRID | UNSUPPORTED
+ -> composição de evidência separada por autoridade
+ -> completude ALL_REQUIRED
+ -> HybridEvidenceEnvelope
+ -> projeções determinísticas F* / S*
+ -> síntese limitada e route-aware
+ -> admissão determinística de output
+```
+
+Fatos estruturados de vulnerabilidade/risco e evidência semântica de remediação nunca se tornam uma classe única e indiferenciada de autoridade.
+
+Runtime exposure continua `UNSUPPORTED` até existir uma autoridade independente futura.
+
+### 5. Boundary governado de public analysis
 
 ```text
 JSON público não confiável
- -> admissão estrita <=2048 bytes
+ -> admissão estrita e limitada
  -> coordenadas GitHub owner/name/ref validadas
  -> identidade pública source-confirmed
  -> snapshot imutável commit/tree
  -> evidência inerte uv.lock no commit exato
- -> parser determinístico + normalização PyPI
+ -> parsing determinístico + normalização PyPI
  -> PublicRepositoryEvidenceExecution
- -> semantic planning request metadata-only <=2048 bytes
- -> proposta não confiável <=1024 bytes
+ -> semantic planning proposal metadata-only e limitado
  -> admissão determinística do scope público v1
- -> autoridade híbrida da Phase 8
+ -> autoridade híbrida existente da Phase 8
  -> PublicAnalysisAdmissionHandoff
  -> STOP
 ```
 
-O scope público v1 é propriedade do código, não do modelo. O planner deve propor exatamente:
+O scope público v1 é propriedade do código, não do modelo.
 
-```text
-remediation_guidance
-risk_priority
-vulnerability_facts
-```
-
-e a autoridade de route deve resolver para:
-
-```text
-HYBRID
-ALL_REQUIRED
-STRUCTURED + SEMANTIC
-```
-
-O planner não recebe raw repository URL, bytes do lockfile, nomes/versões de dependências, texto/instruções arbitrárias do repositório, SQL, credenciais, seleção de provider/model/tool ou conteúdo executável.
-
-### 5. Operational evidence e instrumentação governada
+### 6. Operational evidence e representação CloudWatch EMF
 
 A Phase 10 congela:
 
@@ -170,7 +166,7 @@ operational-telemetry:v1
 operation: analyze_public_repository
 ```
 
-Stages limitados:
+Cinco stages limitados:
 
 ```text
 public_request_admission
@@ -180,16 +176,14 @@ hybrid_route_admission
 public_handoff
 ```
 
-O contrato de evento não possui arbitrary attributes bag. Ele pode carregar somente semântica operacional limitada e identidades content-addressed da Phase 9 já admitidas (`public_request_id`, `source_execution_id`, `handoff_id`) nos stages onde essas identidades já podem existir.
-
-A projeção de métricas de baixa cardinalidade é determinística:
+Métricas de baixa cardinalidade:
 
 ```text
 OperationalStageCount      Count
 OperationalStageLatency    Milliseconds
 ```
 
-com apenas:
+Dimensions exatas:
 
 ```text
 ContractVersion
@@ -198,53 +192,88 @@ Stage
 Outcome
 ```
 
-como dimensions. IDs de request/source/handoff nunca se tornam metric dimensions.
+A Gate 10.2 instrumenta o caminho governado por meio das portas injetadas `MonotonicClock` e `OperationalEventSink`. Uma execução bem-sucedida emite exatamente cinco eventos ordenados; stages rejeitados/falhos são terminais.
 
-A Gate 10.2 instrumenta o caminho governado da Phase 9 através dos ports injetados `MonotonicClock` e `OperationalEventSink`. Uma execução bem-sucedida produz exatamente cinco eventos de sucesso ordenados. Stages rejected/failed são terminais. A entrega externa do sink permanece best effort depois da construção obrigatória do `OperationalEvent`, e o accounting de delivery só pode referenciar IDs de eventos já admitidos.
-
-Validação exact-head da Gate 10.2:
+A Gate 10.3 adiciona serialização AWS-native determinística:
 
 ```text
-PR #138 final head:           24b2affdf464e2548d94273e41007bb3256b561e
-Python CI run:                34141496326 / PASS
-Ruff:                         PASS
-Pyright strict:               0 errors / 0 warnings / 0 informations
-Public Analysis pytest:       70 passed
-merge SHA:                    346b223d9566a5d04d84e279f30793ad52a35b67
-issue #137:                   CLOSED / COMPLETED
+cloudwatch-emf:v1
+namespace: OpsLens/Operational
+storage resolution: 60 seconds
+maximum canonical document: 16 KiB
 ```
-
-## Autoridade híbrida da Phase 8
-
-Hybrid Retrieval significa **hybrid evidence routing**, não automaticamente busca keyword + vector.
 
 ```text
-EvidenceNeed[]
- -> autoridade determinística de route
- -> STRUCTURED | SEMANTIC | HYBRID | UNSUPPORTED
- -> montagem determinística de evidência tipada
- -> completude ALL_REQUIRED
- -> HybridEvidenceEnvelope
- -> síntese limitada e route-aware
+OperationalEvent
+ -> project_operational_metrics(...) existente
+ -> JSON CloudWatch EMF canônico
+ -> CloudWatchEmfDocument content-addressed
+ -> EpochMillisecondsClock injetado
+ -> EmfLineWriter injetado
+ -> STOP
 ```
 
-Autoridade não é achatada:
+`EventId`, `PublicRequestId`, `SourceExecutionId` e `HandoffId` permanecem somente metadata de log e nunca se tornam metric dimensions.
+
+O adapter executa zero retries e tenta escrever no máximo uma vez por `emit(...)`.
+
+## Closeout da Phase 10
+
+A Phase 10 prova:
 
 ```text
-fatos estruturados de vulnerabilidade/risco
- -> autoridade estruturada determinística
-
-orientação explicativa/remediação
- -> evidência semântica admitida
-
-resposta combinada
- -> proveniência explícita por classe de evidência
- -> sem authority laundering
+contrato provider-neutral de operational event
+instrumentação determinística e limitada por stage
+identidades content-minimized de proveniência/correlação
+projeção fixa de métricas de baixa cardinalidade
+sink externo best-effort após evidência obrigatória in-process
+failure taxonomy limitada e sem conteúdo arbitrário
+serialização determinística cloudwatch-emf:v1
+semântica separada de monotonic-duration e epoch-milliseconds
+zero retries no adapter
+evidência operacional/EMF content-addressed
 ```
 
-Runtime exposure continua `UNSUPPORTED` até existir autoridade independente em fase futura.
+Ela **não** prova:
 
-## Avaliação congelada da Phase 8
+```text
+runtime HTTP público
+ingestão no CloudWatch
+runtime principal / runtime IAM
+volume de requests públicos
+distributed traces de produção
+p95/p99 de produção
+taxas de erro/throttle de produção
+custo/request de produção
+dashboards/alarms de produção
+compliance de SLO de produção
+```
+
+### Validação exata da Phase 10
+
+```text
+Gate 10.1
+  PR #135 head: 7742ae003fc8e1ad1d1a6a4f71542875b6d6462c
+  CI:           34135197989 / PASS
+  pytest:       14 passed
+  merge:        665b86f6e527a0096d7c3db522f4bd2c95b177aa
+
+Gate 10.2
+  PR #138 head: 24b2affdf464e2548d94273e41007bb3256b561e
+  CI:           34141496326 / PASS
+  Pyright:      0 errors / 0 warnings / 0 informations
+  pytest:       70 passed
+  merge:        346b223d9566a5d04d84e279f30793ad52a35b67
+
+Gate 10.3
+  PR #141 head: 632e778d36ada833505342708379603a1080d390
+  CI:           34143908297 / run #9 / PASS
+  Pyright:      0 errors / 0 warnings / 0 informations
+  pytest:       26 passed
+  merge:        0c5bf6bab39a3980c063fcb44f657c412111fefa
+```
+
+## Avaliação híbrida congelada
 
 Dataset:
 
@@ -253,40 +282,7 @@ hybrid-evaluation-golden:v1
 68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1
 ```
 
-Seis casos:
-
-```text
-structured_only_factual
-semantic_only_remediation
-true_hybrid
-unsupported_out_of_authority
-partial_structured_evidence
-semantic_retrieval_noise
-```
-
-Métricas independentes:
-
-```text
-route_accuracy
-structured_fact_correctness
-semantic_groundedness
-citation_correctness
-abstention
-latency
-cost
-```
-
-Não existe composite score.
-
-## Baseline híbrido real da Gate 8.4
-
-Evidência imutável:
-
-```text
-labs/evidence/phase-8-gate-8-4-first-complete-baseline-v1.json
-```
-
-Resultado:
+Primeiro baseline real completo da Gate 8.4:
 
 ```text
 route_accuracy:               1.0
@@ -298,59 +294,13 @@ latency_ms:                   2959.3333333333335
 cost:                         UNMEASURED / null
 ```
 
-O caso semantic-noise preserva uma falha útil:
+A Gate 8.5 testou uma hipótese prompt-only predefinida exatamente uma vez e a rejeitou porque as métricas alvo de qualidade não melhoraram.
 
 ```text
 admission != semantic support
 retrieval rank != groundedness
 allowlisted citation != correct citation target
 ```
-
-## Otimização medida da Gate 8.5
-
-H8.5-01 foi testado exatamente uma vez:
-
-```text
-candidate: hybrid-synthesis-prompt:h8.5-01-v1
-result:    REJECT
-```
-
-Não houve melhoria em:
-
-```text
-semantic_groundedness: 0.6666666666666666
-citation_correctness:  0.6666666666666666
-```
-
-O candidato também aumentou total tokens em 280 e não foi promovido.
-
-O default continua:
-
-```text
-HybridSynthesisPromptPolicy.GATE_8_4_V1
-hybrid-synthesis-prompt:v1
-```
-
-## Contracts da Phase 9
-
-```text
-public-analysis-request:v1
-public-repository-evidence:v1
-public-semantic-planning:v1
-public-analysis-handoff:v1
-```
-
-Distinções importantes:
-
-```text
-public request admitted != repository proven public != repository analyzed
-planner proposal != execution authority
-repository evidence != runtime exposure
-semantic planning != SQL authority
-application boundary validated != public runtime deployed
-```
-
-Evidência exact-head da Phase 9 permanece nos labs/PRs. A Gate 9.3 terminou com Ruff/Pyright verdes, `57 passed` no Public Analysis e zero provider/model calls reais.
 
 ## Baseline AWS
 
@@ -370,7 +320,7 @@ streaming:               não
 tools:                   nenhum
 ```
 
-Não existe public application runtime role após a Gate 10.2. As Gates 10.1–10.2 não adicionam recursos AWS nem permissões IAM. Uma futura runtime role pública só será criada quando existir compute boundary concreta e responsabilidades traduzíveis em least privilege.
+A Phase 10 adiciona **zero** recursos de runtime público e **zero** permissões de runtime IAM. Em particular, não concede `logs:PutLogEvents` nem `cloudwatch:PutMetricData`.
 
 ## Invariantes de segurança e autoridade
 
@@ -386,80 +336,23 @@ Não existe public application runtime role após a Gate 10.2. As Gates 10.1–1
 - Hybrid routing e completude obrigatória são determinísticos.
 - Evidência estruturada e semântica permanecem classes separadas.
 - Citation IDs vêm somente de evidência admitida.
-- Citation ID válido prova identidade admitida, não suporte semântico específico.
-- Evidência ausente não é silenciosamente interpretada como benigna.
 - Runtime exposure não é inferido de repository risk.
-- Operational telemetry não se torna autoridade de aplicação ou route.
-- Identificadores de alta cardinalidade não são metric dimensions em `operational-telemetry:v1`.
-- Telemetry delivery accounting não pode inventar identidades de eventos.
-- Evidência de first run é preservada antes da otimização.
-- Experimentos negativos são preservados.
-- Least privilege, observabilidade, diagnóstico e cost accounting são requisitos arquiteturais.
-- Application boundary validado não é apresentado como production runtime implantado.
+- Operational telemetry não se torna business ou route authority.
+- IDs de correlação de alta cardinalidade não viram metric dimensions.
+- Delivery accounting de telemetry não pode inventar identidades de evidência.
+- Serialização EMF não é apresentada como ingestão no CloudWatch.
+- Evidência de first run e experimentos negativos são preservados.
+- Least privilege, observabilidade, diagnóstico de falhas e cost accounting são requisitos arquiteturais.
 
 ## Disciplina de custo
 
-O OpsLens não inventa custos que a evidência de runtime não sustenta.
-
-Gate 8.4/8.5 reportam deliberadamente:
+OpsLens não inventa custos que a evidência de runtime não suporta.
 
 ```text
-cost: UNMEASURED / null
+unmeasured cost != zero cost
 ```
 
-Tokens são evidência válida de pressão de custo, mas não preço completo sem pricing contract determinístico e versionado.
-
-O closeout da Phase 9 e as Gates 10.1–10.2 não criam preço sintético por request público. Custo futuro deve incluir infraestrutura concreta, concurrency, abuse e retry assumptions.
-
-## Quality gates
-
-Slices dedicados de Python CI cobrem:
-
-```text
-Correlation
-Repository Intelligence
-Risk Policy
-Semantic Query
-Knowledge Retrieval
-Hybrid Retrieval
-Public Analysis
-Operational Observability
-```
-
-O projeto usa Ruff, Pyright strict, pytest e regressions. Mudanças com AWS usam adicionalmente Terraform validation, TFLint, Checkov, planos canônicos, deployment verification e checks pós-apply.
-
-## Estrutura do repositório
-
-```text
-.
-├── .github/
-├── docs/
-│   ├── adr/
-│   ├── architecture.md
-│   ├── architecture.pt-br.md
-│   ├── current-state.md
-│   ├── roadmap.md
-│   └── README.md
-├── infra/
-├── knowledge/
-├── labs/
-│   └── evidence/
-├── scripts/
-├── src/opslens/
-│   ├── correlation/
-│   ├── repository_intelligence/
-│   ├── risk_policy/
-│   ├── semantic_query/
-│   ├── knowledge_retrieval/
-│   ├── hybrid_retrieval/
-│   ├── public_analysis/
-│   └── shared/observability/
-├── tests/
-├── README.md
-├── README.pt-br.md
-├── pyproject.toml
-└── uv.lock
-```
+A Phase 10 prova um desenho de controle de cardinalidade, não custo real de CloudWatch. Custo de observabilidade de produção exige volume de workload, ingestão, retenção, quantidade de time series, retries e evidência real de runtime.
 
 ## Documentação
 
@@ -470,19 +363,24 @@ O projeto usa Ruff, Pyright strict, pytest e regressions. Mudanças com AWS usam
 - [Índice de ADRs](docs/adr/README.md)
 - [Índice de documentação](docs/README.md)
 - [Closeout da Phase 8](labs/phase-8-gate-8-6-closeout.md)
-- [Gate 9.1 — request admission](labs/phase-9-gate-9-1-public-request-admission.md)
-- [Gate 9.3 — semantic planning](labs/phase-9-gate-9-3-bounded-semantic-planning.md)
 - [Closeout da Phase 9](labs/phase-9-gate-9-4-closeout.md)
-- [Gate 10.1 — operational telemetry](labs/phase-10-gate-10-1-operational-telemetry-contract.md)
-- [Gate 10.2 — governed instrumentation](labs/phase-10-gate-10-2-governed-orchestration-instrumentation.md)
+- [Gate 10.1](labs/phase-10-gate-10-1-operational-telemetry-contract.md)
+- [Gate 10.2](labs/phase-10-gate-10-2-governed-orchestration-instrumentation.md)
+- [Gate 10.3](labs/phase-10-gate-10-3-cloudwatch-emf-adapter.md)
+- [Closeout da Phase 10](labs/phase-10-gate-10-4-closeout.md)
 
-## Próxima — Phase 10 Gate 10.3: CloudWatch EMF Telemetry Adapter Boundary
+## Próxima — Phase 11: Single-Agent Baseline
 
-A Gate 10.3 adaptará o `OperationalEvent` e a projeção de métricas provider-neutral já congelados para Amazon CloudWatch Embedded Metric Format através de um writer boundary injetado. Ela deve começar offline/fake-writer, preservar exatamente as dimensions de baixa cardinalidade e manter IDs de request/source/handoff fora das metric dimensions.
+A Phase 11 começa com **um único agente limitado** sobre capabilities já governadas do OpsLens, antes de qualquer complexidade multi-agent.
 
-Um documento EMF serializado não prova ingestão no CloudWatch. Runtime público, entrega real de telemetry, runtime IAM, dashboard, alarm, SLO ou distribuição de latência derivada de workload continuam etapas posteriores que exigem deployment explícito e evidência medida.
+```text
+agent reasoning may select/use already-authorized capabilities
+agent reasoning does not acquire deterministic truth or execution authority
+```
 
-A PR #89 de Governed LLM Gateway continua deferred e precisa ser reavaliada separadamente contra a arquitetura vigente no momento.
+A primeira gate da Phase 11 deve congelar a superfície exata de tools/capabilities, execution limits, failure/abstention semantics, evidence handoff, evaluation fixture e mapeamento para a observabilidade da Phase 10 antes da escolha de infraestrutura gerenciada de runtime de agentes.
+
+A PR #89 de Governed LLM Gateway permanece deferred e precisa ser reavaliada separadamente contra a arquitetura vigente do OpsLens.
 
 ---
 
