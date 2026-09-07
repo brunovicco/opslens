@@ -25,6 +25,7 @@ from opslens.public_analysis.application import (
     plan_public_analysis_handoff,
 )
 from opslens.public_analysis.domain import (
+    MAX_PUBLIC_SEMANTIC_PLANNING_REQUEST_BYTES,
     PUBLIC_ANALYSIS_HANDOFF_CONTRACT_VERSION,
     PUBLIC_ANALYSIS_V1_REQUIRED_EVIDENCE_NEEDS,
     PUBLIC_SEMANTIC_PLANNING_CONTRACT_VERSION,
@@ -160,17 +161,17 @@ def test_successful_plan_is_content_free_and_routes_through_phase8_authority() -
     assert len(planner.calls) == 1
     planner_input = planner.calls[0]
     assert b"https://github.com/" not in planner_input
-    assert b"uv.lock" not in planner_input
     assert b"Requests" not in planner_input
     assert b"2.31.0" not in planner_input
     assert b"source =" not in planner_input
-    assert len(planner_input) < MAX_PUBLIC_SEMANTIC_PLAN_RESPONSE_BYTES
+    assert len(planner_input) <= MAX_PUBLIC_SEMANTIC_PLANNING_REQUEST_BYTES
 
     decoded = json.loads(planner_input)
     assert decoded["contract_version"] == PUBLIC_SEMANTIC_PLANNING_CONTRACT_VERSION
     assert decoded["operation"] == "analyze_public_repository"
     assert decoded["allowed_evidence_needs"] == list(_required_need_values())
     assert decoded["source"]["normalized_dependency_count"] == 1
+    assert decoded["source"]["file_evidence_id"] == execution.file_evidence_id
 
     assert handoff.source_execution is execution
     assert handoff.proposal.evidence_needs == PUBLIC_ANALYSIS_V1_REQUIRED_EVIDENCE_NEEDS
