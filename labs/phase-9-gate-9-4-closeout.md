@@ -4,7 +4,7 @@ _Date: 2026-09-07_
 
 ## Status
 
-**CLOSEOUT IMPLEMENTED — protected merge pending.**
+**COMPLETE / MERGED.**
 
 Starting main:
 
@@ -12,11 +12,12 @@ Starting main:
 6e0c595d5d2437dabd94365e1eeb88800a5bcab4
 ```
 
-Tracking:
+Closeout PR:
 
 ```text
-issue:  #131
-branch: docs/phase9-closeout
+issue:      #131 — CLOSED / COMPLETED
+PR:         #132 — MERGED
+merge SHA:  f27c278db1039d31bd8410a2e51d14b77f6c1f0b
 ```
 
 ## Goal
@@ -52,6 +53,8 @@ untrusted public JSON
  -> STOP
 ```
 
+The final `STOP` is deliberate. Phase 9 validates a governed application boundary; it does not yet deploy the public runtime or downstream public evidence execution pipeline.
+
 ## Gate evidence
 
 Gate 9.1:
@@ -86,6 +89,8 @@ merge SHA:                       6f53537c227cade688091187eac1074645e11bf0
 issue #128:                      CLOSED / COMPLETED
 ```
 
+Gate 9.4 was documentation/architecture closeout only. No code/runtime behavior changed, and no new AWS/IAM/provider execution was introduced.
+
 ## Public v1 scope and budgets
 
 ```text
@@ -96,7 +101,7 @@ required needs:
   vulnerability_facts
 ```
 
-Successful admission must agree with Phase 8 authority:
+Successful admission must agree with the existing Phase 8 deterministic authority:
 
 ```text
 HYBRID
@@ -114,15 +119,30 @@ planner calls per orchestration:  <= 1
 adaptive application retries:     0
 ```
 
-These are application bounds, not public runtime rate/concurrency/timeout/quota controls.
+These are application bounds, not public runtime rate, concurrency, timeout, or quota controls.
 
-## Authority and failure taxonomy
+## Authority taxonomy
 
-Deterministic code owns public request admission, GitHub coordinate grammar, source-confirmed repository identity, immutable snapshot/file evidence, `uv.lock` parsing, PyPI normalization, public-v1 evidence scope, planner-output admission, Phase 8 route authority, request/source/proposal/handoff binding, and fail-closed execution admission.
+Deterministic code owns:
 
-Models may propose or synthesize only inside bounded contracts. They do not own structured truth, product scope, repository truth, vulnerability/risk truth, runtime exposure, SQL, route, provider/model selection, evidence completeness, or execution authority.
+```text
+public request admission
+GitHub coordinate grammar
+repository visibility and canonical identity
+immutable snapshot resolution
+exact-commit evidence admission
+uv.lock parsing
+PyPI normalization
+public-v1 mandatory evidence scope
+planner-output admission
+Phase 8 hybrid route authority
+request/source/proposal/handoff identity binding
+fail-closed downstream admission
+```
 
-Fail-closed classes include:
+Models may propose or synthesize only inside bounded contracts. They do not own structured truth, public product scope, repository truth, vulnerability/risk truth, runtime exposure, SQL, route, provider/model selection, evidence completeness, or execution authority.
+
+## Phase 9 fail-closed taxonomy
 
 ```text
 request byte/UTF-8/JSON/field failure
@@ -146,6 +166,14 @@ A failed stage never creates a later authority object.
 
 ## Runtime / IAM closeout decision
 
+ADR 0031 freezes:
+
+```text
+application boundary validated != public runtime deployed
+```
+
+At Phase 9 closeout:
+
 ```text
 public HTTP compute:      NOT DEPLOYED
 public endpoint:          NOT DEPLOYED
@@ -162,13 +190,52 @@ no concrete compute principal
  -> no speculative permission aggregation
 ```
 
-## Cost and observability boundary
+## Cost boundary
 
-Phase 9 adds no synthetic public-request cost. Current cost evidence is stage-local only when the stage actually runs. Gate 9.3 made zero real provider/model calls.
+Phase 9 adds no synthetic public-request cost.
 
-Phase 9 evidence includes content-addressed IDs/hashes, provenance, admission/route identities, bounded failure categories, and exact-head CI. It does not claim public request volume, production traces, p95/p99, production error/throttle rates, production request cost, or production SLO compliance.
+Current evidence can support stage-local accounting only when those stages actually execute:
 
-Future telemetry should prefer content-free IDs/hashes/stage metadata over automatic user/source/model-content logging.
+```text
+Athena bytes scanned
+S3 Vectors / retrieval activity
+Bedrock/model tokens
+provider/request latency
+```
+
+Gate 9.3 used fake ports and made zero real provider/model calls. A public request cost cannot be inferred from those tests.
+
+Future public-runtime USD cost must use a versioned pricing contract or billing reconciliation and include infrastructure, concurrency, abuse, and retry assumptions.
+
+## Observability boundary
+
+Current Phase 9 evidence includes:
+
+```text
+request IDs/hashes
+snapshot/file/parser/normalization identities
+proposal/request hashes
+route decision identity
+handoff identity
+bounded failure categories
+exact-head CI evidence
+```
+
+Phase 9 does not claim:
+
+```text
+public request volume
+public distributed traces
+production p95/p99
+production error rate
+production throttling
+production cost/request
+production SLO/alert compliance
+```
+
+Those require a deployed runtime and measured workload.
+
+Future telemetry should prefer content-free IDs, hashes, and stage metadata over automatic user/source/model-content logging.
 
 ## Public-launch prerequisites
 
@@ -260,18 +327,16 @@ ADR 0031  Phase 9 closes at governed application boundary
 [x] Phase 10 entry criteria explicit
 [x] ADR 0031 recorded
 [x] closeout lab recorded
-[x] README EN/PT-BR synchronized
-[x] architecture EN/PT-BR synchronized
+[x] README EN/PT-BR synchronized for closeout architecture
+[x] architecture EN/PT-BR synchronized for closeout architecture
 [x] docs/ADR indexes synchronized
-[x] current-state/roadmap synchronized for Phase 9 closeout
-[ ] closeout PR reviewed/mergeable
-[ ] protected squash merge
-[ ] issue #131 CLOSED / COMPLETED
+[x] current-state/roadmap synchronized
+[x] closeout PR reviewed/mergeable
+[x] protected squash merge
+[x] issue #131 CLOSED / COMPLETED
 ```
 
 ## Next authorized step
-
-After the protected closeout merge:
 
 ```text
 Phase 10 — Observability & Operational Excellence
