@@ -118,7 +118,10 @@ def _semantic_query(*, limit: int = 3) -> SemanticQuery:
     )
 
 
-def _knowledge_request(*, question: str = "How should dependencies be installed safely?") -> SynthesisRequest:
+def _knowledge_request(
+    *,
+    question: str = "How should dependencies be installed safely?",
+) -> SynthesisRequest:
     """Build one real admitted knowledge synthesis request from offline evidence."""
     chunk = RetrievedChunk.from_text(
         chunk_id="knowledge-chunk:test:agent-execution:v1",
@@ -220,7 +223,10 @@ class _FakeRepositorySource:
         }
 
 
-def _public_request_and_execution() -> tuple[PublicAnalysisRequest, PublicRepositoryEvidenceExecution]:
+def _public_request_and_execution() -> tuple[
+    PublicAnalysisRequest,
+    PublicRepositoryEvidenceExecution,
+]:
     """Build one real admitted public request and deterministic source execution."""
     raw = (
         b'{"repository_url":"https://github.com/brunovicco/opslens",'
@@ -322,7 +328,9 @@ def _executors(
     """Build the closed executor set with deterministic in-memory fakes."""
     _, default_public_execution = _public_request_and_execution()
     return AgentCapabilityExecutors(
-        structured_security_query=(structured if structured is not None else _StructuredExecutor()),
+        structured_security_query=(
+            structured if structured is not None else _StructuredExecutor()
+        ),
         knowledge_guidance=_KnowledgeExecutor(),
         hybrid_security_answer=_HybridExecutor(),
         public_repository_analysis=_PublicExecutor(
@@ -332,6 +340,7 @@ def _executors(
 
 
 def test_execution_contract_is_separate_and_bounded() -> None:
+    """Execution gets a separate frozen contract with one attempt and no fallback."""
     assert SINGLE_AGENT_EXECUTION_CONTRACT_VERSION == "single-agent-execution:v1"
     assert MAX_AGENT_EXECUTIONS_PER_CALL == 1
     assert MAX_AGENT_EXECUTION_RETRIES == 0
@@ -339,8 +348,12 @@ def test_execution_contract_is_separate_and_bounded() -> None:
 
 
 def test_structured_invocation_is_bound_to_authorization_and_query_semantics() -> None:
+    """Equivalent typed inputs share identity while changed query semantics do not."""
     action = _authorized_action(AgentCapability.STRUCTURED_SECURITY_QUERY)
-    first = StructuredSecurityQueryInvocation.create(action=action, query=_semantic_query(limit=3))
+    first = StructuredSecurityQueryInvocation.create(
+        action=action,
+        query=_semantic_query(limit=3),
+    )
     equivalent = StructuredSecurityQueryInvocation.create(
         action=action,
         query=_semantic_query(limit=3),
@@ -356,6 +369,7 @@ def test_structured_invocation_is_bound_to_authorization_and_query_semantics() -
 
 
 def test_typed_invocation_rejects_wrong_authorized_capability_before_execution() -> None:
+    """A valid authorization for one capability cannot be rebound to another."""
     action = _authorized_action(AgentCapability.KNOWLEDGE_GUIDANCE)
 
     with pytest.raises(AgentCapabilityExecutionValidationError):
@@ -363,15 +377,21 @@ def test_typed_invocation_rejects_wrong_authorized_capability_before_execution()
 
 
 def test_forged_invocation_and_execution_identities_fail_closed() -> None:
+    """Caller-forged invocation or execution hashes cannot enter execution evidence."""
     action = _authorized_action(AgentCapability.STRUCTURED_SECURITY_QUERY)
-    invocation = StructuredSecurityQueryInvocation.create(action=action, query=_semantic_query())
+    invocation = StructuredSecurityQueryInvocation.create(
+        action=action,
+        query=_semantic_query(),
+    )
 
     with pytest.raises(AgentCapabilityExecutionValidationError):
         StructuredSecurityQueryInvocation(
             action=action,
             query=invocation.query,
             invocation_sha256="0" * 64,
-            invocation_id=f"{SINGLE_AGENT_EXECUTION_CONTRACT_VERSION}:invocation:{'0' * 64}",
+            invocation_id=(
+                f"{SINGLE_AGENT_EXECUTION_CONTRACT_VERSION}:invocation:{'0' * 64}"
+            ),
         )
 
     with pytest.raises(AgentCapabilityExecutionValidationError):
@@ -381,13 +401,19 @@ def test_forged_invocation_and_execution_identities_fail_closed() -> None:
             invocation_id=invocation.invocation_id,
             downstream_result_sha256="1" * 64,
             execution_sha256="0" * 64,
-            execution_id=f"{SINGLE_AGENT_EXECUTION_CONTRACT_VERSION}:execution:{'0' * 64}",
+            execution_id=(
+                f"{SINGLE_AGENT_EXECUTION_CONTRACT_VERSION}:execution:{'0' * 64}"
+            ),
         )
 
 
 def test_structured_execution_calls_exactly_once_and_binds_query_to_result() -> None:
+    """Structured execution calls one port once and preserves action/invocation identity."""
     action = _authorized_action(AgentCapability.STRUCTURED_SECURITY_QUERY)
-    invocation = StructuredSecurityQueryInvocation.create(action=action, query=_semantic_query())
+    invocation = StructuredSecurityQueryInvocation.create(
+        action=action,
+        query=_semantic_query(),
+    )
     executor = _StructuredExecutor()
 
     execution = execute_authorized_capability(
@@ -402,8 +428,12 @@ def test_structured_execution_calls_exactly_once_and_binds_query_to_result() -> 
 
 
 def test_executor_failure_is_content_free_and_has_zero_retry() -> None:
+    """Downstream exceptions become bounded failures after exactly one attempted call."""
     action = _authorized_action(AgentCapability.STRUCTURED_SECURITY_QUERY)
-    invocation = StructuredSecurityQueryInvocation.create(action=action, query=_semantic_query())
+    invocation = StructuredSecurityQueryInvocation.create(
+        action=action,
+        query=_semantic_query(),
+    )
     executor = _StructuredExecutor(fail=True)
 
     with pytest.raises(AgentCapabilityExecutionError) as exc_info:
@@ -415,6 +445,7 @@ def test_executor_failure_is_content_free_and_has_zero_retry() -> None:
 
 
 def test_knowledge_guidance_executes_one_exact_admitted_request() -> None:
+    """Knowledge guidance executes only the exact request bound to the invocation."""
     action = _authorized_action(AgentCapability.KNOWLEDGE_GUIDANCE)
     request = _knowledge_request()
     invocation = KnowledgeGuidanceInvocation.create(action=action, request=request)
@@ -427,6 +458,7 @@ def test_knowledge_guidance_executes_one_exact_admitted_request() -> None:
 
 
 def test_hybrid_security_answer_executes_one_exact_admitted_request() -> None:
+    """Hybrid answering executes only an already-admitted hybrid synthesis request."""
     action = _authorized_action(AgentCapability.HYBRID_SECURITY_ANSWER)
     request = _hybrid_request()
     invocation = HybridSecurityAnswerInvocation.create(action=action, request=request)
@@ -439,6 +471,7 @@ def test_hybrid_security_answer_executes_one_exact_admitted_request() -> None:
 
 
 def test_public_repository_analysis_executes_one_exact_admitted_request() -> None:
+    """Public analysis result must remain bound to the exact admitted public request."""
     request, source_execution = _public_request_and_execution()
     action = _authorized_action(AgentCapability.PUBLIC_REPOSITORY_ANALYSIS)
     invocation = PublicRepositoryAnalysisInvocation.create(action=action, request=request)
@@ -451,6 +484,7 @@ def test_public_repository_analysis_executes_one_exact_admitted_request() -> Non
 
 
 def test_wrong_runtime_invocation_type_fails_closed() -> None:
+    """An arbitrary object cannot enter the closed typed invocation dispatch."""
     invalid = cast(
         StructuredSecurityQueryInvocation
         | KnowledgeGuidanceInvocation
@@ -464,6 +498,7 @@ def test_wrong_runtime_invocation_type_fails_closed() -> None:
 
 
 def test_proposal_contract_still_has_no_executable_argument_surface() -> None:
+    """Gate 11.2 execution must not enlarge the frozen Gate 11.1 proposal surface."""
     assert set(AgentActionProposal.__dataclass_fields__) == {
         "task_id",
         "decision",

@@ -6,7 +6,6 @@ import json
 import re
 from dataclasses import dataclass
 from hashlib import sha256
-from typing import TypeAlias
 
 from opslens.agent_baseline.domain.errors import AgentCapabilityExecutionValidationError
 from opslens.agent_baseline.domain.models import AgentCapability, AuthorizedAgentAction
@@ -34,7 +33,7 @@ _EXECUTION_ID_PATTERN = re.compile(
 
 
 def _canonical_json(value: object) -> bytes:
-    """Serialize deterministic execution identity payloads."""
+    """Serialize one deterministic execution identity payload."""
     return json.dumps(
         value,
         allow_nan=False,
@@ -50,7 +49,7 @@ def _canonical_sha256(value: object) -> str:
 
 
 def _validate_sha256(value: object, *, label: str, expected: str | None = None) -> str:
-    """Validate one SHA-256 field and optionally its deterministic expected value."""
+    """Validate one SHA-256 field and optional deterministic expected value."""
     if type(value) is not str or _SHA256_PATTERN.fullmatch(value) is None:
         raise AgentCapabilityExecutionValidationError(f"{label} must be lowercase SHA-256")
     if expected is not None and value != expected:
@@ -59,23 +58,22 @@ def _validate_sha256(value: object, *, label: str, expected: str | None = None) 
 
 
 def _validate_action(action: object, capability: AgentCapability) -> AuthorizedAgentAction:
-    """Require one exact Gate 11.1 authorization for the fixed binding capability."""
+    """Require one exact Gate 11.1 authorization for a fixed typed capability."""
     if type(action) is not AuthorizedAgentAction:
         raise AgentCapabilityExecutionValidationError(
             "capability invocation requires one AuthorizedAgentAction"
         )
-    typed_action = action
-    if typed_action.capability is not capability:
+    if action.capability is not capability:
         raise AgentCapabilityExecutionValidationError(
             "authorized action capability does not match the typed invocation"
         )
-    if _ACTION_ID_PATTERN.fullmatch(typed_action.action_id) is None:
+    if _ACTION_ID_PATTERN.fullmatch(action.action_id) is None:
         raise AgentCapabilityExecutionValidationError("authorized action identity is invalid")
-    return typed_action
+    return action
 
 
 def _semantic_query_payload(query: SemanticQuery) -> dict[str, object]:
-    """Project the exact allowlisted SemanticQuery semantics without SQL."""
+    """Project exact allowlisted SemanticQuery semantics without SQL."""
     return {
         "dimensions": [dimension.value for dimension in query.dimensions],
         "filters": {
@@ -104,6 +102,23 @@ def _invocation_payload(
     }
 
 
+def _create_invocation_identity(
+    *,
+    action_id: str,
+    capability: AgentCapability,
+    input_identity: object,
+) -> tuple[str, str]:
+    """Create deterministic invocation digest and identifier."""
+    digest = _canonical_sha256(
+        _invocation_payload(
+            action_id=action_id,
+            capability=capability,
+            input_identity=input_identity,
+        )
+    )
+    return digest, f"{SINGLE_AGENT_EXECUTION_CONTRACT_VERSION}:invocation:{digest}"
+
+
 def _validate_invocation_identity(
     *,
     action_id: str,
@@ -113,19 +128,16 @@ def _validate_invocation_identity(
     invocation_id: object,
 ) -> tuple[str, str]:
     """Validate caller-visible invocation identity against exact typed semantics."""
-    expected_sha = _canonical_sha256(
-        _invocation_payload(
-            action_id=action_id,
-            capability=capability,
-            input_identity=input_identity,
-        )
+    expected_sha, expected_id = _create_invocation_identity(
+        action_id=action_id,
+        capability=capability,
+        input_identity=input_identity,
     )
     digest = _validate_sha256(
         invocation_sha256,
         label="invocation_sha256",
         expected=expected_sha,
     )
-    expected_id = f"{SINGLE_AGENT_EXECUTION_CONTRACT_VERSION}:invocation:{expected_sha}"
     if type(invocation_id) is not str or invocation_id != expected_id:
         raise AgentCapabilityExecutionValidationError(
             "invocation_id must match the content-addressed invocation identity"
@@ -143,7 +155,7 @@ class StructuredSecurityQueryInvocation:
     invocation_id: str
 
     def __post_init__(self) -> None:
-        """Bind an exact structured query to an exact authorization."""
+        """Bind one exact structured query to one exact authorization."""
         action = _validate_action(self.action, AgentCapability.STRUCTURED_SECURITY_QUERY)
         if type(self.query) is not SemanticQuery:
             raise AgentCapabilityExecutionValidationError("query must be one SemanticQuery")
@@ -168,21 +180,12 @@ class StructuredSecurityQueryInvocation:
         admitted_action = _validate_action(action, AgentCapability.STRUCTURED_SECURITY_QUERY)
         if type(query) is not SemanticQuery:
             raise AgentCapabilityExecutionValidationError("query must be one SemanticQuery")
-        digest = _canonical_sha256(
-            _invocation_payload(
-                action_id=admitted_action.action_id,
-                capability=AgentCapability.STRUCTURED_SECURITY_QUERY,
-                input_identity=_semantic_query_payload(query),
-            )
+        digest, identifier = _create_invocation_identity(
+            action_id=admitted_action.action_id,
+            capability=AgentCapability.STRUCTURED_SECURITY_QUERY,
+            input_identity=_semantic_query_payload(query),
         )
-        return cls(
-            action=admitted_action,
-            query=query,
-            invocation_sha256=digest,
-            invocation_id=(
-                f"{SINGLE_AGENT_EXECUTION_CONTRACT_VERSION}:invocation:{digest}"
-            ),
-        )
+        return cls(admitted_action, query, digest, identifier)
 
 
 @dataclass(frozen=True, slots=True)
@@ -195,16 +198,15 @@ class KnowledgeGuidanceInvocation:
     invocation_id: str
 
     def __post_init__(self) -> None:
-        """Bind an exact knowledge request to an exact authorization."""
+        """Bind one exact knowledge request to one exact authorization."""
         action = _validate_action(self.action, AgentCapability.KNOWLEDGE_GUIDANCE)
         if type(self.request) is not SynthesisRequest:
-            raise AgentCapabilityExecutionValidationError(
-                "request must be one SynthesisRequest"
-            )
+            raise AgentCapabilityExecutionValidationError("request must be one SynthesisRequest")
+        input_identity = {"request_sha256": self.request.request_sha256}
         digest, identifier = _validate_invocation_identity(
             action_id=action.action_id,
             capability=AgentCapability.KNOWLEDGE_GUIDANCE,
-            input_identity={"request_sha256": self.request.request_sha256},
+            input_identity=input_identity,
             invocation_sha256=self.invocation_sha256,
             invocation_id=self.invocation_id,
         )
@@ -221,24 +223,13 @@ class KnowledgeGuidanceInvocation:
         """Create one deterministic knowledge-guidance invocation."""
         admitted_action = _validate_action(action, AgentCapability.KNOWLEDGE_GUIDANCE)
         if type(request) is not SynthesisRequest:
-            raise AgentCapabilityExecutionValidationError(
-                "request must be one SynthesisRequest"
-            )
-        digest = _canonical_sha256(
-            _invocation_payload(
-                action_id=admitted_action.action_id,
-                capability=AgentCapability.KNOWLEDGE_GUIDANCE,
-                input_identity={"request_sha256": request.request_sha256},
-            )
+            raise AgentCapabilityExecutionValidationError("request must be one SynthesisRequest")
+        digest, identifier = _create_invocation_identity(
+            action_id=admitted_action.action_id,
+            capability=AgentCapability.KNOWLEDGE_GUIDANCE,
+            input_identity={"request_sha256": request.request_sha256},
         )
-        return cls(
-            action=admitted_action,
-            request=request,
-            invocation_sha256=digest,
-            invocation_id=(
-                f"{SINGLE_AGENT_EXECUTION_CONTRACT_VERSION}:invocation:{digest}"
-            ),
-        )
+        return cls(admitted_action, request, digest, identifier)
 
 
 @dataclass(frozen=True, slots=True)
@@ -251,16 +242,17 @@ class HybridSecurityAnswerInvocation:
     invocation_id: str
 
     def __post_init__(self) -> None:
-        """Bind an exact hybrid request to an exact authorization."""
+        """Bind one exact hybrid request to one exact authorization."""
         action = _validate_action(self.action, AgentCapability.HYBRID_SECURITY_ANSWER)
         if type(self.request) is not HybridSynthesisRequest:
             raise AgentCapabilityExecutionValidationError(
                 "request must be one HybridSynthesisRequest"
             )
+        input_identity = {"request_sha256": self.request.request_sha256}
         digest, identifier = _validate_invocation_identity(
             action_id=action.action_id,
             capability=AgentCapability.HYBRID_SECURITY_ANSWER,
-            input_identity={"request_sha256": self.request.request_sha256},
+            input_identity=input_identity,
             invocation_sha256=self.invocation_sha256,
             invocation_id=self.invocation_id,
         )
@@ -280,21 +272,12 @@ class HybridSecurityAnswerInvocation:
             raise AgentCapabilityExecutionValidationError(
                 "request must be one HybridSynthesisRequest"
             )
-        digest = _canonical_sha256(
-            _invocation_payload(
-                action_id=admitted_action.action_id,
-                capability=AgentCapability.HYBRID_SECURITY_ANSWER,
-                input_identity={"request_sha256": request.request_sha256},
-            )
+        digest, identifier = _create_invocation_identity(
+            action_id=admitted_action.action_id,
+            capability=AgentCapability.HYBRID_SECURITY_ANSWER,
+            input_identity={"request_sha256": request.request_sha256},
         )
-        return cls(
-            action=admitted_action,
-            request=request,
-            invocation_sha256=digest,
-            invocation_id=(
-                f"{SINGLE_AGENT_EXECUTION_CONTRACT_VERSION}:invocation:{digest}"
-            ),
-        )
+        return cls(admitted_action, request, digest, identifier)
 
 
 @dataclass(frozen=True, slots=True)
@@ -307,19 +290,20 @@ class PublicRepositoryAnalysisInvocation:
     invocation_id: str
 
     def __post_init__(self) -> None:
-        """Bind an exact public request to an exact authorization."""
+        """Bind one exact public request to one exact authorization."""
         action = _validate_action(self.action, AgentCapability.PUBLIC_REPOSITORY_ANALYSIS)
         if type(self.request) is not PublicAnalysisRequest:
             raise AgentCapabilityExecutionValidationError(
                 "request must be one PublicAnalysisRequest"
             )
+        input_identity = {
+            "request_id": self.request.request_id,
+            "request_sha256": self.request.request_sha256,
+        }
         digest, identifier = _validate_invocation_identity(
             action_id=action.action_id,
             capability=AgentCapability.PUBLIC_REPOSITORY_ANALYSIS,
-            input_identity={
-                "request_id": self.request.request_id,
-                "request_sha256": self.request.request_sha256,
-            },
+            input_identity=input_identity,
             invocation_sha256=self.invocation_sha256,
             invocation_id=self.invocation_id,
         )
@@ -339,28 +323,18 @@ class PublicRepositoryAnalysisInvocation:
             raise AgentCapabilityExecutionValidationError(
                 "request must be one PublicAnalysisRequest"
             )
-        input_identity = {
-            "request_id": request.request_id,
-            "request_sha256": request.request_sha256,
-        }
-        digest = _canonical_sha256(
-            _invocation_payload(
-                action_id=admitted_action.action_id,
-                capability=AgentCapability.PUBLIC_REPOSITORY_ANALYSIS,
-                input_identity=input_identity,
-            )
+        digest, identifier = _create_invocation_identity(
+            action_id=admitted_action.action_id,
+            capability=AgentCapability.PUBLIC_REPOSITORY_ANALYSIS,
+            input_identity={
+                "request_id": request.request_id,
+                "request_sha256": request.request_sha256,
+            },
         )
-        return cls(
-            action=admitted_action,
-            request=request,
-            invocation_sha256=digest,
-            invocation_id=(
-                f"{SINGLE_AGENT_EXECUTION_CONTRACT_VERSION}:invocation:{digest}"
-            ),
-        )
+        return cls(admitted_action, request, digest, identifier)
 
 
-AgentCapabilityInvocation: TypeAlias = (
+type AgentCapabilityInvocation = (
     StructuredSecurityQueryInvocation
     | KnowledgeGuidanceInvocation
     | HybridSecurityAnswerInvocation
@@ -430,11 +404,33 @@ class StructuredSecurityQueryResultBinding:
                 "result": _athena_result_payload(result),
             }
         )
-        return cls(
-            invocation_sha256=invocation.invocation_sha256,
-            result=result,
-            result_sha256=digest,
-        )
+        return cls(invocation.invocation_sha256, result, digest)
+
+
+def capability_for_invocation(invocation: AgentCapabilityInvocation) -> AgentCapability:
+    """Resolve capability from the closed invocation type set, never a caller string."""
+    if type(invocation) is StructuredSecurityQueryInvocation:
+        return AgentCapability.STRUCTURED_SECURITY_QUERY
+    if type(invocation) is KnowledgeGuidanceInvocation:
+        return AgentCapability.KNOWLEDGE_GUIDANCE
+    if type(invocation) is HybridSecurityAnswerInvocation:
+        return AgentCapability.HYBRID_SECURITY_ANSWER
+    if type(invocation) is PublicRepositoryAnalysisInvocation:
+        return AgentCapability.PUBLIC_REPOSITORY_ANALYSIS
+    raise AgentCapabilityExecutionValidationError("unknown capability invocation type")
+
+
+def action_for_invocation(invocation: AgentCapabilityInvocation) -> AuthorizedAgentAction:
+    """Return the exact Gate 11.1 authorization embedded in a typed invocation."""
+    if type(invocation) is StructuredSecurityQueryInvocation:
+        return invocation.action
+    if type(invocation) is KnowledgeGuidanceInvocation:
+        return invocation.action
+    if type(invocation) is HybridSecurityAnswerInvocation:
+        return invocation.action
+    if type(invocation) is PublicRepositoryAnalysisInvocation:
+        return invocation.action
+    raise AgentCapabilityExecutionValidationError("unknown capability invocation type")
 
 
 @dataclass(frozen=True, slots=True)
@@ -488,7 +484,7 @@ class AgentCapabilityExecution:
         invocation: AgentCapabilityInvocation,
         downstream_result_sha256: str,
     ) -> AgentCapabilityExecution:
-        """Create one execution identity from an exact invocation and admitted result hash."""
+        """Create execution identity from an exact invocation and admitted result hash."""
         capability = capability_for_invocation(invocation)
         action = action_for_invocation(invocation)
         result_digest = _validate_sha256(
@@ -514,36 +510,10 @@ class AgentCapabilityExecution:
         )
 
 
-def capability_for_invocation(invocation: AgentCapabilityInvocation) -> AgentCapability:
-    """Resolve capability from the closed invocation type set, never a caller string."""
-    if type(invocation) is StructuredSecurityQueryInvocation:
-        return AgentCapability.STRUCTURED_SECURITY_QUERY
-    if type(invocation) is KnowledgeGuidanceInvocation:
-        return AgentCapability.KNOWLEDGE_GUIDANCE
-    if type(invocation) is HybridSecurityAnswerInvocation:
-        return AgentCapability.HYBRID_SECURITY_ANSWER
-    if type(invocation) is PublicRepositoryAnalysisInvocation:
-        return AgentCapability.PUBLIC_REPOSITORY_ANALYSIS
-    raise AgentCapabilityExecutionValidationError("unknown capability invocation type")
-
-
-def action_for_invocation(invocation: AgentCapabilityInvocation) -> AuthorizedAgentAction:
-    """Return the exact Gate 11.1 authorization embedded in a typed invocation."""
-    if type(invocation) is StructuredSecurityQueryInvocation:
-        return invocation.action
-    if type(invocation) is KnowledgeGuidanceInvocation:
-        return invocation.action
-    if type(invocation) is HybridSecurityAnswerInvocation:
-        return invocation.action
-    if type(invocation) is PublicRepositoryAnalysisInvocation:
-        return invocation.action
-    raise AgentCapabilityExecutionValidationError("unknown capability invocation type")
-
-
 __all__ = [
+    "MAX_AGENT_EXECUTIONS_PER_CALL",
     "MAX_AGENT_EXECUTION_ADAPTIVE_FALLBACKS",
     "MAX_AGENT_EXECUTION_RETRIES",
-    "MAX_AGENT_EXECUTIONS_PER_CALL",
     "SINGLE_AGENT_EXECUTION_CONTRACT_VERSION",
     "AgentCapabilityExecution",
     "AgentCapabilityInvocation",

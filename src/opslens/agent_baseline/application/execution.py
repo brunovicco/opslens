@@ -31,6 +31,7 @@ class AgentCapabilityExecutionError(RuntimeError):
     """Bounded execution failure that never admits arbitrary downstream messages."""
 
     def __init__(self, category: AgentCapabilityExecutionFailureCategory) -> None:
+        """Create one stable content-free execution failure."""
         self.category = category
         super().__init__(f"agent capability execution failed category={category.value}")
 
