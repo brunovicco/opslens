@@ -6,6 +6,7 @@ import pytest
 
 from opslens.public_analysis.application import PublicAnalysisOperationalFailure
 from opslens.shared.observability.contracts import (
+    OperationalEvent,
     OperationalFailureCategory,
     OperationalOutcome,
     OperationalStage,
@@ -13,7 +14,7 @@ from opslens.shared.observability.contracts import (
 )
 
 
-def _terminal_request_rejection_event():
+def _terminal_request_rejection_event() -> OperationalEvent:
     """Create one valid terminal event without external delivery."""
     return create_operational_event(
         stage=OperationalStage.PUBLIC_REQUEST_ADMISSION,
