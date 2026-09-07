@@ -4,7 +4,7 @@ _Date: 2026-09-07_
 
 ## Status
 
-**IMPLEMENTED — exact-head CI and protected merge pending.**
+**IMPLEMENTED — protected merge pending.**
 
 Starting main:
 
@@ -17,6 +17,7 @@ Tracking:
 ```text
 issue:  #134
 branch: feat/phase10-operational-telemetry-contract
+PR:     #135
 ```
 
 ## Goal
@@ -214,6 +215,7 @@ Tests prove:
 - equivalent operational semantics produce the same event identity;
 - raw repository URL cannot enter `public_request_id`;
 - dependency/prompt-like text cannot enter `source_execution_id`;
+- runtime strings cannot masquerade as typed stage values;
 - post-admission stages require admitted request identity;
 - successful repository evidence requires source execution identity;
 - successful public handoff requires exact source/handoff identities;
@@ -223,6 +225,7 @@ Tests prove:
 - duration/attempt budgets fail closed;
 - forged event hashes fail closed;
 - metric projection uses only the four fixed low-cardinality dimensions;
+- direct metric construction cannot forge count/latency semantics;
 - request/source/handoff IDs never become metric dimensions;
 - event identity changes when operational semantics change.
 
@@ -249,6 +252,32 @@ Scope:
 src/opslens/shared/observability
 tests/unit/shared/observability
 ```
+
+Validation history before protected merge:
+
+```text
+run #1 / 34133863243: FAIL at Ruff
+  - UP035 Mapping import
+  - D103 test docstrings
+
+run #2 / 34134054537: FAIL at Ruff
+  - UP035 fixed
+  - 14 D103 test docstrings remained
+
+run #3 / 34134899916: PASS
+validated implementation head:
+  88a0ce3aa959747b80ff780f09242ea19e977319
+Ruff:
+  All checks passed
+Pyright strict:
+  0 errors, 0 warnings, 0 informations
+pytest:
+  14 passed in 0.06s
+```
+
+The first two failures were repository quality-gate feedback only. They did not invoke AWS, GitHub application transports, Athena, Bedrock, models, OpenTelemetry exporters, CloudWatch, or X-Ray runtime paths.
+
+The final PR head must remain green before protected merge. Exact final-head status is verified from PR/Actions state rather than embedded into a self-referential file hash.
 
 ## External call / resource budget
 
@@ -297,10 +326,12 @@ ADR: `docs/adr/0032-content-minimized-operational-telemetry-contract.md`.
 [x] fixed low-cardinality metric projection
 [x] content leakage regressions
 [x] forged identity regression
+[x] direct metric-forgery regression
 [x] dedicated strict CI workflow
 [x] ADR recorded
 [x] lab recorded
-[ ] exact-head CI green
+[x] implementation validation green
+[ ] final PR head green
 [ ] PR reviewed / mergeable
 [ ] protected squash merge
 [ ] issue #134 CLOSED / COMPLETED
