@@ -1,6 +1,6 @@
 # OpsLens Documentation
 
-OpsLens documentation is organized around current architecture, implementation state, incremental roadmap, ADRs, and measured laboratory evidence.
+OpsLens documentation is organized around current architecture, implementation state, incremental roadmap, ADRs, gate laboratories, and immutable evaluation/runtime evidence.
 
 ## Primary documents
 
@@ -23,11 +23,17 @@ Phase 5  Risk Prioritization Engine             COMPLETE
 Phase 6  Semantic Query Layer                   COMPLETE
 Phase 7  Knowledge Retrieval with Bedrock       COMPLETE
 Phase 8  Hybrid Retrieval                       COMPLETE
-Phase 9  Public Analyze Your Repository         CLOSEOUT IN REVIEW
-Phase 10 Observability & Operational Excellence NEXT AFTER PHASE 9 MERGE
+Phase 9  Public Analyze Your Repository         COMPLETE
+Phase 10 Observability & Operational Excellence NEXT
 ```
 
-Phase 9 closes at a governed **application boundary**, not at a fictional public runtime. The repository now has bounded public request admission, immutable repository-evidence orchestration, proposal-only semantic planning, and a deterministic admission handoff through the existing Phase 8 hybrid route authority. No public HTTP endpoint/runtime principal is claimed.
+Phase 9 closes at a governed **application boundary**, not at a fictional public runtime. The repository has bounded public request admission, immutable repository-evidence orchestration, proposal-only semantic planning, and a deterministic admission handoff through the existing Phase 8 hybrid route authority.
+
+```text
+application boundary validated != public runtime deployed
+```
+
+No public HTTP endpoint or runtime principal is claimed by Phase 9.
 
 ## Phase 9 architecture records
 
@@ -41,14 +47,40 @@ Phase 9 closes at a governed **application boundary**, not at a fictional public
 - [`../labs/phase-9-gate-9-3-bounded-semantic-planning.md`](../labs/phase-9-gate-9-3-bounded-semantic-planning.md) — bounded semantic proposal/admission handoff and exact-head CI evidence.
 - [`../labs/phase-9-gate-9-4-closeout.md`](../labs/phase-9-gate-9-4-closeout.md) — Phase 9 authority/failure/runtime/IAM/cost/observability closeout and Phase 10 entry criteria.
 
-## Frozen Phase 8 evaluation
+Phase 9 frozen contracts:
+
+```text
+public-analysis-request:v1
+public-repository-evidence:v1
+public-semantic-planning:v1
+public-analysis-handoff:v1
+```
+
+Gate 9.4 closeout merge:
+
+```text
+PR #132
+f27c278db1039d31bd8410a2e51d14b77f6c1f0b
+issue #131: CLOSED / COMPLETED
+```
+
+## Phase 8 architecture records
+
+- [`adr/0025-deterministic-hybrid-routing-authority.md`](adr/0025-deterministic-hybrid-routing-authority.md) — deterministic `STRUCTURED | SEMANTIC | HYBRID | UNSUPPORTED` route authority.
+- [`adr/0026-deterministic-hybrid-evidence-envelope.md`](adr/0026-deterministic-hybrid-evidence-envelope.md) — authority-separated structured/semantic evidence envelope and completeness.
+- [`adr/0027-frozen-hybrid-evaluation-contract.md`](adr/0027-frozen-hybrid-evaluation-contract.md) — six-case evaluation fixture and independent metrics frozen before synthesis.
+- [`adr/0028-bounded-route-aware-hybrid-synthesis.md`](adr/0028-bounded-route-aware-hybrid-synthesis.md) — bounded synthesis behind deterministic hybrid route/evidence authority.
+
+## Phase 8 evidence
+
+Frozen dataset:
 
 ```text
 hybrid-evaluation-golden:v1
 sha256: 68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1
 ```
 
-Independent dimensions:
+Independent metrics:
 
 ```text
 route_accuracy
@@ -74,22 +106,15 @@ latency_ms:                   2959.3333333333335
 cost:                         UNMEASURED / null
 ```
 
-Gate 8.5 measured `H8.5-01` exactly once. The prompt-only candidate preserved deterministic guardrails but left semantic groundedness and citation correctness at `2/3`, so the predeclared decision was `REJECT`. The Gate 8.4 prompt remains the runtime default.
+Gate 8.5 measured `H8.5-01` exactly once. The prompt-only candidate preserved deterministic guardrails but did not improve semantic groundedness or citation correctness, so the predeclared decision was `REJECT`. The Gate 8.4 prompt remains the runtime default.
 
-## Phase 8 architecture records
+Evidence and closeout documents:
 
-- [`adr/0025-deterministic-hybrid-routing-authority.md`](adr/0025-deterministic-hybrid-routing-authority.md) — deterministic `STRUCTURED | SEMANTIC | HYBRID | UNSUPPORTED` route authority.
-- [`adr/0026-deterministic-hybrid-evidence-envelope.md`](adr/0026-deterministic-hybrid-evidence-envelope.md) — authority-separated structured/semantic evidence envelope and completeness.
-- [`adr/0027-frozen-hybrid-evaluation-contract.md`](adr/0027-frozen-hybrid-evaluation-contract.md) — six-case evaluation fixture and independent metrics frozen before synthesis.
-- [`adr/0028-bounded-route-aware-hybrid-synthesis.md`](adr/0028-bounded-route-aware-hybrid-synthesis.md) — bounded synthesis behind deterministic hybrid route/evidence authority.
-
-## Phase 8 evidence
-
-- [`../labs/phase-8-gate-8-4-bounded-hybrid-synthesis.md`](../labs/phase-8-gate-8-4-bounded-hybrid-synthesis.md) — first route-aware synthesis and real baseline history.
-- [`../labs/evidence/phase-8-gate-8-4-first-complete-baseline-v1.json`](../labs/evidence/phase-8-gate-8-4-first-complete-baseline-v1.json) — immutable Gate 8.4 real Bedrock baseline.
-- [`../labs/phase-8-gate-8-5-measured-optimization.md`](../labs/phase-8-gate-8-5-measured-optimization.md) — H8.5-01 hypothesis, single-run rule, and measured REJECT decision.
-- [`../labs/evidence/phase-8-gate-8-5-h85-01-first-run-v1.json`](../labs/evidence/phase-8-gate-8-5-h85-01-first-run-v1.json) — immutable H8.5-01 runtime evidence.
-- [`../labs/phase-8-gate-8-6-closeout.md`](../labs/phase-8-gate-8-6-closeout.md) — Phase 8 architecture/evaluation/IAM/cost/observability closeout and Phase 9 entry boundary.
+- [`../labs/phase-8-gate-8-4-bounded-hybrid-synthesis.md`](../labs/phase-8-gate-8-4-bounded-hybrid-synthesis.md)
+- [`../labs/evidence/phase-8-gate-8-4-first-complete-baseline-v1.json`](../labs/evidence/phase-8-gate-8-4-first-complete-baseline-v1.json)
+- [`../labs/phase-8-gate-8-5-measured-optimization.md`](../labs/phase-8-gate-8-5-measured-optimization.md)
+- [`../labs/evidence/phase-8-gate-8-5-h85-01-first-run-v1.json`](../labs/evidence/phase-8-gate-8-5-h85-01-first-run-v1.json)
+- [`../labs/phase-8-gate-8-6-closeout.md`](../labs/phase-8-gate-8-6-closeout.md)
 
 ## Phase 7 architecture records
 
@@ -97,7 +122,7 @@ Gate 8.5 measured `H8.5-01` exactly once. The prompt-only candidate preserved de
 - [`adr/0023-bounded-bedrock-knowledge-synthesis.md`](adr/0023-bounded-bedrock-knowledge-synthesis.md) — bounded non-streaming Bedrock knowledge synthesis after deterministic context admission.
 - [`adr/0024-phase7-runtime-iam-boundary.md`](adr/0024-phase7-runtime-iam-boundary.md) — future least-privilege application runtime entitlement, intentionally documented before compute exists.
 
-Phase 7 detailed evidence remains available in `../labs/phase-7-gate-7-*` and is not rewritten by later closeouts.
+Detailed Phase 7 evidence remains in `../labs/phase-7-gate-7-*` and is not rewritten by later closeouts.
 
 ## Permanent engineering boundaries
 
@@ -116,6 +141,14 @@ Phase 7 detailed evidence remains available in `../labs/phase-7-gate-7-*` and is
 > **No unrestricted text-to-SQL.**
 
 The model may plan and synthesize inside typed, bounded contracts. Deterministic code owns structured truth, public request/product-scope admission, route authority, required-evidence completeness, evidence admission, canonical citations, output admission, and evaluation metric computation.
+
+## Next authorized phase
+
+```text
+Phase 10 — Observability & Operational Excellence
+```
+
+Phase 10 must preserve the frozen Phase 9 contracts and may introduce runtime compute/IAM only for a concrete, bounded workload whose telemetry and operational controls are explicitly defined.
 
 ## Documentation update rule
 
