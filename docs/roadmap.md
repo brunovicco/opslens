@@ -33,8 +33,8 @@ concept
 | 7 | Knowledge Retrieval with Bedrock | ✅ Complete |
 | 8 | Hybrid Retrieval | ✅ Complete |
 | 9 | Public Analyze Your Repository | ✅ Complete |
-| 10 | Observability & Operational Excellence | ▶️ In progress — Gate 10.4 next |
-| 11 | Single-Agent Baseline | ⏳ Planned |
+| 10 | Observability & Operational Excellence | ✅ Complete |
+| 11 | Single-Agent Baseline | ▶️ Next |
 | 12 | Multi-Agent Architecture | ⏳ Planned |
 | 13 | MCP | ⏳ Planned |
 | 14 | Amazon Bedrock AgentCore | ⏳ Planned |
@@ -134,8 +134,6 @@ non-empty retrieval != sufficient evidence != authority to answer
 
 ## Phase 8 — Hybrid Retrieval — COMPLETE
 
-Phase 8 freezes hybrid **evidence routing and composition**, not automatically keyword + vector search.
-
 Contracts:
 
 ```text
@@ -154,8 +152,6 @@ structured + remediation           -> HYBRID
 runtime_exposure                    -> UNSUPPORTED
 ```
 
-Supported routes require `ALL_REQUIRED` evidence. Structured and semantic evidence remain separate authority classes.
-
 First real hybrid baseline:
 
 ```text
@@ -171,8 +167,6 @@ cost:                         UNMEASURED / null
 `H8.5-01` was executed once and rejected because semantic groundedness and citation correctness did not improve. Runtime default remains `hybrid-synthesis-prompt:v1`.
 
 ## Phase 9 — Public Analyze Your Repository — COMPLETE
-
-Phase 9 established a governed public-analysis **application boundary**. It did not deploy a public HTTP runtime.
 
 Merged sequence:
 
@@ -192,45 +186,34 @@ public-semantic-planning:v1
 public-analysis-handoff:v1
 ```
 
-Governed path:
+Governed boundary:
 
 ```text
 untrusted public JSON
  -> strict bounded request admission
- -> validated GitHub owner/name/ref coordinates
  -> source-confirmed public repository identity
  -> immutable commit/tree snapshot
  -> exact-commit inert uv.lock evidence
- -> deterministic parser + PyPI normalization
+ -> deterministic parsing/normalization
  -> PublicRepositoryEvidenceExecution
- -> bounded metadata-only semantic planning proposal
- -> deterministic exact public-v1 scope admission
+ -> metadata-only semantic planning proposal
+ -> deterministic public-v1 scope admission
  -> existing Phase 8 hybrid route authority
  -> PublicAnalysisAdmissionHandoff
  -> STOP
 ```
 
-Phase 9 closeout decision from ADR 0031:
+Phase 9 closes at:
 
 ```text
 application boundary validated != public runtime deployed
 ```
 
-At closeout:
+## Phase 10 — Observability & Operational Excellence — COMPLETE
 
-```text
-public HTTP compute:      NOT DEPLOYED
-public endpoint:          NOT DEPLOYED
-public runtime principal: DOES NOT EXIST
-```
+Phase 10 made the governed application path diagnosable without weakening deterministic authority, provenance, content minimization, cardinality discipline, or least privilege.
 
-Public-launch prerequisites remain explicit: concrete compute/endpoint, runtime IAM, timeout/concurrency/rate/abuse/quota controls, kill switch, cost attribution, production telemetry, rollback/incident procedures, and workload-derived SLOs/alerts.
-
-## Phase 10 — Observability & Operational Excellence — IN PROGRESS
-
-Phase 10 makes the governed application path diagnosable without weakening deterministic authority, provenance, content minimization, or least privilege.
-
-Frozen Phase 10 rules:
+Frozen rules:
 
 ```text
 telemetry evidence != business truth
@@ -241,16 +224,16 @@ provider serialization != execution authority
 EMF document created != CloudWatch ingestion proven
 ```
 
-Current sequence:
+Completed sequence:
 
 ```text
 Gate 10.1 — Content-Minimized Operational Telemetry Contract   COMPLETE / MERGED
 Gate 10.2 — Governed Orchestration Instrumentation             COMPLETE / MERGED
 Gate 10.3 — CloudWatch EMF Telemetry Adapter Boundary          COMPLETE / MERGED
-Gate 10.4 — Phase 10 Closeout                                  NEXT
+Gate 10.4 — Phase 10 Closeout                                  COMPLETE / CLOSEOUT PR
 ```
 
-### Gate 10.1 — Content-Minimized Operational Telemetry Contract — COMPLETE
+### Gate 10.1 — provider-neutral operational evidence
 
 Frozen contract:
 
@@ -259,7 +242,7 @@ operational-telemetry:v1
 operation: analyze_public_repository
 ```
 
-Bounded stages:
+Stages:
 
 ```text
 public_request_admission
@@ -269,14 +252,14 @@ hybrid_route_admission
 public_handoff
 ```
 
-Low-cardinality metrics:
+Metrics:
 
 ```text
 OperationalStageCount
 OperationalStageLatency
 ```
 
-with only these dimensions:
+with dimensions:
 
 ```text
 ContractVersion
@@ -289,23 +272,21 @@ Validation:
 
 ```text
 PR #135 final head:           7742ae003fc8e1ad1d1a6a4f71542875b6d6462c
-exact-head CI:                34135197989 / PASS
-Pyright strict:               0 errors / 0 warnings / 0 informations
+CI:                           34135197989 / PASS
 pytest:                       14 passed
 merge SHA:                    665b86f6e527a0096d7c3db522f4bd2c95b177aa
-issue #134:                   CLOSED / COMPLETED
 ```
 
-### Gate 10.2 — Governed Orchestration Instrumentation — COMPLETE
+### Gate 10.2 — governed instrumentation
 
-Gate 10.2 wired the frozen telemetry contract into the already-governed public-analysis path through injected provider-neutral boundaries:
+Provider-neutral ports:
 
 ```text
 MonotonicClock
 OperationalEventSink
 ```
 
-Successful execution emits exactly five events in stage order. Failed/rejected stages are terminal. Sink delivery is best effort only after mandatory in-process event construction, and undelivered-event accounting accepts only already-admitted event identities.
+Successful execution emits exactly five ordered success events. Failed/rejected stages are terminal. Event construction is mandatory; external sink delivery is best effort. Undelivered accounting accepts only already-admitted event identities.
 
 Validation:
 
@@ -315,54 +296,32 @@ Python CI:                    34141496326 / PASS
 Pyright strict:               0 errors / 0 warnings / 0 informations
 Public Analysis pytest:       70 passed
 merge SHA:                    346b223d9566a5d04d84e279f30793ad52a35b67
-issue #137:                   CLOSED / COMPLETED
 ```
 
-### Gate 10.3 — CloudWatch EMF Telemetry Adapter Boundary — COMPLETE
+### Gate 10.3 — bounded CloudWatch EMF representation
 
-Gate 10.3 introduced an offline AWS-native representation without deploying runtime authority.
-
-Frozen adapter contract:
+Frozen contract:
 
 ```text
 cloudwatch-emf:v1
 namespace: OpsLens/Operational
 storage resolution: 60 seconds
-maximum document: 16 KiB
+maximum canonical document: 16 KiB
 ```
 
 Boundary:
 
 ```text
 OperationalEvent
- -> existing project_operational_metrics(...)
- -> deterministic canonical EMF JSON
+ -> project_operational_metrics(...)
+ -> canonical EMF JSON
  -> content-addressed CloudWatchEmfDocument
  -> injected EpochMillisecondsClock
  -> injected EmfLineWriter
  -> STOP
 ```
 
-Exact dimensions remain:
-
-```text
-ContractVersion
-Operation
-Stage
-Outcome
-```
-
-High-cardinality correlation IDs remain metadata only and never become metric dimensions.
-
-Adapter failure taxonomy:
-
-```text
-clock_contract
-document_contract
-writer_delivery
-```
-
-There are zero adapter retries and at most one writer attempt per `emit(...)`.
+High-cardinality correlation IDs remain metadata-only and never become metric dimensions.
 
 Validation:
 
@@ -373,61 +332,77 @@ Ruff:                         PASS
 Pyright strict:               0 errors / 0 warnings / 0 informations
 pytest:                       26 passed
 merge SHA:                    0c5bf6bab39a3980c063fcb44f657c412111fefa
-issue #140:                   CLOSED / COMPLETED
 ```
 
 Gate 10.3 made zero CloudWatch API calls, created zero AWS/IAM resources, and did not prove telemetry ingestion.
 
-### Gate 10.4 — Phase 10 Closeout — NEXT
+### Gate 10.4 — Phase 10 closeout
 
-Gate 10.4 is a closeout gate, not a deployment gate.
+ADR 0035 closes Phase 10 at the proven boundary.
 
-It must consolidate and freeze:
+Phase 10 proves:
 
 ```text
-operational-telemetry:v1 provider-neutral contract
-five-stage deterministic instrumentation
-content-minimized provenance identities
-low-cardinality metric projection
-best-effort sink semantics
-cloudwatch-emf:v1 provider representation
-separate monotonic vs wall-clock semantics
+provider-neutral operational event contract
+bounded deterministic stage instrumentation
+content-minimized correlation/provenance identities
+fixed low-cardinality metric projection
+best-effort sink semantics after mandatory in-process evidence
+bounded content-free failure taxonomy
+cloudwatch-emf:v1 deterministic serialization
+separate monotonic-duration and epoch-millisecond clock semantics
 zero adapter retries
 content-addressed operational/EMF evidence
-failure taxonomy
-privacy/cardinality boundaries
-IAM and cost non-claims
 ```
 
-It must explicitly preserve:
+Phase 10 does not prove:
 
 ```text
-application boundary validated != public runtime deployed
-EMF document created != CloudWatch ingestion proven
-production SLO/cost/alert claims require deployed workload evidence
-IAM exists only for a concrete runtime identity
+public HTTP runtime
+CloudWatch ingestion
+runtime principal / runtime IAM
+public traffic volume
+production distributed traces
+production p95/p99/error rates
+production cost/request
+production dashboards/alarms
+production SLO compliance
 ```
 
-Gate 10.4 should produce the Phase 10 closeout ADR/lab and synchronize the public documentation. It must not create Lambda/API Gateway/ECS, runtime IAM, CloudWatch delivery, dashboards, alarms, or SLOs merely to complete the phase.
+No new AWS/IAM/resource/provider call is required to close the phase.
 
-After the closeout is merged and postmerge state is synchronized, **Phase 11 — Single-Agent Baseline** becomes the next authorized project phase.
+## Phase 11 — Single-Agent Baseline — NEXT
 
-## Phase 11 — Single-Agent Baseline — PLANNED
+Phase 11 must build **one bounded agent** over already-governed capabilities before multi-agent complexity.
 
-Build one bounded agent over existing deterministic tools before multi-agent complexity.
-
-Entry rule:
+Entry boundary:
 
 ```text
-agent reasoning may select/use already-governed capabilities
+agent reasoning may select/use already-authorized capabilities
 agent reasoning does not acquire deterministic truth or execution authority
 ```
 
-Phase 11 must define an explicit tool/authority surface and a measurable baseline before Phase 12 adds specialization.
+The first Phase 11 gate should freeze the single-agent contract before choosing a managed runtime.
+
+Required topics:
+
+```text
+explicit allowlisted tool/capability surface
+deterministic authority preservation
+bounded execution budget
+bounded retries / no hidden fallback
+failure and abstention semantics
+evidence/provenance handoff
+Phase 10 operational evidence reuse
+offline deterministic evaluation fixture
+baseline before optimization or multi-agent expansion
+```
+
+Do not introduce arbitrary shell/network/tool authority merely because an agent framework supports it.
 
 ## Phase 12 — Multi-Agent Architecture — PLANNED
 
-Introduce specialization only where measured evidence improves the single-agent baseline.
+Introduce specialization only where measured evidence improves the Phase 11 single-agent baseline.
 
 ## Phase 13 — MCP — PLANNED
 
@@ -455,4 +430,4 @@ Consolidate quality, latency, cost, failure, architecture, and portfolio evidenc
 
 ## Deferred cross-project integration
 
-OpsLens PR #89 remains the deferred consumer-side work for **Phase 14 — Case 3 of the separate `brunovicco/governed-llm-gateway` project**. It is not OpsLens Phase 14 and must be re-evaluated against the then-current architecture before any integration merge.
+OpsLens PR #89 remains deferred consumer-side work for **Phase 14 — Case 3 of the separate `brunovicco/governed-llm-gateway` project**. It is not OpsLens Phase 14 and must be re-evaluated against the then-current architecture before any integration merge.
