@@ -4,7 +4,7 @@ _Date: 2026-09-07_
 
 ## Status
 
-**IN PROGRESS — offline implementation complete; exact-head PR CI and merge still pending.**
+**COMPLETE / MERGED.**
 
 Starting point:
 
@@ -12,6 +12,16 @@ Starting point:
 main:   db10ef80b22067b742eddadf3a43c4514c33d074
 issue:  #122
 branch: feat/phase9-public-request-admission
+```
+
+Final validation and merge:
+
+```text
+PR:                 #123
+validated head:     26f0d2b5275284d891ee99a7f8276d41cc4f0753
+Python CI:          #346 / run 34079446683
+merge SHA:          5540d7b508c71aa65d826786618690b7ddc9d433
+issue #122:         CLOSED / COMPLETED
 ```
 
 ## Goal
@@ -238,39 +248,41 @@ Gate 9.1 therefore remains offline and provider-independent.
 
 ```text
 real AWS calls:        0
-GitHub network calls:  0
+GitHub runtime calls:  0
 Bedrock model calls:   0
 new AWS resources:     0
 new IAM roles:         0
 new IAM permissions:   0
 ```
 
-## CI boundary
+The GitHub connector was used only for repository development operations and is not part of the OpsLens Gate 9.1 runtime path.
 
-The Python workflow now has a dedicated:
+## CI evidence
 
-```text
-Public analysis quality gates
-```
-
-covering:
+Exact executable head:
 
 ```text
-uv lock --check
-Ruff
-Pyright strict
-pytest tests/unit/public_analysis
+26f0d2b5275284d891ee99a7f8276d41cc4f0753
 ```
 
-The workflow path filter includes both `src/opslens/public_analysis/**/*.py` and `tests/unit/public_analysis/**/*.py`.
+Python CI #346 / run `34079446683` passed all seven repository slice jobs.
 
-No merge is authorized until the exact PR head is green.
+Public Analysis quality gate:
+
+```text
+uv lock --check  PASS
+Ruff             PASS
+Pyright strict   PASS — 0 errors, 0 warnings, 0 informations
+pytest           PASS — 33 passed
+```
+
+An earlier run exposed only strict-Pyright `reportUnnecessaryIsInstance` diagnostics on defensive checks over statically typed dataclass fields. The implementation corrected those checks without `type: ignore`, suppression, or weaker typing, then passed the exact-head run above.
 
 ## Phase 9 sequencing
 
 Gate 9.1 freezes only request admission.
 
-A later gate must separately define the orchestration boundary from:
+Gate 9.2 must separately define the orchestration boundary from:
 
 ```text
 PublicAnalysisRequest
@@ -280,6 +292,8 @@ PublicAnalysisRequest
  -> risk/hybrid evidence composition
  -> public response projection
 ```
+
+The next gate should remain dependency-injected and testable with fake source ports before public HTTP compute exists. A later real-source validation can then prove that validated coordinates, rather than arbitrary URLs, reach the existing GET-only GitHub transport.
 
 Before public deployment, Phase 9 must also explicitly bound:
 
@@ -295,8 +309,6 @@ failure disclosure
 observability
 public runtime IAM
 ```
-
-Gate 9.2 remains blocked until Gate 9.1 is merged.
 
 ## AIP-C01 learning notes
 
@@ -331,8 +343,8 @@ Validation is not merely input hygiene. In an AI system it is part of the author
 [x] dedicated Python CI slice
 [x] ADR 0029
 [x] no network/AWS/model dependency
-[ ] exact-head PR CI green
-[ ] protected squash merge
-[ ] issue #122 closed / completed
-[ ] authoritative state synchronized to Gate 9.2 NEXT
+[x] exact-head PR CI green
+[x] protected squash merge
+[x] issue #122 closed / completed
+[x] authoritative state synchronized to Gate 9.2 NEXT
 ```
