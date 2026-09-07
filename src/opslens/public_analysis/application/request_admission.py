@@ -44,13 +44,9 @@ def _unique_json_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
 def _decode_request_object(raw_body: bytes) -> dict[str, object]:
     """Decode one small UTF-8 JSON object with exact field admission."""
     if type(raw_body) is not bytes:
-        raise PublicAnalysisRequestAdmissionError(
-            "public request body must be bytes"
-        )
+        raise PublicAnalysisRequestAdmissionError("public request body must be bytes")
     if not raw_body:
-        raise PublicAnalysisRequestAdmissionError(
-            "public request body cannot be empty"
-        )
+        raise PublicAnalysisRequestAdmissionError("public request body cannot be empty")
     if len(raw_body) > MAX_PUBLIC_ANALYSIS_REQUEST_BYTES:
         raise PublicAnalysisRequestAdmissionError(
             "public request body exceeds the hard byte limit"
@@ -92,9 +88,7 @@ def _decode_request_object(raw_body: bytes) -> dict[str, object]:
 def _parse_repository_url(value: object) -> tuple[str, str]:
     """Project one GitHub web URL into coordinates; never retain it as a fetch target."""
     if not isinstance(value, str):
-        raise PublicAnalysisRequestAdmissionError(
-            "repository_url must be a string"
-        )
+        raise PublicAnalysisRequestAdmissionError("repository_url must be a string")
     if not value or value != value.strip():
         raise PublicAnalysisRequestAdmissionError(
             "repository_url must be one normalized non-empty string"
@@ -105,9 +99,7 @@ def _parse_repository_url(value: object) -> tuple[str, str]:
         )
     parsed = urlsplit(value)
     if parsed.scheme.lower() != "https":
-        raise PublicAnalysisRequestAdmissionError(
-            "repository_url must use HTTPS"
-        )
+        raise PublicAnalysisRequestAdmissionError("repository_url must use HTTPS")
     if parsed.username is not None or parsed.password is not None:
         raise PublicAnalysisRequestAdmissionError(
             "repository_url cannot contain user information"
@@ -146,23 +138,14 @@ def _parse_repository_url(value: object) -> tuple[str, str]:
 
 
 def _parse_requested_ref(value: object) -> str | None:
-    """Preserve null as later default-branch resolution; otherwise reuse Phase 4 ref rules."""
+    """Preserve null for later default-branch resolution and reject non-string values."""
     if value is None:
         return None
     if not isinstance(value, str):
         raise PublicAnalysisRequestAdmissionError(
             "requested_ref must be a string or null"
         )
-    try:
-        return PublicRepositoryTarget(
-            owner="opslens-validation",
-            name="request-contract",
-            requested_ref=value,
-        ).requested_ref
-    except PublicAnalysisValidationError as exc:
-        raise PublicAnalysisRequestAdmissionError(
-            "requested_ref violates the GitHub ref contract"
-        ) from exc
+    return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -201,13 +184,17 @@ def admit_public_analysis_request(raw_body: bytes) -> PublicAnalysisRequestAdmis
     mapping = _decode_request_object(raw_body)
     owner, name = _parse_repository_url(mapping["repository_url"])
     requested_ref = _parse_requested_ref(mapping.get("requested_ref"))
-    request = create_public_analysis_request(
-        PublicRepositoryTarget(
+    try:
+        target = PublicRepositoryTarget(
             owner=owner,
             name=name,
             requested_ref=requested_ref,
         )
-    )
+    except PublicAnalysisValidationError as exc:
+        raise PublicAnalysisRequestAdmissionError(
+            "requested_ref violates the GitHub ref contract"
+        ) from exc
+    request = create_public_analysis_request(target)
     return PublicAnalysisRequestAdmission(
         request=request,
         raw_body_sha256=sha256(raw_body).hexdigest(),
