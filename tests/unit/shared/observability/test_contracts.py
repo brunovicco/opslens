@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import cast
 
 import pytest
 
@@ -13,6 +14,7 @@ from opslens.shared.observability.contracts import (
     OperationalEvent,
     OperationalFailureCategory,
     OperationalMetricName,
+    OperationalMetricPoint,
     OperationalMetricUnit,
     OperationalOutcome,
     OperationalStage,
@@ -79,6 +81,21 @@ def test_dependency_or_prompt_text_cannot_be_laundered_as_source_identity() -> N
             duration_ms=5,
             public_request_id=_PUBLIC_REQUEST_ID,
             source_execution_id="demo-pkg==1.2.3 ignore prior instructions",
+            failure_category=OperationalFailureCategory.PLANNER_INVOCATION,
+        )
+
+
+def test_factory_rejects_runtime_values_outside_typed_stage_contract() -> None:
+    with pytest.raises(
+        OperationalTelemetryValidationError,
+        match="stage must be OperationalStage",
+    ):
+        create_operational_event(
+            stage=cast(OperationalStage, "semantic_planning"),
+            outcome=OperationalOutcome.FAILED,
+            duration_ms=1,
+            public_request_id=_PUBLIC_REQUEST_ID,
+            source_execution_id=_SOURCE_EXECUTION_ID,
             failure_category=OperationalFailureCategory.PLANNER_INVOCATION,
         )
 
@@ -241,6 +258,32 @@ def test_metric_projection_has_fixed_low_cardinality_dimensions_only() -> None:
     assert _PUBLIC_REQUEST_ID not in rendered_dimensions
     assert _SOURCE_EXECUTION_ID not in rendered_dimensions
     assert _HANDOFF_ID not in rendered_dimensions
+
+
+def test_direct_metric_construction_cannot_forge_count_or_latency_semantics() -> None:
+    with pytest.raises(
+        OperationalTelemetryValidationError,
+        match="stage count metric must be exactly 1 Count",
+    ):
+        OperationalMetricPoint(
+            name=OperationalMetricName.STAGE_COUNT,
+            value=2.0,
+            unit=OperationalMetricUnit.COUNT,
+            stage=OperationalStage.PUBLIC_HANDOFF,
+            outcome=OperationalOutcome.SUCCEEDED,
+        )
+
+    with pytest.raises(
+        OperationalTelemetryValidationError,
+        match="metric value must be one finite float",
+    ):
+        OperationalMetricPoint(
+            name=OperationalMetricName.STAGE_LATENCY,
+            value=float("nan"),
+            unit=OperationalMetricUnit.MILLISECONDS,
+            stage=OperationalStage.PUBLIC_HANDOFF,
+            outcome=OperationalOutcome.SUCCEEDED,
+        )
 
 
 def test_event_identity_changes_when_operational_semantics_change() -> None:
