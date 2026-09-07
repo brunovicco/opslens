@@ -19,24 +19,13 @@ BEDROCK_AGENT_REASONING_TEMPERATURE: Final = 0.0
 
 _AGENT_REASONING_OUTPUT_SCHEMA = {
     "additionalProperties": False,
-    "oneOf": [
-        {
-            "properties": {
-                "capability": {"enum": [capability.value for capability in AgentCapability]},
-                "decision": {"const": "act"},
-            },
-            "required": ["decision", "capability"],
-            "type": "object",
+    "properties": {
+        "capability": {
+            "enum": [*[capability.value for capability in AgentCapability], None],
         },
-        {
-            "properties": {
-                "capability": {"type": "null"},
-                "decision": {"const": "abstain"},
-            },
-            "required": ["decision", "capability"],
-            "type": "object",
-        },
-    ],
+        "decision": {"enum": ["act", "abstain"]},
+    },
+    "required": ["decision", "capability"],
     "type": "object",
 }
 BEDROCK_AGENT_REASONING_OUTPUT_SCHEMA_JSON: Final = json.dumps(
