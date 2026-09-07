@@ -90,9 +90,8 @@ class AgentCapabilityExecutors:
     public_repository_analysis: PublicRepositoryAnalysisExecutor
 
 
-def _executor_failure(exc: Exception) -> AgentCapabilityExecutionError:
-    """Map arbitrary downstream exceptions to one content-free boundary failure."""
-    del exc
+def _executor_failure() -> AgentCapabilityExecutionError:
+    """Return one content-free downstream failure without retaining provider content."""
     return AgentCapabilityExecutionError(
         AgentCapabilityExecutionFailureCategory.EXECUTOR_FAILURE
     )
@@ -118,8 +117,8 @@ def execute_authorized_capability(
             result = executors.structured_security_query.execute_structured_security_query(
                 invocation
             )
-        except Exception as exc:
-            raise _executor_failure(exc) from exc
+        except Exception:
+            raise _executor_failure() from None
         if type(result) is not StructuredSecurityQueryResultBinding:
             raise _result_contract_failure()
         if result.invocation_sha256 != invocation.invocation_sha256:
@@ -132,8 +131,8 @@ def execute_authorized_capability(
     if type(invocation) is KnowledgeGuidanceInvocation:
         try:
             result = executors.knowledge_guidance.execute_knowledge_guidance(invocation)
-        except Exception as exc:
-            raise _executor_failure(exc) from exc
+        except Exception:
+            raise _executor_failure() from None
         if type(result) is not SynthesisResult:
             raise _result_contract_failure()
         if result.request_sha256 != invocation.request.request_sha256:
@@ -148,8 +147,8 @@ def execute_authorized_capability(
             result = executors.hybrid_security_answer.execute_hybrid_security_answer(
                 invocation
             )
-        except Exception as exc:
-            raise _executor_failure(exc) from exc
+        except Exception:
+            raise _executor_failure() from None
         if type(result) is not HybridSynthesisResult:
             raise _result_contract_failure()
         if result.request_sha256 != invocation.request.request_sha256:
@@ -164,11 +163,14 @@ def execute_authorized_capability(
             result = executors.public_repository_analysis.execute_public_repository_analysis(
                 invocation
             )
-        except Exception as exc:
-            raise _executor_failure(exc) from exc
+        except Exception:
+            raise _executor_failure() from None
         if type(result) is not PublicAnalysisAdmissionHandoff:
             raise _result_contract_failure()
-        if result.source_execution.request.request_id != invocation.request.request_id:
+        result_request = result.source_execution.request
+        if result_request.request_id != invocation.request.request_id:
+            raise _result_contract_failure()
+        if result_request.request_sha256 != invocation.request.request_sha256:
             raise _result_contract_failure()
         return AgentCapabilityExecution.create(
             invocation=invocation,
