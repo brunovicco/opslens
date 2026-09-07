@@ -172,12 +172,12 @@ class PublicAnalysisRequestAdmission:
 
     def __post_init__(self) -> None:
         """Reject forged admission provenance."""
-        if not isinstance(self.request, PublicAnalysisRequest):
+        if type(self.request) is not PublicAnalysisRequest:
             raise PublicAnalysisRequestAdmissionError(
                 "request must be one admitted PublicAnalysisRequest"
             )
         if (
-            not isinstance(self.raw_body_sha256, str)
+            type(self.raw_body_sha256) is not str
             or _SHA256_PATTERN.fullmatch(self.raw_body_sha256) is None
         ):
             raise PublicAnalysisRequestAdmissionError(
