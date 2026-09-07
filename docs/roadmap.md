@@ -230,7 +230,7 @@ Completed sequence:
 Gate 10.1 — Content-Minimized Operational Telemetry Contract   COMPLETE / MERGED
 Gate 10.2 — Governed Orchestration Instrumentation             COMPLETE / MERGED
 Gate 10.3 — CloudWatch EMF Telemetry Adapter Boundary          COMPLETE / MERGED
-Gate 10.4 — Phase 10 Closeout                                  COMPLETE / CLOSEOUT PR
+Gate 10.4 — Phase 10 Closeout                                  COMPLETE / MERGED
 ```
 
 ### Gate 10.1 — provider-neutral operational evidence
@@ -340,6 +340,19 @@ Gate 10.3 made zero CloudWatch API calls, created zero AWS/IAM resources, and di
 
 ADR 0035 closes Phase 10 at the proven boundary.
 
+Closeout validation:
+
+```text
+issue #143:                 CLOSED / COMPLETED
+PR #144 final head:         2fa375f04948792816b72d67c2d1ce9c1043026e
+PR #144 merge SHA:          6669638c8a72e250c6ebb3329ebb2c49e6a97898
+application/runtime code:   unchanged
+new AWS resources/IAM:      0
+new provider/runtime calls: 0
+```
+
+Gate 10.4 was documentation-only; Gate 10.3 remains the latest executable quality evidence.
+
 Phase 10 proves:
 
 ```text
@@ -368,8 +381,6 @@ production cost/request
 production dashboards/alarms
 production SLO compliance
 ```
-
-No new AWS/IAM/resource/provider call is required to close the phase.
 
 ## Phase 11 — Single-Agent Baseline — NEXT
 
