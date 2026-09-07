@@ -4,7 +4,7 @@ OpsLens documentation is organized around current architecture, implementation s
 
 ## Primary documents
 
-- [`architecture.md`](architecture.md) — accumulated architecture baseline through **Phase 9 — Public Analyze Your Repository**; Phase 10 decisions extend it through ADRs/gate labs while the phase remains in progress.
+- [`architecture.md`](architecture.md) — accumulated architecture baseline through **Phase 9 — Public Analyze Your Repository**; Phase 10 is frozen through ADRs 0032–0035 and its gate labs.
 - [`architecture.pt-br.md`](architecture.pt-br.md) — Portuguese architecture baseline synchronized with the English version.
 - [`current-state.md`](current-state.md) — exact implementation checkpoint and next authorized action.
 - [`roadmap.md`](roadmap.md) — incremental phase/gate plan and completion status.
@@ -24,10 +24,8 @@ Phase 6  Semantic Query Layer                   COMPLETE
 Phase 7  Knowledge Retrieval with Bedrock       COMPLETE
 Phase 8  Hybrid Retrieval                       COMPLETE
 Phase 9  Public Analyze Your Repository         COMPLETE
-Phase 10 Observability & Operational Excellence IN PROGRESS
-  Gate 10.1 Content-Minimized Telemetry         COMPLETE / MERGED
-  Gate 10.2 Governed Orchestration Instrumentation COMPLETE / MERGED
-  Gate 10.3 CloudWatch EMF Adapter Boundary     NEXT
+Phase 10 Observability & Operational Excellence COMPLETE
+Phase 11 Single-Agent Baseline                  NEXT
 ```
 
 Phase 9 closes at a governed **application boundary**, not at a fictional public runtime:
@@ -36,14 +34,22 @@ Phase 9 closes at a governed **application boundary**, not at a fictional public
 application boundary validated != public runtime deployed
 ```
 
-Phase 10 preserves that distinction while adding content-minimized operational evidence and deterministic stage instrumentation. No public HTTP endpoint or runtime principal is claimed.
+Phase 10 adds provider-neutral operational evidence, deterministic instrumentation, low-cardinality metrics, and a bounded CloudWatch EMF representation while preserving that boundary.
+
+```text
+EMF document created != CloudWatch ingestion proven
+```
+
+No public HTTP endpoint/runtime principal, CloudWatch ingestion, production dashboard/alarm, or production SLO is claimed.
 
 ## Phase 10 architecture records
 
 - [`adr/0032-content-minimized-operational-telemetry-contract.md`](adr/0032-content-minimized-operational-telemetry-contract.md) — operational telemetry is bounded evidence, not business or execution authority.
 - [`adr/0033-governed-operational-orchestration-instrumentation.md`](adr/0033-governed-operational-orchestration-instrumentation.md) — instrument the governed Phase 9 path without moving authority into telemetry.
+- [`adr/0034-bounded-cloudwatch-emf-telemetry-adapter.md`](adr/0034-bounded-cloudwatch-emf-telemetry-adapter.md) — adapt admitted events into deterministic AWS CloudWatch EMF without deploying runtime authority.
+- [`adr/0035-phase10-observability-closeout.md`](adr/0035-phase10-observability-closeout.md) — close Phase 10 at the proven observability boundary and defer production-runtime claims.
 
-Frozen telemetry contract:
+Frozen provider-neutral contract:
 
 ```text
 operational-telemetry:v1
@@ -60,62 +66,92 @@ hybrid_route_admission
 public_handoff
 ```
 
-Authority boundary:
+Low-cardinality metrics:
+
+```text
+OperationalStageCount      Count
+OperationalStageLatency    Milliseconds
+```
+
+Exact metric dimensions:
+
+```text
+ContractVersion
+Operation
+Stage
+Outcome
+```
+
+Frozen AWS-native representation:
+
+```text
+cloudwatch-emf:v1
+namespace: OpsLens/Operational
+storage resolution: 60 seconds
+maximum canonical document: 16 KiB
+```
+
+High-cardinality correlation IDs remain metadata-only and never become metric dimensions.
+
+## Phase 10 authority boundary
 
 ```text
 telemetry evidence != business truth
 telemetry evidence != route authority
 telemetry failure != permission to bypass fail-closed application contracts
 telemetry delivery accounting != permission to invent evidence identities
+provider serialization != execution authority
+EMF document created != CloudWatch ingestion proven
 ```
 
-The event contract has no arbitrary attribute bag and admits only content-addressed Phase 9 identity references. Metric projection is limited to `OperationalStageCount` and `OperationalStageLatency` with `ContractVersion`, `Operation`, `Stage`, and `Outcome` dimensions.
+Phase 10 closes without adding a public runtime or runtime IAM.
 
-### Gate 10.1 validation
+## Phase 10 validation
+
+### Gate 10.1
 
 ```text
 PR #135 final head:           7742ae003fc8e1ad1d1a6a4f71542875b6d6462c
-Operational Observability CI: run 34135197989 / PASS
-Ruff:                         PASS
-Pyright strict:               0 errors / 0 warnings / 0 informations
+Operational Observability CI: 34135197989 / PASS
 pytest:                       14 passed
 merge SHA:                    665b86f6e527a0096d7c3db522f4bd2c95b177aa
-issue #134:                   CLOSED / COMPLETED
 ```
 
-### Gate 10.2 validation
-
-Gate 10.2 instruments the five governed application stages with an injected monotonic clock and best-effort `OperationalEventSink`. Failed/rejected stages are terminal; sink failure never changes application/route authority; undelivered accounting accepts only already-admitted event identities.
+### Gate 10.2
 
 ```text
 PR #138 final head:           24b2affdf464e2548d94273e41007bb3256b561e
-Python CI run:                34141496326 / PASS
-uv lock --check:              PASS
-Ruff:                         PASS
+Python CI:                    34141496326 / PASS
 Pyright strict:               0 errors / 0 warnings / 0 informations
 Public Analysis pytest:       70 passed
 merge SHA:                    346b223d9566a5d04d84e279f30793ad52a35b67
-issue #137:                   CLOSED / COMPLETED
 ```
 
-Phase 10 laboratories:
+### Gate 10.3
+
+```text
+PR #141 final head:           632e778d36ada833505342708379603a1080d390
+Operational Observability CI: 34143908297 / run #9 / PASS
+Ruff:                         PASS
+Pyright strict:               0 errors / 0 warnings / 0 informations
+pytest:                       26 passed
+merge SHA:                    0c5bf6bab39a3980c063fcb44f657c412111fefa
+```
+
+Gate 10.3 made zero CloudWatch API calls and created zero AWS/IAM resources.
+
+## Phase 10 laboratories
 
 - [`../labs/phase-10-gate-10-1-operational-telemetry-contract.md`](../labs/phase-10-gate-10-1-operational-telemetry-contract.md)
 - [`../labs/phase-10-gate-10-2-governed-orchestration-instrumentation.md`](../labs/phase-10-gate-10-2-governed-orchestration-instrumentation.md)
-
-Neither Gate 10.1 nor 10.2 deployed a public runtime, AWS telemetry exporter/backend, dashboard, alarm, or production SLO.
+- [`../labs/phase-10-gate-10-3-cloudwatch-emf-adapter.md`](../labs/phase-10-gate-10-3-cloudwatch-emf-adapter.md)
+- [`../labs/phase-10-gate-10-4-closeout.md`](../labs/phase-10-gate-10-4-closeout.md)
 
 ## Phase 9 architecture records
 
-- [`adr/0029-public-repository-request-admission.md`](adr/0029-public-repository-request-admission.md) — public repository requests become validated coordinates, not arbitrary fetch URLs.
-- [`adr/0030-public-semantic-planning-authority.md`](adr/0030-public-semantic-planning-authority.md) — public semantic planning remains proposal-only and cannot redefine product scope or execution authority.
-- [`adr/0031-phase9-public-analysis-closeout.md`](adr/0031-phase9-public-analysis-closeout.md) — Phase 9 closes at the governed application boundary and explicitly defers deployment/runtime IAM until a concrete workload exists.
-
-## Phase 9 laboratories
-
-- [`../labs/phase-9-gate-9-1-public-request-admission.md`](../labs/phase-9-gate-9-1-public-request-admission.md) — public request grammar/admission boundary.
-- [`../labs/phase-9-gate-9-3-bounded-semantic-planning.md`](../labs/phase-9-gate-9-3-bounded-semantic-planning.md) — bounded semantic proposal/admission handoff and exact-head CI evidence.
-- [`../labs/phase-9-gate-9-4-closeout.md`](../labs/phase-9-gate-9-4-closeout.md) — Phase 9 authority/failure/runtime/IAM/cost/observability closeout and Phase 10 entry criteria.
+- [`adr/0029-public-repository-request-admission.md`](adr/0029-public-repository-request-admission.md)
+- [`adr/0030-public-semantic-planning-authority.md`](adr/0030-public-semantic-planning-authority.md)
+- [`adr/0031-phase9-public-analysis-closeout.md`](adr/0031-phase9-public-analysis-closeout.md)
 
 Phase 9 frozen contracts:
 
@@ -126,22 +162,12 @@ public-semantic-planning:v1
 public-analysis-handoff:v1
 ```
 
-Gate 9.4 closeout merge:
-
-```text
-PR #132
-f27c278db1039d31bd8410a2e51d14b77f6c1f0b
-issue #131: CLOSED / COMPLETED
-```
-
 ## Phase 8 architecture records
 
-- [`adr/0025-deterministic-hybrid-routing-authority.md`](adr/0025-deterministic-hybrid-routing-authority.md) — deterministic `STRUCTURED | SEMANTIC | HYBRID | UNSUPPORTED` route authority.
-- [`adr/0026-deterministic-hybrid-evidence-envelope.md`](adr/0026-deterministic-hybrid-evidence-envelope.md) — authority-separated structured/semantic evidence envelope and completeness.
-- [`adr/0027-frozen-hybrid-evaluation-contract.md`](adr/0027-frozen-hybrid-evaluation-contract.md) — six-case evaluation fixture and independent metrics frozen before synthesis.
-- [`adr/0028-bounded-route-aware-hybrid-synthesis.md`](adr/0028-bounded-route-aware-hybrid-synthesis.md) — bounded synthesis behind deterministic hybrid route/evidence authority.
-
-## Phase 8 evidence
+- [`adr/0025-deterministic-hybrid-routing-authority.md`](adr/0025-deterministic-hybrid-routing-authority.md)
+- [`adr/0026-deterministic-hybrid-evidence-envelope.md`](adr/0026-deterministic-hybrid-evidence-envelope.md)
+- [`adr/0027-frozen-hybrid-evaluation-contract.md`](adr/0027-frozen-hybrid-evaluation-contract.md)
+- [`adr/0028-bounded-route-aware-hybrid-synthesis.md`](adr/0028-bounded-route-aware-hybrid-synthesis.md)
 
 Frozen dataset:
 
@@ -149,20 +175,6 @@ Frozen dataset:
 hybrid-evaluation-golden:v1
 sha256: 68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1
 ```
-
-Independent metrics:
-
-```text
-route_accuracy
-structured_fact_correctness
-semantic_groundedness
-citation_correctness
-abstention
-latency
-cost
-```
-
-No composite score exists.
 
 Gate 8.4 first complete real Bedrock baseline:
 
@@ -176,21 +188,13 @@ latency_ms:                   2959.3333333333335
 cost:                         UNMEASURED / null
 ```
 
-Gate 8.5 measured `H8.5-01` exactly once. The prompt-only candidate preserved deterministic guardrails but did not improve semantic groundedness or citation correctness, so the predeclared decision was `REJECT`. The Gate 8.4 prompt remains the runtime default.
-
-Evidence and closeout documents:
-
-- [`../labs/phase-8-gate-8-4-bounded-hybrid-synthesis.md`](../labs/phase-8-gate-8-4-bounded-hybrid-synthesis.md)
-- [`../labs/evidence/phase-8-gate-8-4-first-complete-baseline-v1.json`](../labs/evidence/phase-8-gate-8-4-first-complete-baseline-v1.json)
-- [`../labs/phase-8-gate-8-5-measured-optimization.md`](../labs/phase-8-gate-8-5-measured-optimization.md)
-- [`../labs/evidence/phase-8-gate-8-5-h85-01-first-run-v1.json`](../labs/evidence/phase-8-gate-8-5-h85-01-first-run-v1.json)
-- [`../labs/phase-8-gate-8-6-closeout.md`](../labs/phase-8-gate-8-6-closeout.md)
+Gate 8.5 measured `H8.5-01` exactly once and rejected the candidate because the target quality metrics did not improve.
 
 ## Phase 7 architecture records
 
-- [`adr/0022-customer-managed-bedrock-kb-with-s3-vectors.md`](adr/0022-customer-managed-bedrock-kb-with-s3-vectors.md) — customer-managed vector Knowledge Base and S3 Vectors.
-- [`adr/0023-bounded-bedrock-knowledge-synthesis.md`](adr/0023-bounded-bedrock-knowledge-synthesis.md) — bounded non-streaming Bedrock knowledge synthesis after deterministic context admission.
-- [`adr/0024-phase7-runtime-iam-boundary.md`](adr/0024-phase7-runtime-iam-boundary.md) — future least-privilege application runtime entitlement, intentionally documented before compute exists.
+- [`adr/0022-customer-managed-bedrock-kb-with-s3-vectors.md`](adr/0022-customer-managed-bedrock-kb-with-s3-vectors.md)
+- [`adr/0023-bounded-bedrock-knowledge-synthesis.md`](adr/0023-bounded-bedrock-knowledge-synthesis.md)
+- [`adr/0024-phase7-runtime-iam-boundary.md`](adr/0024-phase7-runtime-iam-boundary.md)
 
 Detailed Phase 7 evidence remains in `../labs/phase-7-gate-7-*` and is not rewritten by later closeouts.
 
@@ -210,15 +214,22 @@ Detailed Phase 7 evidence remains in `../labs/phase-7-gate-7-*` and is not rewri
 
 > **No unrestricted text-to-SQL.**
 
-The model may plan and synthesize inside typed, bounded contracts. Deterministic code owns structured truth, public request/product-scope admission, route authority, required-evidence completeness, evidence admission, canonical citations, output admission, evaluation metric computation, and operational telemetry admission semantics.
-
-## Next authorized gate
+## Next authorized phase
 
 ```text
-Phase 10 Gate 10.3 — CloudWatch EMF Telemetry Adapter Boundary
+Phase 11 — Single-Agent Baseline
 ```
 
-Gate 10.3 should adapt the frozen event/metric semantics to deterministic CloudWatch Embedded Metric Format through an injected writer boundary. It must be fake-writer/offline first, preserve the exact low-cardinality dimension set, and make no CloudWatch-delivery, production-runtime, dashboard, alarm, p95/p99, or SLO claim without separately deployed AWS evidence.
+Phase 11 should freeze one bounded agent contract over already-governed capabilities before selecting managed runtime infrastructure or introducing multi-agent complexity.
+
+The entry boundary is:
+
+```text
+agent reasoning may select/use already-authorized capabilities
+agent reasoning does not acquire deterministic truth or execution authority
+```
+
+PR #89 remains deferred cross-project integration work and is not made mergeable by Phase 10 closeout.
 
 ## Documentation update rule
 
@@ -233,7 +244,7 @@ IAM / trust boundary
 observability evidence
 cost reasoning
 CI evidence
-next authorized gate
+next authorized gate/phase
 ```
 
-Top-level documents describe the current baseline. Historical detail stays in labs and ADRs so stale gate status does not leak into the current project overview.
+Top-level documents describe the current baseline. Historical detail stays in labs and ADRs so stale gate status does not leak into the project overview.
