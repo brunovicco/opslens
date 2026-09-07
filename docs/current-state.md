@@ -24,26 +24,28 @@ Phase 9    Public Analyze Your Repository                      COMPLETE
 Phase 10   Observability & Operational Excellence              IN PROGRESS
   Gate 10.1 Content-minimized operational telemetry contract   COMPLETE / MERGED
   Gate 10.2 Governed orchestration instrumentation             COMPLETE / MERGED
-  Gate 10.3 CloudWatch EMF telemetry adapter boundary          NEXT
+  Gate 10.3 CloudWatch EMF telemetry adapter boundary          COMPLETE / MERGED
+  Gate 10.4 Phase 10 closeout                                  NEXT
 ```
 
 Latest merged executable/project checkpoint:
 
 ```text
-Phase 10 Gate 10.2 / PR #138
-346b223d9566a5d04d84e279f30793ad52a35b67
+Phase 10 Gate 10.3 / PR #141
+0c5bf6bab39a3980c063fcb44f657c412111fefa
 ```
 
-Tracking:
+Gate 10.3 validation:
 
 ```text
-Gate 10.2 issue #137:             CLOSED / COMPLETED
-Gate 10.2 final PR head:          24b2affdf464e2548d94273e41007bb3256b561e
-Gate 10.2 exact-head Python CI:   run 34141496326 / PASS
-Public Analysis Ruff:             PASS
-Public Analysis Pyright strict:   0 errors / 0 warnings / 0 informations
-Public Analysis pytest:           70 passed
-Gate 10.2 merge SHA:              346b223d9566a5d04d84e279f30793ad52a35b67
+issue #140:                         CLOSED / COMPLETED
+final PR head:                      632e778d36ada833505342708379603a1080d390
+Operational Observability CI:       34143908297 / run #9 / PASS
+uv lock --check:                    PASS
+Ruff:                               PASS
+Pyright strict:                     0 errors / 0 warnings / 0 informations
+pytest:                             26 passed
+merge SHA:                          0c5bf6bab39a3980c063fcb44f657c412111fefa
 ```
 
 ## Permanent architecture boundaries
@@ -62,17 +64,19 @@ Gate 10.2 merge SHA:              346b223d9566a5d04d84e279f30793ad52a35b67
 
 > **Intent classification != execution authority.**
 
-Deterministic authorities own package/version semantics, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS/Risk Policy facts, SemanticQuery validation and SQL compilation, retrieval/evidence admission, hybrid route/completeness, structured fact projection, canonical evidence/citation identity, output admission, evaluation metrics, execution limits, public request admission, immutable repository evidence binding, public-v1 product scope, semantic-plan admission, public handoff identity, and operational telemetry admission/projection semantics.
+Deterministic authorities own package/version semantics, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS/Risk Policy facts, `SemanticQuery` validation and SQL compilation, retrieval/evidence admission, hybrid route/completeness, structured fact projection, canonical evidence/citation identity, output admission, evaluation metrics, execution limits, public request admission, immutable repository evidence binding, public-v1 product scope, semantic-plan admission, public handoff identity, operational telemetry admission/projection semantics, and provider-specific telemetry document admission.
 
 LLMs may classify, plan, propose, synthesize, explain, and select already-admitted citation IDs. They do not own structured truth, public product scope, repository truth, runtime exposure, SQL authority, route authority, evidence completeness, canonical provenance, provider/model selection, execution authority, or telemetry authority.
 
-Phase 10 adds the explicit distinctions:
+Phase 10 freezes these distinctions:
 
 ```text
 telemetry evidence != business truth
 telemetry evidence != route authority
 telemetry failure != permission to bypass fail-closed application contracts
 telemetry delivery accounting != permission to invent evidence identities
+provider serialization != execution authority
+EMF document created != CloudWatch ingestion proven
 ```
 
 ## Implemented system
@@ -122,16 +126,25 @@ Untrusted public repository JSON
 
 Governed operational instrumentation
  -> operational-telemetry:v1
- -> request admission event
- -> repository evidence event
- -> semantic planning event
- -> deterministic hybrid route event
- -> public handoff event
+ -> exact five-stage event sequence
+ -> deterministic failure taxonomy
+ -> content-addressed OperationalEvent
+ -> fixed low-cardinality metric projection
  -> injected best-effort OperationalEventSink
  -> bounded undelivered-event identity accounting
+
+CloudWatch representation boundary
+ -> admitted OperationalEvent
+ -> existing project_operational_metrics(...)
+ -> deterministic cloudwatch-emf:v1 payload
+ -> exact four-dimension metric set
+ -> content-addressed CloudWatchEmfDocument
+ -> injected EpochMillisecondsClock
+ -> injected EmfLineWriter
+ -> STOP
 ```
 
-The application `STOP` remains material. Gate 10.2 instrumented the governed application boundary; it did not deploy a public HTTP runtime or downstream public analysis execution pipeline.
+The application `STOP` remains material. Phase 10 has made the governed application boundary observable and added an offline AWS-native representation boundary; it has not deployed a public HTTP runtime or proven CloudWatch ingestion.
 
 ## Frozen Phase 7 / 8 quality
 
@@ -171,7 +184,7 @@ latency_ms:                   2959.3333333333335
 cost:                         UNMEASURED / null
 ```
 
-Gate 8.5 H8.5-01 did not improve semantic groundedness/citation correctness and was rejected. Runtime default remains `hybrid-synthesis-prompt:v1`.
+Gate 8.5 `H8.5-01` did not improve semantic groundedness/citation correctness and was rejected. Runtime default remains `hybrid-synthesis-prompt:v1`.
 
 Preserved distinctions:
 
@@ -395,16 +408,100 @@ issue #137:                       CLOSED / COMPLETED
 
 Gate 10.2 created no public runtime, AWS resource, IAM role/policy, Athena call, Bedrock/model call, CloudWatch/OpenTelemetry exporter call, dashboard, alarm, or production SLO claim.
 
+## Phase 10 Gate 10.3 — CloudWatch EMF telemetry adapter boundary
+
+Gate 10.3 adapts admitted operational evidence into an AWS-native representation without changing provider-neutral telemetry authority.
+
+Frozen contract:
+
+```text
+cloudwatch-emf:v1
+namespace: OpsLens/Operational
+storage resolution: 60 seconds
+maximum canonical document: 16 KiB
+```
+
+Boundary:
+
+```text
+OperationalEvent
+ -> project_operational_metrics(...)
+ -> canonical CloudWatch EMF JSON
+ -> CloudWatchEmfDocument
+ -> injected EpochMillisecondsClock
+ -> injected EmfLineWriter
+ -> STOP
+```
+
+Exact metric dimension set remains:
+
+```text
+ContractVersion
+Operation
+Stage
+Outcome
+```
+
+High-cardinality identities remain log metadata only:
+
+```text
+EventId
+PublicRequestId
+SourceExecutionId
+HandoffId
+```
+
+They never become metric dimensions.
+
+Adapter failure categories are content-free and bounded:
+
+```text
+clock_contract
+document_contract
+writer_delivery
+```
+
+Each `emit(...)` has zero adapter retries and at most one writer attempt. The canonical EMF document is SHA-256 content-addressed. The timestamp clock is intentionally distinct from the Gate 10.2 monotonic duration clock.
+
+Validation:
+
+```text
+PR #141 final head:               632e778d36ada833505342708379603a1080d390
+Operational Observability CI:     34143908297 / run #9 / PASS
+uv lock --check:                  PASS
+Ruff:                             PASS
+Pyright strict:                   0 errors / 0 warnings / 0 informations
+pytest:                           26 passed
+merge SHA:                        0c5bf6bab39a3980c063fcb44f657c412111fefa
+issue #140:                       CLOSED / COMPLETED
+```
+
+The initial PR run `34143614259` preserved one test-only strict-Pyright failure (`RecordingWriter.lines -> list[Unknown]`); it was corrected without changing adapter behavior before the exact-head green run.
+
+Gate 10.3 introduced no AWS resource, IAM policy, public runtime, `logs:PutLogEvents`, `cloudwatch:PutMetricData`, OpenTelemetry call, dashboard, alarm, production SLO, or CloudWatch ingestion claim.
+
 ## Cost and observability boundary
 
-OpsLens does not invent a public-request price, production latency distribution, SLO, or alert compliance before a deployed workload exists.
+OpsLens does not invent a public-request price, CloudWatch cost, production latency distribution, SLO, or alert compliance before a deployed workload exists.
 
-Current Phase 10 evidence proves the telemetry contract, deterministic instrumentation, failure taxonomy, content-minimization/cardinality boundaries, and CI quality. It does not yet prove production telemetry delivery.
+Current Phase 10 evidence proves:
 
-Still not claimed:
+```text
+provider-neutral telemetry contract
+content-minimized operational events
+deterministic stage instrumentation
+bounded failure taxonomy
+low-cardinality metric projection
+provider-specific EMF serialization
+content-addressed EMF documents
+clock/writer failure boundaries
+```
+
+It does **not** prove:
 
 ```text
 public request volume
+CloudWatch ingestion
 public distributed traces
 production p95/p99
 production error/throttle rates
@@ -431,6 +528,8 @@ workload-derived SLOs + alerts
 rollback / incident procedures
 ```
 
+None of these prerequisites is silently satisfied by the Phase 10 offline application/telemetry work.
+
 ## Deferred Governed LLM Gateway integration
 
 Long-lived PR #89 remains open/draft for **Phase 14 — Case 3 of the separate `brunovicco/governed-llm-gateway` project**. It is not OpsLens Phase 14 and must be re-evaluated against the then-current architecture before any merge.
@@ -438,7 +537,18 @@ Long-lived PR #89 remains open/draft for **Phase 14 — Case 3 of the separate `
 ## Next authorized step
 
 ```text
-Phase 10 Gate 10.3 — CloudWatch EMF Telemetry Adapter Boundary
+Phase 10 Gate 10.4 — Phase 10 Closeout
 ```
 
-Gate 10.3 may adapt the frozen provider-neutral `OperationalEvent`/metric projection to Amazon CloudWatch Embedded Metric Format through an injected writer boundary, but it must remain offline/fake-writer first. It must preserve the existing low-cardinality dimensions, keep content-addressed IDs out of metric dimensions, perform zero implicit retries, and make no claim of CloudWatch delivery until a concrete runtime transports the serialized records. A real AWS call, runtime IAM policy, dashboard, alarm, or SLO requires separate explicit evidence.
+Gate 10.4 must freeze the completed observability boundary and close Phase 10 without inventing a production runtime. It should consolidate contracts, authority/failure/cardinality/privacy/IAM/cost boundaries, exact merge evidence, and the entry criteria for Phase 11 — Single-Agent Baseline.
+
+The closeout must preserve:
+
+```text
+application boundary validated != public runtime deployed
+EMF document created != CloudWatch ingestion proven
+production SLO/cost/alert claims require deployed workload evidence
+IAM exists only for a concrete runtime identity
+```
+
+A public runtime, CloudWatch delivery backend, runtime IAM policy, dashboard, alarm, or SLO is not required merely to declare the current Phase 10 observability architecture complete.

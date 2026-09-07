@@ -33,7 +33,7 @@ concept
 | 7 | Knowledge Retrieval with Bedrock | ✅ Complete |
 | 8 | Hybrid Retrieval | ✅ Complete |
 | 9 | Public Analyze Your Repository | ✅ Complete |
-| 10 | Observability & Operational Excellence | ▶️ In progress — Gate 10.3 next |
+| 10 | Observability & Operational Excellence | ▶️ In progress — Gate 10.4 next |
 | 11 | Single-Agent Baseline | ⏳ Planned |
 | 12 | Multi-Agent Architecture | ⏳ Planned |
 | 13 | MCP | ⏳ Planned |
@@ -168,7 +168,7 @@ latency_ms:                   2959.3333333333335
 cost:                         UNMEASURED / null
 ```
 
-H8.5-01 was executed once and rejected because semantic groundedness and citation correctness did not improve. The runtime default remains `hybrid-synthesis-prompt:v1`.
+`H8.5-01` was executed once and rejected because semantic groundedness and citation correctness did not improve. Runtime default remains `hybrid-synthesis-prompt:v1`.
 
 ## Phase 9 — Public Analyze Your Repository — COMPLETE
 
@@ -210,22 +210,6 @@ untrusted public JSON
  -> STOP
 ```
 
-Public v1 remains fixed to `analyze_public_repository`. Deterministic code requires exactly:
-
-```text
-remediation_guidance
-risk_priority
-vulnerability_facts
-```
-
-Successful admission must agree with Phase 8 authority:
-
-```text
-HYBRID
-ALL_REQUIRED
-STRUCTURED + SEMANTIC
-```
-
 Phase 9 closeout decision from ADR 0031:
 
 ```text
@@ -238,31 +222,13 @@ At closeout:
 public HTTP compute:      NOT DEPLOYED
 public endpoint:          NOT DEPLOYED
 public runtime principal: DOES NOT EXIST
-new Gate 9.4 AWS:         NONE
-new Gate 9.4 IAM:         NONE
-```
-
-Closeout merge:
-
-```text
-PR #132
-f27c278db1039d31bd8410a2e51d14b77f6c1f0b
-issue #131: CLOSED / COMPLETED
 ```
 
 Public-launch prerequisites remain explicit: concrete compute/endpoint, runtime IAM, timeout/concurrency/rate/abuse/quota controls, kill switch, cost attribution, production telemetry, rollback/incident procedures, and workload-derived SLOs/alerts.
 
 ## Phase 10 — Observability & Operational Excellence — IN PROGRESS
 
-Phase 10 starts from the frozen Phase 9 contracts and makes operational evidence explicit without weakening application authority.
-
-Primary goal:
-
-```text
-make governed execution diagnosable
-without weakening deterministic authority,
-provenance, content minimization, or least privilege
-```
+Phase 10 makes the governed application path diagnosable without weakening deterministic authority, provenance, content minimization, or least privilege.
 
 Frozen Phase 10 rules:
 
@@ -271,14 +237,17 @@ telemetry evidence != business truth
 telemetry evidence != route authority
 telemetry failure != permission to bypass fail-closed application contracts
 telemetry delivery accounting != permission to invent evidence identities
+provider serialization != execution authority
+EMF document created != CloudWatch ingestion proven
 ```
 
-Mandatory sequence:
+Current sequence:
 
 ```text
 Gate 10.1 — Content-Minimized Operational Telemetry Contract   COMPLETE / MERGED
 Gate 10.2 — Governed Orchestration Instrumentation             COMPLETE / MERGED
-Gate 10.3 — CloudWatch EMF Telemetry Adapter Boundary          NEXT
+Gate 10.3 — CloudWatch EMF Telemetry Adapter Boundary          COMPLETE / MERGED
+Gate 10.4 — Phase 10 Closeout                                  NEXT
 ```
 
 ### Gate 10.1 — Content-Minimized Operational Telemetry Contract — COMPLETE
@@ -300,16 +269,14 @@ hybrid_route_admission
 public_handoff
 ```
 
-The event contract has no arbitrary attribute bag. It can carry only bounded operational semantics and already-authorized Phase 9 content-addressed identity references. It cannot carry raw repository/source/model/SQL/credential content.
-
-Low-cardinality metrics are fixed to:
+Low-cardinality metrics:
 
 ```text
 OperationalStageCount
 OperationalStageLatency
 ```
 
-with dimensions:
+with only these dimensions:
 
 ```text
 ContractVersion
@@ -322,142 +289,167 @@ Validation:
 
 ```text
 PR #135 final head:           7742ae003fc8e1ad1d1a6a4f71542875b6d6462c
-exact-head CI run:            34135197989 / PASS
-Ruff:                         PASS
+exact-head CI:                34135197989 / PASS
 Pyright strict:               0 errors / 0 warnings / 0 informations
 pytest:                       14 passed
 merge SHA:                    665b86f6e527a0096d7c3db522f4bd2c95b177aa
 issue #134:                   CLOSED / COMPLETED
 ```
 
-Gate 10.1 introduced no public runtime, new AWS resources, new IAM permissions, Bedrock/model calls, Athena calls, telemetry exporter calls, production dashboards, alarms, or SLO claims.
-
 ### Gate 10.2 — Governed Orchestration Instrumentation — COMPLETE
 
-Gate 10.2 wires `operational-telemetry:v1` into the already-governed public-analysis application path through injected provider-neutral boundaries.
-
-Implemented boundary:
-
-```text
-existing public-analysis stage
- -> deterministic stage outcome/failure classification
- -> OperationalEvent
- -> injected OperationalEventSink
- -> best-effort external delivery accounting
-```
-
-Provider-neutral operational ports:
+Gate 10.2 wired the frozen telemetry contract into the already-governed public-analysis path through injected provider-neutral boundaries:
 
 ```text
 MonotonicClock
 OperationalEventSink
 ```
 
-Successful execution emits exactly five successful events in stage order. Failed/rejected stages are terminal. No later business work or telemetry event is emitted after a fail-closed stop.
-
-The failure taxonomy distinguishes request rejection, source transport failure, evidence rejection, planner invocation failure, planner-output rejection, route-authority rejection, handoff rejection, and unexpected internal failure without copying arbitrary exception/provider text into telemetry.
-
-Sink delivery is best effort only after mandatory in-process event construction:
-
-```text
-valid OperationalEvent construction failure -> fail closed
-external sink delivery failure               -> no business/route authority change
-```
-
-Undelivered-event accounting is itself validated: only already-admitted event IDs are accepted; duplicate or forged IDs fail closed.
+Successful execution emits exactly five events in stage order. Failed/rejected stages are terminal. Sink delivery is best effort only after mandatory in-process event construction, and undelivered-event accounting accepts only already-admitted event identities.
 
 Validation:
 
 ```text
 PR #138 final head:           24b2affdf464e2548d94273e41007bb3256b561e
-Python CI run:                34141496326 / PASS
-uv lock --check:              PASS
-Ruff:                         PASS
+Python CI:                    34141496326 / PASS
 Pyright strict:               0 errors / 0 warnings / 0 informations
 Public Analysis pytest:       70 passed
 merge SHA:                    346b223d9566a5d04d84e279f30793ad52a35b67
 issue #137:                   CLOSED / COMPLETED
 ```
 
-Gate 10.2 remained offline/provider-neutral and introduced no public HTTP runtime, AWS resource, runtime IAM, Athena/Bedrock/model call, CloudWatch/OpenTelemetry exporter call, dashboard, alarm, or production SLO claim.
+### Gate 10.3 — CloudWatch EMF Telemetry Adapter Boundary — COMPLETE
 
-### Gate 10.3 — CloudWatch EMF Telemetry Adapter Boundary — NEXT
+Gate 10.3 introduced an offline AWS-native representation without deploying runtime authority.
 
-Goal: adapt the frozen provider-neutral operational evidence and low-cardinality metric projection to an AWS-native CloudWatch Embedded Metric Format representation without requiring a deployed public runtime.
+Frozen adapter contract:
 
-Proposed boundary to freeze before any real delivery:
+```text
+cloudwatch-emf:v1
+namespace: OpsLens/Operational
+storage resolution: 60 seconds
+maximum document: 16 KiB
+```
+
+Boundary:
 
 ```text
 OperationalEvent
- -> deterministic metric projection
- -> deterministic CloudWatch EMF document
- -> injected line/writer boundary
- -> runtime log transport later
+ -> existing project_operational_metrics(...)
+ -> deterministic canonical EMF JSON
+ -> content-addressed CloudWatchEmfDocument
+ -> injected EpochMillisecondsClock
+ -> injected EmfLineWriter
+ -> STOP
 ```
 
-Gate 10.3 must remain offline/fake-writer first and prove:
+Exact dimensions remain:
 
 ```text
-EMF schema/namespace/version are explicit
-metric dimensions remain exactly ContractVersion/Operation/Stage/Outcome
-public_request_id/source_execution_id/handoff_id never become metric dimensions
-content-addressed event identity may remain log metadata only
-one event produces bounded deterministic EMF output
-no application retry or business authority is introduced
-writer failure cannot authorize downstream work
-no provider exception content enters admitted telemetry
+ContractVersion
+Operation
+Stage
+Outcome
 ```
 
-A serialized EMF document is not proof of CloudWatch ingestion. Gate 10.3 must not claim a real CloudWatch log group, metric datapoint, dashboard, alarm, production p95/p99, SLO, or delivery guarantee unless a later concrete runtime and AWS validation produce that evidence.
+High-cardinality correlation IDs remain metadata only and never become metric dimensions.
 
-Phase 10 entry criteria remain frozen:
+Adapter failure taxonomy:
 
 ```text
-1. Phase 9 contracts remain versioned boundaries
-2. public input never gains arbitrary fetch/SQL/tool/model/execution authority
-3. third-party repository code is never executed
-4. Repository Risk != Runtime Exposure
-5. Phase 8 remains hybrid route/evidence authority
-6. semantic planning remains proposal-only and content-minimized
-7. failed admission prevents downstream execution
-8. IAM exists only for a concrete runtime identity
-9. production SLO/alert claims require deployed workload evidence
-10. observability cannot weaken privacy/provenance/content-minimization boundaries
-11. runtime/provider/retrieval changes require separately versioned hypotheses
-12. PR #89 remains deferred until separately re-evaluated
+clock_contract
+document_contract
+writer_delivery
 ```
 
-## Future phases
+There are zero adapter retries and at most one writer attempt per `emit(...)`.
 
-### Phase 11 — Single-Agent Baseline
+Validation:
+
+```text
+PR #141 final head:           632e778d36ada833505342708379603a1080d390
+Operational Observability CI: 34143908297 / run #9 / PASS
+Ruff:                         PASS
+Pyright strict:               0 errors / 0 warnings / 0 informations
+pytest:                       26 passed
+merge SHA:                    0c5bf6bab39a3980c063fcb44f657c412111fefa
+issue #140:                   CLOSED / COMPLETED
+```
+
+Gate 10.3 made zero CloudWatch API calls, created zero AWS/IAM resources, and did not prove telemetry ingestion.
+
+### Gate 10.4 — Phase 10 Closeout — NEXT
+
+Gate 10.4 is a closeout gate, not a deployment gate.
+
+It must consolidate and freeze:
+
+```text
+operational-telemetry:v1 provider-neutral contract
+five-stage deterministic instrumentation
+content-minimized provenance identities
+low-cardinality metric projection
+best-effort sink semantics
+cloudwatch-emf:v1 provider representation
+separate monotonic vs wall-clock semantics
+zero adapter retries
+content-addressed operational/EMF evidence
+failure taxonomy
+privacy/cardinality boundaries
+IAM and cost non-claims
+```
+
+It must explicitly preserve:
+
+```text
+application boundary validated != public runtime deployed
+EMF document created != CloudWatch ingestion proven
+production SLO/cost/alert claims require deployed workload evidence
+IAM exists only for a concrete runtime identity
+```
+
+Gate 10.4 should produce the Phase 10 closeout ADR/lab and synchronize the public documentation. It must not create Lambda/API Gateway/ECS, runtime IAM, CloudWatch delivery, dashboards, alarms, or SLOs merely to complete the phase.
+
+After the closeout is merged and postmerge state is synchronized, **Phase 11 — Single-Agent Baseline** becomes the next authorized project phase.
+
+## Phase 11 — Single-Agent Baseline — PLANNED
 
 Build one bounded agent over existing deterministic tools before multi-agent complexity.
 
-### Phase 12 — Multi-Agent Architecture
+Entry rule:
+
+```text
+agent reasoning may select/use already-governed capabilities
+agent reasoning does not acquire deterministic truth or execution authority
+```
+
+Phase 11 must define an explicit tool/authority surface and a measurable baseline before Phase 12 adds specialization.
+
+## Phase 12 — Multi-Agent Architecture — PLANNED
 
 Introduce specialization only where measured evidence improves the single-agent baseline.
 
-### Phase 13 — MCP
+## Phase 13 — MCP — PLANNED
 
 Expose bounded internal tools through explicit MCP contracts after deterministic authorities are stable.
 
-### Phase 14 — Amazon Bedrock AgentCore
+## Phase 14 — Amazon Bedrock AgentCore — PLANNED
 
 Evaluate managed runtime capabilities against measured OpsLens needs rather than adopting them for certification coverage alone.
 
-### Phase 15 — A2A
+## Phase 15 — A2A — PLANNED
 
 Add agent-to-agent interoperability only after stable agent boundaries exist.
 
-### Phase 16 — Runtime Exposure with Amazon Inspector
+## Phase 16 — Runtime Exposure with Amazon Inspector — PLANNED
 
 Add independent runtime evidence without conflating repository risk with runtime exposure.
 
-### Phase 17 — Security Hardening
+## Phase 17 — Security Hardening — PLANNED
 
 Perform cross-cutting IAM, data protection, abuse, threat-model, dependency, and operational hardening.
 
-### Phase 18 — Evaluation, Cost & Portfolio Readiness
+## Phase 18 — Evaluation, Cost & Portfolio Readiness — PLANNED
 
 Consolidate quality, latency, cost, failure, architecture, and portfolio evidence.
 
