@@ -114,9 +114,15 @@ def _emf_payload(event: OperationalEvent, timestamp_ms: int) -> bytes:
         raise OperationalTelemetryValidationError(
             "CloudWatch EMF metric dimension projections disagree"
         )
-    if tuple(count_metric.dimensions.keys()) != CLOUDWATCH_EMF_DIMENSIONS:
+
+    dimension_values = dict(count_metric.dimensions)
+    if frozenset(dimension_values) != frozenset(CLOUDWATCH_EMF_DIMENSIONS):
         raise OperationalTelemetryValidationError(
             "CloudWatch EMF dimensions must match the frozen low-cardinality set"
+        )
+    if len(dimension_values) != len(CLOUDWATCH_EMF_DIMENSIONS):
+        raise OperationalTelemetryValidationError(
+            "CloudWatch EMF dimensions cannot contain duplicate targets"
         )
 
     metric_definitions = [
@@ -144,18 +150,16 @@ def _emf_payload(event: OperationalEvent, timestamp_ms: int) -> bytes:
             "Timestamp": timestamp,
         },
         "AttemptCount": event.attempt_count,
-        "ContractVersion": OPERATIONAL_TELEMETRY_CONTRACT_VERSION,
         "EmfContractVersion": CLOUDWATCH_EMF_CONTRACT_VERSION,
         "EventId": event.event_id,
         "FailureCategory": (
             event.failure_category.value if event.failure_category is not None else None
         ),
-        "Operation": OPERATIONAL_TELEMETRY_OPERATION,
         "OperationalStageCount": count_metric.value,
         "OperationalStageLatency": latency_metric.value,
-        "Outcome": event.outcome.value,
-        "Stage": event.stage.value,
     }
+    for dimension_name in CLOUDWATCH_EMF_DIMENSIONS:
+        root[dimension_name] = dimension_values[dimension_name]
 
     if event.public_request_id is not None:
         root["PublicRequestId"] = event.public_request_id
@@ -163,6 +167,15 @@ def _emf_payload(event: OperationalEvent, timestamp_ms: int) -> bytes:
         root["SourceExecutionId"] = event.source_execution_id
     if event.handoff_id is not None:
         root["HandoffId"] = event.handoff_id
+
+    if root["ContractVersion"] != OPERATIONAL_TELEMETRY_CONTRACT_VERSION:
+        raise OperationalTelemetryValidationError(
+            "CloudWatch EMF operational contract version drifted"
+        )
+    if root["Operation"] != OPERATIONAL_TELEMETRY_OPERATION:
+        raise OperationalTelemetryValidationError(
+            "CloudWatch EMF operation projection drifted"
+        )
 
     payload = _canonical_json(root)
     if len(payload) > MAX_CLOUDWATCH_EMF_DOCUMENT_BYTES:
@@ -192,6 +205,10 @@ class CloudWatchEmfDocument:
         if type(self.payload) is not bytes:
             raise OperationalTelemetryValidationError(
                 "CloudWatch EMF document payload must be bytes"
+            )
+        if len(self.payload) > MAX_CLOUDWATCH_EMF_DOCUMENT_BYTES:
+            raise OperationalTelemetryValidationError(
+                "CloudWatch EMF document exceeds the OpsLens hard byte limit"
             )
         expected_payload = _emf_payload(self.event, timestamp)
         if self.payload != expected_payload:
@@ -252,8 +269,14 @@ class CloudWatchEmfOperationalEventSink:
                 CloudWatchEmfAdapterFailure.DOCUMENT_CONTRACT
             )
         try:
-            timestamp_ms = self.clock.epoch_milliseconds()
+            raw_timestamp_ms = self.clock.epoch_milliseconds()
         except Exception:
+            raise CloudWatchEmfAdapterError(
+                CloudWatchEmfAdapterFailure.CLOCK_CONTRACT
+            ) from None
+        try:
+            timestamp_ms = _validate_timestamp_ms(raw_timestamp_ms)
+        except OperationalTelemetryValidationError:
             raise CloudWatchEmfAdapterError(
                 CloudWatchEmfAdapterFailure.CLOCK_CONTRACT
             ) from None
