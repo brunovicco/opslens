@@ -17,25 +17,22 @@ Phase 6    Semantic Query Layer                                COMPLETE
 Phase 7    Knowledge Retrieval with Bedrock                    COMPLETE
 Phase 8    Hybrid Retrieval                                    COMPLETE
 Phase 9    Public Analyze Your Repository                      COMPLETE
-  Gate 9.1 Public repository request admission                 COMPLETE / MERGED
-  Gate 9.2 Immutable repository evidence orchestration         COMPLETE / MERGED
-  Gate 9.3 Bounded semantic planning + admission handoff       COMPLETE / MERGED
-  Gate 9.4 Phase 9 closeout                                    COMPLETE / MERGED
-Phase 10   Observability & Operational Excellence              IN PROGRESS
+Phase 10   Observability & Operational Excellence              COMPLETE
   Gate 10.1 Content-minimized operational telemetry contract   COMPLETE / MERGED
   Gate 10.2 Governed orchestration instrumentation             COMPLETE / MERGED
   Gate 10.3 CloudWatch EMF telemetry adapter boundary          COMPLETE / MERGED
-  Gate 10.4 Phase 10 closeout                                  NEXT
+  Gate 10.4 Phase 10 closeout                                  CLOSEOUT IN PR
+Phase 11   Single-Agent Baseline                               NEXT
 ```
 
-Latest merged executable/project checkpoint:
+Latest merged executable checkpoint before the documentation-only closeout:
 
 ```text
 Phase 10 Gate 10.3 / PR #141
 0c5bf6bab39a3980c063fcb44f657c412111fefa
 ```
 
-Gate 10.3 validation:
+Gate 10.3 exact validation:
 
 ```text
 issue #140:                         CLOSED / COMPLETED
@@ -47,6 +44,8 @@ Pyright strict:                     0 errors / 0 warnings / 0 informations
 pytest:                             26 passed
 merge SHA:                          0c5bf6bab39a3980c063fcb44f657c412111fefa
 ```
+
+Gate 10.4 is documentation/architecture closeout only and introduces no application/runtime code.
 
 ## Permanent architecture boundaries
 
@@ -68,7 +67,7 @@ Deterministic authorities own package/version semantics, vulnerability applicabi
 
 LLMs may classify, plan, propose, synthesize, explain, and select already-admitted citation IDs. They do not own structured truth, public product scope, repository truth, runtime exposure, SQL authority, route authority, evidence completeness, canonical provenance, provider/model selection, execution authority, or telemetry authority.
 
-Phase 10 freezes these distinctions:
+Phase 10 permanently adds:
 
 ```text
 telemetry evidence != business truth
@@ -144,7 +143,7 @@ CloudWatch representation boundary
  -> STOP
 ```
 
-The application `STOP` remains material. Phase 10 has made the governed application boundary observable and added an offline AWS-native representation boundary; it has not deployed a public HTTP runtime or proven CloudWatch ingestion.
+The `STOP` remains material: OpsLens has a validated governed application boundary and an offline telemetry representation boundary, not a deployed public HTTP workload.
 
 ## Frozen Phase 7 / 8 quality
 
@@ -194,7 +193,9 @@ non-empty retrieval != sufficient evidence != authority to answer
 admission != semantic support
 ```
 
-## Phase 9 contracts
+## Phase 9 governed public-analysis boundary
+
+Frozen contracts:
 
 ```text
 public-analysis-request:v1
@@ -203,44 +204,7 @@ public-semantic-planning:v1
 public-analysis-handoff:v1
 ```
 
-### Gate 9.1 — request admission
-
-Untrusted public JSON is bounded and reduced to validated GitHub owner/name/ref coordinates. The raw user URL never becomes fetch authority.
-
-```text
-public request admitted
- != repository proven public
- != repository snapshot resolved
- != repository analyzed
-```
-
-Validation:
-
-```text
-PR #123 head:                    26f0d2b5275284d891ee99a7f8276d41cc4f0753
-Python CI #346 / run 34079446683: PASS
-Public Analysis pytest:          33 passed
-merge SHA:                       5540d7b508c71aa65d826786618690b7ddc9d433
-issue #122:                      CLOSED / COMPLETED
-```
-
-### Gate 9.2 — immutable repository evidence
-
-Source-confirmed public repository metadata resolves an immutable commit/tree; exact-commit inert `uv.lock` evidence is parsed and normalized deterministically. Repository code is never executed.
-
-Validation:
-
-```text
-PR #126 head:                    0fdc6c435c0f2891b6730f61bd73ad7f32ca8213
-Python CI #349 / run 34080376506: PASS
-Public Analysis pytest:          41 passed
-merge SHA:                       b152a21bf9d0807ac40083c609ea434f32ccb671
-issue #125:                      CLOSED / COMPLETED
-```
-
-### Gate 9.3 — bounded semantic planning + admission handoff
-
-The fixed public operation is `analyze_public_repository`. Deterministic policy requires exactly:
+Public v1 is fixed to `analyze_public_repository`. Deterministic code owns its scope and requires exactly:
 
 ```text
 remediation_guidance
@@ -248,16 +212,7 @@ risk_priority
 vulnerability_facts
 ```
 
-Planner bounds:
-
-```text
-planning request:       <= 2048 UTF-8 bytes
-planner response:       <= 1024 bytes
-planner invocations:    <= 1 per orchestration
-adaptive app retries:   0
-```
-
-Successful deterministic admission must agree with Phase 8 route authority:
+Successful admission must agree with Phase 8 route authority:
 
 ```text
 HYBRID
@@ -265,37 +220,17 @@ ALL_REQUIRED
 STRUCTURED + SEMANTIC
 ```
 
-Validation:
-
-```text
-PR #129 head:                    34cea42a0ce37cbfa06b33d57f081403edba2552
-Python CI #358 / run 34082791753: PASS
-Public Analysis Ruff:            PASS
-Public Analysis Pyright strict:  0 errors / 0 warnings / 0 informations
-Public Analysis pytest:          57 passed
-merge SHA:                       6f53537c227cade688091187eac1074645e11bf0
-issue #128:                      CLOSED / COMPLETED
-```
-
-Gate 9.3 used injected fake repository/planner ports and made zero real provider/model calls.
-
-### Gate 9.4 — closeout
-
-ADR 0031 freezes:
+Phase 9 closeout remains:
 
 ```text
 application boundary validated != public runtime deployed
 ```
 
-```text
-PR #132:                         MERGED
-merge SHA:                       f27c278db1039d31bd8410a2e51d14b77f6c1f0b
-issue #131:                      CLOSED / COMPLETED
-```
+## Phase 10 closeout
 
-## Phase 10 Gate 10.1 — operational telemetry contract
+Phase 10 closes with three implemented observability layers plus this documentation closeout.
 
-Frozen contract:
+### Gate 10.1 — provider-neutral telemetry contract
 
 ```text
 operational-telemetry:v1
@@ -320,24 +255,14 @@ rejected
 failed
 ```
 
-Only content-addressed Phase 9 identity references are available:
-
-```text
-public_request_id
-source_execution_id
-handoff_id
-```
-
-There is no arbitrary telemetry attribute bag and no event field for raw repository URL/owner/name, dependency names/versions, `uv.lock` bytes, prompt/retrieved/model text, SQL, credentials/secrets, or provider/model selection.
-
-Metric projection is fixed to:
+Metrics:
 
 ```text
 OperationalStageCount      Count
 OperationalStageLatency    Milliseconds
 ```
 
-with only these dimensions:
+Dimensions:
 
 ```text
 ContractVersion
@@ -346,24 +271,17 @@ Stage
 Outcome
 ```
 
-High-cardinality request/source/handoff identities never become metric dimensions.
-
 Validation:
 
 ```text
-PR #135 final head:               7742ae003fc8e1ad1d1a6a4f71542875b6d6462c
-Operational Observability CI:     run 34135197989 / PASS
-uv lock --check:                  PASS
-Ruff:                             PASS
-Pyright strict:                   0 errors / 0 warnings / 0 informations
-pytest:                           14 passed
-merge SHA:                        665b86f6e527a0096d7c3db522f4bd2c95b177aa
-issue #134:                       CLOSED / COMPLETED
+PR #135 final head:           7742ae003fc8e1ad1d1a6a4f71542875b6d6462c
+Operational Observability CI: 34135197989 / PASS
+pytest:                       14 passed
+merge SHA:                    665b86f6e527a0096d7c3db522f4bd2c95b177aa
+issue #134:                   CLOSED / COMPLETED
 ```
 
-## Phase 10 Gate 10.2 — governed orchestration instrumentation
-
-Gate 10.2 wires `operational-telemetry:v1` into the existing Phase 9 path without moving any application authority into telemetry.
+### Gate 10.2 — governed orchestration instrumentation
 
 Provider-neutral ports:
 
@@ -372,47 +290,22 @@ MonotonicClock
 OperationalEventSink
 ```
 
-Successful execution emits exactly five events in order:
-
-```text
-public_request_admission
-repository_evidence
-semantic_planning
-hybrid_route_admission
-public_handoff
-```
-
-Failure semantics are deterministic and terminal. Source transport vs evidence rejection, planner invocation vs planner-output rejection, route rejection, handoff rejection, and unexpected internal failures remain separately diagnosable without copying arbitrary provider/exception text into events.
-
-Sink delivery remains best effort:
-
-```text
-valid OperationalEvent construction failure -> fail closed
-external sink failure                       -> never changes business/route authority
-```
-
-Delivery accounting accepts only IDs of already-admitted events and rejects forged or duplicate undelivered identities.
+Successful execution emits exactly five ordered success events. Failed/rejected stages are terminal. In-process event construction is mandatory; external sink delivery is best effort and cannot change application/route authority. Undelivered-event accounting accepts only already-admitted event IDs.
 
 Validation:
 
 ```text
-PR #138 final head:               24b2affdf464e2548d94273e41007bb3256b561e
-Python CI run:                    34141496326 / PASS
-uv lock --check:                  PASS
-Ruff:                             PASS
-Pyright strict:                   0 errors / 0 warnings / 0 informations
-Public Analysis pytest:           70 passed
-merge SHA:                        346b223d9566a5d04d84e279f30793ad52a35b67
-issue #137:                       CLOSED / COMPLETED
+PR #138 final head:           24b2affdf464e2548d94273e41007bb3256b561e
+Python CI:                    34141496326 / PASS
+Pyright strict:               0 errors / 0 warnings / 0 informations
+Public Analysis pytest:       70 passed
+merge SHA:                    346b223d9566a5d04d84e279f30793ad52a35b67
+issue #137:                   CLOSED / COMPLETED
 ```
 
-Gate 10.2 created no public runtime, AWS resource, IAM role/policy, Athena call, Bedrock/model call, CloudWatch/OpenTelemetry exporter call, dashboard, alarm, or production SLO claim.
+### Gate 10.3 — CloudWatch EMF adapter boundary
 
-## Phase 10 Gate 10.3 — CloudWatch EMF telemetry adapter boundary
-
-Gate 10.3 adapts admitted operational evidence into an AWS-native representation without changing provider-neutral telemetry authority.
-
-Frozen contract:
+Frozen representation:
 
 ```text
 cloudwatch-emf:v1
@@ -421,28 +314,7 @@ storage resolution: 60 seconds
 maximum canonical document: 16 KiB
 ```
 
-Boundary:
-
-```text
-OperationalEvent
- -> project_operational_metrics(...)
- -> canonical CloudWatch EMF JSON
- -> CloudWatchEmfDocument
- -> injected EpochMillisecondsClock
- -> injected EmfLineWriter
- -> STOP
-```
-
-Exact metric dimension set remains:
-
-```text
-ContractVersion
-Operation
-Stage
-Outcome
-```
-
-High-cardinality identities remain log metadata only:
+High-cardinality correlation identities remain log metadata only:
 
 ```text
 EventId
@@ -453,7 +325,7 @@ HandoffId
 
 They never become metric dimensions.
 
-Adapter failure categories are content-free and bounded:
+Adapter failures:
 
 ```text
 clock_contract
@@ -461,52 +333,69 @@ document_contract
 writer_delivery
 ```
 
-Each `emit(...)` has zero adapter retries and at most one writer attempt. The canonical EMF document is SHA-256 content-addressed. The timestamp clock is intentionally distinct from the Gate 10.2 monotonic duration clock.
+There are zero adapter retries and at most one writer attempt per `emit(...)`.
 
 Validation:
 
 ```text
-PR #141 final head:               632e778d36ada833505342708379603a1080d390
-Operational Observability CI:     34143908297 / run #9 / PASS
-uv lock --check:                  PASS
-Ruff:                             PASS
-Pyright strict:                   0 errors / 0 warnings / 0 informations
-pytest:                           26 passed
-merge SHA:                        0c5bf6bab39a3980c063fcb44f657c412111fefa
-issue #140:                       CLOSED / COMPLETED
+PR #141 final head:           632e778d36ada833505342708379603a1080d390
+Operational Observability CI: 34143908297 / run #9 / PASS
+Ruff:                         PASS
+Pyright strict:               0 errors / 0 warnings / 0 informations
+pytest:                       26 passed
+merge SHA:                    0c5bf6bab39a3980c063fcb44f657c412111fefa
+issue #140:                   CLOSED / COMPLETED
 ```
 
-The initial PR run `34143614259` preserved one test-only strict-Pyright failure (`RecordingWriter.lines -> list[Unknown]`); it was corrected without changing adapter behavior before the exact-head green run.
+The initial Gate 10.3 PR run `34143614259` preserved a test-only strict-Pyright failure before the final exact-head green validation.
 
-Gate 10.3 introduced no AWS resource, IAM policy, public runtime, `logs:PutLogEvents`, `cloudwatch:PutMetricData`, OpenTelemetry call, dashboard, alarm, production SLO, or CloudWatch ingestion claim.
+### Gate 10.4 — closeout decision
 
-## Cost and observability boundary
-
-OpsLens does not invent a public-request price, CloudWatch cost, production latency distribution, SLO, or alert compliance before a deployed workload exists.
-
-Current Phase 10 evidence proves:
+ADR 0035 closes Phase 10 at the proven boundary. The phase proves:
 
 ```text
-provider-neutral telemetry contract
-content-minimized operational events
-deterministic stage instrumentation
-bounded failure taxonomy
-low-cardinality metric projection
-provider-specific EMF serialization
-content-addressed EMF documents
-clock/writer failure boundaries
+provider-neutral operational event contract
+bounded deterministic stage instrumentation
+content-minimized provenance/correlation identities
+fixed low-cardinality metric projection
+best-effort external sink semantics after mandatory in-process evidence
+bounded content-free failure taxonomy
+cloudwatch-emf:v1 deterministic serialization
+separate monotonic-duration and epoch-millisecond clock semantics
+zero adapter retries
+content-addressed OperationalEvent / CloudWatchEmfDocument evidence
 ```
 
-It does **not** prove:
+Phase 10 does not prove:
 
 ```text
-public request volume
+public HTTP runtime
 CloudWatch ingestion
-public distributed traces
+runtime principal / runtime IAM
+public request volume
+production distributed traces
 production p95/p99
 production error/throttle rates
 production cost/request
-production SLO/alert compliance
+production dashboards/alarms
+production SLO compliance
+```
+
+## IAM and cost boundary
+
+Phase 10 closes with no public runtime principal and therefore no new runtime telemetry IAM.
+
+Not granted:
+
+```text
+logs:PutLogEvents
+cloudwatch:PutMetricData
+```
+
+Production observability cost remains unmeasured because no public workload or CloudWatch ingestion exists. High-cardinality correlation IDs are deliberately excluded from metric dimensions as a cost/cardinality safeguard.
+
+```text
+unmeasured cost != zero cost
 ```
 
 ## Public-launch prerequisites still required
@@ -528,7 +417,7 @@ workload-derived SLOs + alerts
 rollback / incident procedures
 ```
 
-None of these prerequisites is silently satisfied by the Phase 10 offline application/telemetry work.
+None of these prerequisites is silently satisfied by Phase 10.
 
 ## Deferred Governed LLM Gateway integration
 
@@ -537,18 +426,23 @@ Long-lived PR #89 remains open/draft for **Phase 14 — Case 3 of the separate `
 ## Next authorized step
 
 ```text
-Phase 10 Gate 10.4 — Phase 10 Closeout
+Phase 11 — Single-Agent Baseline
 ```
 
-Gate 10.4 must freeze the completed observability boundary and close Phase 10 without inventing a production runtime. It should consolidate contracts, authority/failure/cardinality/privacy/IAM/cost boundaries, exact merge evidence, and the entry criteria for Phase 11 — Single-Agent Baseline.
+Phase 11 starts with one bounded agent over already-governed capabilities before any multi-agent complexity.
 
-The closeout must preserve:
+Entry rules:
 
 ```text
-application boundary validated != public runtime deployed
-EMF document created != CloudWatch ingestion proven
-production SLO/cost/alert claims require deployed workload evidence
-IAM exists only for a concrete runtime identity
+1. agent reasoning may select/use already-authorized capabilities
+2. deterministic truth remains code-owned
+3. exact tool surface must be explicit and allowlisted
+4. arbitrary tool execution is not allowed
+5. execution budgets/failure semantics must be bounded
+6. evaluation baseline must exist before optimization or multi-agent expansion
+7. Phase 10 operational evidence boundaries must be reused rather than bypassed
+8. Repository Risk != Runtime Exposure remains frozen
+9. PR #89 remains deferred until separately re-evaluated
 ```
 
-A public runtime, CloudWatch delivery backend, runtime IAM policy, dashboard, alarm, or SLO is not required merely to declare the current Phase 10 observability architecture complete.
+Phase 11 should begin with an offline/provider-neutral agent contract before selecting managed runtime infrastructure.
