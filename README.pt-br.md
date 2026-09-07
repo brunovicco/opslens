@@ -6,7 +6,7 @@
 
 ### Software Supply Chain e Threat Intelligence Verificáveis na AWS
 
-**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Autoridade Determinística**
+**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Public Analysis Admission · Autoridade Determinística**
 
 </div>
 
@@ -47,15 +47,18 @@ Boundaries permanentes:
 | Phase 6 | Semantic Query Layer | ✅ Concluída |
 | Phase 7 | Knowledge Retrieval with Bedrock | ✅ Concluída |
 | Phase 8 | Hybrid Retrieval | ✅ Concluída |
-| Phase 9 | Public Analyze Your Repository | ⏳ Próxima |
+| Phase 9 | Public Analyze Your Repository | ✅ Concluída após merge da Gate 9.4 |
+| Phase 10 | Observability & Operational Excellence | ⏳ Próxima |
 
-A Phase 8 encerra com routing/evidence authority híbridos determinísticos, síntese limitada e route-aware, fixture congelada de seis casos, baseline real no Bedrock e um experimento de otimização medido cujo candidato foi corretamente **rejeitado** por não melhorar groundedness nem citation correctness.
+A Phase 9 encerra em um **boundary governado de aplicação**, e não em um deployment de produção fictício. O OpsLens agora possui admissão limitada do request público, orchestration imutável da evidência de repositório, semantic planning proposal-only e handoff determinístico através da autoridade híbrida já existente da Phase 8.
 
-Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md) e o [closeout da Phase 8](labs/phase-8-gate-8-6-closeout.md).
+O projeto **não** afirma que um runtime HTTP público já foi implantado. Compute público, runtime IAM, controles de rate/abuse, telemetry de produção e SLOs derivados de workload continuam trabalho explícito posterior.
+
+Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md) e o [closeout da Phase 9](labs/phase-9-gate-9-4-closeout.md).
 
 ## Sistema implementado
 
-O OpsLens possui três caminhos cooperando, sem misturar seus diferentes níveis de autoridade.
+O OpsLens possui caminhos governados estruturados, semânticos, híbridos e de public admission sem misturar níveis de autoridade.
 
 ### 1. Autoridade estruturada de vulnerabilidade / risco
 
@@ -112,6 +115,43 @@ source pins oficiais e imutáveis
 
 `RetrieveAndGenerate` não é usado. Retrieval e geração permanecem testáveis e observáveis separadamente.
 
+### 4. Boundary público de análise
+
+```text
+JSON público não confiável
+ -> admissão estrita <=2048 bytes
+ -> coordenadas GitHub owner/name/ref validadas
+ -> identidade pública source-confirmed
+ -> snapshot imutável commit/tree
+ -> evidência inerte uv.lock no commit exato
+ -> parser determinístico + normalização PyPI
+ -> PublicRepositoryEvidenceExecution
+ -> semantic planning request metadata-only <=2048 bytes
+ -> proposta não confiável <=1024 bytes
+ -> admissão determinística do scope público v1
+ -> autoridade híbrida da Phase 8
+ -> PublicAnalysisAdmissionHandoff
+ -> STOP
+```
+
+O scope público v1 é propriedade do código, não do modelo. O planner deve propor exatamente:
+
+```text
+remediation_guidance
+risk_priority
+vulnerability_facts
+```
+
+e a autoridade de route deve resolver para:
+
+```text
+HYBRID
+ALL_REQUIRED
+STRUCTURED + SEMANTIC
+```
+
+O planner não recebe raw repository URL, bytes do lockfile, nomes/versões de dependências, texto/instruções arbitrárias do repositório, SQL, credenciais, seleção de provider/model/tool ou conteúdo executável.
+
 ## Autoridade híbrida da Phase 8
 
 Hybrid Retrieval significa **hybrid evidence routing**, não automaticamente busca keyword + vector.
@@ -140,7 +180,7 @@ resposta combinada
  -> sem authority laundering
 ```
 
-Runtime exposure continua `UNSUPPORTED` até existir uma autoridade independente de runtime em fase futura.
+Runtime exposure continua `UNSUPPORTED` até existir autoridade independente em fase futura.
 
 ## Avaliação congelada da Phase 8
 
@@ -151,7 +191,7 @@ hybrid-evaluation-golden:v1
 68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1
 ```
 
-Seis casos congelados:
+Seis casos:
 
 ```text
 structured_only_factual
@@ -184,7 +224,7 @@ Evidência imutável:
 labs/evidence/phase-8-gate-8-4-first-complete-baseline-v1.json
 ```
 
-Resultado medido:
+Resultado:
 
 ```text
 route_accuracy:               1.0
@@ -196,7 +236,7 @@ latency_ms:                   2959.3333333333335
 cost:                         UNMEASURED / null
 ```
 
-O caso semantic-noise preserva uma falha útil: a evidência rank 1 foi admitida, mas não suportava a pergunta; a evidência rank 2 era o target correto. O modelo usou ambas.
+O caso semantic-noise preserva uma falha útil:
 
 ```text
 admission != semantic support
@@ -206,36 +246,49 @@ allowlisted citation != correct citation target
 
 ## Otimização medida da Gate 8.5
 
-Uma única hipótese prompt-only previamente declarada, `H8.5-01`, foi executada uma vez contra a fixture congelada.
+H8.5-01 foi testado exatamente uma vez:
 
 ```text
 candidate: hybrid-synthesis-prompt:h8.5-01-v1
 result:    REJECT
 ```
 
-O candidato preservou todos os deterministic guardrails, mas não melhorou as duas métricas alvo:
+Não houve melhoria em:
 
 ```text
 semantic_groundedness: 0.6666666666666666
 citation_correctness:  0.6666666666666666
 ```
 
-Também aumentou o total de tokens do modelo em 280 em relação ao baseline da Gate 8.4. Por isso, não foi promovido.
+O candidato também aumentou total tokens em 280 e não foi promovido.
 
-O runtime default continua:
+O default continua:
 
 ```text
 HybridSynthesisPromptPolicy.GATE_8_4_V1
 hybrid-synthesis-prompt:v1
 ```
 
-Evidência imutável do experimento:
+## Contracts da Phase 9
 
 ```text
-labs/evidence/phase-8-gate-8-5-h85-01-first-run-v1.json
+public-analysis-request:v1
+public-repository-evidence:v1
+public-semantic-planning:v1
+public-analysis-handoff:v1
 ```
 
-Essa é governança de avaliação intencional: uma revisão de prompt plausível não é uma otimização enquanto sua regra de aceitação medida e previamente declarada não passar.
+Distinções importantes:
+
+```text
+public request admitted != repository proven public != repository analyzed
+planner proposal != execution authority
+repository evidence != runtime exposure
+semantic planning != SQL authority
+application boundary validated != public runtime deployed
+```
+
+Evidência exact-head da Phase 9 permanece nos labs/PRs. A Gate 9.3 terminou com Ruff/Pyright verdes, `57 passed` no Public Analysis e zero provider/model calls reais.
 
 ## Baseline AWS
 
@@ -255,38 +308,43 @@ streaming:               não
 tools:                   nenhum
 ```
 
-Ainda não existe role pública de runtime da aplicação. A Gate 8.6 não adiciona recursos AWS nem permissões IAM. O boundary futuro do caminho semântico continua limitado a `bedrock:Retrieve` na Knowledge Base exata e `bedrock:InvokeModel` não-streaming para o inference profile/resources aprovados. IAM do runtime público será criado somente quando a Phase 9 definir compute real.
+Não existe public application runtime role no closeout da Phase 9. A Gate 9.4 não adiciona recursos AWS nem permissões IAM. Uma futura runtime role pública só será criada quando existir compute boundary concreta e responsabilidades traduzíveis em least privilege.
 
 ## Invariantes de segurança e autoridade
 
 - Evidência bruta de terceiros é preservada antes da transformação.
-- Versões exatas das fontes e hashes participam da identidade da evidência.
-- Normalização de packages, ranges/versions, aplicabilidade, KEV/EPSS/CVSS e Risk Policy permanecem determinísticas.
-- Código de repositórios de terceiros nunca é executado.
+- Versões exatas e hashes participam da identidade da evidência.
+- Normalização, ranges/versions, aplicabilidade, KEV/EPSS/CVSS e Risk Policy permanecem determinísticos.
+- Código de terceiros nunca é executado.
+- Public request admission não concede fetch authority arbitrária.
+- Public semantic planning não controla product scope nem execution authority.
 - Planejamento em linguagem natural não recebe autoridade SQL irrestrita.
 - Retrieval output é evidência, não verdade determinística.
-- Texto recuperado continua sendo conteúdo de instrução não confiável após validação de proveniência.
-- Routing híbrido e completude de evidência obrigatória são determinísticos.
-- Evidência estruturada e semântica permanecem classes de autoridade separadas.
+- Texto recuperado continua não confiável como instrução após validação de proveniência.
+- Hybrid routing e completude obrigatória são determinísticos.
+- Evidência estruturada e semântica permanecem classes separadas.
 - Citation IDs vêm somente de evidência admitida.
-- Citation ID válido prova identidade admitida, não suporte semântico específico para a pergunta.
+- Citation ID válido prova identidade admitida, não suporte semântico específico.
 - Evidência ausente não é silenciosamente interpretada como benigna.
-- Runtime exposure não é inferido a partir de repository risk.
-- Evidência de first run é preservada antes de otimização.
-- Experimentos negativos são preservados em vez de ajustados até “passar”.
-- Least privilege, observabilidade, diagnóstico de falhas e cost accounting são requisitos arquiteturais.
+- Runtime exposure não é inferido de repository risk.
+- Evidência de first run é preservada antes da otimização.
+- Experimentos negativos são preservados.
+- Least privilege, observabilidade, diagnóstico e cost accounting são requisitos arquiteturais.
+- Application boundary validado não é apresentado como production runtime implantado.
 
 ## Disciplina de custo
 
-O OpsLens não inventa custos que a evidência de runtime não consegue sustentar.
+O OpsLens não inventa custos que a evidência de runtime não sustenta.
 
-A Phase 7 possui componentes model/S3 Vectors diretamente computáveis para uma avaliação grounded, enquanto o runtime híbrido das Gates 8.4/8.5 reporta deliberadamente:
+Gate 8.4/8.5 reportam deliberadamente:
 
 ```text
 cost: UNMEASURED / null
 ```
 
-Contagem de tokens continua sendo evidência válida de pressão de custo, mas não é convertida silenciosamente em preço completo por request sem um pricing contract determinístico e versionado.
+Tokens são evidência válida de pressão de custo, mas não preço completo sem pricing contract determinístico e versionado.
+
+O closeout da Phase 9 não cria preço sintético por request público. A Gate 9.3 usou fake ports e zero provider/model calls reais. Custo futuro deve incluir infraestrutura concreta, concurrency, abuse e retry assumptions.
 
 ## Quality gates
 
@@ -299,9 +357,10 @@ Risk Policy
 Semantic Query
 Knowledge Retrieval
 Hybrid Retrieval
+Public Analysis
 ```
 
-O projeto usa Ruff, Pyright strict, pytest e regressions. Mudanças com AWS usam adicionalmente Terraform validation, TFLint, Checkov, planos canônicos, verificação de deployment e checks pós-apply.
+O projeto usa Ruff, Pyright strict, pytest e regressions. Mudanças com AWS usam adicionalmente Terraform validation, TFLint, Checkov, planos canônicos, deployment verification e checks pós-apply.
 
 ## Estrutura do repositório
 
@@ -326,7 +385,8 @@ O projeto usa Ruff, Pyright strict, pytest e regressions. Mudanças com AWS usam
 │   ├── risk_policy/
 │   ├── semantic_query/
 │   ├── knowledge_retrieval/
-│   └── hybrid_retrieval/
+│   ├── hybrid_retrieval/
+│   └── public_analysis/
 ├── tests/
 ├── README.md
 ├── README.pt-br.md
@@ -342,18 +402,18 @@ O projeto usa Ruff, Pyright strict, pytest e regressions. Mudanças com AWS usam
 - [Arquitetura — Português](docs/architecture.pt-br.md)
 - [Índice de ADRs](docs/adr/README.md)
 - [Índice de documentação](docs/README.md)
-- [Closeout da Phase 7](labs/phase-7-gate-7-8-closeout.md)
-- [Gate 8.4 — bounded synthesis](labs/phase-8-gate-8-4-bounded-hybrid-synthesis.md)
-- [Gate 8.5 — measured optimization](labs/phase-8-gate-8-5-measured-optimization.md)
 - [Closeout da Phase 8](labs/phase-8-gate-8-6-closeout.md)
+- [Gate 9.1 — request admission](labs/phase-9-gate-9-1-public-request-admission.md)
+- [Gate 9.3 — semantic planning](labs/phase-9-gate-9-3-bounded-semantic-planning.md)
+- [Closeout da Phase 9](labs/phase-9-gate-9-4-closeout.md)
 
-## Próxima — Phase 9: Public Analyze Your Repository
+## Próxima — Phase 10: Observability & Operational Excellence
 
-A Phase 9 poderá expor o evidence system governado como demo pública limitada. Ela deverá preservar aquisição imutável de repositórios, verdade estruturada determinística, autoridade híbrida de route/evidence, output admission fail-closed, zero model calls nos caminhos unsupported/incomplete e limites explícitos de custo/abuso.
+A Phase 10 começa dos contracts congelados da Phase 9. Ela deve tornar um futuro runtime concreto diagnosticável sem enfraquecer content minimization, deterministic admission, evidence provenance ou least privilege.
 
-Uma superfície pública não justifica introduzir agents, AgentCore, MCP, A2A, rerankers ou nova tecnologia vetorial por padrão. Esses itens permanecem fases posteriores ou novas hipóteses medidas.
+Se for necessário um pequeno runtime implantado para medir latency/error/trace/cost reais, ele deve ser introduzido explicitamente com IAM, request limits, abuse controls e operational evidence próprios. Production SLOs e alerts devem derivar de workload implantado, não de CI de laboratório.
 
-A PR #89 de Governed LLM Gateway continua deferred e fora da Phase 8.
+A PR #89 de Governed LLM Gateway continua deferred e precisa ser reavaliada separadamente contra a arquitetura vigente no momento.
 
 ---
 
