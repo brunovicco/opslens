@@ -4,7 +4,7 @@ _Date: 2026-09-07_
 
 ## Status
 
-**IMPLEMENTED — final exact-head CI and protected merge pending.**
+**COMPLETE / MERGED.**
 
 Starting main:
 
@@ -12,12 +12,24 @@ Starting main:
 0a141db2cc0a1cb28ebac2c53d58758025d164f9
 ```
 
+Validated final head:
+
+```text
+24b2affdf464e2548d94273e41007bb3256b561e
+```
+
+Protected squash merge:
+
+```text
+346b223d9566a5d04d84e279f30793ad52a35b67
+```
+
 Tracking:
 
 ```text
-issue:  #137
+issue:  #137 — CLOSED / COMPLETED
 branch: feat/phase10-governed-orchestration-instrumentation
-PR:     #138 (draft)
+PR:     #138 — MERGED
 ```
 
 ## Goal
@@ -47,13 +59,11 @@ hybrid_route_admission
 public_handoff
 ```
 
-Successful execution must emit exactly five `succeeded` events in that order.
-
-A rejected/failed stage is terminal and emits no later-stage business work or later-stage event.
+Successful execution emits exactly five `succeeded` events in that order. A rejected/failed stage is terminal and emits no later-stage business work or later-stage event.
 
 ## Semantic-planning refactor
 
-The pre-existing `plan_public_analysis_handoff()` behavior remains available. Internally, the deterministic admission path is now separately callable as:
+The pre-existing `plan_public_analysis_handoff()` behavior remains available. Internally, the deterministic admission path is separately callable as:
 
 ```text
 route_public_semantic_plan(...)
@@ -116,7 +126,7 @@ Provider/exception messages are not copied into events.
 
 ## Regression coverage
 
-Gate 10.2 adds tests for:
+Gate 10.2 proves:
 
 - exact five-stage success ordering and provenance progression;
 - request rejection before any source/planner work;
@@ -131,17 +141,30 @@ Gate 10.2 adds tests for:
 - absence of raw repository URL, dependency/version, prompt, SQL, credential, provider, and sink-error text from event JSON;
 - preservation of all existing Phase 9 semantic-planning regressions.
 
-## CI evidence
+## Final exact-head CI evidence
 
-Implementation head `bcc3bb277078d623d350b136e54dd263d173b36d` passed Python CI run `34139712501` across all seven repository jobs. Public Analysis reported:
+Python CI run `34141496326` / run #363 completed `SUCCESS` on exact PR head:
 
 ```text
-Ruff:            PASS
-Pyright strict:  PASS — 0 errors, 0 warnings, 0 informations
-pytest:          PASS — 68 passed
+24b2affdf464e2548d94273e41007bb3256b561e
 ```
 
-After that green run, delivery-accounting integrity was hardened and explicit regressions were added. Those changes intentionally invalidate the earlier head as the final merge checkpoint. A new exact-head Python CI is required before PR #138 can leave draft state.
+All seven repository jobs passed. Public Analysis reported:
+
+```text
+uv lock --check:  PASS
+Ruff:             PASS
+Pyright strict:   0 errors / 0 warnings / 0 informations
+pytest:           70 passed in 0.49s
+```
+
+The protected squash merge used that exact green head and produced:
+
+```text
+346b223d9566a5d04d84e279f30793ad52a35b67
+```
+
+Issue #137 closed automatically with state reason `completed`.
 
 ## Resource / external-call budget
 
@@ -184,12 +207,17 @@ ADR: `docs/adr/0033-governed-operational-orchestration-instrumentation.md`.
 [x] no real provider/runtime calls in tests
 [x] ADR recorded
 [x] lab recorded
-[x] draft PR #138 created
-[ ] final exact-head Python CI green
-[ ] PR reviewed / mergeable
-[ ] protected squash merge
-[ ] issue #137 CLOSED / COMPLETED
-[ ] postmerge current-state/roadmap sync
+[x] PR #138 created and reviewed as mergeable
+[x] final exact-head Python CI green
+[x] protected squash merge
+[x] issue #137 CLOSED / COMPLETED
+[x] postmerge state synchronization prepared
 ```
 
-Gate 10.3 remains blocked until Gate 10.2 is merged and postmerge state is synchronized.
+## Next authorized gate
+
+```text
+Phase 10 Gate 10.3 — CloudWatch EMF Telemetry Adapter Boundary
+```
+
+Gate 10.3 remains blocked until this postmerge documentation synchronization is merged. It must begin offline/fake-writer first and must not treat serialized EMF as proof of CloudWatch ingestion or production observability.
