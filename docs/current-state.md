@@ -33,18 +33,18 @@ Phase 8    Hybrid Retrieval                                    COMPLETE
 Phase 9    Public Analyze Your Repository                      IN PROGRESS
   Gate 9.1 Public repository request admission                 COMPLETE / MERGED
   Gate 9.2 Immutable repository evidence orchestration         COMPLETE / MERGED
-  Gate 9.3 Bounded semantic planning + admission handoff       NEXT
-  Gate 9.4 Phase 9 closeout                                    PLANNED
+  Gate 9.3 Bounded semantic planning + admission handoff       COMPLETE / MERGED
+  Gate 9.4 Phase 9 closeout                                    NEXT
 ```
 
 Latest merged executable checkpoint:
 
 ```text
-Phase 9 Gate 9.2 / PR #126
-b152a21bf9d0807ac40083c609ea434f32ccb671
+Phase 9 Gate 9.3 / PR #129
+6f53537c227cade688091187eac1074645e11bf0
 ```
 
-Gate 9.2 issue #125 is closed as completed. The public surface still has no deployed HTTP compute, new IAM principal, or public runtime.
+Gate 9.3 issue #128 is closed as completed. The public surface still has no deployed HTTP compute, new IAM principal, or public runtime.
 
 ## Permanent architecture boundaries
 
@@ -76,9 +76,12 @@ Deterministic authorities own:
 - evaluation metric computation;
 - execution limits;
 - public request admission and normalized request identity;
-- public request-to-snapshot/file evidence binding and exact-commit dependency evidence orchestration.
+- public request-to-snapshot/file evidence binding and exact-commit dependency evidence orchestration;
+- public v1 required evidence scope;
+- public semantic-plan output admission and request/source binding;
+- final public planning handoff admission through the existing Phase 8 route authority.
 
-LLMs may classify, plan, propose, synthesize, explain, and select among already-admitted citation IDs. They do not own structured truth, evidence completeness, query/SQL authority, risk/applicability decisions, canonical provenance, public input authority, repository visibility, immutable snapshot identity, or evaluation metric computation.
+LLMs may classify, plan, propose, synthesize, explain, and select among already-admitted citation IDs. They do not own structured truth, evidence completeness, query/SQL authority, risk/applicability decisions, canonical provenance, public input authority, repository visibility, immutable snapshot identity, public v1 product scope, hybrid route authority, or evaluation metric computation.
 
 ## Implemented system
 
@@ -122,7 +125,12 @@ Untrusted public repository JSON
  -> deterministic uv.lock parsing
  -> deterministic Phase 3 PyPI normalization
  -> content-addressed PublicRepositoryEvidenceExecution
- -> STOP before semantic planning / downstream analysis handoff
+ -> bounded metadata-only semantic planning request
+ -> untrusted semantic-plan proposal
+ -> deterministic exact public-v1 scope admission
+ -> existing Phase 8 hybrid route authority
+ -> content-addressed PublicAnalysisAdmissionHandoff
+ -> STOP before downstream public evidence execution
 ```
 
 Structured vulnerability/risk facts remain outside RAG authority. Semantic retrieval supplies explanatory/remediation evidence only. Runtime exposure remains unsupported until a later independent runtime authority is implemented.
@@ -150,7 +158,7 @@ Canonical corpus manifest:
 98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
 ```
 
-No public application compute principal exists after Gate 9.2.
+No public application compute principal exists after Gate 9.3.
 
 ## Frozen Phase 7 quality
 
@@ -472,6 +480,60 @@ issue #125:                       CLOSED / COMPLETED
 
 Gate 9.2 application/runtime tests used injected fake source evidence only. It added no deployed public HTTP compute, new AWS resource, IAM permission, Athena call, Bedrock call, or model call.
 
+## Phase 9 Gate 9.3 — bounded semantic planning + admission handoff
+
+Contracts:
+
+```text
+public-semantic-planning:v1
+public-analysis-handoff:v1
+```
+
+The public operation remains fixed to:
+
+```text
+analyze_public_repository
+```
+
+Deterministic public v1 policy owns the exact evidence scope:
+
+```text
+remediation_guidance
+risk_priority
+vulnerability_facts
+```
+
+The planner receives only bounded metadata derived from the verified Gate 9.2 execution. It does not receive the raw repository URL, lockfile bytes, dependency names/versions, arbitrary repository text/instructions, SQL, provider/model/tool selection, credentials, or executable repository content.
+
+Planner output remains an untrusted proposal. Deterministic admission rejects malformed JSON, duplicate/unknown fields, oversized output, request-hash replay/mismatch, unknown/duplicate needs, omitted mandatory needs, `runtime_exposure`, source-execution rebinding, and any disagreement with the existing Phase 8 route authority.
+
+Successful admission requires exactly:
+
+```text
+HYBRID
+ALL_REQUIRED
+STRUCTURED + SEMANTIC
+```
+
+and produces a content-addressed `PublicAnalysisAdmissionHandoff`. Gate 9.3 stops there; no downstream public evidence execution exists yet.
+
+Exact-head validation:
+
+```text
+PR #129 head:                     34cea42a0ce37cbfa06b33d57f081403edba2552
+Python CI #358 / run 34082791753: PASS
+Public Analysis Ruff:             PASS
+Public Analysis Pyright strict:   PASS — 0 errors, 0 warnings, 0 informations
+Public Analysis pytest:           PASS — 57 passed
+merge SHA:                        6f53537c227cade688091187eac1074645e11bf0
+issue #128:                       CLOSED / COMPLETED
+```
+
+Gate 9.3 used injected fake repository/planner ports only and performed no real runtime GitHub, AWS, Athena, Bedrock, model, retrieval, synthesis, vulnerability-enrichment, or risk-policy call.
+
+ADR: `docs/adr/0030-public-semantic-planning-authority.md`.
+Lab: `labs/phase-9-gate-9-3-bounded-semantic-planning.md`.
+
 ## Deferred Governed LLM Gateway integration
 
 Long-lived PR #89 remains open/draft for **Phase 14 — Case 3 of the separate `brunovicco/governed-llm-gateway` project**.
@@ -481,11 +543,11 @@ It is not OpsLens Phase 14 and is not part of Phase 9. It must be re-evaluated a
 ## Next authorized step
 
 ```text
-Phase 9 Gate 9.3 — Bounded Semantic Planning + Admission Handoff
+Phase 9 Gate 9.4 — Phase 9 Closeout
 ```
 
-Gate 9.3 is the only next gate authorized by the Phase 9 execution sequence. It must compose the now-verified public repository evidence with a bounded semantic-planning/admission handoff without allowing model output to become repository, evidence, routing, SQL, risk, or execution authority.
+Gate 9.4 is the only next gate authorized by the Phase 9 execution sequence. It must freeze the actual Phase 9 application boundary and failure taxonomy, runtime/deployment/IAM decision, request/planner/execution budgets, cost and observability boundaries, launch prerequisites, documentation consistency, and exact Phase 10 entry criteria.
 
-The public surface remains a fixed `analyze one GitHub repository` operation. Any planner output is untrusted until deterministic admission, and the gate must preserve bounded model/context/output behavior, explicit failure handling, and zero downstream execution when admission fails.
+The closeout must preserve a strict distinction between the validated application contracts and a future deployed public runtime. No public HTTP compute principal, public endpoint, runtime IAM policy, rate limiting, abuse protection, production concurrency control, or production SLO evidence exists yet.
 
-Public HTTP compute/runtime IAM, rate limiting, abuse protection, concurrency, deployment, and production SLOs remain outside Gate 9.3. Agents, MCP, AgentCore, A2A, reranking, new vector technology, and runtime exposure remain later phases or separately measured hypotheses.
+Gate 9.4 may explicitly defer deployment/runtime implementation, but it must not claim production readiness from fake-port CI evidence. Agents, MCP, AgentCore, A2A, reranking, new vector technology, and runtime exposure remain later phases or separately measured hypotheses.
