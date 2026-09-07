@@ -149,7 +149,7 @@ def _knowledge_request(
     )
 
 
-def _hybrid_request() -> HybridSynthesisRequest:
+def _hybrid_request(*, question_suffix: str = "") -> HybridSynthesisRequest:
     """Build one real semantic-only hybrid request from the frozen offline fixture."""
     dataset = load_hybrid_evaluation_dataset(_HYBRID_FIXTURE)
     case = next(
@@ -165,7 +165,10 @@ def _hybrid_request() -> HybridSynthesisRequest:
         structured_evidence=case.structured_evidence,
         semantic_evidence=case.semantic_evidence,
     )
-    return build_hybrid_synthesis_request(question=case.question, envelope=envelope)
+    return build_hybrid_synthesis_request(
+        question=f"{case.question}{question_suffix}",
+        envelope=envelope,
+    )
 
 
 _REPOSITORY_ID = 1_333_092_779
@@ -223,15 +226,16 @@ class _FakeRepositorySource:
         }
 
 
-def _public_request_and_execution() -> tuple[
-    PublicAnalysisRequest,
-    PublicRepositoryEvidenceExecution,
-]:
+def _public_request_and_execution(
+    *,
+    requested_ref: str | None = None,
+) -> tuple[PublicAnalysisRequest, PublicRepositoryEvidenceExecution]:
     """Build one real admitted public request and deterministic source execution."""
+    ref_json = "null" if requested_ref is None else f'"{requested_ref}"'
     raw = (
-        b'{"repository_url":"https://github.com/brunovicco/opslens",'
-        b'"requested_ref":null}'
-    )
+        '{"repository_url":"https://github.com/brunovicco/opslens",'
+        f'"requested_ref":{ref_json}}}'
+    ).encode()
     request = admit_public_analysis_request(raw).request
     execution = build_public_repository_evidence(request, _FakeRepositorySource())
     return request, execution
@@ -255,6 +259,7 @@ class _FakeSemanticPlanner:
 class _StructuredExecutor:
     calls: list[str] = field(default_factory=list[str])
     fail: bool = False
+    mismatched_result: bool = False
 
     def execute_structured_security_query(
         self,
@@ -263,6 +268,12 @@ class _StructuredExecutor:
         self.calls.append(invocation.invocation_id)
         if self.fail:
             raise RuntimeError("sensitive downstream failure")
+        bound_invocation = invocation
+        if self.mismatched_result:
+            bound_invocation = StructuredSecurityQueryInvocation.create(
+                action=invocation.action,
+                query=_semantic_query(limit=4),
+            )
         result = AthenaQueryResult(
             query_execution_id="offline-query-1",
             columns=("cve", "epss_score"),
@@ -270,7 +281,7 @@ class _StructuredExecutor:
             data_scanned_bytes=128,
         )
         return StructuredSecurityQueryResultBinding.create(
-            invocation=invocation,
+            invocation=bound_invocation,
             result=result,
         )
 
@@ -278,14 +289,18 @@ class _StructuredExecutor:
 @dataclass(slots=True)
 class _KnowledgeExecutor:
     calls: list[str] = field(default_factory=list[str])
+    result_request: SynthesisRequest | None = None
 
     def execute_knowledge_guidance(
         self,
         invocation: KnowledgeGuidanceInvocation,
     ) -> SynthesisResult:
         self.calls.append(invocation.invocation_id)
+        result_request = (
+            self.result_request if self.result_request is not None else invocation.request
+        )
         return SynthesisResult.create(
-            request=invocation.request,
+            request=result_request,
             decision=SynthesisDecision.INSUFFICIENT_EVIDENCE,
             answer=None,
         )
@@ -294,15 +309,19 @@ class _KnowledgeExecutor:
 @dataclass(slots=True)
 class _HybridExecutor:
     calls: list[str] = field(default_factory=list[str])
+    result_request: HybridSynthesisRequest | None = None
 
     def execute_hybrid_security_answer(
         self,
         invocation: HybridSecurityAnswerInvocation,
     ) -> HybridSynthesisResult:
         self.calls.append(invocation.invocation_id)
+        result_request = (
+            self.result_request if self.result_request is not None else invocation.request
+        )
         return parse_hybrid_synthesis_output(
             '{"claims":[],"decision":"insufficient_evidence"}',
-            request=invocation.request,
+            request=result_request,
         )
 
 
@@ -316,13 +335,14 @@ class _PublicExecutor:
         invocation: PublicRepositoryAnalysisInvocation,
     ) -> PublicAnalysisAdmissionHandoff:
         self.calls.append(invocation.invocation_id)
-        assert self.execution.request.request_id == invocation.request.request_id
         return plan_public_analysis_handoff(self.execution, _FakeSemanticPlanner())
 
 
 def _executors(
     *,
     structured: _StructuredExecutor | None = None,
+    knowledge: _KnowledgeExecutor | None = None,
+    hybrid: _HybridExecutor | None = None,
     public_execution: PublicRepositoryEvidenceExecution | None = None,
 ) -> AgentCapabilityExecutors:
     """Build the closed executor set with deterministic in-memory fakes."""
@@ -331,8 +351,8 @@ def _executors(
         structured_security_query=(
             structured if structured is not None else _StructuredExecutor()
         ),
-        knowledge_guidance=_KnowledgeExecutor(),
-        hybrid_security_answer=_HybridExecutor(),
+        knowledge_guidance=(knowledge if knowledge is not None else _KnowledgeExecutor()),
+        hybrid_security_answer=(hybrid if hybrid is not None else _HybridExecutor()),
         public_repository_analysis=_PublicExecutor(
             public_execution if public_execution is not None else default_public_execution
         ),
@@ -444,6 +464,22 @@ def test_executor_failure_is_content_free_and_has_zero_retry() -> None:
     assert "sensitive downstream failure" not in str(exc_info.value)
 
 
+def test_structured_result_for_another_invocation_fails_result_admission() -> None:
+    """A structured result bound to another query invocation cannot become evidence."""
+    action = _authorized_action(AgentCapability.STRUCTURED_SECURITY_QUERY)
+    invocation = StructuredSecurityQueryInvocation.create(
+        action=action,
+        query=_semantic_query(),
+    )
+    executor = _StructuredExecutor(mismatched_result=True)
+
+    with pytest.raises(AgentCapabilityExecutionError) as exc_info:
+        execute_authorized_capability(invocation, _executors(structured=executor))
+
+    assert executor.calls == [invocation.invocation_id]
+    assert exc_info.value.category is AgentCapabilityExecutionFailureCategory.RESULT_CONTRACT
+
+
 def test_knowledge_guidance_executes_one_exact_admitted_request() -> None:
     """Knowledge guidance executes only the exact request bound to the invocation."""
     action = _authorized_action(AgentCapability.KNOWLEDGE_GUIDANCE)
@@ -455,6 +491,22 @@ def test_knowledge_guidance_executes_one_exact_admitted_request() -> None:
 
     assert execution.capability is AgentCapability.KNOWLEDGE_GUIDANCE
     assert execution.invocation_id == invocation.invocation_id
+
+
+def test_knowledge_result_for_another_request_fails_result_admission() -> None:
+    """Knowledge output from a different synthesis request cannot be admitted."""
+    action = _authorized_action(AgentCapability.KNOWLEDGE_GUIDANCE)
+    request = _knowledge_request()
+    invocation = KnowledgeGuidanceInvocation.create(action=action, request=request)
+    executor = _KnowledgeExecutor(
+        result_request=_knowledge_request(question="Use a different evidence request.")
+    )
+
+    with pytest.raises(AgentCapabilityExecutionError) as exc_info:
+        execute_authorized_capability(invocation, _executors(knowledge=executor))
+
+    assert executor.calls == [invocation.invocation_id]
+    assert exc_info.value.category is AgentCapabilityExecutionFailureCategory.RESULT_CONTRACT
 
 
 def test_hybrid_security_answer_executes_one_exact_admitted_request() -> None:
@@ -470,6 +522,20 @@ def test_hybrid_security_answer_executes_one_exact_admitted_request() -> None:
     assert execution.invocation_id == invocation.invocation_id
 
 
+def test_hybrid_result_for_another_request_fails_result_admission() -> None:
+    """Hybrid output from another synthesis request cannot be admitted."""
+    action = _authorized_action(AgentCapability.HYBRID_SECURITY_ANSWER)
+    request = _hybrid_request()
+    invocation = HybridSecurityAnswerInvocation.create(action=action, request=request)
+    executor = _HybridExecutor(result_request=_hybrid_request(question_suffix=" altered"))
+
+    with pytest.raises(AgentCapabilityExecutionError) as exc_info:
+        execute_authorized_capability(invocation, _executors(hybrid=executor))
+
+    assert executor.calls == [invocation.invocation_id]
+    assert exc_info.value.category is AgentCapabilityExecutionFailureCategory.RESULT_CONTRACT
+
+
 def test_public_repository_analysis_executes_one_exact_admitted_request() -> None:
     """Public analysis result must remain bound to the exact admitted public request."""
     request, source_execution = _public_request_and_execution()
@@ -481,6 +547,22 @@ def test_public_repository_analysis_executes_one_exact_admitted_request() -> Non
 
     assert execution.capability is AgentCapability.PUBLIC_REPOSITORY_ANALYSIS
     assert execution.invocation_id == invocation.invocation_id
+
+
+def test_public_result_for_another_request_fails_result_admission() -> None:
+    """A public handoff for another request cannot be rebound to this invocation."""
+    request, _ = _public_request_and_execution()
+    _, mismatched_execution = _public_request_and_execution(requested_ref="main")
+    action = _authorized_action(AgentCapability.PUBLIC_REPOSITORY_ANALYSIS)
+    invocation = PublicRepositoryAnalysisInvocation.create(action=action, request=request)
+
+    with pytest.raises(AgentCapabilityExecutionError) as exc_info:
+        execute_authorized_capability(
+            invocation,
+            _executors(public_execution=mismatched_execution),
+        )
+
+    assert exc_info.value.category is AgentCapabilityExecutionFailureCategory.RESULT_CONTRACT
 
 
 def test_wrong_runtime_invocation_type_fails_closed() -> None:
