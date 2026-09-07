@@ -4,7 +4,7 @@ OpsLens documentation is organized around current architecture, implementation s
 
 ## Primary documents
 
-- [`architecture.md`](architecture.md) — accumulated architecture baseline through **Phase 8 — Hybrid Retrieval**.
+- [`architecture.md`](architecture.md) — accumulated architecture baseline through **Phase 9 — Public Analyze Your Repository**.
 - [`architecture.pt-br.md`](architecture.pt-br.md) — Portuguese architecture baseline synchronized with the English version.
 - [`current-state.md`](current-state.md) — exact implementation checkpoint and next authorized action.
 - [`roadmap.md`](roadmap.md) — incremental phase/gate plan and completion status.
@@ -23,10 +23,23 @@ Phase 5  Risk Prioritization Engine             COMPLETE
 Phase 6  Semantic Query Layer                   COMPLETE
 Phase 7  Knowledge Retrieval with Bedrock       COMPLETE
 Phase 8  Hybrid Retrieval                       COMPLETE
-Phase 9  Public Analyze Your Repository         NEXT
+Phase 9  Public Analyze Your Repository         CLOSEOUT IN REVIEW
+Phase 10 Observability & Operational Excellence NEXT AFTER PHASE 9 MERGE
 ```
 
-Phase 8 adds deterministic evidence-class routing and completeness without weakening the structured/semantic authority split.
+Phase 9 closes at a governed **application boundary**, not at a fictional public runtime. The repository now has bounded public request admission, immutable repository-evidence orchestration, proposal-only semantic planning, and a deterministic admission handoff through the existing Phase 8 hybrid route authority. No public HTTP endpoint/runtime principal is claimed.
+
+## Phase 9 architecture records
+
+- [`adr/0029-public-repository-request-admission.md`](adr/0029-public-repository-request-admission.md) — public repository requests become validated coordinates, not arbitrary fetch URLs.
+- [`adr/0030-public-semantic-planning-authority.md`](adr/0030-public-semantic-planning-authority.md) — public semantic planning remains proposal-only and cannot redefine product scope or execution authority.
+- [`adr/0031-phase9-public-analysis-closeout.md`](adr/0031-phase9-public-analysis-closeout.md) — Phase 9 closes at the governed application boundary and explicitly defers deployment/runtime IAM until a concrete workload exists.
+
+## Phase 9 laboratories
+
+- [`../labs/phase-9-gate-9-1-public-request-admission.md`](../labs/phase-9-gate-9-1-public-request-admission.md) — public request grammar/admission boundary.
+- [`../labs/phase-9-gate-9-3-bounded-semantic-planning.md`](../labs/phase-9-gate-9-3-bounded-semantic-planning.md) — bounded semantic proposal/admission handoff and exact-head CI evidence.
+- [`../labs/phase-9-gate-9-4-closeout.md`](../labs/phase-9-gate-9-4-closeout.md) — Phase 9 authority/failure/runtime/IAM/cost/observability closeout and Phase 10 entry criteria.
 
 ## Frozen Phase 8 evaluation
 
@@ -84,7 +97,7 @@ Gate 8.5 measured `H8.5-01` exactly once. The prompt-only candidate preserved de
 - [`adr/0023-bounded-bedrock-knowledge-synthesis.md`](adr/0023-bounded-bedrock-knowledge-synthesis.md) — bounded non-streaming Bedrock knowledge synthesis after deterministic context admission.
 - [`adr/0024-phase7-runtime-iam-boundary.md`](adr/0024-phase7-runtime-iam-boundary.md) — future least-privilege application runtime entitlement, intentionally documented before compute exists.
 
-Phase 7 detailed evidence remains available in `../labs/phase-7-gate-7-*` and is not rewritten by the Phase 8 closeout.
+Phase 7 detailed evidence remains available in `../labs/phase-7-gate-7-*` and is not rewritten by later closeouts.
 
 ## Permanent engineering boundaries
 
@@ -102,7 +115,7 @@ Phase 7 detailed evidence remains available in `../labs/phase-7-gate-7-*` and is
 
 > **No unrestricted text-to-SQL.**
 
-The model may plan and synthesize inside typed, bounded contracts. Deterministic code owns structured truth, route authority, required-evidence completeness, evidence admission, canonical citations, output admission, and evaluation metric computation.
+The model may plan and synthesize inside typed, bounded contracts. Deterministic code owns structured truth, public request/product-scope admission, route authority, required-evidence completeness, evidence admission, canonical citations, output admission, and evaluation metric computation.
 
 ## Documentation update rule
 
