@@ -48,21 +48,22 @@ Boundaries permanentes:
 | Phase 7 | Knowledge Retrieval with Bedrock | ✅ Concluída |
 | Phase 8 | Hybrid Retrieval | ✅ Concluída |
 | Phase 9 | Public Analyze Your Repository | ✅ Concluída |
-| Phase 10 | Observability & Operational Excellence | 🚧 Em andamento — Gate 10.1 concluída |
+| Phase 10 | Observability & Operational Excellence | 🚧 Em andamento — Gates 10.1–10.2 concluídas |
 
 A Phase 9 encerra em um **boundary governado de aplicação**, e não em um deployment de produção fictício. O OpsLens possui admissão limitada do request público, orchestration imutável da evidência de repositório, semantic planning proposal-only e handoff determinístico através da autoridade híbrida já existente da Phase 8.
 
-A Gate 10.1 da Phase 10 adiciona agora um contrato provider-neutral e content-minimized de operational evidence sem afirmar que um runtime HTTP público ou backend de telemetry de produção já foi implantado.
+A Phase 10 agora adiciona um contrato provider-neutral e content-minimized de operational evidence e instrumentação determinística do caminho governado da Phase 9. Isso não significa que um runtime HTTP público ou backend de telemetry de produção já foi implantado.
 
 ```text
 telemetry evidence != business truth
 telemetry evidence != route authority
 telemetry failure != permission to bypass fail-closed application contracts
+telemetry delivery accounting != permission to invent evidence identities
 ```
 
 Compute público, runtime IAM, controles de rate/abuse, entrega de telemetry de produção e SLOs derivados de workload continuam trabalho explícito posterior.
 
-Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), o [closeout da Phase 9](labs/phase-9-gate-9-4-closeout.md) e a [Gate 10.1](labs/phase-10-gate-10-1-operational-telemetry-contract.md).
+Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), o [closeout da Phase 9](labs/phase-9-gate-9-4-closeout.md), a [Gate 10.1](labs/phase-10-gate-10-1-operational-telemetry-contract.md) e a [Gate 10.2](labs/phase-10-gate-10-2-governed-orchestration-instrumentation.md).
 
 ## Sistema implementado
 
@@ -160,9 +161,9 @@ STRUCTURED + SEMANTIC
 
 O planner não recebe raw repository URL, bytes do lockfile, nomes/versões de dependências, texto/instruções arbitrárias do repositório, SQL, credenciais, seleção de provider/model/tool ou conteúdo executável.
 
-### 5. Contrato de operational evidence
+### 5. Operational evidence e instrumentação governada
 
-A Gate 10.1 congela:
+A Phase 10 congela:
 
 ```text
 operational-telemetry:v1
@@ -199,16 +200,18 @@ Outcome
 
 como dimensions. IDs de request/source/handoff nunca se tornam metric dimensions.
 
-Validação exact-head da Gate 10.1:
+A Gate 10.2 instrumenta o caminho governado da Phase 9 através dos ports injetados `MonotonicClock` e `OperationalEventSink`. Uma execução bem-sucedida produz exatamente cinco eventos de sucesso ordenados. Stages rejected/failed são terminais. A entrega externa do sink permanece best effort depois da construção obrigatória do `OperationalEvent`, e o accounting de delivery só pode referenciar IDs de eventos já admitidos.
+
+Validação exact-head da Gate 10.2:
 
 ```text
-PR #135 final head:           7742ae003fc8e1ad1d1a6a4f71542875b6d6462c
-Operational Observability CI: run 34135197989 / PASS
+PR #138 final head:           24b2affdf464e2548d94273e41007bb3256b561e
+Python CI run:                34141496326 / PASS
 Ruff:                         PASS
 Pyright strict:               0 errors / 0 warnings / 0 informations
-pytest:                       14 passed
-merge SHA:                    665b86f6e527a0096d7c3db522f4bd2c95b177aa
-issue #134:                   CLOSED / COMPLETED
+Public Analysis pytest:       70 passed
+merge SHA:                    346b223d9566a5d04d84e279f30793ad52a35b67
+issue #137:                   CLOSED / COMPLETED
 ```
 
 ## Autoridade híbrida da Phase 8
@@ -367,7 +370,7 @@ streaming:               não
 tools:                   nenhum
 ```
 
-Não existe public application runtime role após a Gate 10.1. A Gate 10.1 não adiciona recursos AWS nem permissões IAM. Uma futura runtime role pública só será criada quando existir compute boundary concreta e responsabilidades traduzíveis em least privilege.
+Não existe public application runtime role após a Gate 10.2. As Gates 10.1–10.2 não adicionam recursos AWS nem permissões IAM. Uma futura runtime role pública só será criada quando existir compute boundary concreta e responsabilidades traduzíveis em least privilege.
 
 ## Invariantes de segurança e autoridade
 
@@ -388,6 +391,7 @@ Não existe public application runtime role após a Gate 10.1. A Gate 10.1 não 
 - Runtime exposure não é inferido de repository risk.
 - Operational telemetry não se torna autoridade de aplicação ou route.
 - Identificadores de alta cardinalidade não são metric dimensions em `operational-telemetry:v1`.
+- Telemetry delivery accounting não pode inventar identidades de eventos.
 - Evidência de first run é preservada antes da otimização.
 - Experimentos negativos são preservados.
 - Least privilege, observabilidade, diagnóstico e cost accounting são requisitos arquiteturais.
@@ -405,7 +409,7 @@ cost: UNMEASURED / null
 
 Tokens são evidência válida de pressão de custo, mas não preço completo sem pricing contract determinístico e versionado.
 
-O closeout da Phase 9 e a Gate 10.1 não criam preço sintético por request público. Custo futuro deve incluir infraestrutura concreta, concurrency, abuse e retry assumptions.
+O closeout da Phase 9 e as Gates 10.1–10.2 não criam preço sintético por request público. Custo futuro deve incluir infraestrutura concreta, concurrency, abuse e retry assumptions.
 
 ## Quality gates
 
@@ -470,12 +474,13 @@ O projeto usa Ruff, Pyright strict, pytest e regressions. Mudanças com AWS usam
 - [Gate 9.3 — semantic planning](labs/phase-9-gate-9-3-bounded-semantic-planning.md)
 - [Closeout da Phase 9](labs/phase-9-gate-9-4-closeout.md)
 - [Gate 10.1 — operational telemetry](labs/phase-10-gate-10-1-operational-telemetry-contract.md)
+- [Gate 10.2 — governed instrumentation](labs/phase-10-gate-10-2-governed-orchestration-instrumentation.md)
 
-## Próxima — Phase 10 Gate 10.2: Governed Orchestration Instrumentation
+## Próxima — Phase 10 Gate 10.3: CloudWatch EMF Telemetry Adapter Boundary
 
-A Gate 10.2 conectará `operational-telemetry:v1` à orchestration pública já governada através de boundaries provider-neutral injetados. Ela deve definir sequência determinística de eventos e semântica de falha do sink sem permitir que telemetry altere business, route ou evidence authority.
+A Gate 10.3 adaptará o `OperationalEvent` e a projeção de métricas provider-neutral já congelados para Amazon CloudWatch Embedded Metric Format através de um writer boundary injetado. Ela deve começar offline/fake-writer, preservar exatamente as dimensions de baixa cardinalidade e manter IDs de request/source/handoff fora das metric dimensions.
 
-Um runtime público, exporter de produção, SLO ou alert permanece etapa posterior separada, que exige deployment explícito e evidência medida de workload.
+Um documento EMF serializado não prova ingestão no CloudWatch. Runtime público, entrega real de telemetry, runtime IAM, dashboard, alarm, SLO ou distribuição de latência derivada de workload continuam etapas posteriores que exigem deployment explícito e evidência medida.
 
 A PR #89 de Governed LLM Gateway continua deferred e precisa ser reavaliada separadamente contra a arquitetura vigente no momento.
 
