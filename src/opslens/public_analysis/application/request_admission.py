@@ -23,6 +23,7 @@ _ALLOWED_KEYS = frozenset({"repository_url", "requested_ref"})
 _REQUIRED_KEYS = frozenset({"repository_url"})
 _REPOSITORY_PATH_PATTERN = re.compile(r"^/([^/]+)/([^/]+)/?$", re.ASCII)
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$", re.ASCII)
+_CONTROL_CHARACTER_PATTERN = re.compile(r"[\x00-\x1f\x7f]", re.ASCII)
 
 
 class PublicAnalysisRequestAdmissionError(ValueError):
@@ -59,9 +60,9 @@ def _decode_request_object(raw_body: bytes) -> dict[str, object]:
         ) from exc
     try:
         decoded: object = json.loads(text, object_pairs_hook=_unique_json_object)
-    except json.JSONDecodeError as exc:
+    except (json.JSONDecodeError, RecursionError) as exc:
         raise PublicAnalysisRequestAdmissionError(
-            "public request body must contain valid JSON"
+            "public request body must contain valid bounded JSON"
         ) from exc
     if not isinstance(decoded, dict):
         raise PublicAnalysisRequestAdmissionError(
@@ -97,7 +98,16 @@ def _parse_repository_url(value: object) -> tuple[str, str]:
         raise PublicAnalysisRequestAdmissionError(
             "repository_url exceeds the hard character limit"
         )
-    parsed = urlsplit(value)
+    if _CONTROL_CHARACTER_PATTERN.search(value) is not None:
+        raise PublicAnalysisRequestAdmissionError(
+            "repository_url cannot contain control characters"
+        )
+    try:
+        parsed = urlsplit(value)
+    except ValueError as exc:
+        raise PublicAnalysisRequestAdmissionError(
+            "repository_url is not a valid bounded web URL"
+        ) from exc
     if parsed.scheme.lower() != "https":
         raise PublicAnalysisRequestAdmissionError("repository_url must use HTTPS")
     if parsed.username is not None or parsed.password is not None:
@@ -121,6 +131,10 @@ def _parse_repository_url(value: object) -> tuple[str, str]:
     if parsed.query or parsed.fragment:
         raise PublicAnalysisRequestAdmissionError(
             "repository_url cannot contain query or fragment components"
+        )
+    if "%" in parsed.path:
+        raise PublicAnalysisRequestAdmissionError(
+            "repository_url cannot contain percent-encoded path data"
         )
     path_match = _REPOSITORY_PATH_PATTERN.fullmatch(parsed.path)
     if path_match is None:
