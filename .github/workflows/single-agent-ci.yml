@@ -5,6 +5,11 @@ on:
     paths:
       - "src/opslens/agent_baseline/**/*.py"
       - "tests/unit/agent_baseline/**/*.py"
+      - "tests/fixtures/agent_baseline/**"
+      - "scripts/run_single_agent_reasoning_baseline.py"
+      - "labs/phase-11-gate-11-4-bounded-model-reasoning-baseline.md"
+      - "labs/evidence/README.md"
+      - "labs/evidence/phase-11-gate-11-4-*.json"
       - ".github/workflows/single-agent-ci.yml"
   workflow_dispatch:
 
@@ -36,17 +41,22 @@ jobs:
       - name: Sync locked dependencies
         run: uv sync --frozen
 
+      - name: Smoke local reasoning entrypoint
+        run: PYTHONPATH=src uv run python scripts/run_single_agent_reasoning_baseline.py --help
+
       - name: Ruff single-agent slice
         run: >-
           uv run ruff check
           src/opslens/agent_baseline
           tests/unit/agent_baseline
+          scripts/run_single_agent_reasoning_baseline.py
 
       - name: Pyright strict single-agent slice
         run: >-
           uv run pyright
           src/opslens/agent_baseline
           tests/unit/agent_baseline
+          scripts/run_single_agent_reasoning_baseline.py
 
       - name: Pytest single-agent slice
         run: uv run pytest tests/unit/agent_baseline
