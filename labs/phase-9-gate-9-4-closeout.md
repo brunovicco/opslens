@@ -4,7 +4,7 @@ _Date: 2026-09-07_
 
 ## Status
 
-**IMPLEMENTED — final documentation synchronization, review, and protected merge pending.**
+**CLOSEOUT IMPLEMENTED — protected merge pending.**
 
 Starting main:
 
@@ -23,7 +23,7 @@ branch: docs/phase9-closeout
 
 Close Phase 9 at the application boundary that was actually implemented and validated across Gates 9.1–9.3.
 
-The closeout must not claim a public production runtime, endpoint, IAM role, workload distribution, SLO, or cost profile that does not exist.
+The closeout does not claim a public production runtime, endpoint, IAM role, workload distribution, SLO, or cost profile that does not exist.
 
 ## Frozen Phase 9 contracts
 
@@ -52,7 +52,9 @@ untrusted public JSON
  -> STOP
 ```
 
-## Gate 9.1 evidence
+## Gate evidence
+
+Gate 9.1:
 
 ```text
 PR #123 head:                    26f0d2b5275284d891ee99a7f8276d41cc4f0753
@@ -62,15 +64,7 @@ merge SHA:                       5540d7b508c71aa65d826786618690b7ddc9d433
 issue #122:                      CLOSED / COMPLETED
 ```
 
-Properties frozen:
-
-- public body is bounded and strict;
-- only exact HTTPS `github.com/<owner>/<repo>` repository-root URLs are admitted;
-- userinfo/port/query/fragment/control/percent-encoded path authority is rejected;
-- the raw repository URL never becomes acquisition authority;
-- requested ref remains an untrusted coordinate until source resolution.
-
-## Gate 9.2 evidence
+Gate 9.2:
 
 ```text
 PR #126 head:                    0fdc6c435c0f2891b6730f61bd73ad7f32ca8213
@@ -80,17 +74,7 @@ merge SHA:                       b152a21bf9d0807ac40083c609ea434f32ccb671
 issue #125:                      CLOSED / COMPLETED
 ```
 
-Properties frozen:
-
-- source-confirmed canonical repository identity owns reads after initial lookup;
-- null ref uses source-declared default branch;
-- explicit ref is resolved to immutable commit/tree identity;
-- file acquisition uses exact commit SHA;
-- only inert allowlisted `uv.lock` evidence is read;
-- repository code is never executed;
-- request/snapshot/file/parser/normalization identity drift fails closed.
-
-## Gate 9.3 evidence
+Gate 9.3:
 
 ```text
 PR #129 head:                    34cea42a0ce37cbfa06b33d57f081403edba2552
@@ -102,17 +86,17 @@ merge SHA:                       6f53537c227cade688091187eac1074645e11bf0
 issue #128:                      CLOSED / COMPLETED
 ```
 
-Properties frozen:
+## Public v1 scope and budgets
 
 ```text
-public operation: analyze_public_repository
-mandatory evidence needs:
+operation: analyze_public_repository
+required needs:
   remediation_guidance
   risk_priority
   vulnerability_facts
 ```
 
-The planner cannot redefine that product scope. Its proposal remains untrusted until exact deterministic admission and the existing Phase 8 router resolves it to:
+Successful admission must agree with Phase 8 authority:
 
 ```text
 HYBRID
@@ -120,11 +104,7 @@ ALL_REQUIRED
 STRUCTURED + SEMANTIC
 ```
 
-Planner context excludes raw repository URL, lockfile bytes, dependency names/versions, arbitrary repository text/instructions, SQL, credentials, provider/model/tool selection, and executable content.
-
-## Phase 9 application budgets
-
-Already-proven bounds:
+Already-proven application bounds:
 
 ```text
 public request body:              <= 2048 bytes
@@ -134,46 +114,26 @@ planner calls per orchestration:  <= 1
 adaptive application retries:     0
 ```
 
-Gate 9.2 also preserves the earlier bounded read-only GitHub acquisition contract and exact-commit evidence path.
+These are application bounds, not public runtime rate/concurrency/timeout/quota controls.
 
-These are application bounds. They are not public runtime rate, concurrency, timeout, or quota controls.
+## Authority and failure taxonomy
 
-## Authority taxonomy
+Deterministic code owns public request admission, GitHub coordinate grammar, source-confirmed repository identity, immutable snapshot/file evidence, `uv.lock` parsing, PyPI normalization, public-v1 evidence scope, planner-output admission, Phase 8 route authority, request/source/proposal/handoff binding, and fail-closed execution admission.
 
-Deterministic authorities own:
+Models may propose or synthesize only inside bounded contracts. They do not own structured truth, product scope, repository truth, vulnerability/risk truth, runtime exposure, SQL, route, provider/model selection, evidence completeness, or execution authority.
 
-```text
-public request admission
-GitHub coordinate grammar
-repository visibility/canonical identity
-immutable snapshot resolution
-exact-commit evidence admission
-uv.lock parsing
-PyPI normalization
-public-v1 mandatory evidence scope
-planner-output admission
-hybrid route authority
-request/source/proposal/handoff identity binding
-fail-closed execution admission
-```
-
-Models may propose or synthesize only inside already-bounded contracts. They do not own structured truth, public product scope, repository truth, vulnerability/risk truth, runtime exposure, SQL, route, provider/model selection, evidence completeness, or execution authority.
-
-## Phase 9 fail-closed taxonomy
+Fail-closed classes include:
 
 ```text
-request byte/UTF-8/JSON failure
-request duplicate/unknown field failure
+request byte/UTF-8/JSON/field failure
 repository URL grammar failure
 repository metadata/visibility failure
 ref/default-branch resolution failure
-commit/tree resolution failure
-exact-commit file evidence failure
+commit/tree/file evidence failure
 file/parser/normalization provenance mismatch
-planner request binding failure
-planner invocation failure
+planner request binding/invocation failure
 planner response size/UTF-8/JSON/schema failure
-unknown/duplicate evidence need
+unknown/duplicate/out-of-authority evidence need
 under-scoped public-v1 proposal
 runtime_exposure proposal
 proposal replay/request-hash mismatch
@@ -194,7 +154,7 @@ new Phase 9.4 IAM:        NONE
 new Phase 9.4 AWS:        NONE
 ```
 
-This is intentional least privilege, not an omission to paper over.
+This is intentional least privilege:
 
 ```text
 no concrete compute principal
@@ -202,81 +162,42 @@ no concrete compute principal
  -> no speculative permission aggregation
 ```
 
-Any future public runtime must derive permissions from concrete responsibilities and separately validate the minimum GitHub/Athena/Bedrock access it actually needs.
+## Cost and observability boundary
 
-## Cost boundary
+Phase 9 adds no synthetic public-request cost. Current cost evidence is stage-local only when the stage actually runs. Gate 9.3 made zero real provider/model calls.
 
-Phase 9 closeout adds no synthetic cost estimate.
+Phase 9 evidence includes content-addressed IDs/hashes, provenance, admission/route identities, bounded failure categories, and exact-head CI. It does not claim public request volume, production traces, p95/p99, production error/throttle rates, production request cost, or production SLO compliance.
 
-Current evidence can support stage-local accounting only when those stages run:
+Future telemetry should prefer content-free IDs/hashes/stage metadata over automatic user/source/model-content logging.
 
-```text
-Athena bytes scanned
-S3 Vectors / retrieval activity
-Bedrock/model tokens
-provider/request latency
-```
+## Public-launch prerequisites
 
-Gate 9.3 made zero real provider/model calls. A public request cost cannot be inferred from fake-port tests.
-
-Future public-runtime USD cost must use a versioned pricing contract or bill reconciliation and include infrastructure, concurrency, abuse, and retry assumptions.
-
-## Observability boundary
-
-Current Phase 9 evidence includes:
-
-```text
-request IDs/hashes
-snapshot/file/parser/normalization identities
-proposal/request hashes
-route decision identity
-handoff identity
-bounded failure categories
-exact-head CI evidence
-```
-
-Phase 9 does not claim:
-
-```text
-public request volume
-public distributed traces
-production p95/p99
-production error rate
-production throttling
-production cost/request
-production SLO/alert compliance
-```
-
-Future telemetry should prefer content-free IDs/hashes/stage metadata over automatic prompt/source-content logging.
-
-## Missing public-launch prerequisites
-
-Still required before a real launch:
+Still required before a real public launch:
 
 ```text
 concrete HTTP compute + endpoint
 runtime identity + least-privilege IAM
 timeout budget
-concurrency limit
+concurrency limits
 rate limiting
 abuse protection
 quota enforcement
 cache policy only if measured/justified
-kill switch
+kill switch / disable path
 deployment rollback
 cost guardrails + attribution
 production telemetry
 workload-derived SLOs + alerts
-incident/operational playbook
+incident / operational playbook
 ```
 
 Phase 9 completion does not waive these requirements.
 
 ## Phase 10 entry criteria
 
-Phase 10 — Observability & Operational Excellence may begin only with these frozen constraints:
+Phase 10 — Observability & Operational Excellence may begin only with these constraints frozen:
 
-1. Phase 9 contracts remain versioned and immutable in place.
+1. Phase 9 contracts remain versioned boundaries.
 2. Public input never becomes arbitrary fetch, SQL, tool, provider/model, or execution authority.
 3. Third-party repository code is never executed.
 4. Repository risk remains distinct from runtime exposure.
@@ -285,13 +206,11 @@ Phase 10 — Observability & Operational Excellence may begin only with these fr
 7. Failure at any admission stage prevents downstream execution.
 8. IAM is introduced only for a concrete runtime identity.
 9. Production SLO/alert claims require deployed workload evidence.
-10. Observability must not weaken privacy, provenance, or content-minimization boundaries.
+10. Observability cannot weaken privacy, provenance, or content-minimization boundaries.
 11. New runtime/provider/retrieval changes require separately versioned hypotheses and exact-head validation.
-12. Governed LLM Gateway PR #89 remains deferred until separately re-evaluated against the then-current architecture.
+12. Governed LLM Gateway PR #89 remains deferred until separately re-evaluated.
 
 ## Deferred decisions
-
-Not introduced by Phase 9 closeout:
 
 ```text
 public compute runtime
@@ -308,8 +227,6 @@ Governed LLM Gateway merge
 ```
 
 ## AIP-C01 learning notes
-
-Phase 9 closeout demonstrates:
 
 ```text
 application contract != production deployment
@@ -343,11 +260,19 @@ ADR 0031  Phase 9 closes at governed application boundary
 [x] Phase 10 entry criteria explicit
 [x] ADR 0031 recorded
 [x] closeout lab recorded
-[ ] README EN/PT-BR synchronized
-[ ] architecture EN/PT-BR synchronized
-[ ] docs/ADR indexes synchronized
-[ ] current-state/roadmap synchronized to Phase 9 COMPLETE
+[x] README EN/PT-BR synchronized
+[x] architecture EN/PT-BR synchronized
+[x] docs/ADR indexes synchronized
+[x] current-state/roadmap synchronized for Phase 9 closeout
 [ ] closeout PR reviewed/mergeable
 [ ] protected squash merge
 [ ] issue #131 CLOSED / COMPLETED
+```
+
+## Next authorized step
+
+After the protected closeout merge:
+
+```text
+Phase 10 — Observability & Operational Excellence
 ```
