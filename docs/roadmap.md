@@ -34,7 +34,7 @@ concept
 | 8 | Hybrid Retrieval | ✅ Complete |
 | 9 | Public Analyze Your Repository | ✅ Complete |
 | 10 | Observability & Operational Excellence | ✅ Complete |
-| 11 | Single-Agent Baseline | 🚧 In progress — Gates 11.1–11.4 complete |
+| 11 | Single-Agent Baseline | 🚧 In progress — Gates 11.1–11.5 complete |
 | 12 | Multi-Agent Architecture | ⏳ Planned |
 | 13 | MCP | ⏳ Planned |
 | 14 | Amazon Bedrock AgentCore | ⏳ Planned |
@@ -242,8 +242,8 @@ Gate 11.1 — Capability Authorization Contract                COMPLETE / MERGED
 Gate 11.2 — Typed Capability Bindings + Offline Executor      COMPLETE / MERGED
 Gate 11.3 — Frozen Single-Agent Evaluation Fixture            COMPLETE / MERGED
 Gate 11.4 — First Bounded Model Reasoning Baseline            COMPLETE / MERGED
-Gate 11.5 — Measured Optimization Decision                    NEXT
-Gate 11.6 — Phase 11 Closeout                                 BLOCKED
+Gate 11.5 — Measured Optimization Decision                    COMPLETE / MERGED — NO-CHANGE
+Gate 11.6 — Phase 11 Closeout                                 NEXT
 ```
 
 ### Gate 11.1 — capability authorization — COMPLETE
@@ -521,17 +521,67 @@ PR #157 merge SHA:       8b41025facf4451490bf96223d69fbed19b4a00f
 
 Gate 11.4 added no new AWS/IAM/runtime resources, performed zero capability executions in the real baseline, left `operational-telemetry:v1` unchanged, and did not modify deferred PR #89.
 
-### Gate 11.5 — measured optimization decision — NEXT
+### Gate 11.5 — measured optimization decision — COMPLETE / NO-CHANGE
 
-Gate 11.5 must answer one question before changing code:
+Gate 11.5 asked whether the measured Gate 11.4 baseline exposes a material quality, latency, token, cost, or reliability gap that justifies a bounded optimization experiment.
+
+Decision:
 
 ```text
-Does the measured Gate 11.4 baseline expose a material quality, latency, token, or cost gap that justifies one bounded optimization experiment?
+optimization decision:     NO-CHANGE
+experiment authorized:     NO
+new real-model calls:      0
+prompt/model change:       NO
+cache change:              NO
+retry/fallback change:     NO
+authority change:          NO
 ```
 
-Current evidence is already strong: `6/6` proposal quality, `6/6` bounds compliance, zero retries, zero capability executions, sub-second median provider latency, and a six-case derived inference cost of USD 0.0041921.
+Candidate outcomes:
 
-Gate 11.5 must not tune prompts, switch models, introduce caching, expand retries/fallback, add tool authority, or change provider topology merely because an optimization gate exists. If no measurable objective with material expected benefit is identified, the correct engineering decision is to preserve the Gate 11.4 baseline and proceed to Gate 11.6 closeout.
+```text
+prompt compression:              REJECT
+model/profile switch:            REJECT
+prompt caching:                  REJECT
+retry/fallback:                  REJECT
+client warm-up/connection reuse: DEFER — cause/repeatability not proven
+capability/tool expansion:       REJECT
+```
+
+Exact validation and merge:
+
+```text
+issue #159:              CLOSED / COMPLETED
+PR #160 final head:      12c96dfa4bed1daa182adaddda52f4ab589ceeeb
+Single-Agent CI:         34171028733 / run #42 / PASS
+job:                     101891204255
+PR merge test commit:    c74afd8683da27000394854779918faff2da7705
+Ruff:                    PASS
+Pyright strict:          0 errors / 0 warnings / 0 informations
+pytest:                  56 passed in 0.43s
+PR #160 merge SHA:       14b2922239579e333f6cf331d96aa881eccd0423
+```
+
+The decision is recorded in ADR 0040 and the Gate 11.5 lab. No new model call, AWS/IAM/runtime resource, provider topology, tool authority, or deferred gateway integration was introduced.
+
+### Gate 11.6 — Phase 11 closeout — NEXT
+
+Gate 11.6 must consolidate the full Phase 11 evidence and verify that the phase can exit without hidden authority or runtime claims. At minimum it should verify:
+
+```text
+Gate 11.1 capability authorization contract frozen
+Gate 11.2 typed execution/result binding frozen
+Gate 11.3 deterministic evaluation frozen
+Gate 11.4 real reasoning baseline preserved
+Gate 11.5 measured optimization decision merged
+no unrestricted tool/argument surface introduced
+no provider/model/retry/fallback authority transferred to the model
+no runtime exposure/public agent runtime claimed
+no AWS/IAM expansion required by Phase 11
+PR #89 remains deferred and separate
+```
+
+If those invariants hold under exact-head CI and documentation review, Phase 11 can close and Phase 12 — Multi-Agent Architecture — can become the next planned phase. Multi-agent work must remain evidence-driven: specialization is justified only if it improves a measured single-agent baseline or creates a clearly bounded capability separation without weakening deterministic authority.
 
 ## Phase 12 — Multi-Agent Architecture — PLANNED
 

@@ -23,8 +23,8 @@ Phase 11   Single-Agent Baseline                               IN PROGRESS
   Gate 11.2 Typed capability bindings + offline executor       COMPLETE / MERGED
   Gate 11.3 Frozen single-agent evaluation fixture             COMPLETE / MERGED
   Gate 11.4 First bounded model reasoning baseline             COMPLETE / MERGED
-  Gate 11.5 Measured optimization decision                     NEXT
-  Gate 11.6 Phase 11 closeout                                  BLOCKED
+  Gate 11.5 Measured optimization decision                     COMPLETE / MERGED — NO-CHANGE
+  Gate 11.6 Phase 11 closeout                                  NEXT
 Phase 12   Multi-Agent Architecture                            PLANNED
 Phase 13   MCP                                                 PLANNED
 Phase 14   Amazon Bedrock AgentCore                            PLANNED
@@ -37,24 +37,26 @@ Phase 18   Evaluation, Cost & Portfolio Readiness              PLANNED
 Latest merged project checkpoint:
 
 ```text
-Phase 11 Gate 11.4 / PR #157
-8b41025facf4451490bf96223d69fbed19b4a00f
+Phase 11 Gate 11.5 / PR #160
+14b2922239579e333f6cf331d96aa881eccd0423
 ```
 
-Gate 11.4 exact validation:
+Gate 11.5 exact validation:
 
 ```text
-issue #156:              CLOSED / COMPLETED
-PR #157 final head:      2ec5b3804fa8c6454e1ea7d824b82d2db9113f91
-Single-Agent CI:         34170308179 / run #37 / PASS
-job:                     101889202476
-PR merge test commit:    bd3802bf4003e5a447e5e104caad0a86cf8388ec
+issue #159:              CLOSED / COMPLETED
+PR #160 final head:      12c96dfa4bed1daa182adaddda52f4ab589ceeeb
+Single-Agent CI:         34171028733 / run #42 / PASS
+job:                     101891204255
+PR merge test commit:    c74afd8683da27000394854779918faff2da7705
 uv lock --check:         PASS
 entrypoint smoke:        PASS
 Ruff:                    PASS
 Pyright strict:          0 errors / 0 warnings / 0 informations
 pytest:                  56 passed in 0.43s
-PR #157 merge SHA:       8b41025facf4451490bf96223d69fbed19b4a00f
+PR #160 merge SHA:       14b2922239579e333f6cf331d96aa881eccd0423
+optimization decision:   NO-CHANGE / NO-EXPERIMENT
+additional model calls:  0
 ```
 
 ## Permanent architecture boundaries
@@ -159,7 +161,7 @@ Existing execution/evaluation boundary remains independently frozen:
  -> STOP
 ```
 
-The final Gate 11.4 `STOP` is material. OpsLens now has a real single-agent reasoning baseline without granting the model capability-execution authority. It still has no deployed agent runtime, public agent endpoint, AgentCore runtime, MCP, or A2A execution.
+The final Gate 11.4 `STOP` is material. OpsLens now has a real single-agent reasoning baseline without granting the model capability-execution authority. Gate 11.5 deliberately preserved that baseline unchanged after finding no material measured optimization target. OpsLens still has no deployed agent runtime, public agent endpoint, AgentCore runtime, MCP, or A2A execution.
 
 ## Frozen Phase 7 / 8 quality
 
@@ -506,6 +508,52 @@ runtime-exposure authority:     0
 Governed LLM Gateway changes:   0
 ```
 
+## Gate 11.5 — Measured Optimization Decision
+
+Gate 11.5 reviewed the frozen Gate 11.4 evidence before authorizing any prompt, model, cache, retry, fallback, provider-topology, or authority change.
+
+Decision:
+
+```text
+optimization decision:     NO-CHANGE
+experiment authorized:     NO
+new real-model calls:      0
+prompt/model change:       NO
+cache change:              NO
+retry/fallback change:     NO
+authority change:          NO
+```
+
+Candidate outcomes:
+
+```text
+prompt compression:             REJECT
+model/profile switch:           REJECT
+prompt caching:                 REJECT
+retry/fallback:                 REJECT
+client warm-up/connection reuse: DEFER — cause/repeatability not proven
+capability/tool expansion:      REJECT
+```
+
+The no-change decision is evidence-driven rather than a claim that no future optimization can ever be useful. Revisit requires a measured trigger such as quality regression on an expanded frozen corpus, repeatable material latency degradation, a real volume baseline making cost material, measured repeated-prefix reuse, or provider reliability failures.
+
+Gate 11.5 exact evidence:
+
+```text
+ADR:                      docs/adr/0040-preserve-measured-reasoning-baseline-without-premature-optimization.md
+lab:                      labs/phase-11-gate-11-5-measured-optimization-decision.md
+issue #159:               CLOSED / COMPLETED
+PR #160 final head:       12c96dfa4bed1daa182adaddda52f4ab589ceeeb
+Single-Agent CI:          34171028733 / run #42 / PASS
+job:                      101891204255
+PR merge test commit:     c74afd8683da27000394854779918faff2da7705
+Pyright strict:           0 errors / 0 warnings / 0 informations
+pytest:                   56 passed in 0.43s
+PR #160 merge SHA:        14b2922239579e333f6cf331d96aa881eccd0423
+```
+
+Gate 11.5 introduced no real model calls, AWS resources, IAM changes, AgentCore, MCP, A2A, public runtime, runtime-exposure authority, or Governed LLM Gateway changes.
+
 ## Deferred Governed LLM Gateway integration
 
 Long-lived PR #89 remains open/draft for **Phase 14 — Case 3 of the separate `brunovicco/governed-llm-gateway` project**. It remains deferred and must be re-evaluated against the current OpsLens architecture before any merge.
@@ -513,9 +561,7 @@ Long-lived PR #89 remains open/draft for **Phase 14 — Case 3 of the separate `
 ## Next authorized step
 
 ```text
-Phase 11 Gate 11.5 — Measured Optimization Decision
+Phase 11 Gate 11.6 — Phase 11 Closeout
 ```
 
-Gate 11.5 must start from the measured Gate 11.4 baseline rather than assume that an optimization is required. Current evidence already shows `6/6` proposal quality, `6/6` bounds compliance, zero retries, zero capability executions, sub-second median provider latency, and a six-case derived inference cost of USD 0.0041921.
-
-The next gate must first identify a concrete, measurable quality, latency, token, or cost gap before authorizing any optimization experiment. If no material gap is justified by evidence, preserving the Gate 11.4 baseline unchanged is a valid engineering outcome and Gate 11.6 closeout should become next. PR #89 remains deferred and `operational-telemetry:v1` remains unchanged unless a separately versioned agent-specific telemetry contract is justified.
+Gate 11.6 should consolidate the frozen Phase 11 authority, execution, evaluation, reasoning, real-baseline, and no-change optimization evidence; verify that no accidental runtime/IAM/tool authority expansion occurred; and make the Phase 11 exit decision. No new reasoning-model experiment is required for closeout unless a concrete inconsistency is discovered.
