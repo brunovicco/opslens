@@ -21,24 +21,25 @@ Phase 9    Public Analyze Your Repository                      COMPLETE
   Gate 9.2 Immutable repository evidence orchestration         COMPLETE / MERGED
   Gate 9.3 Bounded semantic planning + admission handoff       COMPLETE / MERGED
   Gate 9.4 Phase 9 closeout                                    COMPLETE / MERGED
-Phase 10   Observability & Operational Excellence              NEXT
+Phase 10   Observability & Operational Excellence              IN PROGRESS
+  Gate 10.1 Content-minimized operational telemetry contract   COMPLETE / MERGED
+  Gate 10.2 Governed orchestration instrumentation              NEXT
 ```
 
-Latest merged executable checkpoint:
+Latest merged executable/project checkpoint:
 
 ```text
-Phase 9 Gate 9.3 / PR #129
-6f53537c227cade688091187eac1074645e11bf0
+Phase 10 Gate 10.1 / PR #135
+665b86f6e527a0096d7c3db522f4bd2c95b177aa
 ```
 
-Latest merged project checkpoint:
+Tracking:
 
 ```text
-Phase 9 Gate 9.4 / PR #132
-f27c278db1039d31bd8410a2e51d14b77f6c1f0b
+Gate 10.1 issue #134: CLOSED / COMPLETED
+Gate 10.1 final PR head: 7742ae003fc8e1ad1d1a6a4f71542875b6d6462c
+Gate 10.1 exact-head CI: Operational Observability CI run 34135197989 / PASS
 ```
-
-Gate 9.4 issue #131 is closed as completed.
 
 ## Permanent architecture boundaries
 
@@ -56,9 +57,17 @@ Gate 9.4 issue #131 is closed as completed.
 
 > **Intent classification != execution authority.**
 
-Deterministic authorities own package/version semantics, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS/Risk Policy facts, SemanticQuery validation and SQL compilation, retrieval/evidence admission, hybrid route/completeness, structured fact projection, canonical evidence/citation identity, output admission, evaluation metrics, execution limits, public request admission, immutable repository evidence binding, public-v1 product scope, semantic-plan admission, and public handoff identity.
+Deterministic authorities own package/version semantics, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS/Risk Policy facts, SemanticQuery validation and SQL compilation, retrieval/evidence admission, hybrid route/completeness, structured fact projection, canonical evidence/citation identity, output admission, evaluation metrics, execution limits, public request admission, immutable repository evidence binding, public-v1 product scope, semantic-plan admission, public handoff identity, and operational telemetry admission/projection semantics.
 
-LLMs may classify, plan, propose, synthesize, explain, and select already-admitted citation IDs. They do not own structured truth, public product scope, repository truth, runtime exposure, SQL authority, route authority, evidence completeness, canonical provenance, provider/model selection, or execution authority.
+LLMs may classify, plan, propose, synthesize, explain, and select already-admitted citation IDs. They do not own structured truth, public product scope, repository truth, runtime exposure, SQL authority, route authority, evidence completeness, canonical provenance, provider/model selection, execution authority, or telemetry authority.
+
+Phase 10 adds the explicit distinction:
+
+```text
+telemetry evidence != business truth
+telemetry evidence != route authority
+telemetry failure != permission to bypass fail-closed application contracts
+```
 
 ## Implemented system
 
@@ -104,9 +113,17 @@ Untrusted public repository JSON
  -> existing Phase 8 hybrid route authority
  -> PublicAnalysisAdmissionHandoff
  -> STOP
+
+Operational evidence semantics
+ -> operational-telemetry:v1
+ -> bounded stage / outcome / failure taxonomy
+ -> content-addressed event identity
+ -> Phase 9 identity progression only
+ -> fixed low-cardinality metric projection
+ -> provider-neutral boundary
 ```
 
-The last `STOP` is material: Phase 9 validates the governed application boundary. It does not yet provide a deployed public HTTP runtime or downstream public analysis execution pipeline.
+The application `STOP` remains material. Gate 10.1 did not deploy a public HTTP runtime or downstream public analysis execution pipeline.
 
 ## Frozen Phase 7 / 8 quality
 
@@ -219,7 +236,7 @@ planner invocations:    <= 1 per orchestration
 adaptive app retries:   0
 ```
 
-The planner receives metadata-only verified identities/accounting, not repository content. Successful deterministic admission must agree with Phase 8 route authority:
+Successful deterministic admission must agree with Phase 8 route authority:
 
 ```text
 HYBRID
@@ -241,7 +258,7 @@ issue #128:                      CLOSED / COMPLETED
 
 Gate 9.3 used injected fake repository/planner ports and made zero real provider/model calls.
 
-## Phase 9 Gate 9.4 closeout
+### Gate 9.4 — closeout
 
 ADR 0031 freezes:
 
@@ -249,41 +266,89 @@ ADR 0031 freezes:
 application boundary validated != public runtime deployed
 ```
 
-Closeout merge:
-
 ```text
 PR #132:                         MERGED
 merge SHA:                       f27c278db1039d31bd8410a2e51d14b77f6c1f0b
 issue #131:                      CLOSED / COMPLETED
 ```
 
-No docs-only CI workflow was triggered for PR #132. The PR was reviewed as documentation-only and merged with the exact reviewed head.
+## Phase 10 Gate 10.1 — operational telemetry contract
 
-At closeout:
+Frozen contract:
 
 ```text
-public HTTP compute:      NOT DEPLOYED
-public endpoint:          NOT DEPLOYED
-public runtime principal: DOES NOT EXIST
-new Gate 9.4 AWS:         NONE
-new Gate 9.4 IAM:         NONE
+operational-telemetry:v1
+operation: analyze_public_repository
 ```
 
-This is intentional least privilege. No runtime role is created before a concrete compute principal and responsibilities exist.
+Stages:
 
-## Phase 9 fail-closed taxonomy
+```text
+public_request_admission
+repository_evidence
+semantic_planning
+hybrid_route_admission
+public_handoff
+```
 
-Failure classes include request bytes/UTF-8/JSON/field grammar, repository URL admission, metadata/visibility/ref resolution, immutable commit/tree/file evidence, parser/normalization provenance, planning request binding, planner invocation/output contract, unknown/duplicate/out-of-authority evidence needs, under-scoped plans, `runtime_exposure`, replay, source-execution rebinding, Phase 8 route/completeness/class mismatch, and handoff identity mismatch.
+Outcomes:
 
-Any failed stage creates no later authority object.
+```text
+succeeded
+rejected
+failed
+```
+
+Only content-addressed Phase 9 identity references are available:
+
+```text
+public_request_id
+source_execution_id
+handoff_id
+```
+
+There is no arbitrary telemetry attribute bag and no event field for raw repository URL/owner/name, dependency names/versions, `uv.lock` bytes, prompt/retrieved/model text, SQL, credentials/secrets, or provider/model selection.
+
+Metric projection is fixed to:
+
+```text
+OperationalStageCount      Count
+OperationalStageLatency    Milliseconds
+```
+
+with only these dimensions:
+
+```text
+ContractVersion
+Operation
+Stage
+Outcome
+```
+
+High-cardinality request/source/handoff identities never become metric dimensions.
+
+Validation:
+
+```text
+PR #135 final head:               7742ae003fc8e1ad1d1a6a4f71542875b6d6462c
+Operational Observability CI:     run 34135197989 / PASS
+uv lock --check:                  PASS
+Ruff:                             PASS
+Pyright strict:                   0 errors / 0 warnings / 0 informations
+pytest:                           14 passed
+merge SHA:                        665b86f6e527a0096d7c3db522f4bd2c95b177aa
+issue #134:                       CLOSED / COMPLETED
+```
+
+Gate 10.1 created no public runtime, AWS resource, IAM role/policy, Bedrock/model call, Athena call, OpenTelemetry exporter, CloudWatch runtime call, or X-Ray runtime call.
 
 ## Cost and observability boundary
 
-Phase 9 does not invent a public request price. Existing cost evidence remains stage-specific and only becomes valid when that stage actually runs. Gate 9.3 made zero real provider/model calls.
+OpsLens does not invent a public-request price, production latency distribution, SLO, or alert compliance before a deployed workload exists.
 
-Current evidence supports IDs, hashes, provenance, admission decisions, bounded failure categories, exact-head CI, and real provider token/latency metadata only for previously executed provider stages.
+Current Phase 10 evidence proves the telemetry **contract**, validation behavior, cardinality boundary, and CI quality. It does not yet prove production telemetry delivery.
 
-Phase 9 does not claim:
+Still not claimed:
 
 ```text
 public request volume
@@ -293,8 +358,6 @@ production error/throttle rates
 production cost/request
 production SLO/alert compliance
 ```
-
-Those require a deployed runtime and measured workload.
 
 ## Public-launch prerequisites still required
 
@@ -315,16 +378,14 @@ workload-derived SLOs + alerts
 rollback / incident procedures
 ```
 
-Phase 9 completion does not waive these requirements.
-
 ## Deferred Governed LLM Gateway integration
 
-Long-lived PR #89 remains open/draft for **Phase 14 — Case 3 of the separate `brunovicco/governed-llm-gateway` project**. It is not OpsLens Phase 14 and is not part of Phase 9. It must be re-evaluated against the then-current architecture before any merge.
+Long-lived PR #89 remains open/draft for **Phase 14 — Case 3 of the separate `brunovicco/governed-llm-gateway` project**. It is not OpsLens Phase 14 and must be re-evaluated against the then-current architecture before any merge.
 
 ## Next authorized step
 
 ```text
-Phase 10 — Observability & Operational Excellence
+Phase 10 Gate 10.2 — Governed Orchestration Instrumentation
 ```
 
-Phase 10 must start from the frozen Phase 9 contracts and preserve deterministic authority, provenance, content minimization, least privilege, and fail-closed admission. If real observability requires a small deployed runtime slice, that runtime must be introduced explicitly with concrete compute/IAM, request/abuse/cost limits, rollback, and measured operational evidence. Production SLOs and alerts must come from deployed workload evidence, not laboratory CI.
+Gate 10.2 must instrument the already-governed public-analysis orchestration with `operational-telemetry:v1` through provider-neutral injected boundaries before choosing a production telemetry backend. It must preserve application authority, content minimization, deterministic stage ordering, and fail-closed behavior. It must not claim a public runtime, SLO, or production telemetry delivery unless separately deployed and measured.
