@@ -33,7 +33,7 @@ __all__ = [
     "PublicAnalysisValidationError",
     "PublicRepositoryEvidenceExecution",
     "PublicRepositoryTarget",
-    "PublicSemanticPlanningRequest",
     "PublicSemanticPlanProposal",
+    "PublicSemanticPlanningRequest",
     "create_public_analysis_request",
 ]
