@@ -46,6 +46,23 @@ _EXPECTED_SUCCESS_STAGES = (
 )
 
 
+def _validate_delivery_accounting(
+    *,
+    events: tuple[OperationalEvent, ...],
+    undelivered_event_ids: tuple[str, ...],
+) -> None:
+    """Require undelivered accounting to reference only admitted event identities."""
+    if any(type(event) is not OperationalEvent for event in events):
+        raise ValueError("operational evidence must contain only OperationalEvent objects")
+    if any(type(event_id) is not str for event_id in undelivered_event_ids):
+        raise ValueError("undelivered event identities must be strings")
+    if len(set(undelivered_event_ids)) != len(undelivered_event_ids):
+        raise ValueError("undelivered event identities cannot contain duplicates")
+    admitted_ids = frozenset(event.event_id for event in events)
+    if any(event_id not in admitted_ids for event_id in undelivered_event_ids):
+        raise ValueError("undelivered identities must reference admitted events")
+
+
 class MonotonicClock(Protocol):
     """Injected monotonic clock used only for bounded stage-duration accounting."""
 
@@ -81,6 +98,10 @@ class PublicAnalysisInstrumentationError(RuntimeError):
         undelivered_event_ids: tuple[str, ...],
     ) -> None:
         """Preserve only bounded instrumentation state and previously admitted event IDs."""
+        _validate_delivery_accounting(
+            events=events,
+            undelivered_event_ids=undelivered_event_ids,
+        )
         super().__init__(
             f"public analysis instrumentation failed at {stage.value}: {reason.value}"
         )
@@ -101,6 +122,10 @@ class PublicAnalysisOperationalFailure(RuntimeError):
         undelivered_event_ids: tuple[str, ...],
     ) -> None:
         """Expose bounded stage/event identities without copying arbitrary exception text."""
+        _validate_delivery_accounting(
+            events=events,
+            undelivered_event_ids=undelivered_event_ids,
+        )
         if not events or events[-1].stage is not stage:
             raise ValueError("operational failure requires a terminal event for its stage")
         if events[-1].outcome is OperationalOutcome.SUCCEEDED:
@@ -134,11 +159,10 @@ class PublicAnalysisOperationalExecution:
             raise ValueError("successful operational execution cannot contain failed stages")
         if self.events[-1].handoff_id != self.handoff.handoff_id:
             raise ValueError("operational execution handoff identity drifted")
-        event_ids = tuple(event.event_id for event in self.events)
-        if len(set(self.undelivered_event_ids)) != len(self.undelivered_event_ids):
-            raise ValueError("undelivered event identities cannot contain duplicates")
-        if any(event_id not in event_ids for event_id in self.undelivered_event_ids):
-            raise ValueError("undelivered identities must reference admitted execution events")
+        _validate_delivery_accounting(
+            events=self.events,
+            undelivered_event_ids=self.undelivered_event_ids,
+        )
 
 
 def _clock_read(
