@@ -91,7 +91,12 @@ def test_semantically_identical_bodies_share_normalized_request_identity() -> No
         "https://github.com/brunovicco/opslens#readme",
         "https://github.com/brunovicco/opslens/tree/main",
         "https://github.com/brunovicco%2Fopslens/repository",
+        "https://github.com/brunovicco/%6fpslens",
+        "https://github.com/brunovicco/opslens%2Ftree%2Fmain",
         "https://github.com//brunovicco/opslens",
+        "https://git\nhub.com/brunovicco/opslens",
+        "https://github.com\\@evil.example/brunovicco/opslens",
+        "https://[github.com/brunovicco/opslens",
         " https://github.com/brunovicco/opslens",
     ],
 )
