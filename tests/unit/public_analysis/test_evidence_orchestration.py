@@ -107,9 +107,15 @@ class FakePublicRepositorySource:
     repository_payload: dict[str, object] = field(default_factory=_repository_payload)
     commit_payload: dict[str, object] = field(default_factory=_commit_payload)
     uv_lock_payload: dict[str, object] = field(default_factory=_uv_lock_payload)
-    repository_calls: list[tuple[str, str]] = field(default_factory=list)
-    commit_calls: list[tuple[str, str, str]] = field(default_factory=list)
-    uv_lock_calls: list[tuple[str, str, str]] = field(default_factory=list)
+    repository_calls: list[tuple[str, str]] = field(
+        default_factory=lambda: list[tuple[str, str]]()
+    )
+    commit_calls: list[tuple[str, str, str]] = field(
+        default_factory=lambda: list[tuple[str, str, str]]()
+    )
+    uv_lock_calls: list[tuple[str, str, str]] = field(
+        default_factory=lambda: list[tuple[str, str, str]]()
+    )
 
     def get_repository(self, owner: str, name: str) -> dict[str, object]:
         """Return repository metadata and record only validated coordinates."""
