@@ -34,7 +34,7 @@ concept
 | 8 | Hybrid Retrieval | ✅ Complete |
 | 9 | Public Analyze Your Repository | ✅ Complete |
 | 10 | Observability & Operational Excellence | ✅ Complete |
-| 11 | Single-Agent Baseline | 🚧 In progress — Gates 11.1–11.2 complete |
+| 11 | Single-Agent Baseline | 🚧 In progress — Gates 11.1–11.3 complete |
 | 12 | Multi-Agent Architecture | ⏳ Planned |
 | 13 | MCP | ⏳ Planned |
 | 14 | Amazon Bedrock AgentCore | ⏳ Planned |
@@ -62,9 +62,10 @@ concept
 Phase 11 adds:
 
 ```text
-agent action proposal != capability authorization != execution result
+agent action proposal != capability authorization != execution result != evaluation score
 AuthorizedAgentAction != capability invocation
 capability invocation != execution result
+evaluation evidence != operational telemetry
 agent reasoning may select/use already-authorized capabilities
 agent reasoning does not acquire deterministic truth or execution authority
 ```
@@ -231,15 +232,15 @@ Phase 10 proves deterministic operational evidence and an AWS-native EMF represe
 
 ## Phase 11 — Single-Agent Baseline — IN PROGRESS
 
-Phase 11 introduces agentic reasoning only after deterministic capability authority and typed execution/result binding are frozen.
+Phase 11 introduces agentic reasoning only after deterministic capability authority, typed execution/result binding, and a deterministic evaluation baseline are frozen.
 
 Current sequence:
 
 ```text
 Gate 11.1 — Capability Authorization Contract                COMPLETE / MERGED
 Gate 11.2 — Typed Capability Bindings + Offline Executor      COMPLETE / MERGED
-Gate 11.3 — Frozen Single-Agent Evaluation Fixture            NEXT
-Gate 11.4 — First Bounded Model Reasoning Baseline            BLOCKED
+Gate 11.3 — Frozen Single-Agent Evaluation Fixture            COMPLETE / MERGED
+Gate 11.4 — First Bounded Model Reasoning Baseline            NEXT
 Gate 11.5 — Measured Optimization Decision                    BLOCKED
 Gate 11.6 — Phase 11 Closeout                                 BLOCKED
 ```
@@ -379,36 +380,87 @@ PR #150 merge SHA:       0fb70ace5bd544c6ef5f17f1030bdbcbeb8063b7
 
 Gate 11.2 performed zero real reasoning-model/AWS calls and added no AWS/IAM/runtime resources. It also left `operational-telemetry:v1` unchanged.
 
-### Gate 11.3 — frozen single-agent evaluation fixture — NEXT
+### Gate 11.3 — frozen single-agent evaluation fixture — COMPLETE
 
-Goal:
+Frozen contract:
 
 ```text
-frozen deterministic agent cases
- -> proposal expectation
- -> authorization expectation
- -> execution expectation
- -> independent metric dimensions
- -> baseline-ready fixture
+single-agent-evaluation:v1
+```
+
+Boundary:
+
+```text
+strict golden JSON fixture
+ -> typed content-addressed AgentEvaluationDataset
+ -> frozen task + untrusted AgentActionProposal
+ -> existing deterministic authorization
+ -> optional existing typed execution
+ -> stable observation
+ -> decomposed deterministic metrics
+ -> content-addressed AgentEvaluationReport
  -> STOP
 ```
 
-Required design constraints:
+The first corpus freezes six cases:
 
 ```text
-separate proposal selection from authorization correctness
-separate authorization from execution/result correctness
-include ACT, ABSTAIN, denied, malformed/tampered, and result-mismatch scenarios
-freeze exact capability and outcome expectations
-track execution-attempt budget explicitly
-no composite metric that hides authority failures
-future model-quality/latency/cost dimensions remain UNMEASURED until Gate 11.4
-no real model/provider/AWS calls
-no AgentCore/MCP/A2A
-no runtime-exposure authority
+authorized-structured-no-execution
+explicit-abstention
+unauthorized-capability
+structured-execution-admitted
+structured-executor-failure
+structured-result-contract-failure
 ```
 
-Gate 11.3 must create the evaluation contract before Gate 11.4 is allowed to introduce a real reasoning model.
+Independent metric dimensions:
+
+```text
+total_cases
+passed_cases
+authorization_matches
+capability_matches
+execution_matches
+failure_category_matches
+bounds_compliant_cases
+```
+
+Exact validation:
+
+```text
+issue #153:              CLOSED / COMPLETED
+PR #154 final head:      2dcc7abfc559a8a0b053278a68c926b5dc38d694
+Single-Agent CI:         34163023511 / run #14 / PASS
+job:                     101868535029
+PR merge test commit:    96628ebc2bb5acffa6e27446de28e1073e9d6100
+Ruff:                    PASS
+Pyright strict:          0 errors / 0 warnings / 0 informations
+pytest:                  37 passed in 0.54s
+PR #154 merge SHA:       b1b2f4e45005f1d55a017f4761f3b7e061f8a070
+post-merge workflow:     NONE — workflow has no push trigger
+```
+
+Gate 11.3 performed zero real model/provider/AWS calls and added no AWS/IAM/runtime resources. It also left `operational-telemetry:v1` unchanged and did not touch deferred PR #89.
+
+### Gate 11.4 — first bounded model reasoning baseline — NEXT
+
+Gate 11.4 is the first Phase 11 gate authorized to introduce one real reasoning-model boundary. It must reuse the frozen `single-agent-authority:v1`, `single-agent-execution:v1`, and `single-agent-evaluation:v1` contracts rather than replacing them.
+
+Minimum constraints:
+
+```text
+model output remains an untrusted AgentActionProposal
+one proposal per task
+capability allowlist remains code-owned
+no model-authored executable argument surface
+no adaptive retry/fallback
+no provider/model choice delegated to the model
+no AgentCore/MCP/A2A/public runtime expansion
+no runtime-exposure authority
+measured quality/latency/token/cost only from real observed calls
+```
+
+The detailed provider-neutral reasoning port, first provider adapter, measurement contract, and exact corpus slice must be justified at Gate 11.4 issue creation before implementation.
 
 Observability remains explicit: do not mutate `operational-telemetry:v1` to represent agent steps. Agent-specific operational evidence requires a separately versioned contract if it becomes necessary.
 
