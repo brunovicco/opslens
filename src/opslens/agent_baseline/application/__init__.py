@@ -17,6 +17,10 @@ from opslens.agent_baseline.application.execution import (
     StructuredSecurityQueryExecutor,
     execute_authorized_capability,
 )
+from opslens.agent_baseline.application.reasoning import (
+    parse_reasoning_model_output,
+    reason_about_task,
+)
 
 __all__ = [
     "AgentCapabilityExecutionError",
@@ -32,4 +36,6 @@ __all__ = [
     "evaluate_agent_dataset",
     "execute_authorized_capability",
     "load_agent_evaluation_dataset",
+    "parse_reasoning_model_output",
+    "reason_about_task",
 ]
