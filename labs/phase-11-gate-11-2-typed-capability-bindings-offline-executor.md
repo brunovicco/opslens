@@ -4,7 +4,7 @@ _Date: 2026-09-07_
 
 ## Status
 
-**IMPLEMENTED — final exact-head CI and protected merge pending.**
+**COMPLETE / MERGED.**
 
 Starting main:
 
@@ -12,12 +12,14 @@ Starting main:
 46346ab68737b8a866c85563f3804adbdccc1a92
 ```
 
-Tracking:
+Final tracking:
 
 ```text
-issue:  #149
-branch: feat/phase11-typed-capability-execution
-PR:     #150 (draft)
+issue:              #149 CLOSED / COMPLETED
+branch:             feat/phase11-typed-capability-execution
+PR:                 #150 MERGED
+final PR head:      1f2dae3ece3b4a2dc9280575fd5a1a3c315751f4
+merge SHA:          0fb70ace5bd544c6ef5f17f1030bdbcbeb8063b7
 ```
 
 ## Goal
@@ -192,7 +194,7 @@ executor_failure
 result_contract
 ```
 
-The downstream exception message is not copied into the public execution error or admitted execution evidence.
+Downstream exception text is not copied into the execution error or admitted execution evidence.
 
 Executor failure behavior is:
 
@@ -218,11 +220,11 @@ single-agent-execution:v1
 
 and exposes a deterministic content-addressed execution identity.
 
-This is execution evidence. It does not make agent reasoning authoritative over the downstream business/security truth.
+This is execution evidence. It does not make agent reasoning authoritative over downstream business/security truth.
 
 ## Regression coverage
 
-The current tests prove:
+The merged tests prove:
 
 - execution has a separate frozen versioned contract;
 - one execution / zero retry / zero adaptive fallback limits;
@@ -311,7 +313,33 @@ Pyright strict: 0 errors / 0 warnings / 0 informations
 pytest: 31 passed in 0.47s
 ```
 
-This is the latest executable-quality evidence before ADR/lab documentation changes. The final PR head must be revalidated before merge.
+### Final exact-head validation
+
+Final PR head:
+
+```text
+1f2dae3ece3b4a2dc9280575fd5a1a3c315751f4
+```
+
+Single-Agent CI:
+
+```text
+run: 34155862646 / run #11
+job: 101847434766
+result: SUCCESS
+checkout PR merge commit: 0262b66b97323bda5ecd397c0b292fd961e88f8a
+uv lock --check: PASS
+Ruff: PASS
+Pyright strict: 0 errors / 0 warnings / 0 informations
+pytest: 31 passed in 0.44s
+```
+
+Protected squash merge:
+
+```text
+PR #150 merge SHA: 0fb70ace5bd544c6ef5f17f1030bdbcbeb8063b7
+issue #149:        CLOSED / COMPLETED
+```
 
 ## Authority boundary
 
@@ -385,12 +413,12 @@ This gate exercises several certification-relevant engineering decisions:
 - provider-neutral ports allow later Bedrock/AgentCore choices without moving authority;
 - deterministic offline evaluation is useful before model and managed-runtime variability is introduced.
 
-## Proposed Phase 11 sequence
+## Phase 11 sequence
 
 ```text
 Gate 11.1 — Capability Authorization Contract                COMPLETE / MERGED
-Gate 11.2 — Typed Capability Bindings + Offline Executor      CURRENT
-Gate 11.3 — Frozen Single-Agent Evaluation Fixture            BLOCKED
+Gate 11.2 — Typed Capability Bindings + Offline Executor      COMPLETE / MERGED
+Gate 11.3 — Frozen Single-Agent Evaluation Fixture            NEXT
 Gate 11.4 — First Bounded Model Reasoning Baseline            BLOCKED
 Gate 11.5 — Measured Optimization Decision                    BLOCKED
 Gate 11.6 — Phase 11 Closeout                                 BLOCKED
@@ -414,12 +442,11 @@ Gate 11.3 must freeze cases and metrics before the first real reasoning model ca
 [x] one-execution / zero-retry / zero-fallback limits frozen
 [x] content-free failure taxonomy implemented
 [x] downstream result rebinding regressions implemented
-[x] Single-Agent CI green on hardened executable head
 [x] ADR 0037 recorded
 [x] Gate 11.2 lab recorded
-[ ] final exact-head Single-Agent CI green after docs
-[ ] PR #150 ready / mergeable
-[ ] protected squash merge
-[ ] issue #149 CLOSED / COMPLETED
-[ ] postmerge state sync
+[x] final exact-head Single-Agent CI green
+[x] PR #150 ready / mergeable
+[x] protected squash merge
+[x] issue #149 CLOSED / COMPLETED
+[x] postmerge state sync prepared
 ```

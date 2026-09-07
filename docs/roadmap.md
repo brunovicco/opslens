@@ -34,7 +34,7 @@ concept
 | 8 | Hybrid Retrieval | ✅ Complete |
 | 9 | Public Analyze Your Repository | ✅ Complete |
 | 10 | Observability & Operational Excellence | ✅ Complete |
-| 11 | Single-Agent Baseline | 🚧 In progress — Gate 11.1 complete |
+| 11 | Single-Agent Baseline | 🚧 In progress — Gates 11.1–11.2 complete |
 | 12 | Multi-Agent Architecture | ⏳ Planned |
 | 13 | MCP | ⏳ Planned |
 | 14 | Amazon Bedrock AgentCore | ⏳ Planned |
@@ -63,6 +63,8 @@ Phase 11 adds:
 
 ```text
 agent action proposal != capability authorization != execution result
+AuthorizedAgentAction != capability invocation
+capability invocation != execution result
 agent reasoning may select/use already-authorized capabilities
 agent reasoning does not acquire deterministic truth or execution authority
 ```
@@ -229,14 +231,14 @@ Phase 10 proves deterministic operational evidence and an AWS-native EMF represe
 
 ## Phase 11 — Single-Agent Baseline — IN PROGRESS
 
-Phase 11 introduces agentic reasoning only after deterministic capability authority is frozen.
+Phase 11 introduces agentic reasoning only after deterministic capability authority and typed execution/result binding are frozen.
 
-Planned sequence:
+Current sequence:
 
 ```text
 Gate 11.1 — Capability Authorization Contract                COMPLETE / MERGED
-Gate 11.2 — Typed Capability Bindings + Offline Executor      NEXT
-Gate 11.3 — Frozen Single-Agent Evaluation Fixture            BLOCKED
+Gate 11.2 — Typed Capability Bindings + Offline Executor      COMPLETE / MERGED
+Gate 11.3 — Frozen Single-Agent Evaluation Fixture            NEXT
 Gate 11.4 — First Bounded Model Reasoning Baseline            BLOCKED
 Gate 11.5 — Measured Optimization Decision                    BLOCKED
 Gate 11.6 — Phase 11 Closeout                                 BLOCKED
@@ -295,39 +297,120 @@ PR #147 merge SHA:       641fc20d29cf1148d63b460948a08362158be113
 
 Gate 11.1 performed zero real model, capability, AWS, or runtime calls and added no AWS/IAM resources.
 
-### Gate 11.2 — typed capability bindings + offline executor — NEXT
+### Gate 11.2 — typed capability bindings + offline executor — COMPLETE
+
+Frozen contract:
+
+```text
+single-agent-execution:v1
+```
+
+Boundary:
+
+```text
+AuthorizedAgentAction
+ -> exact typed capability invocation
+ -> deterministic action/capability match
+ -> explicit capability-specific executor port
+ -> one bounded execution attempt
+ -> typed downstream result admission
+ -> content-addressed AgentCapabilityExecution
+ -> STOP
+```
+
+Exact bindings:
+
+```text
+structured_security_query
+ -> SemanticQuery
+ -> StructuredSecurityQueryResultBinding(AthenaQueryResult)
+
+knowledge_guidance
+ -> SynthesisRequest
+ -> SynthesisResult
+
+hybrid_security_answer
+ -> HybridSynthesisRequest
+ -> HybridSynthesisResult
+
+public_repository_analysis
+ -> PublicAnalysisRequest
+ -> PublicAnalysisAdmissionHandoff
+```
+
+The invocation surface has no arbitrary `tool_name`, kwargs, URL, SQL, command, provider/model selector, credentials, retry policy, or fallback policy.
+
+Execution limits:
+
+```text
+max executions per call: 1
+execution retries:        0
+adaptive fallbacks:       0
+```
+
+Result admission preserves exact downstream identity:
+
+```text
+structured -> invocation_sha256 binding
+knowledge  -> SynthesisRequest.request_sha256
+hybrid     -> HybridSynthesisRequest.request_sha256
+public     -> PublicAnalysisRequest request_id + request_sha256
+```
+
+Failure categories:
+
+```text
+executor_failure
+result_contract
+```
+
+Exact validation:
+
+```text
+issue #149:              CLOSED / COMPLETED
+PR #150 final head:      1f2dae3ece3b4a2dc9280575fd5a1a3c315751f4
+Single-Agent CI:         34155862646 / run #11 / PASS
+job:                     101847434766
+Ruff:                    PASS
+Pyright strict:          0 errors / 0 warnings / 0 informations
+pytest:                  31 passed in 0.44s
+PR #150 merge SHA:       0fb70ace5bd544c6ef5f17f1030bdbcbeb8063b7
+```
+
+Gate 11.2 performed zero real reasoning-model/AWS calls and added no AWS/IAM/runtime resources. It also left `operational-telemetry:v1` unchanged.
+
+### Gate 11.3 — frozen single-agent evaluation fixture — NEXT
 
 Goal:
 
 ```text
-AuthorizedAgentAction
- -> deterministic typed capability binding
- -> bounded offline execution adapter
- -> typed capability result
- -> content-addressed execution evidence
+frozen deterministic agent cases
+ -> proposal expectation
+ -> authorization expectation
+ -> execution expectation
+ -> independent metric dimensions
+ -> baseline-ready fixture
  -> STOP
 ```
 
 Required design constraints:
 
 ```text
-exact capability -> exact binding type
-no arbitrary tool_name/kwargs registry
-no model-authored executable arguments
-no provider/model selection
-no hidden fallback
-bounded execution count
-bounded/no adaptive retries
-fail closed on missing/mismatched binding
-result identity bound to task + authorized action + capability result
-reuse existing OpsLens deterministic authorities
+separate proposal selection from authorization correctness
+separate authorization from execution/result correctness
+include ACT, ABSTAIN, denied, malformed/tampered, and result-mismatch scenarios
+freeze exact capability and outcome expectations
+track execution-attempt budget explicitly
+no composite metric that hides authority failures
+future model-quality/latency/cost dimensions remain UNMEASURED until Gate 11.4
+no real model/provider/AWS calls
+no AgentCore/MCP/A2A
+no runtime-exposure authority
 ```
 
-Gate 11.2 must remain provider-neutral and offline. It may exercise existing deterministic application services/fakes, but it must not introduce a real reasoning model yet.
+Gate 11.3 must create the evaluation contract before Gate 11.4 is allowed to introduce a real reasoning model.
 
-The first implementation should prefer typed capability-specific inputs over a generic `dict[str, object]` argument envelope. Each binding must expose only the minimum values required by its governed downstream boundary.
-
-Observability remains explicit: do not mutate `operational-telemetry:v1` to represent agent steps. If Gate 11.2 requires execution telemetry, define a separate versioned agent operational evidence contract or defer it to a dedicated later gate.
+Observability remains explicit: do not mutate `operational-telemetry:v1` to represent agent steps. Agent-specific operational evidence requires a separately versioned contract if it becomes necessary.
 
 ## Phase 12 — Multi-Agent Architecture — PLANNED
 
