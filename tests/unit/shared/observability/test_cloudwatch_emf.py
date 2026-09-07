@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import cast
 
 import pytest
@@ -78,11 +78,12 @@ class RaisingClock:
         raise RuntimeError("clock-secret provider-host.example")
 
 
-@dataclass(slots=True)
 class RecordingWriter:
     """Capture exact EMF lines without external delivery."""
 
-    lines: list[bytes] = field(default_factory=list)
+    def __init__(self) -> None:
+        """Start with no delivered lines."""
+        self.lines: list[bytes] = []
 
     def write(self, line: bytes) -> None:
         """Record one exact line."""
