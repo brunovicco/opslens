@@ -32,6 +32,7 @@ _HANDOFF_ID = f"public-analysis-handoff:v1@sha256:{_DIGEST_C}"
 
 
 def test_successful_request_admission_is_content_addressed_and_deterministic() -> None:
+    """Create stable event identity for identical admitted operational semantics."""
     first = create_operational_event(
         stage=OperationalStage.PUBLIC_REQUEST_ADMISSION,
         outcome=OperationalOutcome.SUCCEEDED,
@@ -58,6 +59,7 @@ def test_successful_request_admission_is_content_addressed_and_deterministic() -
 
 
 def test_raw_repository_url_cannot_be_laundered_into_identity_fields() -> None:
+    """Reject arbitrary repository URLs where admitted request identity is required."""
     with pytest.raises(
         OperationalTelemetryValidationError,
         match="public_request_id must be one admitted content-addressed identifier",
@@ -71,6 +73,7 @@ def test_raw_repository_url_cannot_be_laundered_into_identity_fields() -> None:
 
 
 def test_dependency_or_prompt_text_cannot_be_laundered_as_source_identity() -> None:
+    """Reject arbitrary content where source execution identity is required."""
     with pytest.raises(
         OperationalTelemetryValidationError,
         match="source_execution_id must be one admitted content-addressed identifier",
@@ -86,6 +89,7 @@ def test_dependency_or_prompt_text_cannot_be_laundered_as_source_identity() -> N
 
 
 def test_factory_rejects_runtime_values_outside_typed_stage_contract() -> None:
+    """Reject runtime strings masquerading as typed stage values."""
     with pytest.raises(
         OperationalTelemetryValidationError,
         match="stage must be OperationalStage",
@@ -101,6 +105,7 @@ def test_factory_rejects_runtime_values_outside_typed_stage_contract() -> None:
 
 
 def test_post_admission_stage_requires_public_request_identity() -> None:
+    """Require admitted public request identity after request admission."""
     with pytest.raises(
         OperationalTelemetryValidationError,
         match="post-admission stages require public_request_id",
@@ -114,6 +119,7 @@ def test_post_admission_stage_requires_public_request_identity() -> None:
 
 
 def test_successful_repository_evidence_requires_source_execution_identity() -> None:
+    """Require immutable source execution identity after successful evidence creation."""
     with pytest.raises(
         OperationalTelemetryValidationError,
         match="successful repository evidence requires source_execution_id",
@@ -127,6 +133,7 @@ def test_successful_repository_evidence_requires_source_execution_identity() -> 
 
 
 def test_successful_handoff_requires_exact_source_and_handoff_identities() -> None:
+    """Preserve admitted request, source execution, and handoff identities."""
     event = create_operational_event(
         stage=OperationalStage.PUBLIC_HANDOFF,
         outcome=OperationalOutcome.SUCCEEDED,
@@ -143,6 +150,7 @@ def test_successful_handoff_requires_exact_source_and_handoff_identities() -> No
 
 
 def test_success_cannot_hide_failure_and_failure_requires_category() -> None:
+    """Keep outcome and bounded failure-category semantics mutually consistent."""
     with pytest.raises(
         OperationalTelemetryValidationError,
         match="successful events cannot carry a failure category",
@@ -167,6 +175,7 @@ def test_success_cannot_hide_failure_and_failure_requires_category() -> None:
 
 
 def test_failure_category_must_match_stage_authority() -> None:
+    """Reject failure categories outside the selected operational stage taxonomy."""
     with pytest.raises(
         OperationalTelemetryValidationError,
         match="failure category is not authorized for the selected stage",
@@ -182,6 +191,7 @@ def test_failure_category_must_match_stage_authority() -> None:
 
 
 def test_duration_and_attempt_budgets_fail_closed() -> None:
+    """Reject operational evidence outside frozen duration and attempt budgets."""
     with pytest.raises(OperationalTelemetryValidationError, match="duration_ms"):
         create_operational_event(
             stage=OperationalStage.PUBLIC_REQUEST_ADMISSION,
@@ -201,6 +211,7 @@ def test_duration_and_attempt_budgets_fail_closed() -> None:
 
 
 def test_forged_event_identity_is_rejected() -> None:
+    """Reject telemetry objects whose hash is not derived from canonical semantics."""
     admitted = create_operational_event(
         stage=OperationalStage.PUBLIC_REQUEST_ADMISSION,
         outcome=OperationalOutcome.SUCCEEDED,
@@ -227,6 +238,7 @@ def test_forged_event_identity_is_rejected() -> None:
 
 
 def test_metric_projection_has_fixed_low_cardinality_dimensions_only() -> None:
+    """Project only frozen low-cardinality dimensions from admitted events."""
     event = create_operational_event(
         stage=OperationalStage.PUBLIC_HANDOFF,
         outcome=OperationalOutcome.SUCCEEDED,
@@ -261,6 +273,7 @@ def test_metric_projection_has_fixed_low_cardinality_dimensions_only() -> None:
 
 
 def test_direct_metric_construction_cannot_forge_count_or_latency_semantics() -> None:
+    """Reject metric points that violate the deterministic projection contract."""
     with pytest.raises(
         OperationalTelemetryValidationError,
         match="stage count metric must be exactly 1 Count",
@@ -287,6 +300,7 @@ def test_direct_metric_construction_cannot_forge_count_or_latency_semantics() ->
 
 
 def test_event_identity_changes_when_operational_semantics_change() -> None:
+    """Change event identity when any canonical operational semantic changes."""
     success = create_operational_event(
         stage=OperationalStage.PUBLIC_HANDOFF,
         outcome=OperationalOutcome.SUCCEEDED,
