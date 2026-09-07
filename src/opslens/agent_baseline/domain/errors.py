@@ -1,4 +1,4 @@
-"""Errors for the bounded single-agent authority, execution, and evaluation contracts."""
+"""Errors for bounded single-agent authority, execution, evaluation, and reasoning."""
 
 
 class AgentAuthorityValidationError(ValueError):
@@ -15,3 +15,7 @@ class AgentCapabilityExecutionValidationError(ValueError):
 
 class AgentEvaluationValidationError(ValueError):
     """Raised when offline single-agent evaluation evidence violates its contract."""
+
+
+class AgentReasoningValidationError(ValueError):
+    """Raised when bounded single-agent reasoning data violates its contract."""
