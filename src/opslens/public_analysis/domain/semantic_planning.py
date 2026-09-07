@@ -23,6 +23,7 @@ from opslens.public_analysis.domain.evidence_execution import (
 PUBLIC_SEMANTIC_PLANNING_CONTRACT_VERSION = "public-semantic-planning:v1"
 PUBLIC_ANALYSIS_HANDOFF_CONTRACT_VERSION = "public-analysis-handoff:v1"
 PUBLIC_ANALYSIS_OPERATION = "analyze_public_repository"
+MAX_PUBLIC_SEMANTIC_PLANNING_REQUEST_BYTES = 2_048
 
 PUBLIC_ANALYSIS_V1_REQUIRED_EVIDENCE_NEEDS = tuple(
     sorted(
@@ -105,6 +106,10 @@ class PublicSemanticPlanningRequest:
             self.unsupported_normalization_count,
             field="unsupported_normalization_count",
         )
+        if len(self.canonical_json) > MAX_PUBLIC_SEMANTIC_PLANNING_REQUEST_BYTES:
+            raise PublicAnalysisValidationError(
+                "semantic planning request exceeds the hard byte limit"
+            )
 
     @property
     def canonical_json(self) -> bytes:
@@ -309,6 +314,7 @@ class PublicAnalysisAdmissionHandoff:
 
 
 __all__ = [
+    "MAX_PUBLIC_SEMANTIC_PLANNING_REQUEST_BYTES",
     "PUBLIC_ANALYSIS_HANDOFF_CONTRACT_VERSION",
     "PUBLIC_ANALYSIS_OPERATION",
     "PUBLIC_ANALYSIS_V1_REQUIRED_EVIDENCE_NEEDS",
