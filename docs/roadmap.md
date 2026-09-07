@@ -1,6 +1,6 @@
 # OpsLens — Incremental Roadmap
 
-_Last updated: 2026-09-06_
+_Last updated: 2026-09-07_
 
 OpsLens advances in small, demonstrable, observable, reversible gates.
 
@@ -32,7 +32,7 @@ concept
 | 6 | Semantic Query Layer | ✅ Complete |
 | 7 | Knowledge Retrieval with Bedrock | ✅ Complete |
 | 8 | Hybrid Retrieval | ✅ Complete |
-| 9 | Public Analyze Your Repository | ⏳ Next |
+| 9 | Public Analyze Your Repository | ▶️ In progress — Gate 9.3 next |
 | 10 | Observability & Operational Excellence | ⏳ Planned |
 | 11 | Single-Agent Baseline | ⏳ Planned |
 | 12 | Multi-Agent Architecture | ⏳ Planned |
@@ -347,25 +347,92 @@ deferred optimization backlog
 
 Gate 8.6 makes no AWS, IAM, provider, prompt, retrieval, or model changes.
 
-## Phase 9 — Public Analyze Your Repository — NEXT
+## Phase 9 — Public Analyze Your Repository — IN PROGRESS
 
-Goal: expose the already-governed evidence system as a bounded public demo.
+Goal: expose the already-governed evidence system as a bounded public demo without allowing the public boundary or model output to become execution authority.
 
-Entry boundary:
+Mandatory gate sequence:
 
 ```text
-public repository URL/reference
- -> bounded GET-only acquisition
- -> immutable snapshot identity
- -> deterministic dependency/vulnerability/risk authority
- -> deterministic hybrid route decision
- -> ALL_REQUIRED evidence admission
- -> bounded synthesis only when authorized
- -> deterministic output/citation admission
- -> explicit abstain/reject on unsupported/incomplete/failure paths
+Gate 9.1 — Public Request Admission                         COMPLETE
+Gate 9.2 — Immutable Repository Evidence Orchestration     COMPLETE
+Gate 9.3 — Bounded Semantic Planning + Admission Handoff   NEXT
+Gate 9.4 — Phase 9 Closeout                                PLANNED
 ```
 
-Before public launch, Phase 9 must define concrete runtime compute and least-privilege IAM plus request-size, timeout, concurrency, rate, abuse, and cost controls. Production SLOs/alerts must come from deployed workload evidence, not laboratory samples.
+The order is mandatory. Gate 9.3 begins only from the merged Gate 9.2 checkpoint.
+
+### Gate 9.1 — Public Request Admission — COMPLETE
+
+Contract:
+
+```text
+public-analysis-request:v1
+```
+
+The public operation is fixed to one GitHub repository. Untrusted JSON is bounded and reduced to validated owner/name/ref coordinates before any external capability is available. The original URL is never acquisition authority.
+
+### Gate 9.2 — Immutable Repository Evidence Orchestration — COMPLETE
+
+Contract:
+
+```text
+public-repository-evidence:v1
+```
+
+Merged execution path:
+
+```text
+PublicAnalysisRequest
+ -> validated owner/name/ref coordinates only
+ -> source-confirmed public repository metadata
+ -> exact commit/tree snapshot
+ -> exact-commit inert uv.lock evidence
+ -> deterministic uv.lock parsing
+ -> deterministic Phase 3 PyPI normalization
+ -> content-addressed PublicRepositoryEvidenceExecution
+```
+
+The source-confirmed repository identity owns canonical coordinates after the initial lookup. Null refs use source-declared default-branch evidence. Explicit refs are frozen to immutable commit/tree identity before file acquisition. Cross-request, cross-snapshot, cross-file, parser, or normalization drift fails closed.
+
+Validation checkpoint:
+
+```text
+PR #126 head:                     0fdc6c435c0f2891b6730f61bd73ad7f32ca8213
+Python CI #349 / run 34080376506: PASS
+Public Analysis Pyright strict:   0 errors / 0 warnings / 0 informations
+Public Analysis pytest:           41 passed
+merge SHA:                        b152a21bf9d0807ac40083c609ea434f32ccb671
+issue #125:                       CLOSED / COMPLETED
+```
+
+No deployed public HTTP compute, AWS resource, IAM permission, Athena call, Bedrock call, or model call was introduced by Gate 9.2.
+
+### Gate 9.3 — Bounded Semantic Planning + Admission Handoff — NEXT
+
+Gate 9.3 must compose only already-verified `PublicRepositoryEvidenceExecution` with a bounded semantic-planning/admission boundary.
+
+Permanent constraints for the gate:
+
+```text
+model/planner proposal != execution authority
+public request identity != repository truth
+repository evidence != runtime exposure
+semantic planning != SQL authority
+admission failure -> zero downstream execution
+```
+
+The fixed public operation remains `analyze one GitHub repository`; Gate 9.3 does not reopen the public request schema into an arbitrary chat/question API.
+
+The planner/model may propose only within a frozen, typed output contract. Deterministic code must validate/admit the proposal before any later Phase 9 execution handoff exists. Repository identity, dependency identity, vulnerability/risk truth, hybrid route authorization, SQL compilation, evidence admission, and execution limits remain deterministic authorities.
+
+Gate 9.3 should be offline/fake-planner first. Real Bedrock execution is not implied merely by the gate title; a real call requires an explicit bounded runtime validation decision after the contract and failure behavior are frozen.
+
+### Gate 9.4 — Phase 9 Closeout — PLANNED
+
+Gate 9.4 will consolidate the Phase 9 public-boundary contracts, failure taxonomy, runtime/IAM decision, request/model/execution budgets, cost and observability boundaries, documentation consistency, and the exact entry criteria for Phase 10.
+
+Before any eventual public launch, concrete runtime compute and least-privilege IAM plus request-size, timeout, concurrency, rate, abuse, quota, cache, kill-switch, and cost controls must be explicit. Production SLOs/alerts must come from deployed workload evidence, not laboratory samples.
 
 Phase 9 does not require agents, AgentCore, MCP, A2A, reranking, or new vector infrastructure by default.
 

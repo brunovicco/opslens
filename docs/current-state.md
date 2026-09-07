@@ -32,17 +32,19 @@ Phase 8    Hybrid Retrieval                                    COMPLETE
   Gate 8.6 Phase 8 closeout                                    COMPLETE / MERGED
 Phase 9    Public Analyze Your Repository                      IN PROGRESS
   Gate 9.1 Public repository request admission                 COMPLETE / MERGED
-  Gate 9.2 Deterministic public analysis orchestration         NEXT
+  Gate 9.2 Immutable repository evidence orchestration         COMPLETE / MERGED
+  Gate 9.3 Bounded semantic planning + admission handoff       NEXT
+  Gate 9.4 Phase 9 closeout                                    PLANNED
 ```
 
 Latest merged executable checkpoint:
 
 ```text
-Phase 9 Gate 9.1 / PR #123
-5540d7b508c71aa65d826786618690b7ddc9d433
+Phase 9 Gate 9.2 / PR #126
+b152a21bf9d0807ac40083c609ea434f32ccb671
 ```
 
-Gate 9.1 issue #122 is closed as completed. The public surface still has no deployed HTTP compute, new IAM principal, or public runtime.
+Gate 9.2 issue #125 is closed as completed. The public surface still has no deployed HTTP compute, new IAM principal, or public runtime.
 
 ## Permanent architecture boundaries
 
@@ -73,9 +75,10 @@ Deterministic authorities own:
 - synthesis output admission;
 - evaluation metric computation;
 - execution limits;
-- public request admission and normalized request identity.
+- public request admission and normalized request identity;
+- public request-to-snapshot/file evidence binding and exact-commit dependency evidence orchestration.
 
-LLMs may classify, plan, propose, synthesize, explain, and select among already-admitted citation IDs. They do not own structured truth, evidence completeness, query/SQL authority, risk/applicability decisions, canonical provenance, public input authority, or evaluation metric computation.
+LLMs may classify, plan, propose, synthesize, explain, and select among already-admitted citation IDs. They do not own structured truth, evidence completeness, query/SQL authority, risk/applicability decisions, canonical provenance, public input authority, repository visibility, immutable snapshot identity, or evaluation metric computation.
 
 ## Implemented system
 
@@ -113,7 +116,13 @@ Untrusted public repository JSON
  -> strict bounded admission
  -> GitHub URL reduced to validated owner/name/ref coordinates
  -> content-addressed PublicAnalysisRequest
- -> STOP before any external call
+ -> source-confirmed public repository metadata
+ -> exact commit/tree snapshot
+ -> exact-commit inert uv.lock evidence
+ -> deterministic uv.lock parsing
+ -> deterministic Phase 3 PyPI normalization
+ -> content-addressed PublicRepositoryEvidenceExecution
+ -> STOP before semantic planning / downstream analysis handoff
 ```
 
 Structured vulnerability/risk facts remain outside RAG authority. Semantic retrieval supplies explanatory/remediation evidence only. Runtime exposure remains unsupported until a later independent runtime authority is implemented.
@@ -141,7 +150,7 @@ Canonical corpus manifest:
 98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
 ```
 
-No public application compute principal exists after Gate 9.1.
+No public application compute principal exists after Gate 9.2.
 
 ## Frozen Phase 7 quality
 
@@ -396,7 +405,7 @@ public request admitted
  != repository analyzed
 ```
 
-The original user-controlled URL never becomes fetch authority. A later gate may pass only validated owner/name/ref coordinates into the existing read-only GitHub snapshot resolver, which still owns repository metadata validation, private-repository rejection, and exact commit/tree resolution.
+The original user-controlled URL never becomes fetch authority. Only validated owner/name/ref coordinates may enter the existing read-only GitHub snapshot resolver, which owns repository metadata validation, private-repository rejection, and exact commit/tree resolution.
 
 Normalized request identity is independent from raw transport-body provenance. Missing/null `requested_ref` remains null so later source metadata, not Phase 9, determines the repository default branch.
 
@@ -417,6 +426,52 @@ Gate 9.1 added no AWS resource, IAM permission, runtime GitHub acquisition, Athe
 ADR: `docs/adr/0029-public-repository-request-admission.md`.
 Lab: `labs/phase-9-gate-9-1-public-request-admission.md`.
 
+## Phase 9 Gate 9.2 — immutable repository evidence orchestration
+
+Contract:
+
+```text
+public-repository-evidence:v1
+```
+
+Gate 9.2 composes the admitted request with the existing Phase 4 immutable GitHub evidence contracts without broadening the public boundary:
+
+```text
+PublicAnalysisRequest
+ -> validated owner/name/ref coordinates only
+ -> source-confirmed repository metadata and public visibility
+ -> exact commit/tree snapshot
+ -> exact-commit uv.lock acquisition
+ -> deterministic uv.lock parser
+ -> deterministic Phase 3 PyPI normalization
+ -> PublicRepositoryEvidenceExecution
+```
+
+Authority rules proven by the merged implementation:
+
+- the raw user `repository_url` never re-enters source/transport authority;
+- source-confirmed canonical owner/name coordinates own reads after the initial lookup, including repository rename/canonicalization cases;
+- null requested refs use source-declared default-branch evidence rather than an invented branch;
+- explicit refs remain provenance inputs only until resolved to exact immutable commit/tree identity;
+- file acquisition uses the resolved commit SHA, never a moving ref;
+- only inert allowlisted `uv.lock` bytes are acquired and parsed;
+- request, snapshot, file, parser, and normalization identities must compose exactly or the execution fails closed;
+- third-party repository code is never executed.
+
+Exact-head validation:
+
+```text
+PR #126 head:                     0fdc6c435c0f2891b6730f61bd73ad7f32ca8213
+Python CI #349 / run 34080376506: PASS
+Public Analysis Ruff:             PASS
+Public Analysis Pyright strict:   PASS — 0 errors, 0 warnings, 0 informations
+Public Analysis pytest:           PASS — 41 passed
+merge SHA:                        b152a21bf9d0807ac40083c609ea434f32ccb671
+issue #125:                       CLOSED / COMPLETED
+```
+
+Gate 9.2 application/runtime tests used injected fake source evidence only. It added no deployed public HTTP compute, new AWS resource, IAM permission, Athena call, Bedrock call, or model call.
+
 ## Deferred Governed LLM Gateway integration
 
 Long-lived PR #89 remains open/draft for **Phase 14 — Case 3 of the separate `brunovicco/governed-llm-gateway` project**.
@@ -426,9 +481,11 @@ It is not OpsLens Phase 14 and is not part of Phase 9. It must be re-evaluated a
 ## Next authorized step
 
 ```text
-Phase 9 Gate 9.2 — Deterministic public analysis orchestration
+Phase 9 Gate 9.3 — Bounded Semantic Planning + Admission Handoff
 ```
 
-Gate 9.2 should compose the already-admitted `PublicAnalysisRequest` with existing immutable snapshot and repository-analysis contracts through dependency-injected ports. It should remain offline/fake-source first, prove that arbitrary URLs cannot re-enter acquisition authority, and freeze deterministic success/failure behavior before any public HTTP deployment.
+Gate 9.3 is the only next gate authorized by the Phase 9 execution sequence. It must compose the now-verified public repository evidence with a bounded semantic-planning/admission handoff without allowing model output to become repository, evidence, routing, SQL, risk, or execution authority.
 
-Public compute/runtime IAM, rate limiting, abuse protection, concurrency, external-call budgets, response projection, and deployment remain later Phase 9 gates. Agents, MCP, AgentCore, A2A, reranking, new vector technology, and runtime exposure remain later phases or separately measured hypotheses rather than automatic Gate 9.2 scope.
+The public surface remains a fixed `analyze one GitHub repository` operation. Any planner output is untrusted until deterministic admission, and the gate must preserve bounded model/context/output behavior, explicit failure handling, and zero downstream execution when admission fails.
+
+Public HTTP compute/runtime IAM, rate limiting, abuse protection, concurrency, deployment, and production SLOs remain outside Gate 9.3. Agents, MCP, AgentCore, A2A, reranking, new vector technology, and runtime exposure remain later phases or separately measured hypotheses.
