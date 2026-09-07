@@ -37,3 +37,5 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0027](0027-frozen-hybrid-evaluation-contract.md) | Freeze hybrid evaluation cases and independent metric dimensions before synthesis | Accepted |
 | [0028](0028-bounded-route-aware-hybrid-synthesis.md) | Bound model synthesis behind deterministic hybrid route/evidence authority | Accepted |
 | [0029](0029-public-repository-request-admission.md) | Admit public repository requests as validated coordinates, not fetch URLs | Accepted |
+| [0030](0030-public-semantic-planning-authority.md) | Keep public semantic planning proposal-only and deterministic-scope admitted | Accepted |
+| [0031](0031-phase9-public-analysis-closeout.md) | Close Phase 9 at the governed application boundary, not a fictional public runtime | Accepted |
