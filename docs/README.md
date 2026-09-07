@@ -4,7 +4,7 @@ OpsLens documentation is organized around current architecture, implementation s
 
 ## Primary documents
 
-- [`architecture.md`](architecture.md) — accumulated architecture baseline through **Phase 9 — Public Analyze Your Repository**.
+- [`architecture.md`](architecture.md) — accumulated architecture baseline through **Phase 9 — Public Analyze Your Repository**; Phase 10 decisions extend it through ADRs/gate labs while the phase remains in progress.
 - [`architecture.pt-br.md`](architecture.pt-br.md) — Portuguese architecture baseline synchronized with the English version.
 - [`current-state.md`](current-state.md) — exact implementation checkpoint and next authorized action.
 - [`roadmap.md`](roadmap.md) — incremental phase/gate plan and completion status.
@@ -24,16 +24,65 @@ Phase 6  Semantic Query Layer                   COMPLETE
 Phase 7  Knowledge Retrieval with Bedrock       COMPLETE
 Phase 8  Hybrid Retrieval                       COMPLETE
 Phase 9  Public Analyze Your Repository         COMPLETE
-Phase 10 Observability & Operational Excellence NEXT
+Phase 10 Observability & Operational Excellence IN PROGRESS
+  Gate 10.1 Content-Minimized Telemetry         COMPLETE / MERGED
+  Gate 10.2 Governed Orchestration Instrumentation NEXT
 ```
 
-Phase 9 closes at a governed **application boundary**, not at a fictional public runtime. The repository has bounded public request admission, immutable repository-evidence orchestration, proposal-only semantic planning, and a deterministic admission handoff through the existing Phase 8 hybrid route authority.
+Phase 9 closes at a governed **application boundary**, not at a fictional public runtime:
 
 ```text
 application boundary validated != public runtime deployed
 ```
 
-No public HTTP endpoint or runtime principal is claimed by Phase 9.
+Gate 10.1 preserves that boundary while freezing provider-neutral operational evidence semantics. No public HTTP endpoint or runtime principal is claimed.
+
+## Phase 10 architecture record
+
+- [`adr/0032-content-minimized-operational-telemetry-contract.md`](adr/0032-content-minimized-operational-telemetry-contract.md) — operational telemetry is bounded evidence, not business or execution authority.
+
+Frozen Gate 10.1 contract:
+
+```text
+operational-telemetry:v1
+operation: analyze_public_repository
+```
+
+Operational stages:
+
+```text
+public_request_admission
+repository_evidence
+semantic_planning
+hybrid_route_admission
+public_handoff
+```
+
+Authority boundary:
+
+```text
+telemetry evidence != business truth
+telemetry evidence != route authority
+telemetry failure != permission to bypass fail-closed application contracts
+```
+
+The event contract has no arbitrary attribute bag and admits only content-addressed Phase 9 identity references. Metric projection is limited to `OperationalStageCount` and `OperationalStageLatency` with `ContractVersion`, `Operation`, `Stage`, and `Outcome` dimensions.
+
+Gate 10.1 validation:
+
+```text
+PR #135 final head:           7742ae003fc8e1ad1d1a6a4f71542875b6d6462c
+Operational Observability CI: run 34135197989 / PASS
+Ruff:                         PASS
+Pyright strict:               0 errors / 0 warnings / 0 informations
+pytest:                       14 passed
+merge SHA:                    665b86f6e527a0096d7c3db522f4bd2c95b177aa
+issue #134:                   CLOSED / COMPLETED
+```
+
+Gate 10.1 laboratory:
+
+- [`../labs/phase-10-gate-10-1-operational-telemetry-contract.md`](../labs/phase-10-gate-10-1-operational-telemetry-contract.md) — contract, failure history, exact-head validation, protected merge evidence, IAM/resource boundary, and Gate 10.2 entry criteria.
 
 ## Phase 9 architecture records
 
@@ -140,15 +189,15 @@ Detailed Phase 7 evidence remains in `../labs/phase-7-gate-7-*` and is not rewri
 
 > **No unrestricted text-to-SQL.**
 
-The model may plan and synthesize inside typed, bounded contracts. Deterministic code owns structured truth, public request/product-scope admission, route authority, required-evidence completeness, evidence admission, canonical citations, output admission, and evaluation metric computation.
+The model may plan and synthesize inside typed, bounded contracts. Deterministic code owns structured truth, public request/product-scope admission, route authority, required-evidence completeness, evidence admission, canonical citations, output admission, evaluation metric computation, and operational telemetry admission semantics.
 
-## Next authorized phase
+## Next authorized gate
 
 ```text
-Phase 10 — Observability & Operational Excellence
+Phase 10 Gate 10.2 — Governed Orchestration Instrumentation
 ```
 
-Phase 10 must preserve the frozen Phase 9 contracts and may introduce runtime compute/IAM only for a concrete, bounded workload whose telemetry and operational controls are explicitly defined.
+Gate 10.2 must instrument the existing governed application path through provider-neutral injected telemetry boundaries. It must not introduce a public runtime, production SLO, or telemetry backend claim unless separately justified, deployed, and measured.
 
 ## Documentation update rule
 

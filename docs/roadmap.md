@@ -33,7 +33,7 @@ concept
 | 7 | Knowledge Retrieval with Bedrock | ✅ Complete |
 | 8 | Hybrid Retrieval | ✅ Complete |
 | 9 | Public Analyze Your Repository | ✅ Complete |
-| 10 | Observability & Operational Excellence | ▶️ Next |
+| 10 | Observability & Operational Excellence | ▶️ In progress |
 | 11 | Single-Agent Baseline | ⏳ Planned |
 | 12 | Multi-Agent Architecture | ⏳ Planned |
 | 13 | MCP | ⏳ Planned |
@@ -252,19 +252,116 @@ issue #131: CLOSED / COMPLETED
 
 Public-launch prerequisites remain explicit: concrete compute/endpoint, runtime IAM, timeout/concurrency/rate/abuse/quota controls, kill switch, cost attribution, production telemetry, rollback/incident procedures, and workload-derived SLOs/alerts.
 
-## Phase 10 — Observability & Operational Excellence — NEXT
+## Phase 10 — Observability & Operational Excellence — IN PROGRESS
 
-Phase 10 starts from the frozen Phase 9 contracts.
+Phase 10 starts from the frozen Phase 9 contracts and makes operational evidence explicit without weakening application authority.
 
 Primary goal:
 
 ```text
-make a concrete runtime diagnosable
+make governed execution diagnosable
 without weakening deterministic authority,
 provenance, content minimization, or least privilege
 ```
 
-Entry criteria:
+Frozen Phase 10 rule:
+
+```text
+telemetry evidence != business truth
+telemetry evidence != route authority
+telemetry failure != permission to bypass fail-closed application contracts
+```
+
+Mandatory sequence begins as follows:
+
+```text
+Gate 10.1 — Content-Minimized Operational Telemetry Contract   COMPLETE / MERGED
+Gate 10.2 — Governed Orchestration Instrumentation             NEXT
+```
+
+### Gate 10.1 — Content-Minimized Operational Telemetry Contract — COMPLETE
+
+Frozen contract:
+
+```text
+operational-telemetry:v1
+operation: analyze_public_repository
+```
+
+Bounded stages:
+
+```text
+public_request_admission
+repository_evidence
+semantic_planning
+hybrid_route_admission
+public_handoff
+```
+
+The event contract has no arbitrary attribute bag. It can carry only bounded operational semantics and already-authorized Phase 9 content-addressed identity references. It cannot carry raw repository/source/model/SQL/credential content.
+
+Low-cardinality metrics are fixed to:
+
+```text
+OperationalStageCount
+OperationalStageLatency
+```
+
+with dimensions:
+
+```text
+ContractVersion
+Operation
+Stage
+Outcome
+```
+
+Validation:
+
+```text
+PR #135 final head:           7742ae003fc8e1ad1d1a6a4f71542875b6d6462c
+exact-head CI run:            34135197989 / PASS
+Ruff:                         PASS
+Pyright strict:               0 errors / 0 warnings / 0 informations
+pytest:                       14 passed
+merge SHA:                    665b86f6e527a0096d7c3db522f4bd2c95b177aa
+issue #134:                   CLOSED / COMPLETED
+```
+
+Gate 10.1 introduced no public runtime, new AWS resources, new IAM permissions, Bedrock/model calls, Athena calls, telemetry exporter calls, production dashboards, alarms, or SLO claims.
+
+### Gate 10.2 — Governed Orchestration Instrumentation — NEXT
+
+Goal: wire `operational-telemetry:v1` into the already-governed public-analysis orchestration through injected provider-neutral boundaries before choosing or deploying a telemetry backend.
+
+Expected boundary:
+
+```text
+existing public-analysis stage
+ -> deterministic stage outcome/failure classification
+ -> OperationalEvent
+ -> injected OperationalEventSink
+ -> optional provider adapter later
+```
+
+Gate 10.2 must freeze, test, and document:
+
+```text
+exact stage emission order
+success/rejection/failure mapping
+no downstream stage telemetry after fail-closed application stop
+content-minimized identities only
+clock/duration accounting through an injected boundary
+telemetry sink failure semantics
+no telemetry-based business/route authorization
+no high-cardinality metric dimensions
+```
+
+The sink-failure decision must be explicit. A telemetry failure must never convert an application rejection/failure into success or authorize downstream work. Whether telemetry delivery itself is required for one future runtime is a separate operational policy decision and must not be hidden inside the application authority contract.
+
+Gate 10.2 remains offline/provider-neutral unless real deployment is separately justified. No public HTTP runtime, runtime IAM, production SLO, or production telemetry delivery may be claimed from unit/CI evidence.
+
+Phase 10 entry criteria remain frozen:
 
 ```text
 1. Phase 9 contracts remain versioned boundaries
@@ -280,8 +377,6 @@ Entry criteria:
 11. runtime/provider/retrieval changes require separately versioned hypotheses
 12. PR #89 remains deferred until separately re-evaluated
 ```
-
-Phase 10 should begin with an observability contract and a smallest measurable runtime slice. If real telemetry requires deployed compute, that slice must explicitly define compute identity, least-privilege IAM, timeout/concurrency/rate/abuse/cost controls, rollback, and measurement before any production claim is made.
 
 ## Future phases
 

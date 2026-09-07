@@ -4,7 +4,7 @@ _Date: 2026-09-07_
 
 ## Status
 
-**IMPLEMENTED — protected merge pending.**
+**COMPLETE / MERGED.**
 
 Starting main:
 
@@ -15,9 +15,11 @@ Starting main:
 Tracking:
 
 ```text
-issue:  #134
+issue:  #134 — CLOSED / COMPLETED
 branch: feat/phase10-operational-telemetry-contract
-PR:     #135
+PR:     #135 — MERGED
+final PR head: 7742ae003fc8e1ad1d1a6a4f71542875b6d6462c
+merge SHA:     665b86f6e527a0096d7c3db522f4bd2c95b177aa
 ```
 
 ## Goal
@@ -229,31 +231,15 @@ Tests prove:
 - request/source/handoff IDs never become metric dimensions;
 - event identity changes when operational semantics change.
 
-## CI
+## CI evidence
 
-Gate 10.1 introduces a dedicated workflow:
+Dedicated workflow:
 
 ```text
 .github/workflows/operational-observability-ci.yml
 ```
 
-Quality gates:
-
-```text
-uv lock --check
-Ruff
-Pyright strict
-pytest
-```
-
-Scope:
-
-```text
-src/opslens/shared/observability
-tests/unit/shared/observability
-```
-
-Validation history before protected merge:
+Validation history:
 
 ```text
 run #1 / 34133863243: FAIL at Ruff
@@ -265,19 +251,33 @@ run #2 / 34134054537: FAIL at Ruff
   - 14 D103 test docstrings remained
 
 run #3 / 34134899916: PASS
-validated implementation head:
-  88a0ce3aa959747b80ff780f09242ea19e977319
-Ruff:
-  All checks passed
-Pyright strict:
-  0 errors, 0 warnings, 0 informations
-pytest:
-  14 passed in 0.06s
+  implementation head: 88a0ce3aa959747b80ff780f09242ea19e977319
+  Ruff:             PASS
+  Pyright strict:   0 errors / 0 warnings / 0 informations
+  pytest:           14 passed in 0.06s
+
+run #4 / 34135197989: PASS
+  exact final head: 7742ae003fc8e1ad1d1a6a4f71542875b6d6462c
+  uv lock --check:  PASS
+  Ruff:             PASS
+  Pyright strict:   0 errors / 0 warnings / 0 informations
+  pytest:           14 passed in 0.10s
 ```
 
 The first two failures were repository quality-gate feedback only. They did not invoke AWS, GitHub application transports, Athena, Bedrock, models, OpenTelemetry exporters, CloudWatch, or X-Ray runtime paths.
 
-The final PR head must remain green before protected merge. Exact final-head status is verified from PR/Actions state rather than embedded into a self-referential file hash.
+## Protected merge evidence
+
+PR #135 was marked ready only after the exact final head was mergeable and run `34135197989` was green.
+
+Protected squash merge used the exact validated head:
+
+```text
+expected head: 7742ae003fc8e1ad1d1a6a4f71542875b6d6462c
+merge SHA:     665b86f6e527a0096d7c3db522f4bd2c95b177aa
+```
+
+Issue #134 closed automatically as `completed` after the merge.
 
 ## External call / resource budget
 
@@ -331,13 +331,17 @@ ADR: `docs/adr/0032-content-minimized-operational-telemetry-contract.md`.
 [x] ADR recorded
 [x] lab recorded
 [x] implementation validation green
-[ ] final PR head green
-[ ] PR reviewed / mergeable
-[ ] protected squash merge
-[ ] issue #134 CLOSED / COMPLETED
-[ ] postmerge current-state/roadmap sync
+[x] final PR head green
+[x] PR reviewed / mergeable
+[x] protected squash merge
+[x] issue #134 CLOSED / COMPLETED
+[x] postmerge current-state/roadmap sync
 ```
 
 ## Next gate
 
-Gate 10.2 remains blocked until Gate 10.1 merges.
+```text
+Phase 10 Gate 10.2 — Governed Orchestration Instrumentation
+```
+
+Gate 10.2 may start only from merge SHA `665b86f6e527a0096d7c3db522f4bd2c95b177aa` plus the postmerge documentation synchronization. It must instrument the governed application boundary without turning telemetry delivery into business or route authority.
