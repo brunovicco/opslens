@@ -37,7 +37,7 @@ concept
 | 11 | Single-Agent Baseline | ⏳ Planned |
 | 12 | Multi-Agent Architecture | ⏳ Planned |
 | 13 | MCP | ⏳ Planned |
-| 14 | Amazon Bedrock AgentCore / governed platform integration boundary | ⏳ Planned |
+| 14 | Amazon Bedrock AgentCore | ⏳ Planned |
 | 15 | A2A | ⏳ Planned |
 | 16 | Runtime Exposure with Amazon Inspector | ⏳ Planned |
 | 17 | Security Hardening | ⏳ Planned |
@@ -387,9 +387,9 @@ Introduce specialization only where it demonstrably improves the single-agent ba
 
 Expose bounded internal tools through explicit MCP contracts only after deterministic authorities are stable.
 
-### Phase 14 — Amazon Bedrock AgentCore / governed platform integration
+### Phase 14 — Amazon Bedrock AgentCore
 
-Evaluate managed runtime capabilities against measured OpsLens needs. The long-lived Governed LLM Gateway PR #89 remains a deferred Case 3 integration and must be re-evaluated against the then-current architecture before any merge.
+Evaluate managed runtime capabilities against measured OpsLens needs; do not adopt for certification coverage alone.
 
 ### Phase 15 — A2A
 
@@ -406,3 +406,9 @@ Perform cross-cutting IAM, data protection, abuse, threat-model, guardrail, depe
 ### Phase 18 — Evaluation, Cost & Portfolio Readiness
 
 Consolidate quality, latency, cost, failure, architecture, and portfolio evidence across the completed system.
+
+## Deferred cross-project integration
+
+The long-lived OpsLens PR #89 is the deferred consumer-side work for **Phase 14 — Case 3 of the separate `brunovicco/governed-llm-gateway` project**.
+
+It is not the same thing as OpsLens Phase 14. It remains open/draft and must be re-evaluated against the then-current OpsLens architecture before any integration merge.
