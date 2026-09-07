@@ -27,23 +27,19 @@ _REPORT_ID_PATTERN = re.compile(
 )
 
 
-def _canonical_json(value: object) -> bytes:
-    """Serialize one deterministic reasoning-evaluation identity payload."""
-    return json.dumps(
+def _canonical_sha256(value: object) -> str:
+    """Return SHA-256 over one canonical JSON payload."""
+    encoded = json.dumps(
         value,
         allow_nan=False,
         ensure_ascii=True,
         separators=(",", ":"),
         sort_keys=True,
     ).encode("utf-8")
+    return sha256(encoded).hexdigest()
 
 
-def _canonical_sha256(value: object) -> str:
-    """Hash one canonical reasoning-evaluation identity payload."""
-    return sha256(_canonical_json(value)).hexdigest()
-
-
-def _validate_sha256(value: object, *, label: str, expected: str) -> str:
+def _validate_sha256(value: object, *, label: str, expected: str) -> None:
     """Require one exact lowercase SHA-256 digest."""
     if (
         type(value) is not str
@@ -51,7 +47,6 @@ def _validate_sha256(value: object, *, label: str, expected: str) -> str:
         or value != expected
     ):
         raise AgentEvaluationValidationError(f"{label} must match canonical semantics")
-    return value
 
 
 def _validate_case_key(value: object) -> str:
@@ -70,7 +65,7 @@ class AgentReasoningExpectation:
     authorization_outcome: AgentReasoningAuthorizationOutcome
 
     def __post_init__(self) -> None:
-        """Reject internally inconsistent reasoning expectations."""
+        """Reject internally inconsistent golden behavior."""
         if type(self.decision) is not AgentDecision:
             raise AgentEvaluationValidationError("decision must be AgentDecision")
         if self.capability is not None and type(self.capability) is not AgentCapability:
@@ -86,29 +81,26 @@ class AgentReasoningExpectation:
                 raise AgentEvaluationValidationError(
                     "ACT golden behavior must expect deterministic authorization"
                 )
-        else:
-            if self.capability is not None:
-                raise AgentEvaluationValidationError(
-                    "ABSTAIN expectation cannot carry a capability"
-                )
-            if self.authorization_outcome is not AgentReasoningAuthorizationOutcome.ABSTAINED:
-                raise AgentEvaluationValidationError(
-                    "ABSTAIN golden behavior must expect deterministic abstention"
-                )
+            return
+        if self.capability is not None:
+            raise AgentEvaluationValidationError("ABSTAIN expectation cannot carry a capability")
+        if self.authorization_outcome is not AgentReasoningAuthorizationOutcome.ABSTAINED:
+            raise AgentEvaluationValidationError(
+                "ABSTAIN golden behavior must expect deterministic abstention"
+            )
 
 
 def _expectation_payload(expectation: AgentReasoningExpectation) -> dict[str, object]:
-    """Project exact golden expectation semantics."""
     return {
         "authorization_outcome": expectation.authorization_outcome.value,
-        "capability": expectation.capability.value if expectation.capability is not None else None,
+        "capability": expectation.capability.value if expectation.capability else None,
         "decision": expectation.decision.value,
     }
 
 
 @dataclass(frozen=True, slots=True)
 class AgentReasoningEvaluationCase:
-    """Content-addressed model-reasoning evaluation case."""
+    """Content-addressed reasoning-quality evaluation case."""
 
     case_key: str
     task: SingleAgentTask
@@ -116,23 +108,13 @@ class AgentReasoningEvaluationCase:
     case_sha256: str
 
     def __post_init__(self) -> None:
-        """Reject forged case identities."""
+        """Reject forged case identity."""
         case_key = _validate_case_key(self.case_key)
         if type(self.task) is not SingleAgentTask:
             raise AgentEvaluationValidationError("task must be one SingleAgentTask")
         if type(self.expectation) is not AgentReasoningExpectation:
-            raise AgentEvaluationValidationError(
-                "expectation must be one AgentReasoningExpectation"
-            )
-        expected = _canonical_sha256(
-            {
-                "case_key": case_key,
-                "contract_version": SINGLE_AGENT_REASONING_EVALUATION_CONTRACT_VERSION,
-                "expectation": _expectation_payload(self.expectation),
-                "reasoning_contract_version": SINGLE_AGENT_REASONING_CONTRACT_VERSION,
-                "task_sha256": self.task.task_sha256,
-            }
-        )
+            raise AgentEvaluationValidationError("expectation must be AgentReasoningExpectation")
+        expected = _case_digest(case_key, self.task, self.expectation)
         _validate_sha256(self.case_sha256, label="case_sha256", expected=expected)
 
     @classmethod
@@ -143,34 +125,51 @@ class AgentReasoningEvaluationCase:
         task: SingleAgentTask,
         expectation: AgentReasoningExpectation,
     ) -> AgentReasoningEvaluationCase:
-        """Create one content-addressed reasoning case."""
+        """Create one deterministic reasoning-quality case."""
         case_key = _validate_case_key(case_key)
         if type(task) is not SingleAgentTask:
             raise AgentEvaluationValidationError("task must be one SingleAgentTask")
         if type(expectation) is not AgentReasoningExpectation:
-            raise AgentEvaluationValidationError(
-                "expectation must be one AgentReasoningExpectation"
-            )
-        digest = _canonical_sha256(
-            {
-                "case_key": case_key,
-                "contract_version": SINGLE_AGENT_REASONING_EVALUATION_CONTRACT_VERSION,
-                "expectation": _expectation_payload(expectation),
-                "reasoning_contract_version": SINGLE_AGENT_REASONING_CONTRACT_VERSION,
-                "task_sha256": task.task_sha256,
-            }
-        )
+            raise AgentEvaluationValidationError("expectation must be AgentReasoningExpectation")
         return cls(
             case_key=case_key,
             task=task,
             expectation=expectation,
-            case_sha256=digest,
+            case_sha256=_case_digest(case_key, task, expectation),
         )
+
+
+def _case_digest(
+    case_key: str,
+    task: SingleAgentTask,
+    expectation: AgentReasoningExpectation,
+) -> str:
+    return _canonical_sha256(
+        {
+            "case_key": case_key,
+            "contract_version": SINGLE_AGENT_REASONING_EVALUATION_CONTRACT_VERSION,
+            "expectation": _expectation_payload(expectation),
+            "reasoning_contract_version": SINGLE_AGENT_REASONING_CONTRACT_VERSION,
+            "task_sha256": task.task_sha256,
+        }
+    )
+
+
+def _corpus_digest(cases: tuple[AgentReasoningEvaluationCase, ...]) -> str:
+    return _canonical_sha256(
+        {
+            "cases": [
+                {"case_key": case.case_key, "case_sha256": case.case_sha256}
+                for case in cases
+            ],
+            "contract_version": SINGLE_AGENT_REASONING_EVALUATION_CONTRACT_VERSION,
+        }
+    )
 
 
 @dataclass(frozen=True, slots=True)
 class AgentReasoningEvaluationDataset:
-    """Canonical ordered reasoning corpus frozen before a real baseline run."""
+    """Canonical ordered reasoning corpus frozen before the real baseline."""
 
     cases: tuple[AgentReasoningEvaluationCase, ...]
     corpus_sha256: str
@@ -182,24 +181,17 @@ class AgentReasoningEvaluationDataset:
         if len(self.cases) > MAX_AGENT_REASONING_EVALUATION_CASES:
             raise AgentEvaluationValidationError("reasoning cases exceed the v1 limit")
         if any(type(case) is not AgentReasoningEvaluationCase for case in self.cases):
-            raise AgentEvaluationValidationError(
-                "reasoning cases must contain only AgentReasoningEvaluationCase values"
-            )
+            raise AgentEvaluationValidationError("reasoning cases contain an invalid type")
         ordered = tuple(sorted(self.cases, key=lambda item: item.case_key))
         if ordered != self.cases:
             raise AgentEvaluationValidationError("reasoning cases must use canonical order")
         if len({case.case_key for case in self.cases}) != len(self.cases):
             raise AgentEvaluationValidationError("reasoning case keys must be unique")
-        expected = _canonical_sha256(
-            {
-                "cases": [
-                    {"case_key": case.case_key, "case_sha256": case.case_sha256}
-                    for case in self.cases
-                ],
-                "contract_version": SINGLE_AGENT_REASONING_EVALUATION_CONTRACT_VERSION,
-            }
+        _validate_sha256(
+            self.corpus_sha256,
+            label="corpus_sha256",
+            expected=_corpus_digest(self.cases),
         )
-        _validate_sha256(self.corpus_sha256, label="corpus_sha256", expected=expected)
 
     @classmethod
     def create(
@@ -208,22 +200,15 @@ class AgentReasoningEvaluationDataset:
         cases: tuple[AgentReasoningEvaluationCase, ...],
     ) -> AgentReasoningEvaluationDataset:
         """Create one canonical ordered reasoning corpus."""
+        if type(cases) is not tuple:
+            raise AgentEvaluationValidationError("reasoning cases must be a tuple")
         ordered = tuple(sorted(cases, key=lambda item: item.case_key))
-        digest = _canonical_sha256(
-            {
-                "cases": [
-                    {"case_key": case.case_key, "case_sha256": case.case_sha256}
-                    for case in ordered
-                ],
-                "contract_version": SINGLE_AGENT_REASONING_EVALUATION_CONTRACT_VERSION,
-            }
-        )
-        return cls(cases=ordered, corpus_sha256=digest)
+        return cls(cases=ordered, corpus_sha256=_corpus_digest(ordered))
 
 
 @dataclass(frozen=True, slots=True)
 class AgentReasoningCaseScore:
-    """Decomposed deterministic score for one admitted reasoning result."""
+    """Independent deterministic score dimensions for one admitted reasoning result."""
 
     case_key: str
     reasoning_result_id: str
@@ -236,7 +221,7 @@ class AgentReasoningCaseScore:
     score_sha256: str
 
     def __post_init__(self) -> None:
-        """Reject forged or internally inconsistent case score evidence."""
+        """Reject forged or internally inconsistent score evidence."""
         _validate_case_key(self.case_key)
         for label, value in (
             ("reasoning_result_id", self.reasoning_result_id),
@@ -244,15 +229,6 @@ class AgentReasoningCaseScore:
         ):
             if type(value) is not str or not value.strip():
                 raise AgentEvaluationValidationError(f"{label} must be a non-empty string")
-        for label, value in (
-            ("decision_match", self.decision_match),
-            ("capability_match", self.capability_match),
-            ("authorization_match", self.authorization_match),
-            ("bounds_compliant", self.bounds_compliant),
-            ("passed", self.passed),
-        ):
-            if type(value) is not bool:
-                raise AgentEvaluationValidationError(f"{label} must be bool")
         expected_pass = (
             self.decision_match
             and self.capability_match
@@ -260,12 +236,16 @@ class AgentReasoningCaseScore:
             and self.bounds_compliant
         )
         if self.passed != expected_pass:
-            raise AgentEvaluationValidationError("passed must equal all decomposed score dimensions")
-        expected = _canonical_sha256(self._payload())
-        _validate_sha256(self.score_sha256, label="score_sha256", expected=expected)
+            raise AgentEvaluationValidationError(
+                "passed must equal all decomposed score dimensions"
+            )
+        _validate_sha256(
+            self.score_sha256,
+            label="score_sha256",
+            expected=_canonical_sha256(self._payload()),
+        )
 
     def _payload(self) -> dict[str, object]:
-        """Project exact score semantics."""
         return {
             "authorization_match": self.authorization_match,
             "bounds_compliant": self.bounds_compliant,
@@ -285,13 +265,13 @@ class AgentReasoningCaseScore:
         case: AgentReasoningEvaluationCase,
         result: AgentReasoningResult,
     ) -> AgentReasoningCaseScore:
-        """Score one admitted reasoning result against one exact golden case."""
+        """Score one admitted result against one exact golden case."""
         if type(case) is not AgentReasoningEvaluationCase:
             raise AgentEvaluationValidationError("case must be AgentReasoningEvaluationCase")
         if type(result) is not AgentReasoningResult:
             raise AgentEvaluationValidationError("result must be AgentReasoningResult")
         if result.task.task_id != case.task.task_id:
-            raise AgentEvaluationValidationError("reasoning result is not bound to evaluation case")
+            raise AgentEvaluationValidationError("result is not bound to evaluation case")
         decision_match = result.proposal.decision is case.expectation.decision
         capability_match = result.proposal.capability is case.expectation.capability
         authorization_match = (
@@ -301,13 +281,10 @@ class AgentReasoningCaseScore:
             result.invocation_count == MAX_AGENT_REASONING_INVOCATIONS_PER_TASK
             and result.invocation_evidence.retry_attempts == 0
         )
-        passed = (
-            decision_match
-            and capability_match
-            and authorization_match
-            and bounds_compliant
+        passed = all(
+            (decision_match, capability_match, authorization_match, bounds_compliant)
         )
-        payload = {
+        values: dict[str, object] = {
             "authorization_match": authorization_match,
             "bounds_compliant": bounds_compliant,
             "capability_match": capability_match,
@@ -318,7 +295,6 @@ class AgentReasoningCaseScore:
             "passed": passed,
             "reasoning_result_id": result.result_id,
         }
-        digest = _canonical_sha256(payload)
         return cls(
             case_key=case.case_key,
             reasoning_result_id=result.result_id,
@@ -328,13 +304,13 @@ class AgentReasoningCaseScore:
             authorization_match=authorization_match,
             bounds_compliant=bounds_compliant,
             passed=passed,
-            score_sha256=digest,
+            score_sha256=_canonical_sha256(values),
         )
 
 
 @dataclass(frozen=True, slots=True)
 class AgentReasoningEvaluationMetrics:
-    """Independent integer dimensions for the first real reasoning baseline."""
+    """Decomposed integer metrics for the first reasoning baseline."""
 
     total_cases: int
     passed_cases: int
@@ -358,9 +334,43 @@ class AgentReasoningEvaluationMetrics:
                 raise AgentEvaluationValidationError(f"{label} must be within total_cases")
 
 
+def _metrics(scores: tuple[AgentReasoningCaseScore, ...]) -> AgentReasoningEvaluationMetrics:
+    return AgentReasoningEvaluationMetrics(
+        total_cases=len(scores),
+        passed_cases=sum(score.passed for score in scores),
+        decision_matches=sum(score.decision_match for score in scores),
+        capability_matches=sum(score.capability_match for score in scores),
+        authorization_matches=sum(score.authorization_match for score in scores),
+        bounds_compliant_cases=sum(score.bounds_compliant for score in scores),
+    )
+
+
+def _report_payload(
+    corpus_sha256: str,
+    scores: tuple[AgentReasoningCaseScore, ...],
+    metrics: AgentReasoningEvaluationMetrics,
+) -> dict[str, object]:
+    return {
+        "contract_version": SINGLE_AGENT_REASONING_EVALUATION_CONTRACT_VERSION,
+        "corpus_sha256": corpus_sha256,
+        "metrics": {
+            "authorization_matches": metrics.authorization_matches,
+            "bounds_compliant_cases": metrics.bounds_compliant_cases,
+            "capability_matches": metrics.capability_matches,
+            "decision_matches": metrics.decision_matches,
+            "passed_cases": metrics.passed_cases,
+            "total_cases": metrics.total_cases,
+        },
+        "scores": [
+            {"case_key": score.case_key, "score_sha256": score.score_sha256}
+            for score in scores
+        ],
+    }
+
+
 @dataclass(frozen=True, slots=True)
 class AgentReasoningEvaluationReport:
-    """Content-addressed report over one exact real-model reasoning corpus replay."""
+    """Content-addressed report over one exact reasoning corpus replay."""
 
     corpus_sha256: str
     scores: tuple[AgentReasoningCaseScore, ...]
@@ -373,45 +383,23 @@ class AgentReasoningEvaluationReport:
         if type(self.scores) is not tuple or not self.scores:
             raise AgentEvaluationValidationError("scores must be a non-empty tuple")
         if any(type(score) is not AgentReasoningCaseScore for score in self.scores):
-            raise AgentEvaluationValidationError(
-                "scores must contain only AgentReasoningCaseScore values"
-            )
+            raise AgentEvaluationValidationError("scores contain an invalid type")
         ordered = tuple(sorted(self.scores, key=lambda item: item.case_key))
         if ordered != self.scores:
             raise AgentEvaluationValidationError("scores must use canonical case order")
         if type(self.metrics) is not AgentReasoningEvaluationMetrics:
-            raise AgentEvaluationValidationError(
-                "metrics must be AgentReasoningEvaluationMetrics"
-            )
-        expected_metrics = _metrics_for_scores(self.scores)
-        if self.metrics != expected_metrics:
+            raise AgentEvaluationValidationError("metrics must be reasoning evaluation metrics")
+        if self.metrics != _metrics(self.scores):
             raise AgentEvaluationValidationError("metrics must match score evidence")
-        expected = _canonical_sha256(self._payload())
+        expected = _canonical_sha256(
+            _report_payload(self.corpus_sha256, self.scores, self.metrics)
+        )
         _validate_sha256(self.report_sha256, label="report_sha256", expected=expected)
         expected_id = (
             f"{SINGLE_AGENT_REASONING_EVALUATION_CONTRACT_VERSION}:report:{expected}"
         )
         if self.report_id != expected_id or _REPORT_ID_PATTERN.fullmatch(self.report_id) is None:
             raise AgentEvaluationValidationError("report_id must match canonical report semantics")
-
-    def _payload(self) -> dict[str, object]:
-        """Project report identity without raw task or model text."""
-        return {
-            "contract_version": SINGLE_AGENT_REASONING_EVALUATION_CONTRACT_VERSION,
-            "corpus_sha256": self.corpus_sha256,
-            "metrics": {
-                "authorization_matches": self.metrics.authorization_matches,
-                "bounds_compliant_cases": self.metrics.bounds_compliant_cases,
-                "capability_matches": self.metrics.capability_matches,
-                "decision_matches": self.metrics.decision_matches,
-                "passed_cases": self.metrics.passed_cases,
-                "total_cases": self.metrics.total_cases,
-            },
-            "scores": [
-                {"case_key": score.case_key, "score_sha256": score.score_sha256}
-                for score in self.scores
-            ],
-        }
 
     @classmethod
     def create(
@@ -420,34 +408,18 @@ class AgentReasoningEvaluationReport:
         dataset: AgentReasoningEvaluationDataset,
         scores: tuple[AgentReasoningCaseScore, ...],
     ) -> AgentReasoningEvaluationReport:
-        """Create one deterministic report from exact case score evidence."""
+        """Create one deterministic report over the exact frozen corpus."""
         if type(dataset) is not AgentReasoningEvaluationDataset:
-            raise AgentEvaluationValidationError(
-                "dataset must be AgentReasoningEvaluationDataset"
-            )
+            raise AgentEvaluationValidationError("dataset must be reasoning evaluation dataset")
         ordered = tuple(sorted(scores, key=lambda item: item.case_key))
         if tuple(case.case_key for case in dataset.cases) != tuple(
             score.case_key for score in ordered
         ):
-            raise AgentEvaluationValidationError("scores must cover the exact dataset case keys")
-        metrics = _metrics_for_scores(ordered)
-        payload = {
-            "contract_version": SINGLE_AGENT_REASONING_EVALUATION_CONTRACT_VERSION,
-            "corpus_sha256": dataset.corpus_sha256,
-            "metrics": {
-                "authorization_matches": metrics.authorization_matches,
-                "bounds_compliant_cases": metrics.bounds_compliant_cases,
-                "capability_matches": metrics.capability_matches,
-                "decision_matches": metrics.decision_matches,
-                "passed_cases": metrics.passed_cases,
-                "total_cases": metrics.total_cases,
-            },
-            "scores": [
-                {"case_key": score.case_key, "score_sha256": score.score_sha256}
-                for score in ordered
-            ],
-        }
-        digest = _canonical_sha256(payload)
+            raise AgentEvaluationValidationError("scores must cover exact dataset case keys")
+        metrics = _metrics(ordered)
+        digest = _canonical_sha256(
+            _report_payload(dataset.corpus_sha256, ordered, metrics)
+        )
         return cls(
             corpus_sha256=dataset.corpus_sha256,
             scores=ordered,
@@ -457,20 +429,6 @@ class AgentReasoningEvaluationReport:
                 f"{SINGLE_AGENT_REASONING_EVALUATION_CONTRACT_VERSION}:report:{digest}"
             ),
         )
-
-
-def _metrics_for_scores(
-    scores: tuple[AgentReasoningCaseScore, ...],
-) -> AgentReasoningEvaluationMetrics:
-    """Compute exact decomposed integer metrics from admitted scores."""
-    return AgentReasoningEvaluationMetrics(
-        total_cases=len(scores),
-        passed_cases=sum(score.passed for score in scores),
-        decision_matches=sum(score.decision_match for score in scores),
-        capability_matches=sum(score.capability_match for score in scores),
-        authorization_matches=sum(score.authorization_match for score in scores),
-        bounds_compliant_cases=sum(score.bounds_compliant for score in scores),
-    )
 
 
 __all__ = [
