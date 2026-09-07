@@ -10,7 +10,15 @@ material cost target:           NOT JUSTIFIED
 material latency target:        NOT JUSTIFIED
 optimization experiment:        NOT AUTHORIZED
 decision:                       NO-CHANGE
-Gate 11.5:                      READY FOR EXACT-HEAD CI
+issue #159:                     CLOSED / COMPLETED
+PR #160:                        SQUASH MERGED
+Gate 11.5:                      COMPLETE
+```
+
+Merge SHA:
+
+```text
+14b2922239579e333f6cf331d96aa881eccd0423
 ```
 
 ## Objective
@@ -143,6 +151,22 @@ A future optimization experiment requires new measured evidence, such as:
 
 Historical Gate 11.4 evidence must never be overwritten during a future experiment.
 
+## Exact-head validation and merge
+
+```text
+PR #160 final validated head: 12c96dfa4bed1daa182adaddda52f4ab589ceeeb
+Single-Agent CI:             34171028733 / run #42 / PASS
+job:                         101891204255
+PR merge test commit:        c74afd8683da27000394854779918faff2da7705
+uv lock --check:             PASS
+entrypoint smoke:            PASS
+Ruff:                        PASS
+Pyright strict:              0 errors / 0 warnings / 0 informations
+pytest:                      56 passed in 0.43s
+PR #160 merge SHA:           14b2922239579e333f6cf331d96aa881eccd0423
+issue #159:                  CLOSED / COMPLETED
+```
+
 ## AWS / IAM / runtime boundary
 
 ```text
@@ -161,10 +185,10 @@ PR #89 remains deferred and untouched.
 
 ## Exit boundary
 
-Gate 11.5 is complete when this decision passes exact-head CI and merges through the normal protected squash-merge workflow.
-
-After merge, the next authorized step is:
-
 ```text
-Phase 11 Gate 11.6 — Phase 11 Closeout
+Gate 11.5:                 COMPLETE
+optimization decision:     NO-CHANGE
+experiment authorized:     NO
+new real-model calls:      0
+Phase 11 Gate 11.6:        NEXT
 ```
