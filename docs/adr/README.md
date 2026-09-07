@@ -39,3 +39,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0029](0029-public-repository-request-admission.md) | Admit public repository requests as validated coordinates, not fetch URLs | Accepted |
 | [0030](0030-public-semantic-planning-authority.md) | Keep public semantic planning proposal-only and deterministic-scope admitted | Accepted |
 | [0031](0031-phase9-public-analysis-closeout.md) | Close Phase 9 at the governed application boundary, not a fictional public runtime | Accepted |
+| [0032](0032-content-minimized-operational-telemetry-contract.md) | Treat operational telemetry as content-minimized evidence, not execution authority | Accepted |
