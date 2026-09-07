@@ -16,12 +16,12 @@ Phase 5    Risk Prioritization Engine                          COMPLETE
 Phase 6    Semantic Query Layer                                COMPLETE
 Phase 7    Knowledge Retrieval with Bedrock                    COMPLETE
 Phase 8    Hybrid Retrieval                                    COMPLETE
-Phase 9    Public Analyze Your Repository                      COMPLETE after Gate 9.4 merge
+Phase 9    Public Analyze Your Repository                      COMPLETE
   Gate 9.1 Public repository request admission                 COMPLETE / MERGED
   Gate 9.2 Immutable repository evidence orchestration         COMPLETE / MERGED
   Gate 9.3 Bounded semantic planning + admission handoff       COMPLETE / MERGED
-  Gate 9.4 Phase 9 closeout                                    CLOSEOUT IN REVIEW
-Phase 10   Observability & Operational Excellence              NEXT after Gate 9.4 merge
+  Gate 9.4 Phase 9 closeout                                    COMPLETE / MERGED
+Phase 10   Observability & Operational Excellence              NEXT
 ```
 
 Latest merged executable checkpoint:
@@ -31,12 +31,14 @@ Phase 9 Gate 9.3 / PR #129
 6f53537c227cade688091187eac1074645e11bf0
 ```
 
-Latest merged documentation checkpoint before Gate 9.4:
+Latest merged project checkpoint:
 
 ```text
-Gate 9.3 postmerge state sync / PR #130
-6e0c595d5d2437dabd94365e1eeb88800a5bcab4
+Phase 9 Gate 9.4 / PR #132
+f27c278db1039d31bd8410a2e51d14b77f6c1f0b
 ```
+
+Gate 9.4 issue #131 is closed as completed.
 
 ## Permanent architecture boundaries
 
@@ -239,15 +241,25 @@ issue #128:                      CLOSED / COMPLETED
 
 Gate 9.3 used injected fake repository/planner ports and made zero real provider/model calls.
 
-## Phase 9 closeout decision
+## Phase 9 Gate 9.4 closeout
 
-ADR 0031 freezes the core closeout distinction:
+ADR 0031 freezes:
 
 ```text
 application boundary validated != public runtime deployed
 ```
 
-At Gate 9.4 closeout:
+Closeout merge:
+
+```text
+PR #132:                         MERGED
+merge SHA:                       f27c278db1039d31bd8410a2e51d14b77f6c1f0b
+issue #131:                      CLOSED / COMPLETED
+```
+
+No docs-only CI workflow was triggered for PR #132. The PR was reviewed as documentation-only and merged with the exact reviewed head.
+
+At closeout:
 
 ```text
 public HTTP compute:      NOT DEPLOYED
@@ -310,8 +322,6 @@ Phase 9 completion does not waive these requirements.
 Long-lived PR #89 remains open/draft for **Phase 14 — Case 3 of the separate `brunovicco/governed-llm-gateway` project**. It is not OpsLens Phase 14 and is not part of Phase 9. It must be re-evaluated against the then-current architecture before any merge.
 
 ## Next authorized step
-
-After the Gate 9.4 closeout PR is merged:
 
 ```text
 Phase 10 — Observability & Operational Excellence
