@@ -1,5 +1,11 @@
 # Phase 11 Gate 11.3 — Offline Single-Agent Evaluation
 
+## Status
+
+```text
+COMPLETE / MERGED
+```
+
 ## Objective
 
 Create a reproducible offline baseline for the already-frozen Gate 11.1 authorization and Gate
@@ -109,7 +115,24 @@ uv run pyright src/opslens/agent_baseline tests/unit/agent_baseline
 uv run pytest tests/unit/agent_baseline
 ```
 
-The PR CI result is the authoritative validation evidence for the exact merged candidate SHA.
+## Exact merged evidence
+
+```text
+issue #153:              CLOSED / COMPLETED
+PR #154 final head:      2dcc7abfc559a8a0b053278a68c926b5dc38d694
+Single-Agent CI:         34163023511 / run #14 / PASS
+job:                     101868535029
+PR merge test commit:    96628ebc2bb5acffa6e27446de28e1073e9d6100
+uv lock --check:         PASS
+Ruff:                    PASS
+Pyright strict:          0 errors / 0 warnings / 0 informations
+pytest:                  37 passed in 0.54s
+PR #154 merge SHA:       b1b2f4e45005f1d55a017f4761f3b7e061f8a070
+post-merge workflow:     NONE — Single-Agent CI has no push trigger
+```
+
+The exact-head PR CI remains the authoritative executable evidence. The merge was protected with
+`expected_head_sha=2dcc7abfc559a8a0b053278a68c926b5dc38d694`.
 
 ## Failure lab
 
@@ -126,3 +149,23 @@ without admitting the mismatched result as evidence.
 Gate 11.3 stops after deterministic offline evaluation. It does not prove real model reasoning
 quality, provider latency, token use, or runtime cost. Those measurements require an explicitly
 authorized later gate after this baseline is merged and preserved.
+
+The merged gate preserves:
+
+```text
+agent proposal != authorization != execution result != evaluation score
+authorization evidence != execution evidence != evaluation evidence != operational telemetry
+```
+
+## Next gate
+
+```text
+Gate 11.4 — First Bounded Model Reasoning Baseline — NEXT
+```
+
+Gate 11.4 is the first gate permitted to add a real reasoning-model call. It must consume the
+frozen Gate 11.1–11.3 boundaries rather than broaden them. The model may only produce an untrusted
+bounded proposal; deterministic code retains capability authorization, typed execution admission,
+result binding, metric computation, and report identity.
+
+PR #89 remains deferred and untouched.
