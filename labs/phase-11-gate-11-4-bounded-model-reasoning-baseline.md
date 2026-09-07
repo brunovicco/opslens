@@ -229,10 +229,14 @@ not prove real model behavior or AWS runtime measurements.
 Run from an environment whose existing AWS identity is already permitted to invoke the fixed model
 profile. No credential or profile value is committed to the repository.
 
+The repository uses a `src/` layout without installing the local project package during `uv sync`,
+so local script invocations explicitly add `src` to `PYTHONPATH`, consistent with the existing
+OpsLens operational commands.
+
 Using the standard SDK credential chain:
 
 ```bash
-uv run python scripts/run_single_agent_reasoning_baseline.py \
+PYTHONPATH=src uv run python scripts/run_single_agent_reasoning_baseline.py \
   > /tmp/opslens-gate11-4-reasoning.json \
   2> /tmp/opslens-gate11-4-reasoning.stderr
 
@@ -245,7 +249,7 @@ cat /tmp/opslens-gate11-4-reasoning.json
 With an already-configured local profile when required:
 
 ```bash
-uv run python scripts/run_single_agent_reasoning_baseline.py \
+PYTHONPATH=src uv run python scripts/run_single_agent_reasoning_baseline.py \
   --profile <existing-profile> \
   > /tmp/opslens-gate11-4-reasoning.json \
   2> /tmp/opslens-gate11-4-reasoning.stderr
