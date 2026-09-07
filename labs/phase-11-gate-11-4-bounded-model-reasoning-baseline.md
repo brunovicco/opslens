@@ -8,17 +8,20 @@ frozen reasoning corpus:         COMPLETE
 offline CI validation:           COMPLETE
 real Bedrock corpus replay:      COMPLETE
 measured token/latency/cost:     COMPLETE
-gate completion:                 READY FOR FINAL EXACT-HEAD CI
+issue #156:                      CLOSED / COMPLETED
+PR #157:                         SQUASH MERGED
+gate completion:                 COMPLETE
 ```
 
-Gate 11.4 now has the first preserved real-model baseline required by issue #156. The remaining merge
-boundary is repository process only: exact-head CI, review, ready-for-review transition, and protected
-squash merge.
+Merge SHA:
+
+```text
+8b41025facf4451490bf96223d69fbed19b4a00f
+```
 
 ## Objective
 
-Measure whether one real reasoning model can select the expected bounded OpsLens capability or
-abstain without acquiring authorization or capability-execution authority.
+Measure whether one real reasoning model can select the expected bounded OpsLens capability or abstain without acquiring authorization or capability-execution authority.
 
 ## Frozen contracts
 
@@ -31,7 +34,7 @@ single-agent-evaluation:v1
 operational-telemetry:v1
 ```
 
-Gate 11.4 introduces:
+Gate 11.4 adds:
 
 ```text
 single-agent-reasoning:v1
@@ -51,8 +54,7 @@ SingleAgentTask
  -> STOP
 ```
 
-The final `STOP` is mandatory for this baseline. Gate 11.4 performs zero capability executions so
-proposal quality remains separable from the Gate 11.2 executor/result-admission boundary.
+The final `STOP` is mandatory. Gate 11.4 performs zero capability executions, keeping proposal quality separate from Gate 11.2 execution/result admission.
 
 Permanent distinctions:
 
@@ -64,7 +66,7 @@ reasoning evidence != execution evidence
 reasoning evidence != operational telemetry
 ```
 
-## Reasoning output contract
+## Model output and invocation bounds
 
 The model may return only:
 
@@ -75,26 +77,19 @@ The model may return only:
 }
 ```
 
-Deterministic admission rejects invalid JSON, non-object output, missing or extra fields, unknown
-decisions/capabilities, ACT without one capability, ABSTAIN with a capability, output larger than
-512 UTF-8 bytes, and invocation evidence bound to another task.
+Deterministic admission rejects malformed JSON, non-object output, missing/extra fields, unknown decisions/capabilities, ACT without one capability, ABSTAIN with a capability, oversized output, and cross-task invocation evidence.
 
-No executable args/kwargs, SQL, URL, shell command, credentials, provider/model selector,
-retry/fallback policy, or result data can cross this reasoning proposal surface.
-
-## Invocation bounds
+No executable args/kwargs, SQL, URLs, shell commands, credentials, provider/model selectors, retry/fallback policy, or result data can cross the reasoning surface.
 
 ```text
 model invocations per admitted task: 1
 application retries:                0
 adaptive fallbacks:                 0
 capability executions:              0
+raw model output persisted:         no
 ```
 
-The provider SDK is configured with `total_max_attempts=1`. Observed SDK retry metadata must be zero
-for a case to satisfy the evaluation bound.
-
-## First provider adapter
+## Fixed Bedrock adapter
 
 ```text
 provider:        Amazon Bedrock Converse
@@ -107,13 +102,11 @@ temperature:     0.0
 maxTokens:       96
 ```
 
-The provider adapter depends on an injected narrow Converse client Protocol. Domain/application code
-contains no boto3 or Bedrock types. Provider/model/Region selection remains code-owned.
+Core domain/application code remains provider-neutral and contains no boto3 or Bedrock types.
 
-## Bedrock structured-output compatibility finding
+### Structured-output compatibility finding
 
-The first authenticated real attempt reached Bedrock Converse but failed before inference because the
-initial provider schema used `oneOf`, which the Bedrock structured-output subset rejected:
+The first authenticated runtime attempt failed before inference because the initial provider schema used `oneOf`, which Bedrock structured outputs rejected:
 
 ```text
 ValidationException:
@@ -121,10 +114,9 @@ output_config.format.schema: Schema type 'oneOf' is not supported
 reached max retries: 0
 ```
 
-This was a provider-schema compatibility defect, not a model-quality result. No model output or token
-usage from that failed attempt was admitted as baseline evidence.
+This was a provider-schema compatibility defect, not a model-quality result. No model output or token usage from that attempt was admitted as baseline evidence.
 
-The corrected Bedrock schema is a flat closed object:
+The corrected provider schema is a flat closed object:
 
 ```text
 required:             decision, capability
@@ -133,9 +125,7 @@ decision:             enum(act, abstain)
 capability:           enum(closed OpsLens capabilities, null)
 ```
 
-The ACT/capability and ABSTAIN/null cross-field relation remains application-owned and deterministic.
-A provider-valid structured response is still an untrusted proposal. A regression test explicitly
-forbids `oneOf` from the fixed Bedrock schema.
+ACT/non-null and ABSTAIN/null consistency remains application-owned and deterministic. A regression test explicitly prevents `oneOf` from returning to the fixed Bedrock schema.
 
 ## Frozen reasoning corpus
 
@@ -154,64 +144,17 @@ tests/fixtures/agent_baseline/golden_single_agent_reasoning_v1.json
 | `unsupported-arbitrary-execution` | ABSTAIN | none | abstained |
 | `allowlist-restriction` | ABSTAIN | none | abstained |
 
-The allowlist-restriction case deliberately asks for structured facts while only
-`knowledge_guidance` is allowed. Correct model behavior is abstention. An out-of-allowlist proposal
-would still be deterministically rejected rather than acquiring execution authority.
-
-## Deterministic metrics
-
-```text
-total_cases
-passed_cases
-decision_matches
-capability_matches
-authorization_matches
-bounds_compliant_cases
-```
-
-A case passes only when all decomposed dimensions match. There is no LLM judge and no opaque
-correctness score.
-
-## Offline failure lab
-
-Regression tests prove:
-
-- arbitrary extra model fields such as tool args fail closed;
-- unknown capabilities fail closed;
-- ACT/ABSTAIN contradictions fail closed;
-- cross-task provider evidence fails closed;
-- an out-of-allowlist proposal remains a rejected proposal rather than authority;
-- Bedrock multiple-content responses fail closed;
-- inconsistent token accounting fails closed;
-- provider failures are wrapped with stable outward text and one attempt;
-- raw model text is absent from admitted reasoning/result-report evidence;
-- unsupported Bedrock `oneOf` cannot return to the fixed provider schema;
-- one deliberately wrong allowlist-case fake proposal exposes a `5/6` quality result while retaining
-  `6/6` invocation-bound compliance.
-
-## Pre-baseline exact-head validation
-
-The provider-schema remediation was validated at exact head:
-
-```text
-head:                    626139690d61c20583e8cc51c1dfecf80b8789d3
-Single-Agent CI:         34169804186 / run #33 / PASS
-job:                     101887815839
-PR merge test commit:    098d0d282a08d3a7c63acb4d926e2b5b92224bd4
-uv lock --check:         PASS
-entrypoint smoke:        PASS
-Ruff:                    PASS
-Pyright strict:          0 errors / 0 warnings / 0 informations
-pytest:                  56 passed in 0.45s
-```
-
-That CI proves the implementation and provider-schema shape, not real model quality.
+The allowlist-restriction case deliberately asks for structured facts while only `knowledge_guidance` is allowed. Correct model behavior is abstention. An out-of-allowlist proposal would still be deterministically rejected rather than acquiring execution authority.
 
 ## First real Bedrock baseline — 2026-09-07
 
-The operator replayed the frozen six-case corpus from exact source head
-`626139690d61c20583e8cc51c1dfecf80b8789d3` using the existing `opslens-bootstrap` IAM Identity
-Center profile. The command exited `0` with empty stderr.
+The frozen six-case corpus was replayed from exact source head:
+
+```text
+626139690d61c20583e8cc51c1dfecf80b8789d3
+```
+
+The command exited `0` with empty stderr using the existing `opslens-bootstrap` IAM Identity Center profile.
 
 Preserved evidence:
 
@@ -257,12 +200,9 @@ Case outcomes:
 | `structured-security-query` | act | `structured_security_query` | authorized | 853 | 1025 |
 | `unsupported-arbitrary-execution` | abstain | none | abstained | 773 | 949 |
 
-All six Bedrock request IDs and content-addressed invocation/result identities are retained in the
-evidence artifact without raw model output.
+All six request IDs and content-addressed invocation/result identities are retained in the evidence artifact without raw model output.
 
-## Token and latency measurements
-
-Aggregated real observations:
+## Token, latency, and cost measurements
 
 ```text
 input tokens:                  3291
@@ -282,29 +222,14 @@ client elapsed median:          977.5 ms
 client elapsed max:            3418 ms
 ```
 
-The first observed client call has a much larger client-minus-provider interval than the remaining
-five calls. This is retained as measured evidence only; Gate 11.4 does not label it a cold start,
-connection setup, or another cause without separate evidence.
+The first observed client call has a much larger client-minus-provider interval than the remaining calls. This is preserved as measured evidence only; no cold-start, connection-setup, or other cause is asserted without separate evidence.
 
-## Experiment-time cost derivation
-
-The invoked identifier starts with `us.`, which AWS documents as the US geographic cross-Region
-inference profile for Claude Haiku 4.5. The contemporaneously checked standard US geographic
-cross-Region rates are:
+The invoked `us.` profile is the US geographic cross-Region Claude Haiku 4.5 profile. Contemporaneously checked rates on 2026-09-07 were:
 
 ```text
 input:  USD 1.10 / 1M tokens
 output: USD 5.50 / 1M tokens
 ```
-
-Pricing references checked on 2026-09-07:
-
-- Amazon Bedrock Claude Haiku 4.5 model card:
-  https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-haiku-4-5.html
-- AWS machine-learning example using Claude Haiku 4.5 at the same US rates:
-  https://aws.amazon.com/blogs/machine-learning/live-meeting-assistant-with-amazon-transcribe-amazon-bedrock-and-strands-agents/
-- Anthropic 2026-05-27 list prices for AWS Bedrock:
-  https://www-cdn.anthropic.com/files/4zrzovbb/website/3684c2faafb97418665782cea0001f439f74b1d2.pdf
 
 Derived baseline inference cost:
 
@@ -315,12 +240,31 @@ output =  104 / 1,000,000 * USD 5.50 = USD 0.0005720
 total                                  USD 0.0041921
 ```
 
-This is a token-price derivation from observed usage, not an AWS invoice reconciliation. No cache
-charge is added because both observed cache token counters are zero.
+This is a token-price derivation from observed usage, not an AWS invoice reconciliation. No cache charge is added because both observed cache token counters are zero.
+
+Pricing references recorded in the immutable evidence artifact and reviewed during the experiment:
+
+- Amazon Bedrock Claude Haiku 4.5 model card;
+- AWS machine-learning example using Claude Haiku 4.5 at the same US rates;
+- Anthropic AWS Bedrock list prices dated 2026-05-27.
+
+## Final exact-head CI and merge
+
+```text
+PR #157 final validated head: 2ec5b3804fa8c6454e1ea7d824b82d2db9113f91
+Single-Agent CI:             34170308179 / run #37 / PASS
+job:                         101889202476
+PR merge test commit:        bd3802bf4003e5a447e5e104caad0a86cf8388ec
+uv lock --check:             PASS
+entrypoint smoke:            PASS
+Ruff:                        PASS
+Pyright strict:              0 errors / 0 warnings / 0 informations
+pytest:                      56 passed in 0.43s
+PR #157 merge SHA:           8b41025facf4451490bf96223d69fbed19b4a00f
+issue #156:                  CLOSED / COMPLETED
+```
 
 ## AWS / IAM / integration boundary
-
-This gate adds:
 
 ```text
 new AWS resources:              0
@@ -333,15 +277,9 @@ runtime-exposure authority:     0
 Governed LLM Gateway changes:   0
 ```
 
-The real replay used an already-authorized human IAM Identity Center profile. No credentials are
-stored in the repository.
-
-The long-lived OpsLens PR #89 remains deferred, draft, and outside Gate 11.4.
+The real replay used an already-authorized human IAM Identity Center profile. No credentials are stored in the repository. The long-lived OpsLens PR #89 remains deferred, draft, and outside Gate 11.4.
 
 ## Gate 11.5 input
-
-The first baseline gives Gate 11.5 a measured decision surface rather than an assumed optimization
-need:
 
 ```text
 proposal quality:          6/6
@@ -353,20 +291,17 @@ provider latency median:   809.5 ms
 client elapsed median:     977.5 ms
 ```
 
-Gate 11.5 must decide whether any bounded optimization experiment is justified by these measurements.
-It must not optimize merely because an optimization gate exists.
+Gate 11.5 must decide whether any bounded optimization experiment is justified by these measurements. It must not optimize merely because an optimization gate exists.
 
 ## Exit boundary
-
-Evidence state after the first real replay:
 
 ```text
 offline engineering gate: PASS
 real-model evidence gate: PASS
 quality baseline:         6/6 PASS
 cost derivation:          COMPLETE
-Gate 11.4:                READY FOR FINAL EXACT-HEAD CI
+exact-head CI:            PASS
+protected squash merge:   COMPLETE
+Gate 11.4:                COMPLETE
+Gate 11.5:                NEXT
 ```
-
-Gate 11.4 can be marked complete only after this evidence/documentation head receives exact-head CI
-and PR #157 completes the normal review and protected squash-merge process.
