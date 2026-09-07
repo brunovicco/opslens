@@ -6,7 +6,7 @@
 
 ### Verifiable Software Supply Chain & Threat Intelligence on AWS
 
-**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Public Analysis Admission · Deterministic Authority**
+**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Public Analysis Admission · Operational Evidence · Deterministic Authority**
 
 </div>
 
@@ -47,18 +47,26 @@ Permanent boundaries:
 | Phase 6 | Semantic Query Layer | ✅ Complete |
 | Phase 7 | Knowledge Retrieval with Bedrock | ✅ Complete |
 | Phase 8 | Hybrid Retrieval | ✅ Complete |
-| Phase 9 | Public Analyze Your Repository | ✅ Complete after Gate 9.4 merge |
-| Phase 10 | Observability & Operational Excellence | ⏳ Next |
+| Phase 9 | Public Analyze Your Repository | ✅ Complete |
+| Phase 10 | Observability & Operational Excellence | 🚧 In progress — Gate 10.1 complete |
 
-Phase 9 closes at a governed **application boundary**, not at a fictional production deployment. OpsLens now has bounded public request admission, immutable public-repository evidence orchestration, proposal-only semantic planning, and a deterministic admission handoff through the existing Phase 8 hybrid route authority.
+Phase 9 closes at a governed **application boundary**, not at a fictional production deployment. OpsLens has bounded public request admission, immutable public-repository evidence orchestration, proposal-only semantic planning, and a deterministic admission handoff through the existing Phase 8 hybrid route authority.
 
-The project does **not** claim that a public HTTP runtime has already been deployed. Public compute, runtime IAM, rate/abuse controls, production telemetry, and workload-derived SLOs remain explicit later implementation work.
+Phase 10 Gate 10.1 now adds a provider-neutral, content-minimized operational evidence contract without claiming that a public HTTP runtime or production telemetry backend has already been deployed.
 
-See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), and the [Phase 9 closeout](labs/phase-9-gate-9-4-closeout.md).
+```text
+telemetry evidence != business truth
+telemetry evidence != route authority
+telemetry failure != permission to bypass fail-closed application contracts
+```
+
+Public compute, runtime IAM, rate/abuse controls, production telemetry delivery, and workload-derived SLOs remain explicit later implementation work.
+
+See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), the [Phase 9 closeout](labs/phase-9-gate-9-4-closeout.md), and [Phase 10 Gate 10.1](labs/phase-10-gate-10-1-operational-telemetry-contract.md).
 
 ## Implemented system
 
-OpsLens now has governed structured, semantic, hybrid, and public-admission paths while preserving different authority semantics.
+OpsLens now has governed structured, semantic, hybrid, public-admission, and operational-evidence paths while preserving different authority semantics.
 
 ### 1. Structured vulnerability / risk authority
 
@@ -151,6 +159,57 @@ STRUCTURED + SEMANTIC
 ```
 
 The planner does not receive raw repository URL, lockfile bytes, dependency names/versions, arbitrary repository text/instructions, SQL, credentials, provider/model/tool selection, or executable repository content.
+
+### 5. Operational evidence contract
+
+Phase 10 Gate 10.1 freezes:
+
+```text
+operational-telemetry:v1
+operation: analyze_public_repository
+```
+
+Bounded stages:
+
+```text
+public_request_admission
+repository_evidence
+semantic_planning
+hybrid_route_admission
+public_handoff
+```
+
+The event contract has no arbitrary attributes bag. It may carry only bounded operational semantics and already-admitted content-addressed Phase 9 identities (`public_request_id`, `source_execution_id`, `handoff_id`) at stages where those identities can already exist.
+
+Low-cardinality metric projection is deterministic:
+
+```text
+OperationalStageCount      Count
+OperationalStageLatency    Milliseconds
+```
+
+with only:
+
+```text
+ContractVersion
+Operation
+Stage
+Outcome
+```
+
+as metric dimensions. Request/source/handoff IDs never become metric dimensions.
+
+Gate 10.1 exact-head validation:
+
+```text
+PR #135 final head:           7742ae003fc8e1ad1d1a6a4f71542875b6d6462c
+Operational Observability CI: run 34135197989 / PASS
+Ruff:                         PASS
+Pyright strict:               0 errors / 0 warnings / 0 informations
+pytest:                       14 passed
+merge SHA:                    665b86f6e527a0096d7c3db522f4bd2c95b177aa
+issue #134:                   CLOSED / COMPLETED
+```
 
 ## Phase 8 hybrid authority
 
@@ -316,7 +375,7 @@ streaming:               no
 tools:                   none
 ```
 
-No public application runtime role exists at Phase 9 closeout. Gate 9.4 adds no AWS resources or IAM permissions. A future public runtime role will be created only when a concrete compute boundary exists and its responsibilities can be translated into least-privilege permissions.
+No public application runtime role exists after Gate 10.1. Gate 10.1 adds no AWS resources or IAM permissions. A future public runtime role will be created only when a concrete compute boundary exists and its responsibilities can be translated into least-privilege permissions.
 
 ## Security and authority invariants
 
@@ -335,6 +394,8 @@ No public application runtime role exists at Phase 9 closeout. Gate 9.4 adds no 
 - A valid citation ID proves identity admission, not question-specific semantic support.
 - Missing evidence is not silently interpreted as benign evidence.
 - Unsupported runtime exposure is not inferred from repository risk.
+- Operational telemetry does not become application or route authority.
+- High-cardinality identifiers are not metric dimensions in `operational-telemetry:v1`.
 - First-run evidence is preserved before optimization.
 - Negative experiments are preserved rather than tuned away.
 - IAM least privilege, observability, failure diagnosis, and cost accounting are architecture requirements.
@@ -352,7 +413,7 @@ cost: UNMEASURED / null
 
 Token counts remain valid cost-pressure evidence, but they are not silently converted to a full request price without a deterministic versioned pricing contract.
 
-Phase 9 closeout adds no synthetic public-request price. Gate 9.3 used fake ports and zero real provider/model calls. Future public-runtime cost must include concrete infrastructure, concurrency, abuse, and retry assumptions.
+Phase 9 closeout and Phase 10 Gate 10.1 add no synthetic public-request price. Future public-runtime cost must include concrete infrastructure, concurrency, abuse, and retry assumptions.
 
 ## Quality gates
 
@@ -366,6 +427,7 @@ Semantic Query
 Knowledge Retrieval
 Hybrid Retrieval
 Public Analysis
+Operational Observability
 ```
 
 The project uses Ruff, strict Pyright, pytest, and regression slices. AWS-bearing changes additionally use Terraform validation, TFLint, Checkov, canonical plans, deployment verification, and post-apply convergence checks.
@@ -394,7 +456,8 @@ The project uses Ruff, strict Pyright, pytest, and regression slices. AWS-bearin
 │   ├── semantic_query/
 │   ├── knowledge_retrieval/
 │   ├── hybrid_retrieval/
-│   └── public_analysis/
+│   ├── public_analysis/
+│   └── shared/observability/
 ├── tests/
 ├── README.md
 ├── README.pt-br.md
@@ -414,12 +477,13 @@ The project uses Ruff, strict Pyright, pytest, and regression slices. AWS-bearin
 - [Phase 9 Gate 9.1 request admission](labs/phase-9-gate-9-1-public-request-admission.md)
 - [Phase 9 Gate 9.3 semantic planning](labs/phase-9-gate-9-3-bounded-semantic-planning.md)
 - [Phase 9 closeout](labs/phase-9-gate-9-4-closeout.md)
+- [Phase 10 Gate 10.1 operational telemetry](labs/phase-10-gate-10-1-operational-telemetry-contract.md)
 
-## Next — Phase 10: Observability & Operational Excellence
+## Next — Phase 10 Gate 10.2: Governed Orchestration Instrumentation
 
-Phase 10 starts from the frozen Phase 9 application contracts. It must make a future concrete runtime diagnosable without weakening content minimization, deterministic admission, evidence provenance, or least privilege.
+Gate 10.2 will wire `operational-telemetry:v1` into the existing governed public-analysis orchestration through injected provider-neutral boundaries. It must define deterministic event sequencing and sink-failure semantics without allowing telemetry to change business, route, or evidence authority.
 
-If Phase 10 needs a small deployed runtime slice to measure real latency/error/trace/cost behavior, that runtime must be introduced explicitly with its own IAM, request limits, abuse controls, and operational evidence. Production SLOs and alerts must come from deployed workload evidence, not laboratory CI.
+A public runtime, production exporter, SLO, or alert remains a separate later step that requires explicit deployment and measured workload evidence.
 
 The long-lived Governed LLM Gateway PR #89 remains deferred and must be re-evaluated separately against the then-current OpsLens architecture.
 
