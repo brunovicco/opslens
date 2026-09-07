@@ -4,7 +4,7 @@ _Date: 2026-09-07_
 
 ## Status
 
-**IMPLEMENTED — exact-head CI and protected merge pending.**
+**IMPLEMENTED — final exact-head CI and protected merge pending.**
 
 Starting main:
 
@@ -17,7 +17,7 @@ Tracking:
 ```text
 issue:  #137
 branch: feat/phase10-governed-orchestration-instrumentation
-PR:     pending creation
+PR:     #138 (draft)
 ```
 
 ## Goal
@@ -87,7 +87,17 @@ mandatory in-process event construction
 best-effort external sink delivery
 ```
 
-A sink exception does not convert business success into rejection/failure, cannot change route authority, and cannot authorize later work. Only the undelivered event IDs are retained in bounded execution/failure evidence.
+A sink exception does not convert business success into rejection/failure, cannot change route authority, and cannot authorize later work. Only undelivered event IDs that reference already-admitted events may be retained in bounded execution/failure evidence.
+
+Delivery-accounting integrity is validated for:
+
+```text
+PublicAnalysisInstrumentationError
+PublicAnalysisOperationalFailure
+PublicAnalysisOperationalExecution
+```
+
+Forged IDs, duplicate undelivered IDs, non-string IDs, or non-`OperationalEvent` evidence fail closed. This prevents sink-delivery accounting from becoming an unverified side channel.
 
 ## Failure mapping
 
@@ -115,10 +125,23 @@ Gate 10.2 adds tests for:
 - under-scoped plan rejection at deterministic route admission;
 - final handoff-binding rejection after a successful route;
 - best-effort sink failure with unchanged application authority;
+- forged and duplicate undelivered-event accounting rejection;
 - clock regression failure before downstream work;
 - out-of-budget event duration failure before downstream work;
 - absence of raw repository URL, dependency/version, prompt, SQL, credential, provider, and sink-error text from event JSON;
 - preservation of all existing Phase 9 semantic-planning regressions.
+
+## CI evidence
+
+Implementation head `bcc3bb277078d623d350b136e54dd263d173b36d` passed Python CI run `34139712501` across all seven repository jobs. Public Analysis reported:
+
+```text
+Ruff:            PASS
+Pyright strict:  PASS — 0 errors, 0 warnings, 0 informations
+pytest:          PASS — 68 passed
+```
+
+After that green run, delivery-accounting integrity was hardened and explicit regressions were added. Those changes intentionally invalidate the earlier head as the final merge checkpoint. A new exact-head Python CI is required before PR #138 can leave draft state.
 
 ## Resource / external-call budget
 
@@ -140,6 +163,7 @@ All Gate 10.2 tests use injected fake source/planner/clock/sink ports.
 application boundary validated != public runtime deployed
 telemetry evidence != business truth
 telemetry evidence != route authority
+telemetry delivery accounting != permission to invent evidence identities
 ```
 
 Operational instrumentation explains the path. It does not grant authority to execute it differently.
@@ -156,11 +180,12 @@ ADR: `docs/adr/0033-governed-operational-orchestration-instrumentation.md`.
 [x] deterministic failure taxonomy
 [x] route vs handoff stage separation
 [x] content-minimization regressions
+[x] delivery-accounting integrity regressions
 [x] no real provider/runtime calls in tests
 [x] ADR recorded
 [x] lab recorded
-[ ] draft PR created
-[ ] exact-head Python CI green
+[x] draft PR #138 created
+[ ] final exact-head Python CI green
 [ ] PR reviewed / mergeable
 [ ] protected squash merge
 [ ] issue #137 CLOSED / COMPLETED
