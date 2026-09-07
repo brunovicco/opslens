@@ -9,8 +9,8 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import cast
 
-from boto3.session import Session
 from botocore.config import Config
+from botocore.session import Session
 
 from opslens.agent_baseline.adapters import (
     BEDROCK_AGENT_REASONING_REGION,
@@ -59,7 +59,7 @@ def _parse_args() -> argparse.Namespace:
 
 def _bedrock_client(session: Session) -> BedrockAgentReasoningConverseClient:
     """Create the fixed-region Bedrock runtime client behind the narrow Protocol boundary."""
-    client: object = session.client(
+    client = session.create_client(
         "bedrock-runtime",
         region_name=BEDROCK_AGENT_REASONING_REGION,
         config=Config(
@@ -78,7 +78,7 @@ def main() -> int:
     profile = cast(str | None, args.profile)
     dataset = load_agent_reasoning_evaluation_dataset(dataset_path)
 
-    session = Session(profile_name=profile)
+    session = Session(profile=profile)
     model = BedrockSingleAgentReasoningModel(_bedrock_client(session))
 
     scores: list[AgentReasoningCaseScore] = []
