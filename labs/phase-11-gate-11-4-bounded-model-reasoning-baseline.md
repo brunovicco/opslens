@@ -8,12 +8,16 @@ frozen reasoning corpus:         COMPLETE
 offline CI validation:           COMPLETE
 real Bedrock corpus replay:      COMPLETE
 measured token/latency/cost:     COMPLETE
-gate completion:                 READY FOR FINAL EXACT-HEAD CI
+issue #156:                      CLOSED / COMPLETED
+PR #157:                         SQUASH MERGED
+gate completion:                 COMPLETE
 ```
 
-Gate 11.4 now has the first preserved real-model baseline required by issue #156. The remaining merge
-boundary is repository process only: exact-head CI, review, ready-for-review transition, and protected
-squash merge.
+Gate 11.4 completed through protected squash merge:
+
+```text
+PR #157 merge SHA: 8b41025facf4451490bf96223d69fbed19b4a00f
+```
 
 ## Objective
 
@@ -302,7 +306,7 @@ Pricing references checked on 2026-09-07:
 - Amazon Bedrock Claude Haiku 4.5 model card:
   https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-haiku-4-5.html
 - AWS machine-learning example using Claude Haiku 4.5 at the same US rates:
-  https://aws.amazon.com/blogs/machine-learning/live-meeting-assistant-with-amazon-transcribe-amazon-bedrock-and-strands-agents/
+  https://aws.amazon.com/blogs/machine-learning/live-meeting-assistant-with-amazon-bedrock-and-strands-agents/
 - Anthropic 2026-05-27 list prices for AWS Bedrock:
   https://www-cdn.anthropic.com/files/4zrzovbb/website/3684c2faafb97418665782cea0001f439f74b1d2.pdf
 
@@ -317,6 +321,22 @@ total                                  USD 0.0041921
 
 This is a token-price derivation from observed usage, not an AWS invoice reconciliation. No cache
 charge is added because both observed cache token counters are zero.
+
+## Final exact-head validation and merge
+
+```text
+PR #157 final validated head: 2ec5b3804fa8c6454e1ea7d824b82d2db9113f91
+Single-Agent CI:             34170308179 / run #37 / PASS
+job:                         101889202476
+PR merge test commit:        bd3802bf4003e5a447e5e104caad0a86cf8388ec
+uv lock --check:             PASS
+entrypoint smoke:            PASS
+Ruff:                        PASS
+Pyright strict:              0 errors / 0 warnings / 0 informations
+pytest:                      56 passed in 0.43s
+PR #157 merge SHA:           8b41025facf4451490bf96223d69fbed19b4a00f
+issue #156:                  CLOSED / COMPLETED
+```
 
 ## AWS / IAM / integration boundary
 
@@ -358,15 +378,13 @@ It must not optimize merely because an optimization gate exists.
 
 ## Exit boundary
 
-Evidence state after the first real replay:
-
 ```text
 offline engineering gate: PASS
 real-model evidence gate: PASS
 quality baseline:         6/6 PASS
 cost derivation:          COMPLETE
-Gate 11.4:                READY FOR FINAL EXACT-HEAD CI
+exact-head CI:            PASS
+protected squash merge:   COMPLETE
+Gate 11.4:                COMPLETE
+Gate 11.5:                NEXT
 ```
-
-Gate 11.4 can be marked complete only after this evidence/documentation head receives exact-head CI
-and PR #157 completes the normal review and protected squash-merge process.

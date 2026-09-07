@@ -34,7 +34,7 @@ concept
 | 8 | Hybrid Retrieval | ✅ Complete |
 | 9 | Public Analyze Your Repository | ✅ Complete |
 | 10 | Observability & Operational Excellence | ✅ Complete |
-| 11 | Single-Agent Baseline | 🚧 In progress — Gates 11.1–11.3 complete |
+| 11 | Single-Agent Baseline | 🚧 In progress — Gates 11.1–11.4 complete |
 | 12 | Multi-Agent Architecture | ⏳ Planned |
 | 13 | MCP | ⏳ Planned |
 | 14 | Amazon Bedrock AgentCore | ⏳ Planned |
@@ -66,6 +66,7 @@ agent action proposal != capability authorization != execution result != evaluat
 AuthorizedAgentAction != capability invocation
 capability invocation != execution result
 evaluation evidence != operational telemetry
+structured model output != trusted proposal
 agent reasoning may select/use already-authorized capabilities
 agent reasoning does not acquire deterministic truth or execution authority
 ```
@@ -240,8 +241,8 @@ Current sequence:
 Gate 11.1 — Capability Authorization Contract                COMPLETE / MERGED
 Gate 11.2 — Typed Capability Bindings + Offline Executor      COMPLETE / MERGED
 Gate 11.3 — Frozen Single-Agent Evaluation Fixture            COMPLETE / MERGED
-Gate 11.4 — First Bounded Model Reasoning Baseline            NEXT
-Gate 11.5 — Measured Optimization Decision                    BLOCKED
+Gate 11.4 — First Bounded Model Reasoning Baseline            COMPLETE / MERGED
+Gate 11.5 — Measured Optimization Decision                    NEXT
 Gate 11.6 — Phase 11 Closeout                                 BLOCKED
 ```
 
@@ -442,27 +443,95 @@ post-merge workflow:     NONE — workflow has no push trigger
 
 Gate 11.3 performed zero real model/provider/AWS calls and added no AWS/IAM/runtime resources. It also left `operational-telemetry:v1` unchanged and did not touch deferred PR #89.
 
-### Gate 11.4 — first bounded model reasoning baseline — NEXT
+### Gate 11.4 — first bounded model reasoning baseline — COMPLETE
 
-Gate 11.4 is the first Phase 11 gate authorized to introduce one real reasoning-model boundary. It must reuse the frozen `single-agent-authority:v1`, `single-agent-execution:v1`, and `single-agent-evaluation:v1` contracts rather than replacing them.
-
-Minimum constraints:
+Frozen contracts:
 
 ```text
-model output remains an untrusted AgentActionProposal
-one proposal per task
-capability allowlist remains code-owned
-no model-authored executable argument surface
-no adaptive retry/fallback
-no provider/model choice delegated to the model
-no AgentCore/MCP/A2A/public runtime expansion
-no runtime-exposure authority
-measured quality/latency/token/cost only from real observed calls
+single-agent-reasoning:v1
+single-agent-reasoning-evaluation:v1
 ```
 
-The detailed provider-neutral reasoning port, first provider adapter, measurement contract, and exact corpus slice must be justified at Gate 11.4 issue creation before implementation.
+Authority boundary:
 
-Observability remains explicit: do not mutate `operational-telemetry:v1` to represent agent steps. Agent-specific operational evidence requires a separately versioned contract if it becomes necessary.
+```text
+SingleAgentTask
+ -> one fixed provider-neutral reasoning invocation
+ -> transient untrusted {decision, capability}
+ -> deterministic parser
+ -> existing AgentActionProposal
+ -> existing authorize_agent_action(...)
+ -> AuthorizedAgentAction | AgentAbstention | stable rejection
+ -> STOP
+```
+
+The model output remains an untrusted proposal. Capability allowlists, ACT/ABSTAIN consistency, capability authorization, execution authority, result admission, and evaluation metrics remain deterministic code authority.
+
+Fixed first provider:
+
+```text
+Amazon Bedrock Converse
+region:          us-east-1
+model/profile:   us.anthropic.claude-haiku-4-5-20251001-v1:0
+streaming:       disabled
+tools:           disabled
+temperature:     0.0
+maxTokens:       96
+```
+
+The first authenticated runtime attempt exposed that Bedrock structured outputs reject JSON Schema `oneOf`. The provider schema was corrected to a flat closed object over `decision` and `capability`; ACT/non-null and ABSTAIN/null consistency remains deterministic application authority. A regression test freezes the provider-compatible schema.
+
+First real frozen six-case baseline:
+
+```text
+quality:                    6/6 PASS
+decision matches:           6/6
+capability matches:         6/6
+authorization matches:      6/6
+bounds compliance:          6/6
+SDK retries:                0
+capability executions:      0
+input/output/total tokens:  3291 / 104 / 3395
+provider latency median:    809.5 ms
+client elapsed median:      977.5 ms
+derived inference cost:     USD 0.0041921
+```
+
+Preserved evidence:
+
+```text
+labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json
+corpus_sha256: 3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
+report_sha256: 724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
+```
+
+Exact validation and merge:
+
+```text
+issue #156:              CLOSED / COMPLETED
+PR #157 final head:      2ec5b3804fa8c6454e1ea7d824b82d2db9113f91
+Single-Agent CI:         34170308179 / run #37 / PASS
+job:                     101889202476
+PR merge test commit:    bd3802bf4003e5a447e5e104caad0a86cf8388ec
+Ruff:                    PASS
+Pyright strict:          0 errors / 0 warnings / 0 informations
+pytest:                  56 passed in 0.43s
+PR #157 merge SHA:       8b41025facf4451490bf96223d69fbed19b4a00f
+```
+
+Gate 11.4 added no new AWS/IAM/runtime resources, performed zero capability executions in the real baseline, left `operational-telemetry:v1` unchanged, and did not modify deferred PR #89.
+
+### Gate 11.5 — measured optimization decision — NEXT
+
+Gate 11.5 must answer one question before changing code:
+
+```text
+Does the measured Gate 11.4 baseline expose a material quality, latency, token, or cost gap that justifies one bounded optimization experiment?
+```
+
+Current evidence is already strong: `6/6` proposal quality, `6/6` bounds compliance, zero retries, zero capability executions, sub-second median provider latency, and a six-case derived inference cost of USD 0.0041921.
+
+Gate 11.5 must not tune prompts, switch models, introduce caching, expand retries/fallback, add tool authority, or change provider topology merely because an optimization gate exists. If no measurable objective with material expected benefit is identified, the correct engineering decision is to preserve the Gate 11.4 baseline and proceed to Gate 11.6 closeout.
 
 ## Phase 12 — Multi-Agent Architecture — PLANNED
 
