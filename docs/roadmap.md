@@ -32,8 +32,8 @@ concept
 | 6 | Semantic Query Layer | ✅ Complete |
 | 7 | Knowledge Retrieval with Bedrock | ✅ Complete |
 | 8 | Hybrid Retrieval | ✅ Complete |
-| 9 | Public Analyze Your Repository | ▶️ In progress — Gate 9.4 next |
-| 10 | Observability & Operational Excellence | ⏳ Planned |
+| 9 | Public Analyze Your Repository | ✅ Complete after Gate 9.4 merge |
+| 10 | Observability & Operational Excellence | ▶️ Next |
 | 11 | Single-Agent Baseline | ⏳ Planned |
 | 12 | Multi-Agent Architecture | ⏳ Planned |
 | 13 | MCP | ⏳ Planned |
@@ -59,7 +59,7 @@ NVD/CVE, CISA KEV, FIRST EPSS current/historical, and GitHub Security Advisory s
 
 ### Phase 3 — Vulnerability Correlation Engine
 
-Deterministic PyPI v1 applicability with canonical package identity, PEP 440 vulnerable-range evaluation, GHSA/CVE/NVD reconciliation, and content-addressed evidence.
+Deterministic PyPI applicability with canonical package identity, PEP 440 vulnerable-range evaluation, GHSA/CVE/NVD reconciliation, and content-addressed evidence.
 
 > **No LLM decides vulnerability applicability.**
 
@@ -84,72 +84,23 @@ natural-language factual question
  -> structured evidence
 ```
 
-Permanent rule:
-
 > **No unrestricted text-to-SQL.**
 
 ## Phase 7 — Knowledge Retrieval with Bedrock — COMPLETE
 
-Goal: create a separately measurable explanatory/remediation RAG path without replacing the structured Phase 6 authority boundary.
+Phase 7 introduced a separately measurable explanatory/remediation path without replacing structured authority.
 
-Permanent rules:
-
-> **Not every question is a RAG problem.**
-
-> **Structured facts use structured retrieval.**
-
-> **Retrieval output is evidence, not deterministic truth.**
-
-> **A valid citation ID is not proof that a claim is supported.**
-
-Final path:
+Frozen infrastructure:
 
 ```text
-knowledge/remediation question
- -> bounded RetrievalRequest
- -> Bedrock Knowledge Base Retrieve
- -> checked-corpus admission
- -> bounded deterministic context assembly
- -> deterministic pre-model authority decision
- -> bounded Bedrock synthesis
- -> deterministic citation catalog
- -> grounded claim/citation proposal
- -> explicit support judgments
- -> deterministic groundedness metrics
+knowledge base:          BTVJ2PBR2A
+data source:             IEL1LBE026
+embedding model:         amazon.titan-embed-text-v2:0
+vector store:            Amazon S3 Vectors
+canonical chunks:        9
 ```
 
-### Gate 7.1 — Corpus + retrieval contract — COMPLETE
-
-Provider-independent retrieval contracts with bounded query/top-k/provenance semantics.
-
-### Gate 7.2 — Reproducible canonical corpus — COMPLETE
-
-```text
-6 immutable official source pins
-9 canonical chunks
-manifest sha256:
-98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
-```
-
-### Gate 7.3 — Knowledge Base + vector infrastructure — COMPLETE
-
-```text
-KB id:                BTVJ2PBR2A
-data source id:       IEL1LBE026
-vector store:         Amazon S3 Vectors
-embedding model:      amazon.titan-embed-text-v2:0
-dimensions:           1024
-vector type:          FLOAT32
-distance:             cosine
-chunking:              NONE
-vectors materialized: 9
-```
-
-### Gate 7.4 — Real bounded Retrieve adapter — COMPLETE
-
-Direct `Retrieve`, not `RetrieveAndGenerate`, keeps retrieval independently testable and measurable.
-
-### Gate 7.5 — Retrieval evaluation — COMPLETE
+Frozen retrieval baseline:
 
 ```text
 Recall@1:   0.375
@@ -160,133 +111,55 @@ MRR:        0.5699404761904762
 provenance correctness: 1.0
 ```
 
-### Gate 7.6 — Context assembly + bounded synthesis — COMPLETE
-
-Deterministic whole-chunk context assembly, pre-model authority, one bounded non-streaming Claude Haiku 4.5 Converse call maximum, and strict provider/output admission.
-
-### Gate 7.7 — Citations + groundedness — COMPLETE
-
-Frozen result:
+Frozen groundedness baseline preserves the distinction:
 
 ```text
-decision accuracy:          1.0
-citation target precision:  0.2857142857142857
-citation target recall:     0.5
-claim supportedness:        0.8461538461538461
-unsupported claim rate:     0.15384615384615385
-citation correctness:       0.8461538461538461
-abstention precision:       1.0
-abstention recall:          1.0
+retrieval success != citation attribution success != semantic groundedness
 ```
-
-The isolation case preserved a useful attribution/groundedness failure while the TLS-cipher case correctly abstained despite non-empty retrieval.
-
-### Gate 7.8 — Phase 7 closeout — COMPLETE
-
-Frozen failure taxonomy, runtime IAM strategy, cost/observability boundaries, documentation consistency, Phase 8 entry criteria, and deferred optimization backlog.
 
 ## Phase 8 — Hybrid Retrieval — COMPLETE
 
-Goal: combine structured evidence and semantic evidence without weakening their different authority semantics.
+Phase 8 freezes hybrid **evidence routing and composition**, not automatically keyword + vector search.
 
-Hybrid Retrieval in OpsLens means **hybrid evidence routing**, not automatically “hybrid keyword + vector search.”
-
-Permanent Phase 8 rule:
-
-```text
-structured vulnerability/risk facts
- -> deterministic structured authority
-
-explanatory/remediation guidance
- -> bounded semantic evidence
-
-combined response
- -> explicit evidence-class provenance
- -> no authority laundering
-```
-
-### Gate 8.1 — Offline routing and authority contract — COMPLETE
-
-Contract:
+### Gate 8.1 — deterministic route authority
 
 ```text
 hybrid-routing:v1
-```
-
-```text
 vulnerability_facts / risk_priority -> STRUCTURED
 remediation_guidance                -> SEMANTIC
 structured + remediation           -> HYBRID
-runtime_exposure, alone or mixed   -> UNSUPPORTED
+runtime_exposure                    -> UNSUPPORTED
 ```
 
-Intent/evidence-need classification is not execution authority. Supported routes require `ALL_REQUIRED` evidence.
-
-### Gate 8.2 — Deterministic hybrid evidence envelope — COMPLETE
-
-Contract:
+### Gate 8.2 — deterministic hybrid evidence
 
 ```text
 hybrid-evidence:v1
 ```
 
-Structured and semantic evidence remain separate typed collections. Need-level completeness, provenance, rank integrity, duplicate detection, and content-addressed identity fail closed.
+Structured and semantic evidence remain separate authority classes and supported routes require `ALL_REQUIRED` evidence.
 
-### Gate 8.3 — Frozen hybrid evaluation fixture — COMPLETE
-
-Dataset:
+### Gate 8.3 — frozen evaluation
 
 ```text
 hybrid-evaluation-golden:v1
 68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1
 ```
 
-Six cases:
-
-```text
-structured_only_factual
-semantic_only_remediation
-true_hybrid
-unsupported_out_of_authority
-partial_structured_evidence
-semantic_retrieval_noise
-```
-
-Independent metrics:
-
-```text
-route_accuracy
-structured_fact_correctness
-semantic_groundedness
-citation_correctness
-abstention
-latency
-cost
-```
-
 No composite score exists.
 
-### Gate 8.4 — First bounded hybrid synthesis — COMPLETE
-
-Contract:
+### Gate 8.4 — bounded synthesis
 
 ```text
 hybrid-synthesis:v1
+STRUCTURED  -> 0 model calls
+SEMANTIC    -> <=1
+HYBRID      -> <=1
+UNSUPPORTED -> 0
+incomplete  -> 0 / reject before synthesis
 ```
 
-Route-aware model budget:
-
-```text
-STRUCTURED  -> 0 calls
-SEMANTIC    -> <=1 call
-HYBRID      -> <=1 call
-UNSUPPORTED -> 0 calls
-incomplete  -> reject before synthesis / 0 calls
-```
-
-The model cannot author canonical structured facts or provenance. Explanatory claims require admitted semantic citation IDs.
-
-First complete real Bedrock baseline:
+First real baseline:
 
 ```text
 route_accuracy:               1.0
@@ -298,71 +171,28 @@ latency_ms:                   2959.3333333333335
 cost:                         UNMEASURED / null
 ```
 
-The semantic-noise failure is intentionally preserved.
+### Gate 8.5 — measured optimization
 
-### Gate 8.5 — Measured optimization decision — COMPLETE
+H8.5-01 was tested once and rejected because the target quality metrics did not improve. The runtime default remains `hybrid-synthesis-prompt:v1`.
 
-H8.5-01 tested one predeclared prompt-only candidate exactly once.
+### Gate 8.6 — closeout
 
-```text
-candidate: hybrid-synthesis-prompt:h8.5-01-v1
-quality target:
-  semantic_groundedness == 1.0
-  citation_correctness  == 1.0
-```
+Phase 8 authority/failure taxonomy, IAM/cost/observability boundaries, negative experiment evidence, and Phase 9 entry criteria are frozen.
 
-Measured result:
+## Phase 9 — Public Analyze Your Repository — COMPLETE after Gate 9.4 merge
 
-```text
-semantic_groundedness: 0.6666666666666666
-citation_correctness:  0.6666666666666666
-input-token delta:     +306
-output-token delta:     -26
-total-token delta:     +280
-```
+Goal: establish a governed public-analysis application boundary without allowing public input or model proposals to become execution authority.
 
-Decision:
+Mandatory sequence:
 
 ```text
-H8.5-01 = REJECT
+Gate 9.1 — Public Request Admission                         COMPLETE / MERGED
+Gate 9.2 — Immutable Repository Evidence Orchestration     COMPLETE / MERGED
+Gate 9.3 — Bounded Semantic Planning + Admission Handoff   COMPLETE / MERGED
+Gate 9.4 — Phase 9 Closeout                                CLOSEOUT IN REVIEW
 ```
 
-The runtime default remains `hybrid-synthesis-prompt:v1`. No second H8.5-01 run or post-result prompt mutation is authorized.
-
-### Gate 8.6 — Phase 8 closeout — COMPLETE
-
-Gate 8.6 freezes:
-
-```text
-Phase 8 authority/failure taxonomy
-immutable Gate 8.4 baseline
-measured Gate 8.5 rejection
-future runtime IAM boundary
-cost-accounting boundary
-observability boundary
-README / docs / architecture consistency
-Phase 9 public-demo entry criteria
-deferred optimization backlog
-```
-
-Gate 8.6 makes no AWS, IAM, provider, prompt, retrieval, or model changes.
-
-## Phase 9 — Public Analyze Your Repository — IN PROGRESS
-
-Goal: expose the already-governed evidence system as a bounded public demo without allowing the public boundary or model output to become execution authority.
-
-Mandatory gate sequence:
-
-```text
-Gate 9.1 — Public Request Admission                         COMPLETE
-Gate 9.2 — Immutable Repository Evidence Orchestration     COMPLETE
-Gate 9.3 — Bounded Semantic Planning + Admission Handoff   COMPLETE
-Gate 9.4 — Phase 9 Closeout                                NEXT
-```
-
-The order is mandatory. Gate 9.4 begins only from the merged Gate 9.3 checkpoint.
-
-### Gate 9.1 — Public Request Admission — COMPLETE
+### Gate 9.1 — Public Request Admission
 
 Contract:
 
@@ -370,9 +200,9 @@ Contract:
 public-analysis-request:v1
 ```
 
-The public operation is fixed to one GitHub repository. Untrusted JSON is bounded and reduced to validated owner/name/ref coordinates before any external capability is available. The original URL is never acquisition authority.
+Untrusted JSON is bounded and reduced to validated GitHub owner/name/ref coordinates. The raw URL never becomes arbitrary fetch authority.
 
-### Gate 9.2 — Immutable Repository Evidence Orchestration — COMPLETE
+### Gate 9.2 — Immutable Repository Evidence Orchestration
 
 Contract:
 
@@ -380,35 +210,19 @@ Contract:
 public-repository-evidence:v1
 ```
 
-Merged execution path:
-
 ```text
 PublicAnalysisRequest
- -> validated owner/name/ref coordinates only
- -> source-confirmed public repository metadata
- -> exact commit/tree snapshot
+ -> source-confirmed public repository identity
+ -> immutable commit/tree snapshot
  -> exact-commit inert uv.lock evidence
- -> deterministic uv.lock parsing
+ -> deterministic parser
  -> deterministic Phase 3 PyPI normalization
- -> content-addressed PublicRepositoryEvidenceExecution
+ -> PublicRepositoryEvidenceExecution
 ```
 
-The source-confirmed repository identity owns canonical coordinates after the initial lookup. Null refs use source-declared default-branch evidence. Explicit refs are frozen to immutable commit/tree identity before file acquisition. Cross-request, cross-snapshot, cross-file, parser, or normalization drift fails closed.
+Third-party repository code is never executed.
 
-Validation checkpoint:
-
-```text
-PR #126 head:                     0fdc6c435c0f2891b6730f61bd73ad7f32ca8213
-Python CI #349 / run 34080376506: PASS
-Public Analysis Pyright strict:   0 errors / 0 warnings / 0 informations
-Public Analysis pytest:           41 passed
-merge SHA:                        b152a21bf9d0807ac40083c609ea434f32ccb671
-issue #125:                       CLOSED / COMPLETED
-```
-
-No deployed public HTTP compute, AWS resource, IAM permission, Athena call, Bedrock call, or model call was introduced by Gate 9.2.
-
-### Gate 9.3 — Bounded Semantic Planning + Admission Handoff — COMPLETE
+### Gate 9.3 — Bounded Semantic Planning + Admission Handoff
 
 Contracts:
 
@@ -417,7 +231,13 @@ public-semantic-planning:v1
 public-analysis-handoff:v1
 ```
 
-The public operation remains fixed to `analyze_public_repository`; the planner does not own product semantics. Deterministic v1 policy requires exactly:
+The fixed operation is:
+
+```text
+analyze_public_repository
+```
+
+Deterministic public policy requires exactly:
 
 ```text
 remediation_guidance
@@ -425,9 +245,7 @@ risk_priority
 vulnerability_facts
 ```
 
-The planner receives only a bounded metadata projection of verified Gate 9.2 evidence. Raw repository URL, lockfile bytes, dependency names/versions, arbitrary repository text/instructions, SQL, provider/model/tool selection, and executable repository content are excluded from the planner control plane.
-
-The planner proposal is untrusted until deterministic admission. The existing Phase 8 route authority must resolve the admitted need set to:
+The planner receives only bounded metadata and cannot redefine product scope. Successful admission must agree with the Phase 8 router:
 
 ```text
 HYBRID
@@ -435,90 +253,105 @@ ALL_REQUIRED
 STRUCTURED + SEMANTIC
 ```
 
-Any malformed, under-scoped, out-of-authority, replayed, duplicated, oversized, source-rebound, or route-inconsistent proposal fails closed. Application orchestration performs no adaptive retry.
-
-Validation checkpoint:
+Exact-head validation:
 
 ```text
-PR #129 head:                     34cea42a0ce37cbfa06b33d57f081403edba2552
+PR #129 head:                    34cea42a0ce37cbfa06b33d57f081403edba2552
 Python CI #358 / run 34082791753: PASS
-Public Analysis Pyright strict:   0 errors / 0 warnings / 0 informations
-Public Analysis pytest:           57 passed
-merge SHA:                        6f53537c227cade688091187eac1074645e11bf0
-issue #128:                       CLOSED / COMPLETED
+Public Analysis Pyright strict:  0 errors / 0 warnings / 0 informations
+Public Analysis pytest:          57 passed
+merge SHA:                       6f53537c227cade688091187eac1074645e11bf0
 ```
 
-Gate 9.3 used injected fake repository/planner ports only. It added no deployed public HTTP compute, AWS resource, IAM permission, real runtime GitHub call, Athena call, Bedrock call, model call, retrieval, synthesis, vulnerability enrichment, or risk execution.
+### Gate 9.4 — Phase 9 Closeout
 
-ADR: `docs/adr/0030-public-semantic-planning-authority.md`.
-Lab: `labs/phase-9-gate-9-3-bounded-semantic-planning.md`.
-
-### Gate 9.4 — Phase 9 Closeout — NEXT
-
-Gate 9.4 will close Phase 9 by freezing the public-boundary architecture that actually exists, not by inventing a deployment that has not yet been built.
-
-Required closeout dimensions:
+ADR 0031 freezes the closeout boundary:
 
 ```text
-Gate 9.1 request-admission contract
-Gate 9.2 immutable repository-evidence contract
-Gate 9.3 proposal/admission handoff contract
-Phase 9 authority + failure taxonomy
-runtime/deployment/IAM decision
-request/planner/execution budgets
-cost-accounting boundary
-observability boundary
-security/abuse controls still required before launch
-documentation consistency
-exact Phase 10 entry criteria
+application boundary validated != public runtime deployed
 ```
 
-Gate 9.4 must explicitly preserve the difference between the validated **application boundary** and a future **public runtime**. There is still no deployed public HTTP compute principal, endpoint, public runtime IAM policy, rate limiter, abuse-protection layer, production concurrency control, or production SLO evidence.
+Gate 9.4 introduces no public endpoint, runtime compute, AWS resource, IAM permission, runtime provider call, or downstream public evidence execution.
 
-A closeout decision may defer public deployment/runtime work to a later measured gate, but it must state that explicitly. It must not claim production readiness from fake-port CI evidence.
+At closeout:
 
-Phase 9 does not require agents, AgentCore, MCP, A2A, reranking, new vector infrastructure, or runtime exposure by default.
+```text
+public HTTP compute:      NOT DEPLOYED
+public endpoint:          NOT DEPLOYED
+public runtime principal: DOES NOT EXIST
+new Gate 9.4 AWS:         NONE
+new Gate 9.4 IAM:         NONE
+```
+
+This deliberately preserves least privilege rather than creating a speculative broad runtime role.
+
+Public-launch prerequisites remain explicit: concrete compute/endpoint, runtime IAM, timeout/concurrency/rate/abuse/quota controls, kill switch, cost attribution, request telemetry, rollback/incident procedures, and workload-derived SLOs/alerts.
+
+## Phase 10 — Observability & Operational Excellence — NEXT
+
+Phase 10 starts from the frozen Phase 9 application contracts.
+
+Primary goal:
+
+```text
+make a concrete runtime diagnosable
+without weakening deterministic authority,
+provenance, content minimization, or least privilege
+```
+
+Entry criteria:
+
+```text
+1. Phase 9 contracts remain versioned boundaries
+2. public input never gains arbitrary fetch/SQL/tool/model/execution authority
+3. repository code is never executed
+4. Repository Risk != Runtime Exposure
+5. Phase 8 remains hybrid route/evidence authority
+6. semantic planning remains proposal-only and content-minimized
+7. failed admission prevents downstream execution
+8. IAM exists only for a concrete runtime identity
+9. production SLO/alert claims require deployed workload evidence
+10. observability cannot weaken privacy/provenance boundaries
+11. runtime/provider/retrieval changes require measured versioned hypotheses
+12. PR #89 remains separately deferred until reevaluated
+```
+
+If useful telemetry requires a small deployed runtime slice, that slice must explicitly define compute, IAM, request/time/concurrency/abuse/cost limits, rollback, and measurement before production claims are made.
 
 ## Future phases
 
-### Phase 10 — Observability & Operational Excellence
-
-Make the deployed public system diagnosable through stage latency, errors, throttling, Athena bytes, model tokens/latency, retrieval latency, route decisions, groundedness signals, traces, and cost evidence.
-
 ### Phase 11 — Single-Agent Baseline
 
-Build one bounded agent over existing deterministic tools before introducing multi-agent complexity.
+Build one bounded agent over existing deterministic tools before multi-agent complexity.
 
 ### Phase 12 — Multi-Agent Architecture
 
-Introduce specialization only where it demonstrably improves the single-agent baseline.
+Introduce specialization only where measured evidence improves the single-agent baseline.
 
 ### Phase 13 — MCP
 
-Expose bounded internal tools through explicit MCP contracts only after deterministic authorities are stable.
+Expose bounded internal tools through explicit MCP contracts after deterministic authorities are stable.
 
 ### Phase 14 — Amazon Bedrock AgentCore
 
-Evaluate managed runtime capabilities against measured OpsLens needs; do not adopt for certification coverage alone.
+Evaluate managed runtime capabilities against measured OpsLens needs.
 
 ### Phase 15 — A2A
 
-Introduce agent-to-agent interoperability only after stable single/multi-agent boundaries exist.
+Add agent-to-agent interoperability only after stable agent boundaries exist.
 
 ### Phase 16 — Runtime Exposure with Amazon Inspector
 
-Add independent deployed-runtime evidence so repository risk can be compared with actual runtime exposure without conflation.
+Add independent runtime evidence without conflating repository risk with runtime exposure.
 
 ### Phase 17 — Security Hardening
 
-Perform cross-cutting IAM, data protection, abuse, threat-model, guardrail, dependency, and operational hardening.
+Perform cross-cutting IAM, data protection, abuse, threat-model, dependency, and operational hardening.
 
 ### Phase 18 — Evaluation, Cost & Portfolio Readiness
 
-Consolidate quality, latency, cost, failure, architecture, and portfolio evidence across the completed system.
+Consolidate quality, latency, cost, failure, architecture, and portfolio evidence.
 
 ## Deferred cross-project integration
 
-The long-lived OpsLens PR #89 is the deferred consumer-side work for **Phase 14 — Case 3 of the separate `brunovicco/governed-llm-gateway` project**.
-
-It is not the same thing as OpsLens Phase 14. It remains open/draft and must be re-evaluated against the then-current OpsLens architecture before any integration merge.
+OpsLens PR #89 is the deferred consumer-side work for **Phase 14 — Case 3 of the separate `brunovicco/governed-llm-gateway` project**. It is not OpsLens Phase 14 and must be re-evaluated against the then-current architecture before any integration merge.

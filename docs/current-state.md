@@ -15,26 +15,13 @@ Phase 4    Repository Intelligence                             COMPLETE
 Phase 5    Risk Prioritization Engine                          COMPLETE
 Phase 6    Semantic Query Layer                                COMPLETE
 Phase 7    Knowledge Retrieval with Bedrock                    COMPLETE
-  Gate 7.1 Corpus + retrieval contract                         COMPLETE / MERGED
-  Gate 7.2 Reproducible canonical corpus                       COMPLETE / MERGED
-  Gate 7.3 Knowledge Base + vector infrastructure              COMPLETE / MERGED
-  Gate 7.4 Real bounded Retrieve adapter                       COMPLETE / MERGED
-  Gate 7.5 Retrieval evaluation                                COMPLETE / MERGED
-  Gate 7.6 Context assembly + synthesis                        COMPLETE / MERGED
-  Gate 7.7 Citations + groundedness                            COMPLETE / MERGED
-  Gate 7.8 Phase 7 closeout                                    COMPLETE / MERGED
 Phase 8    Hybrid Retrieval                                    COMPLETE
-  Gate 8.1 Offline hybrid routing + authority contract         COMPLETE / MERGED
-  Gate 8.2 Deterministic hybrid evidence envelope              COMPLETE / MERGED
-  Gate 8.3 Frozen hybrid evaluation fixture                    COMPLETE / MERGED
-  Gate 8.4 First bounded hybrid synthesis                      COMPLETE / MERGED
-  Gate 8.5 Measured optimization decision                      COMPLETE / MERGED — H8.5-01 REJECTED
-  Gate 8.6 Phase 8 closeout                                    COMPLETE / MERGED
-Phase 9    Public Analyze Your Repository                      IN PROGRESS
+Phase 9    Public Analyze Your Repository                      COMPLETE after Gate 9.4 merge
   Gate 9.1 Public repository request admission                 COMPLETE / MERGED
   Gate 9.2 Immutable repository evidence orchestration         COMPLETE / MERGED
   Gate 9.3 Bounded semantic planning + admission handoff       COMPLETE / MERGED
-  Gate 9.4 Phase 9 closeout                                    NEXT
+  Gate 9.4 Phase 9 closeout                                    CLOSEOUT IN REVIEW
+Phase 10   Observability & Operational Excellence              NEXT after Gate 9.4 merge
 ```
 
 Latest merged executable checkpoint:
@@ -44,7 +31,12 @@ Phase 9 Gate 9.3 / PR #129
 6f53537c227cade688091187eac1074645e11bf0
 ```
 
-Gate 9.3 issue #128 is closed as completed. The public surface still has no deployed HTTP compute, new IAM principal, or public runtime.
+Latest merged documentation checkpoint before Gate 9.4:
+
+```text
+Gate 9.3 postmerge state sync / PR #130
+6e0c595d5d2437dabd94365e1eeb88800a5bcab4
+```
 
 ## Permanent architecture boundaries
 
@@ -62,26 +54,9 @@ Gate 9.3 issue #128 is closed as completed. The public surface still has no depl
 
 > **Intent classification != execution authority.**
 
-Deterministic authorities own:
+Deterministic authorities own package/version semantics, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS/Risk Policy facts, SemanticQuery validation and SQL compilation, retrieval/evidence admission, hybrid route/completeness, structured fact projection, canonical evidence/citation identity, output admission, evaluation metrics, execution limits, public request admission, immutable repository evidence binding, public-v1 product scope, semantic-plan admission, and public handoff identity.
 
-- package normalization and version/range semantics;
-- vulnerability applicability and CVE/GHSA/NVD reconciliation;
-- KEV, EPSS, CVSS, and Risk Policy facts;
-- SemanticQuery validation and SQL compilation;
-- retrieval evidence admission and context assembly;
-- hybrid route authorization and required-evidence completeness;
-- structured fact projection;
-- canonical evidence/citation identity;
-- synthesis output admission;
-- evaluation metric computation;
-- execution limits;
-- public request admission and normalized request identity;
-- public request-to-snapshot/file evidence binding and exact-commit dependency evidence orchestration;
-- public v1 required evidence scope;
-- public semantic-plan output admission and request/source binding;
-- final public planning handoff admission through the existing Phase 8 route authority.
-
-LLMs may classify, plan, propose, synthesize, explain, and select among already-admitted citation IDs. They do not own structured truth, evidence completeness, query/SQL authority, risk/applicability decisions, canonical provenance, public input authority, repository visibility, immutable snapshot identity, public v1 product scope, hybrid route authority, or evaluation metric computation.
+LLMs may classify, plan, propose, synthesize, explain, and select already-admitted citation IDs. They do not own structured truth, public product scope, repository truth, runtime exposure, SQL authority, route authority, evidence completeness, canonical provenance, provider/model selection, or execution authority.
 
 ## Implemented system
 
@@ -103,64 +78,35 @@ Controlled Knowledge Corpus
  -> deterministic citation authority
  -> groundedness evaluation
 
-Typed EvidenceNeed proposal
- -> deterministic hybrid route decision
- -> deterministic authority-separated evidence composition
- -> need-level ALL_REQUIRED admission
+EvidenceNeed[]
+ -> deterministic hybrid route authority
+ -> authority-separated evidence composition
+ -> ALL_REQUIRED completeness
  -> HybridEvidenceEnvelope
- -> deterministic F* structured projection
- -> deterministic S* semantic projection
+ -> deterministic F* / S* projections
  -> bounded route-aware synthesis
  -> deterministic output admission
  -> independent quality/runtime metrics
- -> versioned measured optimization decisions
 
 Untrusted public repository JSON
- -> strict bounded admission
- -> GitHub URL reduced to validated owner/name/ref coordinates
- -> content-addressed PublicAnalysisRequest
- -> source-confirmed public repository metadata
- -> exact commit/tree snapshot
+ -> strict bounded request admission
+ -> validated GitHub owner/name/ref coordinates
+ -> source-confirmed public repository identity
+ -> immutable commit/tree snapshot
  -> exact-commit inert uv.lock evidence
  -> deterministic uv.lock parsing
  -> deterministic Phase 3 PyPI normalization
- -> content-addressed PublicRepositoryEvidenceExecution
- -> bounded metadata-only semantic planning request
- -> untrusted semantic-plan proposal
+ -> PublicRepositoryEvidenceExecution
+ -> bounded metadata-only semantic planning proposal
  -> deterministic exact public-v1 scope admission
  -> existing Phase 8 hybrid route authority
- -> content-addressed PublicAnalysisAdmissionHandoff
- -> STOP before downstream public evidence execution
+ -> PublicAnalysisAdmissionHandoff
+ -> STOP
 ```
 
-Structured vulnerability/risk facts remain outside RAG authority. Semantic retrieval supplies explanatory/remediation evidence only. Runtime exposure remains unsupported until a later independent runtime authority is implemented.
+The last `STOP` is material: Phase 9 validates the governed application boundary. It does not yet provide a deployed public HTTP runtime or downstream public analysis execution pipeline.
 
-## AWS / Bedrock baseline
-
-```text
-knowledge base id:     BTVJ2PBR2A
-data source id:        IEL1LBE026
-source bucket:         opslens-dev-data-487757851499-us-east-1
-Region:                us-east-1
-vector store:          Amazon S3 Vectors
-embedding model:       amazon.titan-embed-text-v2:0
-dimensions:            1024
-vector type:           FLOAT32
-distance:              cosine
-chunking:              NONE
-canonical chunks:      9
-synthesis profile:     us.anthropic.claude-haiku-4-5-20251001-v1:0
-```
-
-Canonical corpus manifest:
-
-```text
-98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
-```
-
-No public application compute principal exists after Gate 9.3.
-
-## Frozen Phase 7 quality
+## Frozen Phase 7 / 8 quality
 
 Gate 7.5 retrieval:
 
@@ -186,225 +132,40 @@ abstention precision:              1.0
 abstention recall:                 1.0
 ```
 
+Gate 8.4 first complete hybrid baseline:
+
+```text
+route_accuracy:               1.0
+structured_fact_correctness:  1.0
+semantic_groundedness:        0.6666666666666666
+citation_correctness:         0.6666666666666666
+abstention:                   1.0
+latency_ms:                   2959.3333333333335
+cost:                         UNMEASURED / null
+```
+
+Gate 8.5 H8.5-01 did not improve semantic groundedness/citation correctness and was rejected. Runtime default remains `hybrid-synthesis-prompt:v1`.
+
 Preserved distinctions:
 
 ```text
 retrieval success != citation attribution success != semantic groundedness
 non-empty retrieval != sufficient evidence != authority to answer
-```
-
-## Phase 8 contracts
-
-### Gate 8.1 — route authority
-
-```text
-hybrid-routing:v1
-```
-
-```text
-vulnerability_facts and/or risk_priority -> STRUCTURED
-remediation_guidance                      -> SEMANTIC
-structured + remediation                 -> HYBRID
-runtime_exposure, alone or mixed         -> UNSUPPORTED
-```
-
-Supported routes require `ALL_REQUIRED` evidence.
-
-### Gate 8.2 — authority-separated evidence
-
-```text
-hybrid-evidence:v1
-```
-
-Structured and semantic evidence remain separate typed collections. Extra/unrequested evidence, missing required needs, invalid ranks, duplicates, or identity drift fail closed. Similarity rank/score are evidence metadata, never truth.
-
-### Gate 8.3 — frozen evaluation
-
-```text
-hybrid-evaluation-golden:v1
-68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1
-```
-
-Six cases:
-
-```text
-structured_only_factual
-semantic_only_remediation
-true_hybrid
-unsupported_out_of_authority
-partial_structured_evidence
-semantic_retrieval_noise
-```
-
-Seven independent dimensions:
-
-```text
-route_accuracy
-structured_fact_correctness
-semantic_groundedness
-citation_correctness
-abstention
-latency
-cost
-```
-
-No composite score exists.
-
-### Gate 8.4 — route-aware bounded synthesis
-
-```text
-hybrid-synthesis:v1
-```
-
-```text
-STRUCTURED  -> deterministic F* facts / 0 model calls
-SEMANTIC    -> admitted S* evidence / <=1 model call
-HYBRID      -> F* + S* evidence / <=1 model call
-UNSUPPORTED -> abstain / 0 model calls
-incomplete  -> reject_before_synthesis / 0 model calls
-```
-
-The model never authors canonical structured facts or provenance. Each explanatory claim requires admitted semantic citation identity. Provider/output/citation-contract violations fail closed.
-
-## Gate 8.4 real baseline
-
-Immutable evidence:
-
-```text
-labs/evidence/phase-8-gate-8-4-first-complete-baseline-v1.json
-```
-
-```text
-complete:                            true
-planned_case_count:                  6
-synthesis_invocation_attempt_count:  3
-admitted_model_execution_count:      3
-route_accuracy:                      1.0
-structured_fact_correctness:         1.0
-semantic_groundedness:               0.6666666666666666
-citation_correctness:                0.6666666666666666
-abstention:                          1.0
-latency_ms:                          2959.3333333333335
-cost:                                UNMEASURED / null
-input tokens:                        4150
-output tokens:                       289
-total tokens:                        4439
-```
-
-The semantic-noise case retrieved/admitted both S1 and S2. S2/rank 2 was the frozen support target; S1/rank 1 was an admitted neighbor. The model emitted claims from both, correctly exposing the distinction:
-
-```text
 admission != semantic support
-retrieval rank != groundedness
-allowlisted citation != correct question-specific citation target
 ```
 
-## Gate 8.5 measured optimization
-
-H8.5-01 tested one prompt-only policy exactly once after exact-head CI:
-
-```text
-experiment: hybrid-optimization:h8.5-01-v1
-candidate:  hybrid-synthesis-prompt:h8.5-01-v1
-```
-
-Real-run evidence:
-
-```text
-labs/evidence/phase-8-gate-8-5-h85-01-first-run-v1.json
-```
-
-Execution guardrails passed:
-
-```text
-complete:                            true
-planned_case_count:                  6
-synthesis_invocation_attempt_count:  3
-admitted_model_execution_count:      3
-all stop reasons:                    end_turn
-all SDK retry attempts:              0
-route_accuracy:                      1.0
-structured_fact_correctness:         1.0
-abstention:                          1.0
-```
-
-Quality did not improve:
-
-```text
-semantic_groundedness: 0.6666666666666666
-citation_correctness:  0.6666666666666666
-latency_ms:            2997.0
-cost:                  UNMEASURED / null
-```
-
-Token deltas:
-
-```text
-input:   +306
-output:   -26
-total:   +280
-```
-
-Decision:
-
-```text
-H8.5-01 = REJECT
-semantic_groundedness_target_not_met
-citation_correctness_target_not_met
-```
-
-The runtime default remains:
-
-```text
-HybridSynthesisPromptPolicy.GATE_8_4_V1
-hybrid-synthesis-prompt:v1
-```
-
-No second H8.5-01 run or post-result prompt mutation is authorized.
-
-## Phase 8 closeout conclusions
-
-Gate 8.6 records:
-
-- the Phase 8 authority and failure taxonomy;
-- immutable Gate 8.4 and Gate 8.5 evidence;
-- no speculative IAM expansion before public compute exists;
-- cost remains separated by stage and hybrid USD cost remains unmeasured;
-- current runtime evidence provides request IDs, hashes, route/case behavior, failure categories, tokens, latency, retries, stop reasons, F/S projections, citations, and independent metrics;
-- no production SLO/percentile/alert claims are made from laboratory runs;
-- top-level EN/PT-BR README, architecture, documentation index, and roadmap are synchronized;
-- Phase 9 entry criteria are frozen in `labs/phase-8-gate-8-6-closeout.md`.
-
-Gate 8.6 intentionally performed no AWS/IAM/model changes.
-
-## Phase 9 Gate 9.1 — public request admission
-
-Contract:
+## Phase 9 contracts
 
 ```text
 public-analysis-request:v1
+public-repository-evidence:v1
+public-semantic-planning:v1
+public-analysis-handoff:v1
 ```
 
-The future public operation is deliberately narrower than internal OpsLens capabilities:
+### Gate 9.1 — request admission
 
-```text
-analyze one GitHub repository
-```
-
-Accepted untrusted input is a bounded JSON object containing a GitHub repository web URL and optional requested ref. Gate 9.1 reduces that URL locally to validated coordinates before any external capability exists:
-
-```text
-untrusted JSON bytes
- -> <= 2048 bytes
- -> strict UTF-8 / duplicate-key / known-field admission
- -> exact HTTPS github.com repository-root URL grammar
- -> reject userinfo / port / query / fragment / controls / percent-encoded paths
- -> Phase 4 owner/name/ref validators
- -> content-addressed PublicAnalysisRequest
- -> STOP
-```
-
-Key boundary:
+Untrusted public JSON is bounded and reduced to validated GitHub owner/name/ref coordinates. The raw user URL never becomes fetch authority.
 
 ```text
 public request admitted
@@ -413,89 +174,33 @@ public request admitted
  != repository analyzed
 ```
 
-The original user-controlled URL never becomes fetch authority. Only validated owner/name/ref coordinates may enter the existing read-only GitHub snapshot resolver, which owns repository metadata validation, private-repository rejection, and exact commit/tree resolution.
-
-Normalized request identity is independent from raw transport-body provenance. Missing/null `requested_ref` remains null so later source metadata, not Phase 9, determines the repository default branch.
-
-Exact-head validation:
+Validation:
 
 ```text
-PR #123 head: 26f0d2b5275284d891ee99a7f8276d41cc4f0753
+PR #123 head:                    26f0d2b5275284d891ee99a7f8276d41cc4f0753
 Python CI #346 / run 34079446683: PASS
-Public Analysis Ruff:             PASS
-Public Analysis Pyright strict:   PASS — 0 errors, 0 warnings
-Public Analysis pytest:           PASS — 33 passed
-merge SHA:                        5540d7b508c71aa65d826786618690b7ddc9d433
-issue #122:                       CLOSED / COMPLETED
+Public Analysis pytest:          33 passed
+merge SHA:                       5540d7b508c71aa65d826786618690b7ddc9d433
+issue #122:                      CLOSED / COMPLETED
 ```
 
-Gate 9.1 added no AWS resource, IAM permission, runtime GitHub acquisition, Athena call, or Bedrock call.
+### Gate 9.2 — immutable repository evidence
 
-ADR: `docs/adr/0029-public-repository-request-admission.md`.
-Lab: `labs/phase-9-gate-9-1-public-request-admission.md`.
+Source-confirmed public repository metadata resolves an immutable commit/tree; exact-commit inert `uv.lock` evidence is parsed and normalized deterministically. Repository code is never executed.
 
-## Phase 9 Gate 9.2 — immutable repository evidence orchestration
-
-Contract:
+Validation:
 
 ```text
-public-repository-evidence:v1
-```
-
-Gate 9.2 composes the admitted request with the existing Phase 4 immutable GitHub evidence contracts without broadening the public boundary:
-
-```text
-PublicAnalysisRequest
- -> validated owner/name/ref coordinates only
- -> source-confirmed repository metadata and public visibility
- -> exact commit/tree snapshot
- -> exact-commit uv.lock acquisition
- -> deterministic uv.lock parser
- -> deterministic Phase 3 PyPI normalization
- -> PublicRepositoryEvidenceExecution
-```
-
-Authority rules proven by the merged implementation:
-
-- the raw user `repository_url` never re-enters source/transport authority;
-- source-confirmed canonical owner/name coordinates own reads after the initial lookup, including repository rename/canonicalization cases;
-- null requested refs use source-declared default-branch evidence rather than an invented branch;
-- explicit refs remain provenance inputs only until resolved to exact immutable commit/tree identity;
-- file acquisition uses the resolved commit SHA, never a moving ref;
-- only inert allowlisted `uv.lock` bytes are acquired and parsed;
-- request, snapshot, file, parser, and normalization identities must compose exactly or the execution fails closed;
-- third-party repository code is never executed.
-
-Exact-head validation:
-
-```text
-PR #126 head:                     0fdc6c435c0f2891b6730f61bd73ad7f32ca8213
+PR #126 head:                    0fdc6c435c0f2891b6730f61bd73ad7f32ca8213
 Python CI #349 / run 34080376506: PASS
-Public Analysis Ruff:             PASS
-Public Analysis Pyright strict:   PASS — 0 errors, 0 warnings, 0 informations
-Public Analysis pytest:           PASS — 41 passed
-merge SHA:                        b152a21bf9d0807ac40083c609ea434f32ccb671
-issue #125:                       CLOSED / COMPLETED
+Public Analysis pytest:          41 passed
+merge SHA:                       b152a21bf9d0807ac40083c609ea434f32ccb671
+issue #125:                      CLOSED / COMPLETED
 ```
 
-Gate 9.2 application/runtime tests used injected fake source evidence only. It added no deployed public HTTP compute, new AWS resource, IAM permission, Athena call, Bedrock call, or model call.
+### Gate 9.3 — bounded semantic planning + admission handoff
 
-## Phase 9 Gate 9.3 — bounded semantic planning + admission handoff
-
-Contracts:
-
-```text
-public-semantic-planning:v1
-public-analysis-handoff:v1
-```
-
-The public operation remains fixed to:
-
-```text
-analyze_public_repository
-```
-
-Deterministic public v1 policy owns the exact evidence scope:
+The fixed public operation is `analyze_public_repository`. Deterministic policy requires exactly:
 
 ```text
 remediation_guidance
@@ -503,11 +208,16 @@ risk_priority
 vulnerability_facts
 ```
 
-The planner receives only bounded metadata derived from the verified Gate 9.2 execution. It does not receive the raw repository URL, lockfile bytes, dependency names/versions, arbitrary repository text/instructions, SQL, provider/model/tool selection, credentials, or executable repository content.
+Planner bounds:
 
-Planner output remains an untrusted proposal. Deterministic admission rejects malformed JSON, duplicate/unknown fields, oversized output, request-hash replay/mismatch, unknown/duplicate needs, omitted mandatory needs, `runtime_exposure`, source-execution rebinding, and any disagreement with the existing Phase 8 route authority.
+```text
+planning request:       <= 2048 UTF-8 bytes
+planner response:       <= 1024 bytes
+planner invocations:    <= 1 per orchestration
+adaptive app retries:   0
+```
 
-Successful admission requires exactly:
+The planner receives metadata-only verified identities/accounting, not repository content. Successful deterministic admission must agree with Phase 8 route authority:
 
 ```text
 HYBRID
@@ -515,39 +225,96 @@ ALL_REQUIRED
 STRUCTURED + SEMANTIC
 ```
 
-and produces a content-addressed `PublicAnalysisAdmissionHandoff`. Gate 9.3 stops there; no downstream public evidence execution exists yet.
-
-Exact-head validation:
+Validation:
 
 ```text
-PR #129 head:                     34cea42a0ce37cbfa06b33d57f081403edba2552
+PR #129 head:                    34cea42a0ce37cbfa06b33d57f081403edba2552
 Python CI #358 / run 34082791753: PASS
-Public Analysis Ruff:             PASS
-Public Analysis Pyright strict:   PASS — 0 errors, 0 warnings, 0 informations
-Public Analysis pytest:           PASS — 57 passed
-merge SHA:                        6f53537c227cade688091187eac1074645e11bf0
-issue #128:                       CLOSED / COMPLETED
+Public Analysis Ruff:            PASS
+Public Analysis Pyright strict:  0 errors / 0 warnings / 0 informations
+Public Analysis pytest:          57 passed
+merge SHA:                       6f53537c227cade688091187eac1074645e11bf0
+issue #128:                      CLOSED / COMPLETED
 ```
 
-Gate 9.3 used injected fake repository/planner ports only and performed no real runtime GitHub, AWS, Athena, Bedrock, model, retrieval, synthesis, vulnerability-enrichment, or risk-policy call.
+Gate 9.3 used injected fake repository/planner ports and made zero real provider/model calls.
 
-ADR: `docs/adr/0030-public-semantic-planning-authority.md`.
-Lab: `labs/phase-9-gate-9-3-bounded-semantic-planning.md`.
+## Phase 9 closeout decision
+
+ADR 0031 freezes the core closeout distinction:
+
+```text
+application boundary validated != public runtime deployed
+```
+
+At Gate 9.4 closeout:
+
+```text
+public HTTP compute:      NOT DEPLOYED
+public endpoint:          NOT DEPLOYED
+public runtime principal: DOES NOT EXIST
+new Gate 9.4 AWS:         NONE
+new Gate 9.4 IAM:         NONE
+```
+
+This is intentional least privilege. No runtime role is created before a concrete compute principal and responsibilities exist.
+
+## Phase 9 fail-closed taxonomy
+
+Failure classes include request bytes/UTF-8/JSON/field grammar, repository URL admission, metadata/visibility/ref resolution, immutable commit/tree/file evidence, parser/normalization provenance, planning request binding, planner invocation/output contract, unknown/duplicate/out-of-authority evidence needs, under-scoped plans, `runtime_exposure`, replay, source-execution rebinding, Phase 8 route/completeness/class mismatch, and handoff identity mismatch.
+
+Any failed stage creates no later authority object.
+
+## Cost and observability boundary
+
+Phase 9 does not invent a public request price. Existing cost evidence remains stage-specific and only becomes valid when that stage actually runs. Gate 9.3 made zero real provider/model calls.
+
+Current evidence supports IDs, hashes, provenance, admission decisions, bounded failure categories, exact-head CI, and real provider token/latency metadata only for previously executed provider stages.
+
+Phase 9 does not claim:
+
+```text
+public request volume
+public distributed traces
+production p95/p99
+production error/throttle rates
+production cost/request
+production SLO/alert compliance
+```
+
+Those require a deployed runtime and measured workload.
+
+## Public-launch prerequisites still required
+
+```text
+concrete HTTP compute + endpoint
+runtime identity + least-privilege IAM
+timeout budget
+concurrency limits
+rate limiting
+abuse protection
+quota enforcement
+cache policy only if justified
+kill switch / disable path
+cost guardrails + attribution
+request-level telemetry
+production error/latency distributions
+workload-derived SLOs + alerts
+rollback / incident procedures
+```
+
+Phase 9 completion does not waive these requirements.
 
 ## Deferred Governed LLM Gateway integration
 
-Long-lived PR #89 remains open/draft for **Phase 14 — Case 3 of the separate `brunovicco/governed-llm-gateway` project**.
-
-It is not OpsLens Phase 14 and is not part of Phase 9. It must be re-evaluated against the then-current OpsLens architecture before any integration merge.
+Long-lived PR #89 remains open/draft for **Phase 14 — Case 3 of the separate `brunovicco/governed-llm-gateway` project**. It is not OpsLens Phase 14 and is not part of Phase 9. It must be re-evaluated against the then-current architecture before any merge.
 
 ## Next authorized step
 
+After the Gate 9.4 closeout PR is merged:
+
 ```text
-Phase 9 Gate 9.4 — Phase 9 Closeout
+Phase 10 — Observability & Operational Excellence
 ```
 
-Gate 9.4 is the only next gate authorized by the Phase 9 execution sequence. It must freeze the actual Phase 9 application boundary and failure taxonomy, runtime/deployment/IAM decision, request/planner/execution budgets, cost and observability boundaries, launch prerequisites, documentation consistency, and exact Phase 10 entry criteria.
-
-The closeout must preserve a strict distinction between the validated application contracts and a future deployed public runtime. No public HTTP compute principal, public endpoint, runtime IAM policy, rate limiting, abuse protection, production concurrency control, or production SLO evidence exists yet.
-
-Gate 9.4 may explicitly defer deployment/runtime implementation, but it must not claim production readiness from fake-port CI evidence. Agents, MCP, AgentCore, A2A, reranking, new vector technology, and runtime exposure remain later phases or separately measured hypotheses.
+Phase 10 must start from the frozen Phase 9 contracts and preserve deterministic authority, provenance, content minimization, least privilege, and fail-closed admission. If real observability requires a small deployed runtime slice, that runtime must be introduced explicitly with concrete compute/IAM, request/abuse/cost limits, rollback, and measured operational evidence. Production SLOs and alerts must come from deployed workload evidence, not laboratory CI.
