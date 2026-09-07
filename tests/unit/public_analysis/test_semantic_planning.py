@@ -19,6 +19,7 @@ from opslens.public_analysis.application import (
     MAX_PUBLIC_SEMANTIC_PLAN_RESPONSE_BYTES,
     PublicSemanticPlanAdmissionError,
     admit_public_analysis_request,
+    admit_public_semantic_plan,
     build_public_repository_evidence,
     build_public_semantic_planning_request,
     parse_public_semantic_plan_proposal,
@@ -277,6 +278,27 @@ def test_proposal_for_another_planning_request_is_rejected() -> None:
         parse_public_semantic_plan_proposal(
             raw,
             planning_request=planning_request,
+        )
+
+
+def test_proposal_cannot_be_admitted_against_another_source_execution() -> None:
+    """A valid proposal/request pair cannot be rebound to another Gate 9.2 execution."""
+    first_execution = _execution()
+    planning_request = build_public_semantic_planning_request(first_execution)
+    planner = FakeSemanticPlanner()
+    raw_response = planner.plan(planning_request.canonical_json)
+    proposal = parse_public_semantic_plan_proposal(
+        raw_response,
+        planning_request=planning_request,
+    )
+    different_execution = _execution(requested_ref="main")
+
+    assert different_execution.execution_id != first_execution.execution_id
+    with pytest.raises(PublicSemanticPlanAdmissionError):
+        admit_public_semantic_plan(
+            proposal,
+            planning_request=planning_request,
+            source_execution=different_execution,
         )
 
 
