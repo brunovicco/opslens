@@ -1,0 +1,113 @@
+{
+  "contract_version": "single-agent-evaluation:v1",
+  "cases": [
+    {
+      "case_key": "authorized-structured-no-execution",
+      "task": {
+        "text": "Select the structured security query capability for this admitted task.",
+        "allowed_capabilities": ["structured_security_query"]
+      },
+      "proposal": {
+        "decision": "act",
+        "capability": "structured_security_query"
+      },
+      "execution_mode": "authorization_only",
+      "expected": {
+        "authorization_outcome": "authorized",
+        "capability": "structured_security_query",
+        "execution_outcome": "not_attempted",
+        "failure_category": null
+      }
+    },
+    {
+      "case_key": "explicit-abstention",
+      "task": {
+        "text": "Abstain when no capability should be selected.",
+        "allowed_capabilities": ["knowledge_guidance"]
+      },
+      "proposal": {
+        "decision": "abstain",
+        "capability": null
+      },
+      "execution_mode": "execute_authorized",
+      "expected": {
+        "authorization_outcome": "abstained",
+        "capability": null,
+        "execution_outcome": "not_attempted",
+        "failure_category": null
+      }
+    },
+    {
+      "case_key": "unauthorized-capability",
+      "task": {
+        "text": "Only knowledge guidance is authorized for this task.",
+        "allowed_capabilities": ["knowledge_guidance"]
+      },
+      "proposal": {
+        "decision": "act",
+        "capability": "structured_security_query"
+      },
+      "execution_mode": "execute_authorized",
+      "expected": {
+        "authorization_outcome": "rejected",
+        "capability": null,
+        "execution_outcome": "not_attempted",
+        "failure_category": "capability_authorization"
+      }
+    },
+    {
+      "case_key": "structured-execution-admitted",
+      "task": {
+        "text": "Execute one admitted structured security query offline.",
+        "allowed_capabilities": ["structured_security_query"]
+      },
+      "proposal": {
+        "decision": "act",
+        "capability": "structured_security_query"
+      },
+      "execution_mode": "execute_authorized",
+      "expected": {
+        "authorization_outcome": "authorized",
+        "capability": "structured_security_query",
+        "execution_outcome": "admitted",
+        "failure_category": null
+      }
+    },
+    {
+      "case_key": "structured-executor-failure",
+      "task": {
+        "text": "Classify one downstream structured executor failure without leaking content.",
+        "allowed_capabilities": ["structured_security_query"]
+      },
+      "proposal": {
+        "decision": "act",
+        "capability": "structured_security_query"
+      },
+      "execution_mode": "execute_authorized",
+      "expected": {
+        "authorization_outcome": "authorized",
+        "capability": "structured_security_query",
+        "execution_outcome": "failed",
+        "failure_category": "executor_failure"
+      }
+    },
+    {
+      "case_key": "structured-result-contract-failure",
+      "task": {
+        "text": "Reject a structured result bound to a different invocation.",
+        "allowed_capabilities": ["structured_security_query"]
+      },
+      "proposal": {
+        "decision": "act",
+        "capability": "structured_security_query"
+      },
+      "execution_mode": "execute_authorized",
+      "expected": {
+        "authorization_outcome": "authorized",
+        "capability": "structured_security_query",
+        "execution_outcome": "failed",
+        "failure_category": "result_contract"
+      }
+    }
+  ]
+}
