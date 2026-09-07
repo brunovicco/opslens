@@ -209,8 +209,6 @@ def _case_from_json(value: object, *, index: int) -> AgentEvaluationCase:
 
 def load_agent_evaluation_dataset(path: Path) -> AgentEvaluationDataset:
     """Load one exact-schema JSON corpus and return typed content-addressed cases."""
-    if not isinstance(path, Path):
-        raise AgentEvaluationValidationError("path must be pathlib.Path")
     try:
         raw: object = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError):
