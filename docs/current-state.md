@@ -1,6 +1,6 @@
 # OpsLens — Current State
 
-_Last updated: 2026-09-06_
+_Last updated: 2026-09-07_
 
 This document is the implementation checkpoint for the OpsLens repository. Detailed gate history remains in ADRs, labs, immutable evidence artifacts, merged PRs, and Git history.
 
@@ -29,18 +29,20 @@ Phase 8    Hybrid Retrieval                                    COMPLETE
   Gate 8.3 Frozen hybrid evaluation fixture                    COMPLETE / MERGED
   Gate 8.4 First bounded hybrid synthesis                      COMPLETE / MERGED
   Gate 8.5 Measured optimization decision                      COMPLETE / MERGED — H8.5-01 REJECTED
-  Gate 8.6 Phase 8 closeout                                    COMPLETE
-Phase 9    Public Analyze Your Repository                      NEXT
+  Gate 8.6 Phase 8 closeout                                    COMPLETE / MERGED
+Phase 9    Public Analyze Your Repository                      IN PROGRESS
+  Gate 9.1 Public repository request admission                 COMPLETE / MERGED
+  Gate 9.2 Deterministic public analysis orchestration         NEXT
 ```
 
 Latest merged executable checkpoint:
 
 ```text
-Phase 8 Gate 8.5 / PR #118
-ff7aedaf6c5ef987efee0f7e6bb9e169eeb2f538
+Phase 9 Gate 9.1 / PR #123
+5540d7b508c71aa65d826786618690b7ddc9d433
 ```
 
-Gate 8.6 is a documentation/architecture closeout and introduces no executable/AWS change. Gate 8.5 issue #117 is closed as completed; the rejected H8.5-01 hypothesis is a completed experiment result, not a runtime failure.
+Gate 9.1 issue #122 is closed as completed. The public surface still has no deployed HTTP compute, new IAM principal, or public runtime.
 
 ## Permanent architecture boundaries
 
@@ -70,9 +72,10 @@ Deterministic authorities own:
 - canonical evidence/citation identity;
 - synthesis output admission;
 - evaluation metric computation;
-- execution limits.
+- execution limits;
+- public request admission and normalized request identity.
 
-LLMs may classify, plan, propose, synthesize, explain, and select among already-admitted citation IDs. They do not own structured truth, evidence completeness, query/SQL authority, risk/applicability decisions, canonical provenance, or evaluation metric computation.
+LLMs may classify, plan, propose, synthesize, explain, and select among already-admitted citation IDs. They do not own structured truth, evidence completeness, query/SQL authority, risk/applicability decisions, canonical provenance, public input authority, or evaluation metric computation.
 
 ## Implemented system
 
@@ -105,6 +108,12 @@ Typed EvidenceNeed proposal
  -> deterministic output admission
  -> independent quality/runtime metrics
  -> versioned measured optimization decisions
+
+Untrusted public repository JSON
+ -> strict bounded admission
+ -> GitHub URL reduced to validated owner/name/ref coordinates
+ -> content-addressed PublicAnalysisRequest
+ -> STOP before any external call
 ```
 
 Structured vulnerability/risk facts remain outside RAG authority. Semantic retrieval supplies explanatory/remediation evidence only. Runtime exposure remains unsupported until a later independent runtime authority is implemented.
@@ -132,7 +141,7 @@ Canonical corpus manifest:
 98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
 ```
 
-No public application compute principal exists at Phase 8 closeout.
+No public application compute principal exists after Gate 9.1.
 
 ## Frozen Phase 7 quality
 
@@ -342,35 +351,84 @@ Gate 8.6 records:
 
 - the Phase 8 authority and failure taxonomy;
 - immutable Gate 8.4 and Gate 8.5 evidence;
-- no speculative IAM expansion before Phase 9 compute exists;
+- no speculative IAM expansion before public compute exists;
 - cost remains separated by stage and hybrid USD cost remains unmeasured;
 - current runtime evidence provides request IDs, hashes, route/case behavior, failure categories, tokens, latency, retries, stop reasons, F/S projections, citations, and independent metrics;
 - no production SLO/percentile/alert claims are made from laboratory runs;
 - top-level EN/PT-BR README, architecture, documentation index, and roadmap are synchronized;
 - Phase 9 entry criteria are frozen in `labs/phase-8-gate-8-6-closeout.md`.
 
-Gate 8.6 intentionally performs:
+Gate 8.6 intentionally performed no AWS/IAM/model changes.
+
+## Phase 9 Gate 9.1 — public request admission
+
+Contract:
 
 ```text
-real AWS calls:        0
-new AWS resources:    0
-new IAM roles:        0
-new IAM permissions:  0
-new model calls:      0
+public-analysis-request:v1
 ```
+
+The future public operation is deliberately narrower than internal OpsLens capabilities:
+
+```text
+analyze one GitHub repository
+```
+
+Accepted untrusted input is a bounded JSON object containing a GitHub repository web URL and optional requested ref. Gate 9.1 reduces that URL locally to validated coordinates before any external capability exists:
+
+```text
+untrusted JSON bytes
+ -> <= 2048 bytes
+ -> strict UTF-8 / duplicate-key / known-field admission
+ -> exact HTTPS github.com repository-root URL grammar
+ -> reject userinfo / port / query / fragment / controls / percent-encoded paths
+ -> Phase 4 owner/name/ref validators
+ -> content-addressed PublicAnalysisRequest
+ -> STOP
+```
+
+Key boundary:
+
+```text
+public request admitted
+ != repository proven public
+ != repository snapshot resolved
+ != repository analyzed
+```
+
+The original user-controlled URL never becomes fetch authority. A later gate may pass only validated owner/name/ref coordinates into the existing read-only GitHub snapshot resolver, which still owns repository metadata validation, private-repository rejection, and exact commit/tree resolution.
+
+Normalized request identity is independent from raw transport-body provenance. Missing/null `requested_ref` remains null so later source metadata, not Phase 9, determines the repository default branch.
+
+Exact-head validation:
+
+```text
+PR #123 head: 26f0d2b5275284d891ee99a7f8276d41cc4f0753
+Python CI #346 / run 34079446683: PASS
+Public Analysis Ruff:             PASS
+Public Analysis Pyright strict:   PASS — 0 errors, 0 warnings
+Public Analysis pytest:           PASS — 33 passed
+merge SHA:                        5540d7b508c71aa65d826786618690b7ddc9d433
+issue #122:                       CLOSED / COMPLETED
+```
+
+Gate 9.1 added no AWS resource, IAM permission, runtime GitHub acquisition, Athena call, or Bedrock call.
+
+ADR: `docs/adr/0029-public-repository-request-admission.md`.
+Lab: `labs/phase-9-gate-9-1-public-request-admission.md`.
 
 ## Deferred Governed LLM Gateway integration
 
 Long-lived PR #89 remains open/draft for **Phase 14 — Case 3 of the separate `brunovicco/governed-llm-gateway` project**.
 
-It is not OpsLens Phase 14 and is not part of Phase 8. It must be re-evaluated against the then-current OpsLens architecture before any integration merge.
+It is not OpsLens Phase 14 and is not part of Phase 9. It must be re-evaluated against the then-current OpsLens architecture before any integration merge.
 
 ## Next authorized step
 
 ```text
-Phase 9 — Public Analyze Your Repository
+Phase 9 Gate 9.2 — Deterministic public analysis orchestration
 ```
 
-Phase 9 must expose the already-governed evidence system through a bounded public surface. Before launch it must define concrete compute/runtime IAM and explicit request-size, timeout, concurrency, rate, abuse, and cost limits while preserving immutable repository acquisition, deterministic authority, fail-closed evidence/output admission, and zero-model-call unsupported/incomplete behavior.
+Gate 9.2 should compose the already-admitted `PublicAnalysisRequest` with existing immutable snapshot and repository-analysis contracts through dependency-injected ports. It should remain offline/fake-source first, prove that arbitrary URLs cannot re-enter acquisition authority, and freeze deterministic success/failure behavior before any public HTTP deployment.
 
-Agents, MCP, AgentCore, A2A, reranking, new vector technology, and runtime exposure remain later phases or separately measured hypotheses rather than automatic Phase 9 scope.
+Public compute/runtime IAM, rate limiting, abuse protection, concurrency, external-call budgets, response projection, and deployment remain later Phase 9 gates. Agents, MCP, AgentCore, A2A, reranking, new vector technology, and runtime exposure remain later phases or separately measured hypotheses rather than automatic Gate 9.2 scope.
