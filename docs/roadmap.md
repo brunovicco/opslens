@@ -32,7 +32,7 @@ concept
 | 6 | Semantic Query Layer | ✅ Complete |
 | 7 | Knowledge Retrieval with Bedrock | ✅ Complete |
 | 8 | Hybrid Retrieval | ✅ Complete |
-| 9 | Public Analyze Your Repository | ▶️ In progress — Gate 9.3 next |
+| 9 | Public Analyze Your Repository | ▶️ In progress — Gate 9.4 next |
 | 10 | Observability & Operational Excellence | ⏳ Planned |
 | 11 | Single-Agent Baseline | ⏳ Planned |
 | 12 | Multi-Agent Architecture | ⏳ Planned |
@@ -141,7 +141,7 @@ embedding model:      amazon.titan-embed-text-v2:0
 dimensions:           1024
 vector type:          FLOAT32
 distance:             cosine
-chunking:             NONE
+chunking:              NONE
 vectors materialized: 9
 ```
 
@@ -356,11 +356,11 @@ Mandatory gate sequence:
 ```text
 Gate 9.1 — Public Request Admission                         COMPLETE
 Gate 9.2 — Immutable Repository Evidence Orchestration     COMPLETE
-Gate 9.3 — Bounded Semantic Planning + Admission Handoff   NEXT
-Gate 9.4 — Phase 9 Closeout                                PLANNED
+Gate 9.3 — Bounded Semantic Planning + Admission Handoff   COMPLETE
+Gate 9.4 — Phase 9 Closeout                                NEXT
 ```
 
-The order is mandatory. Gate 9.3 begins only from the merged Gate 9.2 checkpoint.
+The order is mandatory. Gate 9.4 begins only from the merged Gate 9.3 checkpoint.
 
 ### Gate 9.1 — Public Request Admission — COMPLETE
 
@@ -408,33 +408,76 @@ issue #125:                       CLOSED / COMPLETED
 
 No deployed public HTTP compute, AWS resource, IAM permission, Athena call, Bedrock call, or model call was introduced by Gate 9.2.
 
-### Gate 9.3 — Bounded Semantic Planning + Admission Handoff — NEXT
+### Gate 9.3 — Bounded Semantic Planning + Admission Handoff — COMPLETE
 
-Gate 9.3 must compose only already-verified `PublicRepositoryEvidenceExecution` with a bounded semantic-planning/admission boundary.
-
-Permanent constraints for the gate:
+Contracts:
 
 ```text
-model/planner proposal != execution authority
-public request identity != repository truth
-repository evidence != runtime exposure
-semantic planning != SQL authority
-admission failure -> zero downstream execution
+public-semantic-planning:v1
+public-analysis-handoff:v1
 ```
 
-The fixed public operation remains `analyze one GitHub repository`; Gate 9.3 does not reopen the public request schema into an arbitrary chat/question API.
+The public operation remains fixed to `analyze_public_repository`; the planner does not own product semantics. Deterministic v1 policy requires exactly:
 
-The planner/model may propose only within a frozen, typed output contract. Deterministic code must validate/admit the proposal before any later Phase 9 execution handoff exists. Repository identity, dependency identity, vulnerability/risk truth, hybrid route authorization, SQL compilation, evidence admission, and execution limits remain deterministic authorities.
+```text
+remediation_guidance
+risk_priority
+vulnerability_facts
+```
 
-Gate 9.3 should be offline/fake-planner first. Real Bedrock execution is not implied merely by the gate title; a real call requires an explicit bounded runtime validation decision after the contract and failure behavior are frozen.
+The planner receives only a bounded metadata projection of verified Gate 9.2 evidence. Raw repository URL, lockfile bytes, dependency names/versions, arbitrary repository text/instructions, SQL, provider/model/tool selection, and executable repository content are excluded from the planner control plane.
 
-### Gate 9.4 — Phase 9 Closeout — PLANNED
+The planner proposal is untrusted until deterministic admission. The existing Phase 8 route authority must resolve the admitted need set to:
 
-Gate 9.4 will consolidate the Phase 9 public-boundary contracts, failure taxonomy, runtime/IAM decision, request/model/execution budgets, cost and observability boundaries, documentation consistency, and the exact entry criteria for Phase 10.
+```text
+HYBRID
+ALL_REQUIRED
+STRUCTURED + SEMANTIC
+```
 
-Before any eventual public launch, concrete runtime compute and least-privilege IAM plus request-size, timeout, concurrency, rate, abuse, quota, cache, kill-switch, and cost controls must be explicit. Production SLOs/alerts must come from deployed workload evidence, not laboratory samples.
+Any malformed, under-scoped, out-of-authority, replayed, duplicated, oversized, source-rebound, or route-inconsistent proposal fails closed. Application orchestration performs no adaptive retry.
 
-Phase 9 does not require agents, AgentCore, MCP, A2A, reranking, or new vector infrastructure by default.
+Validation checkpoint:
+
+```text
+PR #129 head:                     34cea42a0ce37cbfa06b33d57f081403edba2552
+Python CI #358 / run 34082791753: PASS
+Public Analysis Pyright strict:   0 errors / 0 warnings / 0 informations
+Public Analysis pytest:           57 passed
+merge SHA:                        6f53537c227cade688091187eac1074645e11bf0
+issue #128:                       CLOSED / COMPLETED
+```
+
+Gate 9.3 used injected fake repository/planner ports only. It added no deployed public HTTP compute, AWS resource, IAM permission, real runtime GitHub call, Athena call, Bedrock call, model call, retrieval, synthesis, vulnerability enrichment, or risk execution.
+
+ADR: `docs/adr/0030-public-semantic-planning-authority.md`.
+Lab: `labs/phase-9-gate-9-3-bounded-semantic-planning.md`.
+
+### Gate 9.4 — Phase 9 Closeout — NEXT
+
+Gate 9.4 will close Phase 9 by freezing the public-boundary architecture that actually exists, not by inventing a deployment that has not yet been built.
+
+Required closeout dimensions:
+
+```text
+Gate 9.1 request-admission contract
+Gate 9.2 immutable repository-evidence contract
+Gate 9.3 proposal/admission handoff contract
+Phase 9 authority + failure taxonomy
+runtime/deployment/IAM decision
+request/planner/execution budgets
+cost-accounting boundary
+observability boundary
+security/abuse controls still required before launch
+documentation consistency
+exact Phase 10 entry criteria
+```
+
+Gate 9.4 must explicitly preserve the difference between the validated **application boundary** and a future **public runtime**. There is still no deployed public HTTP compute principal, endpoint, public runtime IAM policy, rate limiter, abuse-protection layer, production concurrency control, or production SLO evidence.
+
+A closeout decision may defer public deployment/runtime work to a later measured gate, but it must state that explicitly. It must not claim production readiness from fake-port CI evidence.
+
+Phase 9 does not require agents, AgentCore, MCP, A2A, reranking, new vector infrastructure, or runtime exposure by default.
 
 ## Future phases
 

@@ -4,7 +4,7 @@ _Date: 2026-09-07_
 
 ## Status
 
-**IMPLEMENTED — final exact-head CI and protected merge pending.**
+**COMPLETE / MERGED.**
 
 Starting main:
 
@@ -12,12 +12,14 @@ Starting main:
 ec09b8c17741aaf1b0e6c6710be15d3cc142c07d
 ```
 
-Tracking:
+Merged checkpoint:
 
 ```text
-issue:  #128
-PR:     #129
-branch: feat/phase9-bounded-semantic-planning
+issue:       #128 — CLOSED / COMPLETED
+PR:          #129 — MERGED
+validated head: 34cea42a0ce37cbfa06b33d57f081403edba2552
+merge SHA:   6f53537c227cade688091187eac1074645e11bf0
+Python CI:   #358 / run 34082791753 — PASS
 ```
 
 ## Goal
@@ -180,22 +182,29 @@ Gate 9.3 tests prove:
 - valid proposal/request pairs cannot be rebound to another Gate 9.2 execution;
 - planner failure is called once and not adaptively retried.
 
-## CI observations
+## Final exact-head CI
+
+Validated head:
+
+```text
+34cea42a0ce37cbfa06b33d57f081403edba2552
+```
+
+Python CI #358 / run `34082791753` passed all seven repository jobs.
+
+Public Analysis exact-head evidence:
+
+```text
+uv lock --check: PASS
+Ruff:             PASS
+Pyright strict:   PASS — 0 errors, 0 warnings, 0 informations
+pytest:           PASS — 57 passed
+```
 
 Earlier branch CI observations were test-quality-only and did not change authority contracts:
 
 1. Ruff required sorted `__all__` exports.
 2. A test incorrectly asserted that the literal path name `uv.lock` could not appear inside immutable file-evidence identity. The test was corrected to distinguish provenance identity from repository content.
-
-Before the final documentation/test commits, Python CI #355 / run `34082518433` passed all seven repository jobs; Public Analysis reported:
-
-```text
-Ruff:            PASS
-Pyright strict:  PASS — 0 errors, 0 warnings, 0 informations
-pytest:          PASS — 56 passed
-```
-
-A new exact-head CI is required because the source-execution regression and this documentation changed the branch head.
 
 ## AWS / provider changes
 
@@ -209,7 +218,7 @@ new AWS resources:         0
 new IAM roles/policies:    0
 ```
 
-The GitHub connector is used only to develop and review the repository, not by Gate 9.3 runtime/application tests.
+The GitHub connector was used only to develop and review the repository, not by Gate 9.3 runtime/application tests.
 
 ## Architecture conclusion
 
@@ -252,9 +261,17 @@ provider calls are not required to validate deterministic architecture boundarie
 [x] planner failure no-retry regression
 [x] ADR recorded
 [x] lab recorded
-[ ] final exact-head Python CI green
-[ ] PR #129 ready for review
-[ ] protected squash merge
-[ ] issue #128 closed completed
-[ ] postmerge current-state/roadmap sync
+[x] final exact-head Python CI green
+[x] PR #129 ready for review
+[x] protected squash merge
+[x] issue #128 closed completed
+[x] postmerge current-state/roadmap sync branch opened
 ```
+
+## Next authorized step
+
+```text
+Phase 9 Gate 9.4 — Phase 9 Closeout
+```
+
+Gate 9.4 may begin only from the merged Gate 9.3 checkpoint and after the postmerge state-sync PR is merged.
