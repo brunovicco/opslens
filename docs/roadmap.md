@@ -34,7 +34,7 @@ concept
 | 8 | Hybrid Retrieval | ✅ Complete |
 | 9 | Public Analyze Your Repository | ✅ Complete |
 | 10 | Observability & Operational Excellence | ✅ Complete |
-| 11 | Single-Agent Baseline | 🚧 In progress — Gates 11.1–11.3 complete |
+| 11 | Single-Agent Baseline | 🚧 In progress — Gates 11.1–11.4 complete |
 | 12 | Multi-Agent Architecture | ⏳ Planned |
 | 13 | MCP | ⏳ Planned |
 | 14 | Amazon Bedrock AgentCore | ⏳ Planned |
@@ -66,11 +66,12 @@ agent action proposal != capability authorization != execution result != evaluat
 AuthorizedAgentAction != capability invocation
 capability invocation != execution result
 evaluation evidence != operational telemetry
-agent reasoning may select/use already-authorized capabilities
+structured model output != trusted proposal
+agent reasoning may select an already-permitted capability
 agent reasoning does not acquire deterministic truth or execution authority
 ```
 
-## Completed foundation — Phases 0–6
+## Completed foundation — Phases 0–10
 
 ### Phase 0 — AWS Foundation
 
@@ -111,7 +112,7 @@ natural-language factual question
 
 The planner never receives unrestricted SQL authority.
 
-## Phase 7 — Knowledge Retrieval with Bedrock — COMPLETE
+### Phase 7 — Knowledge Retrieval with Bedrock
 
 Frozen infrastructure:
 
@@ -134,7 +135,7 @@ MRR:        0.5699404761904762
 provenance correctness: 1.0
 ```
 
-## Phase 8 — Hybrid Retrieval — COMPLETE
+### Phase 8 — Hybrid Retrieval
 
 Frozen contracts:
 
@@ -143,15 +144,6 @@ hybrid-routing:v1
 hybrid-evidence:v1
 hybrid-synthesis:v1
 hybrid-evaluation-golden:v1
-```
-
-Route authority:
-
-```text
-vulnerability_facts / risk_priority -> STRUCTURED
-remediation_guidance                -> SEMANTIC
-structured + remediation           -> HYBRID
-runtime_exposure                    -> UNSUPPORTED
 ```
 
 First complete baseline:
@@ -168,18 +160,7 @@ cost:                         UNMEASURED / null
 
 `H8.5-01` was tested once and rejected. Runtime default remains `hybrid-synthesis-prompt:v1`.
 
-## Phase 9 — Public Analyze Your Repository — COMPLETE
-
-Frozen contracts:
-
-```text
-public-analysis-request:v1
-public-repository-evidence:v1
-public-semantic-planning:v1
-public-analysis-handoff:v1
-```
-
-Governed boundary:
+### Phase 9 — Public Analyze Your Repository
 
 ```text
 untrusted public JSON
@@ -193,13 +174,9 @@ untrusted public JSON
  -> STOP
 ```
 
-Phase 9 closes at:
+Phase 9 closes at `application boundary validated != public runtime deployed`.
 
-```text
-application boundary validated != public runtime deployed
-```
-
-## Phase 10 — Observability & Operational Excellence — COMPLETE
+### Phase 10 — Observability & Operational Excellence
 
 Frozen contracts:
 
@@ -208,52 +185,24 @@ operational-telemetry:v1
 cloudwatch-emf:v1
 ```
 
-Frozen rules:
-
-```text
-telemetry evidence != business truth
-telemetry evidence != route authority
-telemetry failure != permission to bypass fail-closed application contracts
-telemetry delivery accounting != permission to invent evidence identities
-provider serialization != execution authority
-EMF document created != CloudWatch ingestion proven
-```
-
-Completed sequence:
-
-```text
-Gate 10.1 — Content-Minimized Operational Telemetry Contract   COMPLETE / MERGED
-Gate 10.2 — Governed Orchestration Instrumentation             COMPLETE / MERGED
-Gate 10.3 — CloudWatch EMF Telemetry Adapter Boundary          COMPLETE / MERGED
-Gate 10.4 — Phase 10 Closeout                                  COMPLETE / MERGED
-```
-
 Phase 10 proves deterministic operational evidence and an AWS-native EMF representation boundary. It does not prove public runtime, CloudWatch ingestion, production latency/error distributions, runtime IAM, production cost/request, dashboards/alarms, or SLO compliance.
 
 ## Phase 11 — Single-Agent Baseline — IN PROGRESS
 
-Phase 11 introduces agentic reasoning only after deterministic capability authority, typed execution/result binding, and a deterministic evaluation baseline are frozen.
-
 Current sequence:
 
 ```text
-Gate 11.1 — Capability Authorization Contract                COMPLETE / MERGED
-Gate 11.2 — Typed Capability Bindings + Offline Executor      COMPLETE / MERGED
-Gate 11.3 — Frozen Single-Agent Evaluation Fixture            COMPLETE / MERGED
-Gate 11.4 — First Bounded Model Reasoning Baseline            NEXT
-Gate 11.5 — Measured Optimization Decision                    BLOCKED
+Gate 11.1 — Capability Authorization Contract                 COMPLETE / MERGED
+Gate 11.2 — Typed Capability Bindings + Offline Executor       COMPLETE / MERGED
+Gate 11.3 — Frozen Single-Agent Evaluation Fixture             COMPLETE / MERGED
+Gate 11.4 — First Bounded Model Reasoning Baseline             COMPLETE / MERGED
+Gate 11.5 — Measured Optimization Decision                    NEXT
 Gate 11.6 — Phase 11 Closeout                                 BLOCKED
 ```
 
 ### Gate 11.1 — capability authorization — COMPLETE
 
-Frozen contract:
-
-```text
-single-agent-authority:v1
-```
-
-Initial capability classes:
+Frozen contract `single-agent-authority:v1` with four initial capability classes:
 
 ```text
 structured_security_query
@@ -262,207 +211,103 @@ hybrid_security_answer
 public_repository_analysis
 ```
 
-Authority boundary:
-
-```text
-bounded SingleAgentTask
- -> code-owned AgentCapability allowlist
- -> untrusted AgentActionProposal
- -> deterministic authorize_agent_action(...)
- -> AuthorizedAgentAction | AgentAbstention
- -> STOP
-```
-
-Limits:
-
-```text
-max task UTF-8 bytes:       2048
-max allowed capabilities:   4
-proposals per task:         1
-authorization steps:        1
-capability executions:      0
-adaptive retries:           0
-```
-
-Exact validation:
-
-```text
-issue #146:              CLOSED / COMPLETED
-PR #147 final head:      12f63c54add74498478f2e48bc3835485fc3f5f5
-Single-Agent CI:         34149074387 / run #5 / PASS
-Ruff:                    PASS
-Pyright strict:          0 errors / 0 warnings / 0 informations
-pytest:                  16 passed in 0.09s
-PR #147 merge SHA:       641fc20d29cf1148d63b460948a08362158be113
-```
-
-Gate 11.1 performed zero real model, capability, AWS, or runtime calls and added no AWS/IAM resources.
+Authority remains code-owned: model/proposal output cannot itself authorize a capability.
 
 ### Gate 11.2 — typed capability bindings + offline executor — COMPLETE
 
-Frozen contract:
-
-```text
-single-agent-execution:v1
-```
-
-Boundary:
-
-```text
-AuthorizedAgentAction
- -> exact typed capability invocation
- -> deterministic action/capability match
- -> explicit capability-specific executor port
- -> one bounded execution attempt
- -> typed downstream result admission
- -> content-addressed AgentCapabilityExecution
- -> STOP
-```
-
-Exact bindings:
-
-```text
-structured_security_query
- -> SemanticQuery
- -> StructuredSecurityQueryResultBinding(AthenaQueryResult)
-
-knowledge_guidance
- -> SynthesisRequest
- -> SynthesisResult
-
-hybrid_security_answer
- -> HybridSynthesisRequest
- -> HybridSynthesisResult
-
-public_repository_analysis
- -> PublicAnalysisRequest
- -> PublicAnalysisAdmissionHandoff
-```
-
-The invocation surface has no arbitrary `tool_name`, kwargs, URL, SQL, command, provider/model selector, credentials, retry policy, or fallback policy.
-
-Execution limits:
-
-```text
-max executions per call: 1
-execution retries:        0
-adaptive fallbacks:       0
-```
-
-Result admission preserves exact downstream identity:
-
-```text
-structured -> invocation_sha256 binding
-knowledge  -> SynthesisRequest.request_sha256
-hybrid     -> HybridSynthesisRequest.request_sha256
-public     -> PublicAnalysisRequest request_id + request_sha256
-```
-
-Failure categories:
-
-```text
-executor_failure
-result_contract
-```
-
-Exact validation:
-
-```text
-issue #149:              CLOSED / COMPLETED
-PR #150 final head:      1f2dae3ece3b4a2dc9280575fd5a1a3c315751f4
-Single-Agent CI:         34155862646 / run #11 / PASS
-job:                     101847434766
-Ruff:                    PASS
-Pyright strict:          0 errors / 0 warnings / 0 informations
-pytest:                  31 passed in 0.44s
-PR #150 merge SHA:       0fb70ace5bd544c6ef5f17f1030bdbcbeb8063b7
-```
-
-Gate 11.2 performed zero real reasoning-model/AWS calls and added no AWS/IAM/runtime resources. It also left `operational-telemetry:v1` unchanged.
+Frozen contract `single-agent-execution:v1`. Only exact typed capability invocations are accepted; no generic tool registry, arbitrary kwargs, SQL, URL, shell command, provider/model selector, credentials, retry policy, or fallback policy exists at the invocation surface.
 
 ### Gate 11.3 — frozen single-agent evaluation fixture — COMPLETE
 
-Frozen contract:
+Frozen contract `single-agent-evaluation:v1`. Evaluation replays the deterministic Gate 11.1/11.2 boundaries with decomposed metrics and no LLM judge.
+
+### Gate 11.4 — first bounded model reasoning baseline — COMPLETE
+
+New contracts:
 
 ```text
-single-agent-evaluation:v1
+single-agent-reasoning:v1
+single-agent-reasoning-evaluation:v1
 ```
 
-Boundary:
+Reasoning boundary:
 
 ```text
-strict golden JSON fixture
- -> typed content-addressed AgentEvaluationDataset
- -> frozen task + untrusted AgentActionProposal
- -> existing deterministic authorization
- -> optional existing typed execution
- -> stable observation
- -> decomposed deterministic metrics
- -> content-addressed AgentEvaluationReport
+SingleAgentTask
+ -> one fixed provider-neutral model invocation
+ -> transient untrusted {decision, capability}
+ -> deterministic parser
+ -> existing AgentActionProposal
+ -> existing authorize_agent_action(...)
+ -> AuthorizedAgentAction | AgentAbstention | stable rejection
  -> STOP
 ```
 
-The first corpus freezes six cases:
+The baseline deliberately executes no capability.
+
+Fixed provider:
 
 ```text
-authorized-structured-no-execution
-explicit-abstention
-unauthorized-capability
-structured-execution-admitted
-structured-executor-failure
-structured-result-contract-failure
+Amazon Bedrock Converse
+region:          us-east-1
+model/profile:   us.anthropic.claude-haiku-4-5-20251001-v1:0
+temperature:     0.0
+maxTokens:       96
+tools:           disabled
 ```
 
-Independent metric dimensions:
+The first authenticated runtime attempt exposed that Bedrock structured outputs reject JSON Schema `oneOf`. The provider schema was corrected to a flat closed object while deterministic application code retained ACT/ABSTAIN cross-field authority.
+
+First real frozen six-case baseline:
 
 ```text
-total_cases
-passed_cases
-authorization_matches
-capability_matches
-execution_matches
-failure_category_matches
-bounds_compliant_cases
+quality:                    6/6 PASS
+decision matches:           6/6
+capability matches:         6/6
+authorization matches:      6/6
+bounds compliance:          6/6
+SDK retries:                0
+capability executions:      0
+input/output/total tokens:  3291 / 104 / 3395
+provider latency median:    809.5 ms
+client elapsed median:      977.5 ms
+derived inference cost:     USD 0.0041921
 ```
 
-Exact validation:
+Preserved evidence:
 
 ```text
-issue #153:              CLOSED / COMPLETED
-PR #154 final head:      2dcc7abfc559a8a0b053278a68c926b5dc38d694
-Single-Agent CI:         34163023511 / run #14 / PASS
-job:                     101868535029
-PR merge test commit:    96628ebc2bb5acffa6e27446de28e1073e9d6100
-Ruff:                    PASS
+labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json
+corpus_sha256: 3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
+report_sha256: 724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
+```
+
+Exact completion evidence:
+
+```text
+issue #156:              CLOSED / COMPLETED
+PR #157 final head:      2ec5b3804fa8c6454e1ea7d824b82d2db9113f91
+Single-Agent CI:         34170308179 / run #37 / PASS
+job:                     101889202476
+PR merge test commit:    bd3802bf4003e5a447e5e104caad0a86cf8388ec
 Pyright strict:          0 errors / 0 warnings / 0 informations
-pytest:                  37 passed in 0.54s
-PR #154 merge SHA:       b1b2f4e45005f1d55a017f4761f3b7e061f8a070
-post-merge workflow:     NONE — workflow has no push trigger
+pytest:                  56 passed in 0.43s
+PR #157 merge SHA:       8b41025facf4451490bf96223d69fbed19b4a00f
 ```
 
-Gate 11.3 performed zero real model/provider/AWS calls and added no AWS/IAM/runtime resources. It also left `operational-telemetry:v1` unchanged and did not touch deferred PR #89.
+Gate 11.4 added no new AWS resources, IAM roles/policies, AgentCore, MCP, A2A, public runtime, or runtime-exposure authority.
 
-### Gate 11.4 — first bounded model reasoning baseline — NEXT
+### Gate 11.5 — measured optimization decision — NEXT
 
-Gate 11.4 is the first Phase 11 gate authorized to introduce one real reasoning-model boundary. It must reuse the frozen `single-agent-authority:v1`, `single-agent-execution:v1`, and `single-agent-evaluation:v1` contracts rather than replacing them.
-
-Minimum constraints:
+Gate 11.5 must answer a decision question before changing code:
 
 ```text
-model output remains an untrusted AgentActionProposal
-one proposal per task
-capability allowlist remains code-owned
-no model-authored executable argument surface
-no adaptive retry/fallback
-no provider/model choice delegated to the model
-no AgentCore/MCP/A2A/public runtime expansion
-no runtime-exposure authority
-measured quality/latency/token/cost only from real observed calls
+Does the measured Gate 11.4 baseline expose a material quality, latency, token, or cost gap that justifies one bounded optimization experiment?
 ```
 
-The detailed provider-neutral reasoning port, first provider adapter, measurement contract, and exact corpus slice must be justified at Gate 11.4 issue creation before implementation.
+Current evidence is already strong: `6/6` proposal quality, `6/6` bounds compliance, zero retries, zero capability executions, sub-second median provider latency, and a six-case derived inference cost of USD 0.0041921.
 
-Observability remains explicit: do not mutate `operational-telemetry:v1` to represent agent steps. Agent-specific operational evidence requires a separately versioned contract if it becomes necessary.
+Therefore Gate 11.5 must not tune prompts, switch models, introduce caching, expand retries/fallback, add tool authority, or change provider topology merely because an optimization gate exists. If no measurable objective with material expected benefit is identified, the correct decision is to preserve the Gate 11.4 baseline and proceed to Gate 11.6 closeout.
 
 ## Phase 12 — Multi-Agent Architecture — PLANNED
 
