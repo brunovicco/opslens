@@ -5,6 +5,7 @@ from opslens.agent_baseline.domain.errors import (
     AgentCapabilityAuthorizationError,
     AgentCapabilityExecutionValidationError,
     AgentEvaluationValidationError,
+    AgentReasoningValidationError,
 )
 from opslens.agent_baseline.domain.evaluation import (
     MAX_AGENT_EVALUATION_CASES,
@@ -55,6 +56,16 @@ from opslens.agent_baseline.domain.models import (
     create_authorized_agent_action,
     create_single_agent_task,
 )
+from opslens.agent_baseline.domain.reasoning import (
+    MAX_AGENT_REASONING_ADAPTIVE_RETRIES,
+    MAX_AGENT_REASONING_INVOCATIONS_PER_TASK,
+    MAX_AGENT_REASONING_OUTPUT_UTF8_BYTES,
+    SINGLE_AGENT_REASONING_CONTRACT_VERSION,
+    AgentReasoningAuthorizationOutcome,
+    AgentReasoningFailureCategory,
+    AgentReasoningInvocationEvidence,
+    AgentReasoningResult,
+)
 
 __all__ = [
     "MAX_AGENT_ADAPTIVE_RETRIES",
@@ -66,10 +77,14 @@ __all__ = [
     "MAX_AGENT_EXECUTION_ADAPTIVE_FALLBACKS",
     "MAX_AGENT_EXECUTION_RETRIES",
     "MAX_AGENT_PROPOSALS_PER_TASK",
+    "MAX_AGENT_REASONING_ADAPTIVE_RETRIES",
+    "MAX_AGENT_REASONING_INVOCATIONS_PER_TASK",
+    "MAX_AGENT_REASONING_OUTPUT_UTF8_BYTES",
     "MAX_AGENT_TASK_UTF8_BYTES",
     "SINGLE_AGENT_AUTHORITY_CONTRACT_VERSION",
     "SINGLE_AGENT_EVALUATION_CONTRACT_VERSION",
     "SINGLE_AGENT_EXECUTION_CONTRACT_VERSION",
+    "SINGLE_AGENT_REASONING_CONTRACT_VERSION",
     "AgentAbstention",
     "AgentActionProposal",
     "AgentAuthorityValidationError",
@@ -90,6 +105,11 @@ __all__ = [
     "AgentEvaluationMetrics",
     "AgentEvaluationReport",
     "AgentEvaluationValidationError",
+    "AgentReasoningAuthorizationOutcome",
+    "AgentReasoningFailureCategory",
+    "AgentReasoningInvocationEvidence",
+    "AgentReasoningResult",
+    "AgentReasoningValidationError",
     "AuthorizedAgentAction",
     "HybridSecurityAnswerInvocation",
     "KnowledgeGuidanceInvocation",
