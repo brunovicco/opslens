@@ -28,6 +28,7 @@ from opslens.agent_baseline.domain import (
     StructuredSecurityQueryInvocation,
     StructuredSecurityQueryResultBinding,
 )
+from opslens.agent_baseline.domain.errors import AgentEvaluationValidationError
 from opslens.agent_baseline.domain.evaluation import (
     SINGLE_AGENT_EVALUATION_CONTRACT_VERSION,
     AgentEvaluationAuthorizationOutcome,
@@ -39,7 +40,6 @@ from opslens.agent_baseline.domain.evaluation import (
     AgentEvaluationFailureCategory,
     AgentEvaluationReport,
 )
-from opslens.agent_baseline.domain.errors import AgentEvaluationValidationError
 from opslens.agent_baseline.domain.models import AuthorizedAgentAction
 from opslens.hybrid_retrieval.domain.synthesis import HybridSynthesisResult
 from opslens.knowledge_retrieval.domain.synthesis import SynthesisResult

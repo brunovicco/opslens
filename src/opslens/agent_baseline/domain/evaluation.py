@@ -143,11 +143,13 @@ class AgentEvaluationExpectation:
                 "non-authorized expectations cannot carry a capability"
             )
 
-        if self.authorization_outcome is not AgentEvaluationAuthorizationOutcome.AUTHORIZED:
-            if self.execution_outcome is not AgentEvaluationExecutionOutcome.NOT_ATTEMPTED:
-                raise AgentEvaluationValidationError(
-                    "non-authorized expectations cannot expect capability execution"
-                )
+        if (
+            self.authorization_outcome is not AgentEvaluationAuthorizationOutcome.AUTHORIZED
+            and self.execution_outcome is not AgentEvaluationExecutionOutcome.NOT_ATTEMPTED
+        ):
+            raise AgentEvaluationValidationError(
+                "non-authorized expectations cannot expect capability execution"
+            )
 
         auth_failure = self.failure_category in {
             AgentEvaluationFailureCategory.AUTHORITY_VALIDATION,
