@@ -4,7 +4,7 @@ _Date: 2026-09-07_
 
 ## Status
 
-**IMPLEMENTED — final exact-head CI and protected merge pending.**
+**COMPLETE / MERGED**
 
 Starting main:
 
@@ -12,19 +12,21 @@ Starting main:
 184a0b42c0ad0125bb692d8f86ae02b2bc76ff13
 ```
 
-Tracking:
+Final merged checkpoint:
 
 ```text
-issue:  #146
-branch: feat/phase11-single-agent-authority
-PR:     #147 (draft)
+issue:               #146 CLOSED / COMPLETED
+PR:                  #147 MERGED
+final PR head:       12f63c54add74498478f2e48bc3835485fc3f5f5
+merge SHA:           641fc20d29cf1148d63b460948a08362158be113
+Single-Agent CI:     34149074387 / run #5 / PASS
 ```
 
 ## Goal
 
 Start the OpsLens Single-Agent Baseline by freezing capability-selection authority before introducing model variability or execution.
 
-The gate is intentionally smaller than a traditional agent loop:
+The gate intentionally stops before a traditional agent loop:
 
 ```text
 bounded task
@@ -43,13 +45,13 @@ No capability execution occurs.
 agent action proposal != capability authorization != execution result
 ```
 
-And the existing OpsLens rule remains:
+Existing project rule:
 
 ```text
 Agents reason. Code verifies evidence.
 ```
 
-A future LLM may propose an action. It will not own the action's authorization.
+A future LLM may propose an action. It will not own action authorization.
 
 ## Frozen contract
 
@@ -77,7 +79,7 @@ hybrid_security_answer
 public_repository_analysis
 ```
 
-The enum identifies governed capability classes only. It does not expose a direct provider, shell, browser, file system, network, SQL, or generic tool API.
+These values identify governed capability classes only. They do not expose provider, shell, browser, file-system, network, SQL, or generic tool authority.
 
 ## Task admission
 
@@ -90,16 +92,16 @@ exact bounded task text
  -> SHA-256 task identity
 ```
 
-Important properties:
+Properties:
 
 - capability order is canonicalized before hashing;
 - empty capability sets fail closed;
 - duplicate capabilities fail closed;
 - raw strings masquerading as `AgentCapability` fail closed;
 - task size is measured in UTF-8 bytes;
-- changing text or capability authority changes task identity.
+- changing task text or capability authority changes task identity.
 
-The task text remains untrusted content. Its presence in a task does not grant executable authority.
+Task text remains untrusted content. Its presence never grants executable authority.
 
 ## Proposal admission
 
@@ -120,8 +122,6 @@ act      -> exactly one typed capability
 abstain  -> capability must be null
 ```
 
-A proposal has no generic argument bag.
-
 Explicitly absent:
 
 ```text
@@ -137,7 +137,7 @@ credentials
 retry/fallback policy
 ```
 
-This is a central authority boundary, not merely input validation.
+This is an authority boundary, not merely schema hygiene.
 
 ## Authorization
 
@@ -152,22 +152,11 @@ valid proposal
  -> AuthorizedAgentAction
 ```
 
-The action is content-addressed over:
-
-```text
-task_id
-proposal_id
-capability
-contract version
-```
-
-It is authorization evidence only. Gate 11.1 still executes zero capabilities.
+The authorized action is content-addressed over task identity, proposal identity, capability, and contract version.
 
 ### Out-of-allowlist ACT
 
-A proposal selecting a known but unauthorized capability remains structurally valid as a proposal, then fails closed at deterministic authorization.
-
-This proves:
+A structurally valid proposal selecting a known but unauthorized capability fails closed at deterministic authorization.
 
 ```text
 proposal validity != authorization
@@ -175,34 +164,42 @@ proposal validity != authorization
 
 ### ABSTAIN
 
-Abstention is a valid first-class outcome:
+Abstention is a first-class safe outcome:
 
 ```text
 AgentAbstention
 ```
 
-It is content-addressed and contains no capability field. There is no implicit fallback action.
+It is content-addressed and contains no capability authority. There is no implicit fallback action.
 
 ## Tamper resistance
 
-Direct construction with mismatched SHA-256 or content-addressed IDs is rejected for tasks and proposals. Authorized actions and abstentions also validate their own deterministic identity contracts.
-
-A proposal tied to one admitted task cannot be replayed as authority for another task even when both allow the same capability.
-
-## Initial executable validation
-
-The first implementation head was:
+The contract rejects forged/mismatched identities for:
 
 ```text
-c401368908e680af48b42d846b795a9c5c28399c
+SingleAgentTask
+AgentActionProposal
+AuthorizedAgentAction
+AgentAbstention
 ```
 
-Single-Agent CI:
+A proposal bound to one task cannot be replayed as authority for another task even when both tasks expose the same capability class.
+
+## Exact-head executable validation
+
+Final PR head:
 
 ```text
-run: 34148793155 / run #1
-job: 101826450390
-result: SUCCESS
+12f63c54add74498478f2e48bc3835485fc3f5f5
+```
+
+GitHub Actions evidence:
+
+```text
+workflow: Single-Agent CI
+run:      34149074387 / run #5
+job:      101827298939
+result:   SUCCESS
 ```
 
 Quality evidence:
@@ -211,10 +208,22 @@ Quality evidence:
 uv lock --check: PASS
 Ruff:            PASS
 Pyright strict:  0 errors / 0 warnings / 0 informations
-pytest:           14 passed
+pytest:           16 passed in 0.09s
 ```
 
-This validation covered the executable authority contract before the ADR/lab documentation commits. The final PR head must be revalidated before merge.
+The final regression set explicitly covers forged `AuthorizedAgentAction` and `AgentAbstention` identity rejection in addition to the original task/proposal tamper checks.
+
+The workflow checkout validated PR merge commit:
+
+```text
+6c6e5384783e8b8dc92bc76c821ddf9d3bcbe6be
+```
+
+against base main:
+
+```text
+184a0b42c0ad0125bb692d8f86ae02b2bc76ff13
+```
 
 ## Regression coverage
 
@@ -232,18 +241,16 @@ Tests prove:
 - ACT/ABSTAIN inconsistency fails before authorization;
 - raw decision strings fail runtime type admission;
 - mismatched task identity is denied;
-- forged task/proposal identity is rejected;
+- forged task/proposal/action/abstention identities are rejected;
 - generic tool/argument/provider/SQL/command fields do not exist.
 
-## Architecture boundary
-
-ADR:
+## Architecture record
 
 ```text
 docs/adr/0036-bounded-single-agent-capability-authorization.md
 ```
 
-The ADR freezes the architecture before any model or agent framework is selected.
+The ADR freezes the architecture before any reasoning model or agent framework is selected.
 
 ## Observability boundary
 
@@ -258,7 +265,7 @@ bounded failure categories
 telemetry != business/route authority
 ```
 
-But agent-step semantics require a separately versioned operational contract if/when they are introduced. Mutating the five frozen public-analysis stages would make the telemetry contract ambiguous.
+Agent-step semantics require a separately versioned operational contract if they are introduced later.
 
 ## IAM / runtime boundary
 
@@ -288,7 +295,7 @@ A later real baseline must measure model turns, capability calls, latency, retri
 
 ## AIP-C01 learning notes
 
-Gate 11.1 is a concrete example of why agentic architecture starts with authorization rather than with a framework:
+Gate 11.1 demonstrates why agentic architecture starts with authorization rather than a framework:
 
 - model output is proposal data;
 - allowlists are deterministic application authority;
@@ -296,20 +303,20 @@ Gate 11.1 is a concrete example of why agentic architecture starts with authoriz
 - abstention is an explicit safe outcome;
 - IAM should follow concrete adapters/runtime responsibilities;
 - provider-neutral contracts enable later Bedrock/AgentCore comparison without changing authority semantics;
-- offline failure tests remove model nondeterminism while security boundaries are being established.
+- offline failure tests remove model nondeterminism while security boundaries are established.
 
-## Proposed Phase 11 sequence
+## Phase 11 sequence after merge
 
 ```text
-Gate 11.1 — Capability Authorization Contract                CURRENT
-Gate 11.2 — Typed Capability Bindings + Offline Executor      BLOCKED
+Gate 11.1 — Capability Authorization Contract                COMPLETE / MERGED
+Gate 11.2 — Typed Capability Bindings + Offline Executor      NEXT
 Gate 11.3 — Frozen Single-Agent Evaluation Fixture            BLOCKED
 Gate 11.4 — First Bounded Model Reasoning Baseline            BLOCKED
 Gate 11.5 — Measured Optimization Decision                    BLOCKED
 Gate 11.6 — Phase 11 Closeout                                 BLOCKED
 ```
 
-The sequence intentionally creates execution/result authority and evaluation fixtures before a real reasoning model is admitted.
+Gate 11.2 is now authorized because Gate 11.1 has merged and the authoritative state-sync records the completed boundary.
 
 ## Exit checklist
 
@@ -324,12 +331,11 @@ The sequence intentionally creates execution/result authority and evaluation fix
 [x] zero execution/retry budget frozen
 [x] strict regression suite implemented
 [x] dedicated Single-Agent CI created
-[x] initial executable CI green
 [x] ADR 0036 recorded
 [x] Gate 11.1 lab recorded
-[ ] final exact-head Single-Agent CI green
-[ ] PR #147 ready / mergeable
-[ ] protected squash merge
-[ ] issue #146 CLOSED / COMPLETED
-[ ] postmerge state sync
+[x] final exact-head Single-Agent CI green
+[x] PR #147 ready / mergeable
+[x] protected squash merge
+[x] issue #146 CLOSED / COMPLETED
+[x] postmerge state sync
 ```
