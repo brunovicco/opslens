@@ -75,13 +75,6 @@ class PublicRepositoryEvidenceExecution:
             raise PublicAnalysisValidationError(
                 "snapshot resolution must originate from the admitted public coordinates"
             )
-        if (
-            snapshot.repository.owner != target.owner
-            or snapshot.repository.name != target.name
-        ):
-            raise PublicAnalysisValidationError(
-                "resolved repository identity must match the admitted public coordinates"
-            )
 
         requested_ref = target.requested_ref
         if requested_ref is None:
@@ -162,6 +155,8 @@ class PublicRepositoryEvidenceExecution:
             "request": {
                 "request_id": self.request.request_id,
                 "request_sha256": self.request.request_sha256,
+                "requested_owner": self.snapshot_resolution.requested_owner,
+                "requested_name": self.snapshot_resolution.requested_name,
             },
             "repository": {
                 "provider": repository.provider.value,
