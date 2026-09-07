@@ -21,6 +21,10 @@ from opslens.agent_baseline.application.reasoning import (
     parse_reasoning_model_output,
     reason_about_task,
 )
+from opslens.agent_baseline.application.reasoning_evaluation import (
+    evaluate_agent_reasoning_dataset,
+    load_agent_reasoning_evaluation_dataset,
+)
 
 __all__ = [
     "AgentCapabilityExecutionError",
@@ -34,8 +38,10 @@ __all__ = [
     "authorize_agent_action",
     "evaluate_agent_case",
     "evaluate_agent_dataset",
+    "evaluate_agent_reasoning_dataset",
     "execute_authorized_capability",
     "load_agent_evaluation_dataset",
+    "load_agent_reasoning_evaluation_dataset",
     "parse_reasoning_model_output",
     "reason_about_task",
 ]
