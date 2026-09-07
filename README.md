@@ -6,7 +6,7 @@
 
 ### Verifiable Software Supply Chain & Threat Intelligence on AWS
 
-**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Deterministic Authority**
+**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Public Analysis Admission · Deterministic Authority**
 
 </div>
 
@@ -47,15 +47,18 @@ Permanent boundaries:
 | Phase 6 | Semantic Query Layer | ✅ Complete |
 | Phase 7 | Knowledge Retrieval with Bedrock | ✅ Complete |
 | Phase 8 | Hybrid Retrieval | ✅ Complete |
-| Phase 9 | Public Analyze Your Repository | ⏳ Next |
+| Phase 9 | Public Analyze Your Repository | ✅ Complete after Gate 9.4 merge |
+| Phase 10 | Observability & Operational Excellence | ⏳ Next |
 
-Phase 8 closes with deterministic hybrid routing/evidence authority, route-aware bounded synthesis, a frozen six-case evaluation contract, a real Bedrock baseline, and one measured optimization experiment whose candidate was correctly **rejected** because it did not improve groundedness or citation correctness.
+Phase 9 closes at a governed **application boundary**, not at a fictional production deployment. OpsLens now has bounded public request admission, immutable public-repository evidence orchestration, proposal-only semantic planning, and a deterministic admission handoff through the existing Phase 8 hybrid route authority.
 
-See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), and the [Phase 8 closeout](labs/phase-8-gate-8-6-closeout.md).
+The project does **not** claim that a public HTTP runtime has already been deployed. Public compute, runtime IAM, rate/abuse controls, production telemetry, and workload-derived SLOs remain explicit later implementation work.
+
+See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), and the [Phase 9 closeout](labs/phase-9-gate-9-4-closeout.md).
 
 ## Implemented system
 
-OpsLens now has three cooperating evidence paths while preserving different authority semantics.
+OpsLens now has governed structured, semantic, hybrid, and public-admission paths while preserving different authority semantics.
 
 ### 1. Structured vulnerability / risk authority
 
@@ -111,6 +114,43 @@ immutable official source pins
 ```
 
 `RetrieveAndGenerate` is deliberately not used. Retrieval and generation remain independently testable and observable.
+
+### 4. Public analysis application boundary
+
+```text
+untrusted public JSON
+ -> <=2048-byte strict request admission
+ -> validated GitHub owner/name/ref coordinates
+ -> source-confirmed public repository identity
+ -> immutable commit/tree snapshot
+ -> exact-commit inert uv.lock evidence
+ -> deterministic parser + PyPI normalization
+ -> PublicRepositoryEvidenceExecution
+ -> <=2048-byte metadata-only semantic planning request
+ -> <=1024-byte untrusted planner proposal
+ -> exact deterministic public-v1 scope admission
+ -> existing Phase 8 hybrid route authority
+ -> PublicAnalysisAdmissionHandoff
+ -> STOP
+```
+
+Public v1 product scope is code-owned, not model-owned. The planner must propose exactly:
+
+```text
+remediation_guidance
+risk_priority
+vulnerability_facts
+```
+
+and the existing route authority must resolve that set to:
+
+```text
+HYBRID
+ALL_REQUIRED
+STRUCTURED + SEMANTIC
+```
+
+The planner does not receive raw repository URL, lockfile bytes, dependency names/versions, arbitrary repository text/instructions, SQL, credentials, provider/model/tool selection, or executable repository content.
 
 ## Phase 8 hybrid authority
 
@@ -237,6 +277,27 @@ labs/evidence/phase-8-gate-8-5-h85-01-first-run-v1.json
 
 This is intentional evaluation governance: a plausible prompt revision is not an optimization unless its predeclared measured acceptance rule passes.
 
+## Phase 9 contracts
+
+```text
+public-analysis-request:v1
+public-repository-evidence:v1
+public-semantic-planning:v1
+public-analysis-handoff:v1
+```
+
+Key distinctions:
+
+```text
+public request admitted != repository proven public != repository analyzed
+planner proposal != execution authority
+repository evidence != runtime exposure
+semantic planning != SQL authority
+application boundary validated != public runtime deployed
+```
+
+Phase 9 exact-head evidence is recorded in its gate labs and PRs. Gate 9.3 completed with Public Analysis Ruff/Pyright green and `57 passed`, while making zero real provider/model calls.
+
 ## AWS baseline
 
 ```text
@@ -255,7 +316,7 @@ streaming:               no
 tools:                   none
 ```
 
-No public application runtime role exists yet. Gate 8.6 adds no AWS resources or IAM permissions. The future semantic runtime boundary remains scoped to direct `bedrock:Retrieve` for the exact Knowledge Base plus non-streaming `bedrock:InvokeModel` for the approved inference profile/resources. Public-runtime IAM will be created only when Phase 9 defines real compute.
+No public application runtime role exists at Phase 9 closeout. Gate 9.4 adds no AWS resources or IAM permissions. A future public runtime role will be created only when a concrete compute boundary exists and its responsibilities can be translated into least-privilege permissions.
 
 ## Security and authority invariants
 
@@ -263,6 +324,8 @@ No public application runtime role exists yet. Gate 8.6 adds no AWS resources or
 - Exact source versions and hashes participate in evidence identity.
 - Package normalization, version/range matching, vulnerability applicability, KEV/EPSS/CVSS evidence, and Risk Policy remain deterministic.
 - Third-party repository code is never executed.
+- Public request admission never grants arbitrary fetch authority.
+- Public semantic planning does not own product scope or execution authority.
 - Natural-language planning cannot emit unrestricted SQL authority.
 - Retrieval output is evidence, not deterministic truth.
 - Retrieved text remains untrusted instruction content after provenance validation.
@@ -275,6 +338,7 @@ No public application runtime role exists yet. Gate 8.6 adds no AWS resources or
 - First-run evidence is preserved before optimization.
 - Negative experiments are preserved rather than tuned away.
 - IAM least privilege, observability, failure diagnosis, and cost accounting are architecture requirements.
+- A validated application boundary is not represented as a deployed production runtime.
 
 ## Cost discipline
 
@@ -288,6 +352,8 @@ cost: UNMEASURED / null
 
 Token counts remain valid cost-pressure evidence, but they are not silently converted to a full request price without a deterministic versioned pricing contract.
 
+Phase 9 closeout adds no synthetic public-request price. Gate 9.3 used fake ports and zero real provider/model calls. Future public-runtime cost must include concrete infrastructure, concurrency, abuse, and retry assumptions.
+
 ## Quality gates
 
 Dedicated Python CI slices cover:
@@ -299,6 +365,7 @@ Risk Policy
 Semantic Query
 Knowledge Retrieval
 Hybrid Retrieval
+Public Analysis
 ```
 
 The project uses Ruff, strict Pyright, pytest, and regression slices. AWS-bearing changes additionally use Terraform validation, TFLint, Checkov, canonical plans, deployment verification, and post-apply convergence checks.
@@ -326,7 +393,8 @@ The project uses Ruff, strict Pyright, pytest, and regression slices. AWS-bearin
 │   ├── risk_policy/
 │   ├── semantic_query/
 │   ├── knowledge_retrieval/
-│   └── hybrid_retrieval/
+│   ├── hybrid_retrieval/
+│   └── public_analysis/
 ├── tests/
 ├── README.md
 ├── README.pt-br.md
@@ -342,18 +410,18 @@ The project uses Ruff, strict Pyright, pytest, and regression slices. AWS-bearin
 - [Architecture — Português](docs/architecture.pt-br.md)
 - [ADR index](docs/adr/README.md)
 - [Documentation index](docs/README.md)
-- [Phase 7 closeout](labs/phase-7-gate-7-8-closeout.md)
-- [Phase 8 Gate 8.4 bounded synthesis](labs/phase-8-gate-8-4-bounded-hybrid-synthesis.md)
-- [Phase 8 Gate 8.5 measured optimization](labs/phase-8-gate-8-5-measured-optimization.md)
 - [Phase 8 closeout](labs/phase-8-gate-8-6-closeout.md)
+- [Phase 9 Gate 9.1 request admission](labs/phase-9-gate-9-1-public-request-admission.md)
+- [Phase 9 Gate 9.3 semantic planning](labs/phase-9-gate-9-3-bounded-semantic-planning.md)
+- [Phase 9 closeout](labs/phase-9-gate-9-4-closeout.md)
 
-## Next — Phase 9: Public Analyze Your Repository
+## Next — Phase 10: Observability & Operational Excellence
 
-Phase 9 may expose the governed evidence system as a bounded public demo. It must preserve immutable repository acquisition, deterministic structured truth, hybrid route/evidence authority, fail-closed output admission, zero-model-call behavior for unsupported/incomplete paths, and bounded cost/abuse controls.
+Phase 10 starts from the frozen Phase 9 application contracts. It must make a future concrete runtime diagnosable without weakening content minimization, deterministic admission, evidence provenance, or least privilege.
 
-A public surface does not justify introducing agents, AgentCore, MCP, A2A, rerankers, or a new vector technology by default. Those remain later phases or new measured hypotheses.
+If Phase 10 needs a small deployed runtime slice to measure real latency/error/trace/cost behavior, that runtime must be introduced explicitly with its own IAM, request limits, abuse controls, and operational evidence. Production SLOs and alerts must come from deployed workload evidence, not laboratory CI.
 
-The long-lived Governed LLM Gateway PR #89 remains deferred and outside Phase 8.
+The long-lived Governed LLM Gateway PR #89 remains deferred and must be re-evaluated separately against the then-current OpsLens architecture.
 
 ---
 
