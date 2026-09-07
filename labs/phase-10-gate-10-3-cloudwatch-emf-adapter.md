@@ -4,7 +4,7 @@ _Date: 2026-09-07_
 
 ## Status
 
-**IMPLEMENTED — exact-head CI and protected merge pending.**
+**COMPLETE / MERGED.**
 
 Starting main:
 
@@ -15,9 +15,11 @@ Starting main:
 Tracking:
 
 ```text
-issue:  #140
-branch: feat/phase10-cloudwatch-emf-adapter
-PR:     #141 (draft)
+issue:      #140 — CLOSED / COMPLETED
+branch:     feat/phase10-cloudwatch-emf-adapter
+PR:         #141 — MERGED
+final head: 632e778d36ada833505342708379603a1080d390
+merge SHA:  0c5bf6bab39a3980c063fcb44f657c412111fefa
 ```
 
 ## Goal
@@ -230,14 +232,40 @@ Fix commit:
 
 This failure is preserved as quality-gate evidence rather than hidden.
 
-## Implementation hardening discovered before CI
+## Implementation hardening discovered before final validation
 
 The first adapter draft exposed two deterministic issues during review before merge:
 
 1. the provider-neutral metric mapping exposes dimensions as a mapping whose insertion order is not the EMF dimension-order contract, so EMF validation must compare the exact key set rather than inherit mapping iteration order;
 2. a malformed clock value must be classified as `clock_contract`, not `document_contract`.
 
-Both were corrected before final validation. The adapter now reads projected dimension values by frozen key names and validates clock output before document construction.
+Both were corrected before final validation. The adapter reads projected dimension values by frozen key names and validates clock output before document construction.
+
+## Final exact-head CI
+
+Final implementation head:
+
+```text
+632e778d36ada833505342708379603a1080d390
+```
+
+Operational Observability CI:
+
+```text
+run:              34143908297 / run #9 / SUCCESS
+uv lock --check:  PASS
+Ruff:             PASS
+Pyright strict:   0 errors / 0 warnings / 0 informations
+pytest:           26 passed
+```
+
+The protected squash merge used that exact validated head and produced:
+
+```text
+0c5bf6bab39a3980c063fcb44f657c412111fefa
+```
+
+Issue #140 then closed as `COMPLETED`.
 
 ## Resource / external-call budget
 
@@ -310,11 +338,17 @@ docs/adr/0034-bounded-cloudwatch-emf-telemetry-adapter.md
 [x] strict regressions added
 [x] ADR recorded
 [x] draft PR #141 created
-[ ] final exact-head Operational Observability CI green
-[ ] PR reviewed / mergeable
-[ ] protected squash merge
-[ ] issue #140 CLOSED / COMPLETED
-[ ] postmerge current-state/roadmap sync
+[x] final exact-head Operational Observability CI green
+[x] PR reviewed / mergeable
+[x] protected squash merge
+[x] issue #140 CLOSED / COMPLETED
+[x] postmerge state-sync branch created
 ```
 
-The next Phase 10 gate remains blocked until Gate 10.3 is merged and postmerge state is synchronized.
+## Next authorized gate
+
+```text
+Phase 10 Gate 10.4 — Phase 10 Closeout
+```
+
+Gate 10.4 must close the observability phase at the currently proven boundary. It must explicitly preserve that EMF serialization is not CloudWatch ingestion, a validated application boundary is not a deployed public runtime, and production SLO/cost/alert claims require a concrete workload. It must not introduce runtime compute or IAM merely to complete Phase 10.
