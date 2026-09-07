@@ -72,18 +72,18 @@ def _commit_payload() -> dict[str, object]:
 def _uv_lock_content() -> bytes:
     """Return inert lock bytes with one PyPI and one unsupported local package."""
     return (
-        "version = 1\n"
-        "revision = 3\n"
-        'requires-python = ">=3.13"\n'
-        "[[package]]\n"
-        'name = "Requests"\n'
-        'version = "2.31.0"\n'
-        'source = { registry = "https://pypi.org/simple" }\n'
-        "[[package]]\n"
-        'name = "local-demo"\n'
-        'version = "0.1.0"\n'
-        'source = { path = "." }\n'
-    ).encode()
+        b"version = 1\n"
+        b"revision = 3\n"
+        b'requires-python = ">=3.13"\n'
+        b"[[package]]\n"
+        b'name = "Requests"\n'
+        b'version = "2.31.0"\n'
+        b'source = { registry = "https://pypi.org/simple" }\n'
+        b"[[package]]\n"
+        b'name = "local-demo"\n'
+        b'version = "0.1.0"\n'
+        b'source = { path = "." }\n'
+    )
 
 
 def _uv_lock_payload(content: bytes | None = None) -> dict[str, object]:
