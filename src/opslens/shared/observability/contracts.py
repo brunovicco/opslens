@@ -5,11 +5,12 @@ from __future__ import annotations
 import json
 import math
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from hashlib import sha256
 from types import MappingProxyType
-from typing import Final, Mapping
+from typing import Final
 
 OPERATIONAL_TELEMETRY_CONTRACT_VERSION = "operational-telemetry:v1"
 OPERATIONAL_TELEMETRY_OPERATION = "analyze_public_repository"
@@ -234,7 +235,10 @@ def _validate_event_semantics(
         pattern=_HANDOFF_ID_PATTERN,
     )
 
-    if failure_category is not None and type(failure_category) is not OperationalFailureCategory:
+    if (
+        failure_category is not None
+        and type(failure_category) is not OperationalFailureCategory
+    ):
         raise OperationalTelemetryValidationError(
             "failure_category must be OperationalFailureCategory or null"
         )
