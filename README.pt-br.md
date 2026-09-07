@@ -6,7 +6,7 @@
 
 ### Software Supply Chain e Threat Intelligence Verificáveis na AWS
 
-**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Evidência Determinística**
+**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Autoridade Determinística**
 
 </div>
 
@@ -20,7 +20,7 @@ O projeto mantém deliberadamente a verdade determinística separada do raciocí
 
 > **Agents reason. Code verifies evidence.**
 
-Boundaries permanentes adicionais:
+Boundaries permanentes:
 
 > **Not every question is a RAG problem.**
 
@@ -29,6 +29,8 @@ Boundaries permanentes adicionais:
 > **READ, NEVER EXECUTE third-party repository code.**
 
 > **Repository Risk != Runtime Exposure.**
+
+> **Intent classification != execution authority.**
 
 > **No unrestricted text-to-SQL.**
 
@@ -44,17 +46,18 @@ Boundaries permanentes adicionais:
 | Phase 5 | Risk Prioritization Engine | ✅ Concluída |
 | Phase 6 | Semantic Query Layer | ✅ Concluída |
 | Phase 7 | Knowledge Retrieval with Bedrock | ✅ Concluída |
-| Phase 8 | Hybrid Retrieval | ⏳ Próxima |
+| Phase 8 | Hybrid Retrieval | ✅ Concluída |
+| Phase 9 | Public Analyze Your Repository | ⏳ Próxima |
 
-A Phase 7 foi encerrada preservando o baseline medido da Gate 7.7 e consolidando a arquitetura na Gate 7.8. O closeout deliberadamente **não** faz prompt tuning contra o resultado observado.
+A Phase 8 encerra com routing/evidence authority híbridos determinísticos, síntese limitada e route-aware, fixture congelada de seis casos, baseline real no Bedrock e um experimento de otimização medido cujo candidato foi corretamente **rejeitado** por não melhorar groundedness nem citation correctness.
 
-Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md) e [Arquitetura](docs/architecture.pt-br.md).
+Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md) e o [closeout da Phase 8](labs/phase-8-gate-8-6-closeout.md).
 
 ## Sistema implementado
 
-O OpsLens agora possui dois caminhos complementares de evidência.
+O OpsLens possui três caminhos cooperando, sem misturar seus diferentes níveis de autoridade.
 
-### Caminho de autoridade estruturada
+### 1. Autoridade estruturada de vulnerabilidade / risco
 
 ```text
 NVD / CVE -----------+
@@ -64,7 +67,7 @@ GitHub Advisories ---+
                               |
                               v
 repositório público GitHub
- -> snapshot imutável do repositório
+ -> snapshot imutável
  -> aquisição GET-only limitada
  -> evidência exata e inerte do uv.lock
  -> normalização determinística PyPI / PEP 440 / purl
@@ -72,14 +75,26 @@ repositório público GitHub
  -> enrichment NVD/CVSS + CISA KEV + FIRST EPSS
  -> RepositoryAnalysisResult content-addressed
  -> Risk Policy v1 determinística
- -> planejamento SemanticQuery limitado
- -> compilação SQL determinística
- -> Athena read-only limitado
 ```
 
-O modelo nunca decide aplicabilidade de vulnerabilidade, verdade da Risk Policy ou SQL arbitrário.
+O modelo nunca decide aplicabilidade de vulnerabilidade, verdade da Risk Policy, fatos de KEV/EPSS/CVSS ou runtime exposure.
 
-### Caminho de conhecimento explicativo / remediação
+### 2. Caminho estruturado de perguntas em linguagem natural
+
+```text
+pergunta factual em linguagem natural
+ -> planner Bedrock limitado
+ -> proposta estruturada
+ -> parser determinístico
+ -> SemanticQuery tipada
+ -> compilador SQL determinístico
+ -> Athena read-only limitado
+ -> evidência estruturada
+```
+
+O planner não recebe autoridade para SQL arbitrário.
+
+### 3. Caminho semântico explicativo / remediação
 
 ```text
 source pins oficiais e imutáveis
@@ -88,55 +103,141 @@ source pins oficiais e imutáveis
  -> Titan Text Embeddings V2
  -> Amazon S3 Vectors
  -> Retrieve direto e limitado
- -> admissão determinística contra o corpus verificado
- -> montagem determinística e limitada de contexto
- -> uma síntese limitada via Bedrock Converse
- -> autoridade determinística de citações C1..Cn
- -> proposta estruturada de claims + citation IDs
- -> evidência humana de suporte
- -> métricas determinísticas de groundedness
+ -> admissão determinística contra corpus verificado
+ -> montagem limitada de contexto
+ -> síntese limitada e não-streaming via Bedrock Converse
+ -> identidade determinística de citações
+ -> avaliação explícita de suporte / groundedness
 ```
 
-`RetrieveAndGenerate` não é usado. Retrieval e geração permanecem observáveis e testáveis separadamente.
+`RetrieveAndGenerate` não é usado. Retrieval e geração permanecem testáveis e observáveis separadamente.
 
-## Baseline medido da Phase 7
+## Autoridade híbrida da Phase 8
 
-### Qualidade de retrieval
-
-Fixture congelada `knowledge-retrieval-golden:v1`:
+Hybrid Retrieval significa **hybrid evidence routing**, não automaticamente busca keyword + vector.
 
 ```text
-10 casos: 8 positivos + 2 negativos/out-of-authority
-Recall@1:   0.375
-Recall@3:   0.750
-Recall@5:   0.875
-Recall@10:  1.000
-MRR:        0.5699404761904762
-provenance correctness: 1.0
+EvidenceNeed[]
+ -> autoridade determinística de route
+ -> STRUCTURED | SEMANTIC | HYBRID | UNSUPPORTED
+ -> montagem determinística de evidência tipada
+ -> completude ALL_REQUIRED
+ -> HybridEvidenceEnvelope
+ -> síntese limitada e route-aware
 ```
 
-Os dois casos negativos ainda retornaram vizinhos vetoriais. Logo, score de similaridade ou retrieval não vazio são evidência, não autoridade de answerability.
-
-### Qualidade de groundedness / citações
-
-Fixture congelada `knowledge-grounding-golden:v1`:
+Autoridade não é achatada:
 
 ```text
-decision accuracy:          1.0
-citation target precision:  0.2857142857142857
-citation target recall:     0.5
-claim supportedness:        0.8461538461538461
-unsupported claim rate:     0.15384615384615385
-citation correctness:       0.8461538461538461
-abstention precision:       1.0
-abstention recall:          1.0
+fatos estruturados de vulnerabilidade/risco
+ -> autoridade estruturada determinística
+
+orientação explicativa/remediação
+ -> evidência semântica admitida
+
+resposta combinada
+ -> proveniência explícita por classe de evidência
+ -> sem authority laundering
 ```
 
-O failure mais útil foi preservado: em um caso, o retrieval encontrou a evidência correta em rank 1, mas o modelo citou um chunk adjacente. O OpsLens trata isso como falha de attribution/groundedness, em vez de escondê-la atrás de retrieval bem-sucedido.
+Runtime exposure continua `UNSUPPORTED` até existir uma autoridade independente de runtime em fase futura.
 
-O caso exato de TLS cipher fora do corpus retornou corretamente `insufficient_evidence`, mesmo com retrieval vetorial não vazio.
+## Avaliação congelada da Phase 8
 
-## Baseline AWS da Phase 7
+Dataset:
+
+```text
+hybrid-evaluation-golden:v1
+68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1
+```
+
+Seis casos congelados:
+
+```text
+structured_only_factual
+semantic_only_remediation
+true_hybrid
+unsupported_out_of_authority
+partial_structured_evidence
+semantic_retrieval_noise
+```
+
+Métricas independentes:
+
+```text
+route_accuracy
+structured_fact_correctness
+semantic_groundedness
+citation_correctness
+abstention
+latency
+cost
+```
+
+Não existe composite score.
+
+## Baseline híbrido real da Gate 8.4
+
+Evidência imutável:
+
+```text
+labs/evidence/phase-8-gate-8-4-first-complete-baseline-v1.json
+```
+
+Resultado medido:
+
+```text
+route_accuracy:               1.0
+structured_fact_correctness:  1.0
+semantic_groundedness:        0.6666666666666666
+citation_correctness:         0.6666666666666666
+abstention:                   1.0
+latency_ms:                   2959.3333333333335
+cost:                         UNMEASURED / null
+```
+
+O caso semantic-noise preserva uma falha útil: a evidência rank 1 foi admitida, mas não suportava a pergunta; a evidência rank 2 era o target correto. O modelo usou ambas.
+
+```text
+admission != semantic support
+retrieval rank != groundedness
+allowlisted citation != correct citation target
+```
+
+## Otimização medida da Gate 8.5
+
+Uma única hipótese prompt-only previamente declarada, `H8.5-01`, foi executada uma vez contra a fixture congelada.
+
+```text
+candidate: hybrid-synthesis-prompt:h8.5-01-v1
+result:    REJECT
+```
+
+O candidato preservou todos os deterministic guardrails, mas não melhorou as duas métricas alvo:
+
+```text
+semantic_groundedness: 0.6666666666666666
+citation_correctness:  0.6666666666666666
+```
+
+Também aumentou o total de tokens do modelo em 280 em relação ao baseline da Gate 8.4. Por isso, não foi promovido.
+
+O runtime default continua:
+
+```text
+HybridSynthesisPromptPolicy.GATE_8_4_V1
+hybrid-synthesis-prompt:v1
+```
+
+Evidência imutável do experimento:
+
+```text
+labs/evidence/phase-8-gate-8-5-h85-01-first-run-v1.json
+```
+
+Essa é governança de avaliação intencional: uma revisão de prompt plausível não é uma otimização enquanto sua regra de aceitação medida e previamente declarada não passar.
+
+## Baseline AWS
 
 ```text
 environment:             dev
@@ -154,40 +255,38 @@ streaming:               não
 tools:                   nenhum
 ```
 
-Nenhuma role de runtime da aplicação foi criada na Phase 7. O boundary futuro de IAM foi documentado antes de existir compute: `bedrock:Retrieve` será limitado à Knowledge Base específica, enquanto a invocação não-streaming do modelo usará o US Geographic inference profile exato e os foundation-model resources exigidos para as regiões de destino. `RetrieveAndGenerate`, inferência streaming, administração da Knowledge Base e acesso direto ao vector store não fazem parte do entitlement de runtime.
-
-Veja [ADR 0024](docs/adr/0024-phase7-runtime-iam-boundary.md).
+Ainda não existe role pública de runtime da aplicação. A Gate 8.6 não adiciona recursos AWS nem permissões IAM. O boundary futuro do caminho semântico continua limitado a `bedrock:Retrieve` na Knowledge Base exata e `bedrock:InvokeModel` não-streaming para o inference profile/resources aprovados. IAM do runtime público será criado somente quando a Phase 9 definir compute real.
 
 ## Invariantes de segurança e autoridade
 
 - Evidência bruta de terceiros é preservada antes da transformação.
-- Versões exatas da fonte e hashes participam da identidade da evidência.
+- Versões exatas das fontes e hashes participam da identidade da evidência.
 - Normalização de packages, ranges/versions, aplicabilidade, KEV/EPSS/CVSS e Risk Policy permanecem determinísticas.
 - Código de repositórios de terceiros nunca é executado.
 - Planejamento em linguagem natural não recebe autoridade SQL irrestrita.
 - Retrieval output é evidência, não verdade determinística.
-- Texto recuperado continua sendo conteúdo de instrução não confiável mesmo após validação de proveniência.
-- Citation IDs vêm somente do contexto já admitido.
-- Um citation ID válido prova cobertura sintática, não suporte semântico.
-- Evidência ausente não é interpretada silenciosamente como benigna.
+- Texto recuperado continua sendo conteúdo de instrução não confiável após validação de proveniência.
+- Routing híbrido e completude de evidência obrigatória são determinísticos.
+- Evidência estruturada e semântica permanecem classes de autoridade separadas.
+- Citation IDs vêm somente de evidência admitida.
+- Citation ID válido prova identidade admitida, não suporte semântico específico para a pergunta.
+- Evidência ausente não é silenciosamente interpretada como benigna.
+- Runtime exposure não é inferido a partir de repository risk.
 - Evidência de first run é preservada antes de otimização.
+- Experimentos negativos são preservados em vez de ajustados até “passar”.
 - Least privilege, observabilidade, diagnóstico de falhas e cost accounting são requisitos arquiteturais.
 
 ## Disciplina de custo
 
 O OpsLens não inventa custos que a evidência de runtime não consegue sustentar.
 
-A primeira avaliação grounded de quatro casos contabilizou diretamente:
+A Phase 7 possui componentes model/S3 Vectors diretamente computáveis para uma avaliação grounded, enquanto o runtime híbrido das Gates 8.4/8.5 reporta deliberadamente:
 
 ```text
-model input:             $0.0129074
-model output:            $0.0035475
-model subtotal:          $0.0164549
-4 S3 Vectors requests:   $0.0000100
-computable total:        $0.0164649
+cost: UNMEASURED / null
 ```
 
-Esse valor não é chamado de conta AWS completa, porque query embeddings e as unidades de S3 Vectors data-processed/data-returned não aparecem no artifact de runtime.
+Contagem de tokens continua sendo evidência válida de pressão de custo, mas não é convertida silenciosamente em preço completo por request sem um pricing contract determinístico e versionado.
 
 ## Quality gates
 
@@ -199,6 +298,7 @@ Repository Intelligence
 Risk Policy
 Semantic Query
 Knowledge Retrieval
+Hybrid Retrieval
 ```
 
 O projeto usa Ruff, Pyright strict, pytest e regressions. Mudanças com AWS usam adicionalmente Terraform validation, TFLint, Checkov, planos canônicos, verificação de deployment e checks pós-apply.
@@ -210,7 +310,6 @@ O projeto usa Ruff, Pyright strict, pytest e regressions. Mudanças com AWS usam
 ├── .github/
 ├── docs/
 │   ├── adr/
-│   ├── labs/
 │   ├── architecture.md
 │   ├── architecture.pt-br.md
 │   ├── current-state.md
@@ -226,7 +325,8 @@ O projeto usa Ruff, Pyright strict, pytest e regressions. Mudanças com AWS usam
 │   ├── repository_intelligence/
 │   ├── risk_policy/
 │   ├── semantic_query/
-│   └── knowledge_retrieval/
+│   ├── knowledge_retrieval/
+│   └── hybrid_retrieval/
 ├── tests/
 ├── README.md
 ├── README.pt-br.md
@@ -242,21 +342,18 @@ O projeto usa Ruff, Pyright strict, pytest e regressions. Mudanças com AWS usam
 - [Arquitetura — Português](docs/architecture.pt-br.md)
 - [Índice de ADRs](docs/adr/README.md)
 - [Índice de documentação](docs/README.md)
-- [Closeout da Phase 7 Gate 7.8](labs/phase-7-gate-7-8-closeout.md)
+- [Closeout da Phase 7](labs/phase-7-gate-7-8-closeout.md)
+- [Gate 8.4 — bounded synthesis](labs/phase-8-gate-8-4-bounded-hybrid-synthesis.md)
+- [Gate 8.5 — measured optimization](labs/phase-8-gate-8-5-measured-optimization.md)
+- [Closeout da Phase 8](labs/phase-8-gate-8-6-closeout.md)
 
-## Próxima — Phase 8: Hybrid Retrieval
+## Próxima — Phase 9: Public Analyze Your Repository
 
-Phase 8 não significará “concatenar rows de SQL com chunks vetoriais”. O primeiro passo será congelar um contrato explícito de routing e autoridade entre evidência estruturada e evidência semântica.
+A Phase 9 poderá expor o evidence system governado como demo pública limitada. Ela deverá preservar aquisição imutável de repositórios, verdade estruturada determinística, autoridade híbrida de route/evidence, output admission fail-closed, zero model calls nos caminhos unsupported/incomplete e limites explícitos de custo/abuso.
 
-Regra inicial:
+Uma superfície pública não justifica introduzir agents, AgentCore, MCP, A2A, rerankers ou nova tecnologia vetorial por padrão. Esses itens permanecem fases posteriores ou novas hipóteses medidas.
 
-```text
-fatos estruturados de vulnerabilidade/risco -> autoridade estruturada determinística
-orientação explicativa/remediação            -> retrieval semântico limitado
-resposta combinada                            -> proveniência explícita por classe de evidência
-```
-
-Qualquer reranker, keyword/vector hybrid mode, nova tecnologia vetorial ou mudança de prompt precisará ser justificada por requisito medido de qualidade, custo ou failure behavior, e não por cobertura de certificação.
+A PR #89 de Governed LLM Gateway continua deferred e fora da Phase 8.
 
 ---
 
