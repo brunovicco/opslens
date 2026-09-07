@@ -66,6 +66,16 @@ from opslens.agent_baseline.domain.reasoning import (
     AgentReasoningInvocationEvidence,
     AgentReasoningResult,
 )
+from opslens.agent_baseline.domain.reasoning_evaluation import (
+    MAX_AGENT_REASONING_EVALUATION_CASES,
+    SINGLE_AGENT_REASONING_EVALUATION_CONTRACT_VERSION,
+    AgentReasoningCaseScore,
+    AgentReasoningEvaluationCase,
+    AgentReasoningEvaluationDataset,
+    AgentReasoningEvaluationMetrics,
+    AgentReasoningEvaluationReport,
+    AgentReasoningExpectation,
+)
 
 __all__ = [
     "MAX_AGENT_ADAPTIVE_RETRIES",
@@ -78,6 +88,7 @@ __all__ = [
     "MAX_AGENT_EXECUTION_RETRIES",
     "MAX_AGENT_PROPOSALS_PER_TASK",
     "MAX_AGENT_REASONING_ADAPTIVE_RETRIES",
+    "MAX_AGENT_REASONING_EVALUATION_CASES",
     "MAX_AGENT_REASONING_INVOCATIONS_PER_TASK",
     "MAX_AGENT_REASONING_OUTPUT_UTF8_BYTES",
     "MAX_AGENT_TASK_UTF8_BYTES",
@@ -85,6 +96,7 @@ __all__ = [
     "SINGLE_AGENT_EVALUATION_CONTRACT_VERSION",
     "SINGLE_AGENT_EXECUTION_CONTRACT_VERSION",
     "SINGLE_AGENT_REASONING_CONTRACT_VERSION",
+    "SINGLE_AGENT_REASONING_EVALUATION_CONTRACT_VERSION",
     "AgentAbstention",
     "AgentActionProposal",
     "AgentAuthorityValidationError",
@@ -106,6 +118,12 @@ __all__ = [
     "AgentEvaluationReport",
     "AgentEvaluationValidationError",
     "AgentReasoningAuthorizationOutcome",
+    "AgentReasoningCaseScore",
+    "AgentReasoningEvaluationCase",
+    "AgentReasoningEvaluationDataset",
+    "AgentReasoningEvaluationMetrics",
+    "AgentReasoningEvaluationReport",
+    "AgentReasoningExpectation",
     "AgentReasoningFailureCategory",
     "AgentReasoningInvocationEvidence",
     "AgentReasoningResult",
