@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 from dataclasses import dataclass
 from enum import StrEnum
@@ -175,6 +176,154 @@ def _identity_payload(
     }
 
 
+def _validate_event_semantics(
+    *,
+    stage: object,
+    outcome: object,
+    duration_ms: object,
+    attempt_count: object,
+    public_request_id: object,
+    source_execution_id: object,
+    handoff_id: object,
+    failure_category: object,
+) -> tuple[
+    OperationalStage,
+    OperationalOutcome,
+    int,
+    int,
+    str | None,
+    str | None,
+    str | None,
+    OperationalFailureCategory | None,
+]:
+    """Validate one event before identity construction or direct admission."""
+    if type(stage) is not OperationalStage:
+        raise OperationalTelemetryValidationError("stage must be OperationalStage")
+    if type(outcome) is not OperationalOutcome:
+        raise OperationalTelemetryValidationError("outcome must be OperationalOutcome")
+    if (
+        type(duration_ms) is not int
+        or duration_ms < 0
+        or duration_ms > MAX_OPERATIONAL_DURATION_MS
+    ):
+        raise OperationalTelemetryValidationError(
+            "duration_ms must be an integer within the v1 hard limit"
+        )
+    if (
+        type(attempt_count) is not int
+        or attempt_count < 1
+        or attempt_count > MAX_OPERATIONAL_ATTEMPTS
+    ):
+        raise OperationalTelemetryValidationError(
+            "attempt_count must be between 1 and the v1 hard limit"
+        )
+
+    validated_public_request_id = _validate_optional_identity(
+        public_request_id,
+        field="public_request_id",
+        pattern=_PUBLIC_REQUEST_ID_PATTERN,
+    )
+    validated_source_execution_id = _validate_optional_identity(
+        source_execution_id,
+        field="source_execution_id",
+        pattern=_SOURCE_EXECUTION_ID_PATTERN,
+    )
+    validated_handoff_id = _validate_optional_identity(
+        handoff_id,
+        field="handoff_id",
+        pattern=_HANDOFF_ID_PATTERN,
+    )
+
+    if failure_category is not None and type(failure_category) is not OperationalFailureCategory:
+        raise OperationalTelemetryValidationError(
+            "failure_category must be OperationalFailureCategory or null"
+        )
+    validated_failure_category = failure_category
+
+    if outcome is OperationalOutcome.SUCCEEDED:
+        if validated_failure_category is not None:
+            raise OperationalTelemetryValidationError(
+                "successful events cannot carry a failure category"
+            )
+    elif validated_failure_category is None:
+        raise OperationalTelemetryValidationError(
+            "rejected and failed events require a bounded failure category"
+        )
+
+    if (
+        validated_failure_category is not None
+        and validated_failure_category not in _ALLOWED_FAILURES_BY_STAGE[stage]
+    ):
+        raise OperationalTelemetryValidationError(
+            "failure category is not authorized for the selected stage"
+        )
+
+    if stage is OperationalStage.PUBLIC_REQUEST_ADMISSION:
+        if (
+            outcome is OperationalOutcome.SUCCEEDED
+            and validated_public_request_id is None
+        ):
+            raise OperationalTelemetryValidationError(
+                "successful request admission requires public_request_id"
+            )
+        if (
+            validated_source_execution_id is not None
+            or validated_handoff_id is not None
+        ):
+            raise OperationalTelemetryValidationError(
+                "request admission cannot reference later-stage identities"
+            )
+    elif validated_public_request_id is None:
+        raise OperationalTelemetryValidationError(
+            "post-admission stages require public_request_id"
+        )
+
+    if stage is OperationalStage.REPOSITORY_EVIDENCE:
+        if (
+            outcome is OperationalOutcome.SUCCEEDED
+            and validated_source_execution_id is None
+        ):
+            raise OperationalTelemetryValidationError(
+                "successful repository evidence requires source_execution_id"
+            )
+        if validated_handoff_id is not None:
+            raise OperationalTelemetryValidationError(
+                "repository evidence cannot reference a later handoff"
+            )
+    elif stage in (
+        OperationalStage.SEMANTIC_PLANNING,
+        OperationalStage.HYBRID_ROUTE_ADMISSION,
+    ):
+        if validated_source_execution_id is None:
+            raise OperationalTelemetryValidationError(
+                "planning and route stages require source_execution_id"
+            )
+        if validated_handoff_id is not None:
+            raise OperationalTelemetryValidationError(
+                "planning and route stages cannot reference a later handoff"
+            )
+    elif stage is OperationalStage.PUBLIC_HANDOFF:
+        if validated_source_execution_id is None:
+            raise OperationalTelemetryValidationError(
+                "public handoff requires source_execution_id"
+            )
+        if outcome is OperationalOutcome.SUCCEEDED and validated_handoff_id is None:
+            raise OperationalTelemetryValidationError(
+                "successful public handoff requires handoff_id"
+            )
+
+    return (
+        stage,
+        outcome,
+        duration_ms,
+        attempt_count,
+        validated_public_request_id,
+        validated_source_execution_id,
+        validated_handoff_id,
+        validated_failure_category,
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class OperationalEvent:
     """Content-addressed operational evidence for one bounded application stage."""
@@ -192,123 +341,30 @@ class OperationalEvent:
 
     def __post_init__(self) -> None:
         """Reject content-bearing, forged, or semantically inconsistent events."""
-        if type(self.stage) is not OperationalStage:
-            raise OperationalTelemetryValidationError("stage must be OperationalStage")
-        if type(self.outcome) is not OperationalOutcome:
-            raise OperationalTelemetryValidationError("outcome must be OperationalOutcome")
-        if (
-            type(self.duration_ms) is not int
-            or self.duration_ms < 0
-            or self.duration_ms > MAX_OPERATIONAL_DURATION_MS
-        ):
-            raise OperationalTelemetryValidationError(
-                "duration_ms must be an integer within the v1 hard limit"
-            )
-        if (
-            type(self.attempt_count) is not int
-            or self.attempt_count < 1
-            or self.attempt_count > MAX_OPERATIONAL_ATTEMPTS
-        ):
-            raise OperationalTelemetryValidationError(
-                "attempt_count must be between 1 and the v1 hard limit"
-            )
-
-        public_request_id = _validate_optional_identity(
-            self.public_request_id,
-            field="public_request_id",
-            pattern=_PUBLIC_REQUEST_ID_PATTERN,
-        )
-        source_execution_id = _validate_optional_identity(
-            self.source_execution_id,
-            field="source_execution_id",
-            pattern=_SOURCE_EXECUTION_ID_PATTERN,
-        )
-        handoff_id = _validate_optional_identity(
-            self.handoff_id,
-            field="handoff_id",
-            pattern=_HANDOFF_ID_PATTERN,
-        )
-
-        failure_category = self.failure_category
-        if failure_category is not None and type(failure_category) is not OperationalFailureCategory:
-            raise OperationalTelemetryValidationError(
-                "failure_category must be OperationalFailureCategory or null"
-            )
-        if self.outcome is OperationalOutcome.SUCCEEDED:
-            if failure_category is not None:
-                raise OperationalTelemetryValidationError(
-                    "successful events cannot carry a failure category"
-                )
-        elif failure_category is None:
-            raise OperationalTelemetryValidationError(
-                "rejected and failed events require a bounded failure category"
-            )
-
-        if (
-            failure_category is not None
-            and failure_category not in _ALLOWED_FAILURES_BY_STAGE[self.stage]
-        ):
-            raise OperationalTelemetryValidationError(
-                "failure category is not authorized for the selected stage"
-            )
-
-        if self.stage is OperationalStage.PUBLIC_REQUEST_ADMISSION:
-            if (
-                self.outcome is OperationalOutcome.SUCCEEDED
-                and public_request_id is None
-            ):
-                raise OperationalTelemetryValidationError(
-                    "successful request admission requires public_request_id"
-                )
-            if source_execution_id is not None or handoff_id is not None:
-                raise OperationalTelemetryValidationError(
-                    "request admission cannot reference later-stage identities"
-                )
-        else:
-            if public_request_id is None:
-                raise OperationalTelemetryValidationError(
-                    "post-admission stages require public_request_id"
-                )
-
-        if self.stage is OperationalStage.REPOSITORY_EVIDENCE:
-            if (
-                self.outcome is OperationalOutcome.SUCCEEDED
-                and source_execution_id is None
-            ):
-                raise OperationalTelemetryValidationError(
-                    "successful repository evidence requires source_execution_id"
-                )
-            if handoff_id is not None:
-                raise OperationalTelemetryValidationError(
-                    "repository evidence cannot reference a later handoff"
-                )
-        elif self.stage in (
-            OperationalStage.SEMANTIC_PLANNING,
-            OperationalStage.HYBRID_ROUTE_ADMISSION,
-        ):
-            if source_execution_id is None:
-                raise OperationalTelemetryValidationError(
-                    "planning and route stages require source_execution_id"
-                )
-            if handoff_id is not None:
-                raise OperationalTelemetryValidationError(
-                    "planning and route stages cannot reference a later handoff"
-                )
-        elif self.stage is OperationalStage.PUBLIC_HANDOFF:
-            if source_execution_id is None:
-                raise OperationalTelemetryValidationError(
-                    "public handoff requires source_execution_id"
-                )
-            if self.outcome is OperationalOutcome.SUCCEEDED and handoff_id is None:
-                raise OperationalTelemetryValidationError(
-                    "successful public handoff requires handoff_id"
-                )
-
-        payload = _identity_payload(
+        (
+            stage,
+            outcome,
+            duration_ms,
+            attempt_count,
+            public_request_id,
+            source_execution_id,
+            handoff_id,
+            failure_category,
+        ) = _validate_event_semantics(
             stage=self.stage,
             outcome=self.outcome,
             duration_ms=self.duration_ms,
             attempt_count=self.attempt_count,
+            public_request_id=self.public_request_id,
+            source_execution_id=self.source_execution_id,
+            handoff_id=self.handoff_id,
+            failure_category=self.failure_category,
+        )
+        payload = _identity_payload(
+            stage=stage,
+            outcome=outcome,
+            duration_ms=duration_ms,
+            attempt_count=attempt_count,
             public_request_id=public_request_id,
             source_execution_id=source_execution_id,
             handoff_id=handoff_id,
@@ -358,6 +414,42 @@ class OperationalMetricPoint:
     stage: OperationalStage
     outcome: OperationalOutcome
 
+    def __post_init__(self) -> None:
+        """Reject forged metric names, units, dimensions, or unbounded values."""
+        if type(self.name) is not OperationalMetricName:
+            raise OperationalTelemetryValidationError(
+                "metric name must be OperationalMetricName"
+            )
+        if type(self.unit) is not OperationalMetricUnit:
+            raise OperationalTelemetryValidationError(
+                "metric unit must be OperationalMetricUnit"
+            )
+        if type(self.stage) is not OperationalStage:
+            raise OperationalTelemetryValidationError(
+                "metric stage must be OperationalStage"
+            )
+        if type(self.outcome) is not OperationalOutcome:
+            raise OperationalTelemetryValidationError(
+                "metric outcome must be OperationalOutcome"
+            )
+        if type(self.value) is not float or not math.isfinite(self.value):
+            raise OperationalTelemetryValidationError(
+                "metric value must be one finite float"
+            )
+        if self.name is OperationalMetricName.STAGE_COUNT:
+            if self.unit is not OperationalMetricUnit.COUNT or self.value != 1.0:
+                raise OperationalTelemetryValidationError(
+                    "stage count metric must be exactly 1 Count"
+                )
+        elif (
+            self.unit is not OperationalMetricUnit.MILLISECONDS
+            or self.value < 0.0
+            or self.value > float(MAX_OPERATIONAL_DURATION_MS)
+        ):
+            raise OperationalTelemetryValidationError(
+                "stage latency metric must be bounded Milliseconds"
+            )
+
     @property
     def dimensions(self) -> Mapping[str, str]:
         """Return only bounded dimensions; never high-cardinality request/source IDs."""
@@ -383,7 +475,16 @@ def create_operational_event(
     failure_category: OperationalFailureCategory | None = None,
 ) -> OperationalEvent:
     """Create one validated content-addressed operational event."""
-    payload = _identity_payload(
+    (
+        validated_stage,
+        validated_outcome,
+        validated_duration_ms,
+        validated_attempt_count,
+        validated_public_request_id,
+        validated_source_execution_id,
+        validated_handoff_id,
+        validated_failure_category,
+    ) = _validate_event_semantics(
         stage=stage,
         outcome=outcome,
         duration_ms=duration_ms,
@@ -393,16 +494,26 @@ def create_operational_event(
         handoff_id=handoff_id,
         failure_category=failure_category,
     )
+    payload = _identity_payload(
+        stage=validated_stage,
+        outcome=validated_outcome,
+        duration_ms=validated_duration_ms,
+        attempt_count=validated_attempt_count,
+        public_request_id=validated_public_request_id,
+        source_execution_id=validated_source_execution_id,
+        handoff_id=validated_handoff_id,
+        failure_category=validated_failure_category,
+    )
     digest = sha256(_canonical_json(payload)).hexdigest()
     return OperationalEvent(
-        stage=stage,
-        outcome=outcome,
-        duration_ms=duration_ms,
-        attempt_count=attempt_count,
-        public_request_id=public_request_id,
-        source_execution_id=source_execution_id,
-        handoff_id=handoff_id,
-        failure_category=failure_category,
+        stage=validated_stage,
+        outcome=validated_outcome,
+        duration_ms=validated_duration_ms,
+        attempt_count=validated_attempt_count,
+        public_request_id=validated_public_request_id,
+        source_execution_id=validated_source_execution_id,
+        handoff_id=validated_handoff_id,
+        failure_category=validated_failure_category,
         event_sha256=digest,
         event_id=f"{OPERATIONAL_TELEMETRY_CONTRACT_VERSION}@sha256:{digest}",
     )
