@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
+from enum import StrEnum
 from hashlib import sha256
-from typing import cast
+from typing import Final, cast
 
 from opslens.hybrid_retrieval.domain.synthesis import (
     HYBRID_SYNTHESIS_CONTRACT_VERSION,
@@ -32,6 +33,37 @@ TRUSTED_HYBRID_SYNTHESIS_INSTRUCTIONS_V1 = (
     "a supported explanatory claim, return insufficient_evidence with an empty claims array. "
     "Otherwise return answer with claims containing only text, semantic_citation_ids, and "
     "structured_fact_ids. Do not add markdown or extra JSON keys."
+)
+
+TRUSTED_HYBRID_SYNTHESIS_INSTRUCTIONS_H85_01 = (
+    TRUSTED_HYBRID_SYNTHESIS_INSTRUCTIONS_V1
+    + " Answer only the user's requested task and prefer the smallest sufficient set of "
+    "claims and citations. Treat each semantic evidence item independently: do not include a "
+    "claim merely because an admitted item is generally useful or top-ranked. Before returning "
+    "each claim, require that the claim directly addresses the user's question and that every "
+    "cited S item directly supports that exact claim. Omit ancillary testing, environment, "
+    "deployment, or operational advice unless the question asks for it or it is necessary to "
+    "answer the requested task."
+)
+
+
+class HybridSynthesisPromptPolicy(StrEnum):
+    """Exact prompt policies admitted by the bounded synthesis prompt boundary."""
+
+    GATE_8_4_V1 = "hybrid-synthesis-prompt:v1"
+    GATE_8_5_H85_01 = "hybrid-synthesis-prompt:h8.5-01-v1"
+
+
+_TRUSTED_INSTRUCTIONS_BY_POLICY: Final[
+    dict[HybridSynthesisPromptPolicy, str]
+] = {
+    HybridSynthesisPromptPolicy.GATE_8_4_V1: TRUSTED_HYBRID_SYNTHESIS_INSTRUCTIONS_V1,
+    HybridSynthesisPromptPolicy.GATE_8_5_H85_01: (
+        TRUSTED_HYBRID_SYNTHESIS_INSTRUCTIONS_H85_01
+    ),
+}
+_ALLOWED_TRUSTED_INSTRUCTIONS: Final[frozenset[str]] = frozenset(
+    _TRUSTED_INSTRUCTIONS_BY_POLICY.values()
 )
 
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
@@ -80,6 +112,15 @@ def _admit_request(value: object) -> HybridSynthesisRequest:
     return value
 
 
+def _admit_prompt_policy(value: object) -> HybridSynthesisPromptPolicy:
+    """Admit only one explicitly versioned prompt policy."""
+    if not isinstance(value, HybridSynthesisPromptPolicy):
+        raise HybridSynthesisPromptError(
+            "policy must be one admitted HybridSynthesisPromptPolicy"
+        )
+    return value
+
+
 def _fingerprint_payload(
     *,
     request_sha256: str,
@@ -120,9 +161,9 @@ class HybridSynthesisPromptEnvelope:
             self.trusted_instructions,
             field="trusted_instructions",
         )
-        if trusted != TRUSTED_HYBRID_SYNTHESIS_INSTRUCTIONS_V1:
+        if trusted not in _ALLOWED_TRUSTED_INSTRUCTIONS:
             raise HybridSynthesisPromptError(
-                "trusted_instructions must match the frozen hybrid synthesis v1 contract"
+                "trusted_instructions must match one admitted hybrid synthesis prompt policy"
             )
         object.__setattr__(self, "trusted_instructions", trusted)
         question = _require_text(self.question, field="question")
@@ -200,9 +241,13 @@ def _hybrid_evidence_json(request: HybridSynthesisRequest) -> str:
 
 def build_hybrid_synthesis_prompt(
     request: HybridSynthesisRequest,
+    *,
+    policy: HybridSynthesisPromptPolicy = HybridSynthesisPromptPolicy.GATE_8_4_V1,
 ) -> HybridSynthesisPromptEnvelope:
-    """Build one deterministic prompt from an admitted semantic/hybrid request."""
+    """Build one deterministic prompt from an admitted request and explicit policy."""
     admitted_request = _admit_request(request)
+    admitted_policy = _admit_prompt_policy(policy)
+    trusted_instructions = _TRUSTED_INSTRUCTIONS_BY_POLICY[admitted_policy]
     evidence_json = _hybrid_evidence_json(admitted_request)
     if len(evidence_json.encode("utf-8")) > MAX_HYBRID_SYNTHESIS_EVIDENCE_BYTES:
         raise HybridSynthesisPromptError(
@@ -212,16 +257,27 @@ def build_hybrid_synthesis_prompt(
     prompt_sha256 = sha256(
         _fingerprint_payload(
             request_sha256=admitted_request.request_sha256,
-            trusted_instructions=TRUSTED_HYBRID_SYNTHESIS_INSTRUCTIONS_V1,
+            trusted_instructions=trusted_instructions,
             question=admitted_request.question,
             evidence_json=evidence_json,
         )
     ).hexdigest()
     return HybridSynthesisPromptEnvelope(
         request_sha256=admitted_request.request_sha256,
-        trusted_instructions=TRUSTED_HYBRID_SYNTHESIS_INSTRUCTIONS_V1,
+        trusted_instructions=trusted_instructions,
         question=admitted_request.question,
         evidence_json=evidence_json,
         evidence_sha256=evidence_sha256,
         prompt_sha256=prompt_sha256,
     )
+
+
+__all__ = [
+    "MAX_HYBRID_SYNTHESIS_EVIDENCE_BYTES",
+    "TRUSTED_HYBRID_SYNTHESIS_INSTRUCTIONS_H85_01",
+    "TRUSTED_HYBRID_SYNTHESIS_INSTRUCTIONS_V1",
+    "HybridSynthesisPromptEnvelope",
+    "HybridSynthesisPromptError",
+    "HybridSynthesisPromptPolicy",
+    "build_hybrid_synthesis_prompt",
+]

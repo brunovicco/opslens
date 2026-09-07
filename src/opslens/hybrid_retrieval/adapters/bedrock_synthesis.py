@@ -19,6 +19,7 @@ from opslens.hybrid_retrieval.application.synthesis import (
     parse_hybrid_synthesis_output,
 )
 from opslens.hybrid_retrieval.application.synthesis_prompt import (
+    HybridSynthesisPromptPolicy,
     build_hybrid_synthesis_prompt,
 )
 from opslens.hybrid_retrieval.domain.synthesis import (
@@ -59,7 +60,7 @@ class BedrockHybridSynthesisRuntimeError(RuntimeError):
 
 
 class BedrockHybridConverseClient(Protocol):
-    """Define only the non-streaming Bedrock capability required by Gate 8.4."""
+    """Define only the non-streaming Bedrock capability required by hybrid synthesis."""
 
     def converse(self, **request: object) -> Mapping[str, object]:
         """Invoke one non-streaming Converse request."""
@@ -86,6 +87,13 @@ def _admit_synthesis_request(value: object) -> HybridSynthesisRequest:
     """Admit one exact request before invoking the provider."""
     if not isinstance(value, HybridSynthesisRequest):
         raise TypeError("request must be HybridSynthesisRequest.")
+    return value
+
+
+def _admit_prompt_policy(value: object) -> HybridSynthesisPromptPolicy:
+    """Admit one exact versioned prompt policy before provider execution."""
+    if not isinstance(value, HybridSynthesisPromptPolicy):
+        raise TypeError("prompt_policy must be HybridSynthesisPromptPolicy.")
     return value
 
 
@@ -378,10 +386,19 @@ class BedrockHybridSynthesizer:
         client: BedrockHybridConverseClient,
         *,
         clock: Callable[[], float] = time.perf_counter,
+        prompt_policy: HybridSynthesisPromptPolicy = (
+            HybridSynthesisPromptPolicy.GATE_8_4_V1
+        ),
     ) -> None:
-        """Create the adapter with injected runtime client and monotonic clock."""
+        """Create the adapter with explicit prompt policy and injected runtime client."""
         self._client = client
         self._clock = clock
+        self._prompt_policy = _admit_prompt_policy(prompt_policy)
+
+    @property
+    def prompt_policy(self) -> HybridSynthesisPromptPolicy:
+        """Expose the exact versioned prompt policy used by this synthesizer."""
+        return self._prompt_policy
 
     def synthesize(
         self,
@@ -389,7 +406,10 @@ class BedrockHybridSynthesizer:
     ) -> BedrockHybridSynthesisExecution:
         """Invoke Bedrock once and admit only exact bounded hybrid output."""
         admitted_request = _admit_synthesis_request(request)
-        prompt = build_hybrid_synthesis_prompt(admitted_request)
+        prompt = build_hybrid_synthesis_prompt(
+            admitted_request,
+            policy=self._prompt_policy,
+        )
         payload = build_bedrock_hybrid_synthesis_converse_request(prompt)
         started = self._clock()
         try:
@@ -433,3 +453,13 @@ class BedrockHybridSynthesizer:
                 stop_reason=stop_reason,
             ) from exc
         return BedrockHybridSynthesisExecution(result=result, evidence=evidence)
+
+
+__all__ = [
+    "BedrockHybridConverseClient",
+    "BedrockHybridSynthesisExecution",
+    "BedrockHybridSynthesisFailureCategory",
+    "BedrockHybridSynthesisInvocationEvidence",
+    "BedrockHybridSynthesisRuntimeError",
+    "BedrockHybridSynthesizer",
+]
