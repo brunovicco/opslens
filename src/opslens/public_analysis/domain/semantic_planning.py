@@ -314,6 +314,6 @@ __all__ = [
     "PUBLIC_ANALYSIS_V1_REQUIRED_EVIDENCE_NEEDS",
     "PUBLIC_SEMANTIC_PLANNING_CONTRACT_VERSION",
     "PublicAnalysisAdmissionHandoff",
-    "PublicSemanticPlanningRequest",
     "PublicSemanticPlanProposal",
+    "PublicSemanticPlanningRequest",
 ]
