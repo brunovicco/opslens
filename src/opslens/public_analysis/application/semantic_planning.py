@@ -6,7 +6,7 @@ import json
 from typing import Protocol, cast
 
 from opslens.hybrid_retrieval.application import route_evidence_request
-from opslens.hybrid_retrieval.domain import EvidenceNeed, HybridRoutingRequest
+from opslens.hybrid_retrieval.domain import EvidenceNeed, HybridRouteDecision, HybridRoutingRequest
 from opslens.hybrid_retrieval.domain.errors import HybridRetrievalValidationError
 from opslens.public_analysis.domain import (
     PUBLIC_ANALYSIS_V1_REQUIRED_EVIDENCE_NEEDS,
@@ -178,24 +178,19 @@ def parse_public_semantic_plan_proposal(
         ) from exc
 
 
-def admit_public_semantic_plan(
+def route_public_semantic_plan(
     proposal: PublicSemanticPlanProposal,
     *,
     planning_request: PublicSemanticPlanningRequest,
-    source_execution: PublicRepositoryEvidenceExecution,
-) -> PublicAnalysisAdmissionHandoff:
-    """Apply fixed v1 public policy, then delegate route authority to Phase 8."""
+) -> HybridRouteDecision:
+    """Apply fixed public-v1 policy before delegating route authority to Phase 8."""
     if type(proposal) is not PublicSemanticPlanProposal:
         raise PublicSemanticPlanAdmissionError(
-            "public semantic-plan admission requires one parsed proposal"
+            "public semantic-route admission requires one parsed proposal"
         )
     if type(planning_request) is not PublicSemanticPlanningRequest:
         raise PublicSemanticPlanAdmissionError(
-            "public semantic-plan admission requires one planning request"
-        )
-    if type(source_execution) is not PublicRepositoryEvidenceExecution:
-        raise PublicSemanticPlanAdmissionError(
-            "public semantic-plan admission requires verified repository evidence"
+            "public semantic-route admission requires one planning request"
         )
     if proposal.planning_request_sha256 != planning_request.request_sha256:
         raise PublicSemanticPlanAdmissionError(
@@ -205,10 +200,28 @@ def admit_public_semantic_plan(
         raise PublicSemanticPlanAdmissionError(
             "public analysis v1 requires vulnerability, risk, and remediation evidence"
         )
+    try:
+        return route_evidence_request(
+            HybridRoutingRequest(evidence_needs=proposal.evidence_needs)
+        )
+    except HybridRetrievalValidationError as exc:
+        raise PublicSemanticPlanAdmissionError(
+            "semantic plan cannot enter the deterministic hybrid route authority"
+        ) from exc
 
-    route_decision = route_evidence_request(
-        HybridRoutingRequest(evidence_needs=proposal.evidence_needs)
-    )
+
+def build_public_analysis_admission_handoff(
+    *,
+    source_execution: PublicRepositoryEvidenceExecution,
+    planning_request: PublicSemanticPlanningRequest,
+    proposal: PublicSemanticPlanProposal,
+    route_decision: HybridRouteDecision,
+) -> PublicAnalysisAdmissionHandoff:
+    """Bind one already-routed proposal to exact source evidence and handoff identity."""
+    if type(source_execution) is not PublicRepositoryEvidenceExecution:
+        raise PublicSemanticPlanAdmissionError(
+            "public handoff requires verified repository evidence"
+        )
     try:
         return PublicAnalysisAdmissionHandoff(
             source_execution=source_execution,
@@ -220,6 +233,25 @@ def admit_public_semantic_plan(
         raise PublicSemanticPlanAdmissionError(
             "semantic plan cannot be admitted against the verified source execution"
         ) from exc
+
+
+def admit_public_semantic_plan(
+    proposal: PublicSemanticPlanProposal,
+    *,
+    planning_request: PublicSemanticPlanningRequest,
+    source_execution: PublicRepositoryEvidenceExecution,
+) -> PublicAnalysisAdmissionHandoff:
+    """Apply fixed v1 policy, deterministic route authority, then exact handoff binding."""
+    route_decision = route_public_semantic_plan(
+        proposal,
+        planning_request=planning_request,
+    )
+    return build_public_analysis_admission_handoff(
+        source_execution=source_execution,
+        planning_request=planning_request,
+        proposal=proposal,
+        route_decision=route_decision,
+    )
 
 
 def plan_public_analysis_handoff(
@@ -245,7 +277,9 @@ __all__ = [
     "PublicSemanticPlanAdmissionError",
     "PublicSemanticPlanner",
     "admit_public_semantic_plan",
+    "build_public_analysis_admission_handoff",
     "build_public_semantic_planning_request",
     "parse_public_semantic_plan_proposal",
     "plan_public_analysis_handoff",
+    "route_public_semantic_plan",
 ]
