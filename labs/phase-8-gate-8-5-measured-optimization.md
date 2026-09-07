@@ -4,7 +4,7 @@ _Date: 2026-09-06_
 
 ## Objective
 
-Make one measured and reversible optimization decision from the immutable Gate 8.4 real Bedrock baseline. Gate 8.5 does not authorize open-ended prompt tuning or upstream retrieval changes merely because one synthesis metric is imperfect.
+Make one measured and reversible optimization decision from the immutable Gate 8.4 real Bedrock baseline without weakening routing, evidence admission, structured-fact authority, or citation authority.
 
 Starting point:
 
@@ -23,7 +23,7 @@ hybrid-evaluation-golden:v1
 68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1
 ```
 
-The fixture and its human-adjudicated support/citation targets remain unchanged.
+The fixture and its human-adjudicated support/citation targets remained unchanged.
 
 ## Immutable Gate 8.4 baseline
 
@@ -55,7 +55,7 @@ total tokens:   4439
 
 ## Measured weakness
 
-The only failing synthesis-quality case in the frozen fixture is the semantic-noise case:
+The only failing synthesis-quality case in the frozen fixture was the semantic-noise case:
 
 ```text
 question:
@@ -80,7 +80,7 @@ retrieval rank != groundedness
 allowlisted citation != correct citation target
 ```
 
-This is synthesis selection/relevance behavior. The expected evidence was already retrieved and admitted, so the current observation does not justify changing retrieval before testing a smaller downstream intervention.
+The required S2 evidence was already retrieved and admitted, so H8.5-01 tested the smallest downstream intervention rather than modifying retrieval.
 
 ## H8.5-01 — prompt-only hypothesis
 
@@ -88,42 +88,32 @@ Hypothesis:
 
 > Explicitly requiring the smallest sufficient answer, direct relevance to the user's requested task for every claim, and omission of ancillary guidance will remove the extra S1 claim while preserving all deterministic authority boundaries.
 
-The candidate prompt policy is versioned as:
+Candidate prompt policy:
 
 ```text
 hybrid-synthesis-prompt:h8.5-01-v1
 ```
 
-The merged Gate 8.4 default remains:
+Runtime default kept frozen as:
 
 ```text
 hybrid-synthesis-prompt:v1
 ```
 
-The default v1 instructions remain byte-for-byte unchanged. H8.5-01 is opt-in only until the measured experiment is complete and explicitly accepted.
+H8.5-01 changed only trusted synthesis instructions about answer scope and direct relevance. It did not change:
 
-## Controlled variable
-
-H8.5-01 changes exactly one conceptual variable: trusted synthesis instructions about answer scope and direct relevance.
-
-It does **not** change:
-
-- `hybrid-evaluation-golden:v1` or its SHA-256;
-- support/citation targets;
+- the frozen dataset or support/citation targets;
 - Gate 8.1 routing;
-- Gate 8.2 evidence admission or `ALL_REQUIRED` completeness;
+- Gate 8.2 evidence admission or completeness;
 - structured `F*` fact projection;
 - semantic `S*` evidence contents, order, ranks, or scores;
 - output JSON Schema;
-- model or inference profile;
-- Region;
-- temperature;
-- max tokens;
+- model, Region, temperature, or max tokens;
 - one-call-per-eligible-case budget;
 - unsupported runtime-exposure behavior;
 - IAM or AWS infrastructure.
 
-Bedrock profile therefore remains:
+Bedrock profile remained:
 
 ```text
 region:      us-east-1
@@ -134,21 +124,9 @@ temperature: 0.0
 maxTokens:   2048
 ```
 
-## Why not reranking or hybrid keyword/vector search first?
+## Predeclared decision rule
 
-The current frozen failure does not show retrieval unavailability:
-
-```text
-expected S2 -> retrieved -> admitted -> visible to model
-```
-
-Changing candidate budgets, reranking, metadata filters, embeddings, vector stores, or keyword+vector search would perturb an upstream stage that already supplied the required evidence. Such changes remain valid future hypotheses if measured evidence later supports them, but they are not the smallest intervention for H8.5-01.
-
-This is an important evaluation principle for AIP-C01 and production RAG systems: optimize the stage that failed rather than changing the entire retrieval stack because an end-to-end score is below 1.0.
-
-## Predeclared acceptance criteria
-
-Non-regression guardrails:
+Required non-regression guardrails:
 
 ```text
 route_accuracy                        == 1.0
@@ -169,62 +147,148 @@ semantic_groundedness == 1.0
 citation_correctness  == 1.0
 ```
 
-The comparison is intentionally not a composite score.
+All targets must pass for `ACCEPT`; otherwise the candidate is `REJECT`. Latency and token deltas are reported independently and are not collapsed into a composite score.
 
-Latency is reported independently and is not a hard acceptance gate from a single three-call sample. Input/output/total token deltas are reported as cost-pressure evidence. USD cost remains unmeasured unless a deterministic versioned pricing contract is introduced.
+## Exact-head pre-run validation
 
-## Decision rule
-
-```text
-all guardrails pass
-AND semantic_groundedness == 1.0
-AND citation_correctness  == 1.0
- -> ACCEPT
-
-otherwise
- -> REJECT
-```
-
-A completed REJECT is a valid Gate 8.5 result. It does not authorize another prompt edit under the same hypothesis.
-
-Materially changing the candidate after observing the result would create adaptive tuning against the six-case fixture. A different intervention therefore requires a new versioned hypothesis rather than silently mutating H8.5-01.
-
-## Rollback
-
-Rollback is immediate and deterministic:
+The only real H8.5-01 execution was authorized after exact-head CI passed on:
 
 ```text
-keep HybridSynthesisPromptPolicy.GATE_8_4_V1 as the default
+8ac47d0d45e58a0d12e15e6214e4f820614ee19f
 ```
 
-The experiment policy is injected explicitly into the existing Bedrock adapter. No provider transport fork or infrastructure change is required.
+Python CI #341 / run `34065316124` passed all six repository slices. The hybrid retrieval slice passed:
 
-## Offline engineering controls
+```text
+uv lock --check     PASS
+Ruff                PASS
+Pyright strict      PASS — 0 errors, 0 warnings
+pytest              PASS — 73 passed
+```
 
-Before any real model invocation, CI must prove:
+The operator then used a clean SSO credential path. STS preflight passed before the candidate invocation.
 
-- Gate 8.4 v1 prompt fingerprints remain exactly equal to the preserved real baseline hashes;
-- candidate prompt selection is explicit;
-- candidate and baseline use identical request/evidence payloads;
-- default runtime policy remains Gate 8.4 v1;
-- synthetic quality success produces `ACCEPT`;
-- the original semantic-noise behavior produces `REJECT`;
-- an SDK retry produces `REJECT` even if quality targets pass;
-- the Gate 8.5 CLI imports in a fresh interpreter without provider initialization;
-- the existing complete hybrid test slice remains green under Ruff, strict Pyright, and pytest.
+## Immutable H8.5-01 runtime evidence
 
-## Real-run rule
+The single real candidate run completed successfully at the execution level and is preserved at:
 
-No real H8.5-01 Bedrock call is authorized until the draft PR's exact head is green across the repository quality gates.
+```text
+labs/evidence/phase-8-gate-8-5-h85-01-first-run-v1.json
+```
 
-When authorized, the operator must use the clean SSO credential path established during Gate 8.4. Stale `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, `AWS_SECURITY_TOKEN`, or `AWS_CREDENTIAL_EXPIRATION` environment variables must not shadow `AWS_PROFILE=opslens-bootstrap`.
+Execution facts:
 
-Exactly one complete H8.5-01 candidate execution is authorized. Its output must be preserved as immutable evidence before the ACCEPT/REJECT decision is closed.
+```text
+complete:                             true
+planned_case_count:                   6
+synthesis_invocation_attempt_count:   3
+admitted_model_execution_count:       3
+all stop reasons:                     end_turn
+all SDK retry attempts:               0
+region:                               us-east-1
+model:                                us.anthropic.claude-haiku-4-5-20251001-v1:0
+```
+
+Deterministic non-regression metrics:
+
+```text
+route_accuracy:               1.0
+structured_fact_correctness:  1.0
+abstention:                   1.0
+```
+
+The unsupported runtime-exposure case still abstained with zero model calls. The incomplete structured-evidence case still rejected before synthesis with zero model calls. Structured-only output remained deterministic and model-free.
+
+## Candidate quality result
+
+Measured H8.5-01 result:
+
+```text
+semantic_groundedness:  0.6666666666666666
+citation_correctness:   0.6666666666666666
+latency_ms:             2997.0
+cost:                   UNMEASURED / null
+```
+
+The quality target was therefore not met.
+
+The semantic-noise case still produced two claims:
+
+```text
+claim 1 -> S2 / transitive-lock-review
+           directly answers the requested task
+
+claim 2 -> S1 / clean-environment-noise
+           ancillary guidance, not a frozen support/citation target
+```
+
+The candidate prompt did not eliminate the exact failure observed in Gate 8.4.
+
+## Token and latency deltas
+
+Compared with the immutable Gate 8.4 baseline:
+
+```text
+input tokens:   4456   delta +306
+output tokens:   263   delta  -26
+total tokens:   4719   delta +280
+latency_ms:     2997.0 delta +37.666666666666515
+```
+
+The prompt-only candidate slightly reduced output tokens but increased input and total tokens because the added instructions were themselves model-visible. The small single-run latency increase is reported as runtime evidence, not treated as a statistically meaningful regression gate.
+
+USD cost remains intentionally unmeasured because no deterministic versioned pricing contract exists in this phase.
+
+## Decision
+
+```text
+H8.5-01 = REJECT
+```
+
+Machine-recorded rejection reasons:
+
+```text
+semantic_groundedness_target_not_met
+citation_correctness_target_not_met
+```
+
+This is a completed and valid optimization experiment. The rejection is not an execution failure.
+
+The result is important: a plausible prompt refinement did **not** improve the frozen end-to-end semantic/citation metrics. Therefore OpsLens must not promote the candidate merely because the instructions appear semantically better to a human reviewer.
+
+## Runtime policy after rejection
+
+Rollback requires no code mutation because the candidate was never promoted. The runtime default remains:
+
+```text
+HybridSynthesisPromptPolicy.GATE_8_4_V1
+hybrid-synthesis-prompt:v1
+```
+
+The candidate remains versioned experiment code/evidence only.
+
+No second H8.5-01 run is authorized. Editing the candidate after seeing this result and rerunning against the same six-case fixture would be adaptive prompt tuning. A materially different intervention requires a new versioned hypothesis and new predeclared acceptance rule.
+
+## Architecture and AIP-C01 lesson
+
+Gate 8.5 demonstrates why RAG optimization must be stage-specific and evaluation-driven:
+
+```text
+retrieval availability  -> succeeded
+admission                -> succeeded
+deterministic routing    -> succeeded
+structured authority     -> succeeded
+synthesis relevance      -> still imperfect
+```
+
+The correct response is not to silently change embeddings, vector search, reranking, prompt, and thresholds together. Each intervention needs a bounded hypothesis, immutable evaluation target, measured result, and explicit accept/reject decision.
+
+It also demonstrates why output admission and semantic evaluation are separate controls: the S1 citation was validly allowlisted and grounded to an admitted chunk, yet still incorrect for the frozen question-specific citation target.
 
 ## Gate status
 
 ```text
-IN PROGRESS — OFFLINE IMPLEMENTATION / NO GATE 8.5 BEDROCK RUN YET
+COMPLETE — H8.5-01 REJECTED
 ```
 
-Gate 8.6 and Phase 9 remain blocked until the measured Gate 8.5 decision is recorded.
+Gate 8.6 is the next authorized Phase 8 step. Phase 9 remains blocked until Phase 8 closeout is recorded.
