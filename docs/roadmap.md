@@ -33,7 +33,7 @@ concept
 | 7 | Knowledge Retrieval with Bedrock | ✅ Complete |
 | 8 | Hybrid Retrieval | ✅ Complete |
 | 9 | Public Analyze Your Repository | ✅ Complete |
-| 10 | Observability & Operational Excellence | ▶️ In progress |
+| 10 | Observability & Operational Excellence | ▶️ In progress — Gate 10.3 next |
 | 11 | Single-Agent Baseline | ⏳ Planned |
 | 12 | Multi-Agent Architecture | ⏳ Planned |
 | 13 | MCP | ⏳ Planned |
@@ -264,19 +264,21 @@ without weakening deterministic authority,
 provenance, content minimization, or least privilege
 ```
 
-Frozen Phase 10 rule:
+Frozen Phase 10 rules:
 
 ```text
 telemetry evidence != business truth
 telemetry evidence != route authority
 telemetry failure != permission to bypass fail-closed application contracts
+telemetry delivery accounting != permission to invent evidence identities
 ```
 
-Mandatory sequence begins as follows:
+Mandatory sequence:
 
 ```text
 Gate 10.1 — Content-Minimized Operational Telemetry Contract   COMPLETE / MERGED
-Gate 10.2 — Governed Orchestration Instrumentation             NEXT
+Gate 10.2 — Governed Orchestration Instrumentation             COMPLETE / MERGED
+Gate 10.3 — CloudWatch EMF Telemetry Adapter Boundary          NEXT
 ```
 
 ### Gate 10.1 — Content-Minimized Operational Telemetry Contract — COMPLETE
@@ -330,36 +332,83 @@ issue #134:                   CLOSED / COMPLETED
 
 Gate 10.1 introduced no public runtime, new AWS resources, new IAM permissions, Bedrock/model calls, Athena calls, telemetry exporter calls, production dashboards, alarms, or SLO claims.
 
-### Gate 10.2 — Governed Orchestration Instrumentation — NEXT
+### Gate 10.2 — Governed Orchestration Instrumentation — COMPLETE
 
-Goal: wire `operational-telemetry:v1` into the already-governed public-analysis orchestration through injected provider-neutral boundaries before choosing or deploying a telemetry backend.
+Gate 10.2 wires `operational-telemetry:v1` into the already-governed public-analysis application path through injected provider-neutral boundaries.
 
-Expected boundary:
+Implemented boundary:
 
 ```text
 existing public-analysis stage
  -> deterministic stage outcome/failure classification
  -> OperationalEvent
  -> injected OperationalEventSink
- -> optional provider adapter later
+ -> best-effort external delivery accounting
 ```
 
-Gate 10.2 must freeze, test, and document:
+Provider-neutral operational ports:
 
 ```text
-exact stage emission order
-success/rejection/failure mapping
-no downstream stage telemetry after fail-closed application stop
-content-minimized identities only
-clock/duration accounting through an injected boundary
-telemetry sink failure semantics
-no telemetry-based business/route authorization
-no high-cardinality metric dimensions
+MonotonicClock
+OperationalEventSink
 ```
 
-The sink-failure decision must be explicit. A telemetry failure must never convert an application rejection/failure into success or authorize downstream work. Whether telemetry delivery itself is required for one future runtime is a separate operational policy decision and must not be hidden inside the application authority contract.
+Successful execution emits exactly five successful events in stage order. Failed/rejected stages are terminal. No later business work or telemetry event is emitted after a fail-closed stop.
 
-Gate 10.2 remains offline/provider-neutral unless real deployment is separately justified. No public HTTP runtime, runtime IAM, production SLO, or production telemetry delivery may be claimed from unit/CI evidence.
+The failure taxonomy distinguishes request rejection, source transport failure, evidence rejection, planner invocation failure, planner-output rejection, route-authority rejection, handoff rejection, and unexpected internal failure without copying arbitrary exception/provider text into telemetry.
+
+Sink delivery is best effort only after mandatory in-process event construction:
+
+```text
+valid OperationalEvent construction failure -> fail closed
+external sink delivery failure               -> no business/route authority change
+```
+
+Undelivered-event accounting is itself validated: only already-admitted event IDs are accepted; duplicate or forged IDs fail closed.
+
+Validation:
+
+```text
+PR #138 final head:           24b2affdf464e2548d94273e41007bb3256b561e
+Python CI run:                34141496326 / PASS
+uv lock --check:              PASS
+Ruff:                         PASS
+Pyright strict:               0 errors / 0 warnings / 0 informations
+Public Analysis pytest:       70 passed
+merge SHA:                    346b223d9566a5d04d84e279f30793ad52a35b67
+issue #137:                   CLOSED / COMPLETED
+```
+
+Gate 10.2 remained offline/provider-neutral and introduced no public HTTP runtime, AWS resource, runtime IAM, Athena/Bedrock/model call, CloudWatch/OpenTelemetry exporter call, dashboard, alarm, or production SLO claim.
+
+### Gate 10.3 — CloudWatch EMF Telemetry Adapter Boundary — NEXT
+
+Goal: adapt the frozen provider-neutral operational evidence and low-cardinality metric projection to an AWS-native CloudWatch Embedded Metric Format representation without requiring a deployed public runtime.
+
+Proposed boundary to freeze before any real delivery:
+
+```text
+OperationalEvent
+ -> deterministic metric projection
+ -> deterministic CloudWatch EMF document
+ -> injected line/writer boundary
+ -> runtime log transport later
+```
+
+Gate 10.3 must remain offline/fake-writer first and prove:
+
+```text
+EMF schema/namespace/version are explicit
+metric dimensions remain exactly ContractVersion/Operation/Stage/Outcome
+public_request_id/source_execution_id/handoff_id never become metric dimensions
+content-addressed event identity may remain log metadata only
+one event produces bounded deterministic EMF output
+no application retry or business authority is introduced
+writer failure cannot authorize downstream work
+no provider exception content enters admitted telemetry
+```
+
+A serialized EMF document is not proof of CloudWatch ingestion. Gate 10.3 must not claim a real CloudWatch log group, metric datapoint, dashboard, alarm, production p95/p99, SLO, or delivery guarantee unless a later concrete runtime and AWS validation produce that evidence.
 
 Phase 10 entry criteria remain frozen:
 

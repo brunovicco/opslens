@@ -26,7 +26,8 @@ Phase 8  Hybrid Retrieval                       COMPLETE
 Phase 9  Public Analyze Your Repository         COMPLETE
 Phase 10 Observability & Operational Excellence IN PROGRESS
   Gate 10.1 Content-Minimized Telemetry         COMPLETE / MERGED
-  Gate 10.2 Governed Orchestration Instrumentation NEXT
+  Gate 10.2 Governed Orchestration Instrumentation COMPLETE / MERGED
+  Gate 10.3 CloudWatch EMF Adapter Boundary     NEXT
 ```
 
 Phase 9 closes at a governed **application boundary**, not at a fictional public runtime:
@@ -35,13 +36,14 @@ Phase 9 closes at a governed **application boundary**, not at a fictional public
 application boundary validated != public runtime deployed
 ```
 
-Gate 10.1 preserves that boundary while freezing provider-neutral operational evidence semantics. No public HTTP endpoint or runtime principal is claimed.
+Phase 10 preserves that distinction while adding content-minimized operational evidence and deterministic stage instrumentation. No public HTTP endpoint or runtime principal is claimed.
 
-## Phase 10 architecture record
+## Phase 10 architecture records
 
 - [`adr/0032-content-minimized-operational-telemetry-contract.md`](adr/0032-content-minimized-operational-telemetry-contract.md) — operational telemetry is bounded evidence, not business or execution authority.
+- [`adr/0033-governed-operational-orchestration-instrumentation.md`](adr/0033-governed-operational-orchestration-instrumentation.md) — instrument the governed Phase 9 path without moving authority into telemetry.
 
-Frozen Gate 10.1 contract:
+Frozen telemetry contract:
 
 ```text
 operational-telemetry:v1
@@ -64,11 +66,12 @@ Authority boundary:
 telemetry evidence != business truth
 telemetry evidence != route authority
 telemetry failure != permission to bypass fail-closed application contracts
+telemetry delivery accounting != permission to invent evidence identities
 ```
 
 The event contract has no arbitrary attribute bag and admits only content-addressed Phase 9 identity references. Metric projection is limited to `OperationalStageCount` and `OperationalStageLatency` with `ContractVersion`, `Operation`, `Stage`, and `Outcome` dimensions.
 
-Gate 10.1 validation:
+### Gate 10.1 validation
 
 ```text
 PR #135 final head:           7742ae003fc8e1ad1d1a6a4f71542875b6d6462c
@@ -80,9 +83,27 @@ merge SHA:                    665b86f6e527a0096d7c3db522f4bd2c95b177aa
 issue #134:                   CLOSED / COMPLETED
 ```
 
-Gate 10.1 laboratory:
+### Gate 10.2 validation
 
-- [`../labs/phase-10-gate-10-1-operational-telemetry-contract.md`](../labs/phase-10-gate-10-1-operational-telemetry-contract.md) — contract, failure history, exact-head validation, protected merge evidence, IAM/resource boundary, and Gate 10.2 entry criteria.
+Gate 10.2 instruments the five governed application stages with an injected monotonic clock and best-effort `OperationalEventSink`. Failed/rejected stages are terminal; sink failure never changes application/route authority; undelivered accounting accepts only already-admitted event identities.
+
+```text
+PR #138 final head:           24b2affdf464e2548d94273e41007bb3256b561e
+Python CI run:                34141496326 / PASS
+uv lock --check:              PASS
+Ruff:                         PASS
+Pyright strict:               0 errors / 0 warnings / 0 informations
+Public Analysis pytest:       70 passed
+merge SHA:                    346b223d9566a5d04d84e279f30793ad52a35b67
+issue #137:                   CLOSED / COMPLETED
+```
+
+Phase 10 laboratories:
+
+- [`../labs/phase-10-gate-10-1-operational-telemetry-contract.md`](../labs/phase-10-gate-10-1-operational-telemetry-contract.md)
+- [`../labs/phase-10-gate-10-2-governed-orchestration-instrumentation.md`](../labs/phase-10-gate-10-2-governed-orchestration-instrumentation.md)
+
+Neither Gate 10.1 nor 10.2 deployed a public runtime, AWS telemetry exporter/backend, dashboard, alarm, or production SLO.
 
 ## Phase 9 architecture records
 
@@ -194,10 +215,10 @@ The model may plan and synthesize inside typed, bounded contracts. Deterministic
 ## Next authorized gate
 
 ```text
-Phase 10 Gate 10.2 — Governed Orchestration Instrumentation
+Phase 10 Gate 10.3 — CloudWatch EMF Telemetry Adapter Boundary
 ```
 
-Gate 10.2 must instrument the existing governed application path through provider-neutral injected telemetry boundaries. It must not introduce a public runtime, production SLO, or telemetry backend claim unless separately justified, deployed, and measured.
+Gate 10.3 should adapt the frozen event/metric semantics to deterministic CloudWatch Embedded Metric Format through an injected writer boundary. It must be fake-writer/offline first, preserve the exact low-cardinality dimension set, and make no CloudWatch-delivery, production-runtime, dashboard, alarm, p95/p99, or SLO claim without separately deployed AWS evidence.
 
 ## Documentation update rule
 
