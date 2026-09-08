@@ -44,7 +44,7 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0034](0034-bounded-cloudwatch-emf-telemetry-adapter.md) | Adapt admitted operational evidence to bounded CloudWatch EMF without deploying runtime authority | Accepted |
 | [0035](0035-phase10-observability-closeout.md) | Close Phase 10 at the proven observability boundary and defer production runtime claims | Accepted |
 | [0036](0036-bounded-single-agent-capability-authorization.md) | Separate agent action proposal from deterministic capability authorization before execution | Accepted |
-| [0037](0037-typed-single-agent-capability-execution.md) | Bind authorized actions to exact typed capability invocation and result admission | Accepted |
+| [0037](0037-typed-single-agent-capability-execution.md) | Bind authorized actions to exact typed invocation and result admission | Accepted |
 | [0038](0038-offline-single-agent-evaluation-before-runtime.md) | Freeze deterministic single-agent evaluation before real model reasoning | Accepted |
 | [0039](0039-bounded-single-agent-model-reasoning.md) | Add one bounded provider-neutral model reasoning step behind deterministic authorization | Accepted |
 | [0040](0040-preserve-measured-reasoning-baseline-without-premature-optimization.md) | Preserve the measured reasoning baseline when no material optimization target is observed | Accepted |
@@ -52,3 +52,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0042](0042-bounded-multi-agent-specialization-handoff.md) | Bound multi-agent specialization before adding another model call | Accepted |
 | [0043](0043-freeze-multi-agent-comparison-before-second-model-call.md) | Freeze deterministic multi-agent comparison before a second model call | Accepted |
 | [0044](0044-first-bounded-real-two-model-comparison.md) | Measure the first bounded real two-model topology without moving authority into models | Accepted |
+| [0045](0045-do-not-retain-two-model-topology-without-measured-lift.md) | Retain the simpler single-agent reference and deterministic handoff boundary when the two-model topology adds material overhead without measured lift | Accepted |
