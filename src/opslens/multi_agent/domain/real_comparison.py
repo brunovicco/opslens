@@ -560,7 +560,75 @@ class MultiAgentRealComparisonCaseScore:
                 runtime_bounds_compliant,
             )
         )
-        provisional = cls(
+        specialist_input_tokens = (
+            specialist_evidence.input_tokens if specialist_evidence is not None else 0
+        )
+        specialist_output_tokens = (
+            specialist_evidence.output_tokens if specialist_evidence is not None else 0
+        )
+        specialist_total_tokens = (
+            specialist_evidence.total_tokens if specialist_evidence is not None else 0
+        )
+        specialist_provider_latency_ms = (
+            specialist_evidence.provider_latency_ms if specialist_evidence is not None else 0
+        )
+        specialist_client_elapsed_ms = (
+            specialist_evidence.client_elapsed_ms if specialist_evidence is not None else 0
+        )
+        specialist_retry_attempts = (
+            specialist_evidence.retry_attempts if specialist_evidence is not None else 0
+        )
+        provisional = cls.__new__(cls)
+        object.__setattr__(provisional, "case_key", case.case_key)
+        object.__setattr__(provisional, "case_id", case.case_id)
+        object.__setattr__(provisional, "result_id", result.result_id)
+        object.__setattr__(provisional, "triage_decision_match", triage_match)
+        object.__setattr__(provisional, "specialization_match", specialization_match)
+        object.__setattr__(provisional, "admission_match", admission_match)
+        object.__setattr__(provisional, "target_scope_match", target_scope_match)
+        object.__setattr__(provisional, "non_broadening", non_broadening)
+        object.__setattr__(provisional, "specialist_decision_match", specialist_decision_match)
+        object.__setattr__(provisional, "specialist_capability_match", capability_match)
+        object.__setattr__(provisional, "specialist_authorization_match", authorization_match)
+        object.__setattr__(provisional, "runtime_bounds_compliant", runtime_bounds_compliant)
+        object.__setattr__(provisional, "passed", passed)
+        object.__setattr__(provisional, "model_invocation_count", result.model_invocation_count)
+        object.__setattr__(provisional, "triage_input_tokens", triage_evidence.input_tokens)
+        object.__setattr__(provisional, "triage_output_tokens", triage_evidence.output_tokens)
+        object.__setattr__(provisional, "triage_total_tokens", triage_evidence.total_tokens)
+        object.__setattr__(
+            provisional,
+            "triage_provider_latency_ms",
+            triage_evidence.provider_latency_ms,
+        )
+        object.__setattr__(
+            provisional,
+            "triage_client_elapsed_ms",
+            triage_evidence.client_elapsed_ms,
+        )
+        object.__setattr__(provisional, "triage_retry_attempts", triage_evidence.retry_attempts)
+        object.__setattr__(provisional, "specialist_input_tokens", specialist_input_tokens)
+        object.__setattr__(provisional, "specialist_output_tokens", specialist_output_tokens)
+        object.__setattr__(provisional, "specialist_total_tokens", specialist_total_tokens)
+        object.__setattr__(
+            provisional,
+            "specialist_provider_latency_ms",
+            specialist_provider_latency_ms,
+        )
+        object.__setattr__(
+            provisional,
+            "specialist_client_elapsed_ms",
+            specialist_client_elapsed_ms,
+        )
+        object.__setattr__(provisional, "specialist_retry_attempts", specialist_retry_attempts)
+        object.__setattr__(provisional, "capability_executions", result.capability_executions)
+        payload = _score_payload(
+            provisional,
+            case_id=case.case_id,
+            case_key=case.case_key,
+        )
+        digest = _canonical_sha256(payload)
+        return cls(
             case_key=case.case_key,
             case_id=case.case_id,
             result_id=result.result_id,
@@ -581,68 +649,13 @@ class MultiAgentRealComparisonCaseScore:
             triage_provider_latency_ms=triage_evidence.provider_latency_ms,
             triage_client_elapsed_ms=triage_evidence.client_elapsed_ms,
             triage_retry_attempts=triage_evidence.retry_attempts,
-            specialist_input_tokens=(
-                specialist_evidence.input_tokens if specialist_evidence is not None else 0
-            ),
-            specialist_output_tokens=(
-                specialist_evidence.output_tokens if specialist_evidence is not None else 0
-            ),
-            specialist_total_tokens=(
-                specialist_evidence.total_tokens if specialist_evidence is not None else 0
-            ),
-            specialist_provider_latency_ms=(
-                specialist_evidence.provider_latency_ms
-                if specialist_evidence is not None
-                else 0
-            ),
-            specialist_client_elapsed_ms=(
-                specialist_evidence.client_elapsed_ms
-                if specialist_evidence is not None
-                else 0
-            ),
-            specialist_retry_attempts=(
-                specialist_evidence.retry_attempts if specialist_evidence is not None else 0
-            ),
+            specialist_input_tokens=specialist_input_tokens,
+            specialist_output_tokens=specialist_output_tokens,
+            specialist_total_tokens=specialist_total_tokens,
+            specialist_provider_latency_ms=specialist_provider_latency_ms,
+            specialist_client_elapsed_ms=specialist_client_elapsed_ms,
+            specialist_retry_attempts=specialist_retry_attempts,
             capability_executions=result.capability_executions,
-            score_sha256="0" * 64,
-            score_id=(
-                f"{MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION}:score:{'0' * 64}"
-            ),
-        )
-        payload = _score_payload(
-            provisional,
-            case_id=case.case_id,
-            case_key=case.case_key,
-        )
-        digest = _canonical_sha256(payload)
-        return cls(
-            case_key=case.case_key,
-            case_id=case.case_id,
-            result_id=result.result_id,
-            triage_decision_match=provisional.triage_decision_match,
-            specialization_match=provisional.specialization_match,
-            admission_match=provisional.admission_match,
-            target_scope_match=provisional.target_scope_match,
-            non_broadening=provisional.non_broadening,
-            specialist_decision_match=provisional.specialist_decision_match,
-            specialist_capability_match=provisional.specialist_capability_match,
-            specialist_authorization_match=provisional.specialist_authorization_match,
-            runtime_bounds_compliant=provisional.runtime_bounds_compliant,
-            passed=provisional.passed,
-            model_invocation_count=provisional.model_invocation_count,
-            triage_input_tokens=provisional.triage_input_tokens,
-            triage_output_tokens=provisional.triage_output_tokens,
-            triage_total_tokens=provisional.triage_total_tokens,
-            triage_provider_latency_ms=provisional.triage_provider_latency_ms,
-            triage_client_elapsed_ms=provisional.triage_client_elapsed_ms,
-            triage_retry_attempts=provisional.triage_retry_attempts,
-            specialist_input_tokens=provisional.specialist_input_tokens,
-            specialist_output_tokens=provisional.specialist_output_tokens,
-            specialist_total_tokens=provisional.specialist_total_tokens,
-            specialist_provider_latency_ms=provisional.specialist_provider_latency_ms,
-            specialist_client_elapsed_ms=provisional.specialist_client_elapsed_ms,
-            specialist_retry_attempts=provisional.specialist_retry_attempts,
-            capability_executions=provisional.capability_executions,
             score_sha256=digest,
             score_id=f"{MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION}:score:{digest}",
         )
@@ -954,17 +967,12 @@ class MultiAgentRealComparisonReport:
                 "scores must preserve canonical dataset case order"
             )
         metrics = _aggregate_metrics(scores)
-        provisional = cls(
-            dataset_id=dataset.dataset_id,
-            dataset_sha256=dataset.dataset_sha256,
-            case_scores=scores,
-            metrics=metrics,
-            inference_cost_usd=None,
-            report_sha256="0" * 64,
-            report_id=(
-                f"{MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION}:report:{'0' * 64}"
-            ),
-        )
+        provisional = cls.__new__(cls)
+        object.__setattr__(provisional, "dataset_id", dataset.dataset_id)
+        object.__setattr__(provisional, "dataset_sha256", dataset.dataset_sha256)
+        object.__setattr__(provisional, "case_scores", scores)
+        object.__setattr__(provisional, "metrics", metrics)
+        object.__setattr__(provisional, "inference_cost_usd", None)
         digest = _canonical_sha256(_report_payload(provisional))
         return cls(
             dataset_id=dataset.dataset_id,
