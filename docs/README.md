@@ -27,9 +27,13 @@ Phase 9  Public Analyze Your Repository         COMPLETE
 Phase 10 Observability & Operational Excellence COMPLETE
 Phase 11 Single-Agent Baseline                  COMPLETE
 Phase 12 Multi-Agent Architecture               COMPLETE
-Phase 13 MCP                                    IN PROGRESS
+Phase 13 MCP                                    COMPLETE
   Gate 13.1 Bounded MCP capability exposure     COMPLETE / MERGED
-  Gate 13.2 Bounded MCP protocol adapter         NEXT
+  Gate 13.2 Bounded MCP protocol adapter         COMPLETE / MERGED
+  Gate 13.3 Bounded MCP execution bridge         COMPLETE / MERGED
+  Gate 13.4 Bounded MCP result projection        COMPLETE / MERGED
+  Gate 13.5 MCP phase closeout                   COMPLETE / MERGED
+Phase 14 Amazon Bedrock AgentCore               NEXT
 ```
 
 Permanent separations include:
@@ -45,6 +49,9 @@ synthetic fixture conformance != model quality
 MCP tool name != capability authorization
 MCP tool exposure != executable argument authority
 MCP call admission != capability execution
+MCP capability execution != business result transport
+MCP result admission != result projection authority
+MCP result projection != public runtime exposure
 MCP transport success != business/evidence truth
 Repository Risk != Runtime Exposure
 ```
@@ -94,66 +101,101 @@ Closeout references:
 - [`adr/0046-phase12-multi-agent-closeout.md`](adr/0046-phase12-multi-agent-closeout.md)
 - [`../labs/phase-12-gate-12-5-multi-agent-closeout.md`](../labs/phase-12-gate-12-5-multi-agent-closeout.md)
 
-## Phase 13 Gate 13.1 — bounded MCP capability exposure
+## Phase 13 — MCP — complete
 
-Architecture record:
+Phase 13 demonstrates official MCP interoperability while preserving existing deterministic authority. It closes at a bounded offline/in-process boundary instead of introducing a public runtime without a concrete consumer requirement.
 
-- [`adr/0047-bounded-mcp-capability-exposure.md`](adr/0047-bounded-mcp-capability-exposure.md)
-
-Gate lab:
-
-- [`../labs/phase-13-gate-13-1-bounded-mcp-capability-exposure.md`](../labs/phase-13-gate-13-1-bounded-mcp-capability-exposure.md)
-
-Frozen contract:
+Retained contracts:
 
 ```text
 mcp-capability-exposure:v1
+mcp-capability-execution:v1
+mcp-result-projection:v1
 ```
 
-Closed MCP tool identities:
+Retained path:
 
 ```text
-opslens.structured_security_query   -> structured_security_query
-opslens.knowledge_guidance          -> knowledge_guidance
-opslens.hybrid_security_answer      -> hybrid_security_answer
-opslens.public_repository_analysis  -> public_repository_analysis
+existing typed Phase 11 capability authority
+ -> closed MCP tool identity
+ -> official MCP SDK reference-only protocol adapter
+ -> raw exact-key-set argument refusal
+ -> deterministic invocation resolution + admission
+ -> exactly one existing typed executor attempt
+ -> content-addressed MCP execution bridge
+ -> explicit result projection for structured_security_query only
+ -> bounded CVE + EPSS rows
+ -> STOP before public/network runtime
 ```
 
-Gate 13.1 authority path:
+### Gate 13.1 — capability exposure
+
+Architecture/lab:
+
+- [`adr/0047-bounded-mcp-capability-exposure.md`](adr/0047-bounded-mcp-capability-exposure.md)
+- [`../labs/phase-13-gate-13-1-bounded-mcp-capability-exposure.md`](../labs/phase-13-gate-13-1-bounded-mcp-capability-exposure.md)
+
+The closed tool identity remains separate from capability authorization and executable-input authority.
+
+### Gate 13.2 — official SDK offline interoperability
+
+Architecture/lab:
+
+- [`adr/0048-bounded-offline-mcp-protocol-adapter.md`](adr/0048-bounded-offline-mcp-protocol-adapter.md)
+- [`../labs/phase-13-gate-13-2-bounded-mcp-protocol-adapter.md`](../labs/phase-13-gate-13-2-bounded-mcp-protocol-adapter.md)
+
+The official MCP Python SDK is pinned as `mcp==2.2.0` in development dependencies only. Real testing showed that raw argument-shape validation must occur before permissive framework coercion. A separate dependency-placement experiment showed that putting MCP in runtime dependencies enlarged unrelated Lambda packages and tripped an existing package-size guard, so deployment limits were not weakened.
+
+### Gate 13.3 — capability execution bridge
+
+Architecture/lab:
+
+- [`adr/0049-bounded-mcp-capability-execution-bridge.md`](adr/0049-bounded-mcp-capability-execution-bridge.md)
+- [`../labs/phase-13-gate-13-3-bounded-mcp-capability-execution-bridge.md`](../labs/phase-13-gate-13-3-bounded-mcp-capability-execution-bridge.md)
+
+An accepted MCP invocation reference reaches exactly one existing typed capability-executor attempt after deterministic admission. MCP adds no generic args/kwargs dispatch, adaptive retry, or alternate-capability fallback.
+
+### Gate 13.4 — structured business-result projection
+
+Architecture/lab:
+
+- [`adr/0050-bounded-mcp-structured-result-projection.md`](adr/0050-bounded-mcp-structured-result-projection.md)
+- [`../labs/phase-13-gate-13-4-bounded-mcp-structured-result-projection.md`](../labs/phase-13-gate-13-4-bounded-mcp-structured-result-projection.md)
+
+Business-result disclosure is explicit and capability-specific. Only `structured_security_query` transports business rows in Phase 13, mapped to bounded `cve` + `epss_score` fields after existing typed result admission. Knowledge, hybrid, and public-repository result families remain unsupported for business-result transport.
+
+### Gate 13.5 — MCP phase closeout
+
+Architecture/lab/evidence:
+
+- [`adr/0051-phase13-mcp-closeout.md`](adr/0051-phase13-mcp-closeout.md)
+- [`../labs/phase-13-gate-13-5-mcp-closeout.md`](../labs/phase-13-gate-13-5-mcp-closeout.md)
+- [`../labs/evidence/phase-13-closeout-v1.json`](../labs/evidence/phase-13-closeout-v1.json)
+
+Final closeout merge evidence:
 
 ```text
-existing AuthorizedAgentAction
- + existing typed AgentCapabilityInvocation
- -> closed McpToolName
- -> deterministic tool/capability match
- -> content-addressed McpToolCallAdmission
- -> STOP
-```
-
-The MCP boundary does not create the authorization, does not create the typed invocation, does not execute a capability, and does not gain arbitrary executable argument authority.
-
-Exact Gate 13.1 merge evidence:
-
-```text
-issue #180
-PR #181 final head:      340f2d7beee3640bd14455de635fe3ee4b6cc5cc
-PR merge test commit:    166e5626f52bdbabfd306b0e3152b02c1620ee5f
-MCP CI:                  34223369166 / run #3 / PASS
-job:                     102051514632
+issue #192
+PR #193 final head:      99dd3d979a5205e38f2c1a4dfc84dc9f82d0e0c7
+PR merge test commit:    7ec68aa12bc0a08b698ed0ddf76434e7bd97fe85
+MCP CI:                  34250265151 / run #52 / PASS
+job:                     102142600531
 uv lock --check:         PASS
+MCP SDK pin:             PASS
 MCP import smoke:        PASS
 Ruff:                    PASS
 Pyright strict:          0 errors / 0 warnings / 0 informations
-pytest MCP slice:        7 passed in 0.19s
+pytest MCP slice:        29 passed in 0.90s
 review threads:          0
-model invocations:       0
-capability executions:   0
-MCP SDK/runtime:         0
+PR comments:             0
+new model invocations:   0
 new AWS/IAM:             0
-merge SHA:               322922aed4abec3b2266a18d15d8145df974a7d1
+public MCP endpoint:     0
+MCP deployed runtime:    0
+merge SHA:               c449cfc8e18dfd240ceedbe6e8e4d143601f0254
 ```
 
-Gate 13.1 proves the authority contract only. It does not prove real MCP client/server interoperability, authentication, network reliability, capability execution through MCP, result transport, a deployed MCP runtime, AgentCore, A2A, or runtime exposure.
+Phase 13 explicitly does not claim a public/Streamable HTTP MCP endpoint, transport authentication/authorization, persistent invocation/result registries, broader result-family serialization, production network SLOs, AgentCore behavior, A2A interoperability, or runtime exposure.
 
 ## Permanent engineering boundaries
 
@@ -173,17 +215,17 @@ Gate 13.1 proves the authority contract only. It does not prove real MCP client/
 
 > **No unrestricted text-to-SQL.**
 
-## Next authorized gate
+## Next authorized phase
 
 ```text
-Phase 13 — Gate 13.2: Bounded MCP Protocol Adapter / Offline Interoperability
+Phase 14 — Amazon Bedrock AgentCore
 ```
 
-Gate 13.2 may introduce a real MCP protocol adapter only against the frozen Gate 13.1 contract. Before adding an SDK dependency, the current official MCP Python SDK/API must be verified and the selected dependency pinned deliberately.
+Phase 14 must begin with a concrete OpsLens runtime/workload need and an evidence-backed evaluation of AgentCore. Managed runtime adoption is not automatic and does not retroactively turn the Phase 13 offline MCP proof into a public runtime.
 
-The initial protocol path must reference an already-created typed invocation, resolve it deterministically server-side, pass through Gate 13.1 admission, and stop before capability execution. The first interoperability proof should remain offline/in-process or stdio rather than a public network deployment.
+The first gate must define workload, identity/IAM, failure/retry behavior, observability, lifecycle, cost, and security requirements before provisioning runtime resources. Phase 11 deterministic capability authority, the Phase 12 measured topology decision, and all retained Phase 13 MCP boundaries remain upstream constraints.
 
-AgentCore and A2A remain separate later decisions. Deferred PR #89 remains out-of-scope cross-project integration work.
+Deferred PR #89 remains separate cross-project Governed LLM Gateway work and is not authorized by the OpsLens Phase 14 transition.
 
 ## Documentation update rule
 
