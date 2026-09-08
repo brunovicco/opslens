@@ -4,7 +4,7 @@ _Date: 2026-09-08_
 
 ## Status
 
-**IMPLEMENTED / VALIDATION PENDING.**
+**COMPLETE / MERGED.**
 
 Starting checkpoint:
 
@@ -13,6 +13,22 @@ main:   e8f986c3f681c5c189ec7a42f58f7b49c12384dd
 issue:  #186
 branch: feat/phase13-mcp-capability-execution-bridge
 PR:     #187
+```
+
+Final implementation merge:
+
+```text
+PR #187 final head:    a9de9a4748c55dda807c051544727ccaa0bcce78
+PR merge test commit:  2325912f574a62558019674e8eea3ebe64573b77
+MCP CI:                34241001799 / run #29 / PASS
+job:                   102110837648
+uv lock --check:       PASS
+MCP import smoke:      PASS
+Ruff:                  PASS
+Pyright strict:        0 errors / 0 warnings / 0 informations
+pytest MCP slice:      22 passed in 1.21s
+review threads:        0
+merge SHA:             170429c894456adc1e1c38ca93b49f12e310fb94
 ```
 
 ## Objective
@@ -179,7 +195,7 @@ extra `sql` argument -> INVALID_PARAMS before executor
 
 The existing Gate 13.2 raw-argument middleware remains before the execution bridge.
 
-## First CI feedback
+## CI feedback
 
 The first PR validation reached Ruff successfully but strict Pyright rejected an untyped dataclass `default_factory=list` in the new test recorder:
 
@@ -194,16 +210,16 @@ This was corrected by replacing the generic factory with a typed helper returnin
 list[StructuredSecurityQueryInvocation]
 ```
 
-No `type: ignore` was added and no runtime behavior changed.
+No `type: ignore` was added and no runtime behavior changed. The exact final head then passed Ruff, Pyright strict, and all 22 MCP tests.
 
 ## Cardinality and cost boundary
 
 ```text
-new model invocations:                  0
-new inference cost:                     USD 0.00
+new model invocations:                   0
+new inference cost:                      USD 0.00
 capability executions per accepted call: exactly 1
-MCP adaptive retries:                   0
-MCP alternate-capability fallback:      0
+MCP adaptive retries:                    0
+MCP alternate-capability fallback:       0
 ```
 
 The successful offline proof uses deterministic executor fixtures; it does not call AWS merely to prove protocol-to-executor wiring.
@@ -277,9 +293,17 @@ docs/adr/0049-bounded-mcp-capability-execution-bridge.md
 [x] ADR 0049 added and indexed
 [x] Gate 13.3 lab added
 [x] draft PR #187 opened
-[ ] final exact-head MCP CI PASS
-[ ] PR scope/review threads clean
-[ ] protected squash merge
+[x] final exact-head MCP CI PASS
+[x] PR scope/review threads clean
+[x] protected squash merge
 [ ] state synchronization
 [ ] issue #186 CLOSED / COMPLETED after state synchronization
 ```
+
+## Next authorized gate
+
+```text
+Phase 13 — Gate 13.4: Bounded MCP Business Result Projection / Offline Transport
+```
+
+Gate 13.4 may evaluate protocol-visible business-result projection only after Gate 13.3 has proven execution binding. The next gate must define explicit per-capability output admission and data-minimization policy before any business content is transported. Public/network transport, authentication, persistent registries, AgentCore, A2A, runtime exposure, and PR #89 remain separate decisions.
