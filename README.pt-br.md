@@ -50,9 +50,10 @@ Boundaries permanentes:
 | Phase 9 | Public Analyze Your Repository | ✅ Concluída |
 | Phase 10 | Observability & Operational Excellence | ✅ Concluída |
 | Phase 11 | Single-Agent Baseline | ✅ Concluída |
-| Phase 12 | Multi-Agent Architecture | 🚧 Em andamento — Gates 12.1–12.2 concluídas |
+| Phase 12 | Multi-Agent Architecture | ✅ Concluída |
+| Phase 13 | MCP | ▶️ Próxima |
 
-Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), o [closeout da Phase 11](labs/phase-11-gate-11-6-closeout.md), o [lab da Gate 12.1](labs/phase-12-gate-12-1-bounded-specialization-handoff.md) e o [lab da Gate 12.2](labs/phase-12-gate-12-2-comparative-multi-agent-evaluation.md).
+Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), o [closeout da Phase 11](labs/phase-11-gate-11-6-closeout.md) e o [closeout completo da Phase 12](labs/phase-12-gate-12-5-multi-agent-closeout.md).
 
 ## Sistema governado implementado
 
@@ -283,6 +284,55 @@ O resultado `6/6` é conformidade sintética do evaluator/contrato, não qualida
 
 Como a Gate 12.2 não invoca modelo, model invocation count, tokens, provider/client latency, SDK retries e inference cost permanecem explicitamente `null`, em vez de zeros inventados.
 
+### 10. Experimento multi-agent medido e decisão de retenção
+
+A Gate 12.3 introduziu o primeiro experimento autenticado e limitado com dois modelos, preservando autoridade determinística de handoff e capability authorization.
+
+Evidência histórica:
+
+```text
+labs/evidence/phase-12-gate-12-3-first-real-two-model-comparison-v1.json
+```
+
+Resultado observado:
+
+```text
+quality:                           6/6
+model invocations:                 10
+input/output/total tokens:          5788 / 194 / 5982
+provider latency median per task:  1694.0 ms
+client elapsed median per task:    2135.0 ms
+SDK retries:                       0
+capability executions:             0
+derived six-case cost:             USD 0.0074338
+```
+
+A Gate 12.4 comparou esse resultado com a referência da Phase 11:
+
+```text
+quality:                    6/6 -> 6/6      sem ganho
+model invocations:          6 -> 10         +66.67%
+total tokens:               3395 -> 5982    +76.20%
+provider latency median:    809.5 -> 1694   +109.26%
+client elapsed median:      977.5 -> 2135   +118.41%
+derived cost:               0.0041921 -> 0.0074338 USD  +77.33%
+SDK retries:                0 -> 0
+capability executions:      0 -> 0
+```
+
+Decisão de retenção congelada:
+
+```text
+referência single-agent da Phase 11:             RETAIN
+specialization/handoff determinístico Gate 12.1: RETAIN
+disciplina de comparação Gate 12.2:              RETAIN
+topologia de dois modelos Gate 12.3 como default: DO NOT RETAIN
+implementação/evidência Gate 12.3:                 PRESERVE HISTORICALLY
+novo experimento de rescue/tuning:                 NOT AUTHORIZED WITHOUT NEW HYPOTHESIS
+```
+
+A Phase 12, portanto, fecha em torno da arquitetura que sobreviveu à medição, não em torno do experimento mais complexo.
+
 ## Baseline real Bedrock da Phase 11
 
 Provider de raciocínio fixo:
@@ -331,32 +381,38 @@ optimization decision: NO-CHANGE / NO-EXPERIMENT
 
 Prompt compression, troca de modelo, prompt caching, expansão de retry/fallback e expansão de capabilities não foram justificadas por um target material medido.
 
+O projeto trata **não otimizar** como um resultado de engenharia válido quando a evidência não justifica complexidade ou risco adicionais.
+
 ## Evidência de merge da Phase 12
 
-Gate 12.1:
-
 ```text
-PR:                     #166
-final head:             567cdbde81f058d9545328ca78b718c24d79c9fb
-Multi-Agent CI:         34172909750 / run #3 / PASS
-multi-agent pytest:     10 passed in 0.39s
-Single-Agent CI:        34172909748 / run #48 / PASS
-single-agent pytest:    56 passed in 0.44s
-merge SHA:              eceed76a6cfc5d7e28e88dfdc503b4863b526ba0
+Gate 12.1  PR #166  merge eceed76a6cfc5d7e28e88dfdc503b4863b526ba0
+Gate 12.2  PR #169  merge 865ba70c813711cb88da9ac7308c8966ff983fd0
+Gate 12.3  PR #172  merge f51cb70ad070716e774419b8d2c62918d3e65210
+Gate 12.4  PR #175  merge fabe8128d1d6077e8de92225991b5e26c1b72ab3
+Gate 12.5  PR #178  merge aca4264e9c98f81c239b44b55c8772ef02debc4c
 ```
 
-Gate 12.2:
+Validação exata do closeout Gate 12.5:
 
 ```text
-PR:                     #169
-final head:             953467df99ddeaedd6e19471bd2dce6c5bb8de7c
-PR merge test commit:   bab183ee1dbcca0eb6a0bb76b5130180f9f2f7c2
-Multi-Agent CI:         34174680219 / run #7 / PASS
-multi-agent pytest:     18 passed in 0.27s
-merge SHA:              865ba70c813711cb88da9ac7308c8966ff983fd0
+PR final head:          3d9ad6a6d302299fb8209b40c7232bc18555c2dd
+PR merge test commit:   f2de18db9a2b23413be4977e3f4b21a5846ed837
+Multi-Agent CI:         34220492021 / run #34 / PASS
+job:                    102042205489
+Pyright strict:         0 errors / 0 warnings / 0 informations
+pytest:                 33 passed in 0.35s
+new model invocations:  0
+new inference cost:     USD 0.00
 ```
 
-As Gates 12.1–12.2 não adicionam recurso AWS, permissão IAM, capability execution, AgentCore, MCP, A2A, runtime público ou autoridade de runtime exposure. A Gate 12.2 também não adiciona model call real.
+Evidência de closeout:
+
+```text
+labs/evidence/phase-12-closeout-v1.json
+```
+
+A Phase 12 não adiciona runtime público de agentes, AgentCore runtime, MCP runtime, A2A runtime, autoridade de runtime exposure ou autoridade de autorização controlada por modelos.
 
 ## Invariantes de segurança e autoridade
 
@@ -381,22 +437,19 @@ As Gates 12.1–12.2 não adicionam recurso AWS, permissão IAM, capability exec
 - Runtime exposure não é inferido de repository risk.
 - Least privilege, observabilidade, diagnóstico de falhas e cost accounting são requisitos arquiteturais.
 
-## O que a Phase 12 Gate 12.2 não prova
+## O que a Phase 12 não prova
 
 ```text
-qualidade de routing do triage model
-qualidade de reasoning do specialist model
-melhoria de qualidade multi-agent
-model invocation count real multi-agent
-tokens / latência / retries / custo de inferência reais multi-agent
-reliability de runtime multi-agent
-redução de privilégio em runtime
-capability execution através do fluxo multi-agent
+capability execution multi-agent em runtime deployed
 runtime público/deployed de agentes
-comportamento de runtime do AgentCore
+volume de requests ou SLOs de agentes em produção
+comportamento de runtime do Amazon Bedrock AgentCore
 interoperabilidade MCP
 interoperabilidade A2A
 runtime exposure / evidência Amazon Inspector
+superioridade universal de arquitetura multi-agent
+handoff admission controlada por modelo
+capability authorization controlada por modelo
 ```
 
 ## Baseline AWS
@@ -429,31 +482,22 @@ tools no reasoning:      nenhum
 - [Closeout da Phase 8](labs/phase-8-gate-8-6-closeout.md)
 - [Closeout da Phase 9](labs/phase-9-gate-9-4-closeout.md)
 - [Closeout da Phase 10](labs/phase-10-gate-10-4-closeout.md)
-- [Baseline real da Gate 11.4](labs/phase-11-gate-11-4-bounded-model-reasoning-baseline.md)
-- [Decisão de otimização da Gate 11.5](labs/phase-11-gate-11-5-measured-optimization-decision.md)
 - [Closeout da Phase 11](labs/phase-11-gate-11-6-closeout.md)
 - [Handoff limitado da Gate 12.1](labs/phase-12-gate-12-1-bounded-specialization-handoff.md)
 - [Contrato comparativo da Gate 12.2](labs/phase-12-gate-12-2-comparative-multi-agent-evaluation.md)
+- [Experimento real de dois modelos da Gate 12.3](labs/phase-12-gate-12-3-first-bounded-real-two-model-comparison.md)
+- [Decisão de retenção da Gate 12.4](labs/phase-12-gate-12-4-measured-multi-agent-retention-decision.md)
+- [Closeout da Phase 12](labs/phase-12-gate-12-5-multi-agent-closeout.md)
 
-## Próxima — Phase 12 Gate 12.3: First Bounded Real Two-Model Comparison
+## Próxima — Phase 13: MCP
 
-O contrato de comparação agora está congelado. O próximo experimento autorizado pode introduzir no máximo duas chamadas limitadas de reasoning por task:
+A próxima fase pode expor capabilities já limitadas do OpsLens por contratos MCP explícitos.
 
-```text
-SingleAgentTask
- -> triage model limitado propõe uma especialização fechada
- -> parser determinístico + handoff admission
- -> SpecialistAgentTask com scope reduzido
- -> specialist reasoning limitado propõe uma capability já permitida
- -> capability authorization determinística
- -> STOP antes da capability execution
-```
+> **MCP is an interoperability boundary, not new business authority.**
 
-Os limites iniciais são duas model invocations, um handoff, zero adaptive application retries, zero fallbacks e zero capability executions.
+A Phase 13 deve preservar capability authorization determinística, typed invocation/result admission, evidence provenance, tratamento fail-closed de schemas/tools e least privilege. Ela não deve introduzir args/kwargs executáveis arbitrários, SQL, URLs, comandos shell, credenciais, seleção oculta de provider ou alegações de runtime exposure.
 
-Comportamento real do modelo, tokens, provider/client latency, SDK retries e inference cost devem vir somente de evidência observada do provider. As primeiras observações reais precisam ser preservadas antes de qualquer tuning de prompt/model/topologia. A topologia com dois modelos só será mantida se o valor medido da especialização justificar a chamada adicional, latência, tokens, custo, failure surface e complexidade arquitetural em relação à referência congelada da Phase 11.
-
-AgentCore, MCP e A2A permanecem decisões arquiteturais futuras e separadas.
+Amazon Bedrock AgentCore e A2A permanecem decisões arquiteturais posteriores e separadas.
 
 A PR #89 de Governed LLM Gateway continua como trabalho cross-project deferred e precisa ser reavaliada separadamente contra a arquitetura vigente do OpsLens antes de qualquer merge.
 

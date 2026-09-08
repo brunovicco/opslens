@@ -4,7 +4,7 @@ _Date: 2026-09-08_
 
 ## Status
 
-**CLOSEOUT CANDIDATE — merge and final state synchronization pending.**
+**COMPLETE / MERGED.**
 
 Starting checkpoint:
 
@@ -14,7 +14,23 @@ issue: #177
 branch: docs/phase12-multi-agent-closeout
 ```
 
-Gate 12.5 is documentation, architecture, and evidence closeout only. It introduces no new model invocation, AWS resource, IAM permission, capability execution, AgentCore runtime, MCP implementation, A2A implementation, public runtime, runtime-exposure authority, or Governed LLM Gateway integration.
+Final closeout tracking:
+
+```text
+issue:                  #177 — CLOSED / COMPLETED after final state synchronization
+PR:                     #178 — MERGED
+PR final head:          3d9ad6a6d302299fb8209b40c7232bc18555c2dd
+PR merge test commit:   f2de18db9a2b23413be4977e3f4b21a5846ed837
+Multi-Agent CI:         34220492021 / run #34 / PASS
+job:                    102042205489
+Pyright strict:         0 errors / 0 warnings / 0 informations
+pytest:                 33 passed in 0.35s
+merge SHA:              aca4264e9c98f81c239b44b55c8772ef02debc4c
+new model invocations:  0
+new inference cost:     USD 0.00
+```
+
+Gate 12.5 is documentation, architecture, and evidence closeout only. It introduced no new model invocation, AWS resource, IAM permission, capability execution, AgentCore runtime, MCP implementation, A2A implementation, public runtime, runtime-exposure authority, or Governed LLM Gateway integration.
 
 ## Phase 12 completed sequence
 
@@ -23,7 +39,7 @@ Gate 12.1 — Bounded Specialization Handoff Contract            COMPLETE / MERG
 Gate 12.2 — Comparative Multi-Agent Evaluation Contract        COMPLETE / MERGED
 Gate 12.3 — First Bounded Real Two-Model Comparison            COMPLETE / MERGED
 Gate 12.4 — Measured Multi-Agent Retention Decision            COMPLETE / MERGED
-Gate 12.5 — Multi-Agent Phase Closeout                         CLOSEOUT CANDIDATE
+Gate 12.5 — Multi-Agent Phase Closeout                         COMPLETE / MERGED
 ```
 
 ## Retained architecture
@@ -186,6 +202,7 @@ Gate 12.4 therefore recorded:
 ```text
 Phase 11 single-agent reasoning reference:      RETAIN
 Gate 12.1 deterministic specialization/handoff: RETAIN
+Gate 12.2 deterministic comparison discipline: RETAIN
 Gate 12.3 two-model topology as default:        DO NOT RETAIN
 Gate 12.3 implementation/evidence:              PRESERVE HISTORICALLY
 new rescue/tuning experiment:                   NOT AUTHORIZED WITHOUT NEW HYPOTHESIS
@@ -264,11 +281,11 @@ Governed LLM Gateway changes:       0
 
 ## Deferred Governed LLM Gateway integration
 
-OpsLens PR #89 remains long-lived, open/draft cross-project work for **Phase 14 — Case 3 of `brunovicco/governed-llm-gateway`**. Gate 12.5 does not modify, rebase, merge, close, or reuse it.
+OpsLens PR #89 remains long-lived, open/draft cross-project work for **Phase 14 — Case 3 of `brunovicco/governed-llm-gateway`**. Gate 12.5 did not modify, rebase, merge, close, or reuse it.
 
 ## Next phase boundary
 
-After this closeout PR and final state synchronization merge, the next roadmap phase is:
+The next roadmap phase is:
 
 ```text
 Phase 13 — MCP
@@ -310,11 +327,11 @@ docs/adr/0046-phase12-multi-agent-closeout.md
 [x] closeout lab added
 [x] no new model inference or cost incurred
 [x] no AWS/IAM/runtime authority expansion
-[ ] exact-head Multi-Agent CI PASS
-[ ] PR review state clean
-[ ] protected squash merge
-[ ] public/current docs synchronized in follow-up state-sync PR
-[ ] issue #177 CLOSED / COMPLETED after state synchronization
-[ ] Phase 12 marked COMPLETE on authoritative/public docs
-[ ] Phase 13 MCP marked NEXT only after closeout completion
+[x] exact-head Multi-Agent CI PASS
+[x] PR review state clean
+[x] protected squash merge
+[x] public/current docs synchronized in follow-up state-sync PR
+[x] issue #177 CLOSED / COMPLETED after state synchronization
+[x] Phase 12 marked COMPLETE on authoritative/public docs
+[x] Phase 13 MCP marked NEXT only after closeout completion
 ```
