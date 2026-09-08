@@ -616,16 +616,35 @@ class MultiAgentRealComparisonCaseScore:
         )
         digest = _canonical_sha256(payload)
         return cls(
-            **{
-                **payload,
-                "case_id": case.case_id,
-                "case_key": case.case_key,
-                "result_id": result.result_id,
-                "score_sha256": digest,
-                "score_id": (
-                    f"{MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION}:score:{digest}"
-                ),
-            }
+            case_key=case.case_key,
+            case_id=case.case_id,
+            result_id=result.result_id,
+            triage_decision_match=provisional.triage_decision_match,
+            specialization_match=provisional.specialization_match,
+            admission_match=provisional.admission_match,
+            target_scope_match=provisional.target_scope_match,
+            non_broadening=provisional.non_broadening,
+            specialist_decision_match=provisional.specialist_decision_match,
+            specialist_capability_match=provisional.specialist_capability_match,
+            specialist_authorization_match=provisional.specialist_authorization_match,
+            runtime_bounds_compliant=provisional.runtime_bounds_compliant,
+            passed=provisional.passed,
+            model_invocation_count=provisional.model_invocation_count,
+            triage_input_tokens=provisional.triage_input_tokens,
+            triage_output_tokens=provisional.triage_output_tokens,
+            triage_total_tokens=provisional.triage_total_tokens,
+            triage_provider_latency_ms=provisional.triage_provider_latency_ms,
+            triage_client_elapsed_ms=provisional.triage_client_elapsed_ms,
+            triage_retry_attempts=provisional.triage_retry_attempts,
+            specialist_input_tokens=provisional.specialist_input_tokens,
+            specialist_output_tokens=provisional.specialist_output_tokens,
+            specialist_total_tokens=provisional.specialist_total_tokens,
+            specialist_provider_latency_ms=provisional.specialist_provider_latency_ms,
+            specialist_client_elapsed_ms=provisional.specialist_client_elapsed_ms,
+            specialist_retry_attempts=provisional.specialist_retry_attempts,
+            capability_executions=provisional.capability_executions,
+            score_sha256=digest,
+            score_id=f"{MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION}:score:{digest}",
         )
 
 
