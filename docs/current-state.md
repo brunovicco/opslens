@@ -26,7 +26,9 @@ Phase 13   MCP                                                 COMPLETE
   Gate 13.3 Bounded MCP capability execution bridge            COMPLETE / MERGED
   Gate 13.4 Bounded MCP business result projection             COMPLETE / MERGED
   Gate 13.5 MCP phase closeout                                 COMPLETE / MERGED
-Phase 14   Amazon Bedrock AgentCore                            NEXT
+Phase 14   Amazon Bedrock AgentCore                            IN PROGRESS
+  Gate 14.1 AgentCore Runtime capability-fit / authority       COMPLETE / MERGED
+  Gate 14.2 First bounded HTTP/SigV4 runtime experiment        NEXT
 Phase 15   A2A                                                 PLANNED
 Phase 16   Runtime Exposure with Amazon Inspector              PLANNED
 Phase 17   Security Hardening                                  PLANNED
@@ -36,34 +38,33 @@ Phase 18   Evaluation, Cost & Portfolio Readiness              PLANNED
 Latest merged checkpoint:
 
 ```text
-Phase 13 Gate 13.5 / PR #193
-c449cfc8e18dfd240ceedbe6e8e4d143601f0254
+Phase 14 Gate 14.1 / PR #196
+7675b169155f3676a8ddabe0334422242c3f4c85
 ```
 
-Gate 13.5 exact validation and merge:
+Gate 14.1 exact validation and merge:
 
 ```text
-issue #192:               state-sync tracker; closure follows this synchronization
-PR #193 final head:       99dd3d979a5205e38f2c1a4dfc84dc9f82d0e0c7
-PR merge test commit:     7ec68aa12bc0a08b698ed0ddf76434e7bd97fe85
-MCP CI:                    34250265151 / run #52 / PASS
-job:                       102142600531
+issue #195:               state-sync tracker; closure follows this synchronization
+PR #196 final head:       71a77288c5656ba282a1f6bf045f9b3072fbc968
+PR merge test commit:     87155adfff4e22bf87793f19783a52abd6ff015d
+AgentCore CI:              34254184586 / run #3 / PASS
+job:                       102155706778
 uv lock --check:           PASS
-MCP SDK pin:               PASS
-MCP import smoke:          PASS
-Ruff:                      PASS
-Pyright strict:            0 errors / 0 warnings / 0 informations
-pytest MCP slice:          29 passed in 0.90s
+Phase 14 evidence JSON:    PASS
+locked AWS provider:       6.60.0
+AgentCore resource schema: aws_bedrockagentcore_agent_runtime VERIFIED
+AgentCore Python slice:    not introduced; Gate 14.1 is architecture/evidence only
 review threads:            0
 PR conversation comments: 0
 new model invocations:     0
+new capability executions:0
 new AWS/IAM resources:     0
-public MCP endpoint:       0
-MCP deployed runtime:      0
-PR #193 merge SHA:         c449cfc8e18dfd240ceedbe6e8e4d143601f0254
+AgentCore runtimes:        0
+PR #196 merge SHA:         7675b169155f3676a8ddabe0334422242c3f4c85
 ```
 
-Phase 13 closes at the bounded offline MCP boundary. The closeout intentionally does not add public/network MCP hosting, transport authentication, broader result-family serialization, AgentCore, A2A, runtime-exposure authority, or AWS/IAM expansion without a concrete separately justified runtime need.
+Gate 14.1 authorizes only one later bounded AgentCore Runtime experiment. It does not authorize broad AgentCore adoption, MCP hosting, A2A, capability execution, public runtime exposure, or production cost/SLO claims.
 
 ## Permanent architecture boundaries
 
@@ -102,9 +103,16 @@ MCP result admission != result projection authority
 MCP result projection != public runtime exposure
 MCP transport success != business/evidence truth
 MCP result != runtime exposure truth
+AgentCore hosting != business authorization
+runtime authentication != capability authorization
+runtime session != user identity authority
+runtime execution role != model/tool authority
+runtime transport success != business/evidence truth
+runtime telemetry != business truth
+runtime deployment != runtime-exposure truth
 ```
 
-Deterministic code continues to own package/version semantics, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS/Risk Policy facts, `SemanticQuery` validation and SQL compilation, retrieval/evidence admission, hybrid routing/completeness, canonical evidence/citation identity, output admission, public request admission, immutable repository evidence binding, capability allowlists, capability authorization, typed capability invocation/result binding, handoff admission, specialization mapping, comparison/evaluation metrics, MCP tool/capability mapping, raw MCP argument-shape refusal, invocation-reference validation, resolver identity revalidation, call admission, typed capability execution dispatch, MCP admission-to-execution identity binding, business-result projection allowlists and bounds, content-addressed MCP result-projection identity, content-addressed evidence/report identity, provider/model selection, retry/fallback policy, and runtime-exposure authority.
+Deterministic code continues to own package/version semantics, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS/Risk Policy facts, `SemanticQuery` validation and SQL compilation, retrieval/evidence admission, hybrid routing/completeness, canonical evidence/citation identity, output admission, public request admission, immutable repository evidence binding, capability allowlists, capability authorization, typed capability invocation/result binding, handoff admission, specialization mapping, comparison/evaluation metrics, MCP tool/capability mapping, raw MCP argument-shape refusal, invocation-reference validation, resolver identity revalidation, call admission, typed capability execution dispatch, MCP admission-to-execution identity binding, business-result projection allowlists and bounds, content-addressed MCP result-projection identity, content-addressed evidence/report identity, provider/model selection, retry/fallback policy, application session ownership, and runtime-exposure authority.
 
 ## Retained measured reasoning architecture
 
@@ -475,9 +483,54 @@ A2A interoperability
 runtime exposure / Amazon Inspector evidence
 ```
 
+## Phase 14 Gate 14.1 — AgentCore Runtime capability-fit / authority boundary
+
+Frozen decision:
+
+```text
+AgentCore Runtime:        GO TO ONE BOUNDED EXPERIMENT ONLY
+first hosted boundary:   retained Phase 11 bounded single-agent reasoning
+protocol:                HTTP
+authentication:          IAM SigV4
+deployment artifact:     direct code preferred; container only if packaging evidence requires it
+network mode:            deferred to exact Gate 14.2 outbound-dependency review
+capability executions:   0
+adaptive retries:        0
+adaptive fallbacks:      0
+MCP runtime promotion:   not authorized
+A2A:                     deferred to Phase 15
+runtime-exposure truth:  not created
+```
+
+Retained candidate runtime path for Gate 14.2:
+
+```text
+AgentCore Runtime HTTP invocation
+ -> strict runtime request admission
+ -> retained SingleAgentTask authority
+ -> one fixed Bedrock reasoning invocation
+ -> transient untrusted {decision, capability}
+ -> deterministic parser
+ -> existing AgentActionProposal
+ -> existing authorize_agent_action(...)
+ -> AuthorizedAgentAction | AgentAbstention | stable rejection
+ -> STOP before capability execution
+```
+
+The exact locked Terraform AWS provider `6.60.0` was proven through a backend-free schema probe to expose `aws_bedrockagentcore_agent_runtime`. The first CI attempt failed before that assertion because the probe reused the real backend-bearing dev working directory; the corrected isolated probe passed and the failure remains documented rather than rewritten away.
+
+Architecture/evidence references:
+
+```text
+docs/adr/0052-agentcore-runtime-capability-fit.md
+labs/phase-14-gate-14-1-agentcore-runtime-capability-fit.md
+labs/evidence/phase-14-gate-14-1-agentcore-capability-fit-v1.json
+PR #196 merge: 7675b169155f3676a8ddabe0334422242c3f4c85
+```
+
 ## AWS / IAM / runtime checkpoint
 
-Gate 13.5 introduced no deployed runtime expansion:
+Gate 14.1 introduced no deployed runtime expansion:
 
 ```text
 new model invocations:       0
@@ -489,6 +542,8 @@ live capability executions:   0
 MCP SDK dependency:           dev-only mcp==2.2.0
 MCP network runtime:          0
 AgentCore runtime:            0
+AgentCore runtime cost:       USD 0.00
+AgentCore cost baseline:      UNMEASURED
 A2A runtime:                  0
 public runtime:               0
 runtime-exposure authority:   0
@@ -505,24 +560,27 @@ Preserved historical head:
 3781831795d500b05fa4bc602d50f376b4b1539f
 ```
 
-## Next authorized phase
+## Next authorized gate
 
 ```text
-Phase 14 — Amazon Bedrock AgentCore
+Phase 14 Gate 14.2 — First Bounded AgentCore HTTP/SigV4 Runtime Experiment
 ```
 
-Phase 14 must begin with a concrete OpsLens runtime requirement and an evidence-backed evaluation of AgentCore. It does not inherit authorization to deploy the Phase 13 offline MCP proof unchanged as a public runtime.
+Gate 14.2 is the first phase step authorized to design and then, only after its own least-privilege review, create a bounded AgentCore runtime experiment. It must freeze the exact HTTP contract, runtime dependency slice, direct-code artifact size, PUBLIC-versus-VPC decision, execution role, caller permission, session/lifecycle settings, observability plan, deployment/cleanup evidence, and measured latency/cost before capability execution or broader AgentCore adoption.
 
 Initial constraints:
 
 ```text
 1. preserve the retained Phase 11 reasoning reference and Phase 12 retention decision
 2. preserve Phase 13 MCP admission/execution/result-projection authority boundaries
-3. do not equate managed runtime adoption with business authorization or evidence truth
-4. define workload, runtime, identity, observability, failure, and cost needs before provisioning resources
-5. no AWS/IAM expansion without a concrete AgentCore capability requirement
-6. no public MCP/A2A/runtime-exposure claim merely because AgentCore can host agent workloads
-7. preserve Repository Risk != Runtime Exposure
-8. keep the separate Governed LLM Gateway Phase 14 / Case 3 integration independently governed
-9. keep PR #89 untouched until its separately governed re-evaluation
+3. HTTP + SigV4 only for the first AgentCore experiment
+4. capability executions remain 0 in the first experiment
+5. adaptive application retries/fallbacks remain 0
+6. direct code is preferred, but container fallback requires concrete packaging evidence
+7. PUBLIC vs VPC remains unresolved until exact outbound dependencies are reviewed
+8. runtime authentication/session/telemetry never become business authorization or evidence truth
+9. no MCP hosting, A2A, Gateway/Policy, Memory, Browser, or Code Interpreter in Gate 14.2
+10. preserve Repository Risk != Runtime Exposure
+11. keep the separate Governed LLM Gateway Phase 14 / Case 3 integration independently governed
+12. keep PR #89 untouched until its separately governed re-evaluation
 ```
