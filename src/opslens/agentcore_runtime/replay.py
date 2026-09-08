@@ -9,7 +9,10 @@ from collections.abc import Mapping
 from hashlib import sha256
 from typing import Protocol, cast, runtime_checkable
 
-from opslens.agent_baseline.domain.reasoning_evaluation import AgentReasoningEvaluationDataset
+from opslens.agent_baseline.domain.reasoning_evaluation import (
+    AgentReasoningEvaluationCase,
+    AgentReasoningEvaluationDataset,
+)
 
 AGENTCORE_RUNTIME_REPLAY_ARTIFACT_VERSION = "agentcore-runtime-replay:v1"
 PHASE11_REFERENCE_CORPUS_SHA256 = (
@@ -54,6 +57,7 @@ class AgentCoreRuntimeInvokeClient(Protocol):
 
 
 def _canonical_json(value: object) -> bytes:
+    """Serialize one deterministic replay identity payload."""
     return json.dumps(
         value,
         allow_nan=False,
@@ -64,6 +68,7 @@ def _canonical_json(value: object) -> bytes:
 
 
 def _canonical_sha256(value: object) -> str:
+    """Hash one canonical replay identity payload."""
     return sha256(_canonical_json(value)).hexdigest()
 
 
@@ -133,35 +138,25 @@ def _validate_replay_inputs(
         raise AgentCoreRuntimeReplayError("Phase 11 reference corpus must contain exactly six cases")
 
 
-def _request_payload(case: object) -> bytes:
-    task = cast(object, getattr(case, "task"))
-    text = cast(str, getattr(task, "text"))
-    capabilities = cast(tuple[object, ...], getattr(task, "allowed_capabilities"))
+def _request_payload(case: AgentReasoningEvaluationCase) -> bytes:
+    """Project one frozen Phase 11 task into the AgentCore runtime request contract."""
     return _canonical_json(
         {
-            "allowed_capabilities": [cast(object, item).value for item in capabilities],
-            "task_text": text,
+            "allowed_capabilities": [item.value for item in case.task.allowed_capabilities],
+            "task_text": case.task.text,
         }
     )
 
 
 def _score_case(
     *,
-    case: object,
+    case: AgentReasoningEvaluationCase,
     payload: Mapping[str, object],
-) -> dict[str, object]:
-    expectation = cast(object, getattr(case, "expectation"))
-    expected_decision = cast(object, getattr(expectation, "decision")).value
-    expected_capability_value = getattr(expectation, "capability")
+) -> dict[str, bool]:
+    """Score runtime output against the existing deterministic Phase 11 expectation."""
     expected_capability = (
-        cast(object, expected_capability_value).value
-        if expected_capability_value is not None
-        else None
+        case.expectation.capability.value if case.expectation.capability is not None else None
     )
-    expected_authorization = cast(
-        object, getattr(expectation, "authorization_outcome")
-    ).value
-
     actual_decision = payload.get("decision")
     actual_capability = payload.get("capability")
     actual_authorization = payload.get("authorization_outcome")
@@ -173,9 +168,9 @@ def _score_case(
     if type(retry_attempts) is not int:
         raise AgentCoreRuntimeReplayError("invocation_evidence retry_attempts must be an integer")
 
-    decision_match = actual_decision == expected_decision
+    decision_match = actual_decision == case.expectation.decision.value
     capability_match = actual_capability == expected_capability
-    authorization_match = actual_authorization == expected_authorization
+    authorization_match = actual_authorization == case.expectation.authorization_outcome.value
     bounds_compliant = retry_attempts == 0
     passed = decision_match and capability_match and authorization_match and bounds_compliant
 
@@ -213,11 +208,10 @@ def execute_agentcore_runtime_replay(
     passed_cases = 0
 
     for case in dataset.cases:
-        case_key = cast(str, getattr(case, "case_key"))
         session_id = _session_id(
             source_head_sha=source_head_sha,
             replay_run_id=replay_run_id,
-            case_key=case_key,
+            case_key=case.case_key,
         )
         started = time.perf_counter()
         response = client.invoke_agent_runtime(
@@ -233,38 +227,41 @@ def execute_agentcore_runtime_replay(
         status_code = _require_int(response, "statusCode")
         if status_code != 200:
             raise AgentCoreRuntimeReplayError(
-                f"case {case_key} returned unexpected runtime status {status_code}"
+                f"case {case.case_key} returned unexpected runtime status {status_code}"
             )
         content_type = _require_string(response, "contentType")
         if not content_type.startswith(_APPLICATION_JSON):
             raise AgentCoreRuntimeReplayError(
-                f"case {case_key} returned unexpected content type {content_type}"
+                f"case {case.case_key} returned unexpected content type {content_type}"
             )
         returned_session_id = _require_string(response, "runtimeSessionId")
         if returned_session_id != session_id:
             raise AgentCoreRuntimeReplayError(
-                f"case {case_key} returned a different runtime session identity"
+                f"case {case.case_key} returned a different runtime session identity"
             )
 
         payload = _response_json(response)
         score = _score_case(case=case, payload=payload)
-        if cast(bool, score["passed"]):
+        if score["passed"]:
             passed_cases += 1
 
-        invocation_evidence = cast(Mapping[str, object], payload["invocation_evidence"])
+        invocation_evidence = payload.get("invocation_evidence")
+        if not isinstance(invocation_evidence, Mapping):
+            raise AgentCoreRuntimeReplayError("successful runtime response lacks invocation_evidence")
+        typed_evidence = cast(Mapping[str, object], invocation_evidence)
         for key in ("input_tokens", "output_tokens", "total_tokens", "retry_attempts"):
-            if type(invocation_evidence.get(key)) is not int:
+            if type(typed_evidence.get(key)) is not int:
                 raise AgentCoreRuntimeReplayError(
-                    f"case {case_key} invocation_evidence {key} must be an integer"
+                    f"case {case.case_key} invocation_evidence {key} must be an integer"
                 )
-        input_tokens += cast(int, invocation_evidence["input_tokens"])
-        output_tokens += cast(int, invocation_evidence["output_tokens"])
-        total_tokens += cast(int, invocation_evidence["total_tokens"])
-        sdk_retry_attempts += cast(int, invocation_evidence["retry_attempts"])
+        input_tokens += cast(int, typed_evidence["input_tokens"])
+        output_tokens += cast(int, typed_evidence["output_tokens"])
+        total_tokens += cast(int, typed_evidence["total_tokens"])
+        sdk_retry_attempts += cast(int, typed_evidence["retry_attempts"])
 
         observations.append(
             {
-                "case_key": case_key,
+                "case_key": case.case_key,
                 "runtime_session_id": session_id,
                 "transport_elapsed_ms": elapsed_ms,
                 "status_code": status_code,
