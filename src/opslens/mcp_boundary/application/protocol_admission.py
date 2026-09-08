@@ -61,6 +61,21 @@ def _validate_resolved_invocation(
     return invocation
 
 
+def resolve_mcp_invocation_reference(
+    *,
+    invocation_id: str,
+    invocation_sha256: str,
+    resolver: McpInvocationResolver,
+) -> AgentCapabilityInvocation:
+    """Resolve one exact content-addressed MCP reference to its existing typed invocation."""
+    reference = McpInvocationReference(
+        invocation_id=invocation_id,
+        invocation_sha256=invocation_sha256,
+    )
+    resolved = resolver.resolve(reference.invocation_id, reference.invocation_sha256)
+    return _validate_resolved_invocation(reference=reference, invocation=resolved)
+
+
 def admit_mcp_invocation_reference(
     *,
     tool_name: McpToolName,
@@ -72,14 +87,17 @@ def admit_mcp_invocation_reference(
     if type(tool_name) is not McpToolName:
         raise McpBoundaryValidationError("tool_name must be McpToolName")
 
-    reference = McpInvocationReference(
+    invocation = resolve_mcp_invocation_reference(
         invocation_id=invocation_id,
         invocation_sha256=invocation_sha256,
+        resolver=resolver,
     )
-    resolved = resolver.resolve(reference.invocation_id, reference.invocation_sha256)
-    invocation = _validate_resolved_invocation(reference=reference, invocation=resolved)
     admission = admit_mcp_tool_call(tool_name=tool_name, invocation=invocation)
     return McpAdmissionProjection.from_admission(admission)
 
 
-__all__ = ["McpAdmissionProjection", "admit_mcp_invocation_reference"]
+__all__ = [
+    "McpAdmissionProjection",
+    "admit_mcp_invocation_reference",
+    "resolve_mcp_invocation_reference",
+]
