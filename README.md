@@ -16,7 +16,7 @@ It is designed to answer:
 
 > Given the software I actually use, which vulnerabilities affect it, what exact evidence proves that, which findings should I prioritize, and what verified guidance can help me act on them?
 
-The project deliberately separates deterministic truth, evidence admission, model reasoning, authorization, handoff admission, interoperability, and execution.
+The project deliberately separates deterministic truth, evidence admission, model reasoning, authorization, handoff admission, interoperability, execution, result disclosure, and runtime exposure.
 
 > **Agents reason. Code verifies evidence.**
 
@@ -53,9 +53,14 @@ Permanent boundaries:
 | Phase 10 | Observability & Operational Excellence | ✅ Complete |
 | Phase 11 | Single-Agent Baseline | ✅ Complete |
 | Phase 12 | Multi-Agent Architecture | ✅ Complete |
-| Phase 13 | MCP | 🚧 In progress — Gate 13.1 complete; Gate 13.2 next |
+| Phase 13 | MCP | ✅ Complete — bounded offline MCP retained |
+| Phase 14 | Amazon Bedrock AgentCore | ▶️ Next |
+| Phase 15 | A2A | ⏳ Planned |
+| Phase 16 | Runtime Exposure with Amazon Inspector | ⏳ Planned |
+| Phase 17 | Security Hardening | ⏳ Planned |
+| Phase 18 | Evaluation, Cost & Portfolio Readiness | ⏳ Planned |
 
-See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), the [Phase 12 closeout](labs/phase-12-gate-12-5-multi-agent-closeout.md), and the [Gate 13.1 MCP exposure lab](labs/phase-13-gate-13-1-bounded-mcp-capability-exposure.md).
+See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), the [Phase 12 closeout](labs/phase-12-gate-12-5-multi-agent-closeout.md), and the [Phase 13 MCP closeout](labs/phase-13-gate-13-5-mcp-closeout.md).
 
 ## Implemented governed system
 
@@ -128,9 +133,7 @@ EvidenceNeed[]
  -> deterministic output admission
 ```
 
-Structured vulnerability/risk facts and semantic remediation evidence remain separate authority classes.
-
-Runtime exposure remains `UNSUPPORTED` until an independent runtime authority exists.
+Structured vulnerability/risk facts and semantic remediation evidence remain separate authority classes. Runtime exposure remains `UNSUPPORTED` until an independent runtime authority exists.
 
 ### 5. Governed public-analysis boundary
 
@@ -288,12 +291,14 @@ Gate 12.3 implementation/evidence:              PRESERVE HISTORICALLY
 
 Phase 12 therefore closes around the architecture that survived measurement, not around the most complex experiment.
 
-### 11. Bounded MCP capability exposure
+### 11. Bounded MCP interoperability and result disclosure
 
-Phase 13 Gate 13.1 freezes:
+Phase 13 freezes three protocol-facing contracts:
 
 ```text
 mcp-capability-exposure:v1
+mcp-capability-execution:v1
+mcp-result-projection:v1
 ```
 
 Closed one-to-one MCP tool surface:
@@ -305,22 +310,28 @@ opslens.hybrid_security_answer      -> hybrid_security_answer
 opslens.public_repository_analysis  -> public_repository_analysis
 ```
 
-Authority path:
+Retained Phase 13 path:
 
 ```text
-existing AuthorizedAgentAction
- + existing typed AgentCapabilityInvocation
- -> closed McpToolName
- -> deterministic tool/capability match
- -> content-addressed McpToolCallAdmission
- -> STOP
+existing typed Phase 11 capability authority
+ -> closed MCP tool identity
+ -> official MCP SDK reference-only adapter
+ -> raw exact-key-set argument refusal
+ -> deterministic invocation resolution + admission
+ -> exactly one existing typed executor attempt
+ -> content-addressed MCP execution bridge
+ -> explicit mcp-result-projection:v1 for structured_security_query only
+ -> bounded CVE + EPSS rows
+ -> STOP before public/network runtime
 ```
 
-The MCP layer does not create authorization, does not create typed invocation semantics, does not execute a capability, and does not receive arbitrary executable `args` / `kwargs` authority.
+The protocol input remains only `invocation_id` and `invocation_sha256`. MCP cannot author `SemanticQuery`, SQL, URLs, shell commands, credentials, provider/model selection, retry/fallback policy, or arbitrary executable `args`/`kwargs`.
 
-The existing `single-agent-execution:v1` typed invocation remains authoritative for `SemanticQuery`, synthesis requests, repository coordinates, and other executable input semantics. MCP cannot author SQL, arbitrary URLs, shell commands, credentials, provider/model selection, retry/fallback policy, or execution results.
+The official MCP Python SDK is pinned as `mcp==2.2.0` in development dependencies only. Real interoperability testing showed that generated SDK/Pydantic argument coercion may ignore unexpected fields, so OpsLens validates the raw request key set before framework coercion. A separate dependency-placement experiment showed that moving MCP into runtime dependencies enlarged unrelated Lambda packages and tripped an existing package-size gate; deployment limits were not weakened.
 
-Gate 13.1 adds no MCP SDK and no network/server runtime. The framework choice is deliberately deferred until the authority contract is frozen.
+Business-result disclosure is deliberately narrower than capability execution. Phase 13 transports business content only for `structured_security_query`, through an explicit projector that maps the already-admitted internal `("cve", "epss")` shape to bounded `cve` + `epss_score` rows. Knowledge, hybrid, and public-repository business-result transport remain unsupported.
+
+Phase 13 closes at this bounded offline/in-process boundary. It does not create a public MCP runtime merely for completeness.
 
 ## Phase 11 real Bedrock baseline
 
@@ -356,26 +367,36 @@ labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json
 
 The six-case result is an acceptance-corpus result, not a universal model-correctness claim.
 
-## Phase 13 Gate 13.1 merge evidence
+## Phase 13 closeout evidence
 
 ```text
-issue:                  #180
-PR:                     #181
-final head:             340f2d7beee3640bd14455de635fe3ee4b6cc5cc
-PR merge test commit:   166e5626f52bdbabfd306b0e3152b02c1620ee5f
-MCP CI:                 34223369166 / run #3 / PASS
-job:                    102051514632
+issue:                  #192
+PR:                     #193
+final head:             99dd3d979a5205e38f2c1a4dfc84dc9f82d0e0c7
+PR merge test commit:   7ec68aa12bc0a08b698ed0ddf76434e7bd97fe85
+MCP CI:                 34250265151 / run #52 / PASS
+job:                    102142600531
 uv lock --check:        PASS
+MCP SDK pin:            PASS
 MCP import smoke:       PASS
 Ruff:                   PASS
 Pyright strict:         0 errors / 0 warnings / 0 informations
-pytest MCP slice:       7 passed in 0.19s
+pytest MCP slice:       29 passed in 0.90s
 review threads:         0
+PR comments:            0
 model invocations:      0
-capability executions:  0
-MCP SDK/runtime:        0
 new AWS/IAM:            0
-merge SHA:              322922aed4abec3b2266a18d15d8145df974a7d1
+public MCP endpoint:    0
+MCP deployed runtime:   0
+merge SHA:              c449cfc8e18dfd240ceedbe6e8e4d143601f0254
+```
+
+Closeout artifacts:
+
+```text
+labs/evidence/phase-13-closeout-v1.json
+labs/phase-13-gate-13-5-mcp-closeout.md
+docs/adr/0051-phase13-mcp-closeout.md
 ```
 
 ## Security and authority invariants
@@ -398,23 +419,28 @@ merge SHA:              322922aed4abec3b2266a18d15d8145df974a7d1
 - MCP tool name is not capability authorization.
 - MCP exposure is not executable argument authority.
 - MCP admission is not capability execution.
+- MCP capability execution is not business-result transport authority.
+- MCP result admission is not protocol result-projection authority.
+- MCP result projection is not public runtime exposure.
 - MCP transport success is not business/evidence truth.
 - Raw model/provider/downstream output is not canonical authority merely because a protocol transported it.
 - Provider/model selection and retry/fallback policy remain code-owned.
 - Unsupported runtime exposure is not inferred from repository risk.
 - IAM least privilege, observability, failure diagnosis, and cost accounting are architecture requirements.
 
-## What Gate 13.1 does not prove
+## What Phase 13 does not prove
 
 ```text
-real MCP protocol interoperability
-MCP client/server serialization
-MCP authentication or authorization transport
-session lifecycle or network reliability
-capability execution through MCP
-MCP result transport
-public/deployed MCP runtime
-production MCP SLOs
+generic business-result serialization
+knowledge-guidance business-result transport
+hybrid-security-answer business-result transport
+public-repository-analysis business-result transport
+persistent invocation/result registry
+stdio subprocess deployment interoperability
+Streamable HTTP production interoperability
+public MCP endpoint
+MCP transport authentication or authorization
+network reliability or production SLOs
 Amazon Bedrock AgentCore runtime behavior
 A2A interoperability
 runtime exposure / Amazon Inspector evidence
@@ -449,28 +475,14 @@ tools in reasoning:      none
 - [Documentation index](docs/README.md)
 - [Phase 11 closeout](labs/phase-11-gate-11-6-closeout.md)
 - [Phase 12 closeout](labs/phase-12-gate-12-5-multi-agent-closeout.md)
-- [Phase 13 Gate 13.1 bounded MCP exposure](labs/phase-13-gate-13-1-bounded-mcp-capability-exposure.md)
-- [ADR 0047 — Bounded MCP Capability Exposure](docs/adr/0047-bounded-mcp-capability-exposure.md)
+- [Phase 13 MCP closeout](labs/phase-13-gate-13-5-mcp-closeout.md)
+- [ADR 0051 — Phase 13 MCP Closeout](docs/adr/0051-phase13-mcp-closeout.md)
 
-## Next — Phase 13 Gate 13.2: Bounded MCP Protocol Adapter / Offline Interoperability
+## Next — Phase 14: Amazon Bedrock AgentCore
 
-Gate 13.2 may introduce a real MCP protocol adapter only against the already-frozen Gate 13.1 authority contract.
+Phase 14 begins by evaluating Amazon Bedrock AgentCore against a concrete OpsLens runtime/workload need. Managed runtime adoption is not automatic and does not retroactively turn the Phase 13 offline MCP proof into a public runtime.
 
-Before adding an SDK dependency, the current official MCP Python SDK/API must be verified and the chosen dependency pinned deliberately.
-
-Initial path:
-
-```text
-MCP protocol tool call
- -> exact closed tool identity
- -> bounded invocation reference
- -> deterministic server-side resolution to existing typed AgentCapabilityInvocation
- -> Gate 13.1 admit_mcp_tool_call(...)
- -> content-minimized admission response/evidence
- -> STOP before execute_authorized_capability(...)
-```
-
-The first interoperability proof should remain offline/in-process or stdio. No public network deployment, new AWS/IAM authority, capability execution, AgentCore, A2A, or runtime-exposure claim is authorized by this gate boundary.
+The first Phase 14 gate must preserve the retained Phase 11 reasoning reference, the Phase 12 measured topology decision, and the Phase 13 MCP admission/execution/result-projection boundaries. Identity, IAM, observability, failure behavior, retry policy, lifecycle, and cost must be defined before provisioning runtime resources.
 
 The long-lived Governed LLM Gateway PR #89 remains deferred cross-project work and must be re-evaluated separately against the current OpsLens architecture before any merge.
 

@@ -36,8 +36,8 @@ concept
 | 10 | Observability & Operational Excellence | ✅ Complete |
 | 11 | Single-Agent Baseline | ✅ Complete |
 | 12 | Multi-Agent Architecture | ✅ Complete |
-| 13 | MCP | 🚧 In progress — Gates 13.1–13.4 complete; closeout decision next |
-| 14 | Amazon Bedrock AgentCore | ⏳ Planned |
+| 13 | MCP | ✅ Complete — Gates 13.1–13.5 merged; bounded offline MCP retained |
+| 14 | Amazon Bedrock AgentCore | ▶️ Next |
 | 15 | A2A | ⏳ Planned |
 | 16 | Runtime Exposure with Amazon Inspector | ⏳ Planned |
 | 17 | Security Hardening | ⏳ Planned |
@@ -165,9 +165,9 @@ PR #178 merge: aca4264e9c98f81c239b44b55c8772ef02debc4c
 final Phase 12 state sync: 913a3302534098b429d3955c770d025480289a3f
 ```
 
-## Phase 13 — MCP — IN PROGRESS
+## Phase 13 — MCP — COMPLETE
 
-MCP is introduced as an interoperability boundary over existing governed capability authority. It does not become another authorization or generic execution plane.
+MCP is retained as an interoperability boundary over existing governed capability authority. It does not become another authorization, generic execution, business-result disclosure, or runtime-exposure plane.
 
 ### Gate 13.1 — Bounded MCP Capability Exposure Contract — COMPLETE / MERGED
 
@@ -408,45 +408,101 @@ docs/adr/0050-bounded-mcp-structured-result-projection.md
 labs/phase-13-gate-13-4-bounded-mcp-structured-result-projection.md
 ```
 
-### Phase 13 closeout decision — NEXT
+### Gate 13.5 — MCP Phase Closeout — COMPLETE / MERGED
 
-All implementation gates currently defined for Phase 13 are complete. The next step is to decide whether the bounded offline MCP architecture is sufficient to close the phase or whether a separate additional gate is justified by concrete interoperability/runtime evidence.
+Gate 13.5 closes the phase around the bounded offline architecture already proven rather than adding public/network runtime behavior without a concrete consumer requirement.
 
-The closeout decision must not equate framework interoperability with production runtime readiness. Public transport, authentication, session lifecycle, AWS/IAM deployment, broader result-family exposure, AgentCore, A2A, and runtime exposure remain separate decisions.
-
-Closeout constraints:
+Retained path:
 
 ```text
-1. preserve the frozen mcp-capability-exposure:v1 contract
-2. preserve the frozen mcp-capability-execution:v1 bridge
-3. preserve the frozen mcp-result-projection:v1 structured-result disclosure contract
-4. typed single-agent invocation/result authority remains upstream of MCP
-5. no generic business-result serializer
-6. knowledge/hybrid/public business-result transport remains unsupported without separate justification
-7. offline MCP SDK proof does not imply public/HTTP production readiness
-8. do not add transport/authentication/IAM merely for phase-completeness optics or certification coverage
-9. Repository Risk != Runtime Exposure remains frozen
-10. PR #89 remains deferred cross-project work
+Phase 11 typed capability authority
+ -> mcp-capability-exposure:v1
+ -> official MCP SDK reference-only adapter
+ -> raw exact-key-set argument refusal
+ -> deterministic invocation resolution + admission
+ -> mcp-capability-execution:v1
+ -> exactly one existing typed executor attempt
+ -> existing typed result admission
+ -> mcp-result-projection:v1 for structured_security_query only
+ -> bounded CVE + EPSS rows
+ -> STOP before public/network runtime
 ```
 
-### Phase 13 continuation rules
+Closeout decision:
 
 ```text
-1. MCP tool identity never grants capability authorization
-2. MCP arguments never bypass typed invocation creation/admission
-3. transport/framework code depends on the provider-neutral MCP boundary, not vice versa
-4. protocol errors are admitted only through stable content-free categories
-5. capability execution and business result transport remain separate authorities
-6. business result admission and protocol disclosure remain separate authorities
-7. public/network runtime and authentication require separate evidence and least-privilege decisions
-8. no framework adoption merely for certification coverage
-9. Repository Risk != Runtime Exposure remains frozen
-10. PR #89 remains deferred cross-project work
+retain bounded offline MCP architecture
+keep mcp==2.2.0 development-only
+preserve public/network runtime as an explicit non-claim
+preserve broader business-result transport as unsupported without separate justification
 ```
 
-## Phase 14 — Amazon Bedrock AgentCore — PLANNED
+Exact merge evidence:
+
+```text
+issue #192
+PR #193 final head:      99dd3d979a5205e38f2c1a4dfc84dc9f82d0e0c7
+PR merge test commit:    7ec68aa12bc0a08b698ed0ddf76434e7bd97fe85
+MCP CI:                  34250265151 / run #52 / PASS
+job:                     102142600531
+uv lock --check:         PASS
+MCP SDK pin:             PASS
+MCP import smoke:        PASS
+Ruff:                    PASS
+Pyright strict:          0 errors / 0 warnings / 0 informations
+pytest MCP slice:        29 passed in 0.90s
+review threads:          0
+PR comments:             0
+new model invocations:   0
+new AWS/IAM:             0
+public MCP endpoint:     0
+MCP deployed runtime:    0
+merge SHA:               c449cfc8e18dfd240ceedbe6e8e4d143601f0254
+```
+
+Closeout evidence:
+
+```text
+docs/adr/0051-phase13-mcp-closeout.md
+labs/phase-13-gate-13-5-mcp-closeout.md
+labs/evidence/phase-13-closeout-v1.json
+```
+
+### Phase 13 retained architecture
+
+Phase 13 is complete with the following separations frozen:
+
+```text
+MCP tool identity != capability authorization
+MCP arguments != executable business-input authority
+MCP admission != capability execution
+MCP capability execution != business-result disclosure
+MCP result admission != result projection authority
+MCP result projection != public runtime exposure
+MCP transport success != business/evidence truth
+MCP result != runtime exposure truth
+```
+
+Public/Streamable HTTP transport, transport authentication/authorization, persistent registries, broader result-family transport, AgentCore, A2A, network SLOs, and runtime-exposure evidence remain outside Phase 13 unless separately justified later.
+
+## Phase 14 — Amazon Bedrock AgentCore — NEXT
 
 Evaluate managed runtime capabilities against measured OpsLens needs rather than adopting them for certification coverage alone.
+
+Phase 14 entry constraints:
+
+```text
+1. define the concrete OpsLens runtime/workload need before adopting AgentCore
+2. preserve Phase 11 deterministic capability authorization and typed execution authority
+3. preserve Phase 12 measured topology-retention decision
+4. preserve Phase 13 MCP admission/execution/result-projection boundaries
+5. do not infer public MCP runtime readiness from offline MCP interoperability
+6. define identity, IAM, observability, failure, retry, cost, and lifecycle requirements before provisioning
+7. no AWS/IAM expansion without a specific capability requirement
+8. Repository Risk != Runtime Exposure remains frozen
+9. Governed LLM Gateway Phase 14 / Case 3 remains a separate cross-project decision
+10. PR #89 remains deferred until independently re-evaluated
+```
 
 ## Phase 15 — A2A — PLANNED
 
