@@ -35,7 +35,7 @@ concept
 | 9 | Public Analyze Your Repository | ✅ Complete |
 | 10 | Observability & Operational Excellence | ✅ Complete |
 | 11 | Single-Agent Baseline | ✅ Complete |
-| 12 | Multi-Agent Architecture | ▶️ Next |
+| 12 | Multi-Agent Architecture | 🚧 In progress |
 | 13 | MCP | ⏳ Planned |
 | 14 | Amazon Bedrock AgentCore | ⏳ Planned |
 | 15 | A2A | ⏳ Planned |
@@ -62,17 +62,18 @@ concept
 Agentic phases additionally preserve:
 
 ```text
-agent action proposal != capability authorization
+agent proposal != authorization
+handoff proposal != handoff admission
+handoff admission != capability authorization
 AuthorizedAgentAction != capability invocation
 capability invocation != execution result
 structured model output != trusted proposal
-evaluation evidence != operational telemetry
 model selection != capability authority
 agent reasoning may select an already-permitted capability
 agent reasoning does not acquire deterministic truth or execution authority
 ```
 
-## Completed foundation — Phases 0–6
+## Completed foundation — Phases 0–10
 
 ### Phase 0 — AWS Foundation
 
@@ -113,7 +114,7 @@ natural-language factual question
 
 The planner never receives unrestricted SQL authority.
 
-## Phase 7 — Knowledge Retrieval with Bedrock — COMPLETE
+### Phase 7 — Knowledge Retrieval with Bedrock
 
 Frozen infrastructure:
 
@@ -136,7 +137,7 @@ MRR:        0.5699404761904762
 provenance correctness: 1.0
 ```
 
-## Phase 8 — Hybrid Retrieval — COMPLETE
+### Phase 8 — Hybrid Retrieval
 
 Frozen contracts:
 
@@ -147,48 +148,17 @@ hybrid-synthesis:v1
 hybrid-evaluation-golden:v1
 ```
 
-First complete baseline:
+The rejected `H8.5-01` experiment remains historical evidence that tuning is not retained without measured improvement.
+
+### Phase 9 — Public Analyze Your Repository
+
+Governed public-analysis boundary closes at:
 
 ```text
-route_accuracy:               1.0
-structured_fact_correctness:  1.0
-semantic_groundedness:        0.6666666666666666
-citation_correctness:         0.6666666666666666
-abstention:                   1.0
-latency_ms:                   2959.3333333333335
-cost:                         UNMEASURED / null
+application boundary validated != public runtime deployed
 ```
 
-`H8.5-01` was tested once and rejected because it did not improve semantic groundedness/citation correctness. Runtime default remains `hybrid-synthesis-prompt:v1`.
-
-## Phase 9 — Public Analyze Your Repository — COMPLETE
-
-Frozen contracts:
-
-```text
-public-analysis-request:v1
-public-repository-evidence:v1
-public-semantic-planning:v1
-public-analysis-handoff:v1
-```
-
-Governed boundary:
-
-```text
-untrusted public JSON
- -> deterministic request admission
- -> immutable public GitHub evidence
- -> deterministic repository analysis
- -> metadata-only semantic planning proposal
- -> deterministic public-v1 scope admission
- -> existing Phase 8 hybrid authority
- -> PublicAnalysisAdmissionHandoff
- -> STOP
-```
-
-Phase 9 closes at `application boundary validated != public runtime deployed`.
-
-## Phase 10 — Observability & Operational Excellence — COMPLETE
+### Phase 10 — Observability & Operational Excellence
 
 Frozen contracts:
 
@@ -197,7 +167,7 @@ operational-telemetry:v1
 cloudwatch-emf:v1
 ```
 
-Phase 10 proves deterministic operational evidence and an AWS-native EMF representation boundary. It does not prove public runtime, CloudWatch ingestion, production latency/error distributions, runtime IAM, production cost/request, dashboards/alarms, or SLO compliance.
+Operational evidence is representation/evidence authority only; public runtime and CloudWatch ingestion remain separate proof obligations.
 
 ## Phase 11 — Single-Agent Baseline — COMPLETE
 
@@ -222,7 +192,7 @@ single-agent-reasoning:v1
 single-agent-reasoning-evaluation:v1
 ```
 
-Reasoning boundary:
+Reasoning reference:
 
 ```text
 SingleAgentTask
@@ -236,18 +206,7 @@ SingleAgentTask
  -> STOP for the real reasoning-quality baseline
 ```
 
-The initial capability surface remains closed:
-
-```text
-structured_security_query
-knowledge_guidance
-hybrid_security_answer
-public_repository_analysis
-```
-
-The model receives no arbitrary args/kwargs, SQL, URL, shell, credentials, provider/model selection, retry/fallback policy, or result-authority surface.
-
-First real frozen six-case reasoning baseline:
+First real frozen six-case baseline:
 
 ```text
 quality:                    6/6 PASS
@@ -271,45 +230,119 @@ corpus_sha256: 3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
 report_sha256: 724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
 ```
 
-Gate 11.5 made an evidence-driven decision:
+Gate 11.5 retained:
 
 ```text
 optimization decision: NO-CHANGE / NO-EXPERIMENT
 ```
 
-No prompt tuning, model switch, caching, retry/fallback expansion, or capability expansion was retained because the measured baseline did not expose a material target that justified additional complexity or risk.
-
-Gate 11.6 closeout:
-
-```text
-issue #162
-PR #163 final head: a17f7adc334473b3047ed3e37962b6a5881f7934
-Single-Agent CI:    34171804704 / run #44 / PASS
-pytest:             56 passed in 0.44s
-merge SHA:          a075c9a8ec3f0998e990d0b854bfd9ed22cabd07
-```
-
 Phase 11 does not prove multi-agent quality, deployed/public agent runtime, production SLOs, AgentCore behavior, MCP/A2A interoperability, runtime exposure, universal model correctness, or production billing/cost distributions.
 
-## Phase 12 — Multi-Agent Architecture — NEXT
+## Phase 12 — Multi-Agent Architecture — IN PROGRESS
 
-Phase 12 begins only from a concrete specialization hypothesis. The roadmap does not authorize adding agents merely for architectural novelty.
+Phase 12 is evidence-driven. The roadmap does not authorize adding agents merely for architectural novelty.
 
-Entry rules:
+### Gate 12.1 — Bounded Specialization Handoff Contract — COMPLETE / MERGED
+
+Frozen contract:
 
 ```text
-1. each agent/specialization has one explicit bounded responsibility
+multi-agent-handoff:v1
+```
+
+Code-owned specialization partition:
+
+```text
+EVIDENCE_ANALYSIS
+ -> public_repository_analysis
+ -> structured_security_query
+
+GUIDANCE_SYNTHESIS
+ -> hybrid_security_answer
+ -> knowledge_guidance
+```
+
+Deterministic handoff authority:
+
+```text
+SingleAgentTask
+ -> TriageAgentTask
+ -> untrusted MultiAgentHandoffProposal
+ -> deterministic source-task binding
+ -> code-owned specialization scope
+ -> intersection with source allowed_capabilities
+ -> empty intersection? FAIL CLOSED
+ -> AuthorizedMultiAgentHandoff | MultiAgentHandoffAbstention
+ -> narrowed SpecialistAgentTask
+ -> STOP
+```
+
+Frozen Gate 12.1 bounds:
+
+```text
+maximum handoffs per task:       1
+maximum specialist capabilities: 2
+real model calls:                0
+capability executions:           0
+new AWS resources:               0
+new IAM roles/policies:          0
+```
+
+The 4 -> <=2 specialist capability reduction is a deterministic reasoning-surface narrowing property, not a runtime privilege-reduction claim. Models still have no execution authority.
+
+Gate 12.1 merged through PR #166:
+
+```text
+final head:          567cdbde81f058d9545328ca78b718c24d79c9fb
+merge test commit:   b1e40ea858726c0672601db8c51c353ffbcc03ae
+Multi-Agent CI:      34172909750 / run #3 / PASS
+pytest:              10 passed in 0.39s
+Single-Agent CI:     34172909748 / run #48 / PASS
+single-agent pytest: 56 passed in 0.44s
+merge SHA:           eceed76a6cfc5d7e28e88dfdc503b4863b526ba0
+```
+
+Architecture record:
+
+```text
+docs/adr/0042-bounded-multi-agent-specialization-handoff.md
+```
+
+### Gate 12.2 — Comparative Multi-Agent Evaluation Contract — NEXT
+
+Before adding a second real model call, Gate 12.2 must freeze a deterministic comparison protocol against the Phase 11 reference.
+
+Required dimensions:
+
+```text
+routing/proposal quality
+bounds compliance
+specialist capability-surface width
+model invocation count
+input/output/total tokens
+provider/client latency
+SDK retries
+inference cost
+capability executions
+```
+
+Gate 12.2 should first define an offline/provider-neutral evaluation dataset and report contract. It must not use an LLM judge for metric authority.
+
+A later real experiment may be authorized only after the comparison contract is frozen. The topology must be rejected if measured specialization value does not justify additional model calls, latency, token usage, cost, failure modes, or architectural complexity.
+
+### Phase 12 continuation rules
+
+```text
+1. each specialization has one explicit bounded responsibility
 2. deterministic authorities frozen through Phase 11 remain code-owned
 3. generic tool registries and arbitrary executable argument surfaces remain prohibited
-4. handoff identity, failure, stopping, and loop bounds are explicit before execution
+4. handoff identity, failure, stopping, and loop bounds remain explicit
 5. comparative evaluation uses the Phase 11 single-agent baseline as the reference
 6. specialization is retained only when measured evidence demonstrates material value
 7. AgentCore, MCP, and A2A remain separate future decisions
 8. Repository Risk != Runtime Exposure remains frozen
 9. PR #89 remains deferred cross-project work
 ```
-
-The first Phase 12 gate should therefore define a bounded multi-agent hypothesis and comparison protocol before implementation.
 
 ## Phase 13 — MCP — PLANNED
 
