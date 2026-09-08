@@ -27,12 +27,9 @@ Phase 9  Public Analyze Your Repository         COMPLETE
 Phase 10 Observability & Operational Excellence COMPLETE
 Phase 11 Single-Agent Baseline                  COMPLETE
 Phase 12 Multi-Agent Architecture               COMPLETE
-  Gate 12.1 Bounded specialization handoff      COMPLETE / MERGED
-  Gate 12.2 Comparative evaluation contract     COMPLETE / MERGED
-  Gate 12.3 First real two-model comparison     COMPLETE / MERGED
-  Gate 12.4 Measured retention decision         COMPLETE / MERGED
-  Gate 12.5 Multi-agent phase closeout          COMPLETE / MERGED
-Phase 13 MCP                                    NEXT
+Phase 13 MCP                                    IN PROGRESS
+  Gate 13.1 Bounded MCP capability exposure     COMPLETE / MERGED
+  Gate 13.2 Bounded MCP protocol adapter         NEXT
 ```
 
 Permanent separations include:
@@ -45,155 +42,16 @@ AuthorizedAgentAction != capability invocation
 capability invocation != execution result
 structured model output != trusted proposal
 synthetic fixture conformance != model quality
+MCP tool name != capability authorization
+MCP tool exposure != executable argument authority
+MCP call admission != capability execution
+MCP transport success != business/evidence truth
 Repository Risk != Runtime Exposure
 ```
 
-No public/deployed agent runtime, AgentCore runtime, MCP interoperability, A2A interoperability, or runtime-exposure authority is claimed by Phase 12.
+## Retained reasoning reference
 
-## Phase 12 architecture records
-
-- [`adr/0042-bounded-multi-agent-specialization-handoff.md`](adr/0042-bounded-multi-agent-specialization-handoff.md) — freeze deterministic bounded specialization/handoff authority.
-- [`adr/0043-freeze-multi-agent-comparison-before-second-model-call.md`](adr/0043-freeze-multi-agent-comparison-before-second-model-call.md) — freeze comparative metrics before adding the second model call.
-- [`adr/0044-first-bounded-real-two-model-comparison.md`](adr/0044-first-bounded-real-two-model-comparison.md) — run the first bounded real triage-to-specialist experiment without moving authority into models.
-- [`adr/0045-do-not-retain-two-model-topology-without-measured-lift.md`](adr/0045-do-not-retain-two-model-topology-without-measured-lift.md) — retain the simpler measured reference when the two-model topology adds material overhead without measured lift.
-- [`adr/0046-phase12-multi-agent-closeout.md`](adr/0046-phase12-multi-agent-closeout.md) — close Phase 12 around the architecture that survived measurement.
-
-Frozen Phase 12 contracts:
-
-```text
-multi-agent-handoff:v1
-multi-agent-comparison:v1
-multi-agent-triage-reasoning:v1
-multi-agent-two-model-reasoning:v1
-multi-agent-real-comparison:v1
-```
-
-## Retained Phase 12 mechanism
-
-Code-owned specialization partition:
-
-```text
-EVIDENCE_ANALYSIS
- -> public_repository_analysis
- -> structured_security_query
-
-GUIDANCE_SYNTHESIS
- -> hybrid_security_answer
- -> knowledge_guidance
-```
-
-The Gate 12.1 handoff contract can deterministically narrow the reasoning surface from four source capabilities to at most two specialist capabilities. This is reasoning-surface narrowing, not runtime privilege reduction.
-
-Gate 12.1 merged through PR #166 as `eceed76a6cfc5d7e28e88dfdc503b4863b526ba0`.
-
-## Frozen comparison discipline
-
-Gate 12.2 exact identities:
-
-```text
-Phase 11 corpus_sha256:   3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
-Phase 11 report_sha256:   724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
-Gate 12.2 dataset_sha256: 1ad7f6274edea7d515f5827859d8a39bdde8edecc9a2ed58dc09df16b09dd491
-Gate 12.2 report_sha256:  0586822800f028d0bb5c7cdb937db4af2f685abde3e09c76afd979d4e1abc222
-```
-
-The synthetic `6/6` result is evaluator/contract conformance, not model quality.
-
-## Historical Gate 12.3 real two-model experiment
-
-Historical provider evidence:
-
-```text
-../labs/evidence/phase-12-gate-12-3-first-real-two-model-comparison-v1.json
-```
-
-Observed result:
-
-```text
-quality:                           6/6
-model invocations:                 10
-input/output/total tokens:          5788 / 194 / 5982
-provider latency median per task:  1694.0 ms
-client elapsed median per task:    2135.0 ms
-SDK retries:                       0
-capability executions:             0
-derived six-case cost:             USD 0.0074338
-```
-
-Experiment identities:
-
-```text
-dataset_sha256: 0439ebaa6215b2de7eaa82624188576743b5a50cc847137e04dc97ee7a199be7
-report_sha256:  45edf58ac911ec14e872a00464dad5d5311d82165d6b8ac4321da4a0dc5ad09b
-```
-
-## Frozen Phase 12 retention decision
-
-Measured Phase 11 versus Gate 12.3 comparison:
-
-```text
-quality:                    6/6 -> 6/6      no lift
-model invocations:          6 -> 10         +66.67%
-total tokens:               3395 -> 5982    +76.20%
-provider latency median:    809.5 -> 1694   +109.26%
-client elapsed median:      977.5 -> 2135   +118.41%
-derived cost:               0.0041921 -> 0.0074338 USD  +77.33%
-SDK retries:                0 -> 0
-capability executions:      0 -> 0
-```
-
-Retention decision:
-
-```text
-Phase 11 single-agent reasoning reference:      RETAIN
-Gate 12.1 deterministic specialization/handoff: RETAIN
-Gate 12.2 deterministic comparison discipline: RETAIN
-Gate 12.3 two-model topology as default:        DO NOT RETAIN
-Gate 12.3 implementation/evidence:              PRESERVE HISTORICALLY
-new rescue/tuning experiment:                   NOT AUTHORIZED WITHOUT NEW HYPOTHESIS
-```
-
-Decision evidence:
-
-```text
-../labs/evidence/phase-12-gate-12-4-retention-decision-v1.json
-```
-
-## Phase 12 closeout
-
-Closeout evidence:
-
-```text
-../labs/evidence/phase-12-closeout-v1.json
-../labs/phase-12-gate-12-5-multi-agent-closeout.md
-```
-
-Exact closeout merge:
-
-```text
-issue #177
-PR #178 final head:     3d9ad6a6d302299fb8209b40c7232bc18555c2dd
-PR merge test commit:   f2de18db9a2b23413be4977e3f4b21a5846ed837
-Multi-Agent CI:         34220492021 / run #34 / PASS
-job:                    102042205489
-Pyright strict:         0 errors / 0 warnings / 0 informations
-pytest:                 33 passed in 0.35s
-new model calls:        0
-new inference cost:     USD 0.00
-merge SHA:              aca4264e9c98f81c239b44b55c8772ef02debc4c
-```
-
-Phase 12 closes around the measured retained architecture, not around the most complex experiment implemented during the phase.
-
-### Phase 12 laboratories
-
-- [`../labs/phase-12-gate-12-1-bounded-specialization-handoff.md`](../labs/phase-12-gate-12-1-bounded-specialization-handoff.md)
-- [`../labs/phase-12-gate-12-2-comparative-multi-agent-evaluation.md`](../labs/phase-12-gate-12-2-comparative-multi-agent-evaluation.md)
-- [`../labs/phase-12-gate-12-3-first-bounded-real-two-model-comparison.md`](../labs/phase-12-gate-12-3-first-bounded-real-two-model-comparison.md)
-- [`../labs/phase-12-gate-12-4-measured-multi-agent-retention-decision.md`](../labs/phase-12-gate-12-4-measured-multi-agent-retention-decision.md)
-- [`../labs/phase-12-gate-12-5-multi-agent-closeout.md`](../labs/phase-12-gate-12-5-multi-agent-closeout.md)
-
-## Retained Phase 11 reference
+Phase 11 remains the default/reference measured reasoning architecture:
 
 ```text
 quality:                    6/6
@@ -212,11 +70,96 @@ Historical evidence:
 ../labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json
 ```
 
-The single-agent path remains the default/reference measured reasoning architecture until a superior topology is demonstrated against a frozen benchmark.
+## Phase 12 closeout
+
+Phase 12 retained the Gate 12.1 deterministic specialization/handoff mechanism and Gate 12.2 comparison discipline, but did not retain the Gate 12.3 two-model topology as the default reasoning path.
+
+Measured Phase 11 versus Gate 12.3 result:
+
+```text
+quality:                    6/6 -> 6/6      no lift
+model invocations:          6 -> 10         +66.67%
+total tokens:               3395 -> 5982    +76.20%
+provider latency median:    809.5 -> 1694   +109.26%
+client elapsed median:      977.5 -> 2135   +118.41%
+derived cost:               0.0041921 -> 0.0074338 USD  +77.33%
+```
+
+Closeout references:
+
+- [`adr/0042-bounded-multi-agent-specialization-handoff.md`](adr/0042-bounded-multi-agent-specialization-handoff.md)
+- [`adr/0043-freeze-multi-agent-comparison-before-second-model-call.md`](adr/0043-freeze-multi-agent-comparison-before-second-model-call.md)
+- [`adr/0044-first-bounded-real-two-model-comparison.md`](adr/0044-first-bounded-real-two-model-comparison.md)
+- [`adr/0045-do-not-retain-two-model-topology-without-measured-lift.md`](adr/0045-do-not-retain-two-model-topology-without-measured-lift.md)
+- [`adr/0046-phase12-multi-agent-closeout.md`](adr/0046-phase12-multi-agent-closeout.md)
+- [`../labs/phase-12-gate-12-5-multi-agent-closeout.md`](../labs/phase-12-gate-12-5-multi-agent-closeout.md)
+
+## Phase 13 Gate 13.1 — bounded MCP capability exposure
+
+Architecture record:
+
+- [`adr/0047-bounded-mcp-capability-exposure.md`](adr/0047-bounded-mcp-capability-exposure.md)
+
+Gate lab:
+
+- [`../labs/phase-13-gate-13-1-bounded-mcp-capability-exposure.md`](../labs/phase-13-gate-13-1-bounded-mcp-capability-exposure.md)
+
+Frozen contract:
+
+```text
+mcp-capability-exposure:v1
+```
+
+Closed MCP tool identities:
+
+```text
+opslens.structured_security_query   -> structured_security_query
+opslens.knowledge_guidance          -> knowledge_guidance
+opslens.hybrid_security_answer      -> hybrid_security_answer
+opslens.public_repository_analysis  -> public_repository_analysis
+```
+
+Gate 13.1 authority path:
+
+```text
+existing AuthorizedAgentAction
+ + existing typed AgentCapabilityInvocation
+ -> closed McpToolName
+ -> deterministic tool/capability match
+ -> content-addressed McpToolCallAdmission
+ -> STOP
+```
+
+The MCP boundary does not create the authorization, does not create the typed invocation, does not execute a capability, and does not gain arbitrary executable argument authority.
+
+Exact Gate 13.1 merge evidence:
+
+```text
+issue #180
+PR #181 final head:      340f2d7beee3640bd14455de635fe3ee4b6cc5cc
+PR merge test commit:    166e5626f52bdbabfd306b0e3152b02c1620ee5f
+MCP CI:                  34223369166 / run #3 / PASS
+job:                     102051514632
+uv lock --check:         PASS
+MCP import smoke:        PASS
+Ruff:                    PASS
+Pyright strict:          0 errors / 0 warnings / 0 informations
+pytest MCP slice:        7 passed in 0.19s
+review threads:          0
+model invocations:       0
+capability executions:   0
+MCP SDK/runtime:         0
+new AWS/IAM:             0
+merge SHA:               322922aed4abec3b2266a18d15d8145df974a7d1
+```
+
+Gate 13.1 proves the authority contract only. It does not prove real MCP client/server interoperability, authentication, network reliability, capability execution through MCP, result transport, a deployed MCP runtime, AgentCore, A2A, or runtime exposure.
 
 ## Permanent engineering boundaries
 
 > **Agents reason. Code verifies evidence.**
+
+> **MCP is an interoperability boundary, not new business authority.**
 
 > **Not every question is a RAG problem.**
 
@@ -230,17 +173,15 @@ The single-agent path remains the default/reference measured reasoning architect
 
 > **No unrestricted text-to-SQL.**
 
-## Next authorized phase
+## Next authorized gate
 
 ```text
-Phase 13 — MCP
+Phase 13 — Gate 13.2: Bounded MCP Protocol Adapter / Offline Interoperability
 ```
 
-The initial Phase 13 rule is:
+Gate 13.2 may introduce a real MCP protocol adapter only against the frozen Gate 13.1 contract. Before adding an SDK dependency, the current official MCP Python SDK/API must be verified and the selected dependency pinned deliberately.
 
-> **MCP is an interoperability boundary, not new business authority.**
-
-Phase 13 may expose only already-bounded capabilities and must preserve deterministic authorization, typed invocation/result admission, evidence provenance, fail-closed schema/tool handling, and least privilege.
+The initial protocol path must reference an already-created typed invocation, resolve it deterministically server-side, pass through Gate 13.1 admission, and stop before capability execution. The first interoperability proof should remain offline/in-process or stdio rather than a public network deployment.
 
 AgentCore and A2A remain separate later decisions. Deferred PR #89 remains out-of-scope cross-project integration work.
 
