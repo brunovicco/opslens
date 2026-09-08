@@ -111,7 +111,9 @@ def _load_locked_packages(lock_path: Path) -> dict[str, LockedPackage]:
             )
 
         if name in packages:
-            raise RuntimeError(f"runtime package builder does not admit duplicate lock entry {name}")
+            raise RuntimeError(
+                f"runtime package builder does not admit duplicate lock entry {name}"
+            )
         packages[name] = LockedPackage(
             name=name,
             version=version,
