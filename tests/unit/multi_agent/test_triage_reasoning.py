@@ -43,7 +43,11 @@ def _task() -> SingleAgentTask:
     )
 
 
-def _evidence(task: SingleAgentTask, *, request_id: str = "request-1") -> MultiAgentTriageInvocationEvidence:
+def _evidence(
+    task: SingleAgentTask,
+    *,
+    request_id: str = "request-1",
+) -> MultiAgentTriageInvocationEvidence:
     return MultiAgentTriageInvocationEvidence.create(
         source_task_id=task.task_id,
         provider="amazon_bedrock",
@@ -76,6 +80,7 @@ class _FakeTriageModel:
 
 
 def test_triage_parser_creates_existing_handoff_proposal() -> None:
+    """Valid triage output must become the existing handoff proposal type."""
     task = _task()
 
     proposal = parse_triage_model_output(
@@ -91,6 +96,7 @@ def test_triage_parser_creates_existing_handoff_proposal() -> None:
 
 
 def test_triage_parser_accepts_explicit_abstention() -> None:
+    """ABSTAIN must remain a closed no-specialization proposal."""
     proposal = parse_triage_model_output(
         task=_task(),
         output_text='{"decision":"abstain","target_specialization":null}',
@@ -122,11 +128,13 @@ def test_triage_parser_rejects_authority_broadening_shapes(
     output_text: str,
     message: str,
 ) -> None:
+    """Cross-field inconsistency and added capability authority must fail closed."""
     with pytest.raises(MultiAgentTriageReasoningValidationError, match=message):
         parse_triage_model_output(task=_task(), output_text=output_text)
 
 
 def test_triage_parser_rejects_oversized_output() -> None:
+    """Raw triage model output must remain within the frozen byte bound."""
     with pytest.raises(
         MultiAgentTriageReasoningValidationError,
         match="byte limit",
@@ -138,6 +146,7 @@ def test_triage_parser_rejects_oversized_output() -> None:
 
 
 def test_triage_reasoning_invokes_model_exactly_once() -> None:
+    """An admitted triage result must represent exactly one model invocation."""
     task = _task()
     model = _FakeTriageModel(
         '{"decision":"handoff","target_specialization":"evidence_analysis"}'
@@ -153,6 +162,7 @@ def test_triage_reasoning_invokes_model_exactly_once() -> None:
 
 
 def test_bedrock_triage_request_is_fixed_and_has_no_tool_authority() -> None:
+    """The first triage adapter must keep model/profile and output surface code-owned."""
     request = build_bedrock_triage_reasoning_request(_task())
 
     assert request["modelId"] == BEDROCK_TRIAGE_REASONING_MODEL_ID
