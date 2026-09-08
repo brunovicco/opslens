@@ -1,11 +1,11 @@
 """Deterministic MCP admission over already-authorized typed capability invocations."""
 
+from opslens.agent_baseline.domain.errors import AgentCapabilityExecutionValidationError
 from opslens.agent_baseline.domain.execution import (
     AgentCapabilityInvocation,
     action_for_invocation,
     capability_for_invocation,
 )
-from opslens.agent_baseline.domain.errors import AgentCapabilityExecutionValidationError
 from opslens.mcp_boundary.domain import (
     McpBoundaryValidationError,
     McpToolCallAdmission,
