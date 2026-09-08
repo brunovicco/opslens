@@ -191,7 +191,7 @@ def test_real_comparison_reference_drift_fails_closed(tmp_path: Path) -> None:
 
     with pytest.raises(
         MultiAgentRealComparisonValidationError,
-        match="Gate 12.2 report reference drifted",
+        match=r"Gate 12\.2 report reference drifted",
     ):
         load_multi_agent_real_comparison_dataset(changed)
 
