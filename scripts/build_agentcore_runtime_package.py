@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -241,6 +242,8 @@ def _validate_stage(
         )
 
     stage_literal = repr(str(stage))
+    environment = dict(os.environ)
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
     subprocess.run(
         [
             sys.executable,
@@ -254,6 +257,7 @@ def _validate_stage(
             ),
         ],
         check=True,
+        env=environment,
     )
     return native_files
 
