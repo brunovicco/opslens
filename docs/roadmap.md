@@ -36,7 +36,7 @@ concept
 | 10 | Observability & Operational Excellence | ✅ Complete |
 | 11 | Single-Agent Baseline | ✅ Complete |
 | 12 | Multi-Agent Architecture | ✅ Complete |
-| 13 | MCP | 🚧 In progress — Gate 13.1 complete; Gate 13.2 next |
+| 13 | MCP | 🚧 In progress — Gates 13.1–13.2 complete; Gate 13.3 next |
 | 14 | Amazon Bedrock AgentCore | ⏳ Planned |
 | 15 | A2A | ⏳ Planned |
 | 16 | Runtime Exposure with Amazon Inspector | ⏳ Planned |
@@ -226,40 +226,98 @@ docs/adr/0047-bounded-mcp-capability-exposure.md
 labs/phase-13-gate-13-1-bounded-mcp-capability-exposure.md
 ```
 
-### Gate 13.2 — Bounded MCP Protocol Adapter / Offline Interoperability — NEXT
+### Gate 13.2 — Bounded MCP Protocol Adapter / Offline Interoperability — COMPLETE / MERGED
 
-Gate 13.2 may introduce a real MCP protocol adapter, but only against the already-frozen Gate 13.1 authority contract.
+Gate 13.2 introduces the first real official MCP Python SDK adapter against the frozen Gate 13.1 authority contract.
+
+Pinned dependency boundary:
+
+```text
+mcp==2.2.0
+scope: development dependency only
+```
+
+Bounded path:
+
+```text
+MCP Client
+ -> exact closed Gate 13.1 tool identity
+ -> raw tools/call argument-shape refusal
+ -> {invocation_id, invocation_sha256}
+ -> McpInvocationReference
+ -> McpInvocationResolver
+ -> exact existing typed AgentCapabilityInvocation
+ -> independent ID + digest revalidation
+ -> Gate 13.1 admit_mcp_tool_call(...)
+ -> content-minimized McpAdmissionProjection
+ -> MCP Client
+ -> STOP before execute_authorized_capability(...)
+```
+
+Real MCP v2.2.0 interoperability testing discovered that the generated SDK/Pydantic function argument model can ignore an unexpected field instead of failing closed. OpsLens therefore validates the raw request key set before framework coercion. Framework schema validation is not executable-input authority.
+
+Terraform CI also exposed an incorrect dependency-placement experiment: putting `mcp==2.2.0` in project runtime dependencies enlarged unrelated Lambda deployment packages and caused the NVD incremental direct-upload package to exceed the existing 50 MiB limit. The fix was architectural—move MCP back to dev-only—not weakening the deployment limit.
+
+Exact merge evidence:
+
+```text
+issue #183
+PR #184 final head:      86031533d807c2915443ada6c83712feafb1e045
+PR merge test commit:    87790ffef64e9558904bff46034e5459aba2ce3c
+MCP CI:                  34234012588 / run #23 / PASS
+Python CI:               34234012544 / run #382 / PASS
+Terraform CI:            34234012583 / run #231 / PASS
+review threads:          0
+model invocations:       0
+capability executions:   0
+public MCP endpoint:     0
+MCP deployed runtime:    0
+new AWS/IAM:             0
+merge SHA:               131c086ff85564dbd777cebd6454d70e53ca8332
+```
+
+Architecture record and lab:
+
+```text
+docs/adr/0048-bounded-offline-mcp-protocol-adapter.md
+labs/phase-13-gate-13-2-bounded-mcp-protocol-adapter.md
+```
+
+### Gate 13.3 — Bounded MCP Capability Execution Bridge — NEXT
+
+Gate 13.3 may connect the already-admitted Gate 13.2 invocation reference to the existing typed capability execution boundary. MCP still does not become a generic executor or business-result authority.
 
 Proposed bounded path:
 
 ```text
-MCP protocol tool call
- -> exact closed tool identity
- -> bounded invocation reference
- -> deterministic server-side resolution to existing typed AgentCapabilityInvocation
- -> Gate 13.1 admit_mcp_tool_call(...)
- -> content-minimized admission response/evidence
- -> STOP before execute_authorized_capability(...)
+MCP protocol call
+ -> Gate 13.2 exact invocation reference resolution
+ -> Gate 13.1 deterministic MCP admission
+ -> existing typed AgentCapabilityInvocation
+ -> execute_authorized_capability(...)
+ -> exact typed AgentCapabilityExecutionResult
+ -> deterministic execution identity/evidence
+ -> STOP before business result projection/transport
 ```
 
 Entry constraints:
 
 ```text
-1. verify the current official MCP Python SDK/API before adding a dependency
-2. pin the selected SDK deliberately if adopted
-3. protocol input references an already-created typed invocation; it does not author arbitrary business args
-4. resolution must recover the exact invocation identity or fail closed
-5. tool/capability matching remains Gate 13.1 deterministic authority
-6. unknown/missing/forged invocation references fail closed
-7. no dynamic tool registry
-8. STOP before capability execution
-9. first interoperability proof should be offline/in-process or stdio
-10. no public network deployment, AWS/IAM expansion, or authentication design without concrete need
-11. protocol success remains distinct from business/evidence truth
-12. AgentCore, A2A, and runtime exposure remain separate later decisions
+1. protocol input remains only an exact existing invocation reference
+2. MCP admission remains mandatory before capability execution
+3. execution uses the existing single-agent-execution:v1 typed invocation/result contract
+4. no generic args/kwargs, SQL, URL, shell, credential, or provider/model authority moves into MCP
+5. exactly one admitted execution; no adaptive retry/fallback or alternate capability
+6. returned executor object must remain bound to the exact action/invocation identity or fail closed
+7. raw downstream/provider exception text is not admitted as protocol evidence
+8. prove the execution bridge offline first
+9. business result projection/transport is a separate later gate
+10. public/HTTP transport, authentication, session lifecycle, IAM/runtime deployment, AgentCore, and A2A remain separate decisions
+11. Repository Risk != Runtime Exposure remains frozen
+12. PR #89 remains deferred cross-project work
 ```
 
-A real protocol adapter is retained only if it preserves the frozen authority model without creating a second executable-input surface.
+Gate 13.3 should not deploy an MCP runtime merely to demonstrate that the deterministic execution bridge works.
 
 ### Phase 13 continuation rules
 
@@ -268,7 +326,7 @@ A real protocol adapter is retained only if it preserves the frozen authority mo
 2. MCP arguments never bypass typed invocation creation/admission
 3. transport/framework code depends on the provider-neutral MCP boundary, not vice versa
 4. protocol errors are admitted only through stable content-free categories
-5. capability execution and result transport require separate gates
+5. capability execution and business result transport remain separate gates
 6. public/network runtime and authentication require separate evidence and least-privilege decisions
 7. no framework adoption merely for certification coverage
 8. Repository Risk != Runtime Exposure remains frozen
