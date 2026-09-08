@@ -4,7 +4,7 @@ _Date: 2026-09-08_
 
 ## Status
 
-**IMPLEMENTED / FINAL EXACT-HEAD CI GREEN.**
+**IMPLEMENTED / MERGE CANDIDATE FROZEN.**
 
 Starting checkpoint:
 
@@ -313,7 +313,7 @@ pytest MCP slice
 
 Changing `pyproject.toml` / `uv.lock` also exercises existing Python and Terraform CI so dependency-placement regressions cannot be hidden inside the MCP-specific workflow.
 
-## Pre-closeout validation evidence
+## Validation evidence
 
 The implementation head after the final strict-typing remediation was:
 
@@ -329,7 +329,7 @@ Python CI:    run 34232331751 (#378) PASS
 Terraform CI: run 34232331769 (#227) PASS
 ```
 
-The closeout documentation then advanced the PR head and triggered a second complete validation cycle. The final exact-head evidence used for protected merge is recorded in the PR/issue checkpoint immediately before merge; any later branch commit invalidates that evidence and requires another full exact-head validation.
+Closeout documentation then advanced the branch and was itself revalidated. The merge candidate immediately preceding this record was also green across MCP, Python, and Terraform CI. The final exact merge head and run identifiers are preserved in the PR/issue checkpoint used for protected squash merge; any subsequent branch commit invalidates that checkpoint.
 
 ## AWS / IAM / runtime impact
 
@@ -418,6 +418,7 @@ docs/adr/0048-bounded-offline-mcp-protocol-adapter.md
 [x] Gate 13.2 lab added
 [x] draft PR #184 opened
 [x] implementation-head MCP/Python/Terraform CI PASS
+[x] closeout candidate MCP/Python/Terraform CI PASS
 [x] PR scope/review threads clean at validation checkpoint
 [ ] protected squash merge
 [ ] public/current state synchronized
