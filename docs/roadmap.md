@@ -1,6 +1,6 @@
 # OpsLens — Incremental Roadmap
 
-_Last updated: 2026-09-07_
+_Last updated: 2026-09-08_
 
 OpsLens advances in small, demonstrable, observable, reversible gates.
 
@@ -76,114 +76,24 @@ agent reasoning does not acquire deterministic truth or execution authority
 
 ## Completed foundation — Phases 0–10
 
-### Phase 0 — AWS Foundation
+Phases 0–10 are complete. Their detailed architecture and evidence remain in the phase ADRs, labs, current-state history, and Git history.
 
-Real `dev`, Terraform remote state, IAM Identity Center human access, GitHub Actions OIDC deployment identity, cost controls, CloudWatch, X-Ray, and intentional failure-path validation.
-
-### Phase 1 — EPSS Vertical Slice
-
-FIRST EPSS ingestion through EventBridge Scheduler, Lambda, S3 Bronze/Silver, Glue, and Athena.
-
-### Phase 2 — Threat Intelligence Data Lake
-
-NVD/CVE, CISA KEV, FIRST EPSS current/historical, and GitHub Security Advisory source-local deterministic evidence with provenance and explicit time coordinates.
-
-### Phase 3 — Vulnerability Correlation Engine
-
-Deterministic PyPI applicability with canonical package identity, PEP 440 vulnerable-range evaluation, GHSA/CVE/NVD reconciliation, and content-addressed evidence.
-
-### Phase 4 — Repository Intelligence
-
-Read-only public GitHub repository analysis over immutable snapshots and inert `uv.lock` evidence. Third-party repository code is never executed.
-
-### Phase 5 — Risk Prioritization Engine
-
-Deterministic Risk Policy v1 with explicit factor contributions, priority tiers, completeness semantics, and content-addressed results.
-
-### Phase 6 — Semantic Query Layer
-
-```text
-natural-language factual question
- -> bounded model planner
- -> structured proposal
- -> deterministic parser
- -> typed SemanticQuery
- -> deterministic SQL compiler
- -> bounded read-only Athena
- -> structured evidence
-```
-
-The planner never receives unrestricted SQL authority.
-
-### Phase 7 — Knowledge Retrieval with Bedrock
-
-Frozen infrastructure:
-
-```text
-knowledge base:          BTVJ2PBR2A
-data source:             IEL1LBE026
-embedding model:         amazon.titan-embed-text-v2:0
-vector store:            Amazon S3 Vectors
-canonical chunks:        9
-```
-
-Frozen retrieval baseline:
-
-```text
-Recall@1:   0.375
-Recall@3:   0.750
-Recall@5:   0.875
-Recall@10:  1.000
-MRR:        0.5699404761904762
-provenance correctness: 1.0
-```
-
-### Phase 8 — Hybrid Retrieval
-
-Frozen contracts:
-
-```text
-hybrid-routing:v1
-hybrid-evidence:v1
-hybrid-synthesis:v1
-hybrid-evaluation-golden:v1
-```
-
-The rejected `H8.5-01` experiment remains historical evidence that tuning is not retained without measured improvement.
-
-### Phase 9 — Public Analyze Your Repository
-
-Governed public-analysis boundary closes at:
-
-```text
-application boundary validated != public runtime deployed
-```
-
-### Phase 10 — Observability & Operational Excellence
-
-Frozen contracts:
-
-```text
-operational-telemetry:v1
-cloudwatch-emf:v1
-```
-
-Operational evidence is representation/evidence authority only; public runtime and CloudWatch ingestion remain separate proof obligations.
+The retained system includes AWS foundation, threat-intelligence ingestion, deterministic vulnerability correlation, repository intelligence over inert immutable evidence, deterministic risk prioritization, bounded semantic planning and SQL compilation, Bedrock Knowledge Base retrieval with Amazon S3 Vectors, hybrid evidence composition, governed public-analysis admission, and operational telemetry contracts.
 
 ## Phase 11 — Single-Agent Baseline — COMPLETE
 
 Completed sequence:
 
 ```text
-Gate 11.1 — Capability Authorization Contract                 COMPLETE / MERGED
+Gate 11.1 — Capability Authorization Contract                  COMPLETE / MERGED
 Gate 11.2 — Typed Capability Bindings + Offline Executor       COMPLETE / MERGED
 Gate 11.3 — Frozen Single-Agent Evaluation Fixture             COMPLETE / MERGED
 Gate 11.4 — First Bounded Model Reasoning Baseline             COMPLETE / MERGED
-Gate 11.5 — Measured Optimization Decision                    COMPLETE / MERGED — NO-CHANGE
-Gate 11.6 — Phase 11 Closeout                                 COMPLETE / MERGED
+Gate 11.5 — Measured Optimization Decision                     COMPLETE / MERGED — NO-CHANGE
+Gate 11.6 — Phase 11 Closeout                                  COMPLETE / MERGED
 ```
 
-Frozen Phase 11 contracts:
+Frozen contracts:
 
 ```text
 single-agent-authority:v1
@@ -193,55 +103,32 @@ single-agent-reasoning:v1
 single-agent-reasoning-evaluation:v1
 ```
 
-Reasoning reference:
+Frozen real reference:
 
 ```text
-SingleAgentTask
- -> code-owned AgentCapability allowlist
- -> one fixed provider-neutral model invocation
- -> transient untrusted {decision, capability}
- -> deterministic parser
- -> AgentActionProposal
- -> deterministic authorize_agent_action(...)
- -> AuthorizedAgentAction | AgentAbstention | stable rejection
- -> STOP for the real reasoning-quality baseline
-```
-
-First real frozen six-case baseline:
-
-```text
-quality:                    6/6 PASS
-decision matches:           6/6
-capability matches:         6/6
-authorization matches:      6/6
-bounds compliance:          6/6
-SDK retries:                0
-capability executions:      0
+quality:                    6/6
+model invocations:          6
 input/output/total tokens:  3291 / 104 / 3395
 provider latency median:    809.5 ms
 client elapsed median:      977.5 ms
+SDK retries:                0
+capability executions:      0
 derived inference cost:     USD 0.0041921
+corpus_sha256:              3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
+report_sha256:              724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
 ```
 
 Historical evidence:
 
 ```text
 labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json
-corpus_sha256: 3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
-report_sha256: 724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
 ```
 
-Gate 11.5 retained:
-
-```text
-optimization decision: NO-CHANGE / NO-EXPERIMENT
-```
-
-Phase 11 does not prove multi-agent quality, deployed/public agent runtime, production SLOs, AgentCore behavior, MCP/A2A interoperability, runtime exposure, universal model correctness, or production billing/cost distributions.
+Gate 11.5 intentionally retained `NO-CHANGE / NO-EXPERIMENT` because no material optimization target justified additional complexity or risk.
 
 ## Phase 12 — Multi-Agent Architecture — IN PROGRESS
 
-Phase 12 is evidence-driven. The roadmap does not authorize adding agents merely for architectural novelty.
+Phase 12 is evidence-driven. Adding agents is never itself a success criterion.
 
 ### Gate 12.1 — Bounded Specialization Handoff Contract — COMPLETE / MERGED
 
@@ -263,44 +150,13 @@ GUIDANCE_SYNTHESIS
  -> knowledge_guidance
 ```
 
-Deterministic handoff authority:
+The deterministic handoff boundary narrows the reasoning surface from four source capabilities to at most two specialist capabilities. This is not a runtime privilege-reduction claim and models still have no execution authority.
+
+Merge reference:
 
 ```text
-SingleAgentTask
- -> TriageAgentTask
- -> untrusted MultiAgentHandoffProposal
- -> deterministic source-task binding
- -> code-owned specialization scope
- -> intersection with source allowed_capabilities
- -> empty intersection? FAIL CLOSED
- -> AuthorizedMultiAgentHandoff | MultiAgentHandoffAbstention
- -> narrowed SpecialistAgentTask
- -> STOP
-```
-
-Frozen Gate 12.1 bounds:
-
-```text
-maximum handoffs per task:       1
-maximum specialist capabilities: 2
-real model calls:                0
-capability executions:           0
-new AWS resources:               0
-new IAM roles/policies:          0
-```
-
-The 4 -> <=2 specialist capability reduction is a deterministic reasoning-surface narrowing property, not a runtime privilege-reduction claim. Models still have no execution authority.
-
-Gate 12.1 merged through PR #166:
-
-```text
-final head:          567cdbde81f058d9545328ca78b718c24d79c9fb
-merge test commit:   b1e40ea858726c0672601db8c51c353ffbcc03ae
-Multi-Agent CI:      34172909750 / run #3 / PASS
-pytest:              10 passed in 0.39s
-Single-Agent CI:     34172909748 / run #48 / PASS
-single-agent pytest: 56 passed in 0.44s
-merge SHA:           eceed76a6cfc5d7e28e88dfdc503b4863b526ba0
+PR #166
+merge SHA: eceed76a6cfc5d7e28e88dfdc503b4863b526ba0
 ```
 
 Architecture record:
@@ -317,70 +173,22 @@ Frozen contract:
 multi-agent-comparison:v1
 ```
 
-Gate 12.2 froze the comparison protocol before allowing a second real model call. The provider-neutral offline path is:
+Gate 12.2 froze comparison criteria before a second real model call existed. Its synthetic six-case fixture is evaluator/contract conformance only.
 
-```text
-frozen synthetic comparison fixture
- -> admitted SingleAgentTask
- -> synthetic untrusted MultiAgentHandoffProposal
- -> existing Gate 12.1 deterministic handoff admission
- -> HANDOFF | ABSTAINED | REJECTED
- -> deterministic decomposed scoring
- -> content-addressed report
- -> runtime measurements remain null / unmeasured
- -> STOP
-```
-
-The dataset/report bind to the exact Phase 11 reference:
-
-```text
-Phase 11 corpus_sha256: 3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
-Phase 11 report_sha256: 724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
-```
-
-Frozen Gate 12.2 evidence:
+Frozen evidence:
 
 ```text
 dataset_sha256: 1ad7f6274edea7d515f5827859d8a39bdde8edecc9a2ed58dc09df16b09dd491
 report_sha256:  0586822800f028d0bb5c7cdb937db4af2f685abde3e09c76afd979d4e1abc222
-quality claim:   NONE — synthetic evaluator conformance only
+synthetic conformance: 6/6
+capability slots for four handoffs: 16 -> 8
 ```
 
-Frozen synthetic aggregate:
+Merge reference:
 
 ```text
-total / passed:                        6 / 6
-decision matches:                      6
-specialization matches:                6
-admission matches:                     6
-target scope matches:                  6
-non-broadening cases:                  6
-bounds-compliant cases:                6
-handoff / abstention cases:             4 / 2
-source capability slots for handoffs: 16
-specialist capability slots:            8
-capability slots removed:               8
-offline capability executions:          0
-```
-
-Runtime metrics remain explicitly unmeasured rather than encoded as fake zeros:
-
-```text
-model invocation count: null
-input/output/total tokens: null
-provider/client latency: null
-SDK retries: null
-inference cost: null
-```
-
-Gate 12.2 merged through PR #169:
-
-```text
-final head:        953467df99ddeaedd6e19471bd2dce6c5bb8de7c
-merge test commit: bab183ee1dbcca0eb6a0bb76b5130180f9f2f7c2
-Multi-Agent CI:    34174680219 / run #7 / PASS
-pytest:            18 passed in 0.27s
-merge SHA:         865ba70c813711cb88da9ac7308c8966ff983fd0
+PR #169
+merge SHA: 865ba70c813711cb88da9ac7308c8966ff983fd0
 ```
 
 Architecture record:
@@ -389,33 +197,149 @@ Architecture record:
 docs/adr/0043-freeze-multi-agent-comparison-before-second-model-call.md
 ```
 
-### Gate 12.3 — First Bounded Real Two-Model Comparison — NEXT
+### Gate 12.3 — First Bounded Real Two-Model Comparison — COMPLETE / MERGED
 
-Gate 12.3 may introduce the first real two-model experiment, but only inside the already-frozen deterministic boundaries:
+Gate 12.3 introduced the first real bounded triage-to-specialist experiment without transferring handoff, capability-authorization, execution, provider/model-selection, retry/fallback, evidence, or evaluation authority into a model.
+
+Runtime path:
 
 ```text
 SingleAgentTask
- -> bounded triage model proposes specialization only
- -> deterministic parser + Gate 12.1 handoff admission
+ -> one bounded triage model invocation
+ -> transient {decision, target_specialization}
+ -> deterministic parser
+ -> Gate 12.1 deterministic handoff admission
+ -> ABSTAIN / rejected? STOP
  -> narrowed SpecialistAgentTask
- -> bounded specialist reasoning proposes capability only
- -> existing deterministic capability authorization
+ -> one bounded specialist reasoning invocation
+ -> transient {decision, capability}
+ -> deterministic parser
+ -> deterministic capability authorization
  -> STOP before capability execution
 ```
 
-Initial hard bounds:
+Frozen bounds:
 
 ```text
 maximum model invocations per task: 2
 maximum handoffs:                   1
+maximum specialist capabilities:    2
 adaptive application retries:       0
 adaptive fallbacks:                 0
 capability executions:              0
 ```
 
-The Gate 12.2 fixture is not a model-quality baseline. Gate 12.3 must capture the first real triage/specialist observations before any prompt, model, or topology tuning. Real tokens, latency, SDK retries, and inference cost must come only from observed provider evidence and contemporaneous verified pricing.
+The first authenticated Bedrock replay was preserved before any prompt/model/topology tuning:
 
-The two-model topology must be rejected if its measured routing/specialization value does not justify the additional model call, latency, token usage, cost, failure surface, and architectural complexity relative to the frozen Phase 11 reference.
+```text
+labs/evidence/phase-12-gate-12-3-first-real-two-model-comparison-v1.json
+```
+
+Measured result:
+
+```text
+quality:                           6/6
+triage decision matches:           6/6
+specialization matches:            6/6
+admission matches:                 6/6
+target-scope matches:              6/6
+non-broadening cases:              6/6
+specialist decision matches:       6/6
+specialist capability matches:     6/6
+specialist authorization matches:  6/6
+runtime-bounds compliant:          6/6
+model invocations:                 10
+input/output/total tokens:          5788 / 194 / 5982
+provider latency median per task:  1694.0 ms
+client elapsed median per task:    2135.0 ms
+SDK retries:                       0
+capability executions:             0
+derived six-case cost:             USD 0.0074338
+```
+
+Content-addressed experiment identity:
+
+```text
+dataset_sha256: 0439ebaa6215b2de7eaa82624188576743b5a50cc847137e04dc97ee7a199be7
+report_sha256:  45edf58ac911ec14e872a00464dad5d5311d82165d6b8ac4321da4a0dc5ad09b
+```
+
+Direct comparison with the frozen Phase 11 reference:
+
+```text
+metric                     Phase 11       Gate 12.3        delta
+quality                    6/6            6/6              no lift
+model invocations          6              10               +66.67%
+input tokens               3291           5788             +75.87%
+output tokens              104            194              +86.54%
+total tokens               3395           5982             +76.20%
+provider latency median    809.5 ms       1694.0 ms        +109.26%
+client elapsed median      977.5 ms       2135.0 ms        +118.41%
+SDK retries                0              0                 unchanged
+capability executions      0              0                 unchanged
+derived cost               USD 0.0041921  USD 0.0074338    +77.33%
+```
+
+The triage stage alone cost USD `0.0046002`, approximately 9.73% more than the complete Phase 11 six-case single-agent reference.
+
+Gate 12.3 therefore proves feasibility and authority preservation, but no measured quality benefit. It is historical experiment evidence, not an automatic retained architecture decision.
+
+Exact merge evidence:
+
+```text
+issue #171:             CLOSED / COMPLETED
+PR #172 final head:     cf6001f374e3b14bb8048465e36210adc596b3ce
+PR merge test commit:   ddd275e44d8c2122b947bc9241a321c46fef9148
+Multi-Agent CI:         34218039083 / run #32 / PASS
+job:                    102034353535
+pytest:                 33 passed in 0.33s
+merge SHA:              f51cb70ad070716e774419b8d2c62918d3e65210
+```
+
+Architecture and experiment records:
+
+```text
+docs/adr/0044-first-bounded-real-two-model-comparison.md
+labs/phase-12-gate-12-3-first-bounded-real-two-model-comparison.md
+```
+
+### Gate 12.4 — Measured Multi-Agent Retention Decision — NEXT
+
+Gate 12.4 is a decision gate. It must not begin from the assumption that the two-model topology should survive merely because the experiment passed.
+
+Inputs are frozen:
+
+```text
+Phase 11 single-agent reference
+Gate 12.1 deterministic specialization boundary
+Gate 12.2 comparison contract
+Gate 12.3 first authenticated two-model evidence
+```
+
+Current evidence shows:
+
+```text
+quality improvement:      none on the frozen six-case corpus
+coordination surface:     larger
+total model calls:        +66.67%
+total token use:          +76.20%
+provider latency median:  +109.26%
+client latency median:    +118.41%
+inference cost:           +77.33%
+SDK retries:              unchanged at 0
+execution authority:      unchanged at 0 capability executions
+```
+
+Decision rule:
+
+```text
+retain only if a measured specialization benefit materially justifies
+added calls + tokens + latency + cost + failure surface + complexity
+```
+
+The default authorized action is **NO NEW MODEL EXPERIMENT**. A new experiment is allowed only if a concrete falsifiable hypothesis identifies a benefit that Gate 12.3 did not already measure.
+
+Without such evidence, Gate 12.4 should reject or defer the two-model topology as the retained/default reasoning architecture while preserving its implementation and runtime artifacts as historical evidence. The Phase 11 single-agent baseline remains the reference until a superior measured topology exists.
 
 ### Phase 12 continuation rules
 
@@ -427,9 +351,10 @@ The two-model topology must be rejected if its measured routing/specialization v
 5. comparative evaluation uses the Phase 11 single-agent baseline as the reference
 6. specialization is retained only when measured evidence demonstrates material value
 7. synthetic fixture conformance is never relabeled as model quality
-8. AgentCore, MCP, and A2A remain separate future decisions
-9. Repository Risk != Runtime Exposure remains frozen
-10. PR #89 remains deferred cross-project work
+8. real experiment success is not automatically architecture-retention success
+9. AgentCore, MCP, and A2A remain separate future decisions
+10. Repository Risk != Runtime Exposure remains frozen
+11. PR #89 remains deferred cross-project work
 ```
 
 ## Phase 13 — MCP — PLANNED
