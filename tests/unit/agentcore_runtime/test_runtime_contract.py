@@ -73,6 +73,7 @@ class _FakeReasoningModel:
 
 
 def test_admission_recomputes_existing_content_addressed_task_identity() -> None:
+    """Create task identity inside OpsLens instead of trusting caller identity."""
     raw_body = _request()
 
     admitted = admit_agentcore_runtime_request(raw_body)
@@ -98,11 +99,13 @@ def test_admission_recomputes_existing_content_addressed_task_identity() -> None
     ],
 )
 def test_admission_refuses_malformed_or_authority_bearing_fields(raw_body: bytes) -> None:
+    """Fail closed before model invocation on malformed or authority-bearing input."""
     with pytest.raises(AgentCoreRuntimeValidationError):
         admit_agentcore_runtime_request(raw_body)
 
 
 def test_admission_refuses_request_larger_than_runtime_bound() -> None:
+    """Reject the raw request before JSON parsing when its envelope is too large."""
     raw_body = b"{" + b"x" * MAX_AGENTCORE_RUNTIME_REQUEST_UTF8_BYTES + b"}"
 
     with pytest.raises(AgentCoreRuntimeValidationError, match="byte limit"):
@@ -128,11 +131,13 @@ def test_admission_refuses_request_larger_than_runtime_bound() -> None:
     ],
 )
 def test_admission_refuses_invalid_capability_allowlists(capabilities: list[str]) -> None:
+    """Require a non-empty unique allowlist from the closed capability enum."""
     with pytest.raises(AgentCoreRuntimeValidationError):
         admit_agentcore_runtime_request(_request(allowed_capabilities=capabilities))
 
 
 def test_authorized_runtime_projection_invokes_model_once_and_exposes_no_raw_output() -> None:
+    """Project an authorized proposal without raw model or capability-result content."""
     model = _FakeReasoningModel(
         '{"decision":"act","capability":"structured_security_query"}'
     )
@@ -152,6 +157,7 @@ def test_authorized_runtime_projection_invokes_model_once_and_exposes_no_raw_out
 
 
 def test_abstained_runtime_projection_remains_non_executable() -> None:
+    """Preserve explicit abstention without creating execution authority."""
     model = _FakeReasoningModel('{"decision":"abstain","capability":null}')
 
     projection = handle_agentcore_runtime_invocation(raw_body=_request(), model=model)
@@ -165,6 +171,7 @@ def test_abstained_runtime_projection_remains_non_executable() -> None:
 
 
 def test_unauthorized_model_capability_is_projected_as_deterministic_rejection() -> None:
+    """Keep an out-of-allowlist model proposal rejected by deterministic code."""
     model = _FakeReasoningModel(
         '{"decision":"act","capability":"hybrid_security_answer"}'
     )
@@ -181,6 +188,7 @@ def test_unauthorized_model_capability_is_projected_as_deterministic_rejection()
 
 
 def test_projection_contains_only_bounded_metadata_evidence() -> None:
+    """Expose only the pre-existing metadata-only reasoning evidence allowlist."""
     model = _FakeReasoningModel(
         '{"decision":"act","capability":"structured_security_query"}'
     )
