@@ -218,7 +218,7 @@ def test_existing_content_addressed_key_with_different_bytes_fails_closed(
 
     with pytest.raises(
         AgentCoreArtifactPublicationError,
-        match="size differs",
+        match="bytes differ",
     ):
         publish_agentcore_artifact(
             client=client,
