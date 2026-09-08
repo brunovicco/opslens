@@ -186,7 +186,9 @@ class McpStructuredSecurityResultProjection:
 
         athena_result = result.result
         if athena_result.columns != _EXPECTED_ATHENA_COLUMNS:
-            raise McpBoundaryValidationError("Athena projection columns are outside the frozen slice")
+            raise McpBoundaryValidationError(
+                "Athena projection columns are outside the frozen slice"
+            )
         if len(athena_result.rows) > invocation.query.limit:
             raise McpBoundaryValidationError("Athena result exceeds the semantic-query row limit")
         if len(athena_result.rows) > MAX_MCP_RESULT_ROWS:
