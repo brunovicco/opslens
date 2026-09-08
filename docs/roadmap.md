@@ -36,7 +36,7 @@ concept
 | 10 | Observability & Operational Excellence | ✅ Complete |
 | 11 | Single-Agent Baseline | ✅ Complete |
 | 12 | Multi-Agent Architecture | ✅ Complete |
-| 13 | MCP | 🚧 In progress — Gates 13.1–13.2 complete; Gate 13.3 next |
+| 13 | MCP | 🚧 In progress — Gates 13.1–13.3 complete; Gate 13.4 next |
 | 14 | Amazon Bedrock AgentCore | ⏳ Planned |
 | 15 | A2A | ⏳ Planned |
 | 16 | Runtime Exposure with Amazon Inspector | ⏳ Planned |
@@ -75,6 +75,7 @@ model selection != capability authority
 MCP tool name != capability authorization
 MCP tool exposure != executable argument authority
 MCP call admission != capability execution
+MCP capability execution != business result transport
 MCP transport success != business/evidence truth
 MCP result != runtime exposure truth
 ```
@@ -283,41 +284,95 @@ docs/adr/0048-bounded-offline-mcp-protocol-adapter.md
 labs/phase-13-gate-13-2-bounded-mcp-protocol-adapter.md
 ```
 
-### Gate 13.3 — Bounded MCP Capability Execution Bridge — NEXT
+### Gate 13.3 — Bounded MCP Capability Execution Bridge — COMPLETE / MERGED
 
-Gate 13.3 may connect the already-admitted Gate 13.2 invocation reference to the existing typed capability execution boundary. MCP still does not become a generic executor or business-result authority.
+Gate 13.3 binds the already-admitted Gate 13.2 invocation reference to the existing Phase 11 typed capability execution boundary without making MCP a generic executor or business-result authority.
 
-Proposed bounded path:
+Frozen contract:
 
 ```text
-MCP protocol call
- -> Gate 13.2 exact invocation reference resolution
- -> Gate 13.1 deterministic MCP admission
+mcp-capability-execution:v1
+```
+
+Bounded path:
+
+```text
+MCP Client
+ -> exact closed tool identity
+ -> Gate 13.2 raw argument-shape refusal
+ -> exact invocation reference resolution
+ -> Gate 13.1 deterministic admission
  -> existing typed AgentCapabilityInvocation
  -> execute_authorized_capability(...)
- -> exact typed AgentCapabilityExecutionResult
- -> deterministic execution identity/evidence
- -> STOP before business result projection/transport
+ -> AgentCapabilityExecution
+ -> McpCapabilityExecutionBridge
+ -> identity/digest-only MCP structured output
+ -> STOP before business result transport
+```
+
+The execution server is deliberately separate from the Gate 13.2 admission-only server so the previously frozen admission-only semantics do not silently change.
+
+One accepted MCP call performs exactly one existing typed executor attempt. There is no MCP retry, alternate-capability fallback, dynamic dispatch registry, or generic executable argument path.
+
+Protocol output contains execution/admission identities and digests only; downstream business result content remains withheld.
+
+Exact merge evidence:
+
+```text
+issue #186
+PR #187 final head:      a9de9a4748c55dda807c051544727ccaa0bcce78
+PR merge test commit:    2325912f574a62558019674e8eea3ebe64573b77
+MCP CI:                  34241001799 / run #29 / PASS
+job:                     102110837648
+uv lock --check:         PASS
+MCP import smoke:        PASS
+Ruff:                    PASS
+Pyright strict:          0 errors / 0 warnings / 0 informations
+pytest MCP slice:        22 passed in 1.21s
+review threads:          0
+new model invocations:   0
+new AWS/IAM:             0
+public MCP endpoint:     0
+merge SHA:               170429c894456adc1e1c38ca93b49f12e310fb94
+```
+
+Architecture record and lab:
+
+```text
+docs/adr/0049-bounded-mcp-capability-execution-bridge.md
+labs/phase-13-gate-13-3-bounded-mcp-capability-execution-bridge.md
+```
+
+### Gate 13.4 — Bounded MCP Business Result Projection / Offline Transport — NEXT
+
+Gate 13.4 may transport business result content only through explicit deterministic per-capability projection policies. The fact that a result reached `AgentCapabilityExecution` does not make its underlying object generically safe to serialize.
+
+Proposed boundary:
+
+```text
+Gate 13.3 admitted execution
+ -> exact typed downstream result family
+ -> deterministic capability-specific result projector
+ -> allowlisted/minimized result envelope
+ -> bind envelope to Gate 13.3 execution/bridge identity
+ -> MCP structured output
+ -> STOP before public/network runtime
 ```
 
 Entry constraints:
 
 ```text
-1. protocol input remains only an exact existing invocation reference
-2. MCP admission remains mandatory before capability execution
-3. execution uses the existing single-agent-execution:v1 typed invocation/result contract
-4. no generic args/kwargs, SQL, URL, shell, credential, or provider/model authority moves into MCP
-5. exactly one admitted execution; no adaptive retry/fallback or alternate capability
-6. returned executor object must remain bound to the exact action/invocation identity or fail closed
-7. raw downstream/provider exception text is not admitted as protocol evidence
-8. prove the execution bridge offline first
-9. business result projection/transport is a separate later gate
-10. public/HTTP transport, authentication, session lifecycle, IAM/runtime deployment, AgentCore, and A2A remain separate decisions
-11. Repository Risk != Runtime Exposure remains frozen
-12. PR #89 remains deferred cross-project work
+1. no generic serializer for arbitrary downstream/provider objects
+2. output policy is explicit and code-owned per capability/result family
+3. only allowlisted fields cross the MCP protocol boundary
+4. provider messages, credentials, raw exceptions, arbitrary SQL, and hidden metadata remain excluded
+5. projection identity remains bound to Gate 13.3 execution/bridge evidence
+6. unsupported or mismatched result families fail closed
+7. first result-transport proof remains offline/in-process
+8. no public/HTTP transport or authentication in the same gate
+9. no new AWS/IAM/runtime resource unless concrete evidence proves a need
+10. AgentCore, A2A, runtime exposure, and PR #89 remain separate decisions
 ```
-
-Gate 13.3 should not deploy an MCP runtime merely to demonstrate that the deterministic execution bridge works.
 
 ### Phase 13 continuation rules
 
