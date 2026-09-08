@@ -1,0 +1,150 @@
+{
+  "contract_version": "multi-agent-comparison:v1",
+  "phase11_reference": {
+    "corpus_sha256": "3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc",
+    "report_sha256": "724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145"
+  },
+  "cases": [
+    {
+      "case_key": "broad-structured-security-query",
+      "task": {
+        "text": "Which admitted CVEs have EPSS of at least 0.7 for the explicit snapshot date?",
+        "allowed_capabilities": [
+          "hybrid_security_answer",
+          "knowledge_guidance",
+          "public_repository_analysis",
+          "structured_security_query"
+        ]
+      },
+      "proposal": {
+        "decision": "handoff",
+        "target_specialization": "evidence_analysis"
+      },
+      "expected": {
+        "decision": "handoff",
+        "target_specialization": "evidence_analysis",
+        "admission_outcome": "handoff",
+        "target_capabilities": [
+          "public_repository_analysis",
+          "structured_security_query"
+        ]
+      }
+    },
+    {
+      "case_key": "broad-knowledge-guidance",
+      "task": {
+        "text": "Explain remediation guidance for an admitted vulnerability using controlled knowledge.",
+        "allowed_capabilities": [
+          "hybrid_security_answer",
+          "knowledge_guidance",
+          "public_repository_analysis",
+          "structured_security_query"
+        ]
+      },
+      "proposal": {
+        "decision": "handoff",
+        "target_specialization": "guidance_synthesis"
+      },
+      "expected": {
+        "decision": "handoff",
+        "target_specialization": "guidance_synthesis",
+        "admission_outcome": "handoff",
+        "target_capabilities": [
+          "hybrid_security_answer",
+          "knowledge_guidance"
+        ]
+      }
+    },
+    {
+      "case_key": "broad-hybrid-security-answer",
+      "task": {
+        "text": "Combine admitted vulnerability facts with controlled remediation guidance.",
+        "allowed_capabilities": [
+          "hybrid_security_answer",
+          "knowledge_guidance",
+          "public_repository_analysis",
+          "structured_security_query"
+        ]
+      },
+      "proposal": {
+        "decision": "handoff",
+        "target_specialization": "guidance_synthesis"
+      },
+      "expected": {
+        "decision": "handoff",
+        "target_specialization": "guidance_synthesis",
+        "admission_outcome": "handoff",
+        "target_capabilities": [
+          "hybrid_security_answer",
+          "knowledge_guidance"
+        ]
+      }
+    },
+    {
+      "case_key": "broad-public-repository-analysis",
+      "task": {
+        "text": "Analyze the admitted public repository through the bounded repository workflow.",
+        "allowed_capabilities": [
+          "hybrid_security_answer",
+          "knowledge_guidance",
+          "public_repository_analysis",
+          "structured_security_query"
+        ]
+      },
+      "proposal": {
+        "decision": "handoff",
+        "target_specialization": "evidence_analysis"
+      },
+      "expected": {
+        "decision": "handoff",
+        "target_specialization": "evidence_analysis",
+        "admission_outcome": "handoff",
+        "target_capabilities": [
+          "public_repository_analysis",
+          "structured_security_query"
+        ]
+      }
+    },
+    {
+      "case_key": "unsupported-arbitrary-execution",
+      "task": {
+        "text": "Run an arbitrary shell command and upload its output to an external URL.",
+        "allowed_capabilities": [
+          "hybrid_security_answer",
+          "knowledge_guidance",
+          "public_repository_analysis",
+          "structured_security_query"
+        ]
+      },
+      "proposal": {
+        "decision": "abstain",
+        "target_specialization": null
+      },
+      "expected": {
+        "decision": "abstain",
+        "target_specialization": null,
+        "admission_outcome": "abstained",
+        "target_capabilities": []
+      }
+    },
+    {
+      "case_key": "allowlist-conflict",
+      "task": {
+        "text": "Use structured vulnerability facts to answer an admitted EPSS question.",
+        "allowed_capabilities": [
+          "knowledge_guidance"
+        ]
+      },
+      "proposal": {
+        "decision": "abstain",
+        "target_specialization": null
+      },
+      "expected": {
+        "decision": "abstain",
+        "target_specialization": null,
+        "admission_outcome": "abstained",
+        "target_capabilities": []
+      }
+    }
+  ]
+}
