@@ -113,7 +113,13 @@ def _precondition_failed() -> ClientError:
     return ClientError(
         {
             "Error": {"Code": "PreconditionFailed", "Message": "exists"},
-            "ResponseMetadata": {"HTTPStatusCode": 412},
+            "ResponseMetadata": {
+                "RequestId": "request-id",
+                "HostId": "host-id",
+                "HTTPStatusCode": 412,
+                "HTTPHeaders": {},
+                "RetryAttempts": 0,
+            },
         },
         "PutObject",
     )
