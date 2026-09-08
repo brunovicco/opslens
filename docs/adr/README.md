@@ -49,3 +49,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0039](0039-bounded-single-agent-model-reasoning.md) | Add one bounded provider-neutral model reasoning step behind deterministic authorization | Accepted |
 | [0040](0040-preserve-measured-reasoning-baseline-without-premature-optimization.md) | Preserve the measured reasoning baseline when no material optimization target is observed | Accepted |
 | [0041](0041-phase11-single-agent-baseline-closeout.md) | Close Phase 11 at the bounded single-agent reference before multi-agent complexity | Accepted |
+| [0042](0042-bounded-multi-agent-specialization-handoff.md) | Bound multi-agent specialization before adding another model call | Accepted |
