@@ -6,7 +6,7 @@
 
 ### Verifiable Software Supply Chain & Threat Intelligence on AWS
 
-**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Public Analysis · Operational Evidence · Bounded Agent Reasoning · Deterministic Authority**
+**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Public Analysis · Operational Evidence · Bounded Agent Reasoning · MCP Interoperability · Deterministic Authority**
 
 </div>
 
@@ -16,9 +16,11 @@ It is designed to answer:
 
 > Given the software I actually use, which vulnerabilities affect it, what exact evidence proves that, which findings should I prioritize, and what verified guidance can help me act on them?
 
-The project deliberately separates deterministic truth, evidence admission, model reasoning, authorization, handoff admission, and execution.
+The project deliberately separates deterministic truth, evidence admission, model reasoning, authorization, handoff admission, interoperability, and execution.
 
 > **Agents reason. Code verifies evidence.**
+
+> **MCP is an interoperability boundary, not new business authority.**
 
 Permanent boundaries:
 
@@ -51,9 +53,9 @@ Permanent boundaries:
 | Phase 10 | Observability & Operational Excellence | ✅ Complete |
 | Phase 11 | Single-Agent Baseline | ✅ Complete |
 | Phase 12 | Multi-Agent Architecture | ✅ Complete |
-| Phase 13 | MCP | ▶️ Next |
+| Phase 13 | MCP | 🚧 In progress — Gate 13.1 complete; Gate 13.2 next |
 
-See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), the [Phase 11 closeout](labs/phase-11-gate-11-6-closeout.md), and the complete [Phase 12 closeout](labs/phase-12-gate-12-5-multi-agent-closeout.md).
+See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), the [Phase 12 closeout](labs/phase-12-gate-12-5-multi-agent-closeout.md), and the [Gate 13.1 MCP exposure lab](labs/phase-13-gate-13-1-bounded-mcp-capability-exposure.md).
 
 ## Implemented governed system
 
@@ -225,18 +227,7 @@ SingleAgentTask
  -> STOP
 ```
 
-Hard bounds:
-
-```text
-maximum handoffs per source task:       1
-maximum specialist capability surface:  2
-real model calls in Gate 12.1:           0
-capability executions in Gate 12.1:      0
-```
-
-The `4 -> <=2` specialist capability reduction is a reasoning-surface narrowing property, not a runtime privilege-reduction claim. Models still have no execution authority.
-
-The handoff proposal cannot carry arbitrary messages/context, capability selection, args/kwargs, SQL, URLs, shell commands, credentials, provider/model selection, retry/fallback policy, or execution results.
+The `4 -> <=2` specialist capability reduction is reasoning-surface narrowing, not runtime privilege reduction. Models still have no execution authority.
 
 ### 9. Deterministic multi-agent comparison authority
 
@@ -246,53 +237,20 @@ Phase 12 Gate 12.2 freezes:
 multi-agent-comparison:v1
 ```
 
-The comparison contract is intentionally frozen before a second real model invocation exists:
+The comparison contract was frozen before a second real model invocation existed. Its synthetic `6/6` result is evaluator/contract conformance, not model quality.
+
+Exact evidence identities:
 
 ```text
-frozen synthetic comparison fixture
- -> admitted SingleAgentTask
- -> synthetic untrusted MultiAgentHandoffProposal
- -> Gate 12.1 deterministic admission
- -> HANDOFF | ABSTAINED | REJECTED
- -> deterministic decomposed scoring
- -> content-addressed report
- -> runtime measurements remain null / unmeasured
- -> STOP
+Phase 11 corpus_sha256:   3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
+Phase 11 report_sha256:   724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
+Gate 12.2 dataset_sha256: 1ad7f6274edea7d515f5827859d8a39bdde8edecc9a2ed58dc09df16b09dd491
+Gate 12.2 report_sha256:  0586822800f028d0bb5c7cdb937db4af2f685abde3e09c76afd979d4e1abc222
 ```
-
-Exact Phase 11 reference binding:
-
-```text
-corpus_sha256: 3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
-report_sha256: 724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
-```
-
-Frozen Gate 12.2 evidence:
-
-```text
-dataset_sha256: 1ad7f6274edea7d515f5827859d8a39bdde8edecc9a2ed58dc09df16b09dd491
-report_sha256:  0586822800f028d0bb5c7cdb937db4af2f685abde3e09c76afd979d4e1abc222
-total / passed:                        6 / 6
-handoff / abstention cases:             4 / 2
-source capability slots for handoffs: 16
-specialist capability slots:            8
-capability slots removed:               8
-offline capability executions:          0
-```
-
-The `6/6` result is synthetic evaluator/contract conformance, not triage-model quality, specialist-model quality, or a real multi-agent baseline.
-
-Because Gate 12.2 invokes no model, model invocation count, tokens, provider/client latency, SDK retries, and inference cost are explicitly `null` rather than manufactured zeros.
 
 ### 10. Measured multi-agent experiment and retention
 
 Gate 12.3 introduced the first authenticated bounded two-model experiment while preserving deterministic handoff and capability-authorization authority.
-
-Historical evidence:
-
-```text
-labs/evidence/phase-12-gate-12-3-first-real-two-model-comparison-v1.json
-```
 
 Observed result:
 
@@ -307,7 +265,7 @@ capability executions:             0
 derived six-case cost:             USD 0.0074338
 ```
 
-Gate 12.4 compared that result with the Phase 11 reference:
+Gate 12.4 compared that result with the retained Phase 11 reference:
 
 ```text
 quality:                    6/6 -> 6/6      no lift
@@ -316,8 +274,6 @@ total tokens:               3395 -> 5982    +76.20%
 provider latency median:    809.5 -> 1694   +109.26%
 client elapsed median:      977.5 -> 2135   +118.41%
 derived cost:               0.0041921 -> 0.0074338 USD  +77.33%
-SDK retries:                0 -> 0
-capability executions:      0 -> 0
 ```
 
 Frozen retention decision:
@@ -328,10 +284,43 @@ Gate 12.1 deterministic specialization/handoff: RETAIN
 Gate 12.2 deterministic comparison discipline: RETAIN
 Gate 12.3 two-model topology as default:        DO NOT RETAIN
 Gate 12.3 implementation/evidence:              PRESERVE HISTORICALLY
-new rescue/tuning experiment:                   NOT AUTHORIZED WITHOUT NEW HYPOTHESIS
 ```
 
 Phase 12 therefore closes around the architecture that survived measurement, not around the most complex experiment.
+
+### 11. Bounded MCP capability exposure
+
+Phase 13 Gate 13.1 freezes:
+
+```text
+mcp-capability-exposure:v1
+```
+
+Closed one-to-one MCP tool surface:
+
+```text
+opslens.structured_security_query   -> structured_security_query
+opslens.knowledge_guidance          -> knowledge_guidance
+opslens.hybrid_security_answer      -> hybrid_security_answer
+opslens.public_repository_analysis  -> public_repository_analysis
+```
+
+Authority path:
+
+```text
+existing AuthorizedAgentAction
+ + existing typed AgentCapabilityInvocation
+ -> closed McpToolName
+ -> deterministic tool/capability match
+ -> content-addressed McpToolCallAdmission
+ -> STOP
+```
+
+The MCP layer does not create authorization, does not create typed invocation semantics, does not execute a capability, and does not receive arbitrary executable `args` / `kwargs` authority.
+
+The existing `single-agent-execution:v1` typed invocation remains authoritative for `SemanticQuery`, synthesis requests, repository coordinates, and other executable input semantics. MCP cannot author SQL, arbitrary URLs, shell commands, credentials, provider/model selection, retry/fallback policy, or execution results.
+
+Gate 13.1 adds no MCP SDK and no network/server runtime. The framework choice is deliberately deferred until the authority contract is frozen.
 
 ## Phase 11 real Bedrock baseline
 
@@ -344,14 +333,6 @@ model/profile:   us.anthropic.claude-haiku-4-5-20251001-v1:0
 temperature:     0.0
 maxTokens:       96
 tools:           disabled
-```
-
-Preserved evidence:
-
-```text
-labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json
-corpus_sha256: 3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
-report_sha256: 724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
 ```
 
 Measured result:
@@ -367,52 +348,35 @@ client elapsed median:        977.5 ms
 derived six-case cost:        USD 0.0041921
 ```
 
-The first authenticated runtime attempt exposed a provider constraint: Bedrock structured outputs rejected JSON Schema `oneOf`. The adapter was corrected to a flat closed schema while ACT/ABSTAIN cross-field consistency remained deterministic application authority.
+Preserved evidence:
+
+```text
+labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json
+```
 
 The six-case result is an acceptance-corpus result, not a universal model-correctness claim.
 
-## Measured optimization decision
-
-Gate 11.5 intentionally retained the implementation unchanged:
+## Phase 13 Gate 13.1 merge evidence
 
 ```text
-optimization decision: NO-CHANGE / NO-EXPERIMENT
-```
-
-Prompt compression, model switching, prompt caching, retry/fallback expansion, and capability expansion were not justified by a material measured target.
-
-This project treats **not optimizing** as a valid engineering result when evidence does not justify additional complexity or risk.
-
-## Phase 12 merge evidence
-
-```text
-Gate 12.1  PR #166  merge eceed76a6cfc5d7e28e88dfdc503b4863b526ba0
-Gate 12.2  PR #169  merge 865ba70c813711cb88da9ac7308c8966ff983fd0
-Gate 12.3  PR #172  merge f51cb70ad070716e774419b8d2c62918d3e65210
-Gate 12.4  PR #175  merge fabe8128d1d6077e8de92225991b5e26c1b72ab3
-Gate 12.5  PR #178  merge aca4264e9c98f81c239b44b55c8772ef02debc4c
-```
-
-Gate 12.5 exact closeout validation:
-
-```text
-PR final head:          3d9ad6a6d302299fb8209b40c7232bc18555c2dd
-PR merge test commit:   f2de18db9a2b23413be4977e3f4b21a5846ed837
-Multi-Agent CI:         34220492021 / run #34 / PASS
-job:                    102042205489
+issue:                  #180
+PR:                     #181
+final head:             340f2d7beee3640bd14455de635fe3ee4b6cc5cc
+PR merge test commit:   166e5626f52bdbabfd306b0e3152b02c1620ee5f
+MCP CI:                 34223369166 / run #3 / PASS
+job:                    102051514632
+uv lock --check:        PASS
+MCP import smoke:       PASS
+Ruff:                   PASS
 Pyright strict:         0 errors / 0 warnings / 0 informations
-pytest:                 33 passed in 0.35s
-new model invocations:  0
-new inference cost:     USD 0.00
+pytest MCP slice:       7 passed in 0.19s
+review threads:         0
+model invocations:      0
+capability executions:  0
+MCP SDK/runtime:        0
+new AWS/IAM:            0
+merge SHA:              322922aed4abec3b2266a18d15d8145df974a7d1
 ```
-
-Closeout evidence:
-
-```text
-labs/evidence/phase-12-closeout-v1.json
-```
-
-Phase 12 adds no public agent runtime, AgentCore runtime, MCP runtime, A2A runtime, runtime-exposure authority, or model-owned authorization authority.
 
 ## Security and authority invariants
 
@@ -431,25 +395,29 @@ Phase 12 adds no public agent runtime, AgentCore runtime, MCP runtime, A2A runti
 - Handoff admission is not capability authorization.
 - Authorized action is not capability invocation.
 - Capability invocation is not execution result.
-- Synthetic fixture conformance is not model quality.
-- Raw model output is not canonical evidence.
+- MCP tool name is not capability authorization.
+- MCP exposure is not executable argument authority.
+- MCP admission is not capability execution.
+- MCP transport success is not business/evidence truth.
+- Raw model/provider/downstream output is not canonical authority merely because a protocol transported it.
 - Provider/model selection and retry/fallback policy remain code-owned.
 - Unsupported runtime exposure is not inferred from repository risk.
 - IAM least privilege, observability, failure diagnosis, and cost accounting are architecture requirements.
 
-## What Phase 12 does not prove
+## What Gate 13.1 does not prove
 
 ```text
-multi-agent capability execution in a deployed runtime
-public/deployed agent runtime
-production request volume or agent SLOs
+real MCP protocol interoperability
+MCP client/server serialization
+MCP authentication or authorization transport
+session lifecycle or network reliability
+capability execution through MCP
+MCP result transport
+public/deployed MCP runtime
+production MCP SLOs
 Amazon Bedrock AgentCore runtime behavior
-MCP interoperability
 A2A interoperability
 runtime exposure / Amazon Inspector evidence
-universal superiority of multi-agent architecture
-model-owned handoff admission
-model-owned capability authorization
 ```
 
 ## AWS baseline
@@ -479,28 +447,33 @@ tools in reasoning:      none
 - [Architecture — Português](docs/architecture.pt-br.md)
 - [ADR index](docs/adr/README.md)
 - [Documentation index](docs/README.md)
-- [Phase 8 closeout](labs/phase-8-gate-8-6-closeout.md)
-- [Phase 9 closeout](labs/phase-9-gate-9-4-closeout.md)
-- [Phase 10 closeout](labs/phase-10-gate-10-4-closeout.md)
 - [Phase 11 closeout](labs/phase-11-gate-11-6-closeout.md)
-- [Phase 12 Gate 12.1 bounded handoff](labs/phase-12-gate-12-1-bounded-specialization-handoff.md)
-- [Phase 12 Gate 12.2 comparison contract](labs/phase-12-gate-12-2-comparative-multi-agent-evaluation.md)
-- [Phase 12 Gate 12.3 real two-model experiment](labs/phase-12-gate-12-3-first-bounded-real-two-model-comparison.md)
-- [Phase 12 Gate 12.4 retention decision](labs/phase-12-gate-12-4-measured-multi-agent-retention-decision.md)
 - [Phase 12 closeout](labs/phase-12-gate-12-5-multi-agent-closeout.md)
+- [Phase 13 Gate 13.1 bounded MCP exposure](labs/phase-13-gate-13-1-bounded-mcp-capability-exposure.md)
+- [ADR 0047 — Bounded MCP Capability Exposure](docs/adr/0047-bounded-mcp-capability-exposure.md)
 
-## Next — Phase 13: MCP
+## Next — Phase 13 Gate 13.2: Bounded MCP Protocol Adapter / Offline Interoperability
 
-The next phase may expose already-bounded OpsLens capabilities through explicit MCP contracts.
+Gate 13.2 may introduce a real MCP protocol adapter only against the already-frozen Gate 13.1 authority contract.
 
-> **MCP is an interoperability boundary, not new business authority.**
+Before adding an SDK dependency, the current official MCP Python SDK/API must be verified and the chosen dependency pinned deliberately.
 
-Phase 13 must preserve deterministic capability authorization, typed invocation/result admission, evidence provenance, fail-closed schema/tool handling, and least privilege. It must not introduce arbitrary executable args/kwargs, SQL, URLs, shell commands, credentials, hidden provider selection, or runtime-exposure claims.
+Initial path:
 
-Amazon Bedrock AgentCore and A2A remain separate later architecture decisions.
+```text
+MCP protocol tool call
+ -> exact closed tool identity
+ -> bounded invocation reference
+ -> deterministic server-side resolution to existing typed AgentCapabilityInvocation
+ -> Gate 13.1 admit_mcp_tool_call(...)
+ -> content-minimized admission response/evidence
+ -> STOP before execute_authorized_capability(...)
+```
+
+The first interoperability proof should remain offline/in-process or stdio. No public network deployment, new AWS/IAM authority, capability execution, AgentCore, A2A, or runtime-exposure claim is authorized by this gate boundary.
 
 The long-lived Governed LLM Gateway PR #89 remains deferred cross-project work and must be re-evaluated separately against the current OpsLens architecture before any merge.
 
 ---
 
-OpsLens is intentionally built as an evidence system first and an agentic system only where measured evidence justifies the added complexity.
+OpsLens is intentionally built as an evidence system first and an agentic/interoperability system only where measured evidence justifies the added complexity.
