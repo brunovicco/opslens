@@ -1,0 +1,112 @@
+{
+  "artifact_version": "phase-12-closeout:v1",
+  "closeout_date": "2026-09-08",
+  "source_main_sha": "05a9402f726db14b059533a95e2746bdc7d734f1",
+  "phase": "Phase 12 — Multi-Agent Architecture",
+  "status": "complete",
+  "gates": [
+    {
+      "gate": "12.1",
+      "name": "Bounded Specialization Handoff Contract",
+      "issue": 165,
+      "pull_request": 166,
+      "merge_sha": "eceed76a6cfc5d7e28e88dfdc503b4863b526ba0",
+      "retained": true,
+      "role": "deterministic specialization and handoff authority boundary"
+    },
+    {
+      "gate": "12.2",
+      "name": "Comparative Multi-Agent Evaluation Contract",
+      "issue": 168,
+      "pull_request": 169,
+      "merge_sha": "865ba70c813711cb88da9ac7308c8966ff983fd0",
+      "retained": true,
+      "role": "frozen deterministic comparison contract"
+    },
+    {
+      "gate": "12.3",
+      "name": "First Bounded Real Two-Model Comparison",
+      "issue": 171,
+      "pull_request": 172,
+      "merge_sha": "f51cb70ad070716e774419b8d2c62918d3e65210",
+      "retained": false,
+      "role": "historical non-default two-model experiment"
+    },
+    {
+      "gate": "12.4",
+      "name": "Measured Multi-Agent Retention Decision",
+      "issue": 174,
+      "pull_request": 175,
+      "merge_sha": "fabe8128d1d6077e8de92225991b5e26c1b72ab3",
+      "retained": true,
+      "role": "evidence-based topology retention decision"
+    }
+  ],
+  "reference_evidence": {
+    "phase11": {
+      "path": "labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json",
+      "corpus_sha256": "3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc",
+      "report_sha256": "724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145"
+    },
+    "gate12_2": {
+      "dataset_sha256": "1ad7f6274edea7d515f5827859d8a39bdde8edecc9a2ed58dc09df16b09dd491",
+      "report_sha256": "0586822800f028d0bb5c7cdb937db4af2f685abde3e09c76afd979d4e1abc222"
+    },
+    "gate12_3": {
+      "path": "labs/evidence/phase-12-gate-12-3-first-real-two-model-comparison-v1.json",
+      "dataset_sha256": "0439ebaa6215b2de7eaa82624188576743b5a50cc847137e04dc97ee7a199be7",
+      "report_sha256": "45edf58ac911ec14e872a00464dad5d5311d82165d6b8ac4321da4a0dc5ad09b"
+    },
+    "gate12_4": {
+      "path": "labs/evidence/phase-12-gate-12-4-retention-decision-v1.json"
+    }
+  },
+  "measured_comparison": {
+    "phase11_quality": "6/6",
+    "gate12_3_quality": "6/6",
+    "quality_lift": false,
+    "phase11_model_invocations": 6,
+    "gate12_3_model_invocations": 10,
+    "phase11_total_tokens": 3395,
+    "gate12_3_total_tokens": 5982,
+    "phase11_provider_latency_median_ms": 809.5,
+    "gate12_3_provider_latency_median_ms": 1694.0,
+    "phase11_client_elapsed_median_ms": 977.5,
+    "gate12_3_client_elapsed_median_ms": 2135.0,
+    "phase11_derived_cost_usd": 0.0041921,
+    "gate12_3_derived_cost_usd": 0.0074338,
+    "phase11_sdk_retry_attempts": 0,
+    "gate12_3_sdk_retry_attempts": 0,
+    "phase11_capability_executions": 0,
+    "gate12_3_capability_executions": 0
+  },
+  "retained_architecture": {
+    "runtime_reasoning_reference": "Phase 11 single-agent bounded reasoning",
+    "specialization_handoff_boundary": "Gate 12.1 deterministic specialization/handoff",
+    "comparison_contract": "Gate 12.2 deterministic comparison semantics"
+  },
+  "non_retained_default_architecture": {
+    "topology": "Gate 12.3 model-driven triage followed by specialist model reasoning",
+    "disposition": "preserve implementation and evidence historically; do not use as default/reference without a new predeclared measurable benefit hypothesis"
+  },
+  "phase12_non_claims": [
+    "multi-agent capability execution in a deployed runtime",
+    "public or deployed agent runtime",
+    "production SLOs for agent execution",
+    "Amazon Bedrock AgentCore runtime behavior",
+    "MCP interoperability",
+    "A2A interoperability",
+    "runtime exposure or Amazon Inspector evidence",
+    "universal superiority of multi-agent architecture"
+  ],
+  "closeout_runtime_impact": {
+    "new_model_invocations": 0,
+    "new_inference_cost_usd": 0.0,
+    "new_aws_resources": 0,
+    "new_iam_roles_or_policies": 0,
+    "capability_executions": 0,
+    "runtime_exposure_authority_changes": 0,
+    "governed_llm_gateway_changes": 0
+  },
+  "next_phase": "Phase 13 — MCP"
+}
