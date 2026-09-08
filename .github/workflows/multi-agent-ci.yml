@@ -5,7 +5,10 @@ on:
     paths:
       - "src/opslens/multi_agent/**/*.py"
       - "tests/unit/multi_agent/**/*.py"
+      - "tests/fixtures/multi_agent/**"
+      - "scripts/run_multi_agent_comparison_fixture.py"
       - "docs/adr/0042-*.md"
+      - "docs/adr/0043-*.md"
       - "labs/phase-12-gate-12-*.md"
       - ".github/workflows/multi-agent-ci.yml"
   workflow_dispatch:
@@ -38,11 +41,22 @@ jobs:
       - name: Sync locked dependencies
         run: uv sync --frozen
 
+      - name: Run offline comparison fixture
+        run: PYTHONPATH=src uv run python scripts/run_multi_agent_comparison_fixture.py > /tmp/multi-agent-comparison.json
+
       - name: Ruff multi-agent slice
-        run: uv run ruff check src/opslens/multi_agent tests/unit/multi_agent
+        run: >-
+          uv run ruff check
+          src/opslens/multi_agent
+          tests/unit/multi_agent
+          scripts/run_multi_agent_comparison_fixture.py
 
       - name: Pyright strict multi-agent slice
-        run: uv run pyright src/opslens/multi_agent tests/unit/multi_agent
+        run: >-
+          uv run pyright
+          src/opslens/multi_agent
+          tests/unit/multi_agent
+          scripts/run_multi_agent_comparison_fixture.py
 
       - name: Pytest multi-agent slice
         run: uv run pytest tests/unit/multi_agent
