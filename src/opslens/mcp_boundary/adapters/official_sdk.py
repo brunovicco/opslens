@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import TypedDict
 
-from mcp.server import MCPServer
+from mcp import MCPError
+from mcp.server import MCPServer, ServerRequestContext
+from mcp.server.context import CallNext, HandlerResult
 from mcp.server.mcpserver.exceptions import ToolError
+from mcp_types import INVALID_PARAMS
 
 from opslens.mcp_boundary.application import (
     McpAdmissionProjection,
@@ -17,6 +21,9 @@ from opslens.mcp_boundary.ports import McpInvocationResolver
 _SERVER_NAME = "OpsLens Bounded MCP"
 _REJECTED_REFERENCE_MESSAGE = "MCP invocation reference rejected."
 _RESOLUTION_FAILURE_MESSAGE = "MCP invocation resolution failed."
+_REJECTED_ARGUMENTS_MESSAGE = "MCP tool arguments rejected."
+_ALLOWED_REFERENCE_ARGUMENTS = frozenset({"invocation_id", "invocation_sha256"})
+_CLOSED_TOOL_NAMES = frozenset(tool_name.value for tool_name in McpToolName)
 
 
 class McpAdmissionProtocolOutput(TypedDict):
@@ -44,6 +51,31 @@ def _protocol_output(projection: McpAdmissionProjection) -> McpAdmissionProtocol
         admission_id=projection.admission_id,
         admission_sha256=projection.admission_sha256,
     )
+
+
+async def _reject_unexpected_tool_arguments(
+    ctx: ServerRequestContext[None, object],
+    call_next: CallNext,
+) -> HandlerResult:
+    """Fail closed on extra/missing raw arguments before SDK function-model validation."""
+    if ctx.method != "tools/call":
+        return await call_next(ctx)
+
+    params = ctx.params
+    if params is None:
+        raise MCPError(code=INVALID_PARAMS, message=_REJECTED_ARGUMENTS_MESSAGE)
+
+    raw_tool_name = params.get("name")
+    if type(raw_tool_name) is not str or raw_tool_name not in _CLOSED_TOOL_NAMES:
+        return await call_next(ctx)
+
+    raw_arguments = params.get("arguments")
+    if not isinstance(raw_arguments, Mapping):
+        raise MCPError(code=INVALID_PARAMS, message=_REJECTED_ARGUMENTS_MESSAGE)
+    if set(raw_arguments) != _ALLOWED_REFERENCE_ARGUMENTS:
+        raise MCPError(code=INVALID_PARAMS, message=_REJECTED_ARGUMENTS_MESSAGE)
+
+    return await call_next(ctx)
 
 
 def _admit_reference(
@@ -76,6 +108,7 @@ def build_offline_mcp_server(*, resolver: McpInvocationResolver) -> MCPServer[No
             "Exposes only content-addressed references to already-authorized OpsLens "
             "capability invocations. This server does not execute capabilities."
         ),
+        middleware=[_reject_unexpected_tool_arguments],
     )
 
     def structured_security_query(
