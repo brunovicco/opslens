@@ -24,6 +24,7 @@ on:
       - "pyproject.toml"
       - "uv.lock"
       - ".github/workflows/agentcore-ci.yml"
+      - ".github/workflows/agentcore-runtime-experiment.yml"
   workflow_dispatch:
 
 permissions:
@@ -76,6 +77,41 @@ jobs:
                   raise SystemExit(f"{path} must contain one JSON object.")
               if not isinstance(value.get("artifact_version"), str):
                   raise SystemExit(f"{path} is missing artifact_version.")
+          PY
+
+      - name: Validate main-only AgentCore experiment workflow guardrails
+        run: |
+          uv run python - <<'PY'
+          from pathlib import Path
+
+          path = Path(".github/workflows/agentcore-runtime-experiment.yml")
+          text = path.read_text(encoding="utf-8")
+          required_fragments = (
+              "workflow_dispatch:",
+              "confirm_public_experiment:",
+              "github.ref == 'refs/heads/main' && inputs.confirm_public_experiment",
+              "role/OpsLensGitHubDeployRole",
+              "role/OpsLensAgentCoreReplayRole",
+              "bedrock-agentcore:InvokeAgentRuntime",
+              "if: always()",
+              "agentcore_runtime_experiment_enabled=false",
+          )
+          missing = [fragment for fragment in required_fragments if fragment not in text]
+          if missing:
+              raise SystemExit(
+                  "AgentCore experiment workflow lost required guardrails: "
+                  + ", ".join(missing)
+              )
+          forbidden_fragments = (
+              "pull_request:",
+              "agentcore_runtime_experiment_enabled=true\n      - name: Configure",
+          )
+          present = [fragment for fragment in forbidden_fragments if fragment in text]
+          if present:
+              raise SystemExit(
+                  "AgentCore experiment workflow contains forbidden trigger/ordering: "
+                  + ", ".join(present)
+              )
           PY
 
       - name: Prepare exact locked AWS provider schema probe
