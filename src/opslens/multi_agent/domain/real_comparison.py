@@ -63,7 +63,6 @@ _REPORT_ID_PATTERN = re.compile(
 
 
 def _canonical_sha256(value: object) -> str:
-    """Return SHA-256 over deterministic canonical JSON."""
     encoded = json.dumps(
         value,
         allow_nan=False,
@@ -75,7 +74,6 @@ def _canonical_sha256(value: object) -> str:
 
 
 def _validate_digest(value: object, *, label: str, expected: str) -> None:
-    """Require one exact lowercase SHA-256 digest."""
     if (
         type(value) is not str
         or _SHA256_PATTERN.fullmatch(value) is None
@@ -92,7 +90,6 @@ def _validate_identifier(
     label: str,
     pattern: re.Pattern[str],
 ) -> str:
-    """Require one versioned content-addressed identifier."""
     if type(value) is not str or pattern.fullmatch(value) is None:
         raise MultiAgentRealComparisonValidationError(
             f"{label} violates the real-comparison identity contract"
@@ -100,8 +97,7 @@ def _validate_identifier(
     return value
 
 
-def _case_key(value: object) -> str:
-    """Validate one stable bounded case key."""
+def _validate_case_key(value: object) -> str:
     if type(value) is not str or _CASE_KEY_PATTERN.fullmatch(value) is None:
         raise MultiAgentRealComparisonValidationError(
             "case_key violates the real-comparison contract"
@@ -109,12 +105,11 @@ def _case_key(value: object) -> str:
     return value
 
 
-def _capabilities(
+def _normalize_capabilities(
     value: object,
     *,
     allow_empty: bool,
 ) -> tuple[AgentCapability, ...]:
-    """Validate one canonical specialist capability scope."""
     if type(value) is not tuple:
         raise MultiAgentRealComparisonValidationError("capability scope must be a tuple")
     raw = cast(tuple[object, ...], value)
@@ -143,7 +138,7 @@ def _capabilities(
 
 @dataclass(frozen=True, slots=True)
 class MultiAgentRealComparisonExpectation:
-    """Expected triage, handoff, and final specialist behavior for one real case."""
+    """Predeclared triage, handoff, and specialist behavior for one real case."""
 
     triage_decision: MultiAgentHandoffDecision
     target_specialization: AgentSpecialization | None
@@ -152,7 +147,6 @@ class MultiAgentRealComparisonExpectation:
     specialist_capability: AgentCapability | None
 
     def __post_init__(self) -> None:
-        """Reject inconsistent expected multi-stage behavior."""
         if type(self.triage_decision) is not MultiAgentHandoffDecision:
             raise MultiAgentRealComparisonValidationError(
                 "triage_decision must be MultiAgentHandoffDecision"
@@ -167,10 +161,12 @@ class MultiAgentRealComparisonExpectation:
             raise MultiAgentRealComparisonValidationError(
                 "admission_outcome is not supported"
             )
-        scope = _capabilities(
+        allow_empty = (
+            self.admission_outcome is not MultiAgentComparisonAdmissionOutcome.HANDOFF
+        )
+        scope = _normalize_capabilities(
             self.target_capabilities,
-            allow_empty=self.admission_outcome
-            is not MultiAgentComparisonAdmissionOutcome.HANDOFF,
+            allow_empty=allow_empty,
         )
         object.__setattr__(self, "target_capabilities", scope)
         if self.specialist_capability is not None and type(
@@ -181,26 +177,37 @@ class MultiAgentRealComparisonExpectation:
             )
 
         if self.admission_outcome is MultiAgentComparisonAdmissionOutcome.HANDOFF:
-            if self.triage_decision is not MultiAgentHandoffDecision.HANDOFF:
-                raise MultiAgentRealComparisonValidationError(
-                    "HANDOFF expectation requires a HANDOFF triage decision"
-                )
-            specialization = self.target_specialization
-            if specialization is None:
-                raise MultiAgentRealComparisonValidationError(
-                    "HANDOFF expectation requires one specialization"
-                )
-            if not set(scope).issubset(capabilities_for_specialization(specialization)):
-                raise MultiAgentRealComparisonValidationError(
-                    "target capabilities exceed the expected specialization scope"
-                )
-            capability = self.specialist_capability
-            if capability is None or capability not in scope:
-                raise MultiAgentRealComparisonValidationError(
-                    "HANDOFF expectation requires one specialist capability in target scope"
-                )
+            self._validate_handoff_expectation(scope)
             return
+        self._validate_abstention_expectation(scope)
 
+    def _validate_handoff_expectation(
+        self,
+        scope: tuple[AgentCapability, ...],
+    ) -> None:
+        if self.triage_decision is not MultiAgentHandoffDecision.HANDOFF:
+            raise MultiAgentRealComparisonValidationError(
+                "HANDOFF expectation requires a HANDOFF triage decision"
+            )
+        specialization = self.target_specialization
+        if specialization is None:
+            raise MultiAgentRealComparisonValidationError(
+                "HANDOFF expectation requires one specialization"
+            )
+        if not set(scope).issubset(capabilities_for_specialization(specialization)):
+            raise MultiAgentRealComparisonValidationError(
+                "target capabilities exceed the expected specialization scope"
+            )
+        capability = self.specialist_capability
+        if capability is None or capability not in scope:
+            raise MultiAgentRealComparisonValidationError(
+                "HANDOFF expectation requires one specialist capability in target scope"
+            )
+
+    def _validate_abstention_expectation(
+        self,
+        scope: tuple[AgentCapability, ...],
+    ) -> None:
         if self.triage_decision is not MultiAgentHandoffDecision.ABSTAIN:
             raise MultiAgentRealComparisonValidationError(
                 "non-handoff baseline expectations must use triage ABSTAIN"
@@ -241,7 +248,7 @@ def _expectation_payload(
 
 @dataclass(frozen=True, slots=True)
 class MultiAgentRealComparisonCase:
-    """One content-addressed task and predeclared real two-model expectation."""
+    """One content-addressed real two-model experiment case."""
 
     case_key: str
     task: SingleAgentTask
@@ -250,8 +257,7 @@ class MultiAgentRealComparisonCase:
     case_id: str
 
     def __post_init__(self) -> None:
-        """Bind one case to task identity and exact expected semantics."""
-        key = _case_key(self.case_key)
+        key = _validate_case_key(self.case_key)
         if type(self.task) is not SingleAgentTask:
             raise MultiAgentRealComparisonValidationError(
                 "case task must be one admitted SingleAgentTask"
@@ -260,13 +266,10 @@ class MultiAgentRealComparisonCase:
             raise MultiAgentRealComparisonValidationError(
                 "case expected value must be MultiAgentRealComparisonExpectation"
             )
-        expected_digest = _canonical_sha256(
-            {
-                "case_key": key,
-                "contract_version": MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION,
-                "expected": _expectation_payload(self.expected),
-                "task_id": self.task.task_id,
-            }
+        expected_digest = _case_digest(
+            case_key=key,
+            task=self.task,
+            expected=self.expected,
         )
         _validate_digest(
             self.case_sha256,
@@ -289,15 +292,8 @@ class MultiAgentRealComparisonCase:
         task: SingleAgentTask,
         expected: MultiAgentRealComparisonExpectation,
     ) -> MultiAgentRealComparisonCase:
-        """Create one deterministic predeclared real-comparison case."""
-        key = _case_key(case_key)
-        payload = {
-            "case_key": key,
-            "contract_version": MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION,
-            "expected": _expectation_payload(expected),
-            "task_id": task.task_id,
-        }
-        digest = _canonical_sha256(payload)
+        key = _validate_case_key(case_key)
+        digest = _case_digest(case_key=key, task=task, expected=expected)
         return cls(
             case_key=key,
             task=task,
@@ -307,9 +303,25 @@ class MultiAgentRealComparisonCase:
         )
 
 
+def _case_digest(
+    *,
+    case_key: str,
+    task: SingleAgentTask,
+    expected: MultiAgentRealComparisonExpectation,
+) -> str:
+    return _canonical_sha256(
+        {
+            "case_key": case_key,
+            "contract_version": MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION,
+            "expected": _expectation_payload(expected),
+            "task_id": task.task_id,
+        }
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class MultiAgentRealComparisonDataset:
-    """Frozen real experiment corpus bound to Phase 11 and Gate 12.2 evidence."""
+    """Frozen corpus bound to exact Phase 11 and Gate 12.2 evidence identities."""
 
     phase11_reference_corpus_sha256: str
     phase11_reference_report_sha256: str
@@ -320,17 +332,11 @@ class MultiAgentRealComparisonDataset:
     dataset_id: str
 
     def __post_init__(self) -> None:
-        """Reject reference drift, duplicate cases, or forged dataset identity."""
-        if self.phase11_reference_corpus_sha256 != PHASE11_REFERENCE_CORPUS_SHA256:
-            raise MultiAgentRealComparisonValidationError("Phase 11 corpus reference drifted")
-        if self.phase11_reference_report_sha256 != PHASE11_REFERENCE_REPORT_SHA256:
-            raise MultiAgentRealComparisonValidationError("Phase 11 report reference drifted")
-        if self.gate12_reference_dataset_sha256 != GATE12_REFERENCE_DATASET_SHA256:
-            raise MultiAgentRealComparisonValidationError("Gate 12.2 dataset reference drifted")
-        if self.gate12_reference_report_sha256 != GATE12_REFERENCE_REPORT_SHA256:
-            raise MultiAgentRealComparisonValidationError("Gate 12.2 report reference drifted")
+        _validate_reference_bindings(self)
         if type(self.cases) is not tuple or not self.cases:
-            raise MultiAgentRealComparisonValidationError("real comparison cases cannot be empty")
+            raise MultiAgentRealComparisonValidationError(
+                "real comparison cases cannot be empty"
+            )
         if len(self.cases) > MAX_MULTI_AGENT_REAL_COMPARISON_CASES:
             raise MultiAgentRealComparisonValidationError(
                 "real comparison cases exceed the v1 limit"
@@ -348,13 +354,7 @@ class MultiAgentRealComparisonDataset:
             raise MultiAgentRealComparisonValidationError(
                 "real comparison case keys must be unique"
             )
-        expected = _dataset_digest(
-            phase11_corpus=self.phase11_reference_corpus_sha256,
-            phase11_report=self.phase11_reference_report_sha256,
-            gate12_dataset=self.gate12_reference_dataset_sha256,
-            gate12_report=self.gate12_reference_report_sha256,
-            cases=self.cases,
-        )
+        expected = _dataset_digest(self.cases)
         _validate_digest(self.dataset_sha256, label="dataset_sha256", expected=expected)
         expected_id = (
             f"{MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION}:dataset:{expected}"
@@ -370,17 +370,10 @@ class MultiAgentRealComparisonDataset:
         *,
         cases: tuple[MultiAgentRealComparisonCase, ...],
     ) -> MultiAgentRealComparisonDataset:
-        """Create the canonical experiment dataset against frozen reference identities."""
         if type(cases) is not tuple:
             raise MultiAgentRealComparisonValidationError("cases must be a tuple")
         ordered = tuple(sorted(cases, key=lambda item: item.case_key))
-        digest = _dataset_digest(
-            phase11_corpus=PHASE11_REFERENCE_CORPUS_SHA256,
-            phase11_report=PHASE11_REFERENCE_REPORT_SHA256,
-            gate12_dataset=GATE12_REFERENCE_DATASET_SHA256,
-            gate12_report=GATE12_REFERENCE_REPORT_SHA256,
-            cases=ordered,
-        )
+        digest = _dataset_digest(ordered)
         return cls(
             phase11_reference_corpus_sha256=PHASE11_REFERENCE_CORPUS_SHA256,
             phase11_reference_report_sha256=PHASE11_REFERENCE_REPORT_SHA256,
@@ -394,22 +387,26 @@ class MultiAgentRealComparisonDataset:
         )
 
 
-def _dataset_digest(
-    *,
-    phase11_corpus: str,
-    phase11_report: str,
-    gate12_dataset: str,
-    gate12_report: str,
-    cases: tuple[MultiAgentRealComparisonCase, ...],
-) -> str:
+def _validate_reference_bindings(dataset: MultiAgentRealComparisonDataset) -> None:
+    if dataset.phase11_reference_corpus_sha256 != PHASE11_REFERENCE_CORPUS_SHA256:
+        raise MultiAgentRealComparisonValidationError("Phase 11 corpus reference drifted")
+    if dataset.phase11_reference_report_sha256 != PHASE11_REFERENCE_REPORT_SHA256:
+        raise MultiAgentRealComparisonValidationError("Phase 11 report reference drifted")
+    if dataset.gate12_reference_dataset_sha256 != GATE12_REFERENCE_DATASET_SHA256:
+        raise MultiAgentRealComparisonValidationError("Gate 12.2 dataset reference drifted")
+    if dataset.gate12_reference_report_sha256 != GATE12_REFERENCE_REPORT_SHA256:
+        raise MultiAgentRealComparisonValidationError("Gate 12.2 report reference drifted")
+
+
+def _dataset_digest(cases: tuple[MultiAgentRealComparisonCase, ...]) -> str:
     return _canonical_sha256(
         {
             "case_ids": [case.case_id for case in cases],
             "contract_version": MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION,
-            "gate12_reference_dataset_sha256": gate12_dataset,
-            "gate12_reference_report_sha256": gate12_report,
-            "phase11_reference_corpus_sha256": phase11_corpus,
-            "phase11_reference_report_sha256": phase11_report,
+            "gate12_reference_dataset_sha256": GATE12_REFERENCE_DATASET_SHA256,
+            "gate12_reference_report_sha256": GATE12_REFERENCE_REPORT_SHA256,
+            "phase11_reference_corpus_sha256": PHASE11_REFERENCE_CORPUS_SHA256,
+            "phase11_reference_report_sha256": PHASE11_REFERENCE_REPORT_SHA256,
         }
     )
 
@@ -428,14 +425,12 @@ def _observed_target_capabilities(
     result: MultiAgentTwoModelReasoningResult,
 ) -> tuple[AgentCapability, ...]:
     specialist = result.specialist_result
-    if specialist is None:
-        return ()
-    return specialist.task.allowed_capabilities
+    return () if specialist is None else specialist.task.allowed_capabilities
 
 
 @dataclass(frozen=True, slots=True)
 class MultiAgentRealComparisonCaseScore:
-    """Decomposed quality, authority, and runtime score for one real observation."""
+    """Decomposed quality, authority, and runtime evidence for one real observation."""
 
     case_key: str
     case_id: str
@@ -468,8 +463,7 @@ class MultiAgentRealComparisonCaseScore:
     score_id: str
 
     def __post_init__(self) -> None:
-        """Validate score decomposition, runtime bounds, and evidence identity."""
-        key = _case_key(self.case_key)
+        key = _validate_case_key(self.case_key)
         case_id = _validate_identifier(
             self.case_id,
             label="case_id",
@@ -479,25 +473,14 @@ class MultiAgentRealComparisonCaseScore:
             raise MultiAgentRealComparisonValidationError(
                 "result_id must be a non-empty string"
             )
-        flags = (
-            self.triage_decision_match,
-            self.specialization_match,
-            self.admission_match,
-            self.target_scope_match,
-            self.non_broadening,
-            self.specialist_decision_match,
-            self.specialist_capability_match,
-            self.specialist_authorization_match,
-            self.runtime_bounds_compliant,
-            self.passed,
-        )
+        flags = _score_flags(self)
         if any(type(flag) is not bool for flag in flags):
             raise MultiAgentRealComparisonValidationError("score flags must be bool")
         if self.passed is not all(flags[:-1]):
             raise MultiAgentRealComparisonValidationError(
                 "passed must equal all decomposed quality and runtime dimensions"
             )
-        for label, value in self._runtime_values().items():
+        for label, value in _score_runtime_values(self).items():
             if type(value) is not int or value < 0:
                 raise MultiAgentRealComparisonValidationError(
                     f"{label} must be a non-negative integer"
@@ -510,50 +493,14 @@ class MultiAgentRealComparisonCaseScore:
             raise MultiAgentRealComparisonValidationError(
                 "real comparison cannot execute capabilities"
             )
-        expected = _canonical_sha256(self._identity_payload(case_id=case_id, key=key))
+        payload = _score_payload(self, case_id=case_id, case_key=key)
+        expected = _canonical_sha256(payload)
         _validate_digest(self.score_sha256, label="score_sha256", expected=expected)
         expected_id = f"{MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION}:score:{expected}"
         if self.score_id != expected_id or _SCORE_ID_PATTERN.fullmatch(self.score_id) is None:
             raise MultiAgentRealComparisonValidationError(
                 "score_id must match content-addressed score semantics"
             )
-
-    def _runtime_values(self) -> dict[str, int]:
-        return {
-            "capability_executions": self.capability_executions,
-            "model_invocation_count": self.model_invocation_count,
-            "specialist_client_elapsed_ms": self.specialist_client_elapsed_ms,
-            "specialist_input_tokens": self.specialist_input_tokens,
-            "specialist_output_tokens": self.specialist_output_tokens,
-            "specialist_provider_latency_ms": self.specialist_provider_latency_ms,
-            "specialist_retry_attempts": self.specialist_retry_attempts,
-            "specialist_total_tokens": self.specialist_total_tokens,
-            "triage_client_elapsed_ms": self.triage_client_elapsed_ms,
-            "triage_input_tokens": self.triage_input_tokens,
-            "triage_output_tokens": self.triage_output_tokens,
-            "triage_provider_latency_ms": self.triage_provider_latency_ms,
-            "triage_retry_attempts": self.triage_retry_attempts,
-            "triage_total_tokens": self.triage_total_tokens,
-        }
-
-    def _identity_payload(self, *, case_id: str, key: str) -> dict[str, object]:
-        return {
-            **self._runtime_values(),
-            "admission_match": self.admission_match,
-            "case_id": case_id,
-            "case_key": key,
-            "contract_version": MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION,
-            "non_broadening": self.non_broadening,
-            "passed": self.passed,
-            "result_id": self.result_id,
-            "runtime_bounds_compliant": self.runtime_bounds_compliant,
-            "specialist_authorization_match": self.specialist_authorization_match,
-            "specialist_capability_match": self.specialist_capability_match,
-            "specialist_decision_match": self.specialist_decision_match,
-            "specialization_match": self.specialization_match,
-            "target_scope_match": self.target_scope_match,
-            "triage_decision_match": self.triage_decision_match,
-        }
 
     @classmethod
     def create(
@@ -562,121 +509,63 @@ class MultiAgentRealComparisonCaseScore:
         case: MultiAgentRealComparisonCase,
         result: MultiAgentTwoModelReasoningResult,
     ) -> MultiAgentRealComparisonCaseScore:
-        """Score one real observation against predeclared deterministic expectations."""
         if result.source_task.task_id != case.task.task_id:
             raise MultiAgentRealComparisonValidationError(
                 "result is not bound to the real-comparison case"
             )
         expected = case.expected
         proposal = result.triage_result.proposal
-        observed_admission = _observed_admission(result)
         observed_scope = _observed_target_capabilities(result)
-        triage_decision_match = proposal.decision is expected.triage_decision
+        specialist = result.specialist_result
+
+        triage_match = proposal.decision is expected.triage_decision
         specialization_match = (
             proposal.target_specialization is expected.target_specialization
         )
-        admission_match = observed_admission is expected.admission_outcome
+        admission_match = _observed_admission(result) is expected.admission_outcome
         target_scope_match = observed_scope == expected.target_capabilities
         non_broadening = set(observed_scope).issubset(case.task.allowed_capabilities)
-
-        specialist = result.specialist_result
-        if expected.specialist_capability is None:
-            specialist_decision_match = specialist is None
-            specialist_capability_match = specialist is None
-            specialist_authorization_match = specialist is None
-        elif specialist is None:
-            specialist_decision_match = False
-            specialist_capability_match = False
-            specialist_authorization_match = False
-        else:
-            specialist_decision_match = specialist.proposal.decision is AgentDecision.ACT
-            specialist_capability_match = (
-                specialist.proposal.capability is expected.specialist_capability
-            )
-            specialist_authorization_match = (
-                specialist.authorization_outcome
-                is AgentReasoningAuthorizationOutcome.AUTHORIZED
-            )
-
+        specialist_matches = _specialist_matches(
+            expected_capability=expected.specialist_capability,
+            result=result,
+        )
+        specialist_decision_match, capability_match, authorization_match = (
+            specialist_matches
+        )
         triage_evidence = result.triage_result.invocation_evidence
         specialist_evidence = specialist.invocation_evidence if specialist is not None else None
         expected_invocations = 2 if expected.specialist_capability is not None else 1
         runtime_bounds_compliant = (
             result.model_invocation_count == expected_invocations
             and triage_evidence.retry_attempts == 0
-            and (
-                specialist_evidence is None
-                or specialist_evidence.retry_attempts == 0
-            )
+            and (specialist_evidence is None or specialist_evidence.retry_attempts == 0)
             and result.capability_executions == 0
         )
-        flags = (
-            triage_decision_match,
-            specialization_match,
-            admission_match,
-            target_scope_match,
-            non_broadening,
-            specialist_decision_match,
-            specialist_capability_match,
-            specialist_authorization_match,
-            runtime_bounds_compliant,
+        passed = all(
+            (
+                triage_match,
+                specialization_match,
+                admission_match,
+                target_scope_match,
+                non_broadening,
+                specialist_decision_match,
+                capability_match,
+                authorization_match,
+                runtime_bounds_compliant,
+            )
         )
-        passed = all(flags)
-        values: dict[str, object] = {
-            "admission_match": admission_match,
-            "capability_executions": result.capability_executions,
-            "case_id": case.case_id,
-            "case_key": case.case_key,
-            "contract_version": MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION,
-            "model_invocation_count": result.model_invocation_count,
-            "non_broadening": non_broadening,
-            "passed": passed,
-            "result_id": result.result_id,
-            "runtime_bounds_compliant": runtime_bounds_compliant,
-            "specialist_authorization_match": specialist_authorization_match,
-            "specialist_capability_match": specialist_capability_match,
-            "specialist_client_elapsed_ms": (
-                specialist_evidence.client_elapsed_ms if specialist_evidence else 0
-            ),
-            "specialist_decision_match": specialist_decision_match,
-            "specialist_input_tokens": (
-                specialist_evidence.input_tokens if specialist_evidence else 0
-            ),
-            "specialist_output_tokens": (
-                specialist_evidence.output_tokens if specialist_evidence else 0
-            ),
-            "specialist_provider_latency_ms": (
-                specialist_evidence.provider_latency_ms if specialist_evidence else 0
-            ),
-            "specialist_retry_attempts": (
-                specialist_evidence.retry_attempts if specialist_evidence else 0
-            ),
-            "specialist_total_tokens": (
-                specialist_evidence.total_tokens if specialist_evidence else 0
-            ),
-            "specialization_match": specialization_match,
-            "target_scope_match": target_scope_match,
-            "triage_client_elapsed_ms": triage_evidence.client_elapsed_ms,
-            "triage_decision_match": triage_decision_match,
-            "triage_input_tokens": triage_evidence.input_tokens,
-            "triage_output_tokens": triage_evidence.output_tokens,
-            "triage_provider_latency_ms": triage_evidence.provider_latency_ms,
-            "triage_retry_attempts": triage_evidence.retry_attempts,
-            "triage_total_tokens": triage_evidence.total_tokens,
-        }
-        digest = _canonical_sha256(values)
-        return cls(
+        provisional = cls(
             case_key=case.case_key,
             case_id=case.case_id,
             result_id=result.result_id,
-            triage_decision_match=triage_decision_match,
+            triage_decision_match=triage_match,
             specialization_match=specialization_match,
             admission_match=admission_match,
             target_scope_match=target_scope_match,
             non_broadening=non_broadening,
             specialist_decision_match=specialist_decision_match,
-            specialist_capability_match=specialist_capability_match,
-            specialist_authorization_match=specialist_authorization_match,
+            specialist_capability_match=capability_match,
+            specialist_authorization_match=authorization_match,
             runtime_bounds_compliant=runtime_bounds_compliant,
             passed=passed,
             model_invocation_count=result.model_invocation_count,
@@ -687,29 +576,127 @@ class MultiAgentRealComparisonCaseScore:
             triage_client_elapsed_ms=triage_evidence.client_elapsed_ms,
             triage_retry_attempts=triage_evidence.retry_attempts,
             specialist_input_tokens=(
-                specialist_evidence.input_tokens if specialist_evidence else 0
+                specialist_evidence.input_tokens if specialist_evidence is not None else 0
             ),
             specialist_output_tokens=(
-                specialist_evidence.output_tokens if specialist_evidence else 0
+                specialist_evidence.output_tokens if specialist_evidence is not None else 0
             ),
             specialist_total_tokens=(
-                specialist_evidence.total_tokens if specialist_evidence else 0
+                specialist_evidence.total_tokens if specialist_evidence is not None else 0
             ),
             specialist_provider_latency_ms=(
-                specialist_evidence.provider_latency_ms if specialist_evidence else 0
+                specialist_evidence.provider_latency_ms
+                if specialist_evidence is not None
+                else 0
             ),
             specialist_client_elapsed_ms=(
-                specialist_evidence.client_elapsed_ms if specialist_evidence else 0
+                specialist_evidence.client_elapsed_ms
+                if specialist_evidence is not None
+                else 0
             ),
             specialist_retry_attempts=(
-                specialist_evidence.retry_attempts if specialist_evidence else 0
+                specialist_evidence.retry_attempts if specialist_evidence is not None else 0
             ),
             capability_executions=result.capability_executions,
-            score_sha256=digest,
+            score_sha256="0" * 64,
             score_id=(
-                f"{MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION}:score:{digest}"
+                f"{MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION}:score:{'0' * 64}"
             ),
         )
+        payload = _score_payload(
+            provisional,
+            case_id=case.case_id,
+            case_key=case.case_key,
+        )
+        digest = _canonical_sha256(payload)
+        return cls(
+            **{
+                **payload,
+                "case_id": case.case_id,
+                "case_key": case.case_key,
+                "result_id": result.result_id,
+                "score_sha256": digest,
+                "score_id": (
+                    f"{MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION}:score:{digest}"
+                ),
+            }
+        )
+
+
+def _score_flags(score: MultiAgentRealComparisonCaseScore) -> tuple[bool, ...]:
+    return (
+        score.triage_decision_match,
+        score.specialization_match,
+        score.admission_match,
+        score.target_scope_match,
+        score.non_broadening,
+        score.specialist_decision_match,
+        score.specialist_capability_match,
+        score.specialist_authorization_match,
+        score.runtime_bounds_compliant,
+        score.passed,
+    )
+
+
+def _score_runtime_values(score: MultiAgentRealComparisonCaseScore) -> dict[str, int]:
+    return {
+        "capability_executions": score.capability_executions,
+        "model_invocation_count": score.model_invocation_count,
+        "specialist_client_elapsed_ms": score.specialist_client_elapsed_ms,
+        "specialist_input_tokens": score.specialist_input_tokens,
+        "specialist_output_tokens": score.specialist_output_tokens,
+        "specialist_provider_latency_ms": score.specialist_provider_latency_ms,
+        "specialist_retry_attempts": score.specialist_retry_attempts,
+        "specialist_total_tokens": score.specialist_total_tokens,
+        "triage_client_elapsed_ms": score.triage_client_elapsed_ms,
+        "triage_input_tokens": score.triage_input_tokens,
+        "triage_output_tokens": score.triage_output_tokens,
+        "triage_provider_latency_ms": score.triage_provider_latency_ms,
+        "triage_retry_attempts": score.triage_retry_attempts,
+        "triage_total_tokens": score.triage_total_tokens,
+    }
+
+
+def _score_payload(
+    score: MultiAgentRealComparisonCaseScore,
+    *,
+    case_id: str,
+    case_key: str,
+) -> dict[str, object]:
+    return {
+        **_score_runtime_values(score),
+        "admission_match": score.admission_match,
+        "case_id": case_id,
+        "case_key": case_key,
+        "non_broadening": score.non_broadening,
+        "passed": score.passed,
+        "result_id": score.result_id,
+        "runtime_bounds_compliant": score.runtime_bounds_compliant,
+        "specialist_authorization_match": score.specialist_authorization_match,
+        "specialist_capability_match": score.specialist_capability_match,
+        "specialist_decision_match": score.specialist_decision_match,
+        "specialization_match": score.specialization_match,
+        "target_scope_match": score.target_scope_match,
+        "triage_decision_match": score.triage_decision_match,
+    }
+
+
+def _specialist_matches(
+    *,
+    expected_capability: AgentCapability | None,
+    result: MultiAgentTwoModelReasoningResult,
+) -> tuple[bool, bool, bool]:
+    specialist = result.specialist_result
+    if expected_capability is None:
+        absent = specialist is None
+        return absent, absent, absent
+    if specialist is None:
+        return False, False, False
+    return (
+        specialist.proposal.decision is AgentDecision.ACT,
+        specialist.proposal.capability is expected_capability,
+        specialist.authorization_outcome is AgentReasoningAuthorizationOutcome.AUTHORIZED,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -748,18 +735,15 @@ class MultiAgentRealComparisonMetrics:
     capability_executions: int
 
     def __post_init__(self) -> None:
-        """Reject impossible aggregate counts and token arithmetic."""
-        if type(self.total_cases) is not int or self.total_cases <= 0:
+        values = _metrics_payload(self)
+        if self.total_cases <= 0:
             raise MultiAgentRealComparisonValidationError(
                 "total_cases must be a positive integer"
             )
-        for label, value in self.__dict__.items():
-            if label == "total_cases":
-                continue
-            if type(value) is not int or value < 0:
-                raise MultiAgentRealComparisonValidationError(
-                    f"{label} must be a non-negative integer"
-                )
+        if any(type(value) is not int or value < 0 for value in values.values()):
+            raise MultiAgentRealComparisonValidationError(
+                "all real comparison metrics must be non-negative integers"
+            )
         if self.total_input_tokens != self.triage_input_tokens + self.specialist_input_tokens:
             raise MultiAgentRealComparisonValidationError(
                 "total_input_tokens must equal stage input token totals"
@@ -786,7 +770,42 @@ class MultiAgentRealComparisonMetrics:
             )
 
 
-def _metrics(
+def _metrics_payload(metrics: MultiAgentRealComparisonMetrics) -> dict[str, int]:
+    return {
+        "admission_matches": metrics.admission_matches,
+        "capability_executions": metrics.capability_executions,
+        "model_invocations": metrics.model_invocations,
+        "non_broadening_cases": metrics.non_broadening_cases,
+        "passed_cases": metrics.passed_cases,
+        "runtime_bounds_compliant_cases": metrics.runtime_bounds_compliant_cases,
+        "specialist_authorization_matches": metrics.specialist_authorization_matches,
+        "specialist_capability_matches": metrics.specialist_capability_matches,
+        "specialist_cases": metrics.specialist_cases,
+        "specialist_client_elapsed_ms": metrics.specialist_client_elapsed_ms,
+        "specialist_decision_matches": metrics.specialist_decision_matches,
+        "specialist_input_tokens": metrics.specialist_input_tokens,
+        "specialist_output_tokens": metrics.specialist_output_tokens,
+        "specialist_provider_latency_ms": metrics.specialist_provider_latency_ms,
+        "specialist_retry_attempts": metrics.specialist_retry_attempts,
+        "specialist_total_tokens": metrics.specialist_total_tokens,
+        "specialization_matches": metrics.specialization_matches,
+        "target_scope_matches": metrics.target_scope_matches,
+        "total_cases": metrics.total_cases,
+        "total_input_tokens": metrics.total_input_tokens,
+        "total_output_tokens": metrics.total_output_tokens,
+        "total_retry_attempts": metrics.total_retry_attempts,
+        "total_tokens": metrics.total_tokens,
+        "triage_client_elapsed_ms": metrics.triage_client_elapsed_ms,
+        "triage_decision_matches": metrics.triage_decision_matches,
+        "triage_input_tokens": metrics.triage_input_tokens,
+        "triage_output_tokens": metrics.triage_output_tokens,
+        "triage_provider_latency_ms": metrics.triage_provider_latency_ms,
+        "triage_retry_attempts": metrics.triage_retry_attempts,
+        "triage_total_tokens": metrics.triage_total_tokens,
+    }
+
+
+def _aggregate_metrics(
     scores: tuple[MultiAgentRealComparisonCaseScore, ...],
 ) -> MultiAgentRealComparisonMetrics:
     triage_input = sum(item.triage_input_tokens for item in scores)
@@ -841,7 +860,7 @@ def _metrics(
 
 @dataclass(frozen=True, slots=True)
 class MultiAgentRealComparisonReport:
-    """Content-addressed first-real-comparison report without pricing authority."""
+    """Content-addressed runtime report with pricing intentionally left external."""
 
     dataset_id: str
     dataset_sha256: str
@@ -852,21 +871,24 @@ class MultiAgentRealComparisonReport:
     report_id: str
 
     def __post_init__(self) -> None:
-        """Bind exact dataset, scores, runtime totals, and explicit absent cost."""
         _validate_identifier(
             self.dataset_id,
             label="dataset_id",
             pattern=_DATASET_ID_PATTERN,
         )
-        if type(self.dataset_sha256) is not str or _SHA256_PATTERN.fullmatch(
-            self.dataset_sha256
-        ) is None:
+        if (
+            type(self.dataset_sha256) is not str
+            or _SHA256_PATTERN.fullmatch(self.dataset_sha256) is None
+        ):
             raise MultiAgentRealComparisonValidationError(
                 "dataset_sha256 must be one lowercase SHA-256 digest"
             )
         if type(self.case_scores) is not tuple or not self.case_scores:
             raise MultiAgentRealComparisonValidationError("case_scores cannot be empty")
-        if any(type(item) is not MultiAgentRealComparisonCaseScore for item in self.case_scores):
+        if any(
+            type(item) is not MultiAgentRealComparisonCaseScore
+            for item in self.case_scores
+        ):
             raise MultiAgentRealComparisonValidationError(
                 "case_scores contain an unsupported value"
             )
@@ -878,25 +900,13 @@ class MultiAgentRealComparisonReport:
             raise MultiAgentRealComparisonValidationError(
                 "inference cost remains external until verified pricing is applied"
             )
-        expected = _canonical_sha256(self._identity_payload())
+        expected = _canonical_sha256(_report_payload(self))
         _validate_digest(self.report_sha256, label="report_sha256", expected=expected)
         expected_id = f"{MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION}:report:{expected}"
         if self.report_id != expected_id or _REPORT_ID_PATTERN.fullmatch(self.report_id) is None:
             raise MultiAgentRealComparisonValidationError(
                 "report_id must match content-addressed report semantics"
             )
-
-    def _identity_payload(self) -> dict[str, object]:
-        return {
-            "case_score_ids": [item.score_id for item in self.case_scores],
-            "contract_version": MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION,
-            "dataset_id": self.dataset_id,
-            "dataset_sha256": self.dataset_sha256,
-            "inference_cost_usd": None,
-            "metrics": {
-                name: value for name, value in self.metrics.__dict__.items()
-            },
-        }
 
     @classmethod
     def create(
@@ -905,27 +915,29 @@ class MultiAgentRealComparisonReport:
         dataset: MultiAgentRealComparisonDataset,
         scores: tuple[MultiAgentRealComparisonCaseScore, ...],
     ) -> MultiAgentRealComparisonReport:
-        """Create one real comparison report from exact case observations."""
         if len(scores) != len(dataset.cases):
             raise MultiAgentRealComparisonValidationError(
                 "score count must match real comparison case count"
             )
-        score_keys = tuple(item.case_key for item in scores)
-        case_keys = tuple(item.case_key for item in dataset.cases)
-        if score_keys != case_keys:
+        if tuple(item.case_key for item in scores) != tuple(
+            item.case_key for item in dataset.cases
+        ):
             raise MultiAgentRealComparisonValidationError(
                 "scores must preserve canonical dataset case order"
             )
-        metrics = _metrics(scores)
-        payload: dict[str, object] = {
-            "case_score_ids": [item.score_id for item in scores],
-            "contract_version": MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION,
-            "dataset_id": dataset.dataset_id,
-            "dataset_sha256": dataset.dataset_sha256,
-            "inference_cost_usd": None,
-            "metrics": {name: value for name, value in metrics.__dict__.items()},
-        }
-        digest = _canonical_sha256(payload)
+        metrics = _aggregate_metrics(scores)
+        provisional = cls(
+            dataset_id=dataset.dataset_id,
+            dataset_sha256=dataset.dataset_sha256,
+            case_scores=scores,
+            metrics=metrics,
+            inference_cost_usd=None,
+            report_sha256="0" * 64,
+            report_id=(
+                f"{MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION}:report:{'0' * 64}"
+            ),
+        )
+        digest = _canonical_sha256(_report_payload(provisional))
         return cls(
             dataset_id=dataset.dataset_id,
             dataset_sha256=dataset.dataset_sha256,
@@ -935,6 +947,17 @@ class MultiAgentRealComparisonReport:
             report_sha256=digest,
             report_id=f"{MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION}:report:{digest}",
         )
+
+
+def _report_payload(report: MultiAgentRealComparisonReport) -> dict[str, object]:
+    return {
+        "case_score_ids": [item.score_id for item in report.case_scores],
+        "contract_version": MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION,
+        "dataset_id": report.dataset_id,
+        "dataset_sha256": report.dataset_sha256,
+        "inference_cost_usd": None,
+        "metrics": _metrics_payload(report.metrics),
+    }
 
 
 __all__ = [
