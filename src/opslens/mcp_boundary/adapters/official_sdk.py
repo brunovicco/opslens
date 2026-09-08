@@ -48,10 +48,6 @@ def build_offline_mcp_server(*, resolver: McpInvocationResolver) -> MCPServer[No
         ),
     )
 
-    @server.tool(
-        name=McpToolName.STRUCTURED_SECURITY_QUERY.value,
-        structured_output=True,
-    )
     def structured_security_query(
         invocation_id: str,
         invocation_sha256: str,
@@ -64,10 +60,6 @@ def build_offline_mcp_server(*, resolver: McpInvocationResolver) -> MCPServer[No
             resolver=resolver,
         )
 
-    @server.tool(
-        name=McpToolName.KNOWLEDGE_GUIDANCE.value,
-        structured_output=True,
-    )
     def knowledge_guidance(
         invocation_id: str,
         invocation_sha256: str,
@@ -80,10 +72,6 @@ def build_offline_mcp_server(*, resolver: McpInvocationResolver) -> MCPServer[No
             resolver=resolver,
         )
 
-    @server.tool(
-        name=McpToolName.HYBRID_SECURITY_ANSWER.value,
-        structured_output=True,
-    )
     def hybrid_security_answer(
         invocation_id: str,
         invocation_sha256: str,
@@ -96,10 +84,6 @@ def build_offline_mcp_server(*, resolver: McpInvocationResolver) -> MCPServer[No
             resolver=resolver,
         )
 
-    @server.tool(
-        name=McpToolName.PUBLIC_REPOSITORY_ANALYSIS.value,
-        structured_output=True,
-    )
     def public_repository_analysis(
         invocation_id: str,
         invocation_sha256: str,
@@ -112,6 +96,26 @@ def build_offline_mcp_server(*, resolver: McpInvocationResolver) -> MCPServer[No
             resolver=resolver,
         )
 
+    server.add_tool(
+        structured_security_query,
+        name=McpToolName.STRUCTURED_SECURITY_QUERY.value,
+        structured_output=True,
+    )
+    server.add_tool(
+        knowledge_guidance,
+        name=McpToolName.KNOWLEDGE_GUIDANCE.value,
+        structured_output=True,
+    )
+    server.add_tool(
+        hybrid_security_answer,
+        name=McpToolName.HYBRID_SECURITY_ANSWER.value,
+        structured_output=True,
+    )
+    server.add_tool(
+        public_repository_analysis,
+        name=McpToolName.PUBLIC_REPOSITORY_ANALYSIS.value,
+        structured_output=True,
+    )
     return server
 
 
