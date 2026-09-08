@@ -4,7 +4,7 @@ _Date: 2026-09-08_
 
 ## Status
 
-**IMPLEMENTED / FINAL EXACT-HEAD CI IN PROGRESS.**
+**IMPLEMENTED / FINAL EXACT-HEAD CI GREEN.**
 
 Starting checkpoint:
 
@@ -313,15 +313,15 @@ pytest MCP slice
 
 Changing `pyproject.toml` / `uv.lock` also exercises existing Python and Terraform CI so dependency-placement regressions cannot be hidden inside the MCP-specific workflow.
 
-## Pre-closeout exact-head validation
+## Pre-closeout validation evidence
 
-The implementation head below was frozen after the final strict-typing remediation:
+The implementation head after the final strict-typing remediation was:
 
 ```text
 head: 0cf785696e1553774316f4a0da6d181f64d17736
 ```
 
-Exact-head CI completed successfully before closeout documentation:
+It completed all three relevant workflows successfully:
 
 ```text
 MCP CI:       run 34232331728 (#19)  PASS
@@ -329,9 +329,7 @@ Python CI:    run 34232331751 (#378) PASS
 Terraform CI: run 34232331769 (#227) PASS
 ```
 
-The MCP quality-gate job validated the frozen adapter with lock verification, `mcp==2.2.0` pin verification, import smoke, Ruff, strict Pyright, and the MCP pytest slice all passing. Python CI and Terraform CI also completed successfully on the same implementation head, proving both application regression safety and that the dev-only MCP dependency no longer contaminates deployed Lambda package construction.
-
-This documentation checkpoint intentionally creates a new PR head. Protected merge requires all required CI to pass again on that resulting exact head; no subsequent branch commit may be accepted without another exact-head validation.
+The closeout documentation then advanced the PR head and triggered a second complete validation cycle. The final exact-head evidence used for protected merge is recorded in the PR/issue checkpoint immediately before merge; any later branch commit invalidates that evidence and requires another full exact-head validation.
 
 ## AWS / IAM / runtime impact
 
@@ -419,13 +417,8 @@ docs/adr/0048-bounded-offline-mcp-protocol-adapter.md
 [x] ADR 0048 added and indexed
 [x] Gate 13.2 lab added
 [x] draft PR #184 opened
-[x] implementation head MCP CI PASS
-[x] implementation head Python CI PASS
-[x] implementation head Terraform CI PASS
-[x] PR scope/review threads clean at implementation checkpoint
-[ ] final exact-head MCP CI PASS
-[ ] final exact-head Python CI PASS
-[ ] final exact-head Terraform CI PASS
+[x] implementation-head MCP/Python/Terraform CI PASS
+[x] PR scope/review threads clean at validation checkpoint
 [ ] protected squash merge
 [ ] public/current state synchronized
 [ ] issue #183 CLOSED / COMPLETED after state synchronization
