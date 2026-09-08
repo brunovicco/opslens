@@ -179,8 +179,8 @@ data "aws_iam_policy_document" "github_actions_agentcore_deploy" {
   }
 
   statement {
-    sid     = "ManageAgentCoreDefaultRuntimeEndpointDependency"
-    effect  = "Allow"
+    sid    = "ManageAgentCoreDefaultRuntimeEndpointDependency"
+    effect = "Allow"
     actions = [
       "bedrock-agentcore:CreateAgentRuntimeEndpoint",
       "bedrock-agentcore:DeleteAgentRuntimeEndpoint",
