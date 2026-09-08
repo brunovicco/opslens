@@ -4,36 +4,38 @@ _Date: 2026-09-07_
 
 ## Status
 
-```text
-Phase 11 gates 11.1-11.5:  COMPLETE / MERGED
-Gate 11.6 documentation:   COMPLETE
-exact-head CI:             PENDING
-protected squash merge:    PENDING
-Phase 11 closeout:         IN PROGRESS
-```
+**COMPLETE / MERGED.**
 
 Starting checkpoint:
 
 ```text
-main: 8aeca3098b9269fcbf74f775a2ee135c987306dd
-issue: #162 — OPEN
-branch: docs/phase11-closeout
+8aeca3098b9269fcbf74f775a2ee135c987306dd
 ```
 
-Gate 11.6 is documentation/architecture closeout only. It adds no application/runtime code, AWS resources, IAM permissions, provider/model calls, AgentCore, MCP, A2A, public runtime, runtime-exposure authority, or Governed LLM Gateway integration.
+Final closeout tracking:
+
+```text
+issue:          #162 — CLOSED / COMPLETED after state synchronization
+branch:         docs/phase11-closeout
+PR:             #163 — MERGED
+PR final head:  a17f7adc334473b3047ed3e37962b6a5881f7934
+merge SHA:      a075c9a8ec3f0998e990d0b854bfd9ed22cabd07
+```
+
+Gate 11.6 changed documentation/architecture only. It introduced no application/runtime code, AWS resources, IAM permissions, provider/model calls, AgentCore, MCP, A2A, public runtime, runtime-exposure authority, or Governed LLM Gateway integration.
 
 ## Completed Phase 11 sequence
 
 ```text
-Gate 11.1 — Capability Authorization Contract                COMPLETE / MERGED
-Gate 11.2 — Typed Capability Bindings + Offline Executor      COMPLETE / MERGED
-Gate 11.3 — Frozen Single-Agent Evaluation Fixture            COMPLETE / MERGED
-Gate 11.4 — First Bounded Model Reasoning Baseline            COMPLETE / MERGED
+Gate 11.1 — Capability Authorization Contract                 COMPLETE / MERGED
+Gate 11.2 — Typed Capability Bindings + Offline Executor       COMPLETE / MERGED
+Gate 11.3 — Frozen Single-Agent Evaluation Fixture             COMPLETE / MERGED
+Gate 11.4 — First Bounded Model Reasoning Baseline             COMPLETE / MERGED
 Gate 11.5 — Measured Optimization Decision                    COMPLETE / MERGED — NO-CHANGE
-Gate 11.6 — Phase 11 Closeout                                 IN PROGRESS
+Gate 11.6 — Phase 11 Closeout                                 COMPLETE / MERGED
 ```
 
-## Frozen contracts
+## Frozen Phase 11 contracts
 
 ```text
 single-agent-authority:v1
@@ -43,9 +45,9 @@ single-agent-reasoning:v1
 single-agent-reasoning-evaluation:v1
 ```
 
-These contracts are the Phase 12 comparison baseline. Later phases may add new contracts but must not silently weaken the authority distinctions frozen here.
+These contracts form the single-agent reference against which later agentic complexity must be compared.
 
-## Permanent authority path
+## Permanent authority boundary
 
 ```text
 SingleAgentTask
@@ -56,24 +58,34 @@ SingleAgentTask
  -> AgentActionProposal
  -> deterministic authorize_agent_action(...)
  -> AuthorizedAgentAction | AgentAbstention | stable rejection
- -> STOP in the Gate 11.4 model-quality baseline
 ```
 
-The `STOP` is intentional. The real reasoning baseline measures proposal quality and deterministic authorization without conflating it with capability execution.
+The Gate 11.4 real model-quality baseline deliberately stops before capability execution.
 
 Gate 11.2 independently freezes typed execution:
 
 ```text
 AuthorizedAgentAction
  -> exact typed capability invocation
- -> deterministic capability/type match
+ -> deterministic action/capability match
  -> capability-specific executor port
  -> one bounded execution attempt
  -> typed downstream result admission
  -> content-addressed AgentCapabilityExecution
 ```
 
-A valid proposal is not execution authority.
+The following distinctions are permanent:
+
+```text
+agent action proposal != capability authorization
+AuthorizedAgentAction != capability invocation
+capability invocation != execution result
+structured model output != trusted proposal
+evaluation evidence != operational telemetry
+model selection != capability authority
+```
+
+A valid model proposal is never execution authority.
 
 ## Frozen capability surface
 
@@ -96,7 +108,7 @@ shell commands
 credentials
 provider/model selection
 retry/fallback policy
-result data
+result authority
 runtime-exposure truth
 ```
 
@@ -111,11 +123,7 @@ pytest:                  16 passed in 0.09s
 merge SHA:               641fc20d29cf1148d63b460948a08362158be113
 ```
 
-Gate 11.1 froze `single-agent-authority:v1` and the distinction:
-
-```text
-agent action proposal != capability authorization
-```
+Gate 11.1 froze `single-agent-authority:v1`.
 
 ## Gate 11.2 evidence
 
@@ -129,7 +137,7 @@ pytest:                  31 passed in 0.44s
 merge SHA:               0fb70ace5bd544c6ef5f17f1030bdbcbeb8063b7
 ```
 
-Gate 11.2 froze `single-agent-execution:v1`, exact typed capability bindings, one execution attempt, zero adaptive fallback, content-free failure categories, and result identity binding.
+Gate 11.2 froze `single-agent-execution:v1`, exact typed bindings, one execution attempt, zero adaptive fallback, stable failure categories, and result identity binding.
 
 ## Gate 11.3 evidence
 
@@ -144,9 +152,9 @@ pytest:                  37 passed in 0.54s
 merge SHA:               b1b2f4e45005f1d55a017f4761f3b7e061f8a070
 ```
 
-Gate 11.3 froze `single-agent-evaluation:v1`, a strict golden fixture, deterministic decomposed metrics, execution-bound scoring, and content-addressed report identity. It uses no LLM judge.
+Gate 11.3 froze `single-agent-evaluation:v1`, deterministic decomposed metrics, execution-bound scoring, and content-addressed report identity. It uses no LLM judge.
 
-## Gate 11.4 real reasoning evidence
+## Gate 11.4 real Bedrock reasoning baseline
 
 ```text
 issue #156:              CLOSED / COMPLETED
@@ -159,7 +167,7 @@ pytest:                  56 passed in 0.43s
 merge SHA:               8b41025facf4451490bf96223d69fbed19b4a00f
 ```
 
-Frozen provider boundary:
+Fixed provider boundary:
 
 ```text
 provider:        Amazon Bedrock Converse
@@ -171,7 +179,7 @@ temperature:     0.0
 maxTokens:       96
 ```
 
-The first authenticated runtime attempt proved a concrete provider compatibility constraint: Bedrock structured outputs rejected JSON Schema `oneOf`. The provider schema was reduced to a flat closed object while ACT/non-null and ABSTAIN/null consistency remained deterministic application authority.
+The first authenticated runtime attempt proved a provider compatibility constraint: Bedrock structured outputs rejected JSON Schema `oneOf`. The adapter was corrected to a flat closed schema while ACT/non-null and ABSTAIN/null consistency remained deterministic application authority.
 
 Historical first real baseline:
 
@@ -200,7 +208,7 @@ capability executions:   0
 stop reason:             end_turn for all 6 calls
 ```
 
-Measured runtime evidence:
+Measured usage, latency, and experiment-time cost:
 
 ```text
 input tokens:             3291
@@ -218,7 +226,7 @@ derived inference cost:   USD 0.0041921
 
 The cost is a token-price derivation from observed usage and contemporaneously verified Bedrock pricing, not AWS invoice reconciliation.
 
-The six-case result is an acceptance-corpus result. It is not a universal correctness claim.
+The six-case result is an acceptance-corpus result, not a universal model-correctness claim.
 
 ## Gate 11.5 measured optimization decision
 
@@ -248,11 +256,29 @@ capability/tool expansion      REJECT
 
 The absence of a justified optimization was recorded as an engineering result rather than treated as missing work.
 
+## Gate 11.6 exact closeout validation
+
+```text
+PR #163 final head:       a17f7adc334473b3047ed3e37962b6a5881f7934
+Single-Agent CI:          34171804704 / run #44 / PASS
+job:                      101893384194
+PR merge test commit:     7fc884c7d2cf3de6ce2e0c09d0184da06ac5ebc9
+uv lock --check:          PASS
+entrypoint smoke:         PASS
+Ruff:                     PASS
+Pyright strict:           0 errors / 0 warnings / 0 informations
+pytest:                   56 passed in 0.44s
+merge SHA:                a075c9a8ec3f0998e990d0b854bfd9ed22cabd07
+unresolved review threads: 0
+```
+
 ## Evidence admission boundary
 
-Phase 11 keeps raw model output transient. Canonical reasoning/evaluation evidence does not automatically persist arbitrary prompt text, provider prose, provider exception strings, or model-generated explanations.
+Raw model output remains transient. Arbitrary prompt text, provider prose, provider exception strings, and model-generated explanations are not admitted into canonical reasoning/evaluation evidence merely because a provider returned them.
 
-Stable evidence identities, typed observations, request IDs, token usage, stop reason, latency, retry attempts, authorization outcomes, and deterministic scores are admitted through explicit contracts.
+Stable evidence identities, typed observations, request IDs, token usage, stop reason, latency, retry attempts, authorization outcomes, and deterministic scores are admitted only through explicit contracts.
+
+Historical Gate 11.4 evidence is immutable and must not be overwritten by later experiments.
 
 ## What Phase 11 proves
 
@@ -263,7 +289,7 @@ capability authorization remains deterministic
 execution remains typed and independently bounded
 result admission preserves exact downstream identity
 evaluation remains deterministic and decomposed
-real tokens/latency/retry evidence can be captured without granting authority
+real token/latency/retry evidence can be captured without granting authority
 real inference cost can be derived from observed usage without inventing billing evidence
 measured evidence can justify NO-CHANGE instead of speculative tuning
 ```
@@ -304,7 +330,7 @@ The Gate 11.4 real replay used the already-authorized local `opslens-bootstrap` 
 
 ## Phase 12 entry criteria
 
-Next planned phase after Gate 11.6 merges:
+Next authorized phase:
 
 ```text
 Phase 12 — Multi-Agent Architecture
@@ -313,16 +339,18 @@ Phase 12 — Multi-Agent Architecture
 Entry rules:
 
 ```text
-1. multi-agent complexity needs a concrete bounded responsibility
+1. each specialization has one explicit bounded responsibility
 2. deterministic authorities frozen through Phase 11 remain code-owned
 3. no generic tool registry or arbitrary executable argument surface
-4. handoff identity, failure, and stopping semantics are explicit before implementation
+4. handoff identity, failure, stopping, and loop bounds are explicit before execution
 5. comparative evaluation uses the Phase 11 single-agent baseline as reference
 6. specialization is retained only when measured evidence justifies it
 7. AgentCore, MCP, and A2A remain separate future decisions
 8. Repository Risk != Runtime Exposure remains frozen
-9. PR #89 remains deferred cross-project integration work
+9. PR #89 remains deferred cross-project work
 ```
+
+A multi-agent topology that cannot demonstrate material value over the single-agent reference should not be retained.
 
 ## Deferred Governed LLM Gateway integration
 
@@ -343,7 +371,13 @@ Phase 11 provides practical evidence for:
 - failure-path learning from the Bedrock structured-output schema constraint;
 - explicit separation between managed runtime technology and application authority.
 
-## Closeout checklist
+## Architecture record
+
+```text
+docs/adr/0041-phase11-single-agent-baseline-closeout.md
+```
+
+## Exit checklist
 
 ```text
 [x] Gates 11.1-11.5 merged
@@ -360,16 +394,10 @@ Phase 11 provides practical evidence for:
 [x] Phase 12 entry criteria defined
 [x] closeout ADR added
 [x] closeout lab added
-[ ] public/current docs synchronized
-[ ] exact-head CI PASS
-[ ] PR review state clean
-[ ] protected squash merge
-[ ] issue #162 CLOSED / COMPLETED
-[ ] post-merge main/state verified
-```
-
-## Architecture record
-
-```text
-docs/adr/0041-phase11-single-agent-baseline-closeout.md
+[x] exact-head CI PASS
+[x] PR review state clean
+[x] protected squash merge
+[x] public/current docs synchronized in follow-up state-sync PR
+[x] issue #162 CLOSED / COMPLETED after state synchronization
+[x] post-merge main/state verified
 ```
