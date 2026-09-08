@@ -4,7 +4,7 @@ _Date: 2026-09-08_
 
 ## Status
 
-**IMPLEMENTED / MERGE CANDIDATE — FINAL EXACT-HEAD REVALIDATION PENDING.**
+**COMPLETE / MERGED.**
 
 Starting checkpoint:
 
@@ -14,6 +14,22 @@ issue:  #189
 branch: feat/phase13-mcp-structured-result-projection
 PR:     #190
 ```
+
+Final implementation merge:
+
+```text
+PR #190 final head:     a7d9f0b734ed668f3b287d893d4476a14dda974f
+MCP CI:                 34247560534 / run #49 / PASS
+Single-Agent CI:        34247560327 / run #67 / PASS
+pre-index MCP pytest:   29 passed in 1.19s
+pre-index agent pytest: 57 passed in 0.44s
+Ruff:                   PASS in both affected slices
+Pyright strict:         0 errors / 0 warnings / 0 informations
+review threads:         0
+merge SHA:              87772b1604d4ede0f88f72d4d338ddf553953304
+```
+
+The exact final head remained green after ADR 0050 indexing and lab synchronization. The pre-index code-complete checkpoint is retained below because it records concrete pytest counts from the same implementation surface.
 
 ## Objective
 
@@ -268,7 +284,7 @@ Pyright strict:      0 errors / 0 warnings / 0 informations
 pytest slice:        57 passed in 0.44s
 ```
 
-ADR 0050 was then indexed. Final Gate 13.4 completion still requires one exact-head MCP and Single-Agent revalidation after that documentation synchronization.
+ADR 0050 was then indexed and the merge-candidate lab synchronized. The exact final head `a7d9f0b734ed668f3b287d893d4476a14dda974f` subsequently passed MCP CI run #49 and Single-Agent CI run #67 before protected squash merge.
 
 ## Cost and execution boundary
 
@@ -352,10 +368,14 @@ docs/adr/0050-bounded-mcp-structured-result-projection.md
 [x] ADR 0050 added
 [x] Gate 13.4 lab added
 [x] ADR 0050 indexed
-[ ] final exact-head MCP CI PASS
-[ ] final exact-head Single-Agent CI PASS
-[ ] PR scope/review threads clean
-[ ] protected squash merge
+[x] final exact-head MCP CI PASS
+[x] final exact-head Single-Agent CI PASS
+[x] PR scope/review threads clean
+[x] protected squash merge
 [ ] state synchronization
 [ ] issue #189 CLOSED / COMPLETED after state synchronization
 ```
+
+## Next authorized decision
+
+All implementation gates currently defined for Phase 13 are complete. The next step is a Phase 13 closeout decision: either close MCP at the proven bounded offline interoperability/result-projection boundary or justify a separate additional gate with concrete runtime/interoperability evidence. Public/network transport, authentication, persistent registries, broader result families, AgentCore, A2A, runtime exposure, and PR #89 remain separate decisions.
