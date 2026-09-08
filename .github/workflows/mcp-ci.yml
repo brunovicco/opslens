@@ -1,0 +1,51 @@
+name: MCP CI
+
+on:
+  pull_request:
+    paths:
+      - "src/opslens/mcp_boundary/**/*.py"
+      - "tests/unit/mcp_boundary/**/*.py"
+      - "docs/adr/0047-*.md"
+      - "labs/phase-13-gate-13-*.md"
+      - ".github/workflows/mcp-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mcp-quality:
+    name: MCP quality gates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+        with:
+          enable-cache: true
+
+      - name: Verify lockfile is current
+        run: uv lock --check
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen
+
+      - name: Smoke MCP boundary import
+        run: PYTHONPATH=src uv run python -c "import opslens.mcp_boundary"
+
+      - name: Ruff MCP slice
+        run: uv run ruff check src/opslens/mcp_boundary tests/unit/mcp_boundary
+
+      - name: Pyright strict MCP slice
+        run: uv run pyright src/opslens/mcp_boundary tests/unit/mcp_boundary
+
+      - name: Pytest MCP slice
+        run: uv run pytest tests/unit/mcp_boundary
