@@ -33,6 +33,10 @@ from opslens.multi_agent.domain.triage_reasoning import (
 from opslens.multi_agent.ports.triage_reasoning import MultiAgentTriageReasoningModelResponse
 
 
+def _empty_requests() -> list[str]:
+    return []
+
+
 def _task() -> SingleAgentTask:
     return create_single_agent_task(
         text="Which admitted CVEs have EPSS of at least 0.7?",
@@ -69,7 +73,7 @@ def _evidence(
 @dataclass
 class _FakeTriageModel:
     output_text: str
-    requests: list[str] = field(default_factory=list)
+    requests: list[str] = field(default_factory=_empty_requests)
 
     def generate(self, task: SingleAgentTask) -> MultiAgentTriageReasoningModelResponse:
         self.requests.append(task.task_id)
