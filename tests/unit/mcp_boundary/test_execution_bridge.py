@@ -85,11 +85,18 @@ def _structured_invocation(*, minimum_score: float = 0.7) -> StructuredSecurityQ
     return StructuredSecurityQueryInvocation.create(action=_authorized_action(), query=query)
 
 
+def _empty_structured_calls() -> list[StructuredSecurityQueryInvocation]:
+    """Return a fully typed empty call recorder for strict Pyright."""
+    return []
+
+
 @dataclass(slots=True)
 class _StructuredExecutor:
     """Record exact invocation objects and return deterministic bound result evidence."""
 
-    calls: list[StructuredSecurityQueryInvocation] = field(default_factory=list)
+    calls: list[StructuredSecurityQueryInvocation] = field(
+        default_factory=_empty_structured_calls
+    )
     fail: bool = False
     wrong_result_type: bool = False
     mismatched_result: bool = False
