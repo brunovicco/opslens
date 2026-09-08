@@ -21,16 +21,25 @@ from opslens.mcp_boundary.application import (
     admit_mcp_invocation_reference,
     execute_mcp_invocation_reference,
 )
+from opslens.mcp_boundary.application.protocol_result import (
+    project_mcp_structured_result_reference,
+)
 from opslens.mcp_boundary.domain import McpBoundaryValidationError, McpToolName
+from opslens.mcp_boundary.domain.result_projection import (
+    McpStructuredSecurityResultProjection,
+)
 from opslens.mcp_boundary.ports import McpInvocationResolver
 
 _ADMISSION_SERVER_NAME = "OpsLens Bounded MCP"
 _EXECUTION_SERVER_NAME = "OpsLens Bounded MCP Execution"
+_RESULT_SERVER_NAME = "OpsLens Bounded MCP Structured Result"
 _REJECTED_REFERENCE_MESSAGE = "MCP invocation reference rejected."
 _RESOLUTION_FAILURE_MESSAGE = "MCP invocation resolution failed."
 _REJECTED_ARGUMENTS_MESSAGE = "MCP tool arguments rejected."
 _EXECUTION_REJECTED_MESSAGE = "MCP capability execution rejected."
 _EXECUTION_FAILURE_MESSAGE = "MCP capability execution failed."
+_RESULT_PROJECTION_REJECTED_MESSAGE = "MCP business result projection rejected."
+_RESULT_PROJECTION_FAILURE_MESSAGE = "MCP business result projection failed."
 _ALLOWED_REFERENCE_ARGUMENTS = frozenset({"invocation_id", "invocation_sha256"})
 _CLOSED_TOOL_NAMES = frozenset(tool_name.value for tool_name in McpToolName)
 
@@ -64,6 +73,29 @@ class McpExecutionProtocolOutput(TypedDict):
     downstream_result_sha256: str
     bridge_id: str
     bridge_sha256: str
+
+
+class McpStructuredEpssRowProtocolOutput(TypedDict):
+    """Allowlisted business row exposed by the first MCP result transport."""
+
+    cve: str
+    epss_score: str
+
+
+class McpStructuredResultProtocolOutput(TypedDict):
+    """Bounded business-result output for structured-security MCP transport only."""
+
+    contract_version: str
+    tool_name: str
+    capability: str
+    invocation_id: str
+    execution_id: str
+    bridge_id: str
+    result_sha256: str
+    columns: list[str]
+    rows: list[McpStructuredEpssRowProtocolOutput]
+    projection_id: str
+    projection_sha256: str
 
 
 def _admission_protocol_output(
@@ -100,6 +132,31 @@ def _execution_protocol_output(
         downstream_result_sha256=projection.downstream_result_sha256,
         bridge_id=projection.bridge_id,
         bridge_sha256=projection.bridge_sha256,
+    )
+
+
+def _structured_result_protocol_output(
+    projection: McpStructuredSecurityResultProjection,
+) -> McpStructuredResultProtocolOutput:
+    """Convert one validated projection into its exact MCP transport shape."""
+    return McpStructuredResultProtocolOutput(
+        contract_version=projection.contract_version,
+        tool_name=projection.tool_name.value,
+        capability=projection.capability.value,
+        invocation_id=projection.invocation_id,
+        execution_id=projection.execution_id,
+        bridge_id=projection.bridge_id,
+        result_sha256=projection.result_sha256,
+        columns=list(projection.columns),
+        rows=[
+            McpStructuredEpssRowProtocolOutput(
+                cve=row.cve,
+                epss_score=row.epss_score,
+            )
+            for row in projection.rows
+        ],
+        projection_id=projection.projection_id,
+        projection_sha256=projection.projection_sha256,
     )
 
 
@@ -177,6 +234,31 @@ def _execute_reference(
         raise ToolError(_EXECUTION_REJECTED_MESSAGE) from exc
     except Exception as exc:
         raise ToolError(_EXECUTION_FAILURE_MESSAGE) from exc
+
+
+def _project_structured_reference(
+    *,
+    invocation_id: str,
+    invocation_sha256: str,
+    resolver: McpInvocationResolver,
+    executors: AgentCapabilityExecutors,
+) -> McpStructuredResultProtocolOutput:
+    """Execute and project the sole business-result family authorized in Gate 13.4."""
+    try:
+        projection = project_mcp_structured_result_reference(
+            tool_name=McpToolName.STRUCTURED_SECURITY_QUERY,
+            invocation_id=invocation_id,
+            invocation_sha256=invocation_sha256,
+            resolver=resolver,
+            executors=executors,
+        )
+        return _structured_result_protocol_output(projection)
+    except AgentCapabilityExecutionError as exc:
+        raise ToolError(_EXECUTION_FAILURE_MESSAGE) from exc
+    except McpBoundaryValidationError as exc:
+        raise ToolError(_RESULT_PROJECTION_REJECTED_MESSAGE) from exc
+    except Exception as exc:
+        raise ToolError(_RESULT_PROJECTION_FAILURE_MESSAGE) from exc
 
 
 def build_offline_mcp_server(*, resolver: McpInvocationResolver) -> MCPServer[None]:
@@ -351,9 +433,47 @@ def build_offline_mcp_execution_server(
     return server
 
 
+def build_offline_mcp_structured_result_server(
+    *,
+    resolver: McpInvocationResolver,
+    executors: AgentCapabilityExecutors,
+) -> MCPServer[None]:
+    """Build the first business-result MCP proof for structured security only."""
+    server = MCPServer[None](
+        _RESULT_SERVER_NAME,
+        description=(
+            "Executes exactly one already-authorized structured-security invocation and "
+            "projects only allowlisted CVE and EPSS rows."
+        ),
+        middleware=[_reject_unexpected_tool_arguments],
+    )
+
+    def structured_security_query(
+        invocation_id: str,
+        invocation_sha256: str,
+    ) -> McpStructuredResultProtocolOutput:
+        """Execute and project one existing structured-security invocation."""
+        return _project_structured_reference(
+            invocation_id=invocation_id,
+            invocation_sha256=invocation_sha256,
+            resolver=resolver,
+            executors=executors,
+        )
+
+    server.add_tool(
+        structured_security_query,
+        name=McpToolName.STRUCTURED_SECURITY_QUERY.value,
+        structured_output=True,
+    )
+    return server
+
+
 __all__ = [
     "McpAdmissionProtocolOutput",
     "McpExecutionProtocolOutput",
+    "McpStructuredEpssRowProtocolOutput",
+    "McpStructuredResultProtocolOutput",
     "build_offline_mcp_execution_server",
     "build_offline_mcp_server",
+    "build_offline_mcp_structured_result_server",
 ]

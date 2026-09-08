@@ -5,14 +5,20 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from opslens.agent_baseline.application import (
+    AgentCapabilityExecutionOutcome,
     AgentCapabilityExecutors,
-    execute_authorized_capability,
+    execute_authorized_capability_outcome,
 )
+from opslens.agent_baseline.domain import AgentCapabilityInvocation
 from opslens.mcp_boundary.application.admission import admit_mcp_tool_call
 from opslens.mcp_boundary.application.protocol_admission import (
     resolve_mcp_invocation_reference,
 )
-from opslens.mcp_boundary.domain import McpBoundaryValidationError, McpToolName
+from opslens.mcp_boundary.domain import (
+    McpBoundaryValidationError,
+    McpToolCallAdmission,
+    McpToolName,
+)
 from opslens.mcp_boundary.domain.execution import (
     MCP_CAPABILITY_EXECUTION_CONTRACT_VERSION,
     McpCapabilityExecutionBridge,
@@ -62,15 +68,43 @@ class McpExecutionProjection:
         )
 
 
-def execute_mcp_invocation_reference(
+@dataclass(frozen=True, slots=True)
+class McpExecutionOutcome:
+    """Retain admitted typed result only inside the application boundary for later projection."""
+
+    invocation: AgentCapabilityInvocation
+    admission: McpToolCallAdmission
+    capability_outcome: AgentCapabilityExecutionOutcome
+    bridge: McpCapabilityExecutionBridge
+    projection: McpExecutionProjection
+
+    def __post_init__(self) -> None:
+        """Require one internally coherent MCP execution outcome."""
+        if type(self.admission) is not McpToolCallAdmission:
+            raise McpBoundaryValidationError("MCP execution outcome requires one admission")
+        if type(self.capability_outcome) is not AgentCapabilityExecutionOutcome:
+            raise McpBoundaryValidationError(
+                "MCP execution outcome requires one typed capability outcome"
+            )
+        if type(self.bridge) is not McpCapabilityExecutionBridge:
+            raise McpBoundaryValidationError("MCP execution outcome requires one bridge")
+        if type(self.projection) is not McpExecutionProjection:
+            raise McpBoundaryValidationError("MCP execution outcome requires one projection")
+        if self.bridge.invocation_id != self.projection.invocation_id:
+            raise McpBoundaryValidationError("MCP execution projection invocation identity drifted")
+        if self.bridge.execution_id != self.projection.execution_id:
+            raise McpBoundaryValidationError("MCP execution projection execution identity drifted")
+
+
+def execute_mcp_invocation_reference_outcome(
     *,
     tool_name: McpToolName,
     invocation_id: str,
     invocation_sha256: str,
     resolver: McpInvocationResolver,
     executors: AgentCapabilityExecutors,
-) -> McpExecutionProjection:
-    """Admit and execute one exact existing typed invocation exactly once."""
+) -> McpExecutionOutcome:
+    """Admit and execute one exact typed invocation once while retaining admitted result."""
     if type(tool_name) is not McpToolName:
         raise McpBoundaryValidationError("tool_name must be McpToolName")
 
@@ -80,13 +114,43 @@ def execute_mcp_invocation_reference(
         resolver=resolver,
     )
     admission = admit_mcp_tool_call(tool_name=tool_name, invocation=invocation)
-    execution = execute_authorized_capability(invocation, executors)
+    capability_outcome = execute_authorized_capability_outcome(invocation, executors)
     bridge = McpCapabilityExecutionBridge.create(
         admission=admission,
         invocation=invocation,
-        execution=execution,
+        execution=capability_outcome.execution,
     )
-    return McpExecutionProjection.from_bridge(bridge)
+    projection = McpExecutionProjection.from_bridge(bridge)
+    return McpExecutionOutcome(
+        invocation=invocation,
+        admission=admission,
+        capability_outcome=capability_outcome,
+        bridge=bridge,
+        projection=projection,
+    )
 
 
-__all__ = ["McpExecutionProjection", "execute_mcp_invocation_reference"]
+def execute_mcp_invocation_reference(
+    *,
+    tool_name: McpToolName,
+    invocation_id: str,
+    invocation_sha256: str,
+    resolver: McpInvocationResolver,
+    executors: AgentCapabilityExecutors,
+) -> McpExecutionProjection:
+    """Preserve the Gate 13.3 identity-only execution API."""
+    return execute_mcp_invocation_reference_outcome(
+        tool_name=tool_name,
+        invocation_id=invocation_id,
+        invocation_sha256=invocation_sha256,
+        resolver=resolver,
+        executors=executors,
+    ).projection
+
+
+__all__ = [
+    "McpExecutionOutcome",
+    "McpExecutionProjection",
+    "execute_mcp_invocation_reference",
+    "execute_mcp_invocation_reference_outcome",
+]

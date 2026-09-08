@@ -10,12 +10,15 @@ from opslens.agent_baseline.application.evaluation_dataset import load_agent_eva
 from opslens.agent_baseline.application.execution import (
     AgentCapabilityExecutionError,
     AgentCapabilityExecutionFailureCategory,
+    AgentCapabilityExecutionOutcome,
+    AgentCapabilityExecutionResult,
     AgentCapabilityExecutors,
     HybridSecurityAnswerExecutor,
     KnowledgeGuidanceExecutor,
     PublicRepositoryAnalysisExecutor,
     StructuredSecurityQueryExecutor,
     execute_authorized_capability,
+    execute_authorized_capability_outcome,
 )
 from opslens.agent_baseline.application.reasoning import (
     parse_reasoning_model_output,
@@ -29,6 +32,8 @@ from opslens.agent_baseline.application.reasoning_evaluation import (
 __all__ = [
     "AgentCapabilityExecutionError",
     "AgentCapabilityExecutionFailureCategory",
+    "AgentCapabilityExecutionOutcome",
+    "AgentCapabilityExecutionResult",
     "AgentCapabilityExecutors",
     "AgentEvaluationInvocationBuilder",
     "HybridSecurityAnswerExecutor",
@@ -40,6 +45,7 @@ __all__ = [
     "evaluate_agent_dataset",
     "evaluate_agent_reasoning_dataset",
     "execute_authorized_capability",
+    "execute_authorized_capability_outcome",
     "load_agent_evaluation_dataset",
     "load_agent_reasoning_evaluation_dataset",
     "parse_reasoning_model_output",
