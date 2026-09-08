@@ -1,6 +1,6 @@
 # OpsLens — Current State
 
-_Last updated: 2026-09-07_
+_Last updated: 2026-09-08_
 
 This document is the authoritative implementation checkpoint for OpsLens. Detailed history remains in ADRs, gate labs, immutable evidence artifacts, merged PRs, and Git history.
 
@@ -22,7 +22,8 @@ Phase 11   Single-Agent Baseline                               COMPLETE
 Phase 12   Multi-Agent Architecture                            IN PROGRESS
   Gate 12.1 Bounded specialization handoff contract            COMPLETE / MERGED
   Gate 12.2 Comparative multi-agent evaluation contract        COMPLETE / MERGED
-  Gate 12.3 First bounded real two-model comparison            NEXT
+  Gate 12.3 First bounded real two-model comparison            COMPLETE / MERGED
+  Gate 12.4 Measured multi-agent retention decision            NEXT
 Phase 13   MCP                                                 PLANNED
 Phase 14   Amazon Bedrock AgentCore                            PLANNED
 Phase 15   A2A                                                 PLANNED
@@ -34,28 +35,28 @@ Phase 18   Evaluation, Cost & Portfolio Readiness              PLANNED
 Latest merged checkpoint:
 
 ```text
-Phase 12 Gate 12.2 / PR #169
-865ba70c813711cb88da9ac7308c8966ff983fd0
+Phase 12 Gate 12.3 / PR #172
+f51cb70ad070716e774419b8d2c62918d3e65210
 ```
 
-Gate 12.2 exact validation and merge:
+Gate 12.3 exact validation and merge:
 
 ```text
-issue #168:               OPEN until this state synchronization completes
-PR #169 final head:       953467df99ddeaedd6e19471bd2dce6c5bb8de7c
-PR merge test commit:     bab183ee1dbcca0eb6a0bb76b5130180f9f2f7c2
-Multi-Agent CI:           34174680219 / run #7 / PASS
-job:                      101901637997
+issue #171:               CLOSED / COMPLETED
+PR #172 final head:       cf6001f374e3b14bb8048465e36210adc596b3ce
+PR merge test commit:     ddd275e44d8c2122b947bc9241a321c46fef9148
+Multi-Agent CI:           34218039083 / run #32 / PASS
+job:                      102034353535
 offline fixture CLI:      PASS
+real CLI --help smoke:    PASS
 uv lock --check:          PASS
 Ruff:                     PASS
 Pyright strict:           0 errors / 0 warnings / 0 informations
-pytest:                   18 passed in 0.27s
-PR #169 merge SHA:        865ba70c813711cb88da9ac7308c8966ff983fd0
-real model calls:         0
-capability executions:    0
+pytest:                   33 passed in 0.33s
+PR #172 merge SHA:        f51cb70ad070716e774419b8d2c62918d3e65210
 new AWS resources:        0
 new IAM roles/policies:   0
+capability executions:    0
 ```
 
 ## Permanent architecture boundaries
@@ -89,9 +90,9 @@ model selection != capability authority
 
 Deterministic code continues to own package/version semantics, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS/Risk Policy facts, `SemanticQuery` validation and SQL compilation, retrieval/evidence admission, hybrid routing/completeness, canonical evidence/citation identity, output admission, public request admission, immutable repository evidence binding, capability allowlists, capability authorization, typed capability invocation/result binding, handoff admission, specialization mapping, comparison/evaluation metrics, content-addressed evidence/report identity, provider/model selection, retry/fallback policy, and runtime-exposure authority.
 
-LLMs may classify, plan, propose, synthesize, explain, select already-admitted citation IDs, propose one already-permitted capability, and in a future measured Phase 12 experiment propose one closed specialization. They do not own structured truth, SQL authority, evidence completeness, capability authorization, executable arguments, provider/model selection, retry/fallback policy, arbitrary tool execution, evaluation metric computation, handoff admission, or runtime-exposure truth.
+LLMs may classify, plan, propose, synthesize, explain, select already-admitted citation IDs, propose one already-permitted capability, and inside the bounded Gate 12.3 experiment propose one closed specialization. Models do not own structured truth, SQL authority, evidence completeness, handoff admission, capability authorization, executable arguments, provider/model selection, retry/fallback policy, arbitrary tool execution, evaluation metric computation, or runtime-exposure truth.
 
-## Phase 11 frozen reference
+## Phase 11 frozen single-agent reference
 
 Frozen contracts:
 
@@ -103,7 +104,7 @@ single-agent-reasoning:v1
 single-agent-reasoning-evaluation:v1
 ```
 
-Permanent bounded reasoning path:
+Permanent reasoning path:
 
 ```text
 SingleAgentTask
@@ -124,6 +125,7 @@ region:                       us-east-1
 model/profile:                us.anthropic.claude-haiku-4-5-20251001-v1:0
 quality:                      6/6
 bounds compliance:            6/6
+model invocations:            6
 SDK retries:                  0
 capability executions:        0
 input/output/total tokens:    3291 / 104 / 3395
@@ -140,7 +142,7 @@ corpus_sha256: 3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
 report_sha256: 724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
 ```
 
-Gate 11.5 remains `NO-CHANGE / NO-EXPERIMENT`. No later phase may reinterpret the `6/6` acceptance-corpus result as a hidden quality gap without new measured evidence.
+Gate 11.5 retained this reference with `NO-CHANGE / NO-EXPERIMENT`. No later phase may reinterpret the `6/6` acceptance-corpus result as a hidden quality gap without new measured evidence.
 
 ## Phase 12 Gate 12.1 frozen handoff boundary
 
@@ -177,13 +179,6 @@ SingleAgentTask
  -> STOP
 ```
 
-Hard bounds:
-
-```text
-maximum handoffs per source task:       1
-maximum specialist capability surface:  2
-```
-
 The `4 -> <=2` capability reduction is deterministic reasoning-surface narrowing, not runtime privilege reduction. Models still have no capability execution authority.
 
 ## Phase 12 Gate 12.2 frozen comparison boundary
@@ -194,21 +189,9 @@ Contract:
 multi-agent-comparison:v1
 ```
 
-Offline comparison path:
+Gate 12.2 froze comparison semantics before the second real model call. The six-case synthetic fixture remains evaluator/contract conformance only, not model quality.
 
-```text
-frozen comparison fixture
- -> admitted SingleAgentTask
- -> synthetic untrusted MultiAgentHandoffProposal
- -> existing Gate 12.1 handoff admission
- -> HANDOFF | ABSTAINED | REJECTED
- -> deterministic decomposed case score
- -> content-addressed comparison report
- -> runtime measurements remain null
- -> STOP
-```
-
-Frozen evidence identities:
+Frozen identities:
 
 ```text
 dataset_sha256:
@@ -218,64 +201,125 @@ report_sha256:
 0586822800f028d0bb5c7cdb937db4af2f685abde3e09c76afd979d4e1abc222
 ```
 
-Frozen synthetic conformance metrics:
+## Phase 12 Gate 12.3 real two-model evidence
+
+Frozen experiment contracts:
 
 ```text
-total / passed:                        6 / 6
-decision matches:                      6
-specialization matches:                6
-admission matches:                     6
-target scope matches:                  6
-non-broadening cases:                  6
-bounds-compliant cases:                6
-handoff / abstention cases:             4 / 2
-source capability slots for handoffs: 16
-specialist capability slots:            8
-capability slots removed:               8
-offline capability executions:          0
+multi-agent-triage-reasoning:v1
+multi-agent-two-model-reasoning:v1
+multi-agent-real-comparison:v1
 ```
 
-This `6/6` is synthetic contract/evaluator conformance only. It is **not** triage-model quality, specialist-model quality, or a multi-agent runtime baseline.
-
-Because Gate 12.2 makes no model call, these fields are deliberately `null`, not zero:
+Bounded runtime path:
 
 ```text
-model invocation count
-input/output/total tokens
-provider latency
-client elapsed latency
-SDK retries
-inference cost
+SingleAgentTask
+ -> one triage model invocation
+ -> transient {decision, target_specialization}
+ -> deterministic parser
+ -> Gate 12.1 deterministic handoff admission
+ -> ABSTAIN / rejected? STOP
+ -> narrowed SpecialistAgentTask
+ -> one specialist reasoning invocation
+ -> transient {decision, capability}
+ -> deterministic parser
+ -> existing deterministic capability authorization
+ -> STOP before capability execution
 ```
 
-This prevents unmeasured runtime evidence from being represented as an observed zero.
-
-## What Gate 12.2 does not prove
+Hard bounds:
 
 ```text
-triage model quality
-specialist model quality
-multi-agent quality improvement
-real multi-agent model invocation count
-real multi-agent token usage
-real multi-agent latency
-real multi-agent retries
-real multi-agent inference cost
-capability execution through a multi-agent flow
-production reliability
-runtime privilege reduction
-AgentCore / MCP / A2A behavior
+maximum model invocations per task: 2
+maximum handoffs per source task:    1
+maximum specialist capability width: 2
+adaptive application retries:       0
+adaptive fallbacks:                 0
+capability executions:              0
 ```
+
+The first authenticated Bedrock replay is preserved at:
+
+```text
+labs/evidence/phase-12-gate-12-3-first-real-two-model-comparison-v1.json
+```
+
+Content-addressed identities:
+
+```text
+dataset_sha256:
+0439ebaa6215b2de7eaa82624188576743b5a50cc847137e04dc97ee7a199be7
+
+report_sha256:
+45edf58ac911ec14e872a00464dad5d5311d82165d6b8ac4321da4a0dc5ad09b
+```
+
+Observed real result:
+
+```text
+quality:                           6/6
+triage decision matches:           6/6
+specialization matches:            6/6
+handoff admission matches:         6/6
+target-scope matches:              6/6
+non-broadening cases:              6/6
+specialist decision matches:       6/6
+specialist capability matches:     6/6
+specialist authorization matches:  6/6
+runtime-bounds compliant:          6/6
+model invocations:                 10
+input/output/total tokens:          5788 / 194 / 5982
+provider latency median per task:  1694.0 ms
+client elapsed median per task:    2135.0 ms
+SDK retries:                       0
+capability executions:             0
+derived six-case cost:             USD 0.0074338
+```
+
+The two abstention cases stopped after triage. The four admitted handoffs invoked exactly one specialist. No adaptive retry, fallback, capability executor, IAM expansion, or new AWS resource was introduced.
+
+## Measured Phase 11 vs Gate 12.3 comparison
+
+```text
+metric                     Phase 11       Gate 12.3        delta
+quality                    6/6            6/6              no lift
+model invocations          6              10               +66.67%
+input tokens               3291           5788             +75.87%
+output tokens              104            194              +86.54%
+total tokens               3395           5982             +76.20%
+provider latency median    809.5 ms       1694.0 ms        +109.26%
+client elapsed median      977.5 ms       2135.0 ms        +118.41%
+SDK retries                0              0                 unchanged
+capability executions      0              0                 unchanged
+derived cost               USD 0.0041921  USD 0.0074338    +77.33%
+```
+
+Gate 12.3 proves that the bounded two-model topology can preserve the frozen quality and all deterministic authority boundaries. It does **not** demonstrate a quality improvement. The measured coordination overhead is material.
+
+The triage stage alone cost USD `0.0046002` for the six cases, approximately 9.73% more than the complete Phase 11 six-case single-agent reference.
 
 ## AWS / IAM / runtime boundary
 
-Gate 12.2 introduced no AWS resources, IAM roles/policies, provider adapters, real model calls, capability executions, AgentCore runtime, MCP, A2A, public runtime, or runtime-exposure authority.
+The Gate 12.3 experiment used the existing human IAM Identity Center path to invoke the already selected Bedrock profile. It did not justify or introduce:
+
+```text
+new AWS resources
+new IAM roles or policies
+GitHub OIDC trust broadening
+capability execution
+AgentCore runtime
+MCP
+A2A
+public agent runtime
+runtime-exposure authority
+```
 
 ## Deferred Governed LLM Gateway integration
 
 Long-lived PR #89 remains open/draft for **Phase 14 — Case 3 of the separate `brunovicco/governed-llm-gateway` project**. It remains deferred and must be re-evaluated against the current OpsLens architecture before any merge.
 
-Current preserved head:
+Preserved historical head:
 
 ```text
 3781831795d500b05fa4bc602d50f376b4b1539f
@@ -284,31 +328,13 @@ Current preserved head:
 ## Next authorized gate
 
 ```text
-Phase 12 — Gate 12.3: First Bounded Real Two-Model Comparison
+Phase 12 — Gate 12.4: Measured Multi-Agent Retention Decision
 ```
 
-The first real comparison may introduce at most two bounded reasoning invocations per task:
+Gate 12.4 is a decision gate, not an automatic tuning gate. It must use the frozen Phase 11 reference and the preserved Gate 12.3 real evidence to decide whether the two-model topology should be retained, rejected, deferred, or redesigned.
 
-```text
-SingleAgentTask
- -> bounded triage model proposes specialization only
- -> deterministic parser + Gate 12.1 handoff admission
- -> narrowed SpecialistAgentTask
- -> bounded specialist reasoning proposes capability only
- -> existing deterministic capability authorization
- -> STOP before capability execution
-```
+The default next action is **no new model experiment** unless a concrete, falsifiable benefit hypothesis exists that is not already answered by Gate 12.3 evidence.
 
-Required hard bounds for the first experiment:
+Current evidence shows equal `6/6` acceptance quality with materially higher call count, token usage, latency, cost, failure surface, and implementation complexity. Therefore the two-model path must not become the retained/default architecture merely because it is more agentic.
 
-```text
-maximum model invocations per task: 2
-maximum handoffs:                   1
-adaptive application retries:       0
-adaptive fallbacks:                 0
-capability executions:              0
-```
-
-Real tokens, latency, SDK retries, and inference cost must come only from observed provider evidence. The two-model topology must be rejected if measured specialization value does not justify its additional call, latency, token usage, cost, failure surface, and architectural complexity.
-
-AgentCore, MCP, and A2A remain separate future architecture decisions.
+Gate 12.4 must preserve historical Gate 12.3 artifacts regardless of its decision. AgentCore, MCP, and A2A remain separate future architecture decisions.
