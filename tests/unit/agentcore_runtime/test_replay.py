@@ -24,6 +24,7 @@ _FIXTURE = (
     / "agent_baseline"
     / "golden_single_agent_reasoning_v1.json"
 )
+_RUNTIME_ARN = "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/test-abc"
 
 
 class _ReplayClient:
@@ -52,7 +53,7 @@ class _ReplayClient:
         contentType: str,
         accept: str,
     ) -> Mapping[str, object]:
-        assert agentRuntimeArn == "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/test-abc"
+        assert agentRuntimeArn == _RUNTIME_ARN
         assert contentType == "application/json"
         assert accept == "application/json"
         request = json.loads(payload)
@@ -100,7 +101,7 @@ def test_replay_preserves_phase11_corpus_and_bounds() -> None:
 
     report = execute_agentcore_runtime_replay(
         client=client,
-        runtime_arn="arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/test-abc",
+        runtime_arn=_RUNTIME_ARN,
         source_head_sha="a" * 40,
         replay_run_id="unit-test-run",
         dataset=dataset,
@@ -124,7 +125,7 @@ def test_replay_reports_behavior_mismatch_without_hiding_it() -> None:
 
     report = execute_agentcore_runtime_replay(
         client=client,
-        runtime_arn="arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/test-abc",
+        runtime_arn=_RUNTIME_ARN,
         source_head_sha="b" * 40,
         replay_run_id="mismatch-run",
         dataset=dataset,
@@ -143,7 +144,7 @@ def test_replay_fails_closed_on_runtime_session_identity_change() -> None:
     with pytest.raises(AgentCoreRuntimeReplayError, match="different runtime session identity"):
         execute_agentcore_runtime_replay(
             client=client,
-            runtime_arn="arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/test-abc",
+            runtime_arn=_RUNTIME_ARN,
             source_head_sha="c" * 40,
             replay_run_id="session-run",
             dataset=dataset,
@@ -158,7 +159,7 @@ def test_replay_fails_closed_on_non_success_runtime_status() -> None:
     with pytest.raises(AgentCoreRuntimeReplayError, match="unexpected runtime status 502"):
         execute_agentcore_runtime_replay(
             client=client,
-            runtime_arn="arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/test-abc",
+            runtime_arn=_RUNTIME_ARN,
             source_head_sha="d" * 40,
             replay_run_id="status-run",
             dataset=dataset,
