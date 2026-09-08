@@ -37,7 +37,7 @@ concept
 | 11 | Single-Agent Baseline | ✅ Complete |
 | 12 | Multi-Agent Architecture | ✅ Complete |
 | 13 | MCP | ✅ Complete — Gates 13.1–13.5 merged; bounded offline MCP retained |
-| 14 | Amazon Bedrock AgentCore | ▶️ Next |
+| 14 | Amazon Bedrock AgentCore | 🚧 In progress — Gate 14.1 complete; Gate 14.2 next |
 | 15 | A2A | ⏳ Planned |
 | 16 | Runtime Exposure with Amazon Inspector | ⏳ Planned |
 | 17 | Security Hardening | ⏳ Planned |
@@ -61,7 +61,7 @@ concept
 
 > **No unrestricted text-to-SQL.**
 
-Agentic/interoperability phases additionally preserve:
+Agentic/interoperability/runtime phases additionally preserve:
 
 ```text
 agent proposal != authorization
@@ -80,6 +80,13 @@ MCP result admission != result projection authority
 MCP result projection != public runtime exposure
 MCP transport success != business/evidence truth
 MCP result != runtime exposure truth
+AgentCore hosting != business authorization
+runtime authentication != capability authorization
+runtime session != user identity authority
+runtime execution role != model/tool authority
+runtime transport success != business/evidence truth
+runtime telemetry != business truth
+runtime deployment != runtime-exposure truth
 ```
 
 ## Completed foundation — Phases 0–10
@@ -485,24 +492,120 @@ MCP result != runtime exposure truth
 
 Public/Streamable HTTP transport, transport authentication/authorization, persistent registries, broader result-family transport, AgentCore, A2A, network SLOs, and runtime-exposure evidence remain outside Phase 13 unless separately justified later.
 
-## Phase 14 — Amazon Bedrock AgentCore — NEXT
+## Phase 14 — Amazon Bedrock AgentCore — IN PROGRESS
 
-Evaluate managed runtime capabilities against measured OpsLens needs rather than adopting them for certification coverage alone.
+Phase 14 evaluates managed runtime capabilities against measured OpsLens needs rather than adopting AgentCore for certification coverage alone.
 
-Phase 14 entry constraints:
+### Gate 14.1 — AgentCore Runtime Capability-Fit and Authority Boundary — COMPLETE / MERGED
+
+Gate 14.1 intentionally creates no AgentCore resource. It freezes the first deployment hypothesis before AWS/IAM expansion.
+
+Selected first experiment:
 
 ```text
-1. define the concrete OpsLens runtime/workload need before adopting AgentCore
-2. preserve Phase 11 deterministic capability authorization and typed execution authority
-3. preserve Phase 12 measured topology-retention decision
-4. preserve Phase 13 MCP admission/execution/result-projection boundaries
-5. do not infer public MCP runtime readiness from offline MCP interoperability
-6. define identity, IAM, observability, failure, retry, cost, and lifecycle requirements before provisioning
-7. no AWS/IAM expansion without a specific capability requirement
-8. Repository Risk != Runtime Exposure remains frozen
-9. Governed LLM Gateway Phase 14 / Case 3 remains a separate cross-project decision
-10. PR #89 remains deferred until independently re-evaluated
+AgentCore Runtime:        GO TO ONE BOUNDED EXPERIMENT ONLY
+first hosted boundary:   retained Phase 11 bounded single-agent reasoning
+protocol:                HTTP
+authentication:          IAM SigV4
+deployment artifact:     direct code preferred; container only if packaging evidence requires it
+network mode:            deferred to exact Gate 14.2 outbound-dependency review
+capability executions:   0
+adaptive retries:        0
+adaptive fallbacks:      0
+MCP runtime promotion:   not authorized
+A2A:                     deferred to Phase 15
+runtime-exposure truth:  not created
 ```
+
+Bounded candidate path:
+
+```text
+AgentCore Runtime HTTP invocation
+ -> strict runtime request admission
+ -> retained SingleAgentTask authority
+ -> fixed provider/model selection owned by code
+ -> one bounded Bedrock reasoning call
+ -> transient untrusted model output
+ -> deterministic output parser
+ -> existing AgentActionProposal
+ -> existing authorize_agent_action(...)
+ -> AuthorizedAgentAction | AgentAbstention | stable rejection
+ -> STOP before capability execution
+```
+
+Exact merge evidence:
+
+```text
+issue #195
+PR #196 final head:       71a77288c5656ba282a1f6bf045f9b3072fbc968
+PR merge test commit:     87155adfff4e22bf87793f19783a52abd6ff015d
+AgentCore CI:              34254184586 / run #3 / PASS
+job:                       102155706778
+uv lock --check:           PASS
+Phase 14 evidence JSON:    PASS
+locked AWS provider:       6.60.0
+verified resource:         aws_bedrockagentcore_agent_runtime
+review threads:            0
+PR comments:               0
+new AgentCore runtimes:    0
+new model invocations:     0
+new capability executions:0
+new AWS/IAM:               0
+merge SHA:                 7675b169155f3676a8ddabe0334422242c3f4c85
+```
+
+The dedicated AgentCore CI preserves the initial provider-probe failure as historical evidence. Run #1 failed because the probe requested `terraform providers schema` from the real backend-bearing dev directory after `init -backend=false`; it did not reach the provider resource assertion. The corrected isolated backend-free probe read the exact locked provider version and verified the resource without touching Terraform state or AWS.
+
+Architecture/evidence references:
+
+```text
+docs/adr/0052-agentcore-runtime-capability-fit.md
+labs/phase-14-gate-14-1-agentcore-runtime-capability-fit.md
+labs/evidence/phase-14-gate-14-1-agentcore-capability-fit-v1.json
+```
+
+### Gate 14.2 — First Bounded AgentCore HTTP/SigV4 Runtime Experiment — NEXT
+
+Gate 14.2 is the first authorized runtime experiment. It must not begin by copying every existing OpsLens dependency or capability into AgentCore.
+
+Required sequence:
+
+```text
+1. freeze exact HTTP request/response contract
+2. derive the minimal runtime Python/dependency slice
+3. measure direct-code ZIP compressed/uncompressed size
+4. decide direct code vs container from packaging evidence
+5. enumerate exact outbound dependencies
+6. decide PUBLIC vs VPC from that dependency set
+7. derive minimum execution-role permissions/resources
+8. derive minimum caller InvokeAgentRuntime permission
+9. freeze lifecycle/session settings and failure taxonomy
+10. define required runtime observability evidence
+11. create only the bounded dev runtime/IAM/artifact resources
+12. invoke one frozen bounded reasoning corpus through HTTP/SigV4
+13. preserve request/session/runtime/model/token/latency/retry evidence
+14. derive actual AgentCore runtime cost from observed consumption
+15. prove cleanup/destroy behavior
+16. compare runtime path with retained local/direct reference
+17. retain or reject the runtime experiment from measured evidence
+```
+
+Hard initial constraints:
+
+```text
+capability executions:        0
+adaptive application retries: 0
+adaptive fallbacks:           0
+MCP runtime calls:            0
+A2A handoffs:                 0
+AgentCore Gateway/Policy:     0
+AgentCore Memory:             0
+Browser:                      0
+Code Interpreter:             0
+runtime-exposure authority:   0
+```
+
+No production AgentCore readiness, public user flow, OAuth/JWT, production SLO, or monthly cost claim is authorized by Gate 14.2.
 
 ## Phase 15 — A2A — PLANNED
 
