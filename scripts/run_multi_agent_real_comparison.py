@@ -16,6 +16,7 @@ from opslens.agent_baseline.adapters import (
     BedrockAgentReasoningConverseClient,
     BedrockSingleAgentReasoningModel,
 )
+from opslens.agent_baseline.domain.reasoning import AgentReasoningResult
 from opslens.multi_agent.adapters import (
     BEDROCK_TRIAGE_REASONING_REGION,
     BedrockMultiAgentTriageModel,
@@ -76,24 +77,21 @@ def _bedrock_client(session: Session) -> object:
 
 def _specialist_observation(result: object) -> object:
     """Project optional specialist evidence without raw model output."""
-    from opslens.agent_baseline.domain.reasoning import AgentReasoningResult
-
     if result is None:
         return None
     if type(result) is not AgentReasoningResult:
         raise TypeError("specialist result must be AgentReasoningResult or null")
-    specialist = cast(AgentReasoningResult, result)
     return {
-        "authorization_outcome": specialist.authorization_outcome.value,
+        "authorization_outcome": result.authorization_outcome.value,
         "capability": (
-            specialist.proposal.capability.value
-            if specialist.proposal.capability is not None
+            result.proposal.capability.value
+            if result.proposal.capability is not None
             else None
         ),
-        "decision": specialist.proposal.decision.value,
-        "invocation_evidence": asdict(specialist.invocation_evidence),
-        "reasoning_result_id": specialist.result_id,
-        "task_id": specialist.task.task_id,
+        "decision": result.proposal.decision.value,
+        "invocation_evidence": asdict(result.invocation_evidence),
+        "reasoning_result_id": result.result_id,
+        "task_id": result.task.task_id,
     }
 
 
