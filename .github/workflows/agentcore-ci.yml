@@ -11,6 +11,11 @@ on:
       - "labs/evidence/phase-14-*.json"
       - "infra/modules/agentcore_runtime/**"
       - "infra/environments/dev/agentcore*.tf"
+      - "README.md"
+      - "README.pt-br.md"
+      - "docs/README.md"
+      - "docs/current-state.md"
+      - "docs/roadmap.md"
       - "pyproject.toml"
       - "uv.lock"
       - ".github/workflows/agentcore-ci.yml"
@@ -68,16 +73,47 @@ jobs:
                   raise SystemExit(f"{path} is missing artifact_version.")
           PY
 
-      - name: Initialize dev provider schema without backend
+      - name: Prepare exact locked AWS provider schema probe
+        run: |
+          uv run python - <<'PY'
+          import re
+          from pathlib import Path
+
+          lock_path = Path("infra/environments/dev/.terraform.lock.hcl")
+          lock_text = lock_path.read_text(encoding="utf-8")
+          match = re.search(
+              r'provider "registry\.terraform\.io/hashicorp/aws" \{\s+version\s+=\s+"([^"]+)"',
+              lock_text,
+          )
+          if match is None:
+              raise SystemExit("Unable to resolve the locked HashiCorp AWS provider version.")
+
+          version = match.group(1)
+          probe_dir = Path("/tmp/opslens-agentcore-provider-schema")
+          probe_dir.mkdir(parents=True, exist_ok=True)
+          (probe_dir / "main.tf").write_text(
+              "terraform {\n"
+              "  required_providers {\n"
+              "    aws = {\n"
+              "      source  = \"hashicorp/aws\"\n"
+              f"      version = \"= {version}\"\n"
+              "    }\n"
+              "  }\n"
+              "}\n",
+              encoding="utf-8",
+          )
+          print(f"locked_aws_provider_version={version}")
+          PY
+
+      - name: Initialize exact locked AWS provider schema probe
         run: >-
-          terraform -chdir=infra/environments/dev init
+          terraform -chdir=/tmp/opslens-agentcore-provider-schema init
           -backend=false
           -input=false
-          -lockfile=readonly
 
-      - name: Verify locked AWS provider exposes AgentCore Runtime
+      - name: Verify exact locked AWS provider exposes AgentCore Runtime
         run: |
-          terraform -chdir=infra/environments/dev providers schema -json > /tmp/opslens-provider-schema.json
+          terraform -chdir=/tmp/opslens-agentcore-provider-schema providers schema -json > /tmp/opslens-provider-schema.json
           uv run python - <<'PY'
           import json
           from pathlib import Path
@@ -85,8 +121,12 @@ jobs:
           schema = json.loads(Path("/tmp/opslens-provider-schema.json").read_text(encoding="utf-8"))
           aws = schema["provider_schemas"]["registry.terraform.io/hashicorp/aws"]
           resources = aws["resource_schemas"]
-          if "aws_bedrockagentcore_agent_runtime" not in resources:
-              raise SystemExit("Locked AWS provider does not expose aws_bedrockagentcore_agent_runtime.")
+          resource_name = "aws_bedrockagentcore_agent_runtime"
+          if resource_name not in resources:
+              raise SystemExit(
+                  f"Exact locked AWS provider does not expose {resource_name}."
+              )
+          print(f"verified_resource={resource_name}")
           PY
 
       - name: Ruff AgentCore slice
