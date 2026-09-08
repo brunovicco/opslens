@@ -6,7 +6,7 @@
 
 ### Verifiable Software Supply Chain & Threat Intelligence on AWS
 
-**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Public Analysis · Operational Evidence · Deterministic Authority**
+**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Public Analysis · Operational Evidence · Bounded Agent Reasoning · Deterministic Authority**
 
 </div>
 
@@ -16,7 +16,7 @@ It is designed to answer:
 
 > Given the software I actually use, which vulnerabilities affect it, what exact evidence proves that, which findings should I prioritize, and what verified guidance can help me act on them?
 
-The project deliberately separates deterministic truth from model reasoning.
+The project deliberately separates deterministic truth, evidence admission, model reasoning, authorization, and execution.
 
 > **Agents reason. Code verifies evidence.**
 
@@ -49,20 +49,12 @@ Permanent boundaries:
 | Phase 8 | Hybrid Retrieval | ✅ Complete |
 | Phase 9 | Public Analyze Your Repository | ✅ Complete |
 | Phase 10 | Observability & Operational Excellence | ✅ Complete |
-| Phase 11 | Single-Agent Baseline | ▶️ Next |
+| Phase 11 | Single-Agent Baseline | ✅ Complete |
+| Phase 12 | Multi-Agent Architecture | ▶️ Next |
 
-Phase 9 closes at a governed **application boundary**, not at a fictional production deployment. Phase 10 makes that boundary diagnosable and adds an AWS-native telemetry representation without claiming a deployed public runtime or CloudWatch ingestion.
+See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), and the [Phase 11 closeout](labs/phase-11-gate-11-6-closeout.md).
 
-```text
-application boundary validated != public runtime deployed
-telemetry evidence != business truth
-telemetry evidence != route authority
-EMF document created != CloudWatch ingestion proven
-```
-
-See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), and the [Phase 10 closeout](labs/phase-10-gate-10-4-closeout.md).
-
-## Implemented system
+## Implemented governed system
 
 ### 1. Structured vulnerability and risk authority
 
@@ -90,7 +82,7 @@ The model never decides vulnerability applicability, Risk Policy truth, KEV/EPSS
 
 ```text
 natural-language factual question
- -> bounded Bedrock planner
+ -> bounded model planner
  -> structured proposal
  -> deterministic parser
  -> typed SemanticQuery
@@ -133,173 +125,156 @@ EvidenceNeed[]
  -> deterministic output admission
 ```
 
-Structured vulnerability/risk facts and semantic remediation evidence never become one undifferentiated authority class.
+Structured vulnerability/risk facts and semantic remediation evidence remain separate authority classes.
 
-Runtime exposure remains `UNSUPPORTED` until a future independent runtime authority exists.
+Runtime exposure remains `UNSUPPORTED` until an independent runtime authority exists.
 
 ### 5. Governed public-analysis boundary
 
 ```text
 untrusted public JSON
- -> strict bounded request admission
- -> validated GitHub owner/name/ref coordinates
- -> source-confirmed public repository identity
- -> immutable commit/tree snapshot
- -> exact-commit inert uv.lock evidence
- -> deterministic parsing + PyPI normalization
- -> PublicRepositoryEvidenceExecution
- -> bounded metadata-only semantic planning proposal
+ -> deterministic request admission
+ -> immutable public GitHub evidence
+ -> deterministic repository analysis
+ -> proposal-only semantic planning
  -> deterministic public-v1 scope admission
- -> existing Phase 8 hybrid route authority
+ -> existing hybrid authority
  -> PublicAnalysisAdmissionHandoff
  -> STOP
 ```
 
 Public v1 scope is code-owned, not model-owned.
 
-### 6. Operational evidence and CloudWatch EMF representation
+### 6. Operational evidence
 
 Phase 10 freezes:
 
 ```text
 operational-telemetry:v1
-operation: analyze_public_repository
-```
-
-Five bounded stages:
-
-```text
-public_request_admission
-repository_evidence
-semantic_planning
-hybrid_route_admission
-public_handoff
-```
-
-Low-cardinality metrics:
-
-```text
-OperationalStageCount      Count
-OperationalStageLatency    Milliseconds
-```
-
-Exact dimensions:
-
-```text
-ContractVersion
-Operation
-Stage
-Outcome
-```
-
-Gate 10.2 instruments the governed path through injected `MonotonicClock` and `OperationalEventSink` ports. Successful execution emits exactly five ordered events; rejected/failed stages are terminal.
-
-Gate 10.3 adds deterministic AWS-native serialization:
-
-```text
 cloudwatch-emf:v1
-namespace: OpsLens/Operational
-storage resolution: 60 seconds
-maximum canonical document: 16 KiB
 ```
 
+Operational evidence is content-minimized and low-cardinality. CloudWatch EMF serialization is a deterministic representation boundary, not proof of CloudWatch ingestion.
+
 ```text
-OperationalEvent
- -> existing project_operational_metrics(...)
- -> canonical CloudWatch EMF JSON
- -> content-addressed CloudWatchEmfDocument
- -> injected EpochMillisecondsClock
- -> injected EmfLineWriter
- -> STOP
+telemetry evidence != business truth
+telemetry evidence != route authority
+EMF document created != CloudWatch ingestion proven
 ```
 
-High-cardinality `EventId`, `PublicRequestId`, `SourceExecutionId`, and `HandoffId` remain log metadata only and never become metric dimensions.
+### 7. Bounded single-agent reasoning
 
-The adapter performs zero retries and attempts writer delivery at most once per `emit(...)`.
-
-## Phase 10 closeout
-
-Phase 10 proves:
+Phase 11 freezes:
 
 ```text
-provider-neutral operational event contract
-bounded deterministic stage instrumentation
-content-minimized provenance/correlation identities
-fixed low-cardinality metric projection
-best-effort external sink semantics after mandatory in-process evidence
-bounded content-free failure taxonomy
-cloudwatch-emf:v1 deterministic serialization
-separate monotonic-duration and epoch-millisecond clock semantics
-zero adapter retries
-content-addressed operational/EMF evidence
+single-agent-authority:v1
+single-agent-execution:v1
+single-agent-evaluation:v1
+single-agent-reasoning:v1
+single-agent-reasoning-evaluation:v1
 ```
 
-It does **not** prove:
+Permanent reasoning boundary:
 
 ```text
-public HTTP runtime
-CloudWatch ingestion
-runtime principal / runtime IAM
-public request volume
-production distributed traces
-production p95/p99
-production error/throttle rates
+SingleAgentTask
+ -> code-owned AgentCapability allowlist
+ -> one bounded model reasoning invocation
+ -> transient untrusted {decision, capability}
+ -> deterministic parser
+ -> AgentActionProposal
+ -> deterministic authorize_agent_action(...)
+ -> AuthorizedAgentAction | AgentAbstention | stable rejection
+```
+
+The real Gate 11.4 model-quality baseline intentionally stops before capability execution. Typed capability execution remains a separate deterministic boundary.
+
+The model cannot author arbitrary args/kwargs, SQL, URLs, shell commands, credentials, provider/model selection, retry/fallback policy, or runtime-exposure truth.
+
+## Phase 11 real Bedrock baseline
+
+Fixed reasoning provider:
+
+```text
+Amazon Bedrock Converse
+region:          us-east-1
+model/profile:   us.anthropic.claude-haiku-4-5-20251001-v1:0
+temperature:     0.0
+maxTokens:       96
+tools:           disabled
+```
+
+Preserved evidence:
+
+```text
+labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json
+corpus_sha256: 3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
+report_sha256: 724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
+```
+
+Measured result:
+
+```text
+proposal quality:             6/6
+bounds compliance:            6/6
+SDK retries:                  0
+capability executions:        0
+input/output/total tokens:    3291 / 104 / 3395
+provider latency median:      809.5 ms
+client elapsed median:        977.5 ms
+derived six-case cost:        USD 0.0041921
+```
+
+The first authenticated runtime attempt also exposed a real provider constraint: Bedrock structured outputs rejected JSON Schema `oneOf`. The adapter was corrected to a flat closed schema while cross-field ACT/ABSTAIN consistency remained deterministic application authority.
+
+The six-case result is an acceptance-corpus result, not a universal model-correctness claim.
+
+## Measured optimization decision
+
+Gate 11.5 reviewed the real baseline and intentionally retained the implementation unchanged:
+
+```text
+optimization decision: NO-CHANGE / NO-EXPERIMENT
+```
+
+Prompt compression, model switching, prompt caching, retry/fallback expansion, and capability expansion were not justified by a material measured target.
+
+This project treats **not optimizing** as a valid engineering result when evidence does not justify additional complexity or risk.
+
+## Security and authority invariants
+
+- Raw third-party evidence is preserved before transformation.
+- Exact source versions and hashes participate in evidence identity.
+- Package normalization, version/range matching, vulnerability applicability, KEV/EPSS/CVSS evidence, and Risk Policy remain deterministic.
+- Third-party repository code is never executed.
+- Public request admission never grants arbitrary fetch authority.
+- Natural-language planning cannot emit unrestricted SQL authority.
+- Retrieval output is evidence, not deterministic truth.
+- Retrieved text remains untrusted instruction content after provenance validation.
+- Hybrid routing and required-evidence completeness are deterministic.
+- Citation IDs come only from admitted evidence.
+- Agent action proposal is not capability authorization.
+- Authorized action is not capability invocation.
+- Capability invocation is not execution result.
+- Raw model output is not canonical evidence.
+- Provider/model selection and retry/fallback policy remain code-owned.
+- Unsupported runtime exposure is not inferred from repository risk.
+- IAM least privilege, observability, failure diagnosis, and cost accounting are architecture requirements.
+
+## What Phase 11 does not prove
+
+```text
+multi-agent quality or coordination
+public/deployed agent runtime
+production request volume
+production p95/p99 or SLO compliance
+AgentCore runtime behavior
+MCP interoperability
+A2A interoperability
+runtime exposure / Amazon Inspector evidence
+universal model correctness
 production cost/request
-production dashboards/alarms
-production SLO compliance
-```
-
-### Exact Phase 10 validation
-
-```text
-Gate 10.1
-  PR #135 head: 7742ae003fc8e1ad1d1a6a4f71542875b6d6462c
-  CI:           34135197989 / PASS
-  pytest:       14 passed
-  merge:        665b86f6e527a0096d7c3db522f4bd2c95b177aa
-
-Gate 10.2
-  PR #138 head: 24b2affdf464e2548d94273e41007bb3256b561e
-  CI:           34141496326 / PASS
-  Pyright:      0 errors / 0 warnings / 0 informations
-  pytest:       70 passed
-  merge:        346b223d9566a5d04d84e279f30793ad52a35b67
-
-Gate 10.3
-  PR #141 head: 632e778d36ada833505342708379603a1080d390
-  CI:           34143908297 / run #9 / PASS
-  Pyright:      0 errors / 0 warnings / 0 informations
-  pytest:       26 passed
-  merge:        0c5bf6bab39a3980c063fcb44f657c412111fefa
-```
-
-## Frozen hybrid evaluation
-
-Dataset:
-
-```text
-hybrid-evaluation-golden:v1
-68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1
-```
-
-Gate 8.4 first complete real baseline:
-
-```text
-route_accuracy:               1.0
-structured_fact_correctness:  1.0
-semantic_groundedness:        0.6666666666666666
-citation_correctness:         0.6666666666666666
-abstention:                   1.0
-latency_ms:                   2959.3333333333335
-cost:                         UNMEASURED / null
-```
-
-Gate 8.5 tested one predeclared prompt-only hypothesis exactly once and rejected it because the target quality metrics did not improve.
-
-```text
-admission != semantic support
-retrieval rank != groundedness
-allowlisted citation != correct citation target
+AWS billing reconciliation
 ```
 
 ## AWS baseline
@@ -316,43 +291,12 @@ chunking:                NONE
 canonical chunks:        9
 synthesis API:           bedrock-runtime / Converse
 synthesis profile:       us.anthropic.claude-haiku-4-5-20251001-v1:0
+reasoning profile:       us.anthropic.claude-haiku-4-5-20251001-v1:0
 streaming:               no
-tools:                   none
+tools in reasoning:      none
 ```
 
-Phase 10 adds **zero** public runtime resources and **zero** runtime IAM permissions. In particular, it does not grant `logs:PutLogEvents` or `cloudwatch:PutMetricData`.
-
-## Security and authority invariants
-
-- Raw third-party evidence is preserved before transformation.
-- Exact source versions and hashes participate in evidence identity.
-- Package normalization, version/range matching, vulnerability applicability, KEV/EPSS/CVSS evidence, and Risk Policy remain deterministic.
-- Third-party repository code is never executed.
-- Public request admission never grants arbitrary fetch authority.
-- Public semantic planning does not own product scope or execution authority.
-- Natural-language planning cannot emit unrestricted SQL authority.
-- Retrieval output is evidence, not deterministic truth.
-- Retrieved text remains untrusted instruction content after provenance validation.
-- Hybrid routing and required-evidence completeness are deterministic.
-- Structured and semantic evidence remain separate authority classes.
-- Citation IDs come only from admitted evidence.
-- Unsupported runtime exposure is not inferred from repository risk.
-- Operational telemetry does not become business or route authority.
-- High-cardinality correlation IDs are not metric dimensions.
-- Telemetry delivery accounting cannot invent evidence identities.
-- EMF serialization is not represented as CloudWatch ingestion.
-- First-run and negative evaluation evidence is preserved.
-- IAM least privilege, observability, failure diagnosis, and cost accounting are architecture requirements.
-
-## Cost discipline
-
-OpsLens does not invent costs that runtime evidence cannot support.
-
-```text
-unmeasured cost != zero cost
-```
-
-Phase 10 proves a cardinality-control design but not production CloudWatch cost. Real observability cost requires workload volume, ingestion, retention, time-series count, retries, and runtime evidence.
+Phase 11 added no deployed agent runtime, AgentCore, MCP, A2A, public endpoint, or runtime-exposure authority.
 
 ## Documentation
 
@@ -364,24 +308,26 @@ Phase 10 proves a cardinality-control design but not production CloudWatch cost.
 - [Documentation index](docs/README.md)
 - [Phase 8 closeout](labs/phase-8-gate-8-6-closeout.md)
 - [Phase 9 closeout](labs/phase-9-gate-9-4-closeout.md)
-- [Phase 10 Gate 10.1](labs/phase-10-gate-10-1-operational-telemetry-contract.md)
-- [Phase 10 Gate 10.2](labs/phase-10-gate-10-2-governed-orchestration-instrumentation.md)
-- [Phase 10 Gate 10.3](labs/phase-10-gate-10-3-cloudwatch-emf-adapter.md)
 - [Phase 10 closeout](labs/phase-10-gate-10-4-closeout.md)
+- [Phase 11 Gate 11.4 real baseline](labs/phase-11-gate-11-4-bounded-model-reasoning-baseline.md)
+- [Phase 11 Gate 11.5 optimization decision](labs/phase-11-gate-11-5-measured-optimization-decision.md)
+- [Phase 11 closeout](labs/phase-11-gate-11-6-closeout.md)
 
-## Next — Phase 11: Single-Agent Baseline
+## Next — Phase 12: Multi-Agent Architecture
 
-Phase 11 starts with **one bounded agent** over already-governed OpsLens capabilities before any multi-agent complexity.
+Phase 12 starts only from a concrete specialization hypothesis.
 
 ```text
-agent reasoning may select/use already-authorized capabilities
-agent reasoning does not acquire deterministic truth or execution authority
+multi-agent complexity requires measured value
+specialization does not acquire deterministic authority
+handoffs require explicit identity, bounds, failure, and stopping semantics
+comparative evaluation must use the Phase 11 single-agent baseline
 ```
 
-The first Phase 11 gate must freeze the exact tool/capability surface, execution limits, failure/abstention semantics, evidence handoff, evaluation fixture, and Phase 10 observability mapping before selecting managed agent runtime infrastructure.
+AgentCore, MCP, and A2A remain separate future architecture decisions.
 
-The long-lived Governed LLM Gateway PR #89 remains deferred and must be re-evaluated separately against the then-current OpsLens architecture.
+The long-lived Governed LLM Gateway PR #89 remains deferred cross-project work and must be re-evaluated separately against the current OpsLens architecture before any merge.
 
 ---
 
-OpsLens is intentionally built as an evidence system first and an agentic system later.
+OpsLens is intentionally built as an evidence system first and an agentic system only where measured evidence justifies the added complexity.
