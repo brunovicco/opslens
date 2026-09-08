@@ -99,6 +99,7 @@ class _FakeSpecialistModel:
 
 
 def test_handoff_runs_exactly_two_models_and_stops_before_execution() -> None:
+    """An admitted handoff may invoke one specialist but never execute a capability."""
     task = _source_task()
     triage = _FakeTriageModel(
         '{"decision":"handoff","target_specialization":"evidence_analysis"}'
@@ -129,6 +130,7 @@ def test_handoff_runs_exactly_two_models_and_stops_before_execution() -> None:
 
 
 def test_triage_abstention_never_invokes_specialist() -> None:
+    """Triage abstention must stop after the first model invocation."""
     task = _source_task()
     triage = _FakeTriageModel(
         '{"decision":"abstain","target_specialization":null}'
@@ -151,6 +153,7 @@ def test_triage_abstention_never_invokes_specialist() -> None:
 
 
 def test_disjoint_handoff_fails_closed_before_specialist_call() -> None:
+    """An empty specialization intersection must reject before specialist reasoning."""
     task = _source_task(restricted=True)
     triage = _FakeTriageModel(
         '{"decision":"handoff","target_specialization":"evidence_analysis"}'
