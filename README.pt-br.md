@@ -6,7 +6,7 @@
 
 ### Software Supply Chain e Threat Intelligence Verificáveis na AWS
 
-**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Public Analysis · Operational Evidence · Bounded Agent Reasoning · Autoridade Determinística**
+**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Public Analysis · Operational Evidence · Bounded Agent Reasoning · MCP Interoperability · Autoridade Determinística**
 
 </div>
 
@@ -16,9 +16,11 @@ Ela foi projetada para responder:
 
 > Considerando o software que eu realmente utilizo, quais vulnerabilidades o afetam, qual evidência exata prova isso, quais findings devo priorizar e qual orientação verificável pode me ajudar a agir?
 
-O projeto mantém deliberadamente separados verdade determinística, admissão de evidência, raciocínio de modelos, autorização, admissão de handoff e execução.
+O projeto mantém deliberadamente separados verdade determinística, admissão de evidência, raciocínio de modelos, autorização, admissão de handoff, interoperabilidade e execução.
 
 > **Agents reason. Code verifies evidence.**
+
+> **MCP is an interoperability boundary, not new business authority.**
 
 Boundaries permanentes:
 
@@ -51,9 +53,9 @@ Boundaries permanentes:
 | Phase 10 | Observability & Operational Excellence | ✅ Concluída |
 | Phase 11 | Single-Agent Baseline | ✅ Concluída |
 | Phase 12 | Multi-Agent Architecture | ✅ Concluída |
-| Phase 13 | MCP | ▶️ Próxima |
+| Phase 13 | MCP | 🚧 Em andamento — Gate 13.1 concluída; Gate 13.2 próxima |
 
-Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), o [closeout da Phase 11](labs/phase-11-gate-11-6-closeout.md) e o [closeout completo da Phase 12](labs/phase-12-gate-12-5-multi-agent-closeout.md).
+Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), o [closeout da Phase 12](labs/phase-12-gate-12-5-multi-agent-closeout.md) e o [lab de exposição MCP da Gate 13.1](labs/phase-13-gate-13-1-bounded-mcp-capability-exposure.md).
 
 ## Sistema governado implementado
 
@@ -188,7 +190,7 @@ SingleAgentTask
  -> AuthorizedAgentAction | AgentAbstention | stable rejection
 ```
 
-O baseline real de qualidade do modelo na Gate 11.4 termina intencionalmente antes da execução da capability. A execução tipada das capabilities permanece um boundary determinístico separado.
+O baseline real da Gate 11.4 termina intencionalmente antes da capability execution. A execução tipada permanece um boundary determinístico separado.
 
 ### 8. Autoridade limitada de handoff multi-agent
 
@@ -225,18 +227,7 @@ SingleAgentTask
  -> STOP
 ```
 
-Limites congelados:
-
-```text
-máximo de handoffs por source task:      1
-máximo de capabilities no especialista:  2
-model calls reais na Gate 12.1:           0
-capability executions na Gate 12.1:       0
-```
-
 A redução `4 -> <=2` é narrowing da superfície de raciocínio, não uma alegação de redução de privilégio em runtime. Os modelos continuam sem autoridade de execução.
-
-A proposta de handoff não pode carregar mensagem/contexto arbitrário, seleção de capability, args/kwargs, SQL, URLs, comandos shell, credenciais, seleção de provider/model, política de retry/fallback ou execution result.
 
 ### 9. Autoridade determinística da comparação multi-agent
 
@@ -246,53 +237,20 @@ A Phase 12 Gate 12.2 congela:
 multi-agent-comparison:v1
 ```
 
-O contrato de comparação foi congelado antes de existir uma segunda invocação real de modelo:
+O contrato de comparação foi congelado antes de existir uma segunda invocação real de modelo. O resultado sintético `6/6` é conformidade do evaluator/contrato, não qualidade de modelo.
+
+Identidades exatas:
 
 ```text
-fixture sintético de comparação congelado
- -> SingleAgentTask admitida
- -> MultiAgentHandoffProposal sintética e não confiável
- -> admissão determinística da Gate 12.1
- -> HANDOFF | ABSTAINED | REJECTED
- -> scoring determinístico e decomposto
- -> report content-addressed
- -> medições de runtime permanecem null / não medidas
- -> STOP
+Phase 11 corpus_sha256:   3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
+Phase 11 report_sha256:   724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
+Gate 12.2 dataset_sha256: 1ad7f6274edea7d515f5827859d8a39bdde8edecc9a2ed58dc09df16b09dd491
+Gate 12.2 report_sha256:  0586822800f028d0bb5c7cdb937db4af2f685abde3e09c76afd979d4e1abc222
 ```
-
-Binding exato com a referência da Phase 11:
-
-```text
-corpus_sha256: 3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
-report_sha256: 724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
-```
-
-Evidência congelada da Gate 12.2:
-
-```text
-dataset_sha256: 1ad7f6274edea7d515f5827859d8a39bdde8edecc9a2ed58dc09df16b09dd491
-report_sha256:  0586822800f028d0bb5c7cdb937db4af2f685abde3e09c76afd979d4e1abc222
-total / passed:                        6 / 6
-handoff / abstention cases:             4 / 2
-source capability slots for handoffs: 16
-specialist capability slots:            8
-capability slots removed:               8
-offline capability executions:          0
-```
-
-O resultado `6/6` é conformidade sintética do evaluator/contrato, não qualidade do triage model, qualidade do specialist model ou um baseline multi-agent real.
-
-Como a Gate 12.2 não invoca modelo, model invocation count, tokens, provider/client latency, SDK retries e inference cost permanecem explicitamente `null`, em vez de zeros inventados.
 
 ### 10. Experimento multi-agent medido e decisão de retenção
 
-A Gate 12.3 introduziu o primeiro experimento autenticado e limitado com dois modelos, preservando autoridade determinística de handoff e capability authorization.
-
-Evidência histórica:
-
-```text
-labs/evidence/phase-12-gate-12-3-first-real-two-model-comparison-v1.json
-```
+A Gate 12.3 introduziu o primeiro experimento autenticado e limitado com dois modelos, mantendo handoff e capability authorization determinísticos.
 
 Resultado observado:
 
@@ -316,26 +274,55 @@ total tokens:               3395 -> 5982    +76.20%
 provider latency median:    809.5 -> 1694   +109.26%
 client elapsed median:      977.5 -> 2135   +118.41%
 derived cost:               0.0041921 -> 0.0074338 USD  +77.33%
-SDK retries:                0 -> 0
-capability executions:      0 -> 0
 ```
 
-Decisão de retenção congelada:
+Decisão congelada:
 
 ```text
-referência single-agent da Phase 11:             RETAIN
-specialization/handoff determinístico Gate 12.1: RETAIN
-disciplina de comparação Gate 12.2:              RETAIN
-topologia de dois modelos Gate 12.3 como default: DO NOT RETAIN
-implementação/evidência Gate 12.3:                 PRESERVE HISTORICALLY
-novo experimento de rescue/tuning:                 NOT AUTHORIZED WITHOUT NEW HYPOTHESIS
+Phase 11 single-agent reasoning reference:      RETAIN
+Gate 12.1 deterministic specialization/handoff: RETAIN
+Gate 12.2 deterministic comparison discipline: RETAIN
+Gate 12.3 two-model topology as default:        DO NOT RETAIN
+Gate 12.3 implementation/evidence:              PRESERVE HISTORICALLY
 ```
 
-A Phase 12, portanto, fecha em torno da arquitetura que sobreviveu à medição, não em torno do experimento mais complexo.
+A Phase 12 foi encerrada em torno da arquitetura que sobreviveu à medição, não da topologia mais complexa implementada.
+
+### 11. Exposição limitada de capabilities via MCP
+
+A Phase 13 Gate 13.1 congela:
+
+```text
+mcp-capability-exposure:v1
+```
+
+Superfície MCP fechada e um-para-um:
+
+```text
+opslens.structured_security_query   -> structured_security_query
+opslens.knowledge_guidance          -> knowledge_guidance
+opslens.hybrid_security_answer      -> hybrid_security_answer
+opslens.public_repository_analysis  -> public_repository_analysis
+```
+
+Boundary de autoridade:
+
+```text
+existing AuthorizedAgentAction
+ + existing typed AgentCapabilityInvocation
+ -> closed McpToolName
+ -> deterministic tool/capability match
+ -> content-addressed McpToolCallAdmission
+ -> STOP
+```
+
+A camada MCP não cria autorização, não cria a semântica da typed invocation, não executa capability e não recebe autoridade para `args` / `kwargs` executáveis arbitrários.
+
+A typed invocation existente de `single-agent-execution:v1` continua sendo a autoridade para `SemanticQuery`, synthesis requests, coordenadas de repositório e outras semânticas de entrada executável. MCP não pode criar SQL, URLs arbitrárias, shell commands, credenciais, seleção de provider/model, política de retry/fallback ou execution results.
+
+A Gate 13.1 não adiciona MCP SDK nem runtime de rede/servidor. A escolha de framework foi adiada intencionalmente até o contrato de autoridade estar congelado.
 
 ## Baseline real Bedrock da Phase 11
-
-Provider de raciocínio fixo:
 
 ```text
 Amazon Bedrock Converse
@@ -344,14 +331,6 @@ model/profile:   us.anthropic.claude-haiku-4-5-20251001-v1:0
 temperature:     0.0
 maxTokens:       96
 tools:           disabled
-```
-
-Evidência preservada:
-
-```text
-labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json
-corpus_sha256: 3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
-report_sha256: 724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
 ```
 
 Resultado medido:
@@ -367,52 +346,35 @@ client elapsed median:        977.5 ms
 derived six-case cost:        USD 0.0041921
 ```
 
-A primeira execução autenticada revelou uma restrição real do provider: structured outputs do Bedrock rejeitaram JSON Schema `oneOf`. O adapter foi ajustado para um schema fechado e plano, enquanto a consistência ACT/ABSTAIN entre campos continuou sob autoridade determinística da aplicação.
+Evidência preservada:
+
+```text
+labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json
+```
 
 O resultado 6/6 é resultado de um acceptance corpus congelado, não uma afirmação de correção universal do modelo.
 
-## Decisão medida de otimização
-
-A Gate 11.5 manteve intencionalmente a implementação sem mudanças:
+## Evidência de merge da Gate 13.1
 
 ```text
-optimization decision: NO-CHANGE / NO-EXPERIMENT
-```
-
-Prompt compression, troca de modelo, prompt caching, expansão de retry/fallback e expansão de capabilities não foram justificadas por um target material medido.
-
-O projeto trata **não otimizar** como um resultado de engenharia válido quando a evidência não justifica complexidade ou risco adicionais.
-
-## Evidência de merge da Phase 12
-
-```text
-Gate 12.1  PR #166  merge eceed76a6cfc5d7e28e88dfdc503b4863b526ba0
-Gate 12.2  PR #169  merge 865ba70c813711cb88da9ac7308c8966ff983fd0
-Gate 12.3  PR #172  merge f51cb70ad070716e774419b8d2c62918d3e65210
-Gate 12.4  PR #175  merge fabe8128d1d6077e8de92225991b5e26c1b72ab3
-Gate 12.5  PR #178  merge aca4264e9c98f81c239b44b55c8772ef02debc4c
-```
-
-Validação exata do closeout Gate 12.5:
-
-```text
-PR final head:          3d9ad6a6d302299fb8209b40c7232bc18555c2dd
-PR merge test commit:   f2de18db9a2b23413be4977e3f4b21a5846ed837
-Multi-Agent CI:         34220492021 / run #34 / PASS
-job:                    102042205489
+issue:                  #180
+PR:                     #181
+final head:             340f2d7beee3640bd14455de635fe3ee4b6cc5cc
+PR merge test commit:   166e5626f52bdbabfd306b0e3152b02c1620ee5f
+MCP CI:                 34223369166 / run #3 / PASS
+job:                    102051514632
+uv lock --check:        PASS
+MCP import smoke:       PASS
+Ruff:                   PASS
 Pyright strict:         0 errors / 0 warnings / 0 informations
-pytest:                 33 passed in 0.35s
-new model invocations:  0
-new inference cost:     USD 0.00
+pytest MCP slice:       7 passed in 0.19s
+review threads:         0
+model invocations:      0
+capability executions:  0
+MCP SDK/runtime:        0
+new AWS/IAM:            0
+merge SHA:              322922aed4abec3b2266a18d15d8145df974a7d1
 ```
-
-Evidência de closeout:
-
-```text
-labs/evidence/phase-12-closeout-v1.json
-```
-
-A Phase 12 não adiciona runtime público de agentes, AgentCore runtime, MCP runtime, A2A runtime, autoridade de runtime exposure ou autoridade de autorização controlada por modelos.
 
 ## Invariantes de segurança e autoridade
 
@@ -431,25 +393,29 @@ A Phase 12 não adiciona runtime público de agentes, AgentCore runtime, MCP run
 - Handoff admission não é capability authorization.
 - Authorized action não é capability invocation.
 - Capability invocation não é execution result.
-- Conformidade de fixture sintético não é qualidade de modelo.
-- Raw model output não é evidência canônica.
+- MCP tool name não é capability authorization.
+- MCP exposure não é autoridade para argumentos executáveis.
+- MCP admission não é capability execution.
+- Sucesso de transporte MCP não é verdade de negócio/evidência.
+- Raw output de modelo/provider/downstream não vira autoridade canônica apenas porque foi transportado por um protocolo.
 - Seleção de provider/model e política de retry/fallback permanecem controladas por código.
 - Runtime exposure não é inferido de repository risk.
 - Least privilege, observabilidade, diagnóstico de falhas e cost accounting são requisitos arquiteturais.
 
-## O que a Phase 12 não prova
+## O que a Gate 13.1 não prova
 
 ```text
-capability execution multi-agent em runtime deployed
-runtime público/deployed de agentes
-volume de requests ou SLOs de agentes em produção
-comportamento de runtime do Amazon Bedrock AgentCore
-interoperabilidade MCP
+interoperabilidade real do protocolo MCP
+serialização MCP client/server
+autenticação/autorização de transporte MCP
+session lifecycle ou network reliability
+capability execution através de MCP
+MCP result transport
+runtime MCP público/deployed
+production MCP SLOs
+comportamento do Amazon Bedrock AgentCore
 interoperabilidade A2A
 runtime exposure / evidência Amazon Inspector
-superioridade universal de arquitetura multi-agent
-handoff admission controlada por modelo
-capability authorization controlada por modelo
 ```
 
 ## Baseline AWS
@@ -479,28 +445,33 @@ tools no reasoning:      nenhum
 - [Arquitetura — Português](docs/architecture.pt-br.md)
 - [Índice de ADRs](docs/adr/README.md)
 - [Índice de documentação](docs/README.md)
-- [Closeout da Phase 8](labs/phase-8-gate-8-6-closeout.md)
-- [Closeout da Phase 9](labs/phase-9-gate-9-4-closeout.md)
-- [Closeout da Phase 10](labs/phase-10-gate-10-4-closeout.md)
 - [Closeout da Phase 11](labs/phase-11-gate-11-6-closeout.md)
-- [Handoff limitado da Gate 12.1](labs/phase-12-gate-12-1-bounded-specialization-handoff.md)
-- [Contrato comparativo da Gate 12.2](labs/phase-12-gate-12-2-comparative-multi-agent-evaluation.md)
-- [Experimento real de dois modelos da Gate 12.3](labs/phase-12-gate-12-3-first-bounded-real-two-model-comparison.md)
-- [Decisão de retenção da Gate 12.4](labs/phase-12-gate-12-4-measured-multi-agent-retention-decision.md)
 - [Closeout da Phase 12](labs/phase-12-gate-12-5-multi-agent-closeout.md)
+- [Exposição MCP limitada da Gate 13.1](labs/phase-13-gate-13-1-bounded-mcp-capability-exposure.md)
+- [ADR 0047 — Bounded MCP Capability Exposure](docs/adr/0047-bounded-mcp-capability-exposure.md)
 
-## Próxima — Phase 13: MCP
+## Próxima — Phase 13 Gate 13.2: Bounded MCP Protocol Adapter / Offline Interoperability
 
-A próxima fase pode expor capabilities já limitadas do OpsLens por contratos MCP explícitos.
+A Gate 13.2 pode introduzir um adapter real de protocolo MCP somente contra o contrato de autoridade já congelado pela Gate 13.1.
 
-> **MCP is an interoperability boundary, not new business authority.**
+Antes de adicionar uma dependência de SDK, a API atual do MCP Python SDK oficial deve ser verificada e a dependência escolhida deve ser pinada deliberadamente.
 
-A Phase 13 deve preservar capability authorization determinística, typed invocation/result admission, evidence provenance, tratamento fail-closed de schemas/tools e least privilege. Ela não deve introduzir args/kwargs executáveis arbitrários, SQL, URLs, comandos shell, credenciais, seleção oculta de provider ou alegações de runtime exposure.
+Caminho inicial:
 
-Amazon Bedrock AgentCore e A2A permanecem decisões arquiteturais posteriores e separadas.
+```text
+MCP protocol tool call
+ -> exact closed tool identity
+ -> bounded invocation reference
+ -> deterministic server-side resolution to existing typed AgentCapabilityInvocation
+ -> Gate 13.1 admit_mcp_tool_call(...)
+ -> content-minimized admission response/evidence
+ -> STOP before execute_authorized_capability(...)
+```
+
+A primeira prova de interoperabilidade deve continuar offline/in-process ou via stdio. Nenhum public network deployment, nova autoridade AWS/IAM, capability execution, AgentCore, A2A ou alegação de runtime exposure está autorizado por este boundary.
 
 A PR #89 de Governed LLM Gateway continua como trabalho cross-project deferred e precisa ser reavaliada separadamente contra a arquitetura vigente do OpsLens antes de qualquer merge.
 
 ---
 
-O OpsLens é construído intencionalmente primeiro como sistema de evidência e só adota complexidade agentic quando a evidência medida justifica esse aumento de complexidade.
+OpsLens é construído intencionalmente primeiro como sistema de evidência e só adota complexidade agentic/de interoperabilidade quando a evidência medida justifica esse aumento de complexidade.
