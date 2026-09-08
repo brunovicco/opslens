@@ -36,6 +36,28 @@ _FORBIDDEN_DISTRIBUTIONS = frozenset(
 )
 _NATIVE_SUFFIXES = (".so", ".pyd", ".dylib")
 _FIXED_ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
+_RUNTIME_SOURCE_FILES = (
+    "opslens/__init__.py",
+    "opslens/agent_baseline/__init__.py",
+    "opslens/agent_baseline/adapters/bedrock_reasoning.py",
+    "opslens/agent_baseline/application/authorization.py",
+    "opslens/agent_baseline/application/reasoning.py",
+    "opslens/agent_baseline/domain/errors.py",
+    "opslens/agent_baseline/domain/models.py",
+    "opslens/agent_baseline/domain/reasoning.py",
+    "opslens/agent_baseline/ports/reasoning.py",
+    "opslens/agentcore_runtime/application.py",
+    "opslens/agentcore_runtime/domain.py",
+    "opslens/agentcore_runtime/http_adapter.py",
+    "opslens/agentcore_runtime/server.py",
+)
+_RUNTIME_EMPTY_PACKAGE_DIRS = (
+    "opslens/agent_baseline/adapters",
+    "opslens/agent_baseline/application",
+    "opslens/agent_baseline/domain",
+    "opslens/agent_baseline/ports",
+    "opslens/agentcore_runtime",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,16 +162,22 @@ def _dependency_closure(
 
 
 def _copy_runtime_sources(*, repository_root: Path, stage: Path) -> None:
-    """Copy only the retained reasoning and AgentCore runtime source slices."""
-    package_root = stage / "opslens"
-    package_root.mkdir(parents=True)
-    shutil.copy2(repository_root / "src/opslens/__init__.py", package_root / "__init__.py")
-    for name in ("agent_baseline", "agentcore_runtime"):
-        shutil.copytree(
-            repository_root / "src/opslens" / name,
-            package_root / name,
-            ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"),
+    """Copy only source files reachable by the retained bounded reasoning path."""
+    source_root = repository_root / "src"
+    for relative in _RUNTIME_SOURCE_FILES:
+        source = source_root / relative
+        destination = stage / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+
+    for relative in _RUNTIME_EMPTY_PACKAGE_DIRS:
+        init_path = stage / relative / "__init__.py"
+        init_path.parent.mkdir(parents=True, exist_ok=True)
+        init_path.write_text(
+            '"""Runtime-minimized package boundary."""\n',
+            encoding="utf-8",
         )
+
     shutil.copy2(repository_root / "runtime/agentcore/main.py", stage / "main.py")
 
 
@@ -296,7 +324,7 @@ def main() -> int:
         "python_platform": _PLATFORM,
         "runtime": _RUNTIME,
         "sha256": digest,
-        "source_slices": ["opslens.agent_baseline", "opslens.agentcore_runtime"],
+        "source_files": list(_RUNTIME_SOURCE_FILES),
         "uncompressed_bytes": uncompressed_bytes,
         "zip_file": zip_path.name,
     }
