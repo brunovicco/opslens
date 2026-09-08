@@ -92,7 +92,7 @@ def _load_locked_packages(lock_path: Path) -> dict[str, LockedPackage]:
             raise RuntimeError(f"locked package {name} must declare one source")
         typed_source = cast(Mapping[str, object], source)
         if type(typed_source.get("registry")) is not str:
-            raise RuntimeError(f"locked package {name} is not a registry package")
+            continue
 
         dependency_names: list[str] = []
         raw_dependencies = package.get("dependencies", [])
