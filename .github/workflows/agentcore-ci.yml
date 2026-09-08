@@ -8,6 +8,7 @@ on:
       - "tests/fixtures/agentcore_runtime/**"
       - "scripts/build_agentcore_runtime_package.py"
       - "scripts/publish_agentcore_runtime_artifact.py"
+      - "scripts/run_agentcore_runtime_replay.py"
       - "runtime/agentcore/**"
       - "docs/adr/005*.md"
       - "labs/phase-14-gate-14-*.md"
@@ -140,6 +141,7 @@ jobs:
           tests/unit/agentcore_runtime
           scripts/build_agentcore_runtime_package.py
           scripts/publish_agentcore_runtime_artifact.py
+          scripts/run_agentcore_runtime_replay.py
           runtime/agentcore/main.py
 
       - name: Pyright strict AgentCore slice
@@ -149,6 +151,7 @@ jobs:
           tests/unit/agentcore_runtime
           scripts/build_agentcore_runtime_package.py
           scripts/publish_agentcore_runtime_artifact.py
+          scripts/run_agentcore_runtime_replay.py
           runtime/agentcore/main.py
 
       - name: Pytest AgentCore slice
