@@ -30,6 +30,7 @@ The bounded path is:
 ```text
 MCP Client
  -> exact closed Gate 13.1 tool
+ -> raw tools/call argument-shape refusal
  -> {invocation_id, invocation_sha256}
  -> McpInvocationReference validation
  -> McpInvocationResolver
@@ -68,6 +69,26 @@ capability execution result
 ```
 
 The already-created typed `AgentCapabilityInvocation` remains executable-input authority.
+
+## Raw protocol argument refusal
+
+Real interoperability testing against MCP Python SDK v2.2.0 showed that the high-level generated function argument model does not, by itself, provide the required fail-closed behavior for unknown fields. A `tools/call` request containing the two expected reference fields plus an additional `sql` field was accepted by SDK/Pydantic coercion after the unknown field was ignored.
+
+OpsLens therefore does not equate framework-generated schema validation with executable-input authority.
+
+For the four closed Gate 13.1 tool names, the adapter installs a narrow server middleware that observes raw `tools/call` params before function-model validation and requires the argument key set to be exactly:
+
+```text
+{invocation_id, invocation_sha256}
+```
+
+Extra or missing keys are refused with stable `INVALID_PARAMS` before resolver lookup or Gate 13.1 admission.
+
+The middleware is intentionally not an authorization engine and does not rewrite requests. Its sole responsibility is fail-closed protocol-edge refusal. Existing deterministic OpsLens application/domain code remains authoritative for reference validation, resolver identity checks, tool/capability matching, authorization identity, and admission evidence.
+
+This preserves the invariant:
+
+> Framework coercion may parse protocol values; it does not decide which executable-input surface OpsLens admits.
 
 ## Invocation resolution boundary
 
@@ -112,11 +133,13 @@ admission_sha256
 
 Business request content, SQL, repository content, provider/model responses, credentials, and execution results are not returned by the Gate 13.2 protocol adapter.
 
+The SDK structured-output boundary uses a transport `TypedDict` rather than exposing the internal slots dataclass directly, because v2.2.0 rejected the internal dataclass as a serializable structured-output schema. This conversion changes only transport representation; the internal deterministic `McpAdmissionProjection` remains the admitted evidence contract.
+
 ## Failure behavior
 
-The adapter fails closed for malformed references, unknown invocations, resolver identity substitution, tool/capability mismatch, invalid upstream typed identities, and protocol schema violations.
+The adapter fails closed for malformed references, unknown invocations, resolver identity substitution, tool/capability mismatch, invalid upstream typed identities, and protocol argument-shape violations.
 
-Known deterministic boundary rejections become a stable MCP `ToolError` message. Unexpected resolver exceptions are also translated to a different stable error message. Arbitrary downstream exception text is not copied into canonical admission evidence or protocol-visible structured output.
+Extra or missing raw arguments for one of the four closed tools are refused before SDK function-model coercion with stable `INVALID_PARAMS`. Known deterministic boundary rejections become a stable MCP `ToolError` message. Unexpected resolver exceptions are also translated to a different stable error message. Arbitrary downstream exception text is not copied into canonical admission evidence or protocol-visible structured output.
 
 ## Dependency placement decision
 
@@ -156,7 +179,7 @@ content-minimized structured output
 resolver identity-substitution rejection
 tool/capability mismatch rejection
 unknown-invocation rejection
-extra executable argument rejection
+extra executable argument rejection before tool handling
 zero capability execution
 ```
 
@@ -167,6 +190,10 @@ No public TCP listener, HTTP endpoint, stdio subprocess, or external network ser
 ### Keep MCP as a project runtime dependency
 
 Rejected because CI demonstrated that it changes unrelated Lambda deployment artifacts despite Gate 13.2 having no deployed MCP runtime.
+
+### Trust generated MCP/Pydantic argument validation to reject unknown fields
+
+Rejected because the real v2.2.0 protocol test demonstrated that an unexpected `sql` key was silently ignored. The OpsLens contract requires fail-closed rejection, not permissive coercion.
 
 ### Expose typed business inputs directly as MCP tool arguments
 
@@ -194,6 +221,7 @@ Positive:
 
 - real official MCP interoperability is exercised without moving business authority into MCP;
 - the protocol-visible input remains only a content-addressed reference;
+- unexpected raw argument keys fail closed before permissive framework coercion;
 - Gate 13.1 remains the deterministic admission authority;
 - resolver substitution and mismatched identities fail closed;
 - the SDK cannot silently expand Lambda runtime dependencies;
@@ -203,6 +231,7 @@ Positive:
 Trade-offs:
 
 - clients cannot create arbitrary new OpsLens invocations through MCP;
+- the adapter carries a narrow middleware guard because SDK defaults are more permissive than the OpsLens contract;
 - the in-memory resolver is not a production registry;
 - no capability execution is exposed yet;
 - no deployed/public MCP interoperability is claimed.
@@ -225,4 +254,4 @@ Deferred OpsLens PR #89 remains separate Governed LLM Gateway cross-project work
 
 ## AIP-C01 learning connection
 
-This gate demonstrates two practical production lessons. First, interoperability protocols remain subordinate to deterministic authorization and execution boundaries: protocol shape is not business authority. Second, dependency scope is part of runtime architecture. A development-only SDK experiment should not silently enter unrelated Lambda artifacts; CI package-size evidence is a valid signal that the dependency boundary is wrong, not a reason to weaken deployment limits.
+This gate demonstrates three practical production lessons. Interoperability protocols remain subordinate to deterministic authorization and execution boundaries: protocol shape is not business authority. Framework-generated validation must be adversarially verified rather than assumed to be fail closed. Dependency scope is also runtime architecture: a development-only SDK experiment should not silently enter unrelated Lambda artifacts; CI package-size evidence is a valid signal that the dependency boundary is wrong, not a reason to weaken deployment limits.
