@@ -19,7 +19,6 @@ from opslens.hybrid_retrieval.domain.synthesis import HybridSynthesisResult
 from opslens.knowledge_retrieval.domain.synthesis import SynthesisResult
 from opslens.public_analysis.domain.semantic_planning import PublicAnalysisAdmissionHandoff
 
-
 type AgentCapabilityExecutionResult = (
     StructuredSecurityQueryResultBinding
     | SynthesisResult
