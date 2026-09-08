@@ -80,6 +80,17 @@ def _validate_identifier(
     return value
 
 
+def _validate_content_addressed_pair(
+    *,
+    identifier: str,
+    digest: str,
+    label: str,
+) -> None:
+    """Require an identifier suffix to carry its paired content digest."""
+    if not identifier.endswith(digest):
+        raise McpBoundaryValidationError(f"{label} id and digest must identify the same value")
+
+
 def _bridge_payload(
     *,
     tool_name: McpToolName,
@@ -149,6 +160,11 @@ class McpCapabilityExecutionBridge:
             self.invocation_sha256,
             label="invocation_sha256",
         )
+        _validate_content_addressed_pair(
+            identifier=invocation_id,
+            digest=invocation_sha256,
+            label="invocation",
+        )
         admission_id = _validate_identifier(
             self.admission_id,
             label="admission_id",
@@ -158,6 +174,11 @@ class McpCapabilityExecutionBridge:
             self.admission_sha256,
             label="admission_sha256",
         )
+        _validate_content_addressed_pair(
+            identifier=admission_id,
+            digest=admission_sha256,
+            label="admission",
+        )
         execution_id = _validate_identifier(
             self.execution_id,
             label="execution_id",
@@ -166,6 +187,11 @@ class McpCapabilityExecutionBridge:
         execution_sha256 = _validate_sha256(
             self.execution_sha256,
             label="execution_sha256",
+        )
+        _validate_content_addressed_pair(
+            identifier=execution_id,
+            digest=execution_sha256,
+            label="execution",
         )
         downstream_result_sha256 = _validate_sha256(
             self.downstream_result_sha256,
