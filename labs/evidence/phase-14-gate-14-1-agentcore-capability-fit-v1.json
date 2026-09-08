@@ -1,0 +1,138 @@
+{
+  "artifact_version": "phase-14-gate-14-1-agentcore-capability-fit:v1",
+  "decision_date": "2026-09-08",
+  "source_main_sha": "e6f7862275fc0c1a860e70d04363f640d1f02cc8",
+  "phase": "Phase 14 — Amazon Bedrock AgentCore",
+  "gate": "14.1 — AgentCore Runtime capability-fit and authority boundary",
+  "terraform_aws_provider": {
+    "version": "6.60.0",
+    "constraints": ">= 6.57.1, < 7.0.0",
+    "source": "infra/environments/dev/.terraform.lock.hcl"
+  },
+  "official_sources": [
+    {
+      "id": "agentcore-runtime-service-contract",
+      "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-service-contract.html",
+      "observations": [
+        "AgentCore Runtime supports HTTP, MCP, A2A, and AG-UI protocols.",
+        "HTTP uses /invocations; MCP uses /mcp; A2A and AG-UI are separate service contracts.",
+        "Supported inbound authentication includes SigV4 and OAuth 2.0."
+      ]
+    },
+    {
+      "id": "agentcore-runtime-sessions",
+      "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-sessions.html",
+      "observations": [
+        "Runtime session identifiers provide microVM stickiness and isolation semantics.",
+        "Session identity does not replace application-owned user-to-session ownership."
+      ]
+    },
+    {
+      "id": "agentcore-credentials-management",
+      "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/security-credentials-management.html",
+      "observations": [
+        "Runtime execution-role temporary credentials are exposed inside the microVM through MMDS.",
+        "Least-privilege execution-role design is mandatory because code running inside the VM can attempt to use those credentials."
+      ]
+    },
+    {
+      "id": "agentcore-runtime-direct-code",
+      "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-get-started-code-deploy.html",
+      "observations": [
+        "Direct code deployment is intended for rapid iteration with ZIP artifacts.",
+        "Direct code deployment has a 250 MB compressed and 750 MB uncompressed package limit.",
+        "Container deployment remains available when packaging or native dependency requirements justify it."
+      ]
+    },
+    {
+      "id": "agentcore-runtime-pricing",
+      "url": "https://aws.amazon.com/bedrock/agentcore/pricing/",
+      "observations": [
+        "Runtime CPU and memory are billed from actual consumption rather than a fixed monthly allocation.",
+        "Published runtime list prices observed on the decision date are USD 0.0895 per vCPU-hour and USD 0.00945 per GB-hour.",
+        "OpsLens runtime cost remains unmeasured until an authenticated bounded replay exists."
+      ]
+    },
+    {
+      "id": "terraform-agentcore-runtime-resource",
+      "url": "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/bedrockagentcore_agent_runtime",
+      "observations": [
+        "The AWS provider exposes aws_bedrockagentcore_agent_runtime.",
+        "The resource supports direct-code or container artifacts, PUBLIC or VPC network modes, lifecycle settings, HTTP/MCP/A2A/AGUI protocol selection, and optional custom JWT authorizer configuration."
+      ]
+    }
+  ],
+  "retained_opslens_boundaries": [
+    "Agents reason. Code verifies evidence.",
+    "MCP is an interoperability boundary, not new business authority.",
+    "Repository Risk != Runtime Exposure.",
+    "Phase 11 bounded single-agent reasoning remains the retained measured reasoning reference.",
+    "Phase 12 deterministic specialization/handoff remains retained; the measured two-model topology is not the default.",
+    "Phase 13 bounded offline MCP architecture remains retained and is not automatically promoted into a deployed runtime."
+  ],
+  "decision": {
+    "agentcore_runtime_disposition": "GO_TO_ONE_BOUNDED_EXPERIMENT",
+    "first_hosted_boundary": "retained Phase 11 bounded single-agent reasoning path",
+    "first_experiment_stop_boundary": "deterministic authorization outcome before capability execution",
+    "initial_protocol": "HTTP",
+    "initial_inbound_auth": "IAM_SIGV4",
+    "deployment_artifact_candidate": "DIRECT_CODE_PREFERRED_WITH_CONTAINER_FALLBACK_ONLY_IF_PACKAGING_EVIDENCE_REQUIRES_IT",
+    "network_mode": "DEFER_TO_GATE_14_2_AFTER_EXACT_OUTBOUND_DEPENDENCY_REVIEW",
+    "session_identity_authority": "APPLICATION_OWNED",
+    "execution_role_policy": "LEAST_PRIVILEGE_FOR_ONLY_THE_FIRST_EXPERIMENT",
+    "observability_authority": "OPERATIONAL_EVIDENCE_ONLY_NOT_BUSINESS_TRUTH",
+    "capability_executions_in_first_experiment": 0,
+    "adaptive_application_retries": 0,
+    "adaptive_fallbacks": 0,
+    "mcp_runtime_promotion": "NOT_AUTHORIZED",
+    "a2a": "DEFERRED_TO_PHASE_15",
+    "runtime_exposure_authority": "NOT_CREATED"
+  },
+  "authority_boundaries": [
+    "AgentCore hosting != business authorization",
+    "runtime authentication != capability authorization",
+    "runtime session != user identity authority",
+    "runtime execution role != model/tool authority",
+    "runtime transport success != business/evidence truth",
+    "runtime telemetry != business truth",
+    "runtime deployment != runtime-exposure truth",
+    "MCP result != runtime-exposure truth",
+    "Repository Risk != Runtime Exposure"
+  ],
+  "gate_14_1_runtime_impact": {
+    "new_agentcore_runtimes": 0,
+    "new_model_invocations": 0,
+    "new_capability_executions": 0,
+    "new_aws_resources": 0,
+    "new_iam_roles_or_policies": 0,
+    "github_oidc_trust_changes": 0,
+    "new_public_endpoints": 0,
+    "new_inference_cost_usd": 0.0,
+    "agentcore_runtime_cost_usd": 0.0,
+    "runtime_cost_baseline": null
+  },
+  "explicit_non_claims": [
+    "production AgentCore readiness",
+    "public AgentCore endpoint readiness",
+    "OAuth/JWT end-user authorization",
+    "MCP hosting in AgentCore Runtime",
+    "AgentCore Gateway or Policy adoption",
+    "AgentCore Memory adoption",
+    "Browser or Code Interpreter adoption",
+    "A2A interoperability",
+    "capability execution through AgentCore",
+    "production runtime SLOs",
+    "production monthly AgentCore cost",
+    "runtime exposure or Amazon Inspector evidence"
+  ],
+  "deferred_cross_project_work": {
+    "opslens_pull_request": 89,
+    "head_sha": "3781831795d500b05fa4bc602d50f376b4b1539f",
+    "disposition": "remain open/draft and untouched"
+  },
+  "next_authorized_gate": {
+    "gate": "14.2",
+    "name": "first bounded AgentCore HTTP/SigV4 runtime experiment",
+    "authorization": "only after Gate 14.1 merge and state synchronization"
+  }
+}
