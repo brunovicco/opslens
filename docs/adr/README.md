@@ -54,3 +54,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0044](0044-first-bounded-real-two-model-comparison.md) | Measure the first bounded real two-model topology without moving authority into models | Accepted |
 | [0045](0045-do-not-retain-two-model-topology-without-measured-lift.md) | Retain the simpler single-agent reference and deterministic handoff boundary when the two-model topology adds material overhead without measured lift | Accepted |
 | [0046](0046-phase12-multi-agent-closeout.md) | Close Phase 12 around the measured retained architecture rather than the most complex experiment | Accepted |
+| [0047](0047-bounded-mcp-capability-exposure.md) | Expose only already-bounded typed capability invocations through a closed MCP identity and admission contract | Accepted |
