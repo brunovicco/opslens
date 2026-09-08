@@ -4,7 +4,7 @@ _Date: 2026-09-08_
 
 ## Status
 
-**IMPLEMENTED / FINAL VALIDATION PENDING.**
+**IMPLEMENTED / DRAFT PR — FINAL EXACT-HEAD VALIDATION PENDING.**
 
 Starting checkpoint:
 
@@ -12,6 +12,7 @@ Starting checkpoint:
 main:   e6f7862275fc0c1a860e70d04363f640d1f02cc8
 issue:  #195
 branch: docs/phase14-agentcore-capability-fit
+PR:     #196
 ```
 
 ## Objective
@@ -152,21 +153,13 @@ version:  6.60.0
 range:    >= 6.57.1, < 7.0.0
 ```
 
-Current provider resource:
+The exact locked provider schema was verified in AgentCore CI to expose:
 
 ```text
 aws_bedrockagentcore_agent_runtime
 ```
 
-Relevant supported configuration includes:
-
-```text
-direct code | container
-PUBLIC | VPC
-HTTP | MCP | A2A | AGUI
-lifecycle configuration
-optional JWT authorizer
-```
+The current resource supports the AgentCore Runtime configuration evaluated by this gate, including direct-code/container artifacts and protocol/network/authentication configuration.
 
 Source:
 
@@ -277,7 +270,7 @@ AgentCore Runtime HTTP invocation
 Hard initial bounds:
 
 ```text
-capability executions:       0
+capability executions:        0
 adaptive application retries: 0
 adaptive fallbacks:           0
 A2A handoffs:                 0
@@ -380,6 +373,44 @@ PR #89 deferred state
 next authorized gate
 ```
 
+## CI validation checkpoint
+
+A dedicated AgentCore CI workflow was introduced so Phase 14 has a bounded exact-head quality gate before any runtime exists.
+
+The first run exposed a test-harness issue rather than an AgentCore/provider incompatibility:
+
+```text
+run:                     34253629119 / #1 / FAILED
+job:                     102153832609
+failure:                 terraform providers schema requested from the real
+                         backend-bearing dev working directory after
+                         init -backend=false
+Terraform error:         Backend initialization required
+provider resource check: NOT REACHED
+AWS calls/resources:     0
+```
+
+The remediation intentionally did not initialize the real backend or change provider/state files. The workflow now reads the exact AWS provider version from the committed dev lock, creates an isolated temporary backend-free Terraform configuration pinned to that version, and probes that provider schema.
+
+Corrected checkpoint:
+
+```text
+head:                    50975d2bfb34f5e2693e92477bf1e2005d1d065e
+AgentCore CI:            34253894105 / run #2 / PASS
+job:                     102154709747
+uv lock --check:         PASS
+Phase 14 evidence JSON:  PASS
+locked AWS provider:     6.60.0
+verified resource:       aws_bedrockagentcore_agent_runtime
+AgentCore Python slice:  not introduced; architecture/evidence-only gate
+AWS calls/resources:     0
+IAM/model/capability:    0
+```
+
+The workflow also covers the authoritative/public state documents so the later Gate 14.1 state synchronization is validated by the same Phase 14 CI.
+
+Because this lab update changes the PR head, one final exact-head AgentCore CI pass is required before the PR can leave draft state.
+
 ## Gate 14.1 AWS / IAM / runtime impact
 
 ```text
@@ -436,8 +467,11 @@ The stronger architecture is not the one that uses the most AgentCore components
 [x] authority boundaries frozen
 [x] deterministic evidence artifact added
 [x] ADR 0052 added
-[ ] ADR 0052 indexed
-[ ] draft PR opened
+[x] ADR 0052 indexed
+[x] draft PR #196 opened
+[x] dedicated AgentCore CI added
+[x] exact locked AWS provider schema probe verified
+[ ] final exact-head AgentCore CI PASS after this lab checkpoint
 [ ] PR scope/review threads clean
 [ ] protected squash merge
 [ ] post-merge state synchronization
