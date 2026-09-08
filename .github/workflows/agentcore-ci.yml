@@ -158,9 +158,49 @@ jobs:
           uv run python scripts/build_agentcore_runtime_package.py \
             --output-dir /tmp/opslens-agentcore-package-b \
             > /tmp/opslens-agentcore-package-b.json
-          cmp \
+          if ! cmp -s \
             /tmp/opslens-agentcore-package-a/opslens-agentcore-runtime.zip \
-            /tmp/opslens-agentcore-package-b/opslens-agentcore-runtime.zip
+            /tmp/opslens-agentcore-package-b/opslens-agentcore-runtime.zip; then
+            uv run python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          zip_a = Path("/tmp/opslens-agentcore-package-a/opslens-agentcore-runtime.zip")
+          zip_b = Path("/tmp/opslens-agentcore-package-b/opslens-agentcore-runtime.zip")
+
+          def members(path: Path) -> dict[str, tuple[int, int, str]]:
+              with ZipFile(path) as archive:
+                  return {
+                      info.filename: (
+                          info.file_size,
+                          info.CRC,
+                          hashlib.sha256(archive.read(info.filename)).hexdigest(),
+                      )
+                      for info in archive.infolist()
+                  }
+
+          members_a = members(zip_a)
+          members_b = members(zip_b)
+          only_a = sorted(set(members_a) - set(members_b))
+          only_b = sorted(set(members_b) - set(members_a))
+          changed = sorted(
+              name
+              for name in set(members_a) & set(members_b)
+              if members_a[name] != members_b[name]
+          )
+          print(f"zip_a_sha256={hashlib.sha256(zip_a.read_bytes()).hexdigest()}")
+          print(f"zip_b_sha256={hashlib.sha256(zip_b.read_bytes()).hexdigest()}")
+          print(f"only_in_a={only_a}")
+          print(f"only_in_b={only_b}")
+          for name in changed[:20]:
+              print(
+                  "changed_member="
+                  f"{name} a={members_a[name]} b={members_b[name]}"
+              )
+          raise SystemExit("AgentCore direct-code ZIP is not byte reproducible")
+          PY
+          fi
           cmp \
             /tmp/opslens-agentcore-package-a/opslens-agentcore-runtime-package.json \
             /tmp/opslens-agentcore-package-b/opslens-agentcore-runtime-package.json
