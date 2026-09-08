@@ -1,0 +1,113 @@
+{
+  "artifact_version": "phase-14-gate-14-2-offline-runtime-plan:v1",
+  "decision_date": "2026-09-08",
+  "phase": "Phase 14 — Amazon Bedrock AgentCore",
+  "gate": "14.2 — first bounded AgentCore HTTP/SigV4 runtime experiment",
+  "source_main_sha": "144ae94c9b5b5b6e56188d5c881f2d0235a3af56",
+  "pull_request": 199,
+  "issue": 198,
+  "package_validation": {
+    "head_sha": "d8f971aaab6775949a3db5f252ef49db754e4b78",
+    "workflow_run_id": 34288867537,
+    "workflow_job_id": 102270665266,
+    "terraform_aws_provider": "6.60.0",
+    "unit_tests_passed": 24,
+    "ruff": "PASS",
+    "pyright": "PASS",
+    "reproducible_zip": true,
+    "artifact": {
+      "artifact_version": "agentcore-runtime-package:v1",
+      "runtime": "PYTHON_3_13",
+      "architecture": "arm64",
+      "python_platform": "aarch64-manylinux2014",
+      "entry_point": ["main.py"],
+      "compressed_bytes": 16058438,
+      "uncompressed_bytes": 21207613,
+      "sha256": "a846034ad646c4f6383ac08e47d9ed065b4a9f3349c14104db49a2d510b3ec88",
+      "native_files": [],
+      "forbidden_distributions_present": [],
+      "locked_dependencies": [
+        {"name": "botocore", "version": "1.43.72"},
+        {"name": "jmespath", "version": "1.1.0"},
+        {"name": "python-dateutil", "version": "2.9.0.post0"},
+        {"name": "six", "version": "1.17.0"},
+        {"name": "urllib3", "version": "2.7.0"}
+      ]
+    }
+  },
+  "runtime_contract": {
+    "contract_version": "agentcore-runtime-invocation:v1",
+    "max_request_utf8_bytes": 4096,
+    "max_model_invocations_per_request": 1,
+    "max_capability_executions": 0,
+    "max_adaptive_retries": 0,
+    "max_adaptive_fallbacks": 0,
+    "protocol": "HTTP",
+    "inbound_auth": "IAM_SIGV4",
+    "fixed_reasoning_profile": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "stop_boundary": "deterministic authorization outcome before capability execution"
+  },
+  "outbound_dependency_review": {
+    "runtime_application_egress": [
+      "non-streaming Amazon Bedrock Converse to the fixed US Geographic Claude Haiku 4.5 inference profile"
+    ],
+    "explicitly_absent": [
+      "GitHub acquisition",
+      "Athena",
+      "OpsLens data-lake mutation",
+      "caller-supplied URLs or provider endpoints",
+      "MCP",
+      "A2A",
+      "AgentCore Gateway",
+      "AgentCore Memory",
+      "Browser",
+      "Code Interpreter",
+      "runtime exposure authority"
+    ]
+  },
+  "network_decision": {
+    "mode": "PUBLIC",
+    "disposition": "TIME_BOUNDED_DEV_EXPERIMENT_EXCEPTION",
+    "security_hub_control": "BedrockAgentCore.1",
+    "security_hub_severity": "HIGH",
+    "security_hub_public_mode_result": "FAIL",
+    "production_network_conclusion": "NOT_CLAIMED",
+    "retained_runtime_next_candidate": "VPC",
+    "rationale": "OpsLens has no application VPC foundation and the first zero-capability experiment has only a fixed AWS Bedrock model egress dependency; introducing VPC/NAT/endpoints before Runtime retention is measured would confound the experiment and add persistent cost."
+  },
+  "lifecycle": {
+    "idle_runtime_session_timeout_seconds": 120,
+    "max_lifetime_seconds": 900
+  },
+  "iam_boundary": {
+    "github_oidc_trust_change": false,
+    "github_deployment_branch": "refs/heads/main",
+    "runtime_execution_role": {
+      "trust_service": "bedrock-agentcore.amazonaws.com",
+      "confused_deputy_controls": ["aws:SourceAccount", "aws:SourceArn"],
+      "allowed_business_authority": [],
+      "bedrock_mode": "non-streaming InvokeModel only for the fixed inference profile and exact documented destination foundation-model resources"
+    },
+    "replay_caller": "bedrock-agentcore:InvokeAgentRuntime only for the admitted OpsLens runtime resource"
+  },
+  "offline_checkpoint_aws_impact": {
+    "new_agentcore_runtimes": 0,
+    "new_agentcore_invocations": 0,
+    "new_iam_roles_or_policies": 0,
+    "new_vpc_resources": 0,
+    "new_public_application_endpoints": 0,
+    "agentcore_cost_usd": 0.0
+  },
+  "official_sources_checked": [
+    "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-get-started-code-deploy.html",
+    "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-permissions.html",
+    "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-vpc.html",
+    "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-security-best-practices.html",
+    "https://docs.aws.amazon.com/securityhub/latest/userguide/bedrockagentcore-controls.html",
+    "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-lifecycle-settings.html",
+    "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-invoke-agent.html",
+    "https://docs.aws.amazon.com/service-authorization/latest/reference/list_bedrock-agentcore.html",
+    "https://raw.githubusercontent.com/hashicorp/terraform-provider-aws/v6.60.0/website/docs/r/bedrockagentcore_agent_runtime.html.markdown"
+  ],
+  "next_authorized_slice": "content-addressed artifact publication plus least-privilege Terraform/IAM, offline on PR #199 before protected merge"
+}
