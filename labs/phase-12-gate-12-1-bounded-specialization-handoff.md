@@ -6,22 +6,24 @@ _Date: 2026-09-07_
 
 ```text
 Phase 11 reference:          COMPLETE / FROZEN
-handoff contract:            IMPLEMENTED
-specialization mapping:      IMPLEMENTED
-source allowlist narrowing:  IMPLEMENTED
-loop prevention:             IMPLEMENTED
+handoff contract:            COMPLETE / MERGED
+specialization mapping:      COMPLETE / MERGED
+source allowlist narrowing:  COMPLETE / MERGED
+loop prevention:             COMPLETE / MERGED
 real model calls:            0
 capability executions:       0
-exact-head CI:               PENDING
-Gate 12.1 completion:        PENDING CI / MERGE
+exact-head CI:               PASS
+Gate 12.1 completion:        COMPLETE / MERGED
+state synchronization:       IN PROGRESS
 ```
 
-Starting checkpoint:
+Merged checkpoint:
 
 ```text
-main:   72bee85d06f50b736f0ab6045f7c8a8a135b7a79
 issue:  #165
-branch: feat/phase12-bounded-specialization-handoff
+PR:     #166
+head:   567cdbde81f058d9545328ca78b718c24d79c9fb
+merge:  eceed76a6cfc5d7e28e88dfdc503b4863b526ba0
 ```
 
 ## Objective
@@ -59,15 +61,15 @@ corpus_sha256: 3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
 report_sha256: 724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
 ```
 
-Gate 11.5 also remains `NO-CHANGE / NO-EXPERIMENT`. Gate 12.1 does not reinterpret that result as a hidden quality gap.
+Gate 11.5 remains `NO-CHANGE / NO-EXPERIMENT`. Gate 12.1 does not reinterpret that result as a hidden quality gap.
 
-## New frozen contract
+## Frozen contract
 
 ```text
 multi-agent-handoff:v1
 ```
 
-Bounds:
+Hard bounds:
 
 ```text
 maximum handoffs per task:       1
@@ -91,13 +93,11 @@ GUIDANCE_SYNTHESIS
  -> knowledge_guidance
 ```
 
-A future triage model would propose only one specialization. It would not select a capability or provide executable arguments.
+A future triage model may propose only one specialization. It does not select a capability or provide executable arguments.
 
-Deterministic code then intersects the selected specialization scope with the already-admitted source task allowlist.
+Deterministic code intersects the selected specialization scope with the already-admitted source task allowlist. For a source task containing all four Phase 11 capabilities, the maximum specialist scope is reduced from four to two.
 
-For a source task containing all four Phase 11 capabilities, the maximum future specialist scope is therefore reduced from four to two.
-
-This is recorded as:
+This is frozen as:
 
 ```text
 reasoning-surface narrowing != runtime privilege reduction
@@ -155,7 +155,7 @@ retry/fallback policy
 execution result
 ```
 
-This prevents the handoff channel from becoming a generic inter-agent instruction bus.
+The handoff channel therefore does not become a generic inter-agent instruction bus.
 
 ## One-way role boundary
 
@@ -175,7 +175,7 @@ SpecialistAgentTask
 
 ## Content-addressed evidence
 
-The gate introduces content-addressed identities for:
+The gate freezes content-addressed identities for:
 
 ```text
 MultiAgentHandoffProposal
@@ -183,83 +183,37 @@ AuthorizedMultiAgentHandoff
 MultiAgentHandoffAbstention
 ```
 
-`AuthorizedMultiAgentHandoff` binds:
-
-```text
-source task identity
-proposal identity
-target specialization
-target task identity
-narrowed capability tuple
-```
-
-It does not persist model-authored reasoning text or arbitrary handoff messages.
+`AuthorizedMultiAgentHandoff` binds source task identity, proposal identity, target specialization, target task identity, and the narrowed capability tuple. It does not persist model-authored reasoning text or arbitrary handoff messages.
 
 ## Deterministic scope rules
 
-### Full source scope -> evidence specialist
+Full source scope to evidence specialist:
 
 ```text
-source allowed:
-  hybrid_security_answer
-  knowledge_guidance
-  public_repository_analysis
-  structured_security_query
-
-specialization:
-  EVIDENCE_ANALYSIS
-
+source allowed: 4 capabilities
+specialization: EVIDENCE_ANALYSIS
 target allowed:
   public_repository_analysis
   structured_security_query
 ```
 
-### Full source scope -> guidance specialist
+Full source scope to guidance specialist:
 
 ```text
-specialization:
-  GUIDANCE_SYNTHESIS
-
+source allowed: 4 capabilities
+specialization: GUIDANCE_SYNTHESIS
 target allowed:
   hybrid_security_answer
   knowledge_guidance
 ```
 
-### Restricted source scope
+Restricted source authority is preserved by intersection. If the source allows only `structured_security_query`, the evidence specialist receives only that capability.
 
-If source authority contains only:
-
-```text
-structured_security_query
-```
-
-then `EVIDENCE_ANALYSIS` produces a target containing only:
-
-```text
-structured_security_query
-```
-
-The specialization mapping can narrow source authority but cannot broaden it.
-
-### Empty intersection
-
-If the source task allows only:
-
-```text
-knowledge_guidance
-```
-
-and an untrusted proposal requests:
-
-```text
-EVIDENCE_ANALYSIS
-```
-
-handoff admission raises stable `MultiAgentHandoffAuthorizationError` before a specialist task can exist.
+If the specialization/source intersection is empty, admission fails closed with stable `MultiAgentHandoffAuthorizationError` before a specialist task can exist.
 
 ## Tests
 
-The Gate 12.1 unit slice covers:
+Gate 12.1 covers:
 
 ```text
 contract version and hard bounds
@@ -274,35 +228,56 @@ forged proposal identity rejection
 one-way type boundary / no specialist re-handoff
 ```
 
-No fake model or executor is required because Gate 12.1 is a deterministic handoff authority slice.
+The first CI attempt exposed five unnecessary `cast()` calls under strict Pyright. Those were removed rather than suppressed. No `type: ignore` was introduced.
 
-## Dedicated CI
+## Exact-head validation
 
-```text
-.github/workflows/multi-agent-ci.yml
-```
-
-The workflow validates only the new bounded multi-agent slice:
+Validated PR head:
 
 ```text
-uv lock --check
-uv sync --frozen
-Ruff
-Pyright strict
-pytest tests/unit/multi_agent
+567cdbde81f058d9545328ca78b718c24d79c9fb
 ```
 
-It has no AWS credentials or model invocation step.
-
-## Failure semantics
+PR merge test commit:
 
 ```text
-structural contract failure -> MultiAgentHandoffValidationError
-empty authorized scope      -> MultiAgentHandoffAuthorizationError
-explicit abstention         -> MultiAgentHandoffAbstention
+b1e40ea858726c0672601db8c51c353ffbcc03ae
 ```
 
-Provider exception taxonomy is intentionally absent because no provider exists in this gate.
+Multi-Agent CI:
+
+```text
+run:               34172909750 / run #3 / PASS
+job:               101896544229
+uv lock --check:   PASS
+Ruff:              PASS
+Pyright strict:    0 errors / 0 warnings / 0 informations
+pytest:            10 passed in 0.39s
+```
+
+Phase 11 regression validation on the same exact PR head:
+
+```text
+Single-Agent CI:   34172909748 / run #48 / PASS
+job:               101896544157
+entrypoint smoke:  PASS
+Ruff:              PASS
+Pyright strict:    0 errors / 0 warnings / 0 informations
+pytest:            56 passed in 0.44s
+```
+
+The final workflow-filter correction also prevents Phase 12 ADRs from matching the Phase 11 `docs/adr/004*.md` path filter; Single-Agent CI is now scoped explicitly to ADRs 0036–0041.
+
+## Protected merge
+
+PR #166 was marked ready only after the exact head above had green Multi-Agent and Single-Agent validation and no unresolved inline review threads.
+
+Protected squash merge used the exact expected head SHA:
+
+```text
+expected head: 567cdbde81f058d9545328ca78b718c24d79c9fb
+merge SHA:     eceed76a6cfc5d7e28e88dfdc503b4863b526ba0
+```
 
 ## AWS / IAM / runtime boundary
 
@@ -349,13 +324,11 @@ capability execution through multi-agent flow
 AgentCore/MCP/A2A behavior
 ```
 
-These require later evidence.
-
 ## Gate 12.2 entry boundary
 
-A real two-model experiment is not automatically authorized by Gate 12.1 implementation.
+A real two-model experiment is not automatically authorized by Gate 12.1.
 
-Before a model adapter is added, Gate 12.2 must freeze a comparative evaluation contract against the Phase 11 reference. At minimum it must measure:
+Before a second model adapter/call is allowed, Gate 12.2 must freeze a deterministic comparative evaluation contract against the Phase 11 reference. At minimum it must measure:
 
 ```text
 routing/proposal quality
@@ -373,7 +346,11 @@ The topology must be rejected if the measured specialization benefit does not ju
 
 ## Deferred integration
 
-PR #89 remains deferred cross-project Governed LLM Gateway work and is untouched by Gate 12.1.
+PR #89 remains deferred cross-project Governed LLM Gateway work and remains unchanged at:
+
+```text
+3781831795d500b05fa4bc602d50f376b4b1539f
+```
 
 ## Architecture record
 
