@@ -1,0 +1,27 @@
+name: Temporary Gate 13.4 Ruff Diagnostic
+
+on:
+  pull_request:
+    paths:
+      - "src/opslens/agent_baseline/application/execution.py"
+      - ".github/workflows/tmp-phase13-ruff-diagnostic.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  ruff-import-diff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc
+      - name: Sync locked dependencies
+        run: uv sync --frozen
+      - name: Show Ruff import fix diff
+        run: uv run ruff check src/opslens/agent_baseline/application/execution.py --select I --fix --diff
