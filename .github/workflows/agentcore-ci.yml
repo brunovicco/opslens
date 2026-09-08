@@ -92,7 +92,7 @@ jobs:
               "github.ref == 'refs/heads/main' && inputs.confirm_public_experiment",
               "role/OpsLensGitHubDeployRole",
               "role/OpsLensAgentCoreReplayRole",
-              "bedrock-agentcore:InvokeAgentRuntime",
+              "invoke_agent_runtime(",
               "if: always()",
               "agentcore_runtime_experiment_enabled=false",
           )
