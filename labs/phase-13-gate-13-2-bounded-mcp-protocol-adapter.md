@@ -119,6 +119,7 @@ final one-shot cleanup head: afdebe8232bfbe3235979c5f3fa92d8776f82b47
 ```text
 MCP Client
  -> exact closed Gate 13.1 tool name
+ -> raw argument-shape fail-closed middleware
  -> {invocation_id, invocation_sha256}
  -> McpInvocationReference
  -> McpInvocationResolver
@@ -157,7 +158,15 @@ retry/fallback policy
 capability execution result
 ```
 
-An extra field such as `sql` is rejected by the real SDK tool schema before it can become execution authority.
+The real v2.2.0 interoperability test exposed an important framework-default behavior: the high-level function argument model does not itself fail closed on unknown fields. An extra field such as `sql` was silently ignored by SDK/Pydantic argument coercion and the tool call otherwise succeeded.
+
+OpsLens therefore does **not** treat the generated framework schema as the executable-input authority. A server middleware inspects raw `tools/call` params before SDK function-model validation and requires the exact key set:
+
+```text
+{invocation_id, invocation_sha256}
+```
+
+Extra or missing keys fail with stable `INVALID_PARAMS` before resolver lookup, Gate 13.1 admission, or any capability execution. The security property is owned by OpsLens code rather than inferred from a permissive framework default.
 
 ## Invocation reference contract
 
@@ -217,6 +226,24 @@ server.add_tool(handler, name=closed_tool_name, structured_output=True)
 
 This preserves the protocol semantics while making registration explicit to static analysis. No authority behavior changed.
 
+A later strict-Pyright pass also rejected a `set(raw_arguments)` comparison because the SDK middleware context exposes raw params through partially unknown mapping key types. The remediation retained strict typing without `type: ignore`: exact argument shape is checked through mapping length plus membership of both required code-owned keys.
+
+## SDK argument-validation discovery
+
+A real `Client.call_tool(...)` regression case included:
+
+```text
+invocation_id
+invocation_sha256
+sql = "DROP TABLE findings"
+```
+
+Without the OpsLens pre-validation middleware, MCP v2.2.0/Pydantic ignored the additional `sql` field and returned a successful admission result. This is unacceptable for a boundary whose contract says arbitrary executable arguments are not admitted.
+
+The remediation uses the SDK-supported server middleware hook, which observes raw request params before handler validation. For one of the four closed tool names, the middleware refuses any argument mapping whose keys are not exactly the two reference fields.
+
+This deliberately avoids relying on provisional middleware for business authorization or argument rewriting. The middleware only performs a narrow refusal at the protocol edge; deterministic invocation validation, resolver identity checking, capability mapping, and admission remain in existing OpsLens application/domain code.
+
 ## Content-minimized output
 
 Successful protocol calls expose only:
@@ -244,10 +271,10 @@ unknown invocation
 resolver identity mismatch
 tool/capability mismatch
 invalid upstream typed identity
-extra executable protocol arguments
+extra or missing protocol arguments
 ```
 
-Known boundary rejection is translated to a stable MCP `ToolError`. Unexpected resolver failure uses a separate stable message. Arbitrary downstream exception details are not copied into deterministic admission evidence.
+Unexpected/missing raw arguments for one of the four closed tools are refused before SDK function-model coercion with stable `INVALID_PARAMS`. Known deterministic admission-boundary rejection is translated to a stable MCP `ToolError`. Unexpected resolver failure uses a separate stable message. Arbitrary downstream exception details are not copied into deterministic admission evidence.
 
 ## Test boundary
 
@@ -260,7 +287,7 @@ content-minimized structured output
 resolver substitution rejection
 tool/capability mismatch failure
 unknown invocation failure
-extra SQL argument failure
+extra SQL argument refused before tool handling
 ```
 
 The existing Gate 13.1 tests remain in the same MCP slice.
@@ -310,6 +337,7 @@ OpsLens PR #89 remains separate long-lived cross-project work for **Phase 14 —
 official MCP SDK can expose the four frozen OpsLens tool identities
 real MCP Client/server protocol handling can remain reference-only
 protocol input can resolve an already-created typed invocation without authoring it
+raw protocol argument shape can be refused before permissive SDK coercion
 resolver output can be revalidated before admission
 Gate 13.1 remains the deterministic admission authority
 structured MCP output can be content-minimized to deterministic admission evidence
@@ -335,7 +363,7 @@ runtime exposure evidence
 
 ## AIP-C01 learning checkpoint
 
-Two lessons are intentionally preserved. Protocol interoperability does not imply authorization authority: the SDK handles protocol mechanics while deterministic OpsLens code still validates references and admission. Dependency scope is also architecture: a development-only MCP proof must not silently enlarge unrelated Lambda runtime artifacts. CI package-size failure provided concrete evidence of that boundary mistake and drove the narrower dependency placement.
+Three lessons are intentionally preserved. Protocol interoperability does not imply authorization authority: the SDK handles protocol mechanics while deterministic OpsLens code still validates references and admission. Framework-generated validation is not automatically a fail-closed security boundary; real adversarial protocol tests must verify how unknown fields are treated. Dependency scope is also architecture: a development-only MCP proof must not silently enlarge unrelated Lambda runtime artifacts.
 
 ## Architecture record
 
@@ -361,6 +389,7 @@ docs/adr/0048-bounded-offline-mcp-protocol-adapter.md
 [x] official MCPServer adapter implemented
 [x] exactly four closed tools registered
 [x] protocol input limited to invocation ID + digest
+[x] raw tools/call argument shape fails closed before SDK coercion
 [x] content-minimized admission output implemented
 [x] stable fail-closed protocol errors implemented
 [x] real in-process SDK tests added
