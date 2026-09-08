@@ -1,0 +1,44 @@
+name: Phase 13 MCP Lock Refresh
+
+on:
+  push:
+    branches:
+      - feat/phase13-mcp-protocol-adapter
+    paths:
+      - "pyproject.toml"
+      - ".github/workflows/phase13-mcp-lock-refresh.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: feat/phase13-mcp-protocol-adapter
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+        with:
+          enable-cache: false
+
+      - name: Regenerate lock and remove one-shot workflow
+        run: |
+          uv lock
+          rm .github/workflows/phase13-mcp-lock-refresh.yml
+
+      - name: Commit deterministic lock refresh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add uv.lock .github/workflows/phase13-mcp-lock-refresh.yml
+          git commit -m "build(phase13): lock official MCP SDK"
+          git push origin HEAD:feat/phase13-mcp-protocol-adapter
