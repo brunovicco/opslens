@@ -7,8 +7,10 @@ on:
       - "tests/unit/multi_agent/**/*.py"
       - "tests/fixtures/multi_agent/**"
       - "scripts/run_multi_agent_comparison_fixture.py"
+      - "scripts/run_multi_agent_real_comparison.py"
       - "docs/adr/0042-*.md"
       - "docs/adr/0043-*.md"
+      - "docs/adr/0044-*.md"
       - "labs/phase-12-gate-12-*.md"
       - ".github/workflows/multi-agent-ci.yml"
   workflow_dispatch:
@@ -44,12 +46,16 @@ jobs:
       - name: Run offline comparison fixture
         run: PYTHONPATH=src uv run python scripts/run_multi_agent_comparison_fixture.py > /tmp/multi-agent-comparison.json
 
+      - name: Smoke real comparison entrypoint
+        run: PYTHONPATH=src uv run python scripts/run_multi_agent_real_comparison.py --help
+
       - name: Ruff multi-agent slice
         run: >-
           uv run ruff check
           src/opslens/multi_agent
           tests/unit/multi_agent
           scripts/run_multi_agent_comparison_fixture.py
+          scripts/run_multi_agent_real_comparison.py
 
       - name: Pyright strict multi-agent slice
         run: >-
@@ -57,6 +63,7 @@ jobs:
           src/opslens/multi_agent
           tests/unit/multi_agent
           scripts/run_multi_agent_comparison_fixture.py
+          scripts/run_multi_agent_real_comparison.py
 
       - name: Pytest multi-agent slice
         run: uv run pytest tests/unit/multi_agent

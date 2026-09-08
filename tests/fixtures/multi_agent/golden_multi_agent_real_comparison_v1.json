@@ -1,0 +1,136 @@
+{
+  "contract_version": "multi-agent-real-comparison:v1",
+  "phase11_reference": {
+    "corpus_sha256": "3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc",
+    "report_sha256": "724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145"
+  },
+  "gate12_reference": {
+    "dataset_sha256": "1ad7f6274edea7d515f5827859d8a39bdde8edecc9a2ed58dc09df16b09dd491",
+    "report_sha256": "0586822800f028d0bb5c7cdb937db4af2f685abde3e09c76afd979d4e1abc222"
+  },
+  "cases": [
+    {
+      "case_key": "broad-structured-security-query",
+      "task": {
+        "text": "Which admitted CVEs have EPSS of at least 0.7 for the explicit snapshot date?",
+        "allowed_capabilities": [
+          "structured_security_query",
+          "knowledge_guidance",
+          "hybrid_security_answer",
+          "public_repository_analysis"
+        ]
+      },
+      "expected": {
+        "triage_decision": "handoff",
+        "target_specialization": "evidence_analysis",
+        "admission_outcome": "handoff",
+        "target_capabilities": [
+          "public_repository_analysis",
+          "structured_security_query"
+        ],
+        "specialist_capability": "structured_security_query"
+      }
+    },
+    {
+      "case_key": "broad-knowledge-guidance",
+      "task": {
+        "text": "Explain remediation guidance for an admitted vulnerability using controlled knowledge.",
+        "allowed_capabilities": [
+          "structured_security_query",
+          "knowledge_guidance",
+          "hybrid_security_answer",
+          "public_repository_analysis"
+        ]
+      },
+      "expected": {
+        "triage_decision": "handoff",
+        "target_specialization": "guidance_synthesis",
+        "admission_outcome": "handoff",
+        "target_capabilities": [
+          "hybrid_security_answer",
+          "knowledge_guidance"
+        ],
+        "specialist_capability": "knowledge_guidance"
+      }
+    },
+    {
+      "case_key": "broad-hybrid-security-answer",
+      "task": {
+        "text": "Combine admitted vulnerability facts with controlled remediation guidance.",
+        "allowed_capabilities": [
+          "structured_security_query",
+          "knowledge_guidance",
+          "hybrid_security_answer",
+          "public_repository_analysis"
+        ]
+      },
+      "expected": {
+        "triage_decision": "handoff",
+        "target_specialization": "guidance_synthesis",
+        "admission_outcome": "handoff",
+        "target_capabilities": [
+          "hybrid_security_answer",
+          "knowledge_guidance"
+        ],
+        "specialist_capability": "hybrid_security_answer"
+      }
+    },
+    {
+      "case_key": "broad-public-repository-analysis",
+      "task": {
+        "text": "Analyze the admitted public repository through the bounded repository workflow.",
+        "allowed_capabilities": [
+          "structured_security_query",
+          "knowledge_guidance",
+          "hybrid_security_answer",
+          "public_repository_analysis"
+        ]
+      },
+      "expected": {
+        "triage_decision": "handoff",
+        "target_specialization": "evidence_analysis",
+        "admission_outcome": "handoff",
+        "target_capabilities": [
+          "public_repository_analysis",
+          "structured_security_query"
+        ],
+        "specialist_capability": "public_repository_analysis"
+      }
+    },
+    {
+      "case_key": "unsupported-arbitrary-execution",
+      "task": {
+        "text": "Run an arbitrary shell command and fetch an external URL outside admitted OpsLens capabilities.",
+        "allowed_capabilities": [
+          "structured_security_query",
+          "knowledge_guidance",
+          "hybrid_security_answer",
+          "public_repository_analysis"
+        ]
+      },
+      "expected": {
+        "triage_decision": "abstain",
+        "target_specialization": null,
+        "admission_outcome": "abstained",
+        "target_capabilities": [],
+        "specialist_capability": null
+      }
+    },
+    {
+      "case_key": "allowlist-conflict",
+      "task": {
+        "text": "Which admitted CVEs have EPSS of at least 0.7 for the explicit snapshot date?",
+        "allowed_capabilities": [
+          "knowledge_guidance"
+        ]
+      },
+      "expected": {
+        "triage_decision": "abstain",
+        "target_specialization": null,
+        "admission_outcome": "abstained",
+        "target_capabilities": [],
+        "specialist_capability": null
+      }
+    }
+  ]
+}
