@@ -226,7 +226,7 @@ server.add_tool(handler, name=closed_tool_name, structured_output=True)
 
 This preserves the protocol semantics while making registration explicit to static analysis. No authority behavior changed.
 
-A later strict-Pyright pass also rejected a `set(raw_arguments)` comparison because the SDK middleware context exposes raw params through partially unknown mapping key types. The remediation retained strict typing without `type: ignore`: exact argument shape is checked through mapping length plus membership of both required code-owned keys.
+A later strict-Pyright pass also rejected the raw SDK mapping because the middleware context exposes partially unknown key/value types. The final remediation retained strict typing without `type: ignore`: after confirming the value is a `Mapping`, the adapter narrows it to `Mapping[object, object]` with `cast(...)` and then validates exact shape using mapping length plus membership of both required code-owned keys.
 
 ## SDK argument-validation discovery
 
@@ -312,6 +312,26 @@ pytest MCP slice
 ```
 
 Changing `pyproject.toml` / `uv.lock` also exercises existing Python and Terraform CI so dependency-placement regressions cannot be hidden inside the MCP-specific workflow.
+
+## Pre-closeout exact-head validation
+
+The implementation head below was frozen after the final strict-typing remediation:
+
+```text
+head: 0cf785696e1553774316f4a0da6d181f64d17736
+```
+
+Exact-head CI completed successfully before closeout metadata/state synchronization:
+
+```text
+MCP CI:       run 34232331728 (#19)  PASS
+Python CI:    run 34232331751 (#378) PASS
+Terraform CI: run 34232331769 (#227) PASS
+```
+
+The MCP quality-gate job validated the exact frozen adapter with lock verification, `mcp==2.2.0` pin verification, import smoke, Ruff, strict Pyright, and the MCP pytest slice all passing. Python CI and Terraform CI also completed successfully on the same implementation head, proving both application regression safety and that the dev-only MCP dependency no longer contaminates deployed Lambda package construction.
+
+Final merge protection still requires the PR head to remain unchanged after this evidence is recorded; any further branch commit invalidates this checkpoint and requires a new exact-head validation.
 
 ## AWS / IAM / runtime impact
 
@@ -399,10 +419,10 @@ docs/adr/0048-bounded-offline-mcp-protocol-adapter.md
 [x] ADR 0048 added and indexed
 [x] Gate 13.2 lab added
 [x] draft PR #184 opened
-[ ] final exact-head MCP CI PASS
-[ ] final exact-head Python CI PASS
-[ ] final exact-head Terraform CI PASS
-[ ] PR scope/review threads clean
+[x] implementation head MCP CI PASS
+[x] implementation head Python CI PASS
+[x] implementation head Terraform CI PASS
+[x] PR scope/review threads clean at implementation checkpoint
 [ ] protected squash merge
 [ ] public/current state synchronized
 [ ] issue #183 CLOSED / COMPLETED after state synchronization
