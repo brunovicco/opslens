@@ -1,0 +1,71 @@
+{
+  "artifact_version": "phase-12-gate-12-4-retention-decision:v1",
+  "decision_date": "2026-09-08",
+  "source_main_sha": "490243458f5ceae83ca003f965274edb0d978ed9",
+  "new_model_experiment": false,
+  "new_model_invocations": 0,
+  "new_inference_cost_usd": 0.0,
+  "phase11_reference": {
+    "evidence_path": "labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json",
+    "corpus_sha256": "3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc",
+    "report_sha256": "724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145",
+    "quality": "6/6",
+    "model_invocations": 6,
+    "input_tokens": 3291,
+    "output_tokens": 104,
+    "total_tokens": 3395,
+    "provider_latency_median_ms": 809.5,
+    "client_elapsed_median_ms": 977.5,
+    "sdk_retry_attempts": 0,
+    "capability_executions": 0,
+    "derived_cost_usd": 0.0041921
+  },
+  "gate12_3_reference": {
+    "evidence_path": "labs/evidence/phase-12-gate-12-3-first-real-two-model-comparison-v1.json",
+    "dataset_sha256": "0439ebaa6215b2de7eaa82624188576743b5a50cc847137e04dc97ee7a199be7",
+    "report_sha256": "45edf58ac911ec14e872a00464dad5d5311d82165d6b8ac4321da4a0dc5ad09b",
+    "quality": "6/6",
+    "model_invocations": 10,
+    "input_tokens": 5788,
+    "output_tokens": 194,
+    "total_tokens": 5982,
+    "provider_latency_median_ms": 1694.0,
+    "client_elapsed_median_ms": 2135.0,
+    "sdk_retry_attempts": 0,
+    "capability_executions": 0,
+    "derived_cost_usd": 0.0074338
+  },
+  "measured_deltas": {
+    "quality_lift": false,
+    "model_invocations_increase_pct": 66.666667,
+    "input_tokens_increase_pct": 75.873595,
+    "output_tokens_increase_pct": 86.538462,
+    "total_tokens_increase_pct": 76.200295,
+    "provider_latency_median_increase_pct": 109.264978,
+    "client_elapsed_median_increase_pct": 118.414322,
+    "derived_cost_increase_pct": 77.328785,
+    "sdk_retry_attempts_delta": 0,
+    "capability_executions_delta": 0
+  },
+  "decision": {
+    "single_agent_reference": "retain",
+    "deterministic_specialization_handoff_boundary": "retain",
+    "two_model_triage_specialist_default": "do_not_retain",
+    "gate12_3_implementation_and_evidence": "preserve_historically",
+    "additional_tuning_experiment": "not_authorized_without_new_falsifiable_benefit_hypothesis"
+  },
+  "rationale": [
+    "The frozen six-case quality result remains 6/6 with no measured quality lift.",
+    "The two-model topology materially increases model calls, tokens, latency, inference cost, failure surface, and implementation complexity.",
+    "Deterministic specialization narrowing remains useful independently of a second model invocation.",
+    "Historical Gate 12.3 implementation and evidence remain preserved so the rejected default topology stays auditable and reproducible."
+  ],
+  "authority_impact": {
+    "new_aws_resources": 0,
+    "new_iam_roles_or_policies": 0,
+    "capability_executions": 0,
+    "runtime_exposure_authority_changes": 0,
+    "governed_llm_gateway_changes": 0
+  },
+  "next_reference": "Phase 11 single-agent reasoning remains the retained/default measured reasoning reference until a superior topology is demonstrated with new frozen evidence."
+}
