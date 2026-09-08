@@ -50,9 +50,9 @@ Permanent boundaries:
 | Phase 9 | Public Analyze Your Repository | ✅ Complete |
 | Phase 10 | Observability & Operational Excellence | ✅ Complete |
 | Phase 11 | Single-Agent Baseline | ✅ Complete |
-| Phase 12 | Multi-Agent Architecture | 🚧 In progress — Gate 12.1 complete |
+| Phase 12 | Multi-Agent Architecture | 🚧 In progress — Gates 12.1–12.2 complete |
 
-See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), the [Phase 11 closeout](labs/phase-11-gate-11-6-closeout.md), and the [Gate 12.1 handoff lab](labs/phase-12-gate-12-1-bounded-specialization-handoff.md).
+See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), the [Phase 11 closeout](labs/phase-11-gate-11-6-closeout.md), the [Gate 12.1 handoff lab](labs/phase-12-gate-12-1-bounded-specialization-handoff.md), and the [Gate 12.2 comparison lab](labs/phase-12-gate-12-2-comparative-multi-agent-evaluation.md).
 
 ## Implemented governed system
 
@@ -237,6 +237,52 @@ The `4 -> <=2` specialist capability reduction is a reasoning-surface narrowing 
 
 The handoff proposal cannot carry arbitrary messages/context, capability selection, args/kwargs, SQL, URLs, shell commands, credentials, provider/model selection, retry/fallback policy, or execution results.
 
+### 9. Deterministic multi-agent comparison authority
+
+Phase 12 Gate 12.2 freezes:
+
+```text
+multi-agent-comparison:v1
+```
+
+The comparison contract is intentionally frozen before a second real model invocation exists:
+
+```text
+frozen synthetic comparison fixture
+ -> admitted SingleAgentTask
+ -> synthetic untrusted MultiAgentHandoffProposal
+ -> Gate 12.1 deterministic admission
+ -> HANDOFF | ABSTAINED | REJECTED
+ -> deterministic decomposed scoring
+ -> content-addressed report
+ -> runtime measurements remain null / unmeasured
+ -> STOP
+```
+
+Exact Phase 11 reference binding:
+
+```text
+corpus_sha256: 3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
+report_sha256: 724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
+```
+
+Frozen Gate 12.2 evidence:
+
+```text
+dataset_sha256: 1ad7f6274edea7d515f5827859d8a39bdde8edecc9a2ed58dc09df16b09dd491
+report_sha256:  0586822800f028d0bb5c7cdb937db4af2f685abde3e09c76afd979d4e1abc222
+total / passed:                        6 / 6
+handoff / abstention cases:             4 / 2
+source capability slots for handoffs: 16
+specialist capability slots:            8
+capability slots removed:               8
+offline capability executions:          0
+```
+
+The `6/6` result is synthetic evaluator/contract conformance, not triage-model quality, specialist-model quality, or a real multi-agent baseline.
+
+Because Gate 12.2 invokes no model, model invocation count, tokens, provider/client latency, SDK retries, and inference cost are explicitly `null` rather than manufactured zeros.
+
 ## Phase 11 real Bedrock baseline
 
 Fixed reasoning provider:
@@ -287,7 +333,9 @@ Prompt compression, model switching, prompt caching, retry/fallback expansion, a
 
 This project treats **not optimizing** as a valid engineering result when evidence does not justify additional complexity or risk.
 
-## Gate 12.1 merge evidence
+## Phase 12 merge evidence
+
+Gate 12.1:
 
 ```text
 PR:                     #166
@@ -299,7 +347,18 @@ single-agent pytest:    56 passed in 0.44s
 merge SHA:              eceed76a6cfc5d7e28e88dfdc503b4863b526ba0
 ```
 
-Gate 12.1 adds no AWS resource, IAM permission, model call, capability execution, AgentCore, MCP, A2A, public runtime, or runtime-exposure authority.
+Gate 12.2:
+
+```text
+PR:                     #169
+final head:             953467df99ddeaedd6e19471bd2dce6c5bb8de7c
+PR merge test commit:   bab183ee1dbcca0eb6a0bb76b5130180f9f2f7c2
+Multi-Agent CI:         34174680219 / run #7 / PASS
+multi-agent pytest:     18 passed in 0.27s
+merge SHA:              865ba70c813711cb88da9ac7308c8966ff983fd0
+```
+
+Gates 12.1–12.2 add no AWS resource, IAM permission, capability execution, AgentCore, MCP, A2A, public runtime, or runtime-exposure authority. Gate 12.2 also adds no real model call.
 
 ## Security and authority invariants
 
@@ -318,18 +377,20 @@ Gate 12.1 adds no AWS resource, IAM permission, model call, capability execution
 - Handoff admission is not capability authorization.
 - Authorized action is not capability invocation.
 - Capability invocation is not execution result.
+- Synthetic fixture conformance is not model quality.
 - Raw model output is not canonical evidence.
 - Provider/model selection and retry/fallback policy remain code-owned.
 - Unsupported runtime exposure is not inferred from repository risk.
 - IAM least privilege, observability, failure diagnosis, and cost accounting are architecture requirements.
 
-## What Phase 12 Gate 12.1 does not prove
+## What Phase 12 Gate 12.2 does not prove
 
 ```text
-multi-agent quality improvement
-triage-model routing accuracy
+triage-model routing quality
 specialist-model reasoning quality
-multi-agent token / latency / inference cost
+multi-agent quality improvement
+real multi-agent model invocation count
+real multi-agent token / latency / retry / inference cost
 multi-agent runtime reliability
 runtime privilege reduction
 capability execution through multi-agent flow
@@ -374,24 +435,25 @@ tools in reasoning:      none
 - [Phase 11 Gate 11.5 optimization decision](labs/phase-11-gate-11-5-measured-optimization-decision.md)
 - [Phase 11 closeout](labs/phase-11-gate-11-6-closeout.md)
 - [Phase 12 Gate 12.1 bounded handoff](labs/phase-12-gate-12-1-bounded-specialization-handoff.md)
+- [Phase 12 Gate 12.2 comparison contract](labs/phase-12-gate-12-2-comparative-multi-agent-evaluation.md)
 
-## Next — Phase 12 Gate 12.2: Comparative Multi-Agent Evaluation Contract
+## Next — Phase 12 Gate 12.3: First Bounded Real Two-Model Comparison
 
-Before a second model call is introduced, OpsLens must freeze the comparison protocol against the Phase 11 reference.
+The comparison contract is now frozen. The next authorized experiment may introduce at most two bounded reasoning calls per task:
 
 ```text
-routing/proposal quality
-bounds compliance
-specialist capability-surface width
-model invocation count
-tokens
-provider/client latency
-SDK retries
-inference cost
-capability executions
+SingleAgentTask
+ -> bounded triage model proposes one closed specialization
+ -> deterministic parser + handoff admission
+ -> narrowed SpecialistAgentTask
+ -> bounded specialist reasoning proposes one already-permitted capability
+ -> deterministic capability authorization
+ -> STOP before capability execution
 ```
 
-The metric authority remains deterministic; no LLM judge owns acceptance. A two-model topology is retained only if measured specialization value justifies its additional latency, token usage, cost, failure surface, and architectural complexity.
+Initial bounds are two model invocations, one handoff, zero adaptive application retries, zero fallbacks, and zero capability executions.
+
+Real model behavior, tokens, provider/client latency, SDK retries, and inference cost must come only from observed provider evidence. The first real observations must be preserved before any prompt/model/topology tuning. The two-model topology is retained only if its measured specialization value justifies the additional call, latency, token usage, cost, failure surface, and architectural complexity relative to the frozen Phase 11 reference.
 
 AgentCore, MCP, and A2A remain separate future architecture decisions.
 
