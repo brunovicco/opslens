@@ -72,7 +72,9 @@ async def _reject_unexpected_tool_arguments(
     raw_arguments = params.get("arguments")
     if not isinstance(raw_arguments, Mapping):
         raise MCPError(code=INVALID_PARAMS, message=_REJECTED_ARGUMENTS_MESSAGE)
-    if set(raw_arguments) != _ALLOWED_REFERENCE_ARGUMENTS:
+    if len(raw_arguments) != len(_ALLOWED_REFERENCE_ARGUMENTS) or any(
+        argument_name not in raw_arguments for argument_name in _ALLOWED_REFERENCE_ARGUMENTS
+    ):
         raise MCPError(code=INVALID_PARAMS, message=_REJECTED_ARGUMENTS_MESSAGE)
 
     return await call_next(ctx)
