@@ -20,13 +20,13 @@ Phase 9    Public Analyze Your Repository                      COMPLETE
 Phase 10   Observability & Operational Excellence              COMPLETE
 Phase 11   Single-Agent Baseline                               COMPLETE
 Phase 12   Multi-Agent Architecture                            COMPLETE
-Phase 13   MCP                                                 IN PROGRESS
+Phase 13   MCP                                                 COMPLETE
   Gate 13.1 Bounded MCP capability exposure contract           COMPLETE / MERGED
   Gate 13.2 Bounded MCP protocol adapter / offline interop      COMPLETE / MERGED
   Gate 13.3 Bounded MCP capability execution bridge            COMPLETE / MERGED
   Gate 13.4 Bounded MCP business result projection             COMPLETE / MERGED
-  Phase 13 closeout decision                                   NEXT
-Phase 14   Amazon Bedrock AgentCore                            PLANNED
+  Gate 13.5 MCP phase closeout                                 COMPLETE / MERGED
+Phase 14   Amazon Bedrock AgentCore                            NEXT
 Phase 15   A2A                                                 PLANNED
 Phase 16   Runtime Exposure with Amazon Inspector              PLANNED
 Phase 17   Security Hardening                                  PLANNED
@@ -36,32 +36,34 @@ Phase 18   Evaluation, Cost & Portfolio Readiness              PLANNED
 Latest merged checkpoint:
 
 ```text
-Phase 13 Gate 13.4 / PR #190
-87772b1604d4ede0f88f72d4d338ddf553953304
+Phase 13 Gate 13.5 / PR #193
+c449cfc8e18dfd240ceedbe6e8e4d143601f0254
 ```
 
-Gate 13.4 exact validation and merge:
+Gate 13.5 exact validation and merge:
 
 ```text
-issue #189:                reopened intentionally; closure follows this synchronization
-PR #190 final head:        a7d9f0b734ed668f3b287d893d4476a14dda974f
-MCP CI:                     34247560534 / run #49 / PASS
-Single-Agent CI:            34247560327 / run #67 / PASS
-pre-index MCP pytest:       29 passed in 1.19s
-pre-index Single-Agent pytest: 57 passed in 0.44s
-Ruff:                       PASS in both affected slices
-Pyright strict:             0 errors / 0 warnings / 0 informations in both slices
-review threads:             0
-PR conversation comments:  0 before final metadata checkpoint
-PR mergeable at checkpoint: true
-new model invocations:      0
-new AWS/IAM resources:      0
-public MCP endpoint:        0
-MCP deployed runtime:       0
-PR #190 merge SHA:          87772b1604d4ede0f88f72d4d338ddf553953304
+issue #192:               state-sync tracker; closure follows this synchronization
+PR #193 final head:       99dd3d979a5205e38f2c1a4dfc84dc9f82d0e0c7
+PR merge test commit:     7ec68aa12bc0a08b698ed0ddf76434e7bd97fe85
+MCP CI:                    34250265151 / run #52 / PASS
+job:                       102142600531
+uv lock --check:           PASS
+MCP SDK pin:               PASS
+MCP import smoke:          PASS
+Ruff:                      PASS
+Pyright strict:            0 errors / 0 warnings / 0 informations
+pytest MCP slice:          29 passed in 0.90s
+review threads:            0
+PR conversation comments: 0
+new model invocations:     0
+new AWS/IAM resources:     0
+public MCP endpoint:       0
+MCP deployed runtime:      0
+PR #193 merge SHA:         c449cfc8e18dfd240ceedbe6e8e4d143601f0254
 ```
 
-The merge commit text accidentally contained `Closes #189`, so GitHub auto-closed the tracker immediately after the squash merge. The issue was intentionally reopened because OpsLens closes gate trackers only after this separate authoritative state synchronization. No implementation rollback or gate regression occurred.
+Phase 13 closes at the bounded offline MCP boundary. The closeout intentionally does not add public/network MCP hosting, transport authentication, broader result-family serialization, AgentCore, A2A, runtime-exposure authority, or AWS/IAM expansion without a concrete separately justified runtime need.
 
 ## Permanent architecture boundaries
 
@@ -396,9 +398,45 @@ labs/phase-13-gate-13-4-bounded-mcp-structured-result-projection.md
 PR #190 merge: 87772b1604d4ede0f88f72d4d338ddf553953304
 ```
 
-## Phase 13 proof boundary so far
+## Phase 13 Gate 13.5 — MCP phase closeout
 
-Gates 13.1–13.4 now prove:
+Closeout decision:
+
+```text
+retain the bounded offline MCP architecture
+close Phase 13 without inventing a public/deployed MCP runtime
+```
+
+Retained path:
+
+```text
+Phase 11 typed capability authority
+ -> mcp-capability-exposure:v1
+ -> official MCP SDK reference-only adapter
+ -> raw exact-key-set argument refusal
+ -> deterministic invocation resolution + admission
+ -> mcp-capability-execution:v1
+ -> exactly one existing typed executor attempt
+ -> existing typed result admission
+ -> mcp-result-projection:v1 for structured_security_query only
+ -> bounded CVE + EPSS rows
+ -> STOP before public/network runtime
+```
+
+The MCP SDK remains development-only because Phase 13 deploys no MCP runtime and a prior runtime-dependency placement experiment measurably harmed unrelated Lambda packaging. Public/network transport, transport authentication, persistent registries, broader result-family disclosure, AgentCore, A2A, and runtime-exposure behavior remain explicit non-claims rather than being inferred from offline interoperability.
+
+Architecture/evidence references:
+
+```text
+docs/adr/0051-phase13-mcp-closeout.md
+labs/phase-13-gate-13-5-mcp-closeout.md
+labs/evidence/phase-13-closeout-v1.json
+PR #193 merge: c449cfc8e18dfd240ceedbe6e8e4d143601f0254
+```
+
+## Phase 13 retained proof boundary
+
+Phase 13 now proves:
 
 ```text
 MCP-visible tool identity can remain a closed code-owned surface
@@ -419,7 +457,7 @@ prior admission-only and identity-only server semantics can remain stable while 
 MCP SDK experimentation can remain outside unrelated deployed Lambda runtimes
 ```
 
-They still do **not** prove:
+Phase 13 explicitly does **not** prove:
 
 ```text
 generic business-result serialization
@@ -427,10 +465,10 @@ knowledge-guidance result transport
 hybrid-security-answer result transport
 public-repository-analysis result transport
 persistent invocation/result registry
-stdio subprocess interoperability
-Streamable HTTP interoperability
+stdio subprocess deployment interoperability
+Streamable HTTP production interoperability
 public MCP endpoint
-MCP authentication/authorization transport
+MCP transport authentication/authorization
 network reliability or production SLOs
 Amazon Bedrock AgentCore runtime behavior
 A2A interoperability
@@ -439,7 +477,7 @@ runtime exposure / Amazon Inspector evidence
 
 ## AWS / IAM / runtime checkpoint
 
-Gate 13.4 introduced no deployed runtime expansion:
+Gate 13.5 introduced no deployed runtime expansion:
 
 ```text
 new model invocations:       0
@@ -448,7 +486,6 @@ new AWS resources:            0
 new IAM roles/policies:       0
 GitHub OIDC trust changes:    0
 live capability executions:   0
-offline executor calls:       deterministic test fixtures only
 MCP SDK dependency:           dev-only mcp==2.2.0
 MCP network runtime:          0
 AgentCore runtime:            0
@@ -468,23 +505,24 @@ Preserved historical head:
 3781831795d500b05fa4bc602d50f376b4b1539f
 ```
 
-## Next authorized decision
-
-All MCP gates currently defined in the roadmap are now implemented and merged. The next authorized work is a **Phase 13 closeout decision**, not automatic expansion into a public/network MCP runtime.
-
-The closeout decision must determine whether the proven offline boundary is sufficient to close Phase 13 or whether a separate additional gate is justified by concrete interoperability/runtime evidence. No new gate number, transport, authentication layer, AWS/IAM expansion, AgentCore integration, A2A integration, runtime-exposure claim, or deferred PR #89 merge is authorized by this synchronization alone.
-
-Closeout constraints:
+## Next authorized phase
 
 ```text
-1. preserve mcp-capability-exposure:v1, mcp-capability-execution:v1, and mcp-result-projection:v1
-2. retain typed Phase 11 invocation/result authority; MCP remains subordinate to it
-3. preserve explicit result-disclosure policy; no generic serializer
-4. treat knowledge, hybrid, and public-analysis result transport as unsupported unless separately justified
-5. do not infer that offline SDK interoperability proves public/network runtime readiness
-6. do not add public/HTTP transport, authentication, session lifecycle, or IAM merely to make Phase 13 look more complete
+Phase 14 — Amazon Bedrock AgentCore
+```
+
+Phase 14 must begin with a concrete OpsLens runtime requirement and an evidence-backed evaluation of AgentCore. It does not inherit authorization to deploy the Phase 13 offline MCP proof unchanged as a public runtime.
+
+Initial constraints:
+
+```text
+1. preserve the retained Phase 11 reasoning reference and Phase 12 retention decision
+2. preserve Phase 13 MCP admission/execution/result-projection authority boundaries
+3. do not equate managed runtime adoption with business authorization or evidence truth
+4. define workload, runtime, identity, observability, failure, and cost needs before provisioning resources
+5. no AWS/IAM expansion without a concrete AgentCore capability requirement
+6. no public MCP/A2A/runtime-exposure claim merely because AgentCore can host agent workloads
 7. preserve Repository Risk != Runtime Exposure
-8. preserve the measured Phase 11 reasoning reference and Phase 12 retention decision
-9. keep AgentCore, A2A, runtime exposure, and the Governed LLM Gateway integration as separate decisions
-10. keep PR #89 untouched until its separately governed re-evaluation
+8. keep the separate Governed LLM Gateway Phase 14 / Case 3 integration independently governed
+9. keep PR #89 untouched until its separately governed re-evaluation
 ```
