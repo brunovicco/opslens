@@ -16,7 +16,7 @@ It is designed to answer:
 
 > Given the software I actually use, which vulnerabilities affect it, what exact evidence proves that, which findings should I prioritize, and what verified guidance can help me act on them?
 
-The project deliberately separates deterministic truth, evidence admission, model reasoning, authorization, and execution.
+The project deliberately separates deterministic truth, evidence admission, model reasoning, authorization, handoff admission, and execution.
 
 > **Agents reason. Code verifies evidence.**
 
@@ -50,9 +50,9 @@ Permanent boundaries:
 | Phase 9 | Public Analyze Your Repository | ✅ Complete |
 | Phase 10 | Observability & Operational Excellence | ✅ Complete |
 | Phase 11 | Single-Agent Baseline | ✅ Complete |
-| Phase 12 | Multi-Agent Architecture | ▶️ Next |
+| Phase 12 | Multi-Agent Architecture | 🚧 In progress — Gate 12.1 complete |
 
-See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), and the [Phase 11 closeout](labs/phase-11-gate-11-6-closeout.md).
+See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), the [Phase 11 closeout](labs/phase-11-gate-11-6-closeout.md), and the [Gate 12.1 handoff lab](labs/phase-12-gate-12-1-bounded-specialization-handoff.md).
 
 ## Implemented governed system
 
@@ -189,7 +189,53 @@ SingleAgentTask
 
 The real Gate 11.4 model-quality baseline intentionally stops before capability execution. Typed capability execution remains a separate deterministic boundary.
 
-The model cannot author arbitrary args/kwargs, SQL, URLs, shell commands, credentials, provider/model selection, retry/fallback policy, or runtime-exposure truth.
+### 8. Bounded multi-agent handoff authority
+
+Phase 12 Gate 12.1 freezes:
+
+```text
+multi-agent-handoff:v1
+```
+
+Code-owned specialization partition:
+
+```text
+EVIDENCE_ANALYSIS
+ -> public_repository_analysis
+ -> structured_security_query
+
+GUIDANCE_SYNTHESIS
+ -> hybrid_security_answer
+ -> knowledge_guidance
+```
+
+Handoff boundary:
+
+```text
+SingleAgentTask
+ -> TriageAgentTask
+ -> untrusted MultiAgentHandoffProposal
+ -> deterministic source-task binding
+ -> code-owned specialization scope
+ -> deterministic intersection with source allowed_capabilities
+ -> empty intersection? FAIL CLOSED
+ -> AuthorizedMultiAgentHandoff | MultiAgentHandoffAbstention
+ -> narrowed SpecialistAgentTask
+ -> STOP
+```
+
+Hard bounds:
+
+```text
+maximum handoffs per source task:       1
+maximum specialist capability surface:  2
+real model calls in Gate 12.1:           0
+capability executions in Gate 12.1:      0
+```
+
+The `4 -> <=2` specialist capability reduction is a reasoning-surface narrowing property, not a runtime privilege-reduction claim. Models still have no execution authority.
+
+The handoff proposal cannot carry arbitrary messages/context, capability selection, args/kwargs, SQL, URLs, shell commands, credentials, provider/model selection, retry/fallback policy, or execution results.
 
 ## Phase 11 real Bedrock baseline
 
@@ -225,13 +271,13 @@ client elapsed median:        977.5 ms
 derived six-case cost:        USD 0.0041921
 ```
 
-The first authenticated runtime attempt also exposed a real provider constraint: Bedrock structured outputs rejected JSON Schema `oneOf`. The adapter was corrected to a flat closed schema while cross-field ACT/ABSTAIN consistency remained deterministic application authority.
+The first authenticated runtime attempt exposed a provider constraint: Bedrock structured outputs rejected JSON Schema `oneOf`. The adapter was corrected to a flat closed schema while ACT/ABSTAIN cross-field consistency remained deterministic application authority.
 
 The six-case result is an acceptance-corpus result, not a universal model-correctness claim.
 
 ## Measured optimization decision
 
-Gate 11.5 reviewed the real baseline and intentionally retained the implementation unchanged:
+Gate 11.5 intentionally retained the implementation unchanged:
 
 ```text
 optimization decision: NO-CHANGE / NO-EXPERIMENT
@@ -240,6 +286,20 @@ optimization decision: NO-CHANGE / NO-EXPERIMENT
 Prompt compression, model switching, prompt caching, retry/fallback expansion, and capability expansion were not justified by a material measured target.
 
 This project treats **not optimizing** as a valid engineering result when evidence does not justify additional complexity or risk.
+
+## Gate 12.1 merge evidence
+
+```text
+PR:                     #166
+final head:             567cdbde81f058d9545328ca78b718c24d79c9fb
+Multi-Agent CI:         34172909750 / run #3 / PASS
+multi-agent pytest:     10 passed in 0.39s
+Single-Agent CI:        34172909748 / run #48 / PASS
+single-agent pytest:    56 passed in 0.44s
+merge SHA:              eceed76a6cfc5d7e28e88dfdc503b4863b526ba0
+```
+
+Gate 12.1 adds no AWS resource, IAM permission, model call, capability execution, AgentCore, MCP, A2A, public runtime, or runtime-exposure authority.
 
 ## Security and authority invariants
 
@@ -254,6 +314,8 @@ This project treats **not optimizing** as a valid engineering result when eviden
 - Hybrid routing and required-evidence completeness are deterministic.
 - Citation IDs come only from admitted evidence.
 - Agent action proposal is not capability authorization.
+- Handoff proposal is not handoff admission.
+- Handoff admission is not capability authorization.
 - Authorized action is not capability invocation.
 - Capability invocation is not execution result.
 - Raw model output is not canonical evidence.
@@ -261,20 +323,21 @@ This project treats **not optimizing** as a valid engineering result when eviden
 - Unsupported runtime exposure is not inferred from repository risk.
 - IAM least privilege, observability, failure diagnosis, and cost accounting are architecture requirements.
 
-## What Phase 11 does not prove
+## What Phase 12 Gate 12.1 does not prove
 
 ```text
-multi-agent quality or coordination
+multi-agent quality improvement
+triage-model routing accuracy
+specialist-model reasoning quality
+multi-agent token / latency / inference cost
+multi-agent runtime reliability
+runtime privilege reduction
+capability execution through multi-agent flow
 public/deployed agent runtime
-production request volume
-production p95/p99 or SLO compliance
 AgentCore runtime behavior
 MCP interoperability
 A2A interoperability
 runtime exposure / Amazon Inspector evidence
-universal model correctness
-production cost/request
-AWS billing reconciliation
 ```
 
 ## AWS baseline
@@ -296,8 +359,6 @@ streaming:               no
 tools in reasoning:      none
 ```
 
-Phase 11 added no deployed agent runtime, AgentCore, MCP, A2A, public endpoint, or runtime-exposure authority.
-
 ## Documentation
 
 - [Current State](docs/current-state.md)
@@ -312,17 +373,25 @@ Phase 11 added no deployed agent runtime, AgentCore, MCP, A2A, public endpoint, 
 - [Phase 11 Gate 11.4 real baseline](labs/phase-11-gate-11-4-bounded-model-reasoning-baseline.md)
 - [Phase 11 Gate 11.5 optimization decision](labs/phase-11-gate-11-5-measured-optimization-decision.md)
 - [Phase 11 closeout](labs/phase-11-gate-11-6-closeout.md)
+- [Phase 12 Gate 12.1 bounded handoff](labs/phase-12-gate-12-1-bounded-specialization-handoff.md)
 
-## Next — Phase 12: Multi-Agent Architecture
+## Next — Phase 12 Gate 12.2: Comparative Multi-Agent Evaluation Contract
 
-Phase 12 starts only from a concrete specialization hypothesis.
+Before a second model call is introduced, OpsLens must freeze the comparison protocol against the Phase 11 reference.
 
 ```text
-multi-agent complexity requires measured value
-specialization does not acquire deterministic authority
-handoffs require explicit identity, bounds, failure, and stopping semantics
-comparative evaluation must use the Phase 11 single-agent baseline
+routing/proposal quality
+bounds compliance
+specialist capability-surface width
+model invocation count
+tokens
+provider/client latency
+SDK retries
+inference cost
+capability executions
 ```
+
+The metric authority remains deterministic; no LLM judge owns acceptance. A two-model topology is retained only if measured specialization value justifies its additional latency, token usage, cost, failure surface, and architectural complexity.
 
 AgentCore, MCP, and A2A remain separate future architecture decisions.
 
