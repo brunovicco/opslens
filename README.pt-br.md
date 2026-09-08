@@ -16,7 +16,7 @@ Ela foi projetada para responder:
 
 > Considerando o software que eu realmente utilizo, quais vulnerabilidades o afetam, qual evidência exata prova isso, quais findings devo priorizar e qual orientação verificável pode me ajudar a agir?
 
-O projeto mantém deliberadamente separados verdade determinística, admissão de evidência, raciocínio de modelos, autorização e execução.
+O projeto mantém deliberadamente separados verdade determinística, admissão de evidência, raciocínio de modelos, autorização, admissão de handoff e execução.
 
 > **Agents reason. Code verifies evidence.**
 
@@ -50,9 +50,9 @@ Boundaries permanentes:
 | Phase 9 | Public Analyze Your Repository | ✅ Concluída |
 | Phase 10 | Observability & Operational Excellence | ✅ Concluída |
 | Phase 11 | Single-Agent Baseline | ✅ Concluída |
-| Phase 12 | Multi-Agent Architecture | ▶️ Próxima |
+| Phase 12 | Multi-Agent Architecture | 🚧 Em andamento — Gate 12.1 concluída |
 
-Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md) e o [closeout da Phase 11](labs/phase-11-gate-11-6-closeout.md).
+Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), o [closeout da Phase 11](labs/phase-11-gate-11-6-closeout.md) e o [lab da Gate 12.1](labs/phase-12-gate-12-1-bounded-specialization-handoff.md).
 
 ## Sistema governado implementado
 
@@ -189,7 +189,53 @@ SingleAgentTask
 
 O baseline real de qualidade do modelo na Gate 11.4 termina intencionalmente antes da execução da capability. A execução tipada das capabilities permanece um boundary determinístico separado.
 
-O modelo não pode produzir args/kwargs arbitrários, SQL, URLs, comandos shell, credenciais, seleção de provider/model, política de retry/fallback ou verdade de runtime exposure.
+### 8. Autoridade limitada de handoff multi-agent
+
+A Phase 12 Gate 12.1 congela:
+
+```text
+multi-agent-handoff:v1
+```
+
+Partição de especializações controlada por código:
+
+```text
+EVIDENCE_ANALYSIS
+ -> public_repository_analysis
+ -> structured_security_query
+
+GUIDANCE_SYNTHESIS
+ -> hybrid_security_answer
+ -> knowledge_guidance
+```
+
+Boundary de handoff:
+
+```text
+SingleAgentTask
+ -> TriageAgentTask
+ -> MultiAgentHandoffProposal não confiável
+ -> binding determinístico com a source task
+ -> scope de especialização controlado por código
+ -> interseção determinística com source allowed_capabilities
+ -> interseção vazia? FAIL CLOSED
+ -> AuthorizedMultiAgentHandoff | MultiAgentHandoffAbstention
+ -> SpecialistAgentTask com scope reduzido
+ -> STOP
+```
+
+Limites congelados:
+
+```text
+máximo de handoffs por source task:      1
+máximo de capabilities no especialista:  2
+model calls reais na Gate 12.1:           0
+capability executions na Gate 12.1:       0
+```
+
+A redução `4 -> <=2` é narrowing da superfície de raciocínio, não uma alegação de redução de privilégio em runtime. Os modelos continuam sem autoridade de execução.
+
+A proposta de handoff não pode carregar mensagem/contexto arbitrário, seleção de capability, args/kwargs, SQL, URLs, comandos shell, credenciais, seleção de provider/model, política de retry/fallback ou execution result.
 
 ## Baseline real Bedrock da Phase 11
 
@@ -225,13 +271,13 @@ client elapsed median:        977.5 ms
 derived six-case cost:        USD 0.0041921
 ```
 
-A primeira execução autenticada também revelou uma restrição real do provider: structured outputs do Bedrock rejeitaram JSON Schema `oneOf`. O adapter foi ajustado para um schema fechado e plano, enquanto a consistência ACT/ABSTAIN entre campos continuou sob autoridade determinística da aplicação.
+A primeira execução autenticada revelou uma restrição real do provider: structured outputs do Bedrock rejeitaram JSON Schema `oneOf`. O adapter foi ajustado para um schema fechado e plano, enquanto a consistência ACT/ABSTAIN entre campos continuou sob autoridade determinística da aplicação.
 
 O resultado 6/6 é resultado de um acceptance corpus congelado, não uma afirmação de correção universal do modelo.
 
 ## Decisão medida de otimização
 
-A Gate 11.5 revisou o baseline real e manteve intencionalmente a implementação sem mudanças:
+A Gate 11.5 manteve intencionalmente a implementação sem mudanças:
 
 ```text
 optimization decision: NO-CHANGE / NO-EXPERIMENT
@@ -239,7 +285,19 @@ optimization decision: NO-CHANGE / NO-EXPERIMENT
 
 Prompt compression, troca de modelo, prompt caching, expansão de retry/fallback e expansão de capabilities não foram justificadas por um target material medido.
 
-O projeto trata **não otimizar** como um resultado de engenharia válido quando a evidência não justifica complexidade ou risco adicionais.
+## Evidência de merge da Gate 12.1
+
+```text
+PR:                     #166
+final head:             567cdbde81f058d9545328ca78b718c24d79c9fb
+Multi-Agent CI:         34172909750 / run #3 / PASS
+multi-agent pytest:     10 passed in 0.39s
+Single-Agent CI:        34172909748 / run #48 / PASS
+single-agent pytest:    56 passed in 0.44s
+merge SHA:              eceed76a6cfc5d7e28e88dfdc503b4863b526ba0
+```
+
+A Gate 12.1 não adiciona recurso AWS, permissão IAM, model call, capability execution, AgentCore, MCP, A2A, runtime público ou autoridade de runtime exposure.
 
 ## Invariantes de segurança e autoridade
 
@@ -254,6 +312,8 @@ O projeto trata **não otimizar** como um resultado de engenharia válido quando
 - Hybrid routing e completude obrigatória permanecem determinísticos.
 - Citation IDs vêm somente de evidência admitida.
 - Agent action proposal não é capability authorization.
+- Handoff proposal não é handoff admission.
+- Handoff admission não é capability authorization.
 - Authorized action não é capability invocation.
 - Capability invocation não é execution result.
 - Raw model output não é evidência canônica.
@@ -261,20 +321,21 @@ O projeto trata **não otimizar** como um resultado de engenharia válido quando
 - Runtime exposure não é inferido de repository risk.
 - Least privilege, observabilidade, diagnóstico de falhas e cost accounting são requisitos arquiteturais.
 
-## O que a Phase 11 não prova
+## O que a Phase 12 Gate 12.1 não prova
 
 ```text
-qualidade ou coordenação multi-agent
+melhoria de qualidade multi-agent
+acurácia de routing do triage model
+qualidade do specialist model
+tokens / latência / custo de inferência multi-agent
+reliability de runtime multi-agent
+redução de privilégio em runtime
+capability execution através do fluxo multi-agent
 runtime público/deployed de agentes
-volume de requests de produção
-p95/p99 ou SLO compliance de produção
 comportamento de runtime do AgentCore
 interoperabilidade MCP
 interoperabilidade A2A
 runtime exposure / evidência Amazon Inspector
-correção universal do modelo
-custo/request de produção
-reconciliação de billing AWS
 ```
 
 ## Baseline AWS
@@ -296,8 +357,6 @@ streaming:               não
 tools no reasoning:      nenhum
 ```
 
-A Phase 11 não adicionou runtime de agente implantado, AgentCore, MCP, A2A, endpoint público ou autoridade de runtime exposure.
-
 ## Documentação
 
 - [Current State](docs/current-state.md)
@@ -312,17 +371,25 @@ A Phase 11 não adicionou runtime de agente implantado, AgentCore, MCP, A2A, end
 - [Baseline real da Gate 11.4](labs/phase-11-gate-11-4-bounded-model-reasoning-baseline.md)
 - [Decisão de otimização da Gate 11.5](labs/phase-11-gate-11-5-measured-optimization-decision.md)
 - [Closeout da Phase 11](labs/phase-11-gate-11-6-closeout.md)
+- [Handoff limitado da Gate 12.1](labs/phase-12-gate-12-1-bounded-specialization-handoff.md)
 
-## Próxima — Phase 12: Multi-Agent Architecture
+## Próxima — Phase 12 Gate 12.2: Comparative Multi-Agent Evaluation Contract
 
-A Phase 12 começa somente a partir de uma hipótese concreta de especialização.
+Antes de introduzir uma segunda model call, o OpsLens deve congelar o protocolo de comparação contra a referência da Phase 11.
 
 ```text
-multi-agent complexity requires measured value
-specialization does not acquire deterministic authority
-handoffs require explicit identity, bounds, failure, and stopping semantics
-comparative evaluation must use the Phase 11 single-agent baseline
+routing/proposal quality
+bounds compliance
+specialist capability-surface width
+model invocation count
+tokens
+provider/client latency
+SDK retries
+inference cost
+capability executions
 ```
+
+A autoridade das métricas permanece determinística; nenhum LLM judge decide aceitação. Uma topologia com dois modelos só será mantida se o valor medido da especialização justificar latência, tokens, custo, failure surface e complexidade arquitetural adicionais.
 
 AgentCore, MCP e A2A permanecem decisões arquiteturais futuras e separadas.
 
