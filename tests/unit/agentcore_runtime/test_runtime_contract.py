@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import cast
 
 import pytest
 
@@ -200,7 +201,8 @@ def test_projection_contains_only_bounded_metadata_evidence() -> None:
     evidence = payload["invocation_evidence"]
 
     assert isinstance(evidence, dict)
-    assert set(evidence) == {
+    typed_evidence = cast(dict[str, object], evidence)
+    assert set(typed_evidence) == {
         "cache_read_input_tokens",
         "cache_write_input_tokens",
         "client_elapsed_ms",
@@ -217,5 +219,5 @@ def test_projection_contains_only_bounded_metadata_evidence() -> None:
         "stop_reason",
         "total_tokens",
     }
-    assert "output_text" not in evidence
-    assert "credentials" not in evidence
+    assert "output_text" not in typed_evidence
+    assert "credentials" not in typed_evidence
