@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TypedDict
+
 from mcp.server import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
@@ -17,21 +19,49 @@ _REJECTED_REFERENCE_MESSAGE = "MCP invocation reference rejected."
 _RESOLUTION_FAILURE_MESSAGE = "MCP invocation resolution failed."
 
 
+class McpAdmissionProtocolOutput(TypedDict):
+    """Exact structured-output shape exposed by the official MCP adapter."""
+
+    contract_version: str
+    tool_name: str
+    capability: str
+    action_id: str
+    invocation_id: str
+    invocation_sha256: str
+    admission_id: str
+    admission_sha256: str
+
+
+def _protocol_output(projection: McpAdmissionProjection) -> McpAdmissionProtocolOutput:
+    """Convert internal deterministic admission evidence into an SDK-schema-friendly shape."""
+    return McpAdmissionProtocolOutput(
+        contract_version=projection.contract_version,
+        tool_name=projection.tool_name,
+        capability=projection.capability,
+        action_id=projection.action_id,
+        invocation_id=projection.invocation_id,
+        invocation_sha256=projection.invocation_sha256,
+        admission_id=projection.admission_id,
+        admission_sha256=projection.admission_sha256,
+    )
+
+
 def _admit_reference(
     *,
     tool_name: McpToolName,
     invocation_id: str,
     invocation_sha256: str,
     resolver: McpInvocationResolver,
-) -> McpAdmissionProjection:
+) -> McpAdmissionProtocolOutput:
     """Translate one protocol call into deterministic admission without execution."""
     try:
-        return admit_mcp_invocation_reference(
+        projection = admit_mcp_invocation_reference(
             tool_name=tool_name,
             invocation_id=invocation_id,
             invocation_sha256=invocation_sha256,
             resolver=resolver,
         )
+        return _protocol_output(projection)
     except McpBoundaryValidationError as exc:
         raise ToolError(_REJECTED_REFERENCE_MESSAGE) from exc
     except Exception as exc:
@@ -51,7 +81,7 @@ def build_offline_mcp_server(*, resolver: McpInvocationResolver) -> MCPServer[No
     def structured_security_query(
         invocation_id: str,
         invocation_sha256: str,
-    ) -> McpAdmissionProjection:
+    ) -> McpAdmissionProtocolOutput:
         """Admit an existing structured-security invocation reference."""
         return _admit_reference(
             tool_name=McpToolName.STRUCTURED_SECURITY_QUERY,
@@ -63,7 +93,7 @@ def build_offline_mcp_server(*, resolver: McpInvocationResolver) -> MCPServer[No
     def knowledge_guidance(
         invocation_id: str,
         invocation_sha256: str,
-    ) -> McpAdmissionProjection:
+    ) -> McpAdmissionProtocolOutput:
         """Admit an existing knowledge-guidance invocation reference."""
         return _admit_reference(
             tool_name=McpToolName.KNOWLEDGE_GUIDANCE,
@@ -75,7 +105,7 @@ def build_offline_mcp_server(*, resolver: McpInvocationResolver) -> MCPServer[No
     def hybrid_security_answer(
         invocation_id: str,
         invocation_sha256: str,
-    ) -> McpAdmissionProjection:
+    ) -> McpAdmissionProtocolOutput:
         """Admit an existing hybrid-security invocation reference."""
         return _admit_reference(
             tool_name=McpToolName.HYBRID_SECURITY_ANSWER,
@@ -87,7 +117,7 @@ def build_offline_mcp_server(*, resolver: McpInvocationResolver) -> MCPServer[No
     def public_repository_analysis(
         invocation_id: str,
         invocation_sha256: str,
-    ) -> McpAdmissionProjection:
+    ) -> McpAdmissionProtocolOutput:
         """Admit an existing public-repository invocation reference."""
         return _admit_reference(
             tool_name=McpToolName.PUBLIC_REPOSITORY_ANALYSIS,
@@ -119,4 +149,4 @@ def build_offline_mcp_server(*, resolver: McpInvocationResolver) -> MCPServer[No
     return server
 
 
-__all__ = ["build_offline_mcp_server"]
+__all__ = ["McpAdmissionProtocolOutput", "build_offline_mcp_server"]
