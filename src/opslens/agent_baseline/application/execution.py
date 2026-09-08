@@ -20,6 +20,14 @@ from opslens.knowledge_retrieval.domain.synthesis import SynthesisResult
 from opslens.public_analysis.domain.semantic_planning import PublicAnalysisAdmissionHandoff
 
 
+type AgentCapabilityExecutionResult = (
+    StructuredSecurityQueryResultBinding
+    | SynthesisResult
+    | HybridSynthesisResult
+    | PublicAnalysisAdmissionHandoff
+)
+
+
 class AgentCapabilityExecutionFailureCategory(StrEnum):
     """Content-free failure categories for the Gate 11.2 executor boundary."""
 
@@ -90,6 +98,26 @@ class AgentCapabilityExecutors:
     public_repository_analysis: PublicRepositoryAnalysisExecutor
 
 
+@dataclass(frozen=True, slots=True)
+class AgentCapabilityExecutionOutcome:
+    """Preserve one already-admitted typed result beside deterministic execution identity."""
+
+    execution: AgentCapabilityExecution
+    result: AgentCapabilityExecutionResult
+
+    def __post_init__(self) -> None:
+        """Keep the additive outcome bound to the existing deterministic execution evidence."""
+        if type(self.execution) is not AgentCapabilityExecution:
+            raise TypeError("execution must be one AgentCapabilityExecution value")
+        if type(self.result) not in {
+            StructuredSecurityQueryResultBinding,
+            SynthesisResult,
+            HybridSynthesisResult,
+            PublicAnalysisAdmissionHandoff,
+        }:
+            raise TypeError("result must be one admitted typed capability result")
+
+
 def _executor_failure() -> AgentCapabilityExecutionError:
     """Return one content-free downstream failure without retaining provider content."""
     return AgentCapabilityExecutionError(
@@ -104,11 +132,11 @@ def _result_contract_failure() -> AgentCapabilityExecutionError:
     )
 
 
-def execute_authorized_capability(
+def execute_authorized_capability_outcome(
     invocation: AgentCapabilityInvocation,
     executors: AgentCapabilityExecutors,
-) -> AgentCapabilityExecution:
-    """Execute one exact typed invocation once and admit only deterministic result identity."""
+) -> AgentCapabilityExecutionOutcome:
+    """Execute one exact typed invocation once and preserve its admitted typed result."""
     if type(executors) is not AgentCapabilityExecutors:
         raise TypeError("executors must be one AgentCapabilityExecutors value")
 
@@ -123,10 +151,11 @@ def execute_authorized_capability(
             raise _result_contract_failure()
         if result.invocation_sha256 != invocation.invocation_sha256:
             raise _result_contract_failure()
-        return AgentCapabilityExecution.create(
+        execution = AgentCapabilityExecution.create(
             invocation=invocation,
             downstream_result_sha256=result.result_sha256,
         )
+        return AgentCapabilityExecutionOutcome(execution=execution, result=result)
 
     if type(invocation) is KnowledgeGuidanceInvocation:
         try:
@@ -137,10 +166,11 @@ def execute_authorized_capability(
             raise _result_contract_failure()
         if result.request_sha256 != invocation.request.request_sha256:
             raise _result_contract_failure()
-        return AgentCapabilityExecution.create(
+        execution = AgentCapabilityExecution.create(
             invocation=invocation,
             downstream_result_sha256=result.result_sha256,
         )
+        return AgentCapabilityExecutionOutcome(execution=execution, result=result)
 
     if type(invocation) is HybridSecurityAnswerInvocation:
         try:
@@ -153,10 +183,11 @@ def execute_authorized_capability(
             raise _result_contract_failure()
         if result.request_sha256 != invocation.request.request_sha256:
             raise _result_contract_failure()
-        return AgentCapabilityExecution.create(
+        execution = AgentCapabilityExecution.create(
             invocation=invocation,
             downstream_result_sha256=result.result_sha256,
         )
+        return AgentCapabilityExecutionOutcome(execution=execution, result=result)
 
     if type(invocation) is PublicRepositoryAnalysisInvocation:
         try:
@@ -172,21 +203,33 @@ def execute_authorized_capability(
             raise _result_contract_failure()
         if result_request.request_sha256 != invocation.request.request_sha256:
             raise _result_contract_failure()
-        return AgentCapabilityExecution.create(
+        execution = AgentCapabilityExecution.create(
             invocation=invocation,
             downstream_result_sha256=result.handoff_sha256,
         )
+        return AgentCapabilityExecutionOutcome(execution=execution, result=result)
 
     raise TypeError("invocation must be one recognized typed capability invocation")
+
+
+def execute_authorized_capability(
+    invocation: AgentCapabilityInvocation,
+    executors: AgentCapabilityExecutors,
+) -> AgentCapabilityExecution:
+    """Execute one exact typed invocation once and return existing deterministic evidence."""
+    return execute_authorized_capability_outcome(invocation, executors).execution
 
 
 __all__ = [
     "AgentCapabilityExecutionError",
     "AgentCapabilityExecutionFailureCategory",
+    "AgentCapabilityExecutionOutcome",
+    "AgentCapabilityExecutionResult",
     "AgentCapabilityExecutors",
     "HybridSecurityAnswerExecutor",
     "KnowledgeGuidanceExecutor",
     "PublicRepositoryAnalysisExecutor",
     "StructuredSecurityQueryExecutor",
     "execute_authorized_capability",
+    "execute_authorized_capability_outcome",
 ]
