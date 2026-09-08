@@ -17,6 +17,10 @@ from opslens.multi_agent.domain.two_model_reasoning import MultiAgentTwoModelOut
 from opslens.multi_agent.ports.triage_reasoning import MultiAgentTriageReasoningModelResponse
 
 
+def _empty_requests() -> list[str]:
+    return []
+
+
 def _source_task(*, restricted: bool = False) -> SingleAgentTask:
     capabilities = (
         (AgentCapability.KNOWLEDGE_GUIDANCE,)
@@ -75,7 +79,7 @@ def _specialist_evidence(task: SingleAgentTask) -> AgentReasoningInvocationEvide
 @dataclass
 class _FakeTriageModel:
     output_text: str
-    requests: list[str] = field(default_factory=list)
+    requests: list[str] = field(default_factory=_empty_requests)
 
     def generate(self, task: SingleAgentTask) -> MultiAgentTriageReasoningModelResponse:
         self.requests.append(task.task_id)
@@ -88,7 +92,7 @@ class _FakeTriageModel:
 @dataclass
 class _FakeSpecialistModel:
     output_text: str
-    requests: list[str] = field(default_factory=list)
+    requests: list[str] = field(default_factory=_empty_requests)
 
     def generate(self, task: SingleAgentTask) -> AgentReasoningModelResponse:
         self.requests.append(task.task_id)
