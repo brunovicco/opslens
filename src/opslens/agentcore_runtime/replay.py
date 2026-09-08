@@ -131,11 +131,15 @@ def _validate_replay_inputs(
     if type(replay_run_id) is not str or not replay_run_id.strip():
         raise AgentCoreRuntimeReplayError("replay_run_id must be a non-empty string")
     if type(dataset) is not AgentReasoningEvaluationDataset:
-        raise AgentCoreRuntimeReplayError("dataset must be an admitted reasoning evaluation dataset")
+        raise AgentCoreRuntimeReplayError(
+            "dataset must be an admitted reasoning evaluation dataset"
+        )
     if dataset.corpus_sha256 != PHASE11_REFERENCE_CORPUS_SHA256:
         raise AgentCoreRuntimeReplayError("Phase 11 reference corpus identity has drifted")
     if len(dataset.cases) != _EXPECTED_CASE_COUNT:
-        raise AgentCoreRuntimeReplayError("Phase 11 reference corpus must contain exactly six cases")
+        raise AgentCoreRuntimeReplayError(
+            "Phase 11 reference corpus must contain exactly six cases"
+        )
 
 
 def _request_payload(case: AgentReasoningEvaluationCase) -> bytes:
@@ -247,7 +251,9 @@ def execute_agentcore_runtime_replay(
 
         invocation_evidence = payload.get("invocation_evidence")
         if not isinstance(invocation_evidence, Mapping):
-            raise AgentCoreRuntimeReplayError("successful runtime response lacks invocation_evidence")
+            raise AgentCoreRuntimeReplayError(
+                "successful runtime response lacks invocation_evidence"
+            )
         typed_evidence = cast(Mapping[str, object], invocation_evidence)
         for key in ("input_tokens", "output_tokens", "total_tokens", "retry_attempts"):
             if type(typed_evidence.get(key)) is not int:
