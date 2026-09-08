@@ -419,13 +419,13 @@ source = { virtual = "." }
 dependencies = [
     { name = "aws-lambda-powertools", extra = ["tracer"] },
     { name = "boto3" },
-    { name = "mcp" },
     { name = "packaging" },
 ]
 
 [package.dev-dependencies]
 dev = [
     { name = "boto3-stubs", extra = ["boto3", "s3"] },
+    { name = "mcp" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "ruff" },
@@ -452,13 +452,13 @@ nvd-silver-runtime = [
 requires-dist = [
     { name = "aws-lambda-powertools", extras = ["tracer"], specifier = ">=3.34.0" },
     { name = "boto3", specifier = ">=1.43.72" },
-    { name = "mcp", specifier = "==2.2.0" },
     { name = "packaging", specifier = ">=26.3" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "boto3-stubs", extras = ["boto3", "s3"], specifier = ">=1.43.72" },
+    { name = "mcp", specifier = "==2.2.0" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "ruff" },
