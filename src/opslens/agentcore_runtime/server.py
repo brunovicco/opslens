@@ -52,7 +52,7 @@ def create_agentcore_request_handler(
         server_version = "OpsLensAgentCore/1"
         sys_version = ""
 
-        def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
+        def do_GET(self) -> None:
             """Serve the bounded health route and reject all other GET surfaces."""
             body = self._read_bounded_body()
             if body is None:
@@ -66,7 +66,7 @@ def create_agentcore_request_handler(
             )
             self._write_response(response)
 
-        def do_POST(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
+        def do_POST(self) -> None:
             """Serve the bounded invocation route and reject all other POST surfaces."""
             body = self._read_bounded_body(require_content_length=True)
             if body is None:
