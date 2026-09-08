@@ -58,3 +58,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0048](0048-bounded-offline-mcp-protocol-adapter.md) | Prove official MCP interoperability offline while keeping protocol input reference-only and the SDK out of deployed runtime dependencies | Accepted |
 | [0049](0049-bounded-mcp-capability-execution-bridge.md) | Bind MCP admission to the existing typed capability executor while keeping business-result transport separate | Accepted |
 | [0050](0050-bounded-mcp-structured-result-projection.md) | Project only explicitly allowlisted structured-security business results through MCP after typed execution/result admission | Accepted |
+| [0051](0051-phase13-mcp-closeout.md) | Close Phase 13 at the bounded offline MCP boundary rather than inventing a public/deployed runtime without a concrete requirement | Accepted |
