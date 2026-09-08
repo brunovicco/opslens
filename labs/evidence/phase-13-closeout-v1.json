@@ -1,0 +1,123 @@
+{
+  "artifact_version": "phase-13-closeout:v1",
+  "closeout_date": "2026-09-08",
+  "source_main_sha": "915ec9920c3b501631e70a78121fe76fd93be80c",
+  "phase": "Phase 13 — MCP",
+  "status": "complete",
+  "closeout_decision": "retain the bounded offline MCP architecture and close Phase 13 without inventing a public or deployed MCP runtime",
+  "gates": [
+    {
+      "gate": "13.1",
+      "name": "Bounded MCP Capability Exposure Contract",
+      "issue": 180,
+      "pull_request": 181,
+      "merge_sha": "322922aed4abec3b2266a18d15d8145df974a7d1",
+      "contract": "mcp-capability-exposure:v1",
+      "retained": true,
+      "role": "closed tool identity and deterministic MCP admission boundary"
+    },
+    {
+      "gate": "13.2",
+      "name": "Bounded MCP Protocol Adapter / Offline Interoperability",
+      "issue": 183,
+      "pull_request": 184,
+      "merge_sha": "131c086ff85564dbd777cebd6454d70e53ca8332",
+      "contract": "official MCP Python SDK 2.2.0 over reference-only invocation input",
+      "retained": true,
+      "role": "offline official client/server interoperability with raw argument-shape refusal"
+    },
+    {
+      "gate": "13.3",
+      "name": "Bounded MCP Capability Execution Bridge",
+      "issue": 186,
+      "pull_request": 187,
+      "merge_sha": "170429c894456adc1e1c38ca93b49f12e310fb94",
+      "contract": "mcp-capability-execution:v1",
+      "retained": true,
+      "role": "content-addressed admission-to-existing-typed-execution binding"
+    },
+    {
+      "gate": "13.4",
+      "name": "Bounded MCP Business Result Projection / Offline Transport",
+      "issue": 189,
+      "pull_request": 190,
+      "merge_sha": "87772b1604d4ede0f88f72d4d338ddf553953304",
+      "contract": "mcp-result-projection:v1",
+      "retained": true,
+      "role": "explicit structured-security CVE/EPSS business-result disclosure boundary"
+    }
+  ],
+  "retained_architecture": {
+    "upstream_execution_authority": "Phase 11 typed AgentCapabilityInvocation and result-admission contracts",
+    "tool_surface": [
+      "opslens.structured_security_query",
+      "opslens.knowledge_guidance",
+      "opslens.hybrid_security_answer",
+      "opslens.public_repository_analysis"
+    ],
+    "protocol_input": [
+      "invocation_id",
+      "invocation_sha256"
+    ],
+    "protocol_framework": "official MCP Python SDK 2.2.0 in development dependencies only",
+    "raw_argument_authority": "exact key-set validation before framework function-model coercion",
+    "capability_execution": "one exact existing typed executor attempt after deterministic MCP admission",
+    "business_result_transport": "structured_security_query only",
+    "structured_result_fields": [
+      "cve",
+      "epss_score"
+    ],
+    "public_network_runtime": "not retained or claimed in Phase 13"
+  },
+  "authority_boundaries": [
+    "MCP tool name != capability authorization",
+    "MCP tool exposure != executable argument authority",
+    "MCP call admission != capability execution",
+    "MCP capability execution != business result transport",
+    "MCP result admission != result projection authority",
+    "MCP result projection != public runtime exposure",
+    "MCP transport success != business/evidence truth",
+    "MCP result != runtime exposure truth",
+    "Repository Risk != Runtime Exposure"
+  ],
+  "phase13_non_claims": [
+    "generic business-result serialization",
+    "knowledge-guidance business-result transport",
+    "hybrid-security-answer business-result transport",
+    "public-repository-analysis business-result transport",
+    "persistent invocation or result registry",
+    "stdio subprocess deployment interoperability",
+    "Streamable HTTP production interoperability",
+    "public MCP endpoint",
+    "MCP transport authentication or authorization",
+    "network reliability or production SLOs",
+    "Amazon Bedrock AgentCore runtime behavior",
+    "A2A interoperability",
+    "runtime exposure or Amazon Inspector evidence"
+  ],
+  "closeout_runtime_impact": {
+    "new_model_invocations": 0,
+    "new_inference_cost_usd": 0.0,
+    "new_aws_resources": 0,
+    "new_iam_roles_or_policies": 0,
+    "github_oidc_trust_changes": 0,
+    "live_capability_executions": 0,
+    "public_mcp_endpoints": 0,
+    "deployed_mcp_runtimes": 0,
+    "agentcore_runtime_changes": 0,
+    "a2a_runtime_changes": 0,
+    "runtime_exposure_authority_changes": 0,
+    "governed_llm_gateway_changes": 0
+  },
+  "dependency_disposition": {
+    "mcp_python_sdk": "2.2.0",
+    "scope": "development dependency only",
+    "reason": "Phase 13 proves bounded offline interoperability and does not deploy an MCP runtime"
+  },
+  "deferred_cross_project_work": {
+    "opslens_pull_request": 89,
+    "head_sha": "3781831795d500b05fa4bc602d50f376b4b1539f",
+    "disposition": "remain open/draft and untouched until separately governed Governed LLM Gateway Phase 14 Case 3 re-evaluation"
+  },
+  "next_phase": "Phase 14 — Amazon Bedrock AgentCore"
+}
