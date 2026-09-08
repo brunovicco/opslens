@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import cast
 
 from opslens.agent_baseline.domain.models import AgentCapability, SingleAgentTask
 from opslens.agent_baseline.domain.reasoning import AgentReasoningInvocationEvidence
@@ -64,9 +65,9 @@ def _body() -> bytes:
 
 
 def _payload(response_body: bytes) -> dict[str, object]:
-    value = json.loads(response_body.decode("utf-8"))
+    value: object = json.loads(response_body.decode("utf-8"))
     assert isinstance(value, dict)
-    return value
+    return cast(dict[str, object], value)
 
 
 def test_ping_is_health_only_and_does_not_invoke_model() -> None:
