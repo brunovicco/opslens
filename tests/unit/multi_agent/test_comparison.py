@@ -38,6 +38,8 @@ _FIXTURE = (
     / "multi_agent"
     / "golden_multi_agent_comparison_v1.json"
 )
+_FROZEN_DATASET_SHA256 = "1ad7f6274edea7d515f5827859d8a39bdde8edecc9a2ed58dc09df16b09dd491"
+_FROZEN_REPORT_SHA256 = "0586822800f028d0bb5c7cdb937db4af2f685abde3e09c76afd979d4e1abc222"
 
 
 def test_frozen_fixture_binds_exact_phase11_reference_and_contract() -> None:
@@ -48,7 +50,10 @@ def test_frozen_fixture_binds_exact_phase11_reference_and_contract() -> None:
     assert dataset.phase11_reference_corpus_sha256 == PHASE11_REFERENCE_CORPUS_SHA256
     assert dataset.phase11_reference_report_sha256 == PHASE11_REFERENCE_REPORT_SHA256
     assert len(dataset.cases) == 6
-    assert dataset.dataset_id.startswith("multi-agent-comparison:v1:dataset:")
+    assert dataset.dataset_sha256 == _FROZEN_DATASET_SHA256
+    assert dataset.dataset_id == (
+        f"multi-agent-comparison:v1:dataset:{_FROZEN_DATASET_SHA256}"
+    )
 
 
 def test_frozen_synthetic_fixture_has_full_deterministic_conformance() -> None:
@@ -70,7 +75,8 @@ def test_frozen_synthetic_fixture_has_full_deterministic_conformance() -> None:
     assert report.specialist_capability_slots == 8
     assert report.capability_slots_removed == 8
     assert report.offline_capability_executions == 0
-    assert report.report_id.startswith("multi-agent-comparison:v1:report:")
+    assert report.report_sha256 == _FROZEN_REPORT_SHA256
+    assert report.report_id == f"multi-agent-comparison:v1:report:{_FROZEN_REPORT_SHA256}"
 
 
 def test_offline_report_does_not_manufacture_runtime_measurements() -> None:
