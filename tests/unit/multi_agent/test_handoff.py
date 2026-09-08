@@ -81,7 +81,7 @@ def test_evidence_handoff_narrows_full_source_scope_to_two_capabilities() -> Non
     )
 
     assert type(result) is SpecialistAgentTask
-    specialist = cast(SpecialistAgentTask, result)
+    specialist = result
     assert specialist.specialization is AgentSpecialization.EVIDENCE_ANALYSIS
     assert specialist.task.text == source_task.text
     assert specialist.task.allowed_capabilities == (
@@ -104,7 +104,7 @@ def test_guidance_handoff_narrows_full_source_scope_to_two_capabilities() -> Non
     )
 
     assert type(result) is SpecialistAgentTask
-    specialist = cast(SpecialistAgentTask, result)
+    specialist = result
     assert specialist.task.allowed_capabilities == (
         AgentCapability.HYBRID_SECURITY_ANSWER,
         AgentCapability.KNOWLEDGE_GUIDANCE,
@@ -123,7 +123,7 @@ def test_source_allowlist_is_preserved_by_deterministic_intersection() -> None:
     )
 
     assert type(result) is SpecialistAgentTask
-    specialist = cast(SpecialistAgentTask, result)
+    specialist = result
     assert specialist.task.allowed_capabilities == (
         AgentCapability.STRUCTURED_SECURITY_QUERY,
     )
@@ -188,7 +188,7 @@ def test_explicit_handoff_abstention_creates_no_specialist_task() -> None:
     )
 
     assert type(result) is MultiAgentHandoffAbstention
-    abstention = cast(MultiAgentHandoffAbstention, result)
+    abstention = result
     assert abstention.source_task_id == source_task.task_id
     assert abstention.proposal_id == proposal.proposal_id
 
@@ -221,7 +221,7 @@ def test_specialist_task_cannot_be_reused_as_a_handoff_source() -> None:
         proposal=_handoff_proposal(source_task, AgentSpecialization.EVIDENCE_ANALYSIS),
     )
     assert type(result) is SpecialistAgentTask
-    specialist = cast(SpecialistAgentTask, result)
+    specialist = result
     second_proposal = _handoff_proposal(
         specialist.task,
         AgentSpecialization.EVIDENCE_ANALYSIS,
