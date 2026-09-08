@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TypedDict
+from typing import TypedDict, cast
 
 from mcp import MCPError
 from mcp.server import MCPServer, ServerRequestContext
@@ -72,8 +72,9 @@ async def _reject_unexpected_tool_arguments(
     raw_arguments = params.get("arguments")
     if not isinstance(raw_arguments, Mapping):
         raise MCPError(code=INVALID_PARAMS, message=_REJECTED_ARGUMENTS_MESSAGE)
-    if len(raw_arguments) != len(_ALLOWED_REFERENCE_ARGUMENTS) or any(
-        argument_name not in raw_arguments for argument_name in _ALLOWED_REFERENCE_ARGUMENTS
+    arguments = cast(Mapping[object, object], raw_arguments)
+    if len(arguments) != len(_ALLOWED_REFERENCE_ARGUMENTS) or any(
+        argument_name not in arguments for argument_name in _ALLOWED_REFERENCE_ARGUMENTS
     ):
         raise MCPError(code=INVALID_PARAMS, message=_REJECTED_ARGUMENTS_MESSAGE)
 
