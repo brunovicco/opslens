@@ -56,3 +56,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0046](0046-phase12-multi-agent-closeout.md) | Close Phase 12 around the measured retained architecture rather than the most complex experiment | Accepted |
 | [0047](0047-bounded-mcp-capability-exposure.md) | Expose only already-bounded typed capability invocations through a closed MCP identity and admission contract | Accepted |
 | [0048](0048-bounded-offline-mcp-protocol-adapter.md) | Prove official MCP interoperability offline while keeping protocol input reference-only and the SDK out of deployed runtime dependencies | Accepted |
+| [0049](0049-bounded-mcp-capability-execution-bridge.md) | Bind MCP admission to the existing typed capability executor while keeping business-result transport separate | Accepted |
