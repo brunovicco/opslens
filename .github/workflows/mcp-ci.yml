@@ -6,7 +6,10 @@ on:
       - "src/opslens/mcp_boundary/**/*.py"
       - "tests/unit/mcp_boundary/**/*.py"
       - "docs/adr/0047-*.md"
+      - "docs/adr/0048-*.md"
       - "labs/phase-13-gate-13-*.md"
+      - "pyproject.toml"
+      - "uv.lock"
       - ".github/workflows/mcp-ci.yml"
   workflow_dispatch:
 
@@ -37,6 +40,11 @@ jobs:
 
       - name: Sync locked dependencies
         run: uv sync --frozen
+
+      - name: Verify official MCP SDK pin
+        run: >-
+          uv run python -c "from importlib.metadata import version;
+          assert version('mcp') == '2.2.0', version('mcp')"
 
       - name: Smoke MCP boundary import
         run: PYTHONPATH=src uv run python -c "import opslens.mcp_boundary"
