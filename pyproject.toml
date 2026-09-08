@@ -15,6 +15,7 @@ dev = [
     "pyright",
     "ruff",
     "boto3-stubs[boto3,s3]>=1.43.72",
+    "mcp==2.2.0",
 ]
 
 epss-silver-runtime = [

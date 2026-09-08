@@ -11,11 +11,13 @@ from opslens.mcp_boundary.domain.exposure import (
     mcp_tool_for_capability,
     parse_mcp_tool_name,
 )
+from opslens.mcp_boundary.domain.reference import McpInvocationReference
 
 __all__ = [
     "MCP_CAPABILITY_EXPOSURE_CONTRACT_VERSION",
     "McpBoundaryValidationError",
     "McpCapabilityExposure",
+    "McpInvocationReference",
     "McpToolCallAdmission",
     "McpToolName",
     "capability_for_mcp_tool",
