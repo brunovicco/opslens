@@ -1,4 +1,4 @@
-"""Official MCP Python SDK adapter over the frozen OpsLens admission boundary."""
+"""Official MCP Python SDK adapters over frozen OpsLens authority boundaries."""
 
 from __future__ import annotations
 
@@ -11,23 +11,32 @@ from mcp.server.context import CallNext, HandlerResult
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp_types import INVALID_PARAMS
 
+from opslens.agent_baseline.application import (
+    AgentCapabilityExecutionError,
+    AgentCapabilityExecutors,
+)
 from opslens.mcp_boundary.application import (
     McpAdmissionProjection,
+    McpExecutionProjection,
     admit_mcp_invocation_reference,
+    execute_mcp_invocation_reference,
 )
 from opslens.mcp_boundary.domain import McpBoundaryValidationError, McpToolName
 from opslens.mcp_boundary.ports import McpInvocationResolver
 
-_SERVER_NAME = "OpsLens Bounded MCP"
+_ADMISSION_SERVER_NAME = "OpsLens Bounded MCP"
+_EXECUTION_SERVER_NAME = "OpsLens Bounded MCP Execution"
 _REJECTED_REFERENCE_MESSAGE = "MCP invocation reference rejected."
 _RESOLUTION_FAILURE_MESSAGE = "MCP invocation resolution failed."
 _REJECTED_ARGUMENTS_MESSAGE = "MCP tool arguments rejected."
+_EXECUTION_REJECTED_MESSAGE = "MCP capability execution rejected."
+_EXECUTION_FAILURE_MESSAGE = "MCP capability execution failed."
 _ALLOWED_REFERENCE_ARGUMENTS = frozenset({"invocation_id", "invocation_sha256"})
 _CLOSED_TOOL_NAMES = frozenset(tool_name.value for tool_name in McpToolName)
 
 
 class McpAdmissionProtocolOutput(TypedDict):
-    """Exact structured-output shape exposed by the official MCP adapter."""
+    """Exact structured-output shape exposed by the admission-only MCP adapter."""
 
     contract_version: str
     tool_name: str
@@ -39,8 +48,28 @@ class McpAdmissionProtocolOutput(TypedDict):
     admission_sha256: str
 
 
-def _protocol_output(projection: McpAdmissionProjection) -> McpAdmissionProtocolOutput:
-    """Convert internal deterministic admission evidence into an SDK-schema-friendly shape."""
+class McpExecutionProtocolOutput(TypedDict):
+    """Identity-only structured output exposed by the MCP execution bridge."""
+
+    contract_version: str
+    tool_name: str
+    capability: str
+    action_id: str
+    invocation_id: str
+    invocation_sha256: str
+    admission_id: str
+    admission_sha256: str
+    execution_id: str
+    execution_sha256: str
+    downstream_result_sha256: str
+    bridge_id: str
+    bridge_sha256: str
+
+
+def _admission_protocol_output(
+    projection: McpAdmissionProjection,
+) -> McpAdmissionProtocolOutput:
+    """Convert deterministic admission evidence into an SDK-schema-friendly shape."""
     return McpAdmissionProtocolOutput(
         contract_version=projection.contract_version,
         tool_name=projection.tool_name,
@@ -50,6 +79,27 @@ def _protocol_output(projection: McpAdmissionProjection) -> McpAdmissionProtocol
         invocation_sha256=projection.invocation_sha256,
         admission_id=projection.admission_id,
         admission_sha256=projection.admission_sha256,
+    )
+
+
+def _execution_protocol_output(
+    projection: McpExecutionProjection,
+) -> McpExecutionProtocolOutput:
+    """Convert deterministic execution-bridge evidence into identity-only protocol output."""
+    return McpExecutionProtocolOutput(
+        contract_version=projection.contract_version,
+        tool_name=projection.tool_name,
+        capability=projection.capability,
+        action_id=projection.action_id,
+        invocation_id=projection.invocation_id,
+        invocation_sha256=projection.invocation_sha256,
+        admission_id=projection.admission_id,
+        admission_sha256=projection.admission_sha256,
+        execution_id=projection.execution_id,
+        execution_sha256=projection.execution_sha256,
+        downstream_result_sha256=projection.downstream_result_sha256,
+        bridge_id=projection.bridge_id,
+        bridge_sha256=projection.bridge_sha256,
     )
 
 
@@ -96,17 +146,43 @@ def _admit_reference(
             invocation_sha256=invocation_sha256,
             resolver=resolver,
         )
-        return _protocol_output(projection)
+        return _admission_protocol_output(projection)
     except McpBoundaryValidationError as exc:
         raise ToolError(_REJECTED_REFERENCE_MESSAGE) from exc
     except Exception as exc:
         raise ToolError(_RESOLUTION_FAILURE_MESSAGE) from exc
 
 
+def _execute_reference(
+    *,
+    tool_name: McpToolName,
+    invocation_id: str,
+    invocation_sha256: str,
+    resolver: McpInvocationResolver,
+    executors: AgentCapabilityExecutors,
+) -> McpExecutionProtocolOutput:
+    """Admit then execute one exact typed invocation and expose identity evidence only."""
+    try:
+        projection = execute_mcp_invocation_reference(
+            tool_name=tool_name,
+            invocation_id=invocation_id,
+            invocation_sha256=invocation_sha256,
+            resolver=resolver,
+            executors=executors,
+        )
+        return _execution_protocol_output(projection)
+    except AgentCapabilityExecutionError as exc:
+        raise ToolError(_EXECUTION_FAILURE_MESSAGE) from exc
+    except McpBoundaryValidationError as exc:
+        raise ToolError(_EXECUTION_REJECTED_MESSAGE) from exc
+    except Exception as exc:
+        raise ToolError(_EXECUTION_FAILURE_MESSAGE) from exc
+
+
 def build_offline_mcp_server(*, resolver: McpInvocationResolver) -> MCPServer[None]:
-    """Build the bounded four-tool MCP server for offline/in-process interoperability."""
+    """Build the bounded four-tool MCP admission server without capability execution."""
     server = MCPServer[None](
-        _SERVER_NAME,
+        _ADMISSION_SERVER_NAME,
         description=(
             "Exposes only content-addressed references to already-authorized OpsLens "
             "capability invocations. This server does not execute capabilities."
@@ -185,4 +261,99 @@ def build_offline_mcp_server(*, resolver: McpInvocationResolver) -> MCPServer[No
     return server
 
 
-__all__ = ["McpAdmissionProtocolOutput", "build_offline_mcp_server"]
+def build_offline_mcp_execution_server(
+    *,
+    resolver: McpInvocationResolver,
+    executors: AgentCapabilityExecutors,
+) -> MCPServer[None]:
+    """Build a separate four-tool server that admits then executes exactly one typed invocation."""
+    server = MCPServer[None](
+        _EXECUTION_SERVER_NAME,
+        description=(
+            "Executes exactly one already-authorized typed OpsLens capability invocation after "
+            "deterministic MCP admission. Business result content is not transported."
+        ),
+        middleware=[_reject_unexpected_tool_arguments],
+    )
+
+    def structured_security_query(
+        invocation_id: str,
+        invocation_sha256: str,
+    ) -> McpExecutionProtocolOutput:
+        """Admit and execute one existing structured-security invocation."""
+        return _execute_reference(
+            tool_name=McpToolName.STRUCTURED_SECURITY_QUERY,
+            invocation_id=invocation_id,
+            invocation_sha256=invocation_sha256,
+            resolver=resolver,
+            executors=executors,
+        )
+
+    def knowledge_guidance(
+        invocation_id: str,
+        invocation_sha256: str,
+    ) -> McpExecutionProtocolOutput:
+        """Admit and execute one existing knowledge-guidance invocation."""
+        return _execute_reference(
+            tool_name=McpToolName.KNOWLEDGE_GUIDANCE,
+            invocation_id=invocation_id,
+            invocation_sha256=invocation_sha256,
+            resolver=resolver,
+            executors=executors,
+        )
+
+    def hybrid_security_answer(
+        invocation_id: str,
+        invocation_sha256: str,
+    ) -> McpExecutionProtocolOutput:
+        """Admit and execute one existing hybrid-security invocation."""
+        return _execute_reference(
+            tool_name=McpToolName.HYBRID_SECURITY_ANSWER,
+            invocation_id=invocation_id,
+            invocation_sha256=invocation_sha256,
+            resolver=resolver,
+            executors=executors,
+        )
+
+    def public_repository_analysis(
+        invocation_id: str,
+        invocation_sha256: str,
+    ) -> McpExecutionProtocolOutput:
+        """Admit and execute one existing public-repository invocation."""
+        return _execute_reference(
+            tool_name=McpToolName.PUBLIC_REPOSITORY_ANALYSIS,
+            invocation_id=invocation_id,
+            invocation_sha256=invocation_sha256,
+            resolver=resolver,
+            executors=executors,
+        )
+
+    server.add_tool(
+        structured_security_query,
+        name=McpToolName.STRUCTURED_SECURITY_QUERY.value,
+        structured_output=True,
+    )
+    server.add_tool(
+        knowledge_guidance,
+        name=McpToolName.KNOWLEDGE_GUIDANCE.value,
+        structured_output=True,
+    )
+    server.add_tool(
+        hybrid_security_answer,
+        name=McpToolName.HYBRID_SECURITY_ANSWER.value,
+        structured_output=True,
+    )
+    server.add_tool(
+        public_repository_analysis,
+        name=McpToolName.PUBLIC_REPOSITORY_ANALYSIS.value,
+        structured_output=True,
+    )
+    return server
+
+
+__all__ = [
+    "McpAdmissionProtocolOutput",
+    "McpExecutionProtocolOutput",
+    "build_offline_mcp_execution_server",
+    "build_offline_mcp_server",
+]
