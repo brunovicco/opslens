@@ -4,7 +4,7 @@ _Date: 2026-09-08_
 
 ## Status
 
-**IMPLEMENTED / VALIDATION PENDING.**
+**MERGE CANDIDATE — final exact-head PR validation pending after this documentation checkpoint.**
 
 Starting checkpoint:
 
@@ -12,6 +12,7 @@ Starting checkpoint:
 main:   913a3302534098b429d3955c770d025480289a3f
 issue:  #180
 branch: feat/phase13-bounded-mcp-capability-exposure
+PR:     #181
 ```
 
 Gate 13.1 freezes MCP authority and identity semantics before any MCP SDK, server process, network transport, authentication layer, or capability execution is introduced.
@@ -217,6 +218,26 @@ pytest MCP slice
 
 No AWS credentials, MCP runtime, model invocation, or external network service is required by Gate 13.1 CI.
 
+## Implementation-head validation
+
+The first PR run reached the new boundary and failed only Ruff import ordering. That deterministic style failure was corrected without changing the authority contract.
+
+Validated implementation head:
+
+```text
+head:                dd0b5be955dd76cefc66a432f841a45951a5d13e
+PR merge test SHA:   da6069349dadfbd5593e4eadaab1ad242f485bb0
+MCP CI:              34223209211 / run #2 / PASS
+job:                 102050984804
+uv lock --check:     PASS
+import smoke:        PASS
+Ruff:                PASS
+Pyright strict:      0 errors / 0 warnings / 0 informations
+pytest MCP slice:    7 passed in 0.21s
+```
+
+Because this lab update changes the PR head, one final exact-head MCP CI run is required before merge.
+
 ## Framework / dependency decision
 
 No external MCP SDK is added in Gate 13.1.
@@ -305,8 +326,9 @@ docs/adr/0047-bounded-mcp-capability-exposure.md
 [x] dedicated MCP CI added
 [x] ADR 0047 added and indexed
 [x] Gate 13.1 lab added
-[ ] draft PR opened
-[ ] exact-head MCP CI PASS
+[x] draft PR #181 opened
+[x] implementation-head MCP CI PASS
+[ ] final exact-head MCP CI PASS
 [ ] PR scope/review threads clean
 [ ] protected squash merge
 [ ] public/current state synchronized
