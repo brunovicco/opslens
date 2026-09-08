@@ -4,7 +4,7 @@ _Date: 2026-09-08_
 
 ## Status
 
-**IMPLEMENTED / FINAL VALIDATION PENDING.**
+**IMPLEMENTED / FINAL EXACT-HEAD CI IN PROGRESS.**
 
 Starting checkpoint:
 
@@ -321,7 +321,7 @@ The implementation head below was frozen after the final strict-typing remediati
 head: 0cf785696e1553774316f4a0da6d181f64d17736
 ```
 
-Exact-head CI completed successfully before closeout metadata/state synchronization:
+Exact-head CI completed successfully before closeout documentation:
 
 ```text
 MCP CI:       run 34232331728 (#19)  PASS
@@ -329,9 +329,9 @@ Python CI:    run 34232331751 (#378) PASS
 Terraform CI: run 34232331769 (#227) PASS
 ```
 
-The MCP quality-gate job validated the exact frozen adapter with lock verification, `mcp==2.2.0` pin verification, import smoke, Ruff, strict Pyright, and the MCP pytest slice all passing. Python CI and Terraform CI also completed successfully on the same implementation head, proving both application regression safety and that the dev-only MCP dependency no longer contaminates deployed Lambda package construction.
+The MCP quality-gate job validated the frozen adapter with lock verification, `mcp==2.2.0` pin verification, import smoke, Ruff, strict Pyright, and the MCP pytest slice all passing. Python CI and Terraform CI also completed successfully on the same implementation head, proving both application regression safety and that the dev-only MCP dependency no longer contaminates deployed Lambda package construction.
 
-Final merge protection still requires the PR head to remain unchanged after this evidence is recorded; any further branch commit invalidates this checkpoint and requires a new exact-head validation.
+This documentation checkpoint intentionally creates a new PR head. Protected merge requires all required CI to pass again on that resulting exact head; no subsequent branch commit may be accepted without another exact-head validation.
 
 ## AWS / IAM / runtime impact
 
@@ -423,6 +423,9 @@ docs/adr/0048-bounded-offline-mcp-protocol-adapter.md
 [x] implementation head Python CI PASS
 [x] implementation head Terraform CI PASS
 [x] PR scope/review threads clean at implementation checkpoint
+[ ] final exact-head MCP CI PASS
+[ ] final exact-head Python CI PASS
+[ ] final exact-head Terraform CI PASS
 [ ] protected squash merge
 [ ] public/current state synchronized
 [ ] issue #183 CLOSED / COMPLETED after state synchronization
