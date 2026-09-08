@@ -10,9 +10,10 @@ comparison contract:            COMPLETE
 frozen synthetic fixture:       COMPLETE
 offline evaluator:              COMPLETE
 offline CLI harness:            COMPLETE
+identity-pinned CI validation:  COMPLETE
 real model calls:               0
 capability executions:          0
-exact-head CI:                  PENDING
+final documentation-head CI:    PENDING
 Gate 12.2 completion:           IN PROGRESS
 ```
 
@@ -21,6 +22,7 @@ Starting checkpoint:
 ```text
 main:   7addd9f6499e9fd9b3ad08cb2ac4a27d6d5cbe0e
 issue:  #168
+PR:     #169
 branch: feat/phase12-comparative-evaluation-contract
 ```
 
@@ -64,7 +66,7 @@ Therefore:
 synthetic fixture conformance != multi-agent model quality
 ```
 
-A `6/6` offline conformance result, if observed, proves that the evaluation/admission contract behaves as expected for the fixture. It is not a real multi-agent quality baseline.
+The observed `6/6` offline conformance result proves that the evaluation/admission contract behaves as expected for the frozen fixture. It is not a real multi-agent quality baseline.
 
 ## Exact Phase 11 reference
 
@@ -131,6 +133,26 @@ allowlist-conflict
 
 A separate unit case also proves that a synthetic HANDOFF whose specialization has an empty intersection with source authority is scored as deterministic `REJECTED`, rather than creating a specialist task.
 
+## Frozen comparison evidence identities
+
+The exact frozen fixture and deterministic scoring semantics produce:
+
+```text
+dataset_sha256:
+1ad7f6274edea7d515f5827859d8a39bdde8edecc9a2ed58dc09df16b09dd491
+
+dataset_id:
+multi-agent-comparison:v1:dataset:1ad7f6274edea7d515f5827859d8a39bdde8edecc9a2ed58dc09df16b09dd491
+
+report_sha256:
+0586822800f028d0bb5c7cdb937db4af2f685abde3e09c76afd979d4e1abc222
+
+report_id:
+multi-agent-comparison:v1:report:0586822800f028d0bb5c7cdb937db4af2f685abde3e09c76afd979d4e1abc222
+```
+
+These identities are pinned by tests. Any change to fixture semantics, expected outcomes, scoring dimensions, or the Phase 11 reference binding changes the content-addressed identity and must be reviewed explicitly.
+
 ## Decomposed deterministic metrics
 
 Per case:
@@ -145,25 +167,26 @@ bounds_compliant
 passed = conjunction of the six dimensions
 ```
 
-Aggregate:
+Frozen synthetic aggregate:
 
 ```text
-total_cases
-passed_cases
-decision_matches
-specialization_matches
-admission_matches
-target_scope_matches
-non_broadening_cases
-bounds_compliant_cases
-handoff_cases
-abstention_cases
-source_capability_slots_for_handoffs
-specialist_capability_slots
-capability_slots_removed
+total_cases:                         6
+passed_cases:                        6
+decision_matches:                    6
+specialization_matches:              6
+admission_matches:                   6
+target_scope_matches:                6
+non_broadening_cases:                6
+bounds_compliant_cases:              6
+handoff_cases:                       4
+abstention_cases:                    2
+source_capability_slots_for_handoffs: 16
+specialist_capability_slots:          8
+capability_slots_removed:             8
+offline_capability_executions:        0
 ```
 
-The comparison deliberately preserves individual dimensions. A wrong specialization can therefore fail specialization/scope quality while still showing that bounds and non-broadening remained intact.
+The comparison deliberately preserves individual dimensions. A deliberately wrong synthetic specialization produces `5/6` specialization/scope matches while bounds and non-broadening remain `6/6`, proving those failure dimensions are independently visible.
 
 ## Runtime evidence is explicitly absent
 
@@ -240,6 +263,7 @@ The Gate 12.2 tests cover:
 
 ```text
 exact Phase 11 reference binding
+exact frozen dataset/report identities
 six-case fixture conformance
 4-to-2 capability-slot narrowing
 explicit null runtime metrics
@@ -251,9 +275,27 @@ schema-drift failure
 repeatable dataset/report identities
 ```
 
+## Identity-pinned CI checkpoint
+
+Exact implementation/evidence head before this final documentation update:
+
+```text
+head:                2b6869794118072a0f54d3df1ff46d22b739b5d4
+PR merge test:       bc1e98301caf0d26921fb8d37641ac26740db4e2
+Multi-Agent CI:      34174564555 / run #6 / PASS
+job:                 101901301515
+offline fixture CLI: PASS
+uv lock --check:     PASS
+Ruff:                PASS
+Pyright strict:      0 errors / 0 warnings / 0 informations
+pytest:              18 passed in 0.28s
+```
+
+This run confirms both pinned dataset/report identities and the frozen aggregate semantics. A final exact-head CI run is still required because this lab update changes the PR head.
+
 ## CI boundary
 
-Multi-Agent CI now includes:
+Multi-Agent CI includes:
 
 ```text
 tests/fixtures/multi_agent/**
