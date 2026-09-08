@@ -59,3 +59,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0049](0049-bounded-mcp-capability-execution-bridge.md) | Bind MCP admission to the existing typed capability executor while keeping business-result transport separate | Accepted |
 | [0050](0050-bounded-mcp-structured-result-projection.md) | Project only explicitly allowlisted structured-security business results through MCP after typed execution/result admission | Accepted |
 | [0051](0051-phase13-mcp-closeout.md) | Close Phase 13 at the bounded offline MCP boundary rather than inventing a public/deployed runtime without a concrete requirement | Accepted |
+| [0052](0052-agentcore-runtime-capability-fit.md) | Use AgentCore Runtime only for a bounded HTTP/SigV4 hosting experiment before capability execution | Accepted |
