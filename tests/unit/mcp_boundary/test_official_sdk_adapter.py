@@ -5,7 +5,8 @@ from __future__ import annotations
 from datetime import date
 
 import pytest
-from mcp import Client
+from mcp import Client, MCPError
+from mcp_types import INVALID_PARAMS
 
 from opslens.agent_baseline.application import authorize_agent_action
 from opslens.agent_baseline.domain import (
@@ -209,14 +210,15 @@ async def test_official_sdk_rejects_arbitrary_executable_argument_surface() -> N
     )
 
     async with Client(server, raise_exceptions=True) as client:
-        result = await client.call_tool(
-            McpToolName.STRUCTURED_SECURITY_QUERY.value,
-            {
-                "invocation_id": invocation.invocation_id,
-                "invocation_sha256": invocation.invocation_sha256,
-                "sql": "DROP TABLE findings",
-            },
-        )
+        with pytest.raises(MCPError) as exc_info:
+            await client.call_tool(
+                McpToolName.STRUCTURED_SECURITY_QUERY.value,
+                {
+                    "invocation_id": invocation.invocation_id,
+                    "invocation_sha256": invocation.invocation_sha256,
+                    "sql": "DROP TABLE findings",
+                },
+            )
 
-    assert result.is_error is True
-    assert result.structured_content is None
+    assert exc_info.value.error.code == INVALID_PARAMS
+    assert exc_info.value.error.message == "MCP tool arguments rejected."
