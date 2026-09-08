@@ -4,7 +4,7 @@ _Date: 2026-09-08_
 
 ## Status
 
-**IMPLEMENTED / FINAL VALIDATION PENDING.**
+**IMPLEMENTED / MERGE CANDIDATE — FINAL EXACT-HEAD REVALIDATION PENDING.**
 
 Starting checkpoint:
 
@@ -252,16 +252,23 @@ Two non-authority defects were found before the merge candidate:
 
 No `type: ignore`, rule suppression, or quality-gate weakening was introduced.
 
-A later implementation checkpoint already demonstrated the expanded MCP slice as:
+The pre-index merge-candidate head `034b9035f75d043332ace6f32623f10ffa006dd0` demonstrated both affected quality slices as green:
 
 ```text
-MCP CI run:        34244617484 / run #40
-Ruff MCP slice:    PASS
-Pyright strict:    0 errors / 0 warnings / 0 informations
-pytest MCP slice:  29 passed in 1.21s
+MCP CI run:          34246091342 / run #47
+MCP job:             102128326628
+Ruff MCP slice:      PASS
+Pyright strict:      0 errors / 0 warnings / 0 informations
+pytest MCP slice:    29 passed in 1.19s
+
+Single-Agent CI run: 34246091338 / run #65
+Single-Agent job:    102128326221
+Ruff slice:          PASS
+Pyright strict:      0 errors / 0 warnings / 0 informations
+pytest slice:        57 passed in 0.44s
 ```
 
-This is intermediate evidence only. Final Gate 13.4 completion still requires exact-head MCP and Single-Agent CI after all code/docs changes.
+ADR 0050 was then indexed. Final Gate 13.4 completion still requires one exact-head MCP and Single-Agent revalidation after that documentation synchronization.
 
 ## Cost and execution boundary
 
@@ -344,7 +351,7 @@ docs/adr/0050-bounded-mcp-structured-result-projection.md
 [x] no model/AWS/IAM/public runtime expansion
 [x] ADR 0050 added
 [x] Gate 13.4 lab added
-[ ] ADR 0050 indexed
+[x] ADR 0050 indexed
 [ ] final exact-head MCP CI PASS
 [ ] final exact-head Single-Agent CI PASS
 [ ] PR scope/review threads clean
