@@ -6,6 +6,8 @@ on:
       - "src/opslens/agentcore_runtime/**/*.py"
       - "tests/unit/agentcore_runtime/**/*.py"
       - "tests/fixtures/agentcore_runtime/**"
+      - "scripts/build_agentcore_runtime_package.py"
+      - "runtime/agentcore/**"
       - "docs/adr/0052-*.md"
       - "labs/phase-14-gate-14-*.md"
       - "labs/evidence/phase-14-*.json"
@@ -130,25 +132,36 @@ jobs:
           PY
 
       - name: Ruff AgentCore slice
-        run: |
-          if [ -d src/opslens/agentcore_runtime ]; then
-            uv run ruff check src/opslens/agentcore_runtime tests/unit/agentcore_runtime
-          else
-            echo "AgentCore Python slice not introduced yet; Gate 14.1 is architecture/evidence only."
-          fi
+        run: >-
+          uv run ruff check
+          src/opslens/agentcore_runtime
+          tests/unit/agentcore_runtime
+          scripts/build_agentcore_runtime_package.py
+          runtime/agentcore/main.py
 
       - name: Pyright strict AgentCore slice
-        run: |
-          if [ -d src/opslens/agentcore_runtime ]; then
-            uv run pyright src/opslens/agentcore_runtime tests/unit/agentcore_runtime
-          else
-            echo "AgentCore Python slice not introduced yet; Gate 14.1 is architecture/evidence only."
-          fi
+        run: >-
+          uv run pyright
+          src/opslens/agentcore_runtime
+          tests/unit/agentcore_runtime
+          scripts/build_agentcore_runtime_package.py
+          runtime/agentcore/main.py
 
       - name: Pytest AgentCore slice
+        run: uv run pytest tests/unit/agentcore_runtime
+
+      - name: Build reproducible AgentCore direct-code packages
         run: |
-          if [ -d tests/unit/agentcore_runtime ]; then
-            uv run pytest tests/unit/agentcore_runtime
-          else
-            echo "AgentCore unit-test slice not introduced yet; Gate 14.1 is architecture/evidence only."
-          fi
+          uv run python scripts/build_agentcore_runtime_package.py \
+            --output-dir /tmp/opslens-agentcore-package-a \
+            > /tmp/opslens-agentcore-package-a.json
+          uv run python scripts/build_agentcore_runtime_package.py \
+            --output-dir /tmp/opslens-agentcore-package-b \
+            > /tmp/opslens-agentcore-package-b.json
+          cmp \
+            /tmp/opslens-agentcore-package-a/opslens-agentcore-runtime.zip \
+            /tmp/opslens-agentcore-package-b/opslens-agentcore-runtime.zip
+          cmp \
+            /tmp/opslens-agentcore-package-a/opslens-agentcore-runtime-package.json \
+            /tmp/opslens-agentcore-package-b/opslens-agentcore-runtime-package.json
+          cat /tmp/opslens-agentcore-package-a/opslens-agentcore-runtime-package.json
