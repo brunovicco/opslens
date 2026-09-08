@@ -51,3 +51,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0041](0041-phase11-single-agent-baseline-closeout.md) | Close Phase 11 at the bounded single-agent reference before multi-agent complexity | Accepted |
 | [0042](0042-bounded-multi-agent-specialization-handoff.md) | Bound multi-agent specialization before adding another model call | Accepted |
 | [0043](0043-freeze-multi-agent-comparison-before-second-model-call.md) | Freeze deterministic multi-agent comparison before a second model call | Accepted |
+| [0044](0044-first-bounded-real-two-model-comparison.md) | Measure the first bounded real two-model topology without moving authority into models | Accepted |
