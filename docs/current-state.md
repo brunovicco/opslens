@@ -22,7 +22,8 @@ Phase 11   Single-Agent Baseline                               COMPLETE
 Phase 12   Multi-Agent Architecture                            COMPLETE
 Phase 13   MCP                                                 IN PROGRESS
   Gate 13.1 Bounded MCP capability exposure contract           COMPLETE / MERGED
-  Gate 13.2 Bounded MCP protocol adapter / offline interop      NEXT
+  Gate 13.2 Bounded MCP protocol adapter / offline interop      COMPLETE / MERGED
+  Gate 13.3 Bounded MCP capability execution bridge            NEXT
 Phase 14   Amazon Bedrock AgentCore                            PLANNED
 Phase 15   A2A                                                 PLANNED
 Phase 16   Runtime Exposure with Amazon Inspector              PLANNED
@@ -33,29 +34,27 @@ Phase 18   Evaluation, Cost & Portfolio Readiness              PLANNED
 Latest merged checkpoint:
 
 ```text
-Phase 13 Gate 13.1 / PR #181
-322922aed4abec3b2266a18d15d8145df974a7d1
+Phase 13 Gate 13.2 / PR #184
+131c086ff85564dbd777cebd6454d70e53ca8332
 ```
 
-Gate 13.1 exact validation and merge:
+Gate 13.2 exact validation and merge:
 
 ```text
-issue #180:               closeout tracker; closure follows final state synchronization
-PR #181 final head:       340f2d7beee3640bd14455de635fe3ee4b6cc5cc
-PR merge test commit:     166e5626f52bdbabfd306b0e3152b02c1620ee5f
-MCP CI:                    34223369166 / run #3 / PASS
-job:                       102051514632
-uv lock --check:           PASS
-MCP import smoke:          PASS
-Ruff:                      PASS
-Pyright strict:            0 errors / 0 warnings / 0 informations
-pytest MCP slice:          7 passed in 0.19s
+issue #183:               state-sync tracker; closure follows this synchronization
+PR #184 final head:       86031533d807c2915443ada6c83712feafb1e045
+PR merge test commit:     87790ffef64e9558904bff46034e5459aba2ce3c
+MCP CI:                    34234012588 / run #23 / PASS
+Python CI:                 34234012544 / run #382 / PASS
+Terraform CI:              34234012583 / run #231 / PASS
 review threads:            0
-new model invocations:     0
+PR mergeable at checkpoint: true
+model invocations:         0
 capability executions:     0
-MCP SDK/runtime:           0
+public MCP endpoint:       0
+MCP deployed runtime:      0
 new AWS/IAM resources:     0
-PR #181 merge SHA:         322922aed4abec3b2266a18d15d8145df974a7d1
+PR #184 merge SHA:         131c086ff85564dbd777cebd6454d70e53ca8332
 ```
 
 ## Permanent architecture boundaries
@@ -94,7 +93,7 @@ MCP transport success != business/evidence truth
 MCP result != runtime exposure truth
 ```
 
-Deterministic code continues to own package/version semantics, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS/Risk Policy facts, `SemanticQuery` validation and SQL compilation, retrieval/evidence admission, hybrid routing/completeness, canonical evidence/citation identity, output admission, public request admission, immutable repository evidence binding, capability allowlists, capability authorization, typed capability invocation/result binding, handoff admission, specialization mapping, comparison/evaluation metrics, MCP tool/capability mapping and call admission, content-addressed evidence/report identity, provider/model selection, retry/fallback policy, and runtime-exposure authority.
+Deterministic code continues to own package/version semantics, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS/Risk Policy facts, `SemanticQuery` validation and SQL compilation, retrieval/evidence admission, hybrid routing/completeness, canonical evidence/citation identity, output admission, public request admission, immutable repository evidence binding, capability allowlists, capability authorization, typed capability invocation/result binding, handoff admission, specialization mapping, comparison/evaluation metrics, MCP tool/capability mapping, raw MCP argument-shape refusal, invocation-reference validation, resolver identity revalidation and call admission, content-addressed evidence/report identity, provider/model selection, retry/fallback policy, and runtime-exposure authority.
 
 ## Retained measured reasoning architecture
 
@@ -275,8 +274,6 @@ admission_id
 
 It cannot author or reinterpret `SemanticQuery`, SQL, synthesis requests, repository coordinates, URLs, shell commands, credentials, provider/model selection, retry/fallback policy, or execution results.
 
-Failure paths are fail closed for unknown tool names, unknown typed invocation types, tool/capability mismatch, and forged exposure/admission identities.
-
 Architecture/evidence references:
 
 ```text
@@ -284,37 +281,82 @@ docs/adr/0047-bounded-mcp-capability-exposure.md
 labs/phase-13-gate-13-1-bounded-mcp-capability-exposure.md
 ```
 
+## Phase 13 Gate 13.2 — bounded MCP protocol adapter / offline interoperability
+
+Gate 13.2 adds the first real official MCP SDK adapter while preserving Gate 13.1 as deterministic admission authority.
+
+Pinned development-only dependency:
+
+```text
+mcp==2.2.0
+```
+
+Bounded protocol path:
+
+```text
+MCP Client
+ -> exact closed Gate 13.1 tool
+ -> raw tools/call argument-shape refusal
+ -> {invocation_id, invocation_sha256}
+ -> McpInvocationReference
+ -> McpInvocationResolver
+ -> exact existing AgentCapabilityInvocation
+ -> independent ID + digest revalidation
+ -> Gate 13.1 admit_mcp_tool_call(...)
+ -> content-minimized McpAdmissionProjection
+ -> MCP Client
+ -> STOP
+```
+
+The in-process proof uses official `MCPServer` / `Client(server)` interoperability. Protocol-visible input contains only invocation ID + digest, and successful structured output contains only deterministic admission identity.
+
+Real tests discovered that MCP SDK v2.2.0/Pydantic may ignore an unexpected argument field rather than fail closed. OpsLens therefore installs a narrow raw-request middleware that refuses extra or missing keys before SDK function-model coercion. Framework validation remains subordinate to OpsLens authority.
+
+A second concrete finding came from Terraform CI: when `mcp==2.2.0` was initially placed in project runtime dependencies, its transitive graph enlarged unrelated Lambda packages and caused the NVD incremental direct-upload package to exceed the existing 50 MiB limit. The correct remediation was to keep MCP dev-only because Gate 13.2 deploys no MCP runtime; deployment limits were not weakened.
+
+Architecture/evidence references:
+
+```text
+docs/adr/0048-bounded-offline-mcp-protocol-adapter.md
+labs/phase-13-gate-13-2-bounded-mcp-protocol-adapter.md
+PR #184 merge: 131c086ff85564dbd777cebd6454d70e53ca8332
+```
+
 ## Phase 13 proof boundary so far
 
-Gate 13.1 proves:
+Gates 13.1–13.2 now prove:
 
 ```text
 MCP-visible tool identity can remain a closed code-owned surface
 protocol naming can remain separate from capability authorization
 MCP admission can preserve exact upstream action/invocation identity
-unknown or mismatched paths can fail closed before execution
-MCP authority semantics can be tested without adopting a runtime framework
+real official MCP client/server interoperability can remain reference-only
+raw protocol arguments can fail closed before permissive framework coercion
+resolver results can be revalidated before deterministic admission
+structured protocol output can remain content-minimized to admission evidence
+MCP SDK experimentation can remain outside unrelated deployed Lambda runtimes
+offline protocol interoperability can be proven with zero capability execution
 ```
 
-Gate 13.1 does **not** prove:
+They still do **not** prove:
 
 ```text
-real MCP protocol interoperability
-MCP client/server serialization
-MCP authentication or session lifecycle
-network reliability
 capability execution through MCP
-MCP result transport
-public/deployed MCP runtime
-production MCP SLOs
-AgentCore behavior
+business execution-result transport through MCP
+persistent invocation registry
+stdio subprocess interoperability
+Streamable HTTP interoperability
+public MCP endpoint
+MCP authentication/authorization transport
+network reliability or production SLOs
+Amazon Bedrock AgentCore runtime behavior
 A2A interoperability
 runtime exposure / Amazon Inspector evidence
 ```
 
 ## AWS / IAM / runtime checkpoint
 
-Gate 13.1 introduced no runtime expansion:
+Gate 13.2 introduced no deployed runtime expansion:
 
 ```text
 new model invocations:       0
@@ -323,7 +365,7 @@ new AWS resources:            0
 new IAM roles/policies:       0
 GitHub OIDC trust changes:    0
 capability executions:        0
-MCP SDK dependency:           0
+MCP SDK dependency:           dev-only mcp==2.2.0
 MCP network runtime:          0
 AgentCore runtime:            0
 A2A runtime:                  0
@@ -345,24 +387,24 @@ Preserved historical head:
 ## Next authorized gate
 
 ```text
-Phase 13 — Gate 13.2: Bounded MCP Protocol Adapter / Offline Interoperability
+Phase 13 — Gate 13.3: Bounded MCP Capability Execution Bridge
 ```
 
-Gate 13.2 may introduce a real MCP protocol adapter only against the already-frozen Gate 13.1 authority contract. Framework/SDK adoption must not redefine capability authority.
+Gate 13.3 may connect an already-admitted Gate 13.2 MCP invocation reference to the existing deterministic `execute_authorized_capability(...)` boundary. It must not make MCP a new executable-input, authorization, provider-selection, or business-result authority.
 
 Initial constraints:
 
 ```text
-1. protocol input references an already-created typed invocation; it does not author arbitrary business args
-2. deterministic server-side resolution must recover the exact admitted invocation identity or fail closed
-3. tool/capability matching still passes through Gate 13.1 admission
-4. STOP before execute_authorized_capability(...)
-5. first interoperability proof should be offline/in-process or stdio, not public network deployment
-6. unknown/missing/forged invocation references fail closed
-7. no dynamic tool registry
-8. no AWS/IAM expansion without a concrete runtime need
-9. protocol success remains distinct from business/evidence truth
-10. AgentCore, A2A, public runtime, and runtime exposure remain later decisions
+1. input remains the exact already-created typed AgentCapabilityInvocation resolved by ID + digest
+2. Gate 13.1 deterministic tool/capability admission remains mandatory before execution
+3. execution must use the existing typed single-agent execution contract; no generic args/kwargs executor
+4. exactly one admitted capability execution; no adaptive retry/fallback or alternate capability
+5. capability/result identity must remain bound to the exact authorized action and invocation
+6. raw provider/downstream messages are not protocol evidence
+7. Gate 13.3 should prove execution wiring offline before any public/network MCP runtime
+8. business result projection/transport is a separate later gate; do not broaden protocol output yet
+9. no new AWS/IAM/runtime resource unless a concrete capability path demonstrably requires it
+10. MCP execution success remains distinct from business/evidence truth and runtime exposure truth
+11. AgentCore, A2A, public transport/authentication, and runtime exposure remain later decisions
+12. PR #89 remains untouched deferred cross-project work
 ```
-
-Before adding an MCP SDK dependency, Gate 13.2 must verify the current official SDK/API and pin the chosen dependency deliberately.
