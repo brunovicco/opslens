@@ -147,6 +147,7 @@ class MultiAgentRealComparisonExpectation:
     specialist_capability: AgentCapability | None
 
     def __post_init__(self) -> None:
+        """Validate one predeclared real-comparison expectation."""
         if type(self.triage_decision) is not MultiAgentHandoffDecision:
             raise MultiAgentRealComparisonValidationError(
                 "triage_decision must be MultiAgentHandoffDecision"
@@ -257,6 +258,7 @@ class MultiAgentRealComparisonCase:
     case_id: str
 
     def __post_init__(self) -> None:
+        """Validate case bindings and content-addressed identity."""
         key = _validate_case_key(self.case_key)
         if type(self.task) is not SingleAgentTask:
             raise MultiAgentRealComparisonValidationError(
@@ -292,6 +294,7 @@ class MultiAgentRealComparisonCase:
         task: SingleAgentTask,
         expected: MultiAgentRealComparisonExpectation,
     ) -> MultiAgentRealComparisonCase:
+        """Create one canonical real-comparison case."""
         key = _validate_case_key(case_key)
         digest = _case_digest(case_key=key, task=task, expected=expected)
         return cls(
@@ -332,6 +335,7 @@ class MultiAgentRealComparisonDataset:
     dataset_id: str
 
     def __post_init__(self) -> None:
+        """Validate historical references, cases, ordering, and dataset identity."""
         _validate_reference_bindings(self)
         if type(self.cases) is not tuple or not self.cases:
             raise MultiAgentRealComparisonValidationError(
@@ -370,6 +374,7 @@ class MultiAgentRealComparisonDataset:
         *,
         cases: tuple[MultiAgentRealComparisonCase, ...],
     ) -> MultiAgentRealComparisonDataset:
+        """Create the canonical real-comparison dataset with frozen references."""
         if type(cases) is not tuple:
             raise MultiAgentRealComparisonValidationError("cases must be a tuple")
         ordered = tuple(sorted(cases, key=lambda item: item.case_key))
@@ -463,6 +468,7 @@ class MultiAgentRealComparisonCaseScore:
     score_id: str
 
     def __post_init__(self) -> None:
+        """Validate score decomposition, bounds, runtime values, and identity."""
         key = _validate_case_key(self.case_key)
         case_id = _validate_identifier(
             self.case_id,
@@ -509,6 +515,7 @@ class MultiAgentRealComparisonCaseScore:
         case: MultiAgentRealComparisonCase,
         result: MultiAgentTwoModelReasoningResult,
     ) -> MultiAgentRealComparisonCaseScore:
+        """Create one decomposed score from one observed two-model result."""
         if result.source_task.task_id != case.task.task_id:
             raise MultiAgentRealComparisonValidationError(
                 "result is not bound to the real-comparison case"
@@ -517,7 +524,6 @@ class MultiAgentRealComparisonCaseScore:
         proposal = result.triage_result.proposal
         observed_scope = _observed_target_capabilities(result)
         specialist = result.specialist_result
-
         triage_match = proposal.decision is expected.triage_decision
         specialization_match = (
             proposal.target_specialization is expected.target_specialization
@@ -735,6 +741,7 @@ class MultiAgentRealComparisonMetrics:
     capability_executions: int
 
     def __post_init__(self) -> None:
+        """Validate aggregate arithmetic and the zero-execution boundary."""
         values = _metrics_payload(self)
         if self.total_cases <= 0:
             raise MultiAgentRealComparisonValidationError(
@@ -871,6 +878,7 @@ class MultiAgentRealComparisonReport:
     report_id: str
 
     def __post_init__(self) -> None:
+        """Validate report bindings, metrics, pricing non-claim, and identity."""
         _validate_identifier(
             self.dataset_id,
             label="dataset_id",
@@ -915,6 +923,7 @@ class MultiAgentRealComparisonReport:
         dataset: MultiAgentRealComparisonDataset,
         scores: tuple[MultiAgentRealComparisonCaseScore, ...],
     ) -> MultiAgentRealComparisonReport:
+        """Create one content-addressed real-comparison report."""
         if len(scores) != len(dataset.cases):
             raise MultiAgentRealComparisonValidationError(
                 "score count must match real comparison case count"
