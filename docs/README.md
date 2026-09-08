@@ -28,7 +28,8 @@ Phase 10 Observability & Operational Excellence COMPLETE
 Phase 11 Single-Agent Baseline                  COMPLETE
 Phase 12 Multi-Agent Architecture               IN PROGRESS
   Gate 12.1 Bounded specialization handoff      COMPLETE / MERGED
-  Gate 12.2 Comparative evaluation contract     NEXT
+  Gate 12.2 Comparative evaluation contract     COMPLETE / MERGED
+  Gate 12.3 First real two-model comparison     NEXT
 ```
 
 The project preserves:
@@ -42,19 +43,22 @@ handoff proposal != handoff admission
 handoff admission != capability authorization
 AuthorizedAgentAction != capability invocation
 structured model output != trusted proposal
+synthetic fixture conformance != model quality
 Repository Risk != Runtime Exposure
 ```
 
-No public/deployed agent runtime, AgentCore runtime, MCP, A2A, or runtime-exposure authority is claimed by Phase 12 Gate 12.1.
+No public/deployed agent runtime, AgentCore runtime, MCP, A2A, or runtime-exposure authority is claimed by Phase 12 Gate 12.2.
 
 ## Phase 12 architecture records
 
 - [`adr/0042-bounded-multi-agent-specialization-handoff.md`](adr/0042-bounded-multi-agent-specialization-handoff.md) — freeze a deterministic one-way specialization handoff before any second reasoning model exists.
+- [`adr/0043-freeze-multi-agent-comparison-before-second-model-call.md`](adr/0043-freeze-multi-agent-comparison-before-second-model-call.md) — freeze deterministic comparison criteria and exact Phase 11 evidence binding before the first real two-model experiment.
 
-Frozen Gate 12.1 contract:
+Frozen Phase 12 contracts:
 
 ```text
 multi-agent-handoff:v1
+multi-agent-comparison:v1
 ```
 
 Code-owned specialization partition:
@@ -84,7 +88,7 @@ SingleAgentTask
  -> STOP
 ```
 
-Hard bounds:
+Hard Gate 12.1 bounds:
 
 ```text
 maximum handoffs per task:       1
@@ -106,9 +110,70 @@ single-agent pytest:    56 passed in 0.44s
 merge SHA:              eceed76a6cfc5d7e28e88dfdc503b4863b526ba0
 ```
 
+### Gate 12.2 comparison contract
+
+Gate 12.2 evaluates the frozen handoff boundary with synthetic, explicitly untrusted proposals before any second real model invocation exists:
+
+```text
+frozen comparison fixture
+ -> admitted SingleAgentTask
+ -> synthetic MultiAgentHandoffProposal
+ -> Gate 12.1 deterministic admission
+ -> HANDOFF | ABSTAINED | REJECTED
+ -> deterministic decomposed scoring
+ -> content-addressed report
+ -> runtime measurements remain null
+ -> STOP
+```
+
+Exact Phase 11 reference binding:
+
+```text
+corpus_sha256: 3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
+report_sha256: 724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
+```
+
+Frozen Gate 12.2 identities and conformance evidence:
+
+```text
+dataset_sha256: 1ad7f6274edea7d515f5827859d8a39bdde8edecc9a2ed58dc09df16b09dd491
+report_sha256:  0586822800f028d0bb5c7cdb937db4af2f685abde3e09c76afd979d4e1abc222
+total / passed: 6 / 6
+handoff / abstention: 4 / 2
+source capability slots for handoffs: 16
+specialist capability slots: 8
+capability slots removed: 8
+offline capability executions: 0
+```
+
+The `6/6` result is synthetic evaluator/contract conformance. It is not triage-model quality, specialist-model quality, or a real multi-agent baseline.
+
+Because no model is invoked, the report deliberately keeps these values `null` rather than manufacturing runtime zeros:
+
+```text
+model invocation count
+input/output/total tokens
+provider/client latency
+SDK retries
+inference cost
+```
+
+Gate 12.2 exact merge reference:
+
+```text
+issue:                  #168
+PR:                     #169
+final head:             953467df99ddeaedd6e19471bd2dce6c5bb8de7c
+PR merge test commit:   bab183ee1dbcca0eb6a0bb76b5130180f9f2f7c2
+Multi-Agent CI:         34174680219 / run #7 / PASS
+pytest:                 18 passed in 0.27s
+merge SHA:              865ba70c813711cb88da9ac7308c8966ff983fd0
+```
+
 ### Phase 12 laboratories
 
 - [`../labs/phase-12-gate-12-1-bounded-specialization-handoff.md`](../labs/phase-12-gate-12-1-bounded-specialization-handoff.md)
+- [`../labs/phase-12-gate-12-2-comparative-multi-agent-evaluation.md`](../labs/phase-12-gate-12-2-comparative-multi-agent-evaluation.md)
 
 ## Phase 11 architecture records
 
@@ -231,12 +296,14 @@ Detailed earlier evidence remains in phase-specific labs and is not rewritten by
 ## Next authorized gate
 
 ```text
-Phase 12 — Gate 12.2: Comparative Multi-Agent Evaluation Contract
+Phase 12 — Gate 12.3: First Bounded Real Two-Model Comparison
 ```
 
-Before a second model call is introduced, the comparison contract must be frozen against the Phase 11 reference. Required dimensions include routing/proposal quality, bounds compliance, specialist capability-surface width, model invocation count, tokens, provider/client latency, retries, inference cost, and capability executions.
+Gate 12.3 may now add at most two bounded model reasoning calls per task: a triage call that proposes one closed specialization, followed by deterministic handoff admission and a specialist reasoning call that proposes one already-permitted capability. Deterministic capability authorization remains mandatory and the first experiment stops before capability execution.
 
-The comparison must remain deterministic; an LLM judge does not own metric authority. A two-model topology is retained only if measured specialization value justifies the added latency, cost, failure surface, and architectural complexity.
+Initial bounds are two model invocations, one handoff, zero adaptive application retries, zero fallbacks, and zero capability executions. Real tokens, latency, SDK retries, and cost must come only from observed provider evidence. The first real observations must be preserved before any prompt/model/topology tuning.
+
+A two-model topology is retained only if measured specialization value justifies the added model call, latency, token usage, cost, failure surface, and architectural complexity relative to the frozen Phase 11 reference.
 
 AgentCore, MCP, and A2A remain separate future decisions. PR #89 remains deferred cross-project integration work.
 

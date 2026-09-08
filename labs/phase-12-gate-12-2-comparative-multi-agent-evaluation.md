@@ -13,8 +13,9 @@ offline CLI harness:            COMPLETE
 identity-pinned CI validation:  COMPLETE
 real model calls:               0
 capability executions:          0
-final documentation-head CI:    PENDING
-Gate 12.2 completion:           IN PROGRESS
+final exact-head CI:            COMPLETE
+protected squash merge:         COMPLETE
+Gate 12.2 completion:           COMPLETE / MERGED
 ```
 
 Starting checkpoint:
@@ -24,6 +25,16 @@ main:   7addd9f6499e9fd9b3ad08cb2ac4a27d6d5cbe0e
 issue:  #168
 PR:     #169
 branch: feat/phase12-comparative-evaluation-contract
+```
+
+Final merged checkpoint:
+
+```text
+PR #169 final head:     953467df99ddeaedd6e19471bd2dce6c5bb8de7c
+PR merge test commit:   bab183ee1dbcca0eb6a0bb76b5130180f9f2f7c2
+Multi-Agent CI:         34174680219 / run #7 / PASS
+job:                    101901637997
+merge SHA:              865ba70c813711cb88da9ac7308c8966ff983fd0
 ```
 
 ## Objective
@@ -275,23 +286,25 @@ schema-drift failure
 repeatable dataset/report identities
 ```
 
-## Identity-pinned CI checkpoint
-
-Exact implementation/evidence head before this final documentation update:
+## Final exact-head validation
 
 ```text
-head:                2b6869794118072a0f54d3df1ff46d22b739b5d4
-PR merge test:       bc1e98301caf0d26921fb8d37641ac26740db4e2
-Multi-Agent CI:      34174564555 / run #6 / PASS
-job:                 101901301515
-offline fixture CLI: PASS
-uv lock --check:     PASS
-Ruff:                PASS
-Pyright strict:      0 errors / 0 warnings / 0 informations
-pytest:              18 passed in 0.28s
+PR #169 head:           953467df99ddeaedd6e19471bd2dce6c5bb8de7c
+PR merge test commit:   bab183ee1dbcca0eb6a0bb76b5130180f9f2f7c2
+Multi-Agent CI:         34174680219 / run #7 / PASS
+job:                    101901637997
+offline fixture CLI:    PASS
+uv lock --check:        PASS
+Ruff:                   PASS
+Pyright strict:         0 errors / 0 warnings / 0 informations
+pytest:                 18 passed in 0.27s
 ```
 
-This run confirms both pinned dataset/report identities and the frozen aggregate semantics. A final exact-head CI run is still required because this lab update changes the PR head.
+The exact-head run checked out the PR merge test commit against the then-current `main`, executed the frozen fixture before static/type/unit checks, and completed successfully. PR #169 was then squash-merged with the validated exact head as:
+
+```text
+865ba70c813711cb88da9ac7308c8966ff983fd0
+```
 
 ## CI boundary
 
@@ -354,9 +367,9 @@ runtime privilege reduction
 
 ## Next-gate entry rule
 
-A later Gate 12.3 may introduce the first bounded real two-model comparison only after Gate 12.2 merges.
+Gate 12.3 may introduce the first bounded real two-model comparison because Gate 12.2 is now merged.
 
-The first experiment should preserve:
+The first experiment must preserve:
 
 ```text
 maximum model invocations per task: 2
@@ -373,11 +386,11 @@ STOP before execution
 
 Real tokens, latency, retries, and cost must come only from observed provider evidence. Cost must be derived from observed token usage and contemporaneous verified pricing.
 
-The two-model topology is rejected if the measured coordination/specialization value does not justify the additional call, latency, token cost, failure surface, or implementation complexity.
+The first real observations must be preserved before any tuning. The two-model topology is rejected if measured coordination/specialization value does not justify the additional call, latency, token cost, failure surface, or implementation complexity relative to the frozen Phase 11 reference.
 
 ## Deferred integration
 
-PR #89 remains deferred cross-project Governed LLM Gateway work and must remain untouched during Gate 12.2.
+PR #89 remains deferred cross-project Governed LLM Gateway work and was not modified by Gate 12.2.
 
 ## Architecture record
 

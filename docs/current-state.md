@@ -19,15 +19,10 @@ Phase 8    Hybrid Retrieval                                    COMPLETE
 Phase 9    Public Analyze Your Repository                      COMPLETE
 Phase 10   Observability & Operational Excellence              COMPLETE
 Phase 11   Single-Agent Baseline                               COMPLETE
-  Gate 11.1 Bounded capability authorization contract          COMPLETE / MERGED
-  Gate 11.2 Typed capability bindings + offline executor       COMPLETE / MERGED
-  Gate 11.3 Frozen single-agent evaluation fixture             COMPLETE / MERGED
-  Gate 11.4 First bounded model reasoning baseline             COMPLETE / MERGED
-  Gate 11.5 Measured optimization decision                     COMPLETE / MERGED — NO-CHANGE
-  Gate 11.6 Phase 11 closeout                                  COMPLETE / MERGED
 Phase 12   Multi-Agent Architecture                            IN PROGRESS
   Gate 12.1 Bounded specialization handoff contract            COMPLETE / MERGED
-  Gate 12.2 Comparative multi-agent evaluation contract        NEXT
+  Gate 12.2 Comparative multi-agent evaluation contract        COMPLETE / MERGED
+  Gate 12.3 First bounded real two-model comparison            NEXT
 Phase 13   MCP                                                 PLANNED
 Phase 14   Amazon Bedrock AgentCore                            PLANNED
 Phase 15   A2A                                                 PLANNED
@@ -39,25 +34,24 @@ Phase 18   Evaluation, Cost & Portfolio Readiness              PLANNED
 Latest merged checkpoint:
 
 ```text
-Phase 12 Gate 12.1 / PR #166
-eceed76a6cfc5d7e28e88dfdc503b4863b526ba0
+Phase 12 Gate 12.2 / PR #169
+865ba70c813711cb88da9ac7308c8966ff983fd0
 ```
 
-Gate 12.1 exact validation and merge:
+Gate 12.2 exact validation and merge:
 
 ```text
-issue #165:               OPEN until this state synchronization completes
-PR #166 final head:       567cdbde81f058d9545328ca78b718c24d79c9fb
-PR merge test commit:     b1e40ea858726c0672601db8c51c353ffbcc03ae
-Multi-Agent CI:           34172909750 / run #3 / PASS
-job:                      101896544229
+issue #168:               OPEN until this state synchronization completes
+PR #169 final head:       953467df99ddeaedd6e19471bd2dce6c5bb8de7c
+PR merge test commit:     bab183ee1dbcca0eb6a0bb76b5130180f9f2f7c2
+Multi-Agent CI:           34174680219 / run #7 / PASS
+job:                      101901637997
+offline fixture CLI:      PASS
 uv lock --check:          PASS
 Ruff:                     PASS
 Pyright strict:           0 errors / 0 warnings / 0 informations
-pytest:                   10 passed in 0.39s
-Single-Agent CI:          34172909748 / run #48 / PASS
-single-agent pytest:      56 passed in 0.44s
-PR #166 merge SHA:        eceed76a6cfc5d7e28e88dfdc503b4863b526ba0
+pytest:                   18 passed in 0.27s
+PR #169 merge SHA:        865ba70c813711cb88da9ac7308c8966ff983fd0
 real model calls:         0
 capability executions:    0
 new AWS resources:        0
@@ -89,10 +83,11 @@ handoff admission != capability authorization
 AuthorizedAgentAction != capability invocation
 capability invocation != execution result
 structured model output != trusted proposal
+synthetic fixture conformance != model quality
 model selection != capability authority
 ```
 
-Deterministic code continues to own package/version semantics, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS/Risk Policy facts, `SemanticQuery` validation and SQL compilation, retrieval/evidence admission, hybrid routing/completeness, canonical evidence/citation identity, output admission, public request admission, immutable repository evidence binding, capability allowlists, capability authorization, typed capability invocation/result binding, handoff admission, specialization mapping, evaluation metrics, content-addressed evidence/report identity, provider/model selection, retry/fallback policy, and runtime-exposure authority.
+Deterministic code continues to own package/version semantics, vulnerability applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS/Risk Policy facts, `SemanticQuery` validation and SQL compilation, retrieval/evidence admission, hybrid routing/completeness, canonical evidence/citation identity, output admission, public request admission, immutable repository evidence binding, capability allowlists, capability authorization, typed capability invocation/result binding, handoff admission, specialization mapping, comparison/evaluation metrics, content-addressed evidence/report identity, provider/model selection, retry/fallback policy, and runtime-exposure authority.
 
 LLMs may classify, plan, propose, synthesize, explain, select already-admitted citation IDs, propose one already-permitted capability, and in a future measured Phase 12 experiment propose one closed specialization. They do not own structured truth, SQL authority, evidence completeness, capability authorization, executable arguments, provider/model selection, retry/fallback policy, arbitrary tool execution, evaluation metric computation, handoff admission, or runtime-exposure truth.
 
@@ -121,8 +116,6 @@ SingleAgentTask
  -> AuthorizedAgentAction | AgentAbstention | stable rejection
 ```
 
-The Gate 11.4 model-quality baseline deliberately stops before capability execution. Gate 11.2 remains the independent typed execution/result-admission authority.
-
 First real frozen six-case reference:
 
 ```text
@@ -147,17 +140,11 @@ corpus_sha256: 3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
 report_sha256: 724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
 ```
 
-Gate 11.5 remains:
-
-```text
-optimization decision: NO-CHANGE / NO-EXPERIMENT
-```
-
-No later phase may reinterpret the 6/6 acceptance-corpus result as a hidden quality gap without new measured evidence.
+Gate 11.5 remains `NO-CHANGE / NO-EXPERIMENT`. No later phase may reinterpret the `6/6` acceptance-corpus result as a hidden quality gap without new measured evidence.
 
 ## Phase 12 Gate 12.1 frozen handoff boundary
 
-New contract:
+Contract:
 
 ```text
 multi-agent-handoff:v1
@@ -195,39 +182,94 @@ Hard bounds:
 ```text
 maximum handoffs per source task:       1
 maximum specialist capability surface:  2
-real model calls in Gate 12.1:           0
-capability executions in Gate 12.1:      0
-adaptive retry/fallback:                 0
 ```
 
-The handoff proposal contains no arbitrary message/context payload, capability selection, args/kwargs, SQL, URL, shell command, credential, provider/model selection, retry/fallback policy, or execution result.
+The `4 -> <=2` capability reduction is deterministic reasoning-surface narrowing, not runtime privilege reduction. Models still have no capability execution authority.
 
-The one-way `TriageAgentTask -> SpecialistAgentTask` API prevents recursive delegation/cycles in v1. A specialist task is not an admitted handoff source.
+## Phase 12 Gate 12.2 frozen comparison boundary
 
-Gate 12.1 proves deterministic reasoning-surface narrowing from at most four Phase 11 capabilities to at most two specialist capabilities. It does **not** prove runtime privilege reduction because models still have no capability execution authority.
-
-## What Gate 12.1 does not prove
+Contract:
 
 ```text
+multi-agent-comparison:v1
+```
+
+Offline comparison path:
+
+```text
+frozen comparison fixture
+ -> admitted SingleAgentTask
+ -> synthetic untrusted MultiAgentHandoffProposal
+ -> existing Gate 12.1 handoff admission
+ -> HANDOFF | ABSTAINED | REJECTED
+ -> deterministic decomposed case score
+ -> content-addressed comparison report
+ -> runtime measurements remain null
+ -> STOP
+```
+
+Frozen evidence identities:
+
+```text
+dataset_sha256:
+1ad7f6274edea7d515f5827859d8a39bdde8edecc9a2ed58dc09df16b09dd491
+
+report_sha256:
+0586822800f028d0bb5c7cdb937db4af2f685abde3e09c76afd979d4e1abc222
+```
+
+Frozen synthetic conformance metrics:
+
+```text
+total / passed:                        6 / 6
+decision matches:                      6
+specialization matches:                6
+admission matches:                     6
+target scope matches:                  6
+non-broadening cases:                  6
+bounds-compliant cases:                6
+handoff / abstention cases:             4 / 2
+source capability slots for handoffs: 16
+specialist capability slots:            8
+capability slots removed:               8
+offline capability executions:          0
+```
+
+This `6/6` is synthetic contract/evaluator conformance only. It is **not** triage-model quality, specialist-model quality, or a multi-agent runtime baseline.
+
+Because Gate 12.2 makes no model call, these fields are deliberately `null`, not zero:
+
+```text
+model invocation count
+input/output/total tokens
+provider latency
+client elapsed latency
+SDK retries
+inference cost
+```
+
+This prevents unmeasured runtime evidence from being represented as an observed zero.
+
+## What Gate 12.2 does not prove
+
+```text
+triage model quality
+specialist model quality
 multi-agent quality improvement
-triage-model routing accuracy
-specialist-model reasoning quality
-multi-agent latency
-multi-agent token usage
-multi-agent inference cost
-multi-agent reliability
-runtime privilege reduction
+real multi-agent model invocation count
+real multi-agent token usage
+real multi-agent latency
+real multi-agent retries
+real multi-agent inference cost
 capability execution through a multi-agent flow
-AgentCore behavior
-MCP interoperability
-A2A interoperability
-public/deployed agent runtime
-runtime exposure / Amazon Inspector evidence
+production reliability
+runtime privilege reduction
+AgentCore / MCP / A2A behavior
 ```
 
 ## AWS / IAM / runtime boundary
 
-Gate 12.1 introduced no AWS resources, IAM roles/policies, provider adapters, real model calls, capability executions, AgentCore runtime, MCP, A2A, public runtime, or runtime-exposure authority.
+Gate 12.2 introduced no AWS resources, IAM roles/policies, provider adapters, real model calls, capability executions, AgentCore runtime, MCP, A2A, public runtime, or runtime-exposure authority.
 
 ## Deferred Governed LLM Gateway integration
 
@@ -242,11 +284,31 @@ Current preserved head:
 ## Next authorized gate
 
 ```text
-Phase 12 — Gate 12.2: Comparative Multi-Agent Evaluation Contract
+Phase 12 — Gate 12.3: First Bounded Real Two-Model Comparison
 ```
 
-Gate 12.2 must freeze the comparison protocol before any second real model invocation is allowed. At minimum the comparison must include routing/proposal quality, bounds compliance, specialist capability-surface width, model invocation count, token usage, provider/client latency, retries, inference cost, and capability executions.
+The first real comparison may introduce at most two bounded reasoning invocations per task:
 
-A two-model topology is not presumed beneficial. It must be rejected if measured specialization value does not justify the additional model call, latency, cost, complexity, or failure surface.
+```text
+SingleAgentTask
+ -> bounded triage model proposes specialization only
+ -> deterministic parser + Gate 12.1 handoff admission
+ -> narrowed SpecialistAgentTask
+ -> bounded specialist reasoning proposes capability only
+ -> existing deterministic capability authorization
+ -> STOP before capability execution
+```
+
+Required hard bounds for the first experiment:
+
+```text
+maximum model invocations per task: 2
+maximum handoffs:                   1
+adaptive application retries:       0
+adaptive fallbacks:                 0
+capability executions:              0
+```
+
+Real tokens, latency, SDK retries, and inference cost must come only from observed provider evidence. The two-model topology must be rejected if measured specialization value does not justify its additional call, latency, token usage, cost, failure surface, and architectural complexity.
 
 AgentCore, MCP, and A2A remain separate future architecture decisions.
