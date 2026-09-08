@@ -120,6 +120,7 @@ def _precondition_failed() -> ClientError:
 
 
 def test_verified_artifact_uses_content_addressed_agentcore_key(tmp_path: Path) -> None:
+    """A verified ZIP must map to an AgentCore content-addressed S3 key."""
     artifact_path, manifest_path = _write_artifact(tmp_path)
 
     artifact = verify_agentcore_artifact(
@@ -134,6 +135,7 @@ def test_verified_artifact_uses_content_addressed_agentcore_key(tmp_path: Path) 
 
 
 def test_manifest_digest_mismatch_fails_closed(tmp_path: Path) -> None:
+    """Artifact bytes must never be published when manifest identity disagrees."""
     artifact_path, manifest_path = _write_artifact(tmp_path)
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest["sha256"] = "0" * 64
@@ -150,6 +152,7 @@ def test_manifest_digest_mismatch_fails_closed(tmp_path: Path) -> None:
 
 
 def test_new_artifact_publication_is_create_only_and_returns_version(tmp_path: Path) -> None:
+    """First publication must be conditional and bind the resulting S3 VersionId."""
     artifact_path, manifest_path = _write_artifact(tmp_path)
     artifact = verify_agentcore_artifact(
         artifact_path=artifact_path,
@@ -170,6 +173,7 @@ def test_new_artifact_publication_is_create_only_and_returns_version(tmp_path: P
 
 
 def test_existing_exact_artifact_is_admitted_as_idempotent_replay(tmp_path: Path) -> None:
+    """A pre-existing content-addressed key is valid only after exact byte replay."""
     artifact_path, manifest_path = _write_artifact(tmp_path)
     artifact = verify_agentcore_artifact(
         artifact_path=artifact_path,
@@ -195,6 +199,7 @@ def test_existing_exact_artifact_is_admitted_as_idempotent_replay(tmp_path: Path
 def test_existing_content_addressed_key_with_different_bytes_fails_closed(
     tmp_path: Path,
 ) -> None:
+    """A hash-key collision or overwrite with different bytes must fail closed."""
     artifact_path, manifest_path = _write_artifact(tmp_path)
     artifact = verify_agentcore_artifact(
         artifact_path=artifact_path,

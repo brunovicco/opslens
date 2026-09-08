@@ -156,7 +156,9 @@ def verify_agentcore_artifact(
 
     expected_zip_file = _require_string(manifest, "zip_file")
     if artifact_path.name != expected_zip_file:
-        raise AgentCoreArtifactPublicationError("runtime ZIP filename differs from package manifest")
+        raise AgentCoreArtifactPublicationError(
+            "runtime ZIP filename differs from package manifest"
+        )
 
     key = f"{AGENTCORE_RUNTIME_ARTIFACT_PREFIX}/{actual_sha256}/{artifact_path.name}"
     return VerifiedAgentCoreArtifact(
@@ -206,7 +208,9 @@ def _verify_existing(
     )
     body = response.get("Body")
     if not isinstance(body, _ReadableBody):
-        raise AgentCoreArtifactPublicationError("existing artifact response is missing readable Body")
+        raise AgentCoreArtifactPublicationError(
+            "existing artifact response is missing readable Body"
+        )
     try:
         existing_bytes = body.read()
     finally:
