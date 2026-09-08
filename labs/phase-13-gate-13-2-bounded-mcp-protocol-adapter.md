@@ -4,7 +4,7 @@ _Date: 2026-09-08_
 
 ## Status
 
-**IMPLEMENTED / MERGE CANDIDATE FROZEN.**
+**COMPLETE / MERGED.**
 
 Starting checkpoint:
 
@@ -13,6 +13,13 @@ main:   4728685e70b7cebfcb07543a763cf82a98d97ae5
 issue:  #183
 branch: feat/phase13-mcp-protocol-adapter
 PR:     #184
+```
+
+Final merge checkpoint:
+
+```text
+final head: 86031533d807c2915443ada6c83712feafb1e045
+merge SHA:  131c086ff85564dbd777cebd6454d70e53ca8332
 ```
 
 Gate 13.2 introduces the first real official MCP SDK adapter while keeping the Gate 13.1 deterministic authority contract unchanged.
@@ -296,7 +303,7 @@ No capability executor is constructed or invoked by the adapter path.
 
 ## CI boundary
 
-`.github/workflows/mcp-ci.yml` now additionally verifies:
+`.github/workflows/mcp-ci.yml` additionally verifies:
 
 ```text
 installed mcp version == 2.2.0
@@ -313,23 +320,33 @@ pytest MCP slice
 
 Changing `pyproject.toml` / `uv.lock` also exercises existing Python and Terraform CI so dependency-placement regressions cannot be hidden inside the MCP-specific workflow.
 
-## Validation evidence
+## Final validation evidence
 
-The implementation head after the final strict-typing remediation was:
-
-```text
-head: 0cf785696e1553774316f4a0da6d181f64d17736
-```
-
-It completed all three relevant workflows successfully:
+Protected squash merge used the exact final validated head:
 
 ```text
-MCP CI:       run 34232331728 (#19)  PASS
-Python CI:    run 34232331751 (#378) PASS
-Terraform CI: run 34232331769 (#227) PASS
+head: 86031533d807c2915443ada6c83712feafb1e045
 ```
 
-Closeout documentation then advanced the branch and was itself revalidated. The merge candidate immediately preceding this record was also green across MCP, Python, and Terraform CI. The final exact merge head and run identifiers are preserved in the PR/issue checkpoint used for protected squash merge; any subsequent branch commit invalidates that checkpoint.
+All three relevant workflows completed successfully on that head:
+
+```text
+MCP CI:       run 34234012588 (#23)  PASS
+Python CI:    run 34234012544 (#382) PASS
+Terraform CI: run 34234012583 (#231) PASS
+review threads: 0
+PR mergeable at checkpoint: true
+```
+
+Protected squash merge:
+
+```text
+PR:        #184
+method:    squash
+merge SHA: 131c086ff85564dbd777cebd6454d70e53ca8332
+```
+
+`main` was re-read immediately after merge and pointed to that exact SHA.
 
 ## AWS / IAM / runtime impact
 
@@ -417,10 +434,19 @@ docs/adr/0048-bounded-offline-mcp-protocol-adapter.md
 [x] ADR 0048 added and indexed
 [x] Gate 13.2 lab added
 [x] draft PR #184 opened
-[x] implementation-head MCP/Python/Terraform CI PASS
-[x] closeout candidate MCP/Python/Terraform CI PASS
-[x] PR scope/review threads clean at validation checkpoint
-[ ] protected squash merge
-[ ] public/current state synchronized
-[ ] issue #183 CLOSED / COMPLETED after state synchronization
+[x] final exact-head MCP CI PASS
+[x] final exact-head Python CI PASS
+[x] final exact-head Terraform CI PASS
+[x] PR scope/review threads clean
+[x] protected squash merge
+[x] public/current state synchronized by follow-up docs-only state-sync PR
+[ ] issue #183 CLOSED / COMPLETED after state-sync merge
 ```
+
+## Next authorized gate
+
+```text
+Phase 13 — Gate 13.3: Bounded MCP Capability Execution Bridge
+```
+
+Gate 13.3 may wire the exact already-admitted typed invocation to the existing `execute_authorized_capability(...)` contract, but it must stop before introducing business-result projection/transport or any public MCP runtime. Capability execution and result transport remain separate gates.
