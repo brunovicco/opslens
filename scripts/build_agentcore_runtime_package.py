@@ -73,9 +73,7 @@ def _required_string(mapping: Mapping[str, object], key: str, *, context: str) -
 
 def _load_locked_packages(lock_path: Path) -> dict[str, LockedPackage]:
     """Load exact registry package identities and dependency edges from uv.lock."""
-    document: object = tomllib.loads(lock_path.read_text(encoding="utf-8"))
-    if not isinstance(document, Mapping):
-        raise RuntimeError("uv.lock must contain one TOML mapping")
+    document = tomllib.loads(lock_path.read_text(encoding="utf-8"))
     root = cast(Mapping[str, object], document)
     raw_packages = root.get("package")
     if not isinstance(raw_packages, Sequence) or isinstance(raw_packages, (str, bytes)):
