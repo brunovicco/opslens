@@ -1,6 +1,21 @@
 """Domain contracts for bounded OpsLens multi-agent coordination."""
 
+from opslens.multi_agent.domain.comparison import (
+    MAX_MULTI_AGENT_COMPARISON_CASES,
+    MULTI_AGENT_COMPARISON_CONTRACT_VERSION,
+    PHASE11_REFERENCE_CORPUS_SHA256,
+    PHASE11_REFERENCE_REPORT_SHA256,
+    MultiAgentComparisonAdmissionOutcome,
+    MultiAgentComparisonCase,
+    MultiAgentComparisonCaseScore,
+    MultiAgentComparisonDataset,
+    MultiAgentComparisonExpectation,
+    MultiAgentComparisonReport,
+    create_multi_agent_comparison_case,
+    create_multi_agent_comparison_dataset,
+)
 from opslens.multi_agent.domain.errors import (
+    MultiAgentComparisonValidationError,
     MultiAgentHandoffAuthorizationError,
     MultiAgentHandoffValidationError,
 )
@@ -23,11 +38,22 @@ from opslens.multi_agent.domain.handoff import (
 )
 
 __all__ = [
+    "MAX_MULTI_AGENT_COMPARISON_CASES",
     "MAX_MULTI_AGENT_HANDOFFS_PER_TASK",
     "MAX_SPECIALIST_CAPABILITIES",
+    "MULTI_AGENT_COMPARISON_CONTRACT_VERSION",
     "MULTI_AGENT_HANDOFF_CONTRACT_VERSION",
+    "PHASE11_REFERENCE_CORPUS_SHA256",
+    "PHASE11_REFERENCE_REPORT_SHA256",
     "AgentSpecialization",
     "AuthorizedMultiAgentHandoff",
+    "MultiAgentComparisonAdmissionOutcome",
+    "MultiAgentComparisonCase",
+    "MultiAgentComparisonCaseScore",
+    "MultiAgentComparisonDataset",
+    "MultiAgentComparisonExpectation",
+    "MultiAgentComparisonReport",
+    "MultiAgentComparisonValidationError",
     "MultiAgentHandoffAbstention",
     "MultiAgentHandoffAuthorizationError",
     "MultiAgentHandoffDecision",
@@ -37,6 +63,8 @@ __all__ = [
     "TriageAgentTask",
     "capabilities_for_specialization",
     "create_authorized_multi_agent_handoff",
+    "create_multi_agent_comparison_case",
+    "create_multi_agent_comparison_dataset",
     "create_multi_agent_handoff_abstention",
     "create_multi_agent_handoff_proposal",
     "create_triage_agent_task",
