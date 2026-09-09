@@ -67,3 +67,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0057](0057-bounded-offline-a2a-reference-adapter.md) | Retain a strict offline A2A 1.0 reference adapter and defer any real peer runtime until independent conformance/value is proven | Accepted |
 | [0058](0058-official-a2a-sdk-as-ci-conformance-oracle.md) | Use the official A2A SDK only as an isolated exact-source CI conformance oracle while keeping OpsLens admission authoritative | Accepted |
 | [0059](0059-phase15-a2a-closeout.md) | Close Phase 15 at the bounded offline A2A interoperability boundary instead of creating an unjustified network runtime | Accepted |
+| [0060](0060-bounded-amazon-inspector-runtime-evidence-fit.md) | Treat Amazon Inspector as an independent runtime-evidence authority and authorize read-only discovery before activation or correlation | Accepted |
