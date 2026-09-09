@@ -128,7 +128,7 @@ jobs:
               ),
               "labs/phase-17-gate-17-1-threat-model.md": (
                   "labs/evidence/phase-17-gate-17-1-threat-model-v1.json",
-                  "Gate 17.2 — CI/CD and workflow authority hardening",
+                  "17.2 — CI/CD and workflow authority hardening",
               ),
               "docs/current-state.md": (
                   "Gate 17.1",
