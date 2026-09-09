@@ -86,9 +86,11 @@ jobs:
           python -m json.tool /tmp/a2a-reference-experiment.json > /dev/null
           cat /tmp/a2a-reference-experiment.json
 
-      - name: Run isolated official A2A SDK conformance probe
+      - name: Run isolated official A2A SDK source conformance probe
         run: |
-          PYTHONPATH=src uv run --with a2a-sdk==1.1.4 python scripts/run_a2a_sdk_conformance.py | tee /tmp/a2a-sdk-conformance.json
+          PYTHONPATH=src uv run \
+            --with 'a2a-sdk @ git+https://github.com/a2aproject/a2a-python.git@2d4d3048b245d2af854bad804f0e722ea9febc08' \
+            python scripts/run_a2a_sdk_conformance.py | tee /tmp/a2a-sdk-conformance.json
           python -m json.tool /tmp/a2a-sdk-conformance.json > /dev/null
           python - <<'PY'
           import json
@@ -97,6 +99,8 @@ jobs:
           value = json.loads(Path("/tmp/a2a-sdk-conformance.json").read_text(encoding="utf-8"))
           if value["sdk"]["version"] != "1.1.4":
               raise SystemExit("unexpected A2A SDK version")
+          if value["sdk"]["source_commit"] != "2d4d3048b245d2af854bad804f0e722ea9febc08":
+              raise SystemExit("unexpected A2A SDK source commit")
           for key in (
               "agent_card",
               "send_message_request",
@@ -109,7 +113,7 @@ jobs:
                   raise SystemExit(f"{key} SDK semantic round-trip did not pass")
           impact = value["impact"]
           for key in (
-              "network_requests",
+              "protocol_network_requests",
               "model_invocations",
               "capability_executions",
               "new_aws_resources",
@@ -118,6 +122,8 @@ jobs:
           ):
               if impact[key] != 0:
                   raise SystemExit(f"Gate 15.3 impact widened: {key}={impact[key]}")
+          if impact["dependency_acquisition_network_is_ci_setup_only"] is not True:
+              raise SystemExit("dependency acquisition boundary was not recorded")
           PY
           cat /tmp/a2a-sdk-conformance.json
 
