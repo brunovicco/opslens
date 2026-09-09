@@ -1,0 +1,114 @@
+{
+  "artifact_version": "phase-16-gate-16-4-inspector-readonly-rerun:v1",
+  "evidence_date": "2026-09-09",
+  "phase": "Phase 16 — Runtime Exposure with Amazon Inspector",
+  "gate": "16.4 — Temporary Inspector Read Role and Measured Rerun",
+  "issue": 245,
+  "implementation_pr": 246,
+  "source_main_sha": "bc3c79b4168ffbaa1374b50e60bb8a6d416a14c2",
+  "bootstrap": {
+    "profile": "opslens-bootstrap",
+    "terraform_plan": {
+      "add": 2,
+      "change": 0,
+      "destroy": 0,
+      "created_addresses": [
+        "aws_iam_role.github_actions_inspector_discovery",
+        "aws_iam_role_policy.github_actions_inspector_discovery"
+      ]
+    },
+    "terraform_apply": {
+      "added": 2,
+      "changed": 0,
+      "destroyed": 0
+    },
+    "role": {
+      "name": "OpsLensInspectorDiscoveryRole",
+      "arn": "arn:aws:iam::487757851499:role/OpsLensInspectorDiscoveryRole",
+      "created_at": "2026-09-09T22:46:24+00:00",
+      "oidc_audience": "sts.amazonaws.com",
+      "oidc_subject": "repo:brunovicco@38844444/opslens@1333092779:ref:refs/heads/main",
+      "max_session_duration_seconds": 3600
+    },
+    "policy": {
+      "name": "OpsLensInspectorDiscoveryReadOnly",
+      "allowed_actions": [
+        "inspector2:ListCoverage",
+        "inspector2:ListFindings"
+      ],
+      "resource": "*",
+      "requested_region": "us-east-1"
+    }
+  },
+  "measured_run": {
+    "workflow": "Inspector Read-Only Discovery",
+    "run_id": 34414116549,
+    "run_number": 2,
+    "job_id": 102675000098,
+    "event": "workflow_dispatch",
+    "workflow_conclusion": "success",
+    "assumed_role": "OpsLensInspectorDiscoveryRole",
+    "requested_sts_session_seconds": 900,
+    "contract_version": "inspector-readonly-discovery:v1",
+    "result": "SUCCESS",
+    "client_elapsed_ms": 465.877452,
+    "coverage": {
+      "attempted": true,
+      "outcome": "SUCCESS",
+      "page_count": 1,
+      "record_count": 0,
+      "sdk_retry_count": 0,
+      "error_code": null,
+      "page_content_sha256": [
+        "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      ]
+    },
+    "findings": {
+      "attempted": true,
+      "outcome": "SUCCESS",
+      "page_count": 1,
+      "record_count": 0,
+      "sdk_retry_count": 0,
+      "error_code": null,
+      "page_content_sha256": [
+        "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      ]
+    },
+    "coverage_resource_type_counts": [],
+    "finding_resource_type_counts": [],
+    "finding_type_counts": [],
+    "scan_status_counts": [],
+    "aws_mutation_count": 0,
+    "new_iam_count": 0,
+    "model_invocations": 0,
+    "capability_executions": 0
+  },
+  "actions_artifact": {
+    "artifact_id": 10128371987,
+    "name": "phase-16-gate-16-4-inspector-readonly-34414116549",
+    "size_bytes": 579,
+    "digest": "sha256:a6f917e62124b4c604891e1a83db9874e3ef34696110dfaead1af16d45a03365",
+    "retention_days": 14
+  },
+  "interpretation": {
+    "minimum_read_boundary_was_sufficient": true,
+    "current_dev_account_returned_inspector_coverage": false,
+    "current_dev_account_returned_inspector_findings": false,
+    "zero_records_proves_inspector_disabled": false,
+    "zero_records_proves_inspector_unsupported": false,
+    "zero_records_proves_inspector_has_no_value_elsewhere": false,
+    "activate_or_change_inspector_to_manufacture_evidence": false
+  },
+  "retention": {
+    "inspector_readonly_adapter_and_contract": "RETAIN",
+    "measured_zero_evidence_artifact": "RETAIN",
+    "standing_inspector_discovery_iam": "DO_NOT_RETAIN_REMOVE",
+    "opslens_github_deploy_role_inspector_access": "NONE",
+    "inspector_activation_or_configuration_change_in_phase16": "DO_NOT_CREATE",
+    "repository_runtime_automatic_correlation": "DO_NOT_CREATE",
+    "runtime_risk_composite_scoring": "DO_NOT_CREATE",
+    "model_synthesis_over_inspector_evidence": "DO_NOT_CREATE"
+  },
+  "next_gate": "Phase 16 Gate 16.5 — remove temporary Inspector IAM and close runtime-exposure experiment",
+  "pr_89_touched": false
+}
