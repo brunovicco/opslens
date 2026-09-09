@@ -1,0 +1,151 @@
+name: Security Hardening CI
+
+on:
+  pull_request:
+    paths:
+      - "labs/phase-17-*.md"
+      - "labs/evidence/phase-17-*.json"
+      - "docs/adr/0064-*.md"
+      - "docs/adr/README.md"
+      - "docs/current-state.md"
+      - "docs/roadmap.md"
+      - "docs/README.md"
+      - ".github/workflows/security-hardening-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate-17-security-evidence:
+    name: Gate 17 security evidence
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository without persisted credentials
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Validate Gate 17.1 threat-model evidence
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          evidence_path = Path("labs/evidence/phase-17-gate-17-1-threat-model-v1.json")
+          value = json.loads(evidence_path.read_text(encoding="utf-8"))
+
+          expected_scalar = {
+              "artifact_version": "phase-17-gate-17-1-threat-model:v1",
+              "source_main_sha": "f6fc614fbeaf7b3f294d7dba10c31e6f0e96313c",
+              "issue": 250,
+              "decision": "GO_TO_ONE_BOUNDED_CICD_AND_WORKFLOW_AUTHORITY_HARDENING_SLICE",
+              "aws_mutation_count": 0,
+              "new_iam_count": 0,
+              "model_invocations": 0,
+              "capability_executions": 0,
+              "pr_89_touched": False,
+          }
+          for key, expected in expected_scalar.items():
+              observed = value.get(key)
+              if observed != expected:
+                  raise SystemExit(
+                      f"Gate 17.1 evidence mismatch for {key}: {observed!r} != {expected!r}"
+                  )
+
+          classifications = {"PROVEN_CONTROL", "GAP", "DEFERRED", "NOT_APPLICABLE"}
+          if set(value.get("classification_vocabulary", [])) != classifications:
+              raise SystemExit("Gate 17.1 classification vocabulary drifted")
+
+          threats = value.get("threats")
+          if not isinstance(threats, list) or not threats:
+              raise SystemExit("Gate 17.1 threat inventory must be non-empty")
+
+          threat_ids: list[str] = []
+          for threat in threats:
+              if not isinstance(threat, dict):
+                  raise SystemExit("Every Gate 17.1 threat must be an object")
+              required = {
+                  "threat_id",
+                  "asset_or_boundary",
+                  "threat",
+                  "existing_controls",
+                  "proof_refs",
+                  "residual_risk",
+                  "classification",
+                  "recommended_action",
+                  "priority",
+              }
+              if set(threat) != required:
+                  raise SystemExit(
+                      f"Threat {threat.get('threat_id')} does not use the frozen exact field set"
+                  )
+              threat_id = threat["threat_id"]
+              if not isinstance(threat_id, str) or not threat_id.startswith("SEC17-"):
+                  raise SystemExit("Threat id violates the SEC17 contract")
+              if threat["classification"] not in classifications:
+                  raise SystemExit(f"Unknown classification for {threat_id}")
+              if threat["priority"] not in {"HIGH", "MEDIUM", "LOW"}:
+                  raise SystemExit(f"Unknown priority for {threat_id}")
+              if not threat["proof_refs"]:
+                  raise SystemExit(f"Threat {threat_id} has no proof references")
+              threat_ids.append(threat_id)
+
+          if len(threat_ids) != len(set(threat_ids)):
+              raise SystemExit("Gate 17.1 threat ids must be unique")
+
+          gap_summary = value.get("gap_summary")
+          if not isinstance(gap_summary, dict):
+              raise SystemExit("Gate 17.1 gap summary is missing")
+          if set(gap_summary.get("high_priority", [])) != {
+              "SEC17-CICD-001",
+              "SEC17-IAM-002",
+              "SEC17-IAM-003",
+          }:
+              raise SystemExit("Gate 17.1 high-priority gap set drifted")
+
+          next_gate = value.get("next_gate")
+          if not isinstance(next_gate, dict):
+              raise SystemExit("Gate 17.1 next-gate decision is missing")
+          if next_gate.get("gate") != "17.2 — CI/CD and workflow authority hardening":
+              raise SystemExit("Gate 17.1 next gate drifted")
+          if "AWS IAM mutation" not in next_gate.get("not_authorized", []):
+              raise SystemExit("Gate 17.1 must keep AWS IAM mutation unauthorized")
+          if "PR #89 modification" not in next_gate.get("not_authorized", []):
+              raise SystemExit("Gate 17.1 must keep PR #89 out of scope")
+          PY
+
+      - name: Verify Gate 17.1 documentation references
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          required_refs = {
+              "docs/adr/0064-evidence-first-security-hardening-priorities.md": (
+                  "labs/evidence/phase-17-gate-17-1-threat-model-v1.json",
+                  "Gate 17.2 — CI/CD and workflow authority hardening",
+              ),
+              "labs/phase-17-gate-17-1-threat-model.md": (
+                  "labs/evidence/phase-17-gate-17-1-threat-model-v1.json",
+                  "17.2 — CI/CD and workflow authority hardening",
+              ),
+              "docs/current-state.md": (
+                  "Gate 17.1",
+                  "Gate 17.2",
+              ),
+              "docs/roadmap.md": (
+                  "Gate 17.1",
+                  "Gate 17.2",
+              ),
+              "docs/README.md": (
+                  "Gate 17.1",
+                  "Gate 17.2",
+              ),
+          }
+          for path_value, needles in required_refs.items():
+              text = Path(path_value).read_text(encoding="utf-8")
+              for needle in needles:
+                  if needle not in text:
+                      raise SystemExit(f"{path_value} is missing required Gate 17 reference {needle!r}")
+          PY
