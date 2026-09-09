@@ -29,7 +29,9 @@ Phase 16   Runtime Exposure with Amazon Inspector              COMPLETE
   Gate 16.3 Minimum Inspector read-only IAM boundary           COMPLETE / DEDICATED TEMP ROLE
   Gate 16.4 Temporary role + measured rerun                    COMPLETE / SUCCESS / ZERO RECORDS
   Gate 16.5 Temporary Inspector IAM teardown                   COMPLETE / ROLE ABSENT / CONVERGED
-Phase 17   Security Hardening                                  NEXT / PLANNED
+Phase 17   Security Hardening                                  IN PROGRESS
+  Gate 17.1 Cross-cutting threat/control-gap inventory         COMPLETE / GO TO 17.2
+  Gate 17.2 CI/CD and workflow authority hardening             NEXT
 Phase 18   Evaluation, Cost & Portfolio Readiness              PLANNED
 ```
 
@@ -76,6 +78,10 @@ Inspector EPSS != OpsLens source-authority replacement
 Inspector finding status != business remediation state
 Inspector evidence != model authority
 runtime evidence correlation != capability authorization
+security control name != proven enforcement
+historical workflow != inert workflow
+plan-only intent != write-authority requirement
+CI evidence != enforced merge gate
 ```
 
 Deterministic code remains authoritative for evidence identity, vulnerability applicability, risk policy, structured-query compilation, retrieval admission, capability authorization, executable input binding, result admission, handoff admission, MCP admission/projection, A2A reference identity/resolution/admission, retry/fallback policy, and runtime evidence admission/correlation.
@@ -300,11 +306,67 @@ labs/evidence/phase-16-closeout-v1.json
 labs/evidence/phase-16-gate-16-5-inspector-iam-cleanup-postapply-v1.json
 ```
 
-## Next — Phase 17 Security Hardening
+## Phase 17 — Security Hardening — IN PROGRESS
 
-Phase 17 should start with a cross-cutting threat-model and control-gap inventory across the retained system rather than introducing another AWS service by default.
+### Gate 17.1 — cross-cutting threat model and control-gap inventory
 
-Focus areas include IAM/trust boundaries, data protection, dependency and CI/CD integrity, model/agent abuse resistance, input/output boundaries, logging/content minimization, operational recovery, and evidence-backed negative controls.
+Gate 17.1 reviewed retained implementation, IaC, workflows, GitHub main ruleset evidence, historical lab boundaries, and current external security guidance before authorizing any new runtime or cloud authority.
+
+Canonical evidence:
+
+```text
+labs/evidence/phase-17-gate-17-1-threat-model-v1.json
+docs/adr/0064-evidence-first-security-hardening-priorities.md
+labs/phase-17-gate-17-1-threat-model.md
+```
+
+Observed high-priority gaps:
+
+```text
+SEC17-CICD-001  main ruleset does not require CI status checks
+SEC17-IAM-002   EPSS plan-only paths assume write/invoke-capable coordinator authority
+SEC17-IAM-003   historical AgentCore workflow retains shared deploy-role mutation authority
+```
+
+Observed medium-priority gaps:
+
+```text
+SEC17-CICD-003  checkout credentials persist by default where authenticated git is unnecessary
+SEC17-SUPPLY-001 repository-local continuous dependency security automation not observed
+```
+
+Observed low-priority documentation gap:
+
+```text
+SEC17-DOC-001   accumulated architecture headers still describe Phase 9 / Phase 10 as current
+```
+
+Important proven controls remain retained and are explicitly recorded as non-gaps: immutable main-only GitHub OIDC trust, full-SHA action pinning in sampled workflows, no observed privileged `pull_request_target`/`workflow_run` triggers, bounded public request/repository acquisition, proposal-only semantic planning, untrusted retrieved-content handling, deterministic agent authorization/result admission, raw MCP/A2A admission, content-minimized telemetry, and bounded model token/call behavior.
+
+Gate 17.1 authorizes exactly one next repository slice:
+
+```text
+Gate 17.2 — CI/CD and workflow authority hardening
+```
+
+Gate 17.2 may enforce repository/workflow authority invariants, but it does **not** authorize AWS IAM mutation, new AWS services, public runtime deployment, Inspector reactivation, dependency-platform rollout in the same slice, or PR #89 changes.
+
+Changing GitHub `main` required status checks remains an explicit human/platform administration boundary after the exact contexts are defined and proven.
+
+Gate 17.1 cloud/runtime impact:
+
+```text
+AWS mutations:          0
+new IAM:                0
+new AWS services:       0
+model invocations:      0
+capability executions:  0
+PR #89 changes:         0
+```
+
+## Next — Gate 17.2 CI/CD and workflow authority hardening
+
+Prioritize enforcement gaps before introducing more security automation. Dependency update/review/scanning controls are intentionally deferred to a separate later gate so new automation is not added on top of unresolved workflow-authority gaps.
 
 ## Deferred cross-project work
 
