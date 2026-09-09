@@ -1,0 +1,126 @@
+{
+  "artifact_version": "phase-15-closeout:v1",
+  "evidence_date": "2026-09-09",
+  "phase": "Phase 15 — A2A",
+  "gate": "15.4 — Phase 15 Retention and Closeout",
+  "issue": 235,
+  "source_main_sha": "f28a761bd666538cdfe24a53ee4e336b15b36398",
+  "protocol": {
+    "release": "1.0.0",
+    "binding": "JSONRPC",
+    "operation": "SendMessage",
+    "reference_contract": "a2a-reference-interoperability:v1"
+  },
+  "gate_15_1": {
+    "decision": "GO_OFFLINE_ONLY",
+    "retained_independently_deployed_peer": false,
+    "current_in_process_handoff_requires_a2a": false,
+    "authoritative_protocol_evidence": "labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v2.json"
+  },
+  "gate_15_2": {
+    "result": "PASS",
+    "decision": "RETAIN_BOUNDED_OFFLINE_REFERENCE_ADAPTER",
+    "agent_card_bytes": 582,
+    "protocol_request_count": 2,
+    "peer_handler_count": 2,
+    "request_bytes_total": 1308,
+    "response_bytes_total": 989,
+    "client_elapsed_ms_sum": 0.353039,
+    "handler_elapsed_ms_sum": 0.239397,
+    "retry_count": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "new_aws_resources": 0,
+    "new_iam_roles_or_policies": 0,
+    "incremental_aws_cost_usd": 0.0,
+    "evidence": "labs/evidence/phase-15-gate-15-2-bounded-offline-a2a-reference-adapter-v1.json"
+  },
+  "gate_15_3": {
+    "result": "PASS",
+    "decision": "RETAIN_OFFICIAL_SDK_AS_EXACT_SOURCE_CI_ORACLE_ONLY",
+    "sdk": {
+      "distribution": "a2a-sdk",
+      "version": "1.1.4",
+      "release_tag": "v1.1.4",
+      "source_commit": "2d4d3048b245d2af854bad804f0e722ea9febc08",
+      "project_dependency": false,
+      "runtime_dependency": false
+    },
+    "conformance": {
+      "agent_card_parse": "PASS",
+      "agent_card_semantic_roundtrip": "PASS",
+      "send_message_request_parse": "PASS",
+      "send_message_request_semantic_roundtrip": "PASS",
+      "jsonrpc_request_construction": "PASS",
+      "message_response_parse": "PASS",
+      "task_response_parse": "PASS"
+    },
+    "exact_head": "bcf1ee4e7fa6ff948041696f6df4d735ef8b6cb5",
+    "merge_sha": "f28a761bd666538cdfe24a53ee4e336b15b36398",
+    "ci": {
+      "a2a": {
+        "run_id": 34408271518,
+        "run_number": 16,
+        "result": "SUCCESS"
+      },
+      "multi_agent": {
+        "run_id": 34408271444,
+        "run_number": 48,
+        "result": "SUCCESS"
+      },
+      "agentcore": {
+        "run_id": 34408271466,
+        "run_number": 75,
+        "result": "SUCCESS"
+      }
+    },
+    "protocol_network_requests": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "new_aws_resources": 0,
+    "new_iam_roles_or_policies": 0,
+    "incremental_aws_cost_usd": 0.0,
+    "evidence": "labs/evidence/phase-15-gate-15-3-official-sdk-conformance-v1.json"
+  },
+  "retention": {
+    "retain": [
+      "content-addressed A2AReference contract",
+      "strict raw duplicate-key and exact-shape admission",
+      "code-owned reference resolution for bounded lab and CI use",
+      "A2A 1.0 JSONRPC SendMessage reference projection",
+      "bounded Message and terminal completed Task metadata admission",
+      "local replay refusal",
+      "A2A fixtures and CI slice",
+      "official a2a-sdk v1.1.4 exact-source CI conformance oracle",
+      "Phase 15 immutable evidence"
+    ],
+    "do_not_retain_or_create": [
+      "public or network A2A runtime",
+      "standing A2A cloud resources",
+      "new A2A IAM",
+      "A2A capability authorization",
+      "A2A business-result authority",
+      "a2a-sdk project or runtime dependency",
+      "AgentCore hosting for A2A",
+      "MCP public runtime promotion"
+    ]
+  },
+  "authority_invariants": [
+    "A2A message != capability authorization",
+    "A2A peer identity != business authority",
+    "A2A AgentCard skill != OpsLens capability authorization",
+    "A2A task state != business/evidence truth",
+    "A2A transport success != business/evidence truth",
+    "A2A artifact != admitted OpsLens evidence",
+    "A2A handoff proposal != handoff admission",
+    "A2A context/task identity != OpsLens source-task identity",
+    "A2A authentication != capability authorization",
+    "A2A protocol binding != business authority",
+    "A2A generated id != OpsLens content identity",
+    "A2A SDK acceptance != OpsLens admission authority"
+  ],
+  "phase_status": "COMPLETE",
+  "next_planned_phase": "Phase 16 — Runtime Exposure with Amazon Inspector",
+  "phase_16_aws_changes_authorized_by_this_artifact": false,
+  "pr_89_touched": false
+}

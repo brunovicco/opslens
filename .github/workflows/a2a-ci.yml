@@ -10,10 +10,13 @@ on:
       - "scripts/run_a2a_sdk_conformance.py"
       - "docs/adr/0057-*.md"
       - "docs/adr/0058-*.md"
+      - "docs/adr/0059-*.md"
       - "labs/phase-15-gate-15-2-*.md"
       - "labs/phase-15-gate-15-3-*.md"
+      - "labs/phase-15-closeout.md"
       - "labs/evidence/phase-15-gate-15-2-*.json"
       - "labs/evidence/phase-15-gate-15-3-*.json"
+      - "labs/evidence/phase-15-closeout-v1.json"
       - ".github/workflows/a2a-ci.yml"
   workflow_dispatch:
 
@@ -52,7 +55,7 @@ jobs:
             exit 1
           fi
           if grep -q 'name = "a2a-sdk"' uv.lock; then
-            echo "a2a-sdk must not enter the OpsLens project lockfile in Gate 15.3"
+            echo "a2a-sdk must not enter the OpsLens project lockfile"
             exit 1
           fi
 
@@ -106,6 +109,28 @@ jobs:
               "2d4d3048b245d2af854bad804f0e722ea9febc08"
           ):
               raise SystemExit("Gate 15.3 evidence SDK source mismatch.")
+          PY
+
+      - name: Validate Phase 15 closeout evidence JSON
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("labs/evidence/phase-15-closeout-v1.json")
+          with path.open("r", encoding="utf-8") as handle:
+              value = json.load(handle)
+          if value.get("artifact_version") != "phase-15-closeout:v1":
+              raise SystemExit("Phase 15 closeout artifact_version mismatch.")
+          if value.get("phase_status") != "COMPLETE":
+              raise SystemExit("Phase 15 closeout must be COMPLETE.")
+          if value.get("phase_16_aws_changes_authorized_by_this_artifact") is not False:
+              raise SystemExit("Phase 15 closeout must not authorize Phase 16 AWS changes.")
+          if value.get("pr_89_touched") is not False:
+              raise SystemExit("PR #89 must remain untouched.")
+          gate_15_3 = value.get("gate_15_3")
+          if not isinstance(gate_15_3, dict) or gate_15_3.get("result") != "PASS":
+              raise SystemExit("Gate 15.3 PASS evidence is required for closeout.")
           PY
 
       - name: Run bounded offline A2A reference experiment

@@ -22,7 +22,6 @@ real gap
  -> protected squash merge
  -> post-merge verification
  -> issue closure
- -> branch hygiene
 ```
 
 ## Current roadmap status
@@ -42,10 +41,10 @@ real gap
 | 10 | Observability & Operational Excellence | ✅ Complete |
 | 11 | Single-Agent Baseline | ✅ Complete |
 | 12 | Multi-Agent Architecture | ✅ Complete |
-| 13 | MCP | ✅ Complete — bounded offline MCP retained |
+| 13 | MCP | ✅ Complete — bounded offline interoperability retained |
 | 14 | Amazon Bedrock AgentCore | ✅ Complete — optional lab target retained; standing experiment IAM removed |
-| 15 | A2A | 🚧 In progress — Gate 15.2 measured offline adapter complete; official-SDK conformance next |
-| 16 | Runtime Exposure with Amazon Inspector | ⏳ Planned |
+| 15 | A2A | ✅ Complete — bounded offline reference interoperability + official SDK conformance retained |
+| 16 | Runtime Exposure with Amazon Inspector | ▶️ Next / Planned |
 | 17 | Security Hardening | ⏳ Planned |
 | 18 | Evaluation, Cost & Portfolio Readiness | ⏳ Planned |
 
@@ -67,29 +66,16 @@ real gap
 
 > **No unrestricted text-to-SQL.**
 
-Agentic/interoperability/runtime phases preserve:
-
 ```text
 agent proposal != authorization
 handoff proposal != handoff admission
 handoff admission != capability authorization
 AuthorizedAgentAction != capability invocation
 capability invocation != execution result
-structured model output != trusted proposal
-model selection != capability authority
-MCP tool name != capability authorization
-MCP tool exposure != executable argument authority
 MCP call admission != capability execution
-MCP capability execution != business-result transport
-MCP result admission != result-projection authority
 MCP result projection != public runtime exposure
-MCP transport success != business/evidence truth
 AgentCore hosting != business authorization
 runtime authentication != capability authorization
-runtime session != identity authority
-runtime execution role != model/tool authority
-runtime transport success != business/evidence truth
-runtime telemetry != business truth
 runtime deployment != runtime-exposure truth
 A2A message != capability authorization
 A2A peer identity != business authority
@@ -97,8 +83,6 @@ A2A AgentCard skill != OpsLens capability authorization
 A2A task state != business/evidence truth
 A2A transport success != business/evidence truth
 A2A artifact != admitted OpsLens evidence
-A2A handoff proposal != handoff admission
-A2A context/task identity != OpsLens source-task identity
 A2A authentication != capability authorization
 A2A protocol binding != business authority
 A2A generated id != OpsLens content identity
@@ -107,9 +91,9 @@ A2A SDK acceptance != OpsLens admission authority
 
 ## Completed foundation — Phases 0–10
 
-Phases 0–10 are complete. Detailed architecture, evidence, AWS/IAM decisions, and failure-path records remain in ADRs, labs, and Git history.
+Phases 0–10 established AWS foundation, threat-intelligence ingestion, deterministic vulnerability correlation, immutable public-repository evidence, risk prioritization, bounded semantic query planning/SQL compilation, Bedrock Knowledge Base retrieval with Amazon S3 Vectors, hybrid retrieval, governed public-analysis admission, and operational telemetry.
 
-The retained platform includes AWS foundation, threat-intelligence ingestion, deterministic vulnerability correlation, repository intelligence over immutable inert evidence, deterministic risk prioritization, bounded semantic planning and SQL compilation, Bedrock Knowledge Base retrieval with Amazon S3 Vectors, hybrid evidence composition, governed public-analysis admission, and operational telemetry contracts.
+Detailed historical implementation/evidence remains in ADRs, labs, immutable artifacts, and Git history.
 
 ## Phase 11 — Single-Agent Baseline — COMPLETE
 
@@ -124,30 +108,17 @@ client elapsed median:      977.5 ms
 SDK retries:                0
 capability executions:      0
 derived inference cost:     USD 0.0041921
-corpus_sha256:              3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
 ```
 
-This remains the default/reference reasoning architecture until a superior topology is demonstrated against frozen evidence.
+This remains the default/reference reasoning path.
 
 ## Phase 12 — Multi-Agent Architecture — COMPLETE
 
-Retained outcome:
-
-```text
-Phase 11 single-agent reasoning reference:      RETAIN
-Gate 12.1 deterministic specialization/handoff: RETAIN
-Gate 12.2 deterministic comparison discipline: RETAIN
-Gate 12.3 two-model topology as default:        DO NOT RETAIN
-Gate 12.3 implementation/evidence:              PRESERVE HISTORICALLY
-```
-
-The real two-model experiment produced no quality lift and increased invocations, tokens, latency, and cost. Gate 12.1 remains reusable as a deterministic content-addressed specialization/handoff authority boundary.
+Retained deterministic handoff/specialization and comparison discipline; rejected the measured two-model topology as the default because it produced no quality lift while increasing invocations, tokens, latency, and cost.
 
 ## Phase 13 — MCP — COMPLETE
 
-MCP is retained as an interoperability boundary over existing governed capability authority.
-
-Retained contracts:
+Retained:
 
 ```text
 mcp-capability-exposure:v1
@@ -155,273 +126,127 @@ mcp-capability-execution:v1
 mcp-result-projection:v1
 ```
 
-Retained path:
-
-```text
-Phase 11 typed capability authority
- -> closed MCP tool identity
- -> official MCP SDK reference-only adapter
- -> raw exact-key-set argument refusal
- -> deterministic invocation resolution + admission
- -> exactly one existing typed executor attempt
- -> existing typed result admission
- -> structured result projection for structured_security_query only
- -> bounded CVE + EPSS rows
- -> STOP before public/network runtime
-```
-
-Public/network MCP hosting remains an explicit non-claim. The MCP SDK stays development-only in the retained architecture.
+MCP remains a bounded offline interoperability layer over existing typed capability authority. A public/network MCP runtime is not retained.
 
 ## Phase 14 — Amazon Bedrock AgentCore — COMPLETE
 
-Phase 14 evaluated managed runtime value against measured OpsLens needs instead of preselecting adoption.
+Measured one bounded HTTP/SigV4 Runtime experiment and retained AgentCore only as an optional lab target.
 
-### Gate 14.1 — Runtime capability fit — COMPLETE
-
-Authorized only one bounded experiment:
+Final state:
 
 ```text
-AgentCore Runtime:        GO TO ONE BOUNDED EXPERIMENT ONLY
-first hosted boundary:    retained Phase 11 bounded reasoning
-protocol:                 HTTP
-authentication:           IAM SigV4
-capability executions:    0
-MCP runtime promotion:    not authorized
-A2A:                      deferred
-runtime-exposure truth:   not created
+Phase 11 direct Bedrock reasoning:          RETAIN / DEFAULT
+AgentCore implementation/evidence:          RETAIN AS OPTIONAL LAB TARGET
+AgentCore managed Runtime as default:        DO NOT RETAIN
+standing AgentCore Runtime resources:        NONE
+standing experiment-specific GitHub IAM:    REMOVED
+Gate 14.2 PUBLIC exception:                  NOT RETAINED
+Runtime Identity service-linked role:        RETAIN pending separate safety proof
 ```
 
-### Gate 14.2 — bounded Runtime experiment — COMPLETE / MEASURED
+## Phase 15 — A2A — COMPLETE
 
-Terminal measured result:
-
-```text
-workflow run:               34378942784 / run #11 / SUCCESS
-replay:                     6 / 6 PASS
-input/output/total tokens:  3291 / 104 / 3395
-SDK retries:                0
-capability executions:      0
-transport elapsed sum:      19981 ms
-deploy-role invocation:     AccessDeniedException / HTTP 403
-runtime cleanup:            RESOURCE_NOT_FOUND
-AgentCore Runtime cost:     USD 0.002380345136128484
-Bedrock inference cost:     USD 0.0041921
-total observed cost:        USD 0.006572445136128483
-```
-
-The `PUBLIC` network mode was a dev-only experiment exception and is not a retained production decision.
-
-### Gate 14.3 — Runtime retention decision — COMPLETE / RETAIN WITH CHANGES
+### Gate 15.1 — capability fit / protocol correction — COMPLETE
 
 ```text
-default OpsLens reasoning runtime:            DO NOT RETAIN AgentCore
-Phase 11 direct Bedrock reasoning reference: RETAIN
-AgentCore implementation/evidence:           RETAIN
-PUBLIC network mode:                         DO NOT RETAIN
-standing AgentCore Runtime resources:        DO NOT RETAIN
-standing experiment-specific IAM:            DO NOT RETAIN without an active experiment
-```
-
-The six-case quality/model/token evidence was unchanged relative to Phase 11. AgentCore added USD 0.002380345136128484 of measured Runtime cost, or 56.78168784448091% relative to the unchanged USD 0.0041921 inference component. Raw latency boundaries were not normalized into a percentage comparison.
-
-### Gate 14.4 — standing experiment IAM cleanup — COMPLETE / VERIFIED
-
-```text
-implementation merge: 9913c3cbf5f2239d6445042a139a9cca890590c8
-plan:                 0 add / 0 change / 4 destroy
-apply:                0 add / 0 change / 4 destroy
-post-apply plan:      NO CHANGES
-```
-
-Independent verification:
-
-```text
-OpsLensAgentCoreReplayRole:                 ABSENT
-OpsLensAgentCoreDeployDevAccess:            ABSENT
-AgentCore deploy policy attachment:         []
-OpsLensGitHubDeployRole:                    PRESENT
-AWSServiceRoleForBedrockAgentCoreRuntimeIdentity:
-                                            PRESENT / intentionally retained
-```
-
-Final retained Phase 14 architecture:
-
-```text
-Phase 11 direct Bedrock reasoning:           DEFAULT / RETAIN
-AgentCore implementation/evidence:           RETAIN AS OPTIONAL LAB TARGET
-AgentCore managed Runtime as default:         DO NOT RETAIN
-standing AgentCore Runtime resources:         NONE
-standing experiment-specific GitHub IAM:     REMOVED
-Gate 14.2 PUBLIC exception:                   NOT RETAINED
-Runtime Identity service-linked role:         RETAIN pending separate safety proof
-```
-
-## Phase 15 — A2A — IN PROGRESS
-
-Phase 15 evaluates A2A as an agent-peer interoperability boundary without presuming a distributed runtime.
-
-### Gate 15.1 — capability fit / authority boundary — COMPLETE / CORRECTED
-
-The original Gate 15.1 revision incorrectly treated the historical versioned `0.3.0` page as the latest stable A2A baseline. The architecture decision remains valid, but the authoritative protocol evidence is corrected to A2A `1.0.0`.
-
-Current official baseline verified on 2026-09-09:
-
-```text
-Agent2Agent Protocol:          1.0.0
-release date:                  2026-03-12
-previous protocol:             0.3.0
-standard protocol bindings:    JSONRPC / GRPC / HTTP+JSON
+A2A protocol:                  1.0.0
+standard bindings:             JSONRPC / GRPC / HTTP+JSON
 first OpsLens binding choice:  JSONRPC
-Python SDK latest observed:    1.1.4
-Gate 15.1 SDK pin:             NONE
+independent retained peer:     NO
+network A2A required today:    NO
+decision:                      GO OFFLINE ONLY
 ```
 
-Current architecture finding:
+### Gate 15.2 — bounded offline reference adapter — COMPLETE / MEASURED
 
 ```text
-retained independent OpsLens agent peer:    NO
-current in-process handoff needs A2A:        NO
-bounded reference-interoperability test:    YES
+contract:                    a2a-reference-interoperability:v1
+Agent Card bytes:            582
+protocol requests:           2
+request bytes total:         1308
+response bytes total:        989
+client elapsed sum:          0.353039 ms
+handler elapsed sum:         0.239397 ms
+retries:                     0
+model invocations:           0
+capability executions:       0
+new AWS/IAM:                 0
+incremental AWS cost:        USD 0.00
 ```
 
-Decision:
+The retained profile carries only `{handoff_id, specialist_task_id, reference_sha256}` for an already-admitted specialist task and stops before model/capability execution.
+
+### Gate 15.3 — official SDK conformance — COMPLETE / PASS
 
 ```text
-GO TO ONE BOUNDED OFFLINE/IN-PROCESS INTEROPERABILITY EXPERIMENT
+a2a-sdk version:             1.1.4
+release tag:                 v1.1.4
+source commit:               2d4d3048b245d2af854bad804f0e722ea9febc08
+AgentCard conformance:       PASS
+SendMessage request:         PASS
+JSON-RPC construction:       PASS
+Message response:            PASS
+Task response:               PASS
+project/runtime dependency:  0
+protocol network requests:   0
+model/capability execution:  0
+AWS/IAM changes:             0
 ```
 
-Gate 15.1 records:
+The SDK is retained only as an exact-source CI conformance oracle. Package acquisition is CI setup, not A2A protocol traffic.
+
+### Gate 15.4 — retention / closeout — COMPLETE
+
+Retain:
 
 ```text
-docs/adr/0056-bounded-a2a-capability-fit.md
-labs/phase-15-gate-15-1-a2a-capability-fit.md
-labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v1.json  # historical protocol claim superseded
-labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v2.json  # authoritative correction
+content-addressed A2AReference
+strict raw JSON admission
+code-owned reference resolution for bounded lab / CI
+A2A 1.0 JSONRPC SendMessage profile
+Message / terminal Task metadata admission
+A2A fixtures / CI
+official a2a-sdk exact-source CI oracle
+Phase 15 immutable evidence
 ```
 
-### Gate 15.2 — bounded offline reference-only adapter — COMPLETE / MEASURED
-
-Gate 15.2 froze and proved:
+Do not create/retain:
 
 ```text
-a2a-reference-interoperability:v1
+public/network A2A runtime
+standing A2A cloud resources
+new A2A IAM
+A2A capability authorization
+A2A business-result authority
+a2a-sdk project/runtime dependency
+AgentCore hosting for A2A
+MCP public-runtime promotion
 ```
 
-Retained path:
+Canonical closeout:
 
 ```text
-pre-admitted SpecialistAgentTask
- -> content-addressed A2AReference
- -> lab-only code-owned registry
- -> strict A2A 1.0 JSON-RPC SendMessage projection
- -> raw duplicate-key / exact-key-set validation
- -> code-owned reference resolution
- -> bounded Message or terminal completed Task metadata
- -> deterministic OpsLens result admission
- -> STOP before model/capability execution
+docs/adr/0059-phase15-a2a-closeout.md
+labs/phase-15-closeout.md
+labs/evidence/phase-15-closeout-v1.json
 ```
 
-Protected merge:
+## Phase 16 — Runtime Exposure with Amazon Inspector — NEXT / PLANNED
 
-```text
-PR:               #231
-main SHA:         3a9adfdcfdd206d1c932a2d90bcb312377596b70
-measurement head: c27a2362df4971a7b619be33dcaacd2bfe2a2369
-```
-
-SDK/dependency outcome:
-
-```text
-official Python SDK inspected: 1.1.4
-a2a-sdk pinned:                NO
-new runtime dependencies:      0
-```
-
-The selected wire profile can be verified with deterministic stdlib code, so Gate 15.2 does not widen deployed dependencies. The official SDK remains a potential independent conformance oracle, never OpsLens admission authority.
-
-Measured local result:
-
-```text
-Agent Card bytes:          582
-protocol requests:         2
-peer handler attempts:     2
-request bytes total:       1308
-response bytes total:      989
-client elapsed sum:        0.353039 ms
-handler elapsed sum:       0.239397 ms
-retries:                   0
-model invocations:         0
-capability executions:     0
-new AWS resources:         0
-new IAM roles/policies:    0
-incremental AWS cost:      USD 0.00
-```
-
-Exact implementation validation before protected merge:
-
-```text
-A2A CI:        34406512226 / #7  SUCCESS
-Multi-Agent:   34406512227 / #42 SUCCESS
-AgentCore CI:  34406512228 / #70 SUCCESS
-```
-
-Gate 15.2 proves OpsLens-owned offline protocol projection/admission. It does **not** yet prove that an independent official implementation accepts the same frozen profile.
-
-Records:
-
-```text
-docs/adr/0057-bounded-offline-a2a-reference-adapter.md
-labs/phase-15-gate-15-2-bounded-offline-a2a-reference-adapter.md
-labs/evidence/phase-15-gate-15-2-bounded-offline-a2a-reference-adapter-v1.json
-```
-
-### Gate 15.3 — bounded offline official-SDK conformance — NEXT / AUTHORIZED
-
-Use the official Python A2A SDK only as an independent protocol-conformance oracle for the already-frozen Gate 15.2 happy path.
-
-Required boundary:
-
-```text
-OpsLens A2AReference + raw validation:    AUTHORITATIVE
-OpsLens content identity/admission:       AUTHORITATIVE
-official SDK parsing/acceptance:          CONFORMANCE ORACLE ONLY
-SDK-created business/capability authority: 0
-```
-
-Required evidence:
-
-```text
-pin exact SDK version in development scope only if needed
-record lockfile/package impact
-prove runtime dependency surface remains unchanged
-validate frozen AgentCard through official SDK types/parser
-validate frozen SendMessage happy-path through official SDK representation
-compare canonical protocol semantics, not incidental serializer ordering
-record any optional-field/default coercion differences
-keep OpsLens negative/fail-closed parser authoritative
-keep model calls = 0
-keep capability executions = 0
-keep network deployment = 0
-keep AWS/IAM changes = 0
-keep business-result transport = 0
-```
-
-A real peer/network experiment remains deferred. Passing official-SDK conformance alone does not create a reason to deploy another agent service.
-
-## Phase 16 — Runtime Exposure with Amazon Inspector — PLANNED
-
-Add independent runtime evidence while preserving:
+Purpose: add independent runtime exposure evidence while preserving:
 
 > **Repository Risk != Runtime Exposure.**
 
+Phase 16 must begin with a fresh capability-fit/evidence boundary before any AWS mutation. Phase 15 closeout does not authorize Phase 16 infrastructure changes.
+
 ## Phase 17 — Security Hardening — PLANNED
 
-Perform cross-cutting IAM, data protection, abuse, threat-model, dependency, and operational hardening.
+Cross-cutting IAM, data protection, abuse resistance, dependency, threat-model, and operational hardening.
 
 ## Phase 18 — Evaluation, Cost & Portfolio Readiness — PLANNED
 
-Consolidate quality, latency, cost, failure, architecture, and portfolio evidence.
+Consolidate quality, latency, cost, failure-path, architecture, and portfolio evidence.
 
 ## Deferred cross-project integration
 
-OpsLens PR #89 remains separate consumer-side work for the Governed LLM Gateway project. It must not be modified or merged as a side effect of Phase 15 work.
+OpsLens PR #89 / `feat/governed-gateway-semantic-planner` remains separate Governed LLM Gateway work and must not be modified or merged as a side effect of Phase 15 or Phase 16.
