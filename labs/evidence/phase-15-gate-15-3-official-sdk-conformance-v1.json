@@ -1,0 +1,166 @@
+{
+  "artifact_version": "phase-15-gate-15-3-official-sdk-conformance:v1",
+  "evidence_date": "2026-09-09",
+  "phase": "Phase 15 — A2A",
+  "gate": "15.3 — bounded offline official A2A SDK conformance",
+  "issue": 233,
+  "pull_request": 234,
+  "source_main_sha": "a60ea13008d841222af0f6486ca9ed69dd6f8426",
+  "successful_head_sha": "5639aa1984295a62714c56271f44111aa0e311ff",
+  "frozen_opslens_contract": "a2a-reference-interoperability:v1",
+  "protocol": {
+    "a2a_release": "1.0.0",
+    "protocol_version": "1.0",
+    "binding": "JSONRPC",
+    "jsonrpc_version": "2.0",
+    "operation": "SendMessage"
+  },
+  "official_sdk_oracle": {
+    "distribution": "a2a-sdk",
+    "version": "1.1.4",
+    "release_tag": "v1.1.4",
+    "source_commit": "2d4d3048b245d2af854bad804f0e722ea9febc08",
+    "acquisition": "EXACT_GITHUB_SOURCE_COMMIT_IN_CI_ONLY",
+    "project_runtime_dependency": false,
+    "project_dev_dependency": false,
+    "project_lockfile_entry": false,
+    "authority_role": "PROTOCOL_CONFORMANCE_ORACLE_ONLY"
+  },
+  "dependency_resolution_history": {
+    "first_attempt": {
+      "head_sha": "c19970e1c9c2767be7f5b9baebee7d5a914ca944",
+      "workflow_run_id": 34407729623,
+      "workflow_run_number": 9,
+      "job_id": 102654625012,
+      "conclusion": "failure",
+      "failed_step": "Run isolated official A2A SDK conformance probe",
+      "requested_distribution": "a2a-sdk==1.1.4",
+      "failure_class": "DEFAULT_PACKAGE_INDEX_RESOLUTION_UNAVAILABLE",
+      "protocol_conformance_executed": false,
+      "note": "The CI resolver reported no satisfiable a2a-sdk==1.1.4 distribution. This is dependency-distribution evidence, not protocol incompatibility."
+    },
+    "intermediate_attempt": {
+      "head_sha": "1eac72ef16505b146d1e53f4bedd7a69f8bb4c64",
+      "workflow_run_id": 34407921404,
+      "workflow_run_number": 10,
+      "job_id": 102655246611,
+      "conclusion": "failure",
+      "reason": "The workflow still used the default-package-index resolver while the semantic boundary wording was being corrected; no new protocol evidence was produced."
+    },
+    "retained_acquisition_decision": "Use the exact official GitHub source commit corresponding to v1.1.4 in isolated CI instead of silently downgrading the SDK oracle or adding it to OpsLens project dependencies."
+  },
+  "successful_ci": {
+    "workflow": "A2A CI",
+    "run_id": 34407951331,
+    "run_number": 11,
+    "job_id": 102655344898,
+    "head_sha": "5639aa1984295a62714c56271f44111aa0e311ff",
+    "conclusion": "success",
+    "checks": {
+      "uv_lock_check": "PASS",
+      "locked_dependency_sync": "PASS",
+      "project_sdk_dependency_absence": "PASS",
+      "gate_15_2_fixture": "PASS",
+      "gate_15_2_evidence": "PASS",
+      "gate_15_2_regression_experiment": "PASS",
+      "official_sdk_source_conformance": "PASS",
+      "ruff": "PASS",
+      "pyright": "PASS — 0 errors, 0 warnings",
+      "pytest": "PASS — 25 passed in 0.08s"
+    }
+  },
+  "conformance_result": {
+    "elapsed_ms": 255.964758,
+    "agent_card": {
+      "parse": "PASS",
+      "semantic_roundtrip": "PASS",
+      "sdk_message_type": "AgentCard",
+      "supported_interface_count": 1,
+      "protocol_binding": "JSONRPC",
+      "protocol_version": "1.0",
+      "omitted_default_false_fields": []
+    },
+    "send_message_request": {
+      "parse": "PASS",
+      "semantic_roundtrip": "PASS",
+      "jsonrpc_construction": "PASS",
+      "jsonrpc_version": "2.0",
+      "method": "SendMessage",
+      "role": "ROLE_USER",
+      "request_id_preserved": true,
+      "reference_fields": [
+        "handoff_id",
+        "reference_sha256",
+        "specialist_task_id"
+      ]
+    },
+    "message_response": {
+      "parse": "PASS",
+      "semantic_roundtrip": "PASS",
+      "result_kind": "message"
+    },
+    "task_response": {
+      "parse": "PASS",
+      "semantic_roundtrip": "PASS",
+      "result_kind": "task"
+    },
+    "material_semantic_differences": [],
+    "byte_equality_required": false
+  },
+  "authority": {
+    "sdk_is_protocol_oracle_only": true,
+    "opslens_raw_validation_remains_authoritative": true,
+    "opslens_content_identity_remains_authoritative": true,
+    "opslens_replay_policy_remains_authoritative": true,
+    "opslens_result_admission_remains_authoritative": true,
+    "sdk_acceptance_creates_capability_authority": false,
+    "sdk_acceptance_creates_business_truth": false
+  },
+  "impact": {
+    "protocol_network_requests": 0,
+    "dependency_acquisition_network_is_ci_setup_only": true,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "new_aws_resources": 0,
+    "new_iam_roles_or_policies": 0,
+    "business_result_transport": 0,
+    "incremental_aws_cost_usd": 0.0,
+    "opslens_runtime_dependency_changes": 0,
+    "opslens_lockfile_changes": 0
+  },
+  "claims_supported": [
+    "The official Python A2A SDK v1.1.4 accepts and semantically round-trips the frozen OpsLens A2A 1.0 Agent Card profile.",
+    "The official SDK accepts and semantically round-trips the frozen SendMessage request params while preserving ROLE_USER and the three reference-only data fields.",
+    "The JSON-RPC library used by the official SDK accepts method SendMessage, JSON-RPC 2.0, and the OpsLens string request id.",
+    "The official SDK accepts both the bounded direct Message and terminal Task SendMessageResponse result forms.",
+    "The conformance proof requires no A2A protocol network traffic, model invocation, capability execution, AWS resource, IAM change, business-result transport, or OpsLens project dependency/lockfile change."
+  ],
+  "explicit_non_claims": [
+    "A real independently deployed A2A peer is not proven or required by current OpsLens architecture.",
+    "Production network transport, TLS, peer authentication, latency, availability, and SLOs are not proven.",
+    "SDK parsing does not replace OpsLens raw duplicate-key or exact-shape validation.",
+    "SDK acceptance does not create business or capability authority.",
+    "Exactly-once distributed execution is not proven.",
+    "Streaming, push notifications, extended Agent Card authentication, business-result transport, and multi-turn semantics are not evaluated.",
+    "A2A is not retained as a production network architecture.",
+    "AgentCore is not selected as A2A hosting.",
+    "MCP is not promoted to a public runtime."
+  ],
+  "retention_decision": {
+    "gate_15_2_adapter": "RETAIN_AS_BOUNDED_OFFLINE_REFERENCE_IMPLEMENTATION",
+    "official_sdk": "RETAIN_AS_EXACT_SOURCE_CI_CONFORMANCE_ORACLE_ONLY",
+    "opslens_project_sdk_dependency": "DO_NOT_ADD",
+    "network_peer": "DO_NOT_CREATE_WITHOUT_CONCRETE_INDEPENDENT_CONSUMER_REQUIREMENT"
+  },
+  "next_gate_recommendation": {
+    "gate": "15.4",
+    "decision": "PHASE_15_RETENTION_AND_CLOSEOUT",
+    "network_experiment_preselected": false,
+    "expected_question": "Given local strict admission and independent official-SDK conformance, what A2A artifacts should OpsLens retain without manufacturing an unnecessary distributed peer/runtime?"
+  },
+  "deferred_cross_project_work": {
+    "pull_request": 89,
+    "branch": "feat/governed-gateway-semantic-planner",
+    "changed_by_gate_15_3": false
+  }
+}
