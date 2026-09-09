@@ -44,6 +44,27 @@ jobs:
       - name: Validate A2A protocol fixture JSON
         run: python -m json.tool tests/fixtures/a2a/protocol-contract-v1.json > /dev/null
 
+      - name: Validate Gate 15.2 evidence JSON
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path(
+              "labs/evidence/phase-15-gate-15-2-bounded-offline-a2a-reference-adapter-v1.json"
+          )
+          with path.open("r", encoding="utf-8") as handle:
+              value = json.load(handle)
+          if not isinstance(value, dict):
+              raise SystemExit("Gate 15.2 evidence must contain one JSON object.")
+          if value.get("artifact_version") != (
+              "phase-15-gate-15-2-bounded-offline-a2a-reference-adapter:v1"
+          ):
+              raise SystemExit("Gate 15.2 evidence artifact_version mismatch.")
+          if value.get("contract") != "a2a-reference-interoperability:v1":
+              raise SystemExit("Gate 15.2 evidence contract mismatch.")
+          PY
+
       - name: Run bounded offline A2A reference experiment
         run: |
           PYTHONPATH=src uv run python scripts/run_a2a_reference_experiment.py | tee /tmp/a2a-reference-experiment.json
