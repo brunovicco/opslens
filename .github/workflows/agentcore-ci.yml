@@ -95,6 +95,11 @@ jobs:
               "invoke_agent_runtime(",
               "if: always()",
               "agentcore_runtime_experiment_enabled=false",
+              "Verify AgentCore Runtime cleanup",
+              "runtime_cleanup_result",
+              "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+              "opslens-agentcore-replay.json",
+              "opslens-agentcore-deploy-role-denial.json",
           )
           missing = [fragment for fragment in required_fragments if fragment not in text]
           if missing:
