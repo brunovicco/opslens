@@ -33,6 +33,7 @@ from opslens.multi_agent.domain.handoff import (
 SDK_VERSION = "1.1.4"
 SDK_TAG = "v1.1.4"
 SDK_SOURCE_COMMIT = "2d4d3048b245d2af854bad804f0e722ea9febc08"
+SDK_ACQUISITION = "EXACT_GITHUB_SOURCE_COMMIT_IN_CI_ONLY"
 
 
 def _object(value: object, *, label: str) -> dict[str, object]:
@@ -246,6 +247,7 @@ def main() -> None:
             "version": version("a2a-sdk"),
             "release_tag": SDK_TAG,
             "source_commit": SDK_SOURCE_COMMIT,
+            "acquisition": SDK_ACQUISITION,
         },
         "agent_card": _agent_card_check(
             sdk_types=sdk_types,
@@ -275,7 +277,8 @@ def main() -> None:
             "opslens_content_identity_remains_authoritative": True,
         },
         "impact": {
-            "network_requests": 0,
+            "protocol_network_requests": 0,
+            "dependency_acquisition_network_is_ci_setup_only": True,
             "model_invocations": 0,
             "capability_executions": 0,
             "new_aws_resources": 0,
