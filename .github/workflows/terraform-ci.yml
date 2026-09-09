@@ -64,7 +64,7 @@ jobs:
         run: uv run python scripts/build_nvd_analytics_projector_lambda_package.py
 
       - name: Check Terraform formatting
-        run: terraform fmt -check -recursive infra
+        run: terraform fmt -diff -check -recursive infra
 
       - name: Initialize bootstrap without backend
         run: terraform -chdir=infra/bootstrap init -backend=false -input=false

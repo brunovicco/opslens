@@ -6,11 +6,16 @@ on:
       - "src/opslens/agentcore_runtime/**/*.py"
       - "tests/unit/agentcore_runtime/**/*.py"
       - "tests/fixtures/agentcore_runtime/**"
-      - "docs/adr/0052-*.md"
+      - "scripts/build_agentcore_runtime_package.py"
+      - "scripts/publish_agentcore_runtime_artifact.py"
+      - "scripts/run_agentcore_runtime_replay.py"
+      - "runtime/agentcore/**"
+      - "docs/adr/005*.md"
       - "labs/phase-14-gate-14-*.md"
       - "labs/evidence/phase-14-*.json"
       - "infra/modules/agentcore_runtime/**"
       - "infra/environments/dev/agentcore*.tf"
+      - "infra/bootstrap/github_agentcore*.tf"
       - "README.md"
       - "README.pt-br.md"
       - "docs/README.md"
@@ -19,6 +24,7 @@ on:
       - "pyproject.toml"
       - "uv.lock"
       - ".github/workflows/agentcore-ci.yml"
+      - ".github/workflows/agentcore-runtime-experiment.yml"
   workflow_dispatch:
 
 permissions:
@@ -71,6 +77,46 @@ jobs:
                   raise SystemExit(f"{path} must contain one JSON object.")
               if not isinstance(value.get("artifact_version"), str):
                   raise SystemExit(f"{path} is missing artifact_version.")
+          PY
+
+      - name: Validate main-only AgentCore experiment workflow guardrails
+        run: |
+          uv run python - <<'PY'
+          from pathlib import Path
+
+          path = Path(".github/workflows/agentcore-runtime-experiment.yml")
+          text = path.read_text(encoding="utf-8")
+          required_fragments = (
+              "workflow_dispatch:",
+              "confirm_public_experiment:",
+              "github.ref == 'refs/heads/main' && inputs.confirm_public_experiment",
+              "role/OpsLensGitHubDeployRole",
+              "role/OpsLensAgentCoreReplayRole",
+              "invoke_agent_runtime(",
+              "if: always()",
+              "agentcore_runtime_experiment_enabled=false",
+              "Verify AgentCore Runtime cleanup",
+              "runtime_cleanup_result",
+              "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+              "opslens-agentcore-replay.json",
+              "opslens-agentcore-deploy-role-denial.json",
+          )
+          missing = [fragment for fragment in required_fragments if fragment not in text]
+          if missing:
+              raise SystemExit(
+                  "AgentCore experiment workflow lost required guardrails: "
+                  + ", ".join(missing)
+              )
+          forbidden_fragments = (
+              "pull_request:",
+              "agentcore_runtime_experiment_enabled=true\n      - name: Configure",
+          )
+          present = [fragment for fragment in forbidden_fragments if fragment in text]
+          if present:
+              raise SystemExit(
+                  "AgentCore experiment workflow contains forbidden trigger/ordering: "
+                  + ", ".join(present)
+              )
           PY
 
       - name: Prepare exact locked AWS provider schema probe
@@ -130,25 +176,80 @@ jobs:
           PY
 
       - name: Ruff AgentCore slice
-        run: |
-          if [ -d src/opslens/agentcore_runtime ]; then
-            uv run ruff check src/opslens/agentcore_runtime tests/unit/agentcore_runtime
-          else
-            echo "AgentCore Python slice not introduced yet; Gate 14.1 is architecture/evidence only."
-          fi
+        run: >-
+          uv run ruff check
+          src/opslens/agentcore_runtime
+          tests/unit/agentcore_runtime
+          scripts/build_agentcore_runtime_package.py
+          scripts/publish_agentcore_runtime_artifact.py
+          scripts/run_agentcore_runtime_replay.py
+          runtime/agentcore/main.py
 
       - name: Pyright strict AgentCore slice
-        run: |
-          if [ -d src/opslens/agentcore_runtime ]; then
-            uv run pyright src/opslens/agentcore_runtime tests/unit/agentcore_runtime
-          else
-            echo "AgentCore Python slice not introduced yet; Gate 14.1 is architecture/evidence only."
-          fi
+        run: >-
+          uv run pyright
+          src/opslens/agentcore_runtime
+          tests/unit/agentcore_runtime
+          scripts/build_agentcore_runtime_package.py
+          scripts/publish_agentcore_runtime_artifact.py
+          scripts/run_agentcore_runtime_replay.py
+          runtime/agentcore/main.py
 
       - name: Pytest AgentCore slice
+        run: uv run pytest tests/unit/agentcore_runtime
+
+      - name: Build reproducible AgentCore direct-code packages
         run: |
-          if [ -d tests/unit/agentcore_runtime ]; then
-            uv run pytest tests/unit/agentcore_runtime
-          else
-            echo "AgentCore unit-test slice not introduced yet; Gate 14.1 is architecture/evidence only."
+          uv run python scripts/build_agentcore_runtime_package.py \
+            --output-dir /tmp/opslens-agentcore-package-a \
+            > /tmp/opslens-agentcore-package-a.json
+          uv run python scripts/build_agentcore_runtime_package.py \
+            --output-dir /tmp/opslens-agentcore-package-b \
+            > /tmp/opslens-agentcore-package-b.json
+          if ! cmp -s \
+            /tmp/opslens-agentcore-package-a/opslens-agentcore-runtime.zip \
+            /tmp/opslens-agentcore-package-b/opslens-agentcore-runtime.zip; then
+            uv run python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          zip_a = Path("/tmp/opslens-agentcore-package-a/opslens-agentcore-runtime.zip")
+          zip_b = Path("/tmp/opslens-agentcore-package-b/opslens-agentcore-runtime.zip")
+
+          def members(path: Path) -> dict[str, tuple[int, int, str]]:
+              with ZipFile(path) as archive:
+                  return {
+                      info.filename: (
+                          info.file_size,
+                          info.CRC,
+                          hashlib.sha256(archive.read(info.filename)).hexdigest(),
+                      )
+                      for info in archive.infolist()
+                  }
+
+          members_a = members(zip_a)
+          members_b = members(zip_b)
+          only_a = sorted(set(members_a) - set(members_b))
+          only_b = sorted(set(members_b) - set(members_a))
+          changed = sorted(
+              name
+              for name in set(members_a) & set(members_b)
+              if members_a[name] != members_b[name]
+          )
+          print(f"zip_a_sha256={hashlib.sha256(zip_a.read_bytes()).hexdigest()}")
+          print(f"zip_b_sha256={hashlib.sha256(zip_b.read_bytes()).hexdigest()}")
+          print(f"only_in_a={only_a}")
+          print(f"only_in_b={only_b}")
+          for name in changed[:20]:
+              print(
+                  "changed_member="
+                  f"{name} a={members_a[name]} b={members_b[name]}"
+              )
+          raise SystemExit("AgentCore direct-code ZIP is not byte reproducible")
+          PY
           fi
+          cmp \
+            /tmp/opslens-agentcore-package-a/opslens-agentcore-runtime-package.json \
+            /tmp/opslens-agentcore-package-b/opslens-agentcore-runtime-package.json
+          cat /tmp/opslens-agentcore-package-a/opslens-agentcore-runtime-package.json
