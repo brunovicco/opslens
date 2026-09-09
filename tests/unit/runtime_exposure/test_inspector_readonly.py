@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import cast
 
 import pytest
 from botocore.exceptions import ClientError
@@ -154,7 +155,10 @@ def test_discovers_independent_runtime_dimensions() -> None:
 def test_paginates_and_hashes_business_records_only() -> None:
     """Preserve page count/hash evidence without persisting opaque tokens."""
     first = _coverage_page(next_token="opaque-token")
-    second = {"coveredResources": [], "ResponseMetadata": _metadata()}
+    second: dict[str, object] = {
+        "coveredResources": [],
+        "ResponseMetadata": _metadata(),
+    }
     client = FakeInspectorClient(
         coverage_pages=[first, second],
         finding_pages=[{"findings": [], "ResponseMetadata": _metadata()}],
@@ -212,10 +216,8 @@ def test_findings_access_denied_preserves_coverage_evidence() -> None:
 def test_rejects_network_reachability_for_non_ec2_resource() -> None:
     """Fail closed if upstream data violates the frozen EC2-only reachability boundary."""
     invalid = _findings_page()
-    findings = invalid["findings"]
-    assert isinstance(findings, list)
-    network_finding = findings[1]
-    assert isinstance(network_finding, dict)
+    findings = cast(list[object], invalid["findings"])
+    network_finding = cast(dict[str, object], findings[1])
     network_finding["resources"] = [
         {
             "id": "arn:aws:lambda:us-east-1:487757851499:function:unexpected",
@@ -238,10 +240,8 @@ def test_rejects_network_reachability_for_non_ec2_resource() -> None:
 def test_rejects_cross_account_runtime_evidence() -> None:
     """Reject Inspector evidence outside the expected account boundary."""
     page = _coverage_page()
-    records = page["coveredResources"]
-    assert isinstance(records, list)
-    record = records[0]
-    assert isinstance(record, dict)
+    records = cast(list[object], page["coveredResources"])
+    record = cast(dict[str, object], records[0])
     record["accountId"] = "000000000000"
     client = FakeInspectorClient(
         coverage_pages=[page],
