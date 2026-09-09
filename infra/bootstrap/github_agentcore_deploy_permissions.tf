@@ -7,6 +7,10 @@ locals {
     "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.dev_agentcore_runtime_execution_role_name}"
   )
 
+  dev_agentcore_runtime_precreation_arn = (
+    "arn:aws:bedrock-agentcore:${var.aws_region}:${data.aws_caller_identity.current.account_id}:runtime/*"
+  )
+
   dev_agentcore_runtime_arn = (
     "arn:aws:bedrock-agentcore:${var.aws_region}:${data.aws_caller_identity.current.account_id}:runtime/${local.dev_agentcore_runtime_name}-*"
   )
@@ -143,6 +147,16 @@ data "aws_iam_policy_document" "github_actions_agentcore_deploy" {
   }
 
   statement {
+    sid     = "CreateAgentCoreDefaultRuntimeEndpointDependency"
+    effect  = "Allow"
+    actions = ["bedrock-agentcore:CreateAgentRuntimeEndpoint"]
+
+    resources = [
+      local.dev_agentcore_runtime_precreation_arn,
+    ]
+  }
+
+  statement {
     sid    = "ManageExactBoundedAgentCoreRuntime"
     effect = "Allow"
 
@@ -179,12 +193,9 @@ data "aws_iam_policy_document" "github_actions_agentcore_deploy" {
   }
 
   statement {
-    sid    = "ManageAgentCoreDefaultRuntimeEndpointDependency"
-    effect = "Allow"
-    actions = [
-      "bedrock-agentcore:CreateAgentRuntimeEndpoint",
-      "bedrock-agentcore:DeleteAgentRuntimeEndpoint",
-    ]
+    sid     = "DeleteExactAgentCoreDefaultRuntimeEndpointDependency"
+    effect  = "Allow"
+    actions = ["bedrock-agentcore:DeleteAgentRuntimeEndpoint"]
 
     resources = [
       local.dev_agentcore_runtime_arn,
