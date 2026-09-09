@@ -32,7 +32,8 @@ Phase 14 Amazon Bedrock AgentCore               COMPLETE
 Phase 15 A2A                                    IN PROGRESS
   Gate 15.1 capability fit / authority          COMPLETE / GO OFFLINE ONLY
   Gate 15.1 protocol-baseline correction        COMPLETE / A2A 1.0.0
-  Gate 15.2 reference-only offline adapter      NEXT / AUTHORIZED
+  Gate 15.2 reference-only offline adapter      COMPLETE / MEASURED
+  Gate 15.3 official SDK conformance            NEXT / AUTHORIZED
 ```
 
 Permanent separations include:
@@ -57,6 +58,8 @@ A2A transport success != business/evidence truth
 A2A artifact != admitted OpsLens evidence
 A2A authentication != capability authorization
 A2A protocol binding != business authority
+A2A generated id != OpsLens content identity
+A2A SDK acceptance != OpsLens admission authority
 Repository Risk != Runtime Exposure
 ```
 
@@ -178,8 +181,6 @@ Python SDK latest observed:     1.1.4
 SDK pinned by Gate 15.1:        NO
 ```
 
-A2A v1.0 uses Agent Card `supportedInterfaces`; each interface declares `url`, `protocolBinding`, and `protocolVersion`. JSON-RPC is an explicit Gate 15.2 scope choice rather than a claim that A2A has only one binding.
-
 Finding:
 
 ```text
@@ -194,21 +195,6 @@ Decision:
 GO TO ONE BOUNDED OFFLINE/IN-PROCESS INTEROPERABILITY EXPERIMENT
 ```
 
-The first experiment is reference-only:
-
-```text
-pre-admitted SpecialistAgentTask
- -> code-owned local reference
- -> {handoff_id, specialist_task_id, reference_sha256}
- -> A2A 1.0 SendMessage over selected JSONRPC binding
- -> bounded peer reference resolution
- -> terminal Message or Task metadata
- -> deterministic OpsLens admission
- -> STOP before model/capability execution
-```
-
-Gate 15.1 added no SDK dependency, endpoint, model call, capability execution, AWS resource, IAM permission, or AgentCore runtime.
-
 References:
 
 - [`adr/0056-bounded-a2a-capability-fit.md`](adr/0056-bounded-a2a-capability-fit.md)
@@ -216,25 +202,87 @@ References:
 - [`../labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v1.json`](../labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v1.json) — historical first assessment; protocol-version claim superseded
 - [`../labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v2.json`](../labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v2.json) — authoritative corrected evidence
 
-### Next authorized gate — Gate 15.2
+### Gate 15.2 — bounded offline reference adapter — complete / measured
 
-Freeze and implement the smallest selected A2A `1.0` reference-only adapter contract offline using one explicitly selected JSON-RPC binding.
+Gate 15.2 retains:
+
+```text
+a2a-reference-interoperability:v1
+```
+
+Measured path:
+
+```text
+pre-admitted SpecialistAgentTask
+ -> content-addressed A2AReference
+ -> lab-only code-owned registry
+ -> strict A2A 1.0 JSON-RPC SendMessage projection
+ -> raw duplicate-key / exact-shape validation
+ -> bounded local reference resolution
+ -> Message or terminal completed Task metadata
+ -> deterministic OpsLens admission
+ -> STOP before model/capability execution
+```
+
+Protected implementation merge:
+
+```text
+PR:               #231
+main SHA:         3a9adfdcfdd206d1c932a2d90bcb312377596b70
+measurement head: c27a2362df4971a7b619be33dcaacd2bfe2a2369
+```
+
+Measured evidence:
+
+```text
+Agent Card bytes:          582
+protocol requests:         2
+peer handler attempts:     2
+request bytes total:       1308
+response bytes total:      989
+client elapsed sum:        0.353039 ms
+handler elapsed sum:       0.239397 ms
+retries:                   0
+model invocations:         0
+capability executions:     0
+new AWS resources:         0
+new IAM roles/policies:    0
+incremental AWS cost:      USD 0.00
+```
+
+Dependency outcome:
+
+```text
+official Python a2a-sdk inspected: 1.1.4
+a2a-sdk pinned:                    NO
+new runtime dependencies:          0
+```
+
+The local experiment proves OpsLens-owned protocol projection/admission but does not yet prove independent official-SDK conformance or a production network/runtime need.
+
+References:
+
+- [`adr/0057-bounded-offline-a2a-reference-adapter.md`](adr/0057-bounded-offline-a2a-reference-adapter.md)
+- [`../labs/phase-15-gate-15-2-bounded-offline-a2a-reference-adapter.md`](../labs/phase-15-gate-15-2-bounded-offline-a2a-reference-adapter.md)
+- [`../labs/evidence/phase-15-gate-15-2-bounded-offline-a2a-reference-adapter-v1.json`](../labs/evidence/phase-15-gate-15-2-bounded-offline-a2a-reference-adapter-v1.json)
+
+### Next authorized gate — Gate 15.3
+
+Run one bounded offline official-SDK conformance check against the already-frozen A2A 1.0 Agent Card and `SendMessage` happy path.
 
 Required properties:
 
 ```text
-raw protocol validation before domain admission
-AgentInterface protocolBinding/version admission
-exact reference binding
-fail-closed unsupported binding/version behavior
-fail-closed tamper/unknown-reference behavior
-duplicate/replay/failure fixtures
-inspect Python SDK 1.1.4 before any pin
-SDK/dependency placement evidence
-request/response byte and local latency evidence
+OpsLens raw validation remains authoritative
+OpsLens content identity/admission remains authoritative
+official SDK is protocol oracle only
+SDK dependency is development-only if a pin is required
+runtime dependency surface remains unchanged
+network deployment = 0
 model invocations = 0
 capability executions = 0
-AWS/IAM/runtime deployment = 0
+AWS/IAM changes = 0
+business-result transport = 0
 ```
 
-Gate 15.2 must not assume AgentCore hosting or promote MCP into a public runtime.
+Passing SDK conformance will not by itself authorize a network peer, AgentCore hosting, or MCP public runtime.
