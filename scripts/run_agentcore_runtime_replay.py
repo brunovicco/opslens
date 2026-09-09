@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 from collections.abc import Mapping
 from pathlib import Path
 from typing import cast
@@ -13,15 +14,19 @@ from typing import cast
 from botocore.config import Config
 from botocore.session import Session
 
-from opslens.agent_baseline.application.reasoning_evaluation import (
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+_PROJECT_SRC = _PROJECT_ROOT / "src"
+if str(_PROJECT_SRC) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_SRC))
+
+from opslens.agent_baseline.application.reasoning_evaluation import (  # noqa: E402
     load_agent_reasoning_evaluation_dataset,
 )
-from opslens.agentcore_runtime.replay import (
+from opslens.agentcore_runtime.replay import (  # noqa: E402
     AgentCoreRuntimeInvokeClient,
     execute_agentcore_runtime_replay,
 )
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _DEFAULT_DATASET = (
     _PROJECT_ROOT
     / "tests"
