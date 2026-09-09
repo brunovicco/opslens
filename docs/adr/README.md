@@ -68,3 +68,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0058](0058-official-a2a-sdk-as-ci-conformance-oracle.md) | Use the official A2A SDK only as an isolated exact-source CI conformance oracle while keeping OpsLens admission authoritative | Accepted |
 | [0059](0059-phase15-a2a-closeout.md) | Close Phase 15 at the bounded offline A2A interoperability boundary instead of creating an unjustified network runtime | Accepted |
 | [0060](0060-bounded-amazon-inspector-runtime-evidence-fit.md) | Treat Amazon Inspector as an independent runtime-evidence authority and authorize read-only discovery before activation or correlation | Accepted |
+| [0061](0061-dedicated-temporary-inspector-discovery-role.md) | Use a dedicated temporary least-privilege Inspector discovery role instead of widening the shared GitHub deployment role | Accepted |
