@@ -69,11 +69,15 @@ def test_precreation_workload_identity_tag_dependency_is_request_tag_bounded() -
     """Managed workload-identity tagging must use only the measured precreation scope."""
     text = _POLICY_PATH.read_text(encoding="utf-8")
 
-    assert 'dev_agentcore_workload_identity_precreation_arn = (' in text
+    assert 'dev_agentcore_workload_identity_directory_arn = (' in text
     assert (
         '"arn:aws:bedrock-agentcore:${var.aws_region}:'
         '${data.aws_caller_identity.current.account_id}:'
-        'workload-identity-directory/default/workload-identity/*"'
+        'workload-identity-directory/default"'
+    ) in text
+    assert 'dev_agentcore_workload_identity_precreation_arn = (' in text
+    assert (
+        '"${local.dev_agentcore_workload_identity_directory_arn}/workload-identity/*"'
     ) in text
     assert 'sid     = "TagAgentCoreWorkloadIdentityDuringCreateDependency"' in text
 
@@ -86,8 +90,8 @@ def test_precreation_workload_identity_tag_dependency_is_request_tag_bounded() -
     _assert_exact_create_time_tags(tag_statement)
 
 
-def test_managed_workload_identity_create_uses_only_measured_scope_and_tags() -> None:
-    """Managed workload-identity creation must remain isolated to the measured dependency."""
+def test_managed_workload_identity_create_requires_directory_and_identity_scopes() -> None:
+    """Managed identity creation must authorize both required resource types and exact tags."""
     text = _POLICY_PATH.read_text(encoding="utf-8")
 
     assert 'sid     = "CreateAgentCoreManagedWorkloadIdentityDependency"' in text
@@ -96,6 +100,7 @@ def test_managed_workload_identity_create_uses_only_measured_scope_and_tags() ->
     )[1].split("\n  }", maxsplit=1)[0]
 
     assert 'actions = ["bedrock-agentcore:CreateWorkloadIdentity"]' in create_statement
+    assert "local.dev_agentcore_workload_identity_directory_arn" in create_statement
     assert "local.dev_agentcore_workload_identity_precreation_arn" in create_statement
     assert 'resources = ["*"]' not in create_statement
     assert "bedrock-agentcore:GetWorkloadIdentity" not in create_statement
@@ -145,6 +150,7 @@ def test_workload_identity_cleanup_remains_exact_family_scoped() -> None:
     assert 'actions = ["bedrock-agentcore:DeleteWorkloadIdentity"]' in delete_statement
     assert "local.dev_agentcore_workload_identity_arn" in delete_statement
     assert "local.dev_agentcore_workload_identity_precreation_arn" not in delete_statement
+    assert "local.dev_agentcore_workload_identity_directory_arn" in text
 
 
 def test_deployment_role_never_receives_runtime_invoke_authority() -> None:
