@@ -31,10 +31,11 @@ Phase 13 MCP                                    COMPLETE
 Phase 14 Amazon Bedrock AgentCore               COMPLETE
 Phase 15 A2A                                    COMPLETE
 Phase 16 Runtime Exposure with Inspector        IN PROGRESS
-  Gate 16.1 Inspector capability fit            COMPLETE / GO READ-ONLY ONLY
-  Gate 16.2 read-only Inspector discovery       COMPLETE / BLOCKED_BY_EXISTING_IAM
-  Gate 16.3 minimum Inspector read IAM          COMPLETE / DEDICATED TEMP ROLE
-  Gate 16.4 temporary role + discovery rerun    NEXT / IMPLEMENTATION AUTHORIZED
+  Gate 16.1 capability fit                     COMPLETE / GO READ-ONLY ONLY
+  Gate 16.2 existing-role discovery            COMPLETE / BLOCKED_BY_EXISTING_IAM
+  Gate 16.3 minimum read IAM                   COMPLETE / DEDICATED TEMP ROLE
+  Gate 16.4 temporary role + rerun             COMPLETE / SUCCESS / ZERO RECORDS
+  Gate 16.5 temporary IAM teardown             HUMAN DESTROY PENDING
 Phase 17 Security Hardening                     PLANNED
 Phase 18 Evaluation, Cost & Portfolio           PLANNED
 ```
@@ -55,6 +56,7 @@ A2A message != capability authorization
 A2A transport success != business/evidence truth
 A2A SDK acceptance != OpsLens admission authority
 AWS authentication != Inspector read authorization
+Inspector API success != runtime evidence presence
 Inspector coverage != vulnerability finding
 Inspector finding != repository finding
 Inspector package match != deployed application ownership
@@ -105,120 +107,82 @@ Canonical Phase 15 closeout:
 
 ## Phase 16 — Runtime Exposure with Amazon Inspector — in progress
 
-### Gate 16.1 — capability fit / authority
-
-Phase 16 starts from the invariant:
+Phase 16 starts from:
 
 > **Repository Risk != Runtime Exposure.**
 
-The first capability-fit decision treats Amazon Inspector as an independent runtime evidence authority rather than an extension of repository-risk truth.
-
-Selected first read APIs:
+Amazon Inspector is treated as an independent runtime-evidence authority. The bounded read surface remains:
 
 ```text
 ListCoverage
 ListFindings
 ```
 
-Current Inspector finding dimensions relevant to OpsLens:
+### Gate 16.2 — first discovery
+
+The first main-only attempt used the shared deploy role without widening it:
 
 ```text
-NETWORK_REACHABILITY
-PACKAGE_VULNERABILITY
-CODE_VULNERABILITY
+run:              34411934819 / #1
+ListCoverage:     ACCESS_DENIED
+ListFindings:     NOT_ATTEMPTED / fail-closed
+AWS mutations:    0
+new IAM:          0
 ```
 
-The current upstream contract is explicitly preserved:
+That result triggered a separate IAM decision rather than automatic privilege expansion.
+
+### Gate 16.3 — dedicated temporary read role
+
+The accepted experiment identity was limited to the two Inspector list actions, the immutable OpsLens main OIDC subject, `aws:RequestedRegion == us-east-1`, and mandatory teardown after one measured run.
+
+Reference:
+
+- [`adr/0061-dedicated-temporary-inspector-discovery-role.md`](adr/0061-dedicated-temporary-inspector-discovery-role.md)
+
+### Gate 16.4 — measured rerun
+
+Human bootstrap created exactly the temporary role/policy and one main-only rerun succeeded:
 
 ```text
-NETWORK_REACHABILITY is EC2-only.
-```
-
-Therefore Phase 16 keeps four evidence dimensions separate:
-
-```text
-runtime_coverage
-runtime_vulnerability
-network_reachability
-code_vulnerability
-```
-
-References:
-
-- [`adr/0060-bounded-amazon-inspector-runtime-evidence-fit.md`](adr/0060-bounded-amazon-inspector-runtime-evidence-fit.md)
-- [`../labs/phase-16-gate-16-1-inspector-runtime-evidence-fit.md`](../labs/phase-16-gate-16-1-inspector-runtime-evidence-fit.md)
-- [`../labs/evidence/phase-16-gate-16-1-inspector-runtime-evidence-fit-v1.json`](../labs/evidence/phase-16-gate-16-1-inspector-runtime-evidence-fit-v1.json)
-
-### Gate 16.2 — bounded read-only discovery — complete
-
-The implementation was merged before the live experiment. The main-only workflow then used the existing `OpsLensGitHubDeployRole` without changing IAM or Inspector configuration.
-
-Measured result:
-
-```text
-workflow:                 Inspector Read-Only Discovery
-run:                      34411934819 / #1
-job:                      102668116801
-main SHA:                 d5ba77cc98df84488928e49ea5e429234e46bc9a
-workflow conclusion:      success
-experiment result:        BLOCKED_BY_EXISTING_IAM
-ListCoverage:             ACCESS_DENIED / AccessDeniedException
-ListFindings:             NOT_ATTEMPTED after fail-closed stop
-client elapsed:           103.252301 ms
+run:                      34414116549 / #2
+job:                      102675000098
+client elapsed:           465.877452 ms
+ListCoverage:             SUCCESS / 1 page / 0 records
+ListFindings:             SUCCESS / 1 page / 0 records
 SDK retries:              0
 AWS mutations:            0
-new IAM:                  0
+new IAM during discovery: 0
 model invocations:        0
 capability executions:    0
 ```
 
-Authentication succeeded through GitHub OIDC, but Inspector read authorization did not. This is valid terminal evidence for Gate 16.2 and does not authorize automatic privilege expansion.
+The minimum IAM boundary worked, but the current dev account returned no Inspector coverage or finding evidence. The zero result is intentionally narrow: it does not prove Inspector is disabled, unsupported, or without value elsewhere.
+
+Retained decision:
+
+```text
+Inspector read-only adapter/contract:        RETAIN
+measured zero-evidence result:               RETAIN
+standing Inspector discovery IAM:            REMOVE
+Inspector activation/configuration change:   DO NOT CREATE IN PHASE 16
+repository/runtime automatic correlation:    DO NOT CREATE
+runtime-risk composite scoring:              DO NOT CREATE
+model synthesis over Inspector evidence:     DO NOT CREATE
+```
 
 References:
 
-- [`../labs/phase-16-gate-16-2-inspector-readonly-discovery.md`](../labs/phase-16-gate-16-2-inspector-readonly-discovery.md)
-- [`../labs/evidence/phase-16-gate-16-2-inspector-readonly-discovery-v1.json`](../labs/evidence/phase-16-gate-16-2-inspector-readonly-discovery-v1.json)
-- GitHub Actions run `34411934819`
-- artifact `10127569570`, SHA-256 `8814b313261e2ac2cde2894e7ea428e437aaa66cd0d2f47e7187759565d6738e`
+- [`adr/0062-retain-inspector-read-contract-without-standing-iam-or-scan-activation.md`](adr/0062-retain-inspector-read-contract-without-standing-iam-or-scan-activation.md)
+- [`../labs/phase-16-gate-16-4-inspector-readonly-rerun.md`](../labs/phase-16-gate-16-4-inspector-readonly-rerun.md)
+- [`../labs/evidence/phase-16-gate-16-4-inspector-readonly-rerun-v1.json`](../labs/evidence/phase-16-gate-16-4-inspector-readonly-rerun-v1.json)
+- GitHub Actions run `34414116549`
+- artifact `10128371987`, digest `sha256:a6f917e62124b4c604891e1a83db9874e3ef34696110dfaead1af16d45a03365`
 
-### Gate 16.3 — minimum Inspector read-only IAM boundary — complete
+### Gate 16.5 — mandatory teardown
 
-The measured denial triggered a separate IAM decision instead of automatic privilege expansion.
+The retained repository state removes the temporary Inspector IAM definition. The historical discovery workflow remains for reproducibility but is disabled by default and requires explicit confirmation that a separately authorized temporary role exists.
 
-Decision:
+After protected merge, the human bootstrap plane must prove an exact `0 add / 0 change / 2 destroy` cleanup, apply the reviewed saved plan, require post-apply convergence, and independently verify the temporary role is absent while the shared deployment role remains free of Inspector authority.
 
-```text
-widen OpsLensGitHubDeployRole:                 REJECT
-use dedicated temporary discovery role:       ACCEPT
-stop Phase 16:                                 REJECT FOR NOW
-```
-
-Frozen role contract:
-
-```text
-role:                       OpsLensInspectorDiscoveryRole
-allowed actions:            inspector2:ListCoverage
-                            inspector2:ListFindings
-resource:                   *
-region condition:           aws:RequestedRegion == us-east-1
-OIDC subject:               immutable OpsLens repository/main subject
-requested STS session:      900 seconds
-other AWS permissions:      0
-mandatory teardown:         YES after one measured experiment
-```
-
-The two Inspector list actions have no IAM resource type, so resource-level ARN scoping is unavailable. Principal separation, exact action allowlisting, regional restriction, short session request, and mandatory teardown compensate for that unavoidable scope.
-
-References:
-
-- [`adr/0061-dedicated-temporary-inspector-discovery-role.md`](adr/0061-dedicated-temporary-inspector-discovery-role.md)
-- [`../labs/phase-16-gate-16-3-inspector-readonly-iam-decision.md`](../labs/phase-16-gate-16-3-inspector-readonly-iam-decision.md)
-- [`../labs/evidence/phase-16-gate-16-3-inspector-readonly-iam-decision-v1.json`](../labs/evidence/phase-16-gate-16-3-inspector-readonly-iam-decision-v1.json)
-
-### Next gate — Gate 16.4
-
-Implement the temporary role/policy and switch the manual discovery workflow to that role in the repository. Validate Terraform and negative-permission guardrails before stopping at the human AWS apply boundary.
-
-After one measured discovery, remove the temporary role/policy and independently verify its absence before any retained runtime-identity decision.
-
-No change to `OpsLensGitHubDeployRole`, Inspector activation/configuration, hybrid routing, repository/runtime automatic correlation, runtime-risk composite scoring, model synthesis, or agent capability execution is authorized.
+Phase 16 closes only after that cleanup evidence is recorded.
