@@ -1,0 +1,96 @@
+{
+  "artifact_version": "phase-14-gate-14-2-ninth-runtime-attempt-cleanup-iam-failure:v1",
+  "decision_date": "2026-09-09",
+  "phase": "Phase 14 — Amazon Bedrock AgentCore",
+  "gate": "14.2 — first bounded AgentCore HTTP/SigV4 runtime experiment",
+  "source_main_sha": "9153bad5bef098598f84953bc157c1d369e176d8",
+  "workflow_run": {
+    "id": 34357918962,
+    "job_id": 102487202553,
+    "conclusion": "failure",
+    "runtime_id": "opslens_dev_bounded_runtime-NGpNvhEnbO",
+    "runtime_arn": "arn:aws:bedrock-agentcore:us-east-1:487757851499:runtime/opslens_dev_bounded_runtime-NGpNvhEnbO",
+    "runtime_version": "1",
+    "runtime_ready": true,
+    "network_mode": "PUBLIC",
+    "protocol": "HTTP"
+  },
+  "bounded_runtime_evidence": {
+    "artifact_sha256": "a846034ad646c4f6383ac08e47d9ed065b4a9f3349c14104db49a2d510b3ec88",
+    "artifact_version_id": "zbr0hWXEjhjAlBEFZO4782AHyhL5mbfm",
+    "publication_status": "replay_verified",
+    "phase_11_corpus_sha256": "3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc",
+    "replay_cases": 6,
+    "replay_passed": 6,
+    "capability_executions": 0,
+    "input_tokens": 3291,
+    "output_tokens": 104,
+    "total_tokens": 3395,
+    "sdk_retry_attempts": 0,
+    "transport_elapsed_sum_ms": 20674,
+    "deployment_role_invoke_denial": "AccessDeniedException / HTTP 403"
+  },
+  "terraform_cleanup": {
+    "planned": "0 to add, 0 to change, 3 to destroy",
+    "reported_apply": "0 added, 0 changed, 3 destroyed",
+    "independent_verifier_poll_interval_seconds": 5,
+    "independent_verifier_attempts": 30,
+    "independent_verifier_observed_status": "READY",
+    "runtime_cleanup_proven": false
+  },
+  "human_control_plane_checkpoint": {
+    "observed_at": "2026-09-09T15:27:31Z",
+    "get_agent_runtime_exit_code": 0,
+    "status": "READY",
+    "created_at": "2026-09-09T13:36:01.545376Z",
+    "last_updated_at": "2026-09-09T13:36:12.543695Z",
+    "workload_identity_arn": "arn:aws:bedrock-agentcore:us-east-1:487757851499:workload-identity-directory/default/workload-identity/opslens_dev_bounded_runtime-NGpNvhEnbO",
+    "exact_name_list_count": 1
+  },
+  "cloudtrail_delete_event": {
+    "event_time": "2026-09-09T13:37:03Z",
+    "event_name": "DeleteAgentRuntime",
+    "event_source": "bedrock-agentcore.amazonaws.com",
+    "principal": "arn:aws:sts::487757851499:assumed-role/OpsLensGitHubDeployRole/GitHubActions",
+    "error_code": "AccessDenied",
+    "request_agent_runtime_id": "opslens_dev_bounded_runtime-NGpNvhEnbO",
+    "request_id": "a83c40f9-bc85-4c84-a1da-c20e3d3f24eb",
+    "missing_action": "bedrock-agentcore:DeleteWorkloadIdentity",
+    "authorization_resource": "arn:aws:bedrock-agentcore:us-east-1:487757851499:workload-identity-directory/default",
+    "message": "User: arn:aws:sts::487757851499:assumed-role/OpsLensGitHubDeployRole/GitHubActions is not authorized to perform: bedrock-agentcore:DeleteWorkloadIdentity on resource: arn:aws:bedrock-agentcore:us-east-1:487757851499:workload-identity-directory/default because no identity-based policy allows the bedrock-agentcore:DeleteWorkloadIdentity action"
+  },
+  "failure_classification": {
+    "layer": "AgentCore managed workload-identity delete dependency",
+    "cause": "DeleteAgentRuntime requires DeleteWorkloadIdentity authorization on the exact default workload-identity directory in addition to the generated workload-identity resource",
+    "provider_behavior": "hashicorp/aws v6.60.0 treats an AccessDeniedException containing 'is not authorized to perform' from DeleteAgentRuntime as successful deletion, so Terraform removed the runtime from state while the control plane retained it READY",
+    "selected_remediation": "add only the exact default workload-identity directory ARN to the existing DeleteAgentCoreGeneratedWorkloadIdentityDependency while retaining the exact OpsLens generated workload-identity family ARN"
+  },
+  "authority_invariants": {
+    "github_deployment_get_workload_identity_authority": false,
+    "github_deployment_create_service_linked_role_authority": false,
+    "github_deployment_runtime_invoke_authority": false,
+    "delete_workload_identity_wildcard_resource_authority": false
+  },
+  "preserved_workflow_artifact": {
+    "artifact_id": 10106761648,
+    "name": "phase-14-gate-14-2-agentcore-runtime-evidence-34357918962",
+    "digest": "sha256:455a9cb35a239fa050479bbe88bf0070fdb34ad369252da23331dc3c25994ba1",
+    "size_bytes": 4851,
+    "expires_at": "2026-10-09T13:39:39Z",
+    "files": [
+      "opslens-agentcore-lifecycle.json",
+      "opslens-agentcore-publication.json",
+      "opslens-agentcore-runtime.json",
+      "opslens-agentcore-replay.json",
+      "opslens-agentcore-deploy-role-denial.json"
+    ]
+  },
+  "pre_next_experiment_requirements": [
+    "merge the exact workload-identity directory DeleteWorkloadIdentity scope correction through protected main",
+    "human cleanup proves the orphan runtime and its managed workload identity are absent",
+    "human bootstrap plan shows only the intended OpsLensAgentCoreDeployDevAccess policy delta",
+    "human bootstrap applies the exact reviewed policy delta and Terraform converges with no drift",
+    "use a fresh workflow_dispatch on main rather than rerunning run 9"
+  ],
+  "retention_rule": "preserve run 9 replay and deployment-role denial as successful bounded evidence while retaining cleanup as a measured authorization failure"
+}
