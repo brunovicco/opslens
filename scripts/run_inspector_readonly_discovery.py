@@ -29,7 +29,10 @@ def _parser() -> argparse.ArgumentParser:
 def main() -> int:
     """Execute only ListCoverage/ListFindings and emit machine-readable evidence."""
     args = _parser().parse_args()
-    client = cast(InspectorReadClient, boto3.client("inspector2", region_name=args.region))
+    client = cast(
+        InspectorReadClient,
+        boto3.client("inspector2", region_name=args.region),  # pyright: ignore[reportUnknownMemberType]
+    )
     evidence = run_readonly_inspector_discovery(
         client=client,
         region=args.region,
