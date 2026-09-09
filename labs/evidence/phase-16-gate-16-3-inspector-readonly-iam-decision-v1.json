@@ -1,0 +1,83 @@
+{
+  "artifact_version": "phase-16-gate-16-3-inspector-readonly-iam-decision:v1",
+  "evidence_date": "2026-09-09",
+  "phase": "Phase 16 — Runtime Exposure with Amazon Inspector",
+  "gate": "16.3 — Minimum Amazon Inspector Read-Only IAM Boundary Decision",
+  "issue": 243,
+  "source_main_sha": "c31f04bfab70604bd5f4eec856cc59d417ec63bb",
+  "measured_trigger": {
+    "gate_16_2_run_id": 34411934819,
+    "gate_16_2_job_id": 102668116801,
+    "gate_16_2_result": "BLOCKED_BY_EXISTING_IAM",
+    "coverage_outcome": "ACCESS_DENIED",
+    "coverage_error_code": "AccessDeniedException",
+    "findings_attempted": false,
+    "aws_mutation_count": 0,
+    "new_iam_count": 0
+  },
+  "options": {
+    "widen_existing_deploy_role": "REJECT",
+    "dedicated_temporary_inspector_discovery_role": "ACCEPT",
+    "stop_phase_16_without_additional_iam": "REJECT_FOR_NOW"
+  },
+  "decision": "USE_DEDICATED_TEMPORARY_INSPECTOR_DISCOVERY_ROLE",
+  "role_contract": {
+    "role_name": "OpsLensInspectorDiscoveryRole",
+    "purpose": "one bounded Amazon Inspector read-only discovery experiment",
+    "trust": {
+      "provider": "existing GitHub Actions OIDC provider",
+      "audience": "sts.amazonaws.com",
+      "subject": "repo:brunovicco@38844444/opslens@1333092779:ref:refs/heads/main",
+      "custom_github_oidc_claim_dependency": false
+    },
+    "allowed_actions": [
+      "inspector2:ListCoverage",
+      "inspector2:ListFindings"
+    ],
+    "resource": "*",
+    "resource_scope_reason": "AWS Inspector2 service authorization exposes no resource type for ListCoverage or ListFindings.",
+    "conditions": {
+      "aws:RequestedRegion": "us-east-1"
+    },
+    "requested_sts_session_seconds": 900,
+    "inspector_write_actions": [],
+    "iam_actions": [],
+    "other_aws_service_actions": []
+  },
+  "rationale": {
+    "separate_deployment_and_runtime_evidence_authority": true,
+    "minimize_standing_blast_radius": true,
+    "exact_action_allowlist": true,
+    "region_restricted": true,
+    "independently_reversible": true,
+    "general_deploy_role_widened": false
+  },
+  "teardown": {
+    "required_after_one_measured_gate_16_4_run": true,
+    "remove_role": true,
+    "remove_policy": true,
+    "independent_absence_verification": true,
+    "retained_runtime_identity_requires_separate_decision": true
+  },
+  "gate_16_4_authorization": {
+    "repository_terraform_implementation": true,
+    "workflow_role_switch": true,
+    "workflow_requested_session_seconds": 900,
+    "human_aws_apply_required": true,
+    "automatic_aws_apply_authorized": false,
+    "modify_opslens_github_deploy_role": false,
+    "inspector_activation_or_configuration_change": false,
+    "repository_runtime_correlation": false,
+    "runtime_risk_scoring": false,
+    "model_invocations": 0,
+    "capability_executions": 0
+  },
+  "official_source_facts": {
+    "inspector2_list_coverage_access_level": "List",
+    "inspector2_list_findings_access_level": "List",
+    "list_actions_resource_type_available": false,
+    "aws_requested_region_is_global_condition_key": true,
+    "github_custom_oidc_claims_supported_by_aws": false
+  },
+  "pr_89_touched": false
+}

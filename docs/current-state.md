@@ -26,7 +26,8 @@ Phase 15   A2A                                                 COMPLETE
 Phase 16   Runtime Exposure with Amazon Inspector              IN PROGRESS
   Gate 16.1 Inspector capability fit / authority               COMPLETE / GO READ-ONLY ONLY
   Gate 16.2 Bounded read-only Inspector discovery              COMPLETE / BLOCKED_BY_EXISTING_IAM
-  Gate 16.3 Minimum Inspector read-only IAM boundary            NEXT / DECISION ONLY
+  Gate 16.3 Minimum Inspector read-only IAM boundary            COMPLETE / DEDICATED TEMP ROLE
+  Gate 16.4 Temporary read-role implementation + rerun          NEXT / IMPLEMENTATION AUTHORIZED
 Phase 17   Security Hardening                                  PLANNED
 Phase 18   Evaluation, Cost & Portfolio Readiness              PLANNED
 ```
@@ -246,18 +247,60 @@ artifact 10127569570
 artifact SHA-256 8814b313261e2ac2cde2894e7ea428e437aaa66cd0d2f47e7187759565d6738e
 ```
 
-### Next gate — Gate 16.3
+### Gate 16.3 — minimum Inspector read-only IAM boundary — COMPLETE
 
-Evaluate the minimum Inspector read-only IAM boundary as a **decision-only gate**. The question is whether the value of independent runtime evidence justifies a narrowly scoped identity for `ListCoverage` / `ListFindings`, and whether that authority should live in a dedicated Inspector discovery role instead of widening the general deployment role.
-
-Until Gate 16.3 explicitly accepts an IAM design:
+The measured denial was used to compare three options:
 
 ```text
-IAM mutation:                         NOT AUTHORIZED
-Inspector activation/change:          NOT AUTHORIZED
-hybrid routing integration:            NOT AUTHORIZED
-repository/runtime auto-correlation:    NOT AUTHORIZED
-runtime-risk composite scoring:         NOT AUTHORIZED
+A. widen OpsLensGitHubDeployRole                   REJECT
+B. dedicated temporary Inspector discovery role   ACCEPT
+C. stop Phase 16                                   REJECT FOR NOW
+```
+
+Accepted frozen contract:
+
+```text
+role:                       OpsLensInspectorDiscoveryRole
+purpose:                    one bounded read-only Inspector experiment
+OIDC subject:               repo:brunovicco@38844444/opslens@1333092779:ref:refs/heads/main
+allowed actions:            inspector2:ListCoverage
+                            inspector2:ListFindings
+resource:                   *
+region condition:           aws:RequestedRegion == us-east-1
+requested STS session:      900 seconds
+Inspector write actions:    0
+IAM actions:                0
+other AWS service actions:  0
+```
+
+AWS exposes no resource type for these two Inspector list actions, so resource-level ARN scoping is unavailable. The unavoidable `Resource = "*"` is compensated by the exact two-action allowlist, a region condition, a dedicated principal, a short requested session, and mandatory teardown after one measured run.
+
+`OpsLensGitHubDeployRole` must not receive Inspector permissions.
+
+Canonical Gate 16.3 records:
+
+```text
+docs/adr/0061-dedicated-temporary-inspector-discovery-role.md
+labs/phase-16-gate-16-3-inspector-readonly-iam-decision.md
+labs/evidence/phase-16-gate-16-3-inspector-readonly-iam-decision-v1.json
+```
+
+### Next gate — Gate 16.4
+
+Implement the temporary dedicated role and workflow switch in the repository, prove the Terraform/CI boundary offline, then stop at the human AWS apply boundary before creating any real IAM resources.
+
+After a human apply, run exactly one bounded Inspector discovery with the dedicated role, preserve measured evidence, and remove the experiment role/policy after the measurement unless a later retention gate explicitly decides otherwise.
+
+Still not authorized:
+
+```text
+modify OpsLensGitHubDeployRole permissions
+Inspector activation/change
+hybrid routing integration
+repository/runtime auto-correlation
+runtime-risk composite scoring
+model synthesis
+agent capability execution
 ```
 
 ## Deferred cross-project work

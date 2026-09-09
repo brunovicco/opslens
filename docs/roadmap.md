@@ -44,7 +44,7 @@ real gap
 | 13 | MCP | ✅ Complete — bounded offline interoperability retained |
 | 14 | Amazon Bedrock AgentCore | ✅ Complete — optional lab target retained; standing experiment IAM removed |
 | 15 | A2A | ✅ Complete — bounded offline reference interoperability + official SDK conformance retained |
-| 16 | Runtime Exposure with Amazon Inspector | 🚧 In progress — Gate 16.2 measured `BLOCKED_BY_EXISTING_IAM`; minimum read-IAM decision next |
+| 16 | Runtime Exposure with Amazon Inspector | 🚧 In progress — Gate 16.3 accepted a dedicated temporary read role; implementation/rerun next |
 | 17 | Security Hardening | ⏳ Planned |
 | 18 | Evaluation, Cost & Portfolio Readiness | ⏳ Planned |
 
@@ -182,25 +182,75 @@ GitHub Actions artifact 10127569570
 artifact SHA-256 8814b313261e2ac2cde2894e7ea428e437aaa66cd0d2f47e7187759565d6738e
 ```
 
-### Gate 16.3 — minimum Inspector read-only IAM boundary — NEXT / DECISION ONLY
+### Gate 16.3 — minimum Inspector read-only IAM boundary — COMPLETE
 
-The measured denial proves that a new authorization decision is necessary if OpsLens is to continue retrieving Inspector runtime evidence.
-
-Gate 16.3 must compare at least:
+Compared options:
 
 ```text
-A. widen OpsLensGitHubDeployRole with Inspector reads
-B. create a dedicated Inspector discovery identity with only the required reads
-C. stop Phase 16 without additional IAM
+A. widen OpsLensGitHubDeployRole                   REJECT
+B. dedicated temporary Inspector discovery role   ACCEPT
+C. stop Phase 16                                   REJECT FOR NOW
 ```
 
-The gate should prefer the smallest independently reviewable authority surface and explicitly consider trust reuse, blast radius, standing permission, teardown/reversibility, observability, and whether the data value justifies any IAM addition.
+Accepted contract:
 
-No IAM change is authorized merely by opening or completing the decision gate.
+```text
+role:                       OpsLensInspectorDiscoveryRole
+purpose:                    one bounded read-only Inspector experiment
+OIDC subject:               repo:brunovicco@38844444/opslens@1333092779:ref:refs/heads/main
+allowed actions:            inspector2:ListCoverage
+                            inspector2:ListFindings
+resource:                   *
+region condition:           aws:RequestedRegion == us-east-1
+requested STS session:      900 seconds
+Inspector write actions:    0
+IAM actions:                0
+other AWS service actions:  0
+```
+
+The AWS Service Authorization Reference exposes no resource type for these two list actions, so `Resource = "*"` is unavoidable. The gate compensates with exact action allowlisting, regional restriction, principal separation, short requested session duration, and mandatory teardown after one measured run.
+
+Records:
+
+```text
+docs/adr/0061-dedicated-temporary-inspector-discovery-role.md
+labs/phase-16-gate-16-3-inspector-readonly-iam-decision.md
+labs/evidence/phase-16-gate-16-3-inspector-readonly-iam-decision-v1.json
+```
+
+### Gate 16.4 — temporary read-role implementation + rerun — NEXT / AUTHORIZED
+
+Implement the decision without mutating AWS automatically:
+
+```text
+Terraform temporary OpsLensInspectorDiscoveryRole
+exact two-action inline/attached policy
+aws:RequestedRegion == us-east-1
+existing immutable main-branch OIDC trust
+workflow assumes dedicated role
+role-duration-seconds = 900
+Terraform/CI negative-permission guardrails
+```
+
+Execution sequence:
+
+```text
+repository implementation
+ -> exact-head CI
+ -> protected squash merge
+ -> human Terraform plan/apply
+ -> one main-only Inspector discovery run
+ -> preserve measured evidence
+ -> remove temporary role/policy
+ -> human cleanup apply
+ -> independent absence verification
+ -> retention/value decision
+```
 
 Still not authorized:
 
 ```text
+modify OpsLensGitHubDeployRole permissions
 Enable/Disable Inspector
 ECR scanning changes
 EC2 scan-mode changes
