@@ -7,6 +7,7 @@ on:
       - "tests/unit/runtime_exposure/**/*.py"
       - "tests/fixtures/runtime_exposure/**"
       - "scripts/run_inspector_*.py"
+      - "infra/bootstrap/github_inspector_discovery_role.tf"
       - "docs/adr/0060-*.md"
       - "docs/adr/0061-*.md"
       - "labs/phase-16-*.md"
@@ -92,6 +93,50 @@ jobs:
               raise SystemExit("PR #89 must remain untouched.")
           PY
 
+      - name: Validate temporary Inspector discovery IAM boundary
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          terraform_path = Path("infra/bootstrap/github_inspector_discovery_role.tf")
+          terraform_text = terraform_path.read_text(encoding="utf-8")
+          expected_actions = {
+              "inspector2:ListCoverage",
+              "inspector2:ListFindings",
+          }
+          observed_actions = set(
+              re.findall(r'"(inspector2:[A-Za-z0-9*]+)"', terraform_text)
+          )
+          if observed_actions != expected_actions:
+              raise SystemExit(
+                  f"unexpected Inspector IAM action set: {sorted(observed_actions)}"
+              )
+
+          required_terraform = (
+              'name                 = "OpsLensInspectorDiscoveryRole"',
+              'variable = "token.actions.githubusercontent.com:aud"',
+              'values   = ["sts.amazonaws.com"]',
+              'variable = "token.actions.githubusercontent.com:sub"',
+              '"repo:brunovicco@38844444/opslens@1333092779:ref:refs/heads/main"',
+              'resources = ["*"]',
+              'variable = "aws:RequestedRegion"',
+              'values   = ["us-east-1"]',
+          )
+          for fragment in required_terraform:
+              if fragment not in terraform_text:
+                  raise SystemExit(f"missing Inspector IAM guardrail: {fragment}")
+
+          for path in Path("infra/bootstrap").glob("*.tf"):
+              if path == terraform_path:
+                  continue
+              text = path.read_text(encoding="utf-8")
+              if "inspector2:" in text:
+                  raise SystemExit(
+                      f"Inspector authority leaked outside dedicated role: {path}"
+                  )
+          PY
+
       - name: Validate main-only Inspector discovery workflow guardrails
         run: |
           python - <<'PY'
@@ -103,12 +148,14 @@ jobs:
           required = (
               "workflow_dispatch:",
               "github.ref == 'refs/heads/main'",
-              "OpsLensGitHubDeployRole",
+              "OpsLensInspectorDiscoveryRole",
+              "role-duration-seconds: 900",
               "run_inspector_readonly_discovery.py",
               "aws_mutation_count",
               "new_iam_count",
           )
           forbidden = (
+              "OpsLensGitHubDeployRole",
               "inspector2 enable",
               "inspector2 disable",
               "update-organization-configuration",
@@ -121,7 +168,7 @@ jobs:
                   raise SystemExit(f"missing Inspector workflow guardrail: {fragment}")
           for fragment in forbidden:
               if fragment in text:
-                  raise SystemExit(f"forbidden mutating Inspector workflow fragment: {fragment}")
+                  raise SystemExit(f"forbidden Inspector workflow fragment: {fragment}")
           PY
 
       - name: Ruff runtime exposure slice
