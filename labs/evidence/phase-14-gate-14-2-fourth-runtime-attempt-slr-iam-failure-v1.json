@@ -1,0 +1,69 @@
+{
+  "artifact_version": "phase-14-gate-14-2-fourth-runtime-attempt-slr-iam-failure:v1",
+  "decision_date": "2026-09-09",
+  "phase": "Phase 14 — Amazon Bedrock AgentCore",
+  "gate": "14.2 — first bounded AgentCore HTTP/SigV4 runtime experiment",
+  "source_main_sha": "e9f08d67ea6f9b91310c861742583700f025918c",
+  "workflow_run": {
+    "id": 34304163709,
+    "job_id": 102317261974,
+    "conclusion": "failure",
+    "failed_step": "Apply bounded AgentCore resources only",
+    "error_type": "AccessDeniedException",
+    "error_message": "Failed creating service linked role. Please verify that the calling role has sufficient permissions to create a service linked role."
+  },
+  "failure_classification": {
+    "layer": "AgentCore Runtime Identity service-linked-role prerequisite",
+    "cause": "CreateAgentRuntime attempted to provision the account-level AWSServiceRoleForBedrockAgentCoreRuntimeIdentity service-linked role, but the GitHub deployment principal intentionally did not have iam:CreateServiceLinkedRole authority",
+    "artifact_publication_completed": true,
+    "terraform_create_plan_reached": true,
+    "terraform_create_plan": "3 to add, 0 to change, 0 to destroy",
+    "runtime_id_captured": false,
+    "runtime_ready": false,
+    "runtime_invocations": 0,
+    "capability_executions": 0
+  },
+  "artifact_publication": {
+    "bucket": "opslens-dev-artifacts-487757851499-us-east-1",
+    "key": "agentcore/runtime/a846034ad646c4f6383ac08e47d9ed065b4a9f3349c14104db49a2d510b3ec88/opslens-agentcore-runtime.zip",
+    "sha256": "a846034ad646c4f6383ac08e47d9ed065b4a9f3349c14104db49a2d510b3ec88",
+    "version_id": "zbr0hWXEjhjAlBEFZO4782AHyhL5mbfm",
+    "status": "replay_verified"
+  },
+  "cleanup": {
+    "cleanup_steps_executed": true,
+    "execution_role_created_before_failure": true,
+    "execution_role_policy_created_before_failure": true,
+    "execution_role_destroyed": true,
+    "execution_role_policy_destroyed": true,
+    "runtime_id_captured": false,
+    "runtime_cleanup_verification_required": true,
+    "runtime_cleanup_verification_reason": "CreateAgentRuntime entered the AgentCore control plane but Terraform did not capture a runtime ID; the workflow verifier therefore could not query the runtime control plane"
+  },
+  "preserved_workflow_artifact": {
+    "artifact_id": 10086057337,
+    "name": "phase-14-gate-14-2-agentcore-runtime-evidence-34304163709",
+    "digest": "sha256:e3f400e8fa85ac6a8b88aa199bf8f60c0546b12c23e456a7e6139d301f781fed",
+    "expires_at": "2026-10-09T02:42:24Z",
+    "files": [
+      "opslens-agentcore-lifecycle.json",
+      "opslens-agentcore-publication.json"
+    ]
+  },
+  "authority_learning": {
+    "service_linked_role_name": "AWSServiceRoleForBedrockAgentCoreRuntimeIdentity",
+    "service_principal": "runtime-identity.bedrock-agentcore.amazonaws.com",
+    "aws_behavior": "AgentCore creates the Runtime Identity service-linked role automatically for runtimes created or updated on or after 2025-10-13",
+    "selected_remediation": "provision the account-level Runtime Identity service-linked role through the human-owned Terraform bootstrap boundary instead of granting iam:CreateServiceLinkedRole to OpsLensGitHubDeployRole",
+    "github_deployment_create_service_linked_role_authority": false,
+    "github_deployment_runtime_invoke_authority": false
+  },
+  "pre_next_experiment_requirements": [
+    "human control-plane listing proves no orphan opslens_dev_bounded_runtime resource remains",
+    "human IAM lookup determines whether AWSServiceRoleForBedrockAgentCoreRuntimeIdentity already exists",
+    "bootstrap Terraform creates the service-linked role if absent or imports it if already present",
+    "bootstrap Terraform converges with no drift",
+    "use a fresh workflow_dispatch on main rather than rerunning this source run"
+  ],
+  "retention_rule": "preserve this failed authenticated attempt as AgentCore Runtime Identity bootstrap-prerequisite evidence; do not rewrite it as successful runtime evidence"
+}
