@@ -44,7 +44,7 @@ real gap
 | 12 | Multi-Agent Architecture | ✅ Complete |
 | 13 | MCP | ✅ Complete — bounded offline MCP retained |
 | 14 | Amazon Bedrock AgentCore | ✅ Complete — optional lab target retained; standing experiment IAM removed |
-| 15 | A2A | 🚧 In progress — Gate 15.1 capability fit complete; bounded offline reference adapter next |
+| 15 | A2A | 🚧 In progress — Gate 15.1 complete/corrected to A2A 1.0; bounded offline reference adapter next |
 | 16 | Runtime Exposure with Amazon Inspector | ⏳ Planned |
 | 17 | Security Hardening | ⏳ Planned |
 | 18 | Evaluation, Cost & Portfolio Readiness | ⏳ Planned |
@@ -100,6 +100,7 @@ A2A artifact != admitted OpsLens evidence
 A2A handoff proposal != handoff admission
 A2A context/task identity != OpsLens source-task identity
 A2A authentication != capability authorization
+A2A protocol binding != business authority
 ```
 
 ## Completed foundation — Phases 0–10
@@ -257,13 +258,23 @@ Runtime Identity service-linked role:         RETAIN pending separate safety pro
 
 Phase 15 evaluates A2A as an agent-peer interoperability boundary without presuming a distributed runtime.
 
-### Gate 15.1 — capability fit / authority boundary — COMPLETE
+### Gate 15.1 — capability fit / authority boundary — COMPLETE / CORRECTED
 
-Official stable baseline assessed:
+The original Gate 15.1 revision incorrectly treated the historical versioned `0.3.0` page as the latest stable A2A baseline. The architecture decision remains valid, but the authoritative protocol evidence is now corrected.
+
+Current official baseline verified on 2026-09-09:
 
 ```text
-Agent2Agent Protocol: 0.3.0
+Agent2Agent Protocol:          1.0.0
+release date:                  2026-03-12
+previous protocol:             0.3.0
+standard protocol bindings:    JSONRPC / GRPC / HTTP+JSON
+first OpsLens binding choice:  JSONRPC
+Python SDK latest observed:    1.1.4
+Gate 15.1 SDK pin:             NONE
 ```
+
+A2A v1.0 Agent Cards advertise `supportedInterfaces`; each `AgentInterface` declares its own `url`, `protocolBinding`, and `protocolVersion`. OpsLens choosing JSON-RPC for Gate 15.2 is therefore an explicit experiment scope decision, not a protocol-wide claim.
 
 Current architecture finding:
 
@@ -277,7 +288,7 @@ The retained Gate 12.1 handoff is a meaningful protocol boundary because it alre
 
 Gate 15.1 hypothesis:
 
-> A minimal A2A adapter can carry only a reference to one already-admitted specialist task across a bounded peer boundary and re-bind the protocol response to existing OpsLens identities without allowing protocol data to create capability or business authority.
+> A minimal A2A adapter can carry only a reference to one already-admitted specialist task across a bounded peer boundary and re-bind the protocol response to existing OpsLens identities without allowing protocol data, peer metadata, task state, artifacts, or protocol binding to create capability or business authority.
 
 Decision:
 
@@ -289,13 +300,15 @@ First experiment bounds:
 
 ```text
 AgentCard:                  minimal required surface
-JSON-RPC 2.0:              yes
-message/send:              yes
+supportedInterfaces:       one interface only
+protocolBinding:           JSONRPC
+protocolVersion:           1.0
+core operation:            SendMessage
 terminal Message/Task:     exactly bounded
 reference-only input:      yes
 streaming:                 no
 push notifications:        no
-secondary auth:            no
+extended auth flow:        no
 multi-turn:                no
 model invocations:         0
 capability executions:     0
@@ -310,7 +323,7 @@ Preferred reference path:
 pre-admitted SpecialistAgentTask
  -> local code-owned reference registry
  -> {handoff_id, specialist_task_id, reference_sha256}
- -> minimal A2A message/send
+ -> A2A 1.0 SendMessage over selected JSONRPC binding
  -> bounded peer reference resolution
  -> terminal protocol metadata
  -> deterministic OpsLens admission
@@ -322,23 +335,26 @@ Gate 15.1 records:
 ```text
 docs/adr/0056-bounded-a2a-capability-fit.md
 labs/phase-15-gate-15-1-a2a-capability-fit.md
-labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v1.json
+labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v1.json  # historical protocol claim superseded
+labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v2.json  # authoritative correction
 ```
 
 ### Gate 15.2 — bounded offline reference-only adapter — NEXT / AUTHORIZED
 
-Gate 15.2 must freeze the contract before implementation framework coercion and then prove the smallest official A2A `0.3.0` slice offline.
+Gate 15.2 must freeze the contract before implementation/framework coercion and then prove the smallest selected A2A `1.0` JSON-RPC slice offline.
 
 Required work:
 
 ```text
-inspect official 0.3.0-compatible SDK/package
-freeze exact dependency placement
+inspect official Python SDK 1.1.4 package/framework surface
+freeze exact dependency placement before pinning
 freeze reference-only request contract
-freeze AgentCard/skill mapping
+freeze AgentCard supportedInterfaces projection
 freeze raw protocol validation before domain admission
+admit protocolBinding = JSONRPC and protocolVersion = 1.0 explicitly
 bind request/message/task/context IDs as evidence only
 freeze duplicate/replay/failure semantics
+cover unsupported binding/version fail-closed behavior
 cover unknown/tampered reference fail-closed behavior
 measure request/response bytes and local latency
 keep model calls = 0
