@@ -44,6 +44,27 @@ jobs:
           terraform_version: 1.15.8
           terraform_wrapper: false
 
+      - name: Initialize lifecycle evidence
+        run: |
+          uv run python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          value = {
+              "artifact_version": "agentcore-runtime-lifecycle:v1",
+              "capability_executions": 0,
+              "source_head_sha": os.environ["GITHUB_SHA"],
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+              "workflow_started_at": datetime.now(timezone.utc).isoformat(),
+          }
+          Path("/tmp/opslens-agentcore-lifecycle.json").write_text(
+              json.dumps(value, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
       - name: Build existing dev deployment packages
         run: |
           uv run python scripts/build_lambda_package.py
@@ -124,6 +145,7 @@ jobs:
           uv run python - "$GITHUB_ENV" <<'PY'
           import json
           import sys
+          from datetime import datetime, timezone
           from pathlib import Path
 
           value = json.loads(Path("/tmp/opslens-agentcore-runtime.json").read_text(encoding="utf-8"))
@@ -137,13 +159,31 @@ jobs:
               handle.write(f"AGENTCORE_RUNTIME_ARN={value['arn']}\n")
               handle.write(f"AGENTCORE_RUNTIME_ID={value['id']}\n")
               handle.write(f"AGENTCORE_RUNTIME_VERSION={value['version']}\n")
+
+          lifecycle_path = Path("/tmp/opslens-agentcore-lifecycle.json")
+          lifecycle = json.loads(lifecycle_path.read_text(encoding="utf-8"))
+          lifecycle.update(
+              {
+                  "runtime_arn": value["arn"],
+                  "runtime_id": value["id"],
+                  "runtime_version": value["version"],
+                  "terraform_apply_completed_at": datetime.now(timezone.utc).isoformat(),
+              }
+          )
+          lifecycle_path.write_text(
+              json.dumps(lifecycle, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
           PY
 
       - name: Verify runtime reaches READY
         run: |
           uv run python - <<'PY'
+          import json
           import os
           import time
+          from datetime import datetime, timezone
+          from pathlib import Path
           from botocore.session import Session
 
           runtime_id = os.environ["AGENTCORE_RUNTIME_ID"]
@@ -154,6 +194,13 @@ jobs:
               status = response.get("status")
               print(f"agentcore_runtime_status={status} attempt={attempt + 1}")
               if status == "READY":
+                  lifecycle_path = Path("/tmp/opslens-agentcore-lifecycle.json")
+                  lifecycle = json.loads(lifecycle_path.read_text(encoding="utf-8"))
+                  lifecycle["runtime_ready_at"] = datetime.now(timezone.utc).isoformat()
+                  lifecycle_path.write_text(
+                      json.dumps(lifecycle, indent=2, sort_keys=True) + "\n",
+                      encoding="utf-8",
+                  )
                   break
               if status in terminal_failures:
                   raise SystemExit(
@@ -180,6 +227,19 @@ jobs:
             --region us-east-1 \
             --output /tmp/opslens-agentcore-replay.json
           cat /tmp/opslens-agentcore-replay.json
+          uv run python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          path = Path("/tmp/opslens-agentcore-lifecycle.json")
+          value = json.loads(path.read_text(encoding="utf-8"))
+          value["replay_completed_at"] = datetime.now(timezone.utc).isoformat()
+          path.write_text(
+              json.dumps(value, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
 
       - name: Restore deployment credentials for negative authorization test
         uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
@@ -193,6 +253,7 @@ jobs:
           uv run python - <<'PY'
           import json
           import os
+          from datetime import datetime, timezone
           from pathlib import Path
           from botocore.exceptions import ClientError
           from botocore.session import Session
@@ -239,6 +300,16 @@ jobs:
                   encoding="utf-8",
               )
               print(json.dumps(evidence, indent=2, sort_keys=True))
+
+              lifecycle_path = Path("/tmp/opslens-agentcore-lifecycle.json")
+              lifecycle = json.loads(lifecycle_path.read_text(encoding="utf-8"))
+              lifecycle["deployment_principal_denial_proved_at"] = datetime.now(
+                  timezone.utc
+              ).isoformat()
+              lifecycle_path.write_text(
+                  json.dumps(lifecycle, indent=2, sort_keys=True) + "\n",
+                  encoding="utf-8",
+              )
           else:
               raise SystemExit("Deployment principal unexpectedly invoked AgentCore Runtime.")
           PY
@@ -274,3 +345,61 @@ jobs:
           -input=false
           -lock-timeout=30s
           /tmp/opslens-agentcore-delete.tfplan
+
+      - name: Verify AgentCore Runtime cleanup
+        if: always()
+        run: |
+          uv run python - <<'PY'
+          import json
+          import os
+          import time
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from botocore.exceptions import ClientError
+          from botocore.session import Session
+
+          runtime_id = os.environ.get("AGENTCORE_RUNTIME_ID")
+          if not runtime_id:
+              print("No runtime ID was captured; no runtime cleanup verification is required.")
+              raise SystemExit(0)
+
+          client = Session().create_client("bedrock-agentcore-control", region_name="us-east-1")
+          for attempt in range(30):
+              try:
+                  response = client.get_agent_runtime(agentRuntimeId=runtime_id)
+              except ClientError as exc:
+                  code = exc.response.get("Error", {}).get("Code")
+                  if code in {"ResourceNotFoundException", "NotFoundException"}:
+                      lifecycle_path = Path("/tmp/opslens-agentcore-lifecycle.json")
+                      lifecycle = json.loads(lifecycle_path.read_text(encoding="utf-8"))
+                      lifecycle["runtime_cleanup_verified_at"] = datetime.now(
+                          timezone.utc
+                      ).isoformat()
+                      lifecycle["runtime_cleanup_result"] = "RESOURCE_NOT_FOUND"
+                      lifecycle_path.write_text(
+                          json.dumps(lifecycle, indent=2, sort_keys=True) + "\n",
+                          encoding="utf-8",
+                      )
+                      print("agentcore_runtime_cleanup=RESOURCE_NOT_FOUND")
+                      break
+                  raise
+              status = response.get("status")
+              print(f"agentcore_runtime_cleanup_status={status} attempt={attempt + 1}")
+              time.sleep(5)
+          else:
+              raise SystemExit("AgentCore runtime still exists after cleanup timeout.")
+          PY
+
+      - name: Preserve bounded experiment evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: phase-14-gate-14-2-agentcore-runtime-evidence-${{ github.run_id }}
+          path: |
+            /tmp/opslens-agentcore-lifecycle.json
+            /tmp/opslens-agentcore-publication.json
+            /tmp/opslens-agentcore-runtime.json
+            /tmp/opslens-agentcore-replay.json
+            /tmp/opslens-agentcore-deploy-role-denial.json
+          if-no-files-found: warn
+          retention-days: 30
