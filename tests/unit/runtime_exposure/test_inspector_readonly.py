@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from botocore.exceptions import ClientError
 import pytest
+from botocore.exceptions import ClientError
 
 from opslens.runtime_exposure.adapters.inspector_readonly import (
     run_readonly_inspector_discovery,
