@@ -63,3 +63,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0053](0053-bounded-agentcore-direct-code-public-network-experiment.md) | Use the reproducible direct-code package and a time-bounded PUBLIC network exception for the first AgentCore Runtime experiment | Accepted |
 | [0054](0054-retain-agentcore-only-as-optional-lab-target.md) | Retain AgentCore Runtime only as an optional lab target rather than the default OpsLens reasoning runtime | Accepted |
 | [0055](0055-remove-standing-agentcore-experiment-iam.md) | Remove standing GitHub AgentCore experiment IAM after the retention decision while preserving the optional lab and service-linked-role safety boundary | Accepted |
+| [0056](0056-bounded-a2a-capability-fit.md) | Authorize one bounded offline reference-only A2A interoperability experiment before any network or execution authority | Accepted |

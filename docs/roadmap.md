@@ -44,7 +44,7 @@ real gap
 | 12 | Multi-Agent Architecture | ✅ Complete |
 | 13 | MCP | ✅ Complete — bounded offline MCP retained |
 | 14 | Amazon Bedrock AgentCore | ✅ Complete — optional lab target retained; standing experiment IAM removed |
-| 15 | A2A | ▶️ Next / planned |
+| 15 | A2A | 🚧 In progress — Gate 15.1 capability fit complete; bounded offline reference adapter next |
 | 16 | Runtime Exposure with Amazon Inspector | ⏳ Planned |
 | 17 | Security Hardening | ⏳ Planned |
 | 18 | Evaluation, Cost & Portfolio Readiness | ⏳ Planned |
@@ -91,6 +91,15 @@ runtime execution role != model/tool authority
 runtime transport success != business/evidence truth
 runtime telemetry != business truth
 runtime deployment != runtime-exposure truth
+A2A message != capability authorization
+A2A peer identity != business authority
+A2A AgentCard skill != OpsLens capability authorization
+A2A task state != business/evidence truth
+A2A transport success != business/evidence truth
+A2A artifact != admitted OpsLens evidence
+A2A handoff proposal != handoff admission
+A2A context/task identity != OpsLens source-task identity
+A2A authentication != capability authorization
 ```
 
 ## Completed foundation — Phases 0–10
@@ -129,7 +138,7 @@ Gate 12.3 two-model topology as default:        DO NOT RETAIN
 Gate 12.3 implementation/evidence:              PRESERVE HISTORICALLY
 ```
 
-The real two-model experiment produced no quality lift and increased invocations, tokens, latency, and cost.
+The real two-model experiment produced no quality lift and increased invocations, tokens, latency, and cost. Gate 12.1 remains reusable as a deterministic content-addressed specialization/handoff authority boundary.
 
 ## Phase 13 — MCP — COMPLETE
 
@@ -201,61 +210,24 @@ The `PUBLIC` network mode was a dev-only experiment exception and is not a retai
 
 ### Gate 14.3 — Runtime retention decision — COMPLETE / RETAIN WITH CHANGES
 
-Decision:
-
 ```text
 default OpsLens reasoning runtime:            DO NOT RETAIN AgentCore
 Phase 11 direct Bedrock reasoning reference: RETAIN
 AgentCore implementation/evidence:           RETAIN
-AgentCore deployment role:                   OPTIONAL LAB / FUTURE CONSUMER TARGET ONLY
 PUBLIC network mode:                         DO NOT RETAIN
 standing AgentCore Runtime resources:        DO NOT RETAIN
 standing experiment-specific IAM:            DO NOT RETAIN without an active experiment
-```
-
-Overall classification:
-
-```text
-RETAIN WITH CHANGES
 ```
 
 The six-case quality/model/token evidence was unchanged relative to Phase 11. AgentCore added USD 0.002380345136128484 of measured Runtime cost, or 56.78168784448091% relative to the unchanged USD 0.0041921 inference component. Raw latency boundaries were not normalized into a percentage comparison.
 
 ### Gate 14.4 — standing experiment IAM cleanup — COMPLETE / VERIFIED
 
-Repository cleanup was merged in PR #225 at:
-
 ```text
-9913c3cbf5f2239d6445042a139a9cca890590c8
-```
-
-Exact-head CI:
-
-```text
-AgentCore CI: 34396085154 / run #63 / PASS
-Terraform CI: 34396085123 / run #267 / PASS
-```
-
-Human bootstrap plan and apply:
-
-```text
-plan:   0 add / 0 change / 4 destroy
-apply:  0 add / 0 change / 4 destroy
-```
-
-Destroyed exactly:
-
-```text
-aws_iam_policy.github_actions_agentcore_deploy
-aws_iam_role.github_actions_agentcore_replay
-aws_iam_role_policy.github_actions_agentcore_replay
-aws_iam_role_policy_attachment.github_actions_agentcore_deploy
-```
-
-Post-apply convergence:
-
-```text
-No changes. Your infrastructure matches the configuration.
+implementation merge: 9913c3cbf5f2239d6445042a139a9cca890590c8
+plan:                 0 add / 0 change / 4 destroy
+apply:                0 add / 0 change / 4 destroy
+post-apply plan:      NO CHANGES
 ```
 
 Independent verification:
@@ -269,9 +241,7 @@ AWSServiceRoleForBedrockAgentCoreRuntimeIdentity:
                                             PRESENT / intentionally retained
 ```
 
-The service-linked role remains protected because safe account-level deletion has not been proven.
-
-### Final retained Phase 14 architecture
+Final retained Phase 14 architecture:
 
 ```text
 Phase 11 direct Bedrock reasoning:           DEFAULT / RETAIN
@@ -283,47 +253,102 @@ Gate 14.2 PUBLIC exception:                   NOT RETAINED
 Runtime Identity service-linked role:         RETAIN pending separate safety proof
 ```
 
-Evidence:
+## Phase 15 — A2A — IN PROGRESS
+
+Phase 15 evaluates A2A as an agent-peer interoperability boundary without presuming a distributed runtime.
+
+### Gate 15.1 — capability fit / authority boundary — COMPLETE
+
+Official stable baseline assessed:
 
 ```text
-docs/adr/0052-agentcore-runtime-capability-fit.md
-docs/adr/0053-bounded-agentcore-direct-code-public-network-experiment.md
-docs/adr/0054-retain-agentcore-only-as-optional-lab-target.md
-docs/adr/0055-remove-standing-agentcore-experiment-iam.md
-labs/evidence/phase-14-gate-14-2-final-runtime-experiment-v1.json
-labs/evidence/phase-14-gate-14-3-agentcore-retention-decision-v1.json
-labs/evidence/phase-14-gate-14-4-agentcore-iam-cleanup-postapply-v1.json
+Agent2Agent Protocol: 0.3.0
 ```
 
-## Phase 15 — A2A — NEXT / PLANNED
-
-A2A is not adopted merely because it is next in sequence. Phase 15 begins with capability fit and a concrete service-boundary problem.
-
-The first gate must determine:
+Current architecture finding:
 
 ```text
-which existing agent/service boundary requires A2A interoperability
-why the current in-process handoff is insufficient
-what identity/message/provenance contract is required
-what remains proposal/admission authority
-what remains capability authorization
-what replay/idempotency/failure semantics are needed
-what observability and cost evidence are required
-whether a network runtime is actually necessary
+retained independent OpsLens agent peer:    NO
+current in-process handoff needs A2A:        NO
+bounded reference-interoperability test:    YES
 ```
 
-Permanent Phase 15 constraints:
+The retained Gate 12.1 handoff is a meaningful protocol boundary because it already creates one content-addressed `SpecialistAgentTask` after deterministic source binding and capability narrowing. That does not mean the existing in-process path should become distributed.
+
+Gate 15.1 hypothesis:
+
+> A minimal A2A adapter can carry only a reference to one already-admitted specialist task across a bounded peer boundary and re-bind the protocol response to existing OpsLens identities without allowing protocol data to create capability or business authority.
+
+Decision:
 
 ```text
-A2A message != capability authorization
-A2A peer identity != business authority
-A2A transport success != business/evidence truth
-A2A handoff proposal != handoff admission
-A2A must not assume AgentCore hosting
-A2A must not promote MCP into public runtime as a side effect
+GO TO ONE BOUNDED OFFLINE/IN-PROCESS INTEROPERABILITY EXPERIMENT
 ```
 
-Implementation starts only after that first evidence-backed gate freezes the boundary.
+First experiment bounds:
+
+```text
+AgentCard:                  minimal required surface
+JSON-RPC 2.0:              yes
+message/send:              yes
+terminal Message/Task:     exactly bounded
+reference-only input:      yes
+streaming:                 no
+push notifications:        no
+secondary auth:            no
+multi-turn:                no
+model invocations:         0
+capability executions:     0
+AWS resources:             0
+new IAM:                   0
+public endpoint:           0
+```
+
+Preferred reference path:
+
+```text
+pre-admitted SpecialistAgentTask
+ -> local code-owned reference registry
+ -> {handoff_id, specialist_task_id, reference_sha256}
+ -> minimal A2A message/send
+ -> bounded peer reference resolution
+ -> terminal protocol metadata
+ -> deterministic OpsLens admission
+ -> STOP before model/capability execution
+```
+
+Gate 15.1 records:
+
+```text
+docs/adr/0056-bounded-a2a-capability-fit.md
+labs/phase-15-gate-15-1-a2a-capability-fit.md
+labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v1.json
+```
+
+### Gate 15.2 — bounded offline reference-only adapter — NEXT / AUTHORIZED
+
+Gate 15.2 must freeze the contract before implementation framework coercion and then prove the smallest official A2A `0.3.0` slice offline.
+
+Required work:
+
+```text
+inspect official 0.3.0-compatible SDK/package
+freeze exact dependency placement
+freeze reference-only request contract
+freeze AgentCard/skill mapping
+freeze raw protocol validation before domain admission
+bind request/message/task/context IDs as evidence only
+freeze duplicate/replay/failure semantics
+cover unknown/tampered reference fail-closed behavior
+measure request/response bytes and local latency
+keep model calls = 0
+keep capability executions = 0
+keep AWS/IAM/runtime deployment = 0
+```
+
+No network service, model call, capability execution, AgentCore hosting, or MCP public runtime is authorized by Gate 15.2.
+
+A later A2A peer/model experiment requires a new gate and a separate measurable value hypothesis.
 
 ## Phase 16 — Runtime Exposure with Amazon Inspector — PLANNED
 
@@ -341,4 +366,4 @@ Consolidate quality, latency, cost, failure, architecture, and portfolio evidenc
 
 ## Deferred cross-project integration
 
-OpsLens PR #89 remains separate consumer-side work for the Governed LLM Gateway project. It must not be modified or merged as a side effect of Phase 14 closeout or Phase 15 planning.
+OpsLens PR #89 remains separate consumer-side work for the Governed LLM Gateway project. It must not be modified or merged as a side effect of Phase 15 work.

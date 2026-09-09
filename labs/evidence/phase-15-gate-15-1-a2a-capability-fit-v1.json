@@ -1,0 +1,126 @@
+{
+  "artifact_version": "phase-15-gate-15-1-a2a-capability-fit:v1",
+  "evidence_date": "2026-09-09",
+  "phase": "Phase 15 — A2A",
+  "gate": "15.1 — A2A Capability Fit and Authority Boundary",
+  "issue": 227,
+  "source_main_sha": "b4854fd6aeef4b3f041cd89b3fe45d63c8b72be5",
+  "official_protocol_baseline": {
+    "name": "Agent2Agent Protocol",
+    "stable_version_assessed": "0.3.0",
+    "specification": "https://a2a-protocol.org/v0.3.0/specification/",
+    "assessed_on": "2026-09-09",
+    "minimum_relevant_surface": [
+      "AgentCard",
+      "HTTP(S)",
+      "JSON-RPC 2.0",
+      "message/send",
+      "Task",
+      "Message",
+      "Part",
+      "Artifact",
+      "task/context identity",
+      "declared security schemes"
+    ]
+  },
+  "existing_opslens_boundary": {
+    "contract_version": "multi-agent-handoff:v1",
+    "domain_file": "src/opslens/multi_agent/domain/handoff.py",
+    "application_file": "src/opslens/multi_agent/application/handoff.py",
+    "source_type": "TriageAgentTask",
+    "proposal_type": "MultiAgentHandoffProposal",
+    "admission_function": "admit_multi_agent_handoff",
+    "admitted_type": "SpecialistAgentTask",
+    "handoff_evidence_type": "AuthorizedMultiAgentHandoff",
+    "max_handoffs_per_task": 1,
+    "max_specialist_capabilities": 2,
+    "retained_as_default_two_model_topology": false
+  },
+  "capability_fit": {
+    "current_independently_deployed_peer_exists": false,
+    "current_in_process_handoff_requires_network_protocol": false,
+    "bounded_reference_interoperability_hypothesis_exists": true,
+    "hypothesis": "An A2A adapter can carry only an already-admitted specialist-task reference across a bounded peer boundary and re-bind protocol results to existing OpsLens content identities without allowing protocol input, peer metadata, task state, or artifacts to create capability or business authority.",
+    "decision_class": "GO_TO_ONE_BOUNDED_OFFLINE_IN_PROCESS_INTEROPERABILITY_EXPERIMENT"
+  },
+  "first_experiment_bounds": {
+    "network_deployment": false,
+    "public_endpoint": false,
+    "aws_resources": 0,
+    "new_iam_roles_or_policies": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "streaming": false,
+    "push_notifications": false,
+    "secondary_authentication": false,
+    "file_payloads": false,
+    "arbitrary_urls": false,
+    "multi_turn_context": false,
+    "sdk_selected": false,
+    "dependency_added": false,
+    "business_result_transport": false
+  },
+  "preferred_reference_boundary": {
+    "input_authority": "PRE_ADMITTED_SPECIALIST_AGENT_TASK_ONLY",
+    "protocol_projection": [
+      "handoff_id",
+      "specialist_task_id",
+      "reference_sha256"
+    ],
+    "resolution": "CODE_OWNED_LOCAL_REFERENCE_RESOLUTION",
+    "a2a_generated_identity_authority": false,
+    "protocol_success_business_truth": false,
+    "result_scope": "METADATA_ONLY_BEFORE_CAPABILITY_EXECUTION"
+  },
+  "permanent_invariants": [
+    "A2A message != capability authorization",
+    "A2A peer identity != business authority",
+    "A2A AgentCard skill != OpsLens capability authorization",
+    "A2A task state != business/evidence truth",
+    "A2A transport success != business/evidence truth",
+    "A2A artifact != admitted OpsLens evidence",
+    "A2A handoff proposal != handoff admission",
+    "A2A context/task identity != OpsLens source-task identity",
+    "A2A authentication != capability authorization",
+    "AgentCore hosting != business authorization",
+    "MCP is an interoperability boundary, not new business authority"
+  ],
+  "next_gate_requirements": [
+    "freeze exact reference-only contract before framework coercion",
+    "inspect official A2A 0.3.0-compatible SDK and dependency placement",
+    "validate exact AgentCard and message/send subset",
+    "bind A2A request/message/task/context identities to OpsLens evidence only",
+    "define duplicate/replay/failure semantics",
+    "reject unknown or tampered references fail closed",
+    "record protocol byte/latency/retry/failure dimensions independently",
+    "keep model invocations at zero",
+    "keep capability executions at zero",
+    "keep AWS/IAM/runtime deployment at zero"
+  ],
+  "explicit_non_claims": [
+    "A2A is not retained production architecture",
+    "no public or deployed A2A runtime exists",
+    "production TLS/authentication posture is not proven",
+    "exactly-once A2A execution is not proven",
+    "A2A does not create capability authorization",
+    "A2A artifacts are not automatically admitted business evidence",
+    "AgentCore is not selected as A2A hosting",
+    "MCP is not promoted to public runtime",
+    "runtime exposure truth is not created"
+  ],
+  "aws_iam_cost": {
+    "new_aws_resources": 0,
+    "new_iam_roles_or_policies": 0,
+    "new_model_calls": 0,
+    "new_capability_executions": 0,
+    "incremental_aws_cost_usd": 0.0
+  },
+  "deferred_cross_project_work": {
+    "pull_request": 89,
+    "branch": "feat/governed-gateway-semantic-planner",
+    "head_sha": "3781831795d500b05fa4bc602d50f376b4b1539f",
+    "changed_by_gate_15_1": false
+  },
+  "decision_record": "docs/adr/0056-bounded-a2a-capability-fit.md",
+  "next_authorized_gate": "Gate 15.2 — bounded offline A2A reference-only adapter contract"
+}
