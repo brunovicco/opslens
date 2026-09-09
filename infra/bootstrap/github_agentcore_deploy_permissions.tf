@@ -19,6 +19,10 @@ locals {
     "${local.dev_agentcore_runtime_arn}/runtime-endpoint/*"
   )
 
+  dev_agentcore_workload_identity_precreation_arn = (
+    "arn:aws:bedrock-agentcore:${var.aws_region}:${data.aws_caller_identity.current.account_id}:workload-identity-directory/default/workload-identity/*"
+  )
+
   dev_agentcore_workload_identity_arn = (
     "arn:aws:bedrock-agentcore:${var.aws_region}:${data.aws_caller_identity.current.account_id}:workload-identity-directory/default/workload-identity/${local.dev_agentcore_runtime_name}-*"
   )
@@ -163,6 +167,58 @@ data "aws_iam_policy_document" "github_actions_agentcore_deploy" {
 
     resources = [
       local.dev_agentcore_runtime_precreation_arn,
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Project"
+      values   = ["opslens"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Environment"
+      values   = ["dev"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Purpose"
+      values   = [local.dev_agentcore_runtime_purpose]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/ManagedBy"
+      values   = ["terraform"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Repository"
+      values   = ["brunovicco/opslens"]
+    }
+
+    condition {
+      test     = "ForAllValues:StringEquals"
+      variable = "aws:TagKeys"
+      values = [
+        "Environment",
+        "ManagedBy",
+        "Project",
+        "Purpose",
+        "Repository",
+      ]
+    }
+  }
+
+  statement {
+    sid     = "TagAgentCoreWorkloadIdentityDuringCreateDependency"
+    effect  = "Allow"
+    actions = ["bedrock-agentcore:TagResource"]
+
+    resources = [
+      local.dev_agentcore_workload_identity_precreation_arn,
     ]
 
     condition {
