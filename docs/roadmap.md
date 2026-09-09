@@ -44,8 +44,8 @@ real gap
 | 13 | MCP | ✅ Complete — bounded offline interoperability retained |
 | 14 | Amazon Bedrock AgentCore | ✅ Complete — optional lab target retained; standing experiment IAM removed |
 | 15 | A2A | ✅ Complete — bounded offline reference interoperability + official SDK conformance retained |
-| 16 | Runtime Exposure with Amazon Inspector | 🚧 In progress — read boundary proven; zero current evidence; temporary IAM teardown pending |
-| 17 | Security Hardening | ⏳ Planned |
+| 16 | Runtime Exposure with Amazon Inspector | ✅ Complete — read contract proven; zero current records; temporary IAM removed |
+| 17 | Security Hardening | ▶️ Next |
 | 18 | Evaluation, Cost & Portfolio Readiness | ⏳ Planned |
 
 ## Permanent engineering boundaries
@@ -93,128 +93,96 @@ Inspector evidence != model authority
 runtime evidence correlation != capability authorization
 ```
 
-## Completed platform through Phase 15
+## Completed platform through Phase 16
 
 Phases 0–10 established the AWS foundation, threat-intelligence ingestion, deterministic vulnerability correlation, repository intelligence, risk prioritization, bounded semantic query, Bedrock Knowledge Base retrieval with Amazon S3 Vectors, hybrid evidence, governed public analysis, and operational telemetry.
 
 Phase 11 retained the measured single-agent Bedrock reference. Phase 12 retained deterministic specialization/handoff but rejected the measured two-model topology as default. Phase 13 retained bounded offline MCP interoperability. Phase 14 retained AgentCore only as an optional lab target and removed standing experiment IAM. Phase 15 retained bounded offline A2A reference interoperability plus an exact-source official SDK CI oracle, without creating a public A2A runtime.
 
-## Phase 16 — Runtime Exposure with Amazon Inspector — IN PROGRESS
+Phase 16 added a typed read-only Amazon Inspector evidence boundary without equating runtime evidence with repository-risk truth. The existing shared deployment role correctly failed with `AccessDeniedException`; one temporary dedicated two-action role was then created for a single measured rerun. `ListCoverage` and `ListFindings` both succeeded with one page and zero records. The temporary role was subsequently removed with an exact `0 add / 0 change / 2 destroy` cleanup and a convergent post-apply plan.
 
-Purpose: add independent runtime evidence while preserving:
-
-> **Repository Risk != Runtime Exposure.**
-
-### Gate 16.1 — capability fit / authority — COMPLETE
-
-Amazon Inspector was accepted as an independent evidence authority. The first experiment was limited to:
+Final Phase 16 retention:
 
 ```text
-ListCoverage
-ListFindings
+Inspector read-only domain/adapter contract:   RETAIN
+historical discovery workflow:                 RETAIN / DISABLED BY DEFAULT
+measured zero-record evidence:                 RETAIN
+standing Inspector discovery IAM:              NONE
+Inspector activation/configuration:             NOT CREATED
+hybrid runtime_exposure routing:                NOT CREATED
+repository/runtime automatic correlation:       NOT CREATED
+runtime-risk composite scoring:                 NOT CREATED
+model synthesis over Inspector evidence:        NOT CREATED
 ```
 
-No activation/configuration change, hybrid routing, runtime-risk scoring, model synthesis, or automatic repository/runtime correlation was authorized.
-
-### Gate 16.2 — existing-role discovery — COMPLETE / BLOCKED_BY_EXISTING_IAM
+Canonical Phase 16 closeout:
 
 ```text
-run:                 34411934819 / #1
-ListCoverage:        ACCESS_DENIED
-ListFindings:        NOT_ATTEMPTED / fail-closed
-AWS mutations:       0
-new IAM:             0
+docs/adr/0063-phase16-runtime-exposure-closeout.md
+labs/phase-16-closeout.md
+labs/evidence/phase-16-closeout-v1.json
 ```
 
-The result proved that GitHub OIDC authentication did not imply Inspector read authorization.
+## Phase 17 — Security Hardening — NEXT
 
-### Gate 16.3 — minimum read-only IAM decision — COMPLETE
+Purpose: evaluate the retained platform as an attacker and operator would, then harden only evidenced gaps while preserving deterministic authority and least privilege.
+
+### Gate 17.1 — cross-cutting threat model and control-gap inventory — NEXT
+
+Start with a repository-wide review before changing runtime behavior or adding AWS services.
+
+Required review domains:
 
 ```text
-widen OpsLensGitHubDeployRole:                 REJECT
-dedicated temporary Inspector discovery role: ACCEPT
-stop before one bounded rerun:                 REJECT
+identity / IAM / OIDC trust
+CI/CD and artifact integrity
+third-party dependency and supply-chain integrity
+public input / repository acquisition abuse
+semantic planning and prompt-injection boundaries
+RAG / retrieved-content instruction resistance
+agent proposal / capability authorization boundaries
+MCP and A2A protocol admission
+AgentCore optional runtime assumptions
+runtime evidence / Inspector boundaries
+secrets and sensitive-data handling
+telemetry content minimization
+failure recovery / kill switch / rollback
+rate / quota / denial-of-wallet exposure
 ```
 
-The accepted role was limited to `ListCoverage` and `ListFindings`, `Resource = "*"`, `aws:RequestedRegion == us-east-1`, the immutable main-branch OIDC subject, a 900-second requested workflow session, and mandatory teardown.
-
-### Gate 16.4 — temporary role + measured rerun — COMPLETE
-
-Human bootstrap created exactly the temporary role/policy:
+Expected output:
 
 ```text
-plan:  2 add / 0 change / 0 destroy
-apply: 2 added / 0 changed / 0 destroyed
+threat inventory
+existing control mapping
+residual-risk classification
+proof references
+prioritized gaps
+explicit non-gaps / already-proven controls
+recommended next gate only when evidence justifies change
 ```
 
-One main-only rerun then measured:
+Do not convert a checklist into speculative implementation. Controls already proven by earlier phases should be referenced, not rebuilt.
+
+### Candidate later gates — NOT YET AUTHORIZED
+
+Depending on Gate 17.1 evidence, later slices may include:
 
 ```text
-run:                      34414116549 / #2
-job:                      102675000098
-workflow conclusion:      success
-experiment result:        SUCCESS
-client elapsed:           465.877452 ms
-ListCoverage:             SUCCESS / 1 page / 0 records
-ListFindings:             SUCCESS / 1 page / 0 records
-SDK retries:              0
-AWS mutations:            0
-new IAM during discovery: 0
-model invocations:        0
-capability executions:    0
+17.2 IAM / OIDC least-privilege verification
+17.3 CI/CD / dependency / artifact integrity hardening
+17.4 application input / prompt-injection / tool-abuse adversarial tests
+17.5 sensitive-data / logging / telemetry hardening
+17.6 operational recovery / kill-switch / abuse-cost controls
+17.7 Security Hardening closeout
 ```
 
-The dedicated boundary was sufficient, but the current dev account returned no Inspector coverage or finding records. That result is current-account evidence only; it does not prove Inspector is disabled or valueless elsewhere.
-
-Decision:
-
-```text
-Inspector read-only adapter/contract:        RETAIN
-measured zero-evidence result:               RETAIN
-standing Inspector discovery IAM:            DO NOT RETAIN / REMOVE
-Inspector activation/configuration change:   DO NOT CREATE IN PHASE 16
-repository/runtime automatic correlation:    DO NOT CREATE
-runtime-risk composite scoring:              DO NOT CREATE
-model synthesis over Inspector evidence:     DO NOT CREATE
-```
-
-Records:
-
-```text
-docs/adr/0062-retain-inspector-read-contract-without-standing-iam-or-scan-activation.md
-labs/phase-16-gate-16-4-inspector-readonly-rerun.md
-labs/evidence/phase-16-gate-16-4-inspector-readonly-rerun-v1.json
-```
-
-### Gate 16.5 — temporary Inspector IAM teardown — CURRENT
-
-Repository cleanup removes the temporary role/policy from Terraform desired state and disables the historical discovery workflow by default unless a future explicitly authorized temporary role is confirmed.
-
-After protected merge, the human bootstrap plane must produce and review an exact cleanup plan. Expected target:
-
-```text
-0 add / 0 change / 2 destroy
-```
-
-Only these addresses may be destroyed:
-
-```text
-aws_iam_role.github_actions_inspector_discovery
-aws_iam_role_policy.github_actions_inspector_discovery
-```
-
-After apply, require a fresh convergent plan and independent verification that the temporary role is absent while `OpsLensGitHubDeployRole` remains present without Inspector authority.
-
-Only after that evidence is immutable may Phase 16 close and Phase 17 begin.
-
-## Phase 17 — Security Hardening — PLANNED
-
-Cross-cutting IAM, data protection, abuse resistance, dependency, threat-model, and operational hardening.
+These labels are planning aids only. Gate 17.1 must decide whether each one is actually necessary.
 
 ## Phase 18 — Evaluation, Cost & Portfolio Readiness — PLANNED
 
-Consolidate quality, latency, cost, failure-path, architecture, and portfolio evidence.
+Consolidate quality, latency, cost, failure-path, architecture, security, and portfolio evidence after Phase 17 closes.
 
 ## Deferred cross-project integration
 
-OpsLens PR #89 / `feat/governed-gateway-semantic-planner` remains separate Governed LLM Gateway work and must not be modified or merged as a side effect of Phase 16.
+OpsLens PR #89 / `feat/governed-gateway-semantic-planner` remains separate Governed LLM Gateway work and must not be modified or merged as a side effect of Phase 16 or Phase 17.
