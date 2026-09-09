@@ -11,6 +11,7 @@ on:
       - "docs/adr/0060-*.md"
       - "docs/adr/0061-*.md"
       - "docs/adr/0062-*.md"
+      - "docs/adr/0063-*.md"
       - "labs/phase-16-*.md"
       - "labs/evidence/phase-16-*.json"
       - ".github/workflows/runtime-exposure-ci.yml"
@@ -134,6 +135,61 @@ jobs:
               raise SystemExit("Temporary Inspector IAM must not be retained.")
           if value.get("pr_89_touched") is not False:
               raise SystemExit("PR #89 must remain untouched.")
+          PY
+
+      - name: Validate Gate 16.5 Inspector IAM cleanup
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          cleanup_path = Path(
+              "labs/evidence/phase-16-gate-16-5-inspector-iam-cleanup-postapply-v1.json"
+          )
+          cleanup = json.loads(cleanup_path.read_text(encoding="utf-8"))
+          plan = cleanup.get("reviewed_cleanup_plan")
+          apply = cleanup.get("apply")
+          convergence = cleanup.get("post_apply_convergence")
+          verification = cleanup.get("independent_verification")
+          retention = cleanup.get("retention")
+          if not all(isinstance(v, dict) for v in (plan, apply, convergence, verification, retention)):
+              raise SystemExit("Gate 16.5 cleanup evidence shape mismatch.")
+          if (plan.get("add"), plan.get("change"), plan.get("destroy")) != (0, 0, 2):
+              raise SystemExit("Gate 16.5 cleanup plan must be 0/0/2.")
+          expected = {
+              "aws_iam_role.github_actions_inspector_discovery",
+              "aws_iam_role_policy.github_actions_inspector_discovery",
+          }
+          if set(plan.get("destroyed_addresses", [])) != expected:
+              raise SystemExit("Gate 16.5 destroyed addresses changed.")
+          if (apply.get("added"), apply.get("changed"), apply.get("destroyed")) != (0, 0, 2):
+              raise SystemExit("Gate 16.5 apply must be 0/0/2.")
+          if convergence.get("result") != "NO_CHANGES":
+              raise SystemExit("Gate 16.5 requires post-apply convergence.")
+          temporary = verification.get("temporary_role")
+          shared = verification.get("shared_deploy_role")
+          if not isinstance(temporary, dict) or temporary.get("result") != "ABSENT":
+              raise SystemExit("Temporary Inspector role must be absent.")
+          if temporary.get("aws_error") != "NoSuchEntity":
+              raise SystemExit("Temporary role absence must preserve NoSuchEntity evidence.")
+          if not isinstance(shared, dict) or shared.get("result") != "PRESENT":
+              raise SystemExit("Shared deployment role must remain present.")
+          if retention.get("standing_inspector_discovery_iam") != "REMOVED":
+              raise SystemExit("Standing Inspector discovery IAM must be removed.")
+          if cleanup.get("pr_89_touched") is not False:
+              raise SystemExit("PR #89 must remain untouched.")
+
+          closeout_path = Path("labs/evidence/phase-16-closeout-v1.json")
+          closeout = json.loads(closeout_path.read_text(encoding="utf-8"))
+          if closeout.get("status") != "COMPLETE":
+              raise SystemExit("Phase 16 closeout must be COMPLETE.")
+          retained = closeout.get("retained_state")
+          if not isinstance(retained, dict):
+              raise SystemExit("Phase 16 retained state missing.")
+          if retained.get("standing_inspector_discovery_iam") != "NONE":
+              raise SystemExit("Phase 16 cannot close with standing Inspector IAM.")
+          if closeout.get("next_phase") != "Phase 17 — Security Hardening":
+              raise SystemExit("Phase 17 must be next after Phase 16 closeout.")
           PY
 
       - name: Validate retained bootstrap has no Inspector authority
