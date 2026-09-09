@@ -1,4 +1,4 @@
-"""Regression tests for the AgentCore Runtime Identity bootstrap boundary."""
+"""Regression tests for the retained AgentCore Runtime Identity service-linked-role boundary."""
 
 from __future__ import annotations
 
@@ -14,10 +14,13 @@ _SLR_PATH = (
 _DEPLOY_POLICY_PATH = (
     _PROJECT_ROOT / "infra" / "bootstrap" / "github_agentcore_deploy_permissions.tf"
 )
+_REPLAY_ROLE_PATH = (
+    _PROJECT_ROOT / "infra" / "bootstrap" / "github_agentcore_replay_role.tf"
+)
 
 
-def test_runtime_identity_slr_is_human_bootstrap_owned() -> None:
-    """The account-level Runtime Identity SLR must be explicit bootstrap infrastructure."""
+def test_runtime_identity_slr_is_human_bootstrap_owned_and_protected() -> None:
+    """The account-level Runtime Identity SLR remains explicit protected bootstrap infrastructure."""
     text = _SLR_PATH.read_text(encoding="utf-8")
 
     assert (
@@ -32,15 +35,8 @@ def test_runtime_identity_slr_is_human_bootstrap_owned() -> None:
     assert "prevent_destroy = true" in text
 
 
-def test_github_deployment_role_cannot_create_service_linked_roles() -> None:
-    """GitHub deployment authority must not create account-level service-linked roles."""
-    text = _DEPLOY_POLICY_PATH.read_text(encoding="utf-8")
-
-    assert '"iam:CreateServiceLinkedRole"' not in text
-
-
-def test_slr_bootstrap_does_not_blur_runtime_invocation_boundary() -> None:
-    """Provisioning the SLR must not add AgentCore data-plane authority to deployment CI."""
-    text = _DEPLOY_POLICY_PATH.read_text(encoding="utf-8")
-
-    assert '"bedrock-agentcore:InvokeAgentRuntime"' not in text
+def test_gate14_4_removes_github_agentcore_authority_without_deleting_slr() -> None:
+    """Standing GitHub AgentCore authority is retired while the protected service role remains."""
+    assert _SLR_PATH.exists()
+    assert not _DEPLOY_POLICY_PATH.exists()
+    assert not _REPLAY_ROLE_PATH.exists()
