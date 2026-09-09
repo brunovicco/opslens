@@ -1,0 +1,78 @@
+{
+  "artifact_version": "phase-14-gate-14-2-seventh-runtime-attempt-workload-identity-directory-iam-failure:v1",
+  "decision_date": "2026-09-09",
+  "phase": "Phase 14 — Amazon Bedrock AgentCore",
+  "gate": "14.2 — first bounded AgentCore HTTP/SigV4 runtime experiment",
+  "source_main_sha": "8d6d514a2e7b0e8e50397a20784671afe98c3c95",
+  "workflow_run": {
+    "id": 34307984723,
+    "job_id": 102328565810,
+    "conclusion": "failure",
+    "failed_step": "Apply bounded AgentCore resources only",
+    "error_type": "AccessDeniedException",
+    "missing_action": "bedrock-agentcore:CreateWorkloadIdentity",
+    "authorization_resource": "arn:aws:bedrock-agentcore:us-east-1:487757851499:workload-identity-directory/default",
+    "request_id": "790d2b2e-5c92-488d-941b-2b54122a632a",
+    "sdk_attempt_count": 1
+  },
+  "failure_classification": {
+    "layer": "AgentCore managed workload-identity directory create dependency",
+    "cause": "CreateWorkloadIdentity requires authorization against both the workload-identity resource family and the account default workload-identity directory; run 6 exposed the subresource requirement and run 7 exposed the directory requirement after the subresource grant was applied",
+    "artifact_publication_completed": true,
+    "terraform_create_plan_reached": true,
+    "terraform_create_plan": "3 to add, 0 to change, 0 to destroy",
+    "runtime_id_captured": false,
+    "runtime_ready": false,
+    "runtime_invocations": 0,
+    "capability_executions": 0
+  },
+  "artifact_publication": {
+    "bucket": "opslens-dev-artifacts-487757851499-us-east-1",
+    "key": "agentcore/runtime/a846034ad646c4f6383ac08e47d9ed065b4a9f3349c14104db49a2d510b3ec88/opslens-agentcore-runtime.zip",
+    "sha256": "a846034ad646c4f6383ac08e47d9ed065b4a9f3349c14104db49a2d510b3ec88",
+    "version_id": "zbr0hWXEjhjAlBEFZO4782AHyhL5mbfm",
+    "status": "replay_verified"
+  },
+  "cleanup": {
+    "cleanup_steps_executed": true,
+    "execution_role_created_before_failure": true,
+    "execution_role_policy_created_before_failure": true,
+    "execution_role_destroyed": true,
+    "execution_role_policy_destroyed": true,
+    "terraform_cleanup_apply": "0 added, 0 changed, 2 destroyed",
+    "runtime_id_captured": false,
+    "runtime_cleanup_verification_required": true,
+    "runtime_cleanup_verification_reason": "CreateAgentRuntime entered the AgentCore control plane but no runtime ID was captured; the workflow verifier therefore did not query the runtime control plane"
+  },
+  "preserved_workflow_artifact": {
+    "artifact_id": 10087375784,
+    "name": "phase-14-gate-14-2-agentcore-runtime-evidence-34307984723",
+    "digest": "sha256:948f1285879c4af97c76e948e6e06b1b0e7a26f5714678593a3bee46f94350a3",
+    "expires_at": "2026-10-09T03:41:56Z",
+    "files": [
+      "opslens-agentcore-lifecycle.json",
+      "opslens-agentcore-publication.json"
+    ]
+  },
+  "authority_learning": {
+    "aws_behavior": "CreateWorkloadIdentity authorization evaluates both workload-identity and workload-identity-directory resource types for AgentCore Runtime managed identity creation",
+    "measured_workload_identity_scope": "arn:aws:bedrock-agentcore:us-east-1:487757851499:workload-identity-directory/default/workload-identity/*",
+    "measured_directory_scope": "arn:aws:bedrock-agentcore:us-east-1:487757851499:workload-identity-directory/default",
+    "official_service_authorization_reference_resource_types": [
+      "workload-identity",
+      "workload-identity-directory"
+    ],
+    "selected_remediation": "retain exact-tag-constrained CreateWorkloadIdentity on the workload-identity precreation family and add the exact default directory ARN to the same exact-tag-constrained statement",
+    "github_deployment_get_workload_identity_authority": false,
+    "github_deployment_create_service_linked_role_authority": false,
+    "github_deployment_runtime_invoke_authority": false
+  },
+  "pre_next_experiment_requirements": [
+    "merge the directory-scope correction through protected main",
+    "human control-plane listing proves no orphan opslens_dev_bounded_runtime resource remains",
+    "human bootstrap plan shows only the intended OpsLensAgentCoreDeployDevAccess policy delta",
+    "human bootstrap applies the exact reviewed policy delta and Terraform converges with no drift",
+    "use a fresh workflow_dispatch on main rather than rerunning this source run"
+  ],
+  "retention_rule": "preserve run 7 as measured directory-level CreateWorkloadIdentity authorization evidence; do not rewrite it as successful runtime evidence"
+}
