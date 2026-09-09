@@ -1,0 +1,84 @@
+{
+  "artifact_version": "phase-16-gate-16-2-inspector-readonly-discovery:v1",
+  "evidence_date": "2026-09-09",
+  "phase": "Phase 16 — Runtime Exposure with Amazon Inspector",
+  "gate": "16.2 — Bounded Read-Only Amazon Inspector Discovery",
+  "issue": 240,
+  "implementation_pr": 241,
+  "implementation_merge_sha": "d5ba77cc98df84488928e49ea5e429234e46bc9a",
+  "workflow": {
+    "name": "Inspector Read-Only Discovery",
+    "run_id": 34411934819,
+    "run_number": 1,
+    "job_id": 102668116801,
+    "event": "workflow_dispatch",
+    "head_branch": "main",
+    "head_sha": "d5ba77cc98df84488928e49ea5e429234e46bc9a",
+    "conclusion": "success",
+    "region": "us-east-1",
+    "existing_role": "OpsLensGitHubDeployRole"
+  },
+  "experiment": {
+    "contract_version": "inspector-readonly-discovery:v1",
+    "result": "BLOCKED_BY_EXISTING_IAM",
+    "expected_account_id": "487757851499",
+    "region": "us-east-1",
+    "client_elapsed_ms": 103.252301,
+    "coverage": {
+      "attempted": true,
+      "outcome": "ACCESS_DENIED",
+      "error_code": "AccessDeniedException",
+      "page_count": 0,
+      "record_count": 0,
+      "page_content_sha256": [],
+      "sdk_retry_count": 0
+    },
+    "findings": {
+      "attempted": false,
+      "outcome": "NOT_ATTEMPTED",
+      "error_code": null,
+      "page_count": 0,
+      "record_count": 0,
+      "page_content_sha256": [],
+      "sdk_retry_count": 0
+    },
+    "coverage_resource_type_counts": [],
+    "finding_resource_type_counts": [],
+    "finding_type_counts": [],
+    "scan_status_counts": []
+  },
+  "authority": {
+    "oidc_role_assumption_succeeded": true,
+    "inspector_list_coverage_authorized": false,
+    "inspector_list_findings_probed_after_required_coverage_denial": false,
+    "automatic_iam_widening": false,
+    "aws_mutation_count": 0,
+    "new_iam_count": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "repository_runtime_correlation": false,
+    "inspector_activation_or_configuration_change": false
+  },
+  "artifact": {
+    "github_artifact_id": 10127569570,
+    "name": "phase-16-gate-16-2-inspector-readonly-34411934819",
+    "size_bytes": 586,
+    "sha256": "8814b313261e2ac2cde2894e7ea428e437aaa66cd0d2f47e7187759565d6738e",
+    "retention_days": 14
+  },
+  "interpretation": {
+    "experiment_execution_succeeded": true,
+    "useful_inspector_runtime_evidence_retrieved": false,
+    "existing_credentials_are_sufficient_for_gate_16_2_read_surface": false,
+    "access_denied_is_measured_terminal_evidence": true,
+    "gate_16_2_complete": true,
+    "iam_change_authorized_by_this_artifact": false
+  },
+  "next_gate": {
+    "gate": "16.3 — Minimum Inspector Read-Only IAM Boundary Decision",
+    "status": "DECISION_ONLY_NEXT",
+    "purpose": "Decide whether a dedicated least-privilege Inspector read identity is justified before any IAM mutation.",
+    "authorized_iam_mutation": false
+  },
+  "pr_89_touched": false
+}

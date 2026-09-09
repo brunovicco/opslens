@@ -25,7 +25,8 @@ Phase 14   Amazon Bedrock AgentCore                            COMPLETE
 Phase 15   A2A                                                 COMPLETE
 Phase 16   Runtime Exposure with Amazon Inspector              IN PROGRESS
   Gate 16.1 Inspector capability fit / authority               COMPLETE / GO READ-ONLY ONLY
-  Gate 16.2 Bounded read-only Inspector discovery              NEXT / AUTHORIZED
+  Gate 16.2 Bounded read-only Inspector discovery              COMPLETE / BLOCKED_BY_EXISTING_IAM
+  Gate 16.3 Minimum Inspector read-only IAM boundary            NEXT / DECISION ONLY
 Phase 17   Security Hardening                                  PLANNED
 Phase 18   Evaluation, Cost & Portfolio Readiness              PLANNED
 ```
@@ -61,6 +62,7 @@ runtime deployment != runtime-exposure truth
 A2A message != capability authorization
 A2A transport success != business/evidence truth
 A2A SDK acceptance != OpsLens admission authority
+AWS authentication != Inspector read authorization
 Inspector coverage != vulnerability finding
 Inspector finding != repository finding
 Inspector package match != deployed application ownership
@@ -193,38 +195,6 @@ hybrid routing integration:            NOT AUTHORIZED
 repository/runtime auto-correlation:    NOT AUTHORIZED
 ```
 
-Target boundary:
-
-```text
-Amazon Inspector read response
- -> source-preserving raw snapshot
- -> exact account / region / pagination context
- -> deterministic type-specific parser
- -> RuntimeEvidenceEnvelope
- -> optional deterministic correlation only when identity is provable
- -> otherwise preserve independent evidence / fail closed
-```
-
-Gate 16.2 must use existing credentials first. Valid terminal outcomes include useful evidence, zero evidence, or `AccessDenied`. Access denial must not cause automatic IAM widening.
-
-Required Gate 16.2 measurements:
-
-```text
-API outcome per call
-pagination count
-covered-resource count
-finding count
-finding-type counts
-resource-type counts
-scan-status counts
-elapsed time
-SDK retry count when observable
-AWS mutations = 0
-new IAM = 0
-model invocations = 0
-capability executions = 0
-```
-
 Canonical Gate 16.1 records:
 
 ```text
@@ -233,9 +203,62 @@ labs/phase-16-gate-16-1-inspector-runtime-evidence-fit.md
 labs/evidence/phase-16-gate-16-1-inspector-runtime-evidence-fit-v1.json
 ```
 
-### Next authorized gate — Gate 16.2
+### Gate 16.2 — bounded read-only Inspector discovery — COMPLETE
 
-Run one bounded read-only Amazon Inspector discovery experiment using only `ListCoverage` and `ListFindings` with existing credentials. Do not enable Inspector, change scan configuration, create IAM, add EventBridge, or change repository-risk authority.
+The implementation was protected-merged before the live AWS attempt. The first main-only discovery used the already-existing `OpsLensGitHubDeployRole` without changing that role or Amazon Inspector configuration.
+
+Measured run:
+
+```text
+workflow:                    Inspector Read-Only Discovery
+run:                         34411934819 / #1
+job:                         102668116801
+source main SHA:             d5ba77cc98df84488928e49ea5e429234e46bc9a
+workflow conclusion:         success
+experiment result:           BLOCKED_BY_EXISTING_IAM
+client elapsed:              103.252301 ms
+ListCoverage attempted:      YES
+ListCoverage outcome:        ACCESS_DENIED
+AWS error:                   AccessDeniedException
+ListFindings attempted:      NO / FAIL-CLOSED STOP
+SDK retries:                 0
+AWS mutations:               0
+new IAM:                     0
+model invocations:           0
+capability executions:       0
+```
+
+OIDC role assumption succeeded, but the selected Inspector read was not authorized. This preserves the distinction:
+
+```text
+AWS authentication != Inspector read authorization
+```
+
+The experiment therefore completed successfully as a measurement while retrieving no Inspector runtime evidence. The access denial is terminal Gate 16.2 evidence, not permission to widen IAM.
+
+Canonical Gate 16.2 records:
+
+```text
+labs/phase-16-gate-16-2-inspector-readonly-discovery.md
+labs/evidence/phase-16-gate-16-2-inspector-readonly-discovery-v1.json
+GitHub Actions run 34411934819
+artifact 10127569570
+artifact SHA-256 8814b313261e2ac2cde2894e7ea428e437aaa66cd0d2f47e7187759565d6738e
+```
+
+### Next gate — Gate 16.3
+
+Evaluate the minimum Inspector read-only IAM boundary as a **decision-only gate**. The question is whether the value of independent runtime evidence justifies a narrowly scoped identity for `ListCoverage` / `ListFindings`, and whether that authority should live in a dedicated Inspector discovery role instead of widening the general deployment role.
+
+Until Gate 16.3 explicitly accepts an IAM design:
+
+```text
+IAM mutation:                         NOT AUTHORIZED
+Inspector activation/change:          NOT AUTHORIZED
+hybrid routing integration:            NOT AUTHORIZED
+repository/runtime auto-correlation:    NOT AUTHORIZED
+runtime-risk composite scoring:         NOT AUTHORIZED
+```
 
 ## Deferred cross-project work
 
