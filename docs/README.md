@@ -31,6 +31,7 @@ Phase 13 MCP                                    COMPLETE
 Phase 14 Amazon Bedrock AgentCore               COMPLETE
 Phase 15 A2A                                    IN PROGRESS
   Gate 15.1 capability fit / authority          COMPLETE / GO OFFLINE ONLY
+  Gate 15.1 protocol-baseline correction        COMPLETE / A2A 1.0.0
   Gate 15.2 reference-only offline adapter      NEXT / AUTHORIZED
 ```
 
@@ -55,6 +56,7 @@ A2A task state != business/evidence truth
 A2A transport success != business/evidence truth
 A2A artifact != admitted OpsLens evidence
 A2A authentication != capability authorization
+A2A protocol binding != business authority
 Repository Risk != Runtime Exposure
 ```
 
@@ -162,7 +164,21 @@ References:
 
 ### Gate 15.1 — capability fit / authority boundary
 
-The official stable A2A `0.3.0` specification was assessed against the real retained OpsLens handoff boundary.
+The first Gate 15.1 revision used a historical A2A `0.3.0` page and incorrectly described it as the current latest stable protocol. The architecture decision is unchanged, but the protocol baseline was corrected before Gate 15.2 implementation.
+
+Authoritative baseline:
+
+```text
+A2A protocol:                   1.0.0
+release date:                   2026-03-12
+previous protocol:              0.3.0
+standard bindings:              JSONRPC / GRPC / HTTP+JSON
+first OpsLens binding choice:   JSONRPC
+Python SDK latest observed:     1.1.4
+SDK pinned by Gate 15.1:        NO
+```
+
+A2A v1.0 uses Agent Card `supportedInterfaces`; each interface declares `url`, `protocolBinding`, and `protocolVersion`. JSON-RPC is an explicit Gate 15.2 scope choice rather than a claim that A2A has only one binding.
 
 Finding:
 
@@ -184,7 +200,7 @@ The first experiment is reference-only:
 pre-admitted SpecialistAgentTask
  -> code-owned local reference
  -> {handoff_id, specialist_task_id, reference_sha256}
- -> minimal A2A message/send
+ -> A2A 1.0 SendMessage over selected JSONRPC binding
  -> bounded peer reference resolution
  -> terminal Message or Task metadata
  -> deterministic OpsLens admission
@@ -197,19 +213,23 @@ References:
 
 - [`adr/0056-bounded-a2a-capability-fit.md`](adr/0056-bounded-a2a-capability-fit.md)
 - [`../labs/phase-15-gate-15-1-a2a-capability-fit.md`](../labs/phase-15-gate-15-1-a2a-capability-fit.md)
-- [`../labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v1.json`](../labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v1.json)
+- [`../labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v1.json`](../labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v1.json) — historical first assessment; protocol-version claim superseded
+- [`../labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v2.json`](../labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v2.json) — authoritative corrected evidence
 
 ### Next authorized gate — Gate 15.2
 
-Freeze and implement the smallest official A2A `0.3.0` reference-only adapter contract offline.
+Freeze and implement the smallest selected A2A `1.0` reference-only adapter contract offline using one explicitly selected JSON-RPC binding.
 
 Required properties:
 
 ```text
 raw protocol validation before domain admission
+AgentInterface protocolBinding/version admission
 exact reference binding
+fail-closed unsupported binding/version behavior
 fail-closed tamper/unknown-reference behavior
 duplicate/replay/failure fixtures
+inspect Python SDK 1.1.4 before any pin
 SDK/dependency placement evidence
 request/response byte and local latency evidence
 model invocations = 0
