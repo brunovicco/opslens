@@ -10,6 +10,7 @@ on:
       - "infra/bootstrap/github_inspector_discovery_role.tf"
       - "docs/adr/0060-*.md"
       - "docs/adr/0061-*.md"
+      - "docs/adr/0062-*.md"
       - "labs/phase-16-*.md"
       - "labs/evidence/phase-16-*.json"
       - ".github/workflows/runtime-exposure-ci.yml"
@@ -93,51 +94,64 @@ jobs:
               raise SystemExit("PR #89 must remain untouched.")
           PY
 
-      - name: Validate temporary Inspector discovery IAM boundary
+      - name: Validate Gate 16.4 measured Inspector rerun
         run: |
           python - <<'PY'
-          import re
+          import json
           from pathlib import Path
 
-          terraform_path = Path("infra/bootstrap/github_inspector_discovery_role.tf")
-          terraform_text = terraform_path.read_text(encoding="utf-8")
-          expected_actions = {
-              "inspector2:ListCoverage",
-              "inspector2:ListFindings",
-          }
-          observed_actions = set(
-              re.findall(r'"(inspector2:[A-Za-z0-9*]+)"', terraform_text)
+          path = Path(
+              "labs/evidence/phase-16-gate-16-4-inspector-readonly-rerun-v1.json"
           )
-          if observed_actions != expected_actions:
-              raise SystemExit(
-                  f"unexpected Inspector IAM action set: {sorted(observed_actions)}"
-              )
-
-          required_terraform = (
-              'name                 = "OpsLensInspectorDiscoveryRole"',
-              'variable = "token.actions.githubusercontent.com:aud"',
-              'values   = ["sts.amazonaws.com"]',
-              'variable = "token.actions.githubusercontent.com:sub"',
-              '"repo:brunovicco@38844444/opslens@1333092779:ref:refs/heads/main"',
-              'resources = ["*"]',
-              'variable = "aws:RequestedRegion"',
-              'values   = ["us-east-1"]',
-          )
-          for fragment in required_terraform:
-              if fragment not in terraform_text:
-                  raise SystemExit(f"missing Inspector IAM guardrail: {fragment}")
-
-          for path in Path("infra/bootstrap").glob("*.tf"):
-              if path == terraform_path:
-                  continue
-              text = path.read_text(encoding="utf-8")
-              if "inspector2:" in text:
-                  raise SystemExit(
-                      f"Inspector authority leaked outside dedicated role: {path}"
-                  )
+          value = json.loads(path.read_text(encoding="utf-8"))
+          measured = value.get("measured_run")
+          if not isinstance(measured, dict):
+              raise SystemExit("Gate 16.4 measured run evidence missing.")
+          if measured.get("result") != "SUCCESS":
+              raise SystemExit("Gate 16.4 must preserve successful Inspector reads.")
+          for api_name in ("coverage", "findings"):
+              api = measured.get(api_name)
+              if not isinstance(api, dict):
+                  raise SystemExit(f"Gate 16.4 {api_name} evidence missing.")
+              if api.get("outcome") != "SUCCESS":
+                  raise SystemExit(f"Gate 16.4 {api_name} must be SUCCESS.")
+              if api.get("record_count") != 0:
+                  raise SystemExit(f"Gate 16.4 {api_name} measured zero records.")
+              if api.get("sdk_retry_count") != 0:
+                  raise SystemExit(f"Gate 16.4 {api_name} retries changed.")
+          for key in (
+              "aws_mutation_count",
+              "new_iam_count",
+              "model_invocations",
+              "capability_executions",
+          ):
+              if measured.get(key) != 0:
+                  raise SystemExit(f"Gate 16.4 widened authority: {key}")
+          retention = value.get("retention")
+          if not isinstance(retention, dict):
+              raise SystemExit("Gate 16.4 retention evidence missing.")
+          if retention.get("standing_inspector_discovery_iam") != "DO_NOT_RETAIN_REMOVE":
+              raise SystemExit("Temporary Inspector IAM must not be retained.")
+          if value.get("pr_89_touched") is not False:
+              raise SystemExit("PR #89 must remain untouched.")
           PY
 
-      - name: Validate main-only Inspector discovery workflow guardrails
+      - name: Validate retained bootstrap has no Inspector authority
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          retired = Path("infra/bootstrap/github_inspector_discovery_role.tf")
+          if retired.exists():
+              raise SystemExit("temporary Inspector IAM Terraform must be absent")
+
+          for path in Path("infra/bootstrap").glob("*.tf"):
+              text = path.read_text(encoding="utf-8")
+              if "inspector2:" in text or "OpsLensInspectorDiscoveryRole" in text:
+                  raise SystemExit(f"standing Inspector authority remains in {path}")
+          PY
+
+      - name: Validate historical Inspector discovery workflow guardrails
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -147,7 +161,10 @@ jobs:
           )
           required = (
               "workflow_dispatch:",
+              "confirm_temporary_role_exists:",
+              "default: false",
               "github.ref == 'refs/heads/main'",
+              "inputs.confirm_temporary_role_exists == true",
               "OpsLensInspectorDiscoveryRole",
               "role-duration-seconds: 900",
               "run_inspector_readonly_discovery.py",
