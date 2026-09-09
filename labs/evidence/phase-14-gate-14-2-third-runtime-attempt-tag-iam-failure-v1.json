@@ -1,0 +1,66 @@
+{
+  "artifact_version": "phase-14-gate-14-2-third-runtime-attempt-tag-iam-failure:v1",
+  "decision_date": "2026-09-09",
+  "phase": "Phase 14 — Amazon Bedrock AgentCore",
+  "gate": "14.2 — first bounded AgentCore HTTP/SigV4 runtime experiment",
+  "source_main_sha": "3dae4f36802780b9e22ae040d27174379bfd81f7",
+  "workflow_run": {
+    "id": 34302810527,
+    "job_id": 102313177872,
+    "conclusion": "failure",
+    "failed_step": "Apply bounded AgentCore resources only",
+    "error_type": "AccessDeniedException",
+    "denied_action": "bedrock-agentcore:TagResource",
+    "authorization_resource": "arn:aws:bedrock-agentcore:us-east-1:487757851499:runtime/*"
+  },
+  "failure_classification": {
+    "layer": "AgentCore control-plane deployment IAM",
+    "cause": "CreateAgentRuntime requires the documented TagResource dependent permission, and the measured authorization evaluates that create-time tagging operation against the account/region runtime/* pre-creation scope before the generated runtime ID can match the post-creation OpsLens runtime-family ARN",
+    "source_cli_boundary_fixed": true,
+    "default_endpoint_precreation_scope_fixed": true,
+    "artifact_publication_completed": true,
+    "terraform_create_plan_reached": true,
+    "runtime_creation_recorded_in_terraform_state": false,
+    "runtime_identity_captured": false,
+    "runtime_ready": false,
+    "runtime_replay_executed": false,
+    "runtime_invocations": 0,
+    "capability_executions": 0
+  },
+  "artifact_publication": {
+    "bucket": "opslens-dev-artifacts-487757851499-us-east-1",
+    "key": "agentcore/runtime/a846034ad646c4f6383ac08e47d9ed065b4a9f3349c14104db49a2d510b3ec88/opslens-agentcore-runtime.zip",
+    "sha256": "a846034ad646c4f6383ac08e47d9ed065b4a9f3349c14104db49a2d510b3ec88",
+    "size_bytes": 16058438,
+    "version_id": "zbr0hWXEjhjAlBEFZO4782AHyhL5mbfm",
+    "status": "replay_verified"
+  },
+  "cleanup": {
+    "cleanup_steps_executed": true,
+    "execution_role_created_before_failure": true,
+    "execution_role_policy_created_before_failure": true,
+    "execution_role_destroyed": true,
+    "execution_role_policy_destroyed": true,
+    "runtime_id_captured": false,
+    "runtime_control_plane_cleanup_verified": false,
+    "cleanup_verifier_message": "No runtime ID was captured; no runtime cleanup verification is required.",
+    "orphan_runtime_absence_requires_human_verification": true
+  },
+  "preserved_workflow_artifact": {
+    "artifact_id": 10085572294,
+    "name": "phase-14-gate-14-2-agentcore-runtime-evidence-34302810527",
+    "digest": "sha256:ef05c9b483be5d03cdbce077b07f3ea668be74c5b91abbd5b207f49617b6b808",
+    "size_bytes": 760,
+    "expires_at": "2026-10-09T02:22:14Z",
+    "files": [
+      "opslens-agentcore-lifecycle.json",
+      "opslens-agentcore-publication.json"
+    ]
+  },
+  "authority_learning": {
+    "aws_documentation": "The Service Authorization Reference lists TagResource as a dependent permission of CreateAgentRuntime. TagResource supports the runtime resource type together with aws:RequestTag/${TagKey} and aws:TagKeys condition keys.",
+    "measured_authorization_scope": "arn:aws:bedrock-agentcore:us-east-1:487757851499:runtime/*",
+    "required_change": "admit only TagResource on the measured account-and-region runtime/* pre-creation scope, constrained by the exact Gate 14.2 request tags and allowed tag-key set, while retaining post-creation tag mutation on the exact OpsLens runtime family"
+  },
+  "retention_rule": "preserve this failed authenticated attempt as AgentCore create-time tagging IAM evidence; do not infer successful runtime creation or cleanup from this run and do not rewrite it as successful AgentCore runtime evidence"
+}
