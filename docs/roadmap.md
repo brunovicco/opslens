@@ -44,7 +44,7 @@ real gap
 | 13 | MCP | ✅ Complete — bounded offline interoperability retained |
 | 14 | Amazon Bedrock AgentCore | ✅ Complete — optional lab target retained; standing experiment IAM removed |
 | 15 | A2A | ✅ Complete — bounded offline reference interoperability + official SDK conformance retained |
-| 16 | Runtime Exposure with Amazon Inspector | 🚧 In progress — Gate 16.1 complete; read-only discovery next |
+| 16 | Runtime Exposure with Amazon Inspector | 🚧 In progress — Gate 16.2 measured `BLOCKED_BY_EXISTING_IAM`; minimum read-IAM decision next |
 | 17 | Security Hardening | ⏳ Planned |
 | 18 | Evaluation, Cost & Portfolio Readiness | ⏳ Planned |
 
@@ -79,6 +79,7 @@ runtime deployment != runtime-exposure truth
 A2A message != capability authorization
 A2A transport success != business/evidence truth
 A2A SDK acceptance != OpsLens admission authority
+AWS authentication != Inspector read authorization
 Inspector coverage != vulnerability finding
 Inspector finding != repository finding
 Inspector package match != deployed application ownership
@@ -139,19 +140,6 @@ hybrid routing integration:            NOT AUTHORIZED
 repository/runtime auto-correlation:    NOT AUTHORIZED
 ```
 
-Target authority boundary:
-
-```text
-Amazon Inspector read response
- -> source-preserving raw snapshot
- -> exact account / region / pagination context
- -> deterministic resource/finding admission
- -> type-specific runtime evidence
- -> RuntimeEvidenceEnvelope
- -> correlate only when identity is provable
- -> otherwise preserve independent evidence / fail closed
-```
-
 Records:
 
 ```text
@@ -160,33 +148,57 @@ labs/phase-16-gate-16-1-inspector-runtime-evidence-fit.md
 labs/evidence/phase-16-gate-16-1-inspector-runtime-evidence-fit-v1.json
 ```
 
-### Gate 16.2 — bounded read-only Inspector discovery — NEXT / AUTHORIZED
+### Gate 16.2 — bounded read-only Inspector discovery — COMPLETE
 
-Run exactly one discovery experiment against the existing dev account using existing credentials first.
+One main-only experiment was run against the existing dev account using the already-existing `OpsLensGitHubDeployRole` and no AWS/IAM mutation.
 
-Allowed cloud calls:
-
-```text
-inspector2:ListCoverage
-inspector2:ListFindings
-```
-
-Required behavior:
+Measured result:
 
 ```text
-read only
-no automatic IAM widening
-AccessDenied is valid terminal evidence
-zero resources/findings is valid evidence
-preserve pagination/source identity
-measure API outcome, counts, latency, retries
-AWS mutations = 0
-new IAM = 0
-model invocations = 0
-capability executions = 0
+workflow:                 Inspector Read-Only Discovery
+run:                      34411934819 / #1
+job:                      102668116801
+main SHA:                 d5ba77cc98df84488928e49ea5e429234e46bc9a
+workflow conclusion:      success
+experiment result:        BLOCKED_BY_EXISTING_IAM
+client elapsed:           103.252301 ms
+ListCoverage:             ACCESS_DENIED / AccessDeniedException
+ListFindings:             NOT_ATTEMPTED after fail-closed stop
+SDK retries:              0
+AWS mutations:            0
+new IAM:                  0
+model invocations:        0
+capability executions:    0
 ```
 
-Not authorized:
+OIDC authentication and role assumption succeeded. Inspector read authorization did not. The experiment therefore proved that the current deployment role is insufficient for the selected read surface while preserving least privilege.
+
+Records:
+
+```text
+labs/phase-16-gate-16-2-inspector-readonly-discovery.md
+labs/evidence/phase-16-gate-16-2-inspector-readonly-discovery-v1.json
+GitHub Actions artifact 10127569570
+artifact SHA-256 8814b313261e2ac2cde2894e7ea428e437aaa66cd0d2f47e7187759565d6738e
+```
+
+### Gate 16.3 — minimum Inspector read-only IAM boundary — NEXT / DECISION ONLY
+
+The measured denial proves that a new authorization decision is necessary if OpsLens is to continue retrieving Inspector runtime evidence.
+
+Gate 16.3 must compare at least:
+
+```text
+A. widen OpsLensGitHubDeployRole with Inspector reads
+B. create a dedicated Inspector discovery identity with only the required reads
+C. stop Phase 16 without additional IAM
+```
+
+The gate should prefer the smallest independently reviewable authority surface and explicitly consider trust reuse, blast radius, standing permission, teardown/reversibility, observability, and whether the data value justifies any IAM addition.
+
+No IAM change is authorized merely by opening or completing the decision gate.
+
+Still not authorized:
 
 ```text
 Enable/Disable Inspector
@@ -200,8 +212,6 @@ runtime-risk composite scoring
 model synthesis
 repository/runtime automatic correlation
 ```
-
-A later gate may propose a minimum read-only IAM boundary only if the measured Gate 16.2 result proves it is necessary. It may not be silently created as part of discovery.
 
 ## Phase 17 — Security Hardening — PLANNED
 
