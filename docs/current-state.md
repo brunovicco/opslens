@@ -29,7 +29,8 @@ Phase 14   Amazon Bedrock AgentCore                            COMPLETE
 Phase 15   A2A                                                 IN PROGRESS
   Gate 15.1 A2A capability fit / authority boundary            COMPLETE / GO OFFLINE ONLY
   Gate 15.1 protocol-baseline correction                       COMPLETE / A2A 1.0.0
-  Gate 15.2 Reference-only A2A adapter contract                NEXT / AUTHORIZED
+  Gate 15.2 Reference-only A2A adapter contract                COMPLETE / MEASURED
+  Gate 15.3 Official SDK conformance check                     NEXT / AUTHORIZED
 Phase 16   Runtime Exposure with Amazon Inspector              PLANNED
 Phase 17   Security Hardening                                  PLANNED
 Phase 18   Evaluation, Cost & Portfolio Readiness              PLANNED
@@ -87,9 +88,11 @@ A2A handoff proposal != handoff admission
 A2A context/task identity != OpsLens source-task identity
 A2A authentication != capability authorization
 A2A protocol binding != business authority
+A2A generated id != OpsLens content identity
+A2A SDK acceptance != OpsLens admission authority
 ```
 
-Deterministic code continues to own package/version semantics, vulnerability applicability, source evidence, KEV/EPSS/CVSS facts, Risk Policy v1, semantic-query validation, SQL compilation, retrieval/evidence admission, hybrid completeness, citation/evidence identity, public request admission, immutable repository evidence binding, capability allowlists, capability authorization, executable-input bindings, result admission, handoff admission, MCP mapping/admission/projection authority, A2A reference resolution/admission authority, provider/model selection, retry/fallback policy, application session ownership, cost/execution bounds, and runtime-exposure truth.
+Deterministic code continues to own package/version semantics, vulnerability applicability, source evidence, KEV/EPSS/CVSS facts, Risk Policy v1, semantic-query validation, SQL compilation, retrieval/evidence admission, hybrid completeness, citation/evidence identity, public request admission, immutable repository evidence binding, capability allowlists, capability authorization, executable-input bindings, result admission, handoff admission, MCP mapping/admission/projection authority, A2A reference identity/resolution/admission authority, provider/model selection, retry/fallback policy, application session ownership, cost/execution bounds, and runtime-exposure truth.
 
 ## Retained reasoning architecture
 
@@ -154,7 +157,7 @@ TriageAgentTask
  -> SpecialistAgentTask
 ```
 
-This authority boundary is the reference input for Phase 15 A2A capability-fit work, without reactivating the rejected two-model topology.
+This authority boundary is the reference input for Phase 15 A2A work, without reactivating the rejected two-model topology.
 
 ## Retained Phase 13 MCP boundary
 
@@ -344,69 +347,10 @@ current in-process handoff requires network A2A:    NO
 bounded protocol-fit hypothesis exists:            YES
 ```
 
-The useful hypothesis remains:
-
-> Can an A2A adapter carry only an already-admitted specialist-task reference across a bounded peer boundary and re-bind protocol results to existing OpsLens content identities without allowing A2A input, peer metadata, task state, protocol binding, or artifacts to create capability or business authority?
-
 Decision:
 
 ```text
 GO TO ONE BOUNDED OFFLINE/IN-PROCESS INTEROPERABILITY EXPERIMENT
-```
-
-The first experiment must remain reference-only and stop before model or capability execution:
-
-```text
-already-admitted SpecialistAgentTask
- -> code-owned local reference registration
- -> {handoff_id, specialist_task_id, reference_sha256}
- -> A2A 1.0 SendMessage over explicitly selected JSONRPC binding
- -> bounded peer reference resolution
- -> terminal Message or Task metadata
- -> deterministic OpsLens admission
- -> metadata-only evidence
- -> STOP
-```
-
-Minimum protocol surface authorized for Gate 15.2:
-
-```text
-AgentCard
-supportedInterfaces
-one AgentInterface
-  protocolBinding = JSONRPC
-  protocolVersion = 1.0
-SendMessage
-structured Part only if needed
-one terminal Message or Task
-```
-
-Deferred:
-
-```text
-GRPC
-HTTP+JSON
-streaming
-push notifications
-extended authentication flow
-file payloads
-multi-turn context
-public/network deployment
-remote capability execution
-business-result transport
-```
-
-Gate 15.1 AWS/IAM/runtime impact:
-
-```text
-A2A SDK dependencies:       0
-A2A endpoints:              0
-model invocations:          0
-capability executions:      0
-new AWS resources:          0
-new IAM roles/policies:     0
-AgentCore resources:        0
-incremental AWS cost:       USD 0.00
 ```
 
 Decision records:
@@ -416,6 +360,109 @@ docs/adr/0056-bounded-a2a-capability-fit.md
 labs/phase-15-gate-15-1-a2a-capability-fit.md
 labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v1.json  # historical / protocol claim superseded
 labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v2.json  # authoritative corrected evidence
+```
+
+## Phase 15 Gate 15.2 — bounded offline A2A reference adapter
+
+Gate 15.2 is complete and measured. It retains a strict offline adapter over one already-admitted specialist-task reference; it does not create a distributed runtime.
+
+Protected implementation merge:
+
+```text
+PR:                  #231
+main SHA:            3a9adfdcfdd206d1c932a2d90bcb312377596b70
+measurement head:    c27a2362df4971a7b619be33dcaacd2bfe2a2369
+contract:            a2a-reference-interoperability:v1
+A2A release:         1.0.0
+binding:             JSONRPC
+operation:           SendMessage
+```
+
+Retained path:
+
+```text
+pre-admitted SpecialistAgentTask
+ -> deterministic content-addressed A2AReference
+ -> lab-only in-memory code-owned registry
+ -> strict A2A 1.0 JSON-RPC SendMessage projection
+ -> raw duplicate-key + exact-shape validation
+ -> code-owned reference resolution
+ -> bounded Message or terminal completed Task metadata
+ -> deterministic OpsLens result admission
+ -> STOP before model/capability execution
+```
+
+Reference-only protocol fields:
+
+```text
+handoff_id
+specialist_task_id
+reference_sha256
+```
+
+The protocol does not author task text, capability scope, specialization authority, model/provider selection, executable inputs, SQL, URLs, credentials, retry/fallback policy, or business results.
+
+SDK/dependency decision:
+
+```text
+official Python SDK inspected: 1.1.4
+a2a-sdk runtime dependency:   0
+a2a-sdk dev dependency:       0 for Gate 15.2
+new runtime dependencies:     0
+```
+
+The official SDK remains reference evidence only at this gate because the selected wire profile can be validated with deterministic stdlib code. SDK acceptance is not OpsLens admission authority.
+
+Measured local evidence:
+
+```text
+Agent Card bytes:          582
+protocol requests:         2
+peer handler attempts:     2
+request bytes total:       1308
+response bytes total:      989
+client elapsed sum:        0.353039 ms
+handler elapsed sum:       0.239397 ms
+retries:                   0
+model invocations:         0
+capability executions:     0
+new AWS resources:         0
+new IAM roles/policies:    0
+incremental AWS cost:      USD 0.00
+```
+
+These latency values are local process measurements only and are not production/network SLO evidence.
+
+Validation history:
+
+```text
+first A2A CI:  34403479455 / #1 — functional experiment PASS, Ruff RUF022 FAIL
+remediation:   c27a2362df4971a7b619be33dcaacd2bfe2a2369 — export ordering only
+measured CI:   34405966213 / #2 — SUCCESS, 25 pytest tests, Pyright 0 errors
+final PR head: 033038238dd84cd15c4cddfbf159b568b917ef50
+A2A CI:        34406512226 / #7  — SUCCESS
+Multi-Agent:   34406512227 / #42 — SUCCESS
+AgentCore CI:  34406512228 / #70 — SUCCESS
+```
+
+Retained Gate 15.2 claims:
+
+```text
+content-addressed reference projection:       PROVEN
+raw fail-closed protocol admission:           PROVEN
+Message metadata admission:                   PROVEN
+terminal completed Task metadata admission:   PROVEN
+cross-implementation SDK conformance:         NOT YET PROVEN
+network/runtime interoperability:              NOT PROVEN
+business-result authority:                     NOT CREATED
+```
+
+Records:
+
+```text
+docs/adr/0057-bounded-offline-a2a-reference-adapter.md
+labs/phase-15-gate-15-2-bounded-offline-a2a-reference-adapter.md
+labs/evidence/phase-15-gate-15-2-bounded-offline-a2a-reference-adapter-v1.json
 ```
 
 ## Deferred Governed LLM Gateway integration
@@ -431,8 +478,8 @@ feat/governed-gateway-semantic-planner
 
 ## Next authorized action
 
-Phase 15 Gate 15.2 only:
+Phase 15 Gate 15.3 only:
 
-> Freeze and implement the smallest A2A `1.0` reference-only adapter contract offline using one explicitly selected JSON-RPC binding, including raw protocol validation, AgentInterface version/binding admission, exact identity binding, duplicate/replay/failure fixtures, SDK `1.1.4` dependency-placement evidence, observability, and zero model/capability execution.
+> Run one bounded offline conformance check using the official Python A2A SDK as an independent protocol oracle for the already-frozen happy-path Agent Card and `SendMessage` profile, while keeping OpsLens raw validation, content identity, and result admission authoritative.
 
-Gate 15.2 must not deploy a network service, create AWS/IAM resources, invoke a model, execute a capability, assume AgentCore hosting, or promote MCP into a public runtime.
+Gate 15.3 must keep network deployment, AWS/IAM changes, model invocations, capability executions, and business-result transport at zero. A real network peer remains deferred until a concrete independent consumer requirement exists.

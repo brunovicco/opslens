@@ -11,6 +11,7 @@ issue:              #230
 PR:                 #231
 source main:        ef6d59916d415ed16564543cf39ff5eb82384e12
 measurement head:   c27a2362df4971a7b619be33dcaacd2bfe2a2369
+protected merge:    3a9adfdcfdd206d1c932a2d90bcb312377596b70
 contract:           a2a-reference-interoperability:v1
 A2A release:        1.0.0
 binding:            JSONRPC
@@ -209,6 +210,22 @@ offline reference experiment:    PASS
 Ruff:                             PASS
 Pyright strict:                  PASS — 0 errors / 0 warnings
 pytest A2A slice:                 PASS — 25 tests
+```
+
+Final implementation PR head validation before merge:
+
+```text
+head:           033038238dd84cd15c4cddfbf159b568b917ef50
+A2A CI:         34406512226 / #7  SUCCESS
+Multi-Agent CI: 34406512227 / #42 SUCCESS
+AgentCore CI:   34406512228 / #70 SUCCESS
+```
+
+Protected squash merge:
+
+```text
+PR:        #231
+main SHA:  3a9adfdcfdd206d1c932a2d90bcb312377596b70
 ```
 
 ## Measured local evidence
