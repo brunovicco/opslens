@@ -323,12 +323,21 @@ data "aws_iam_policy_document" "github_actions_agentcore_deploy" {
   }
 
   statement {
+    sid     = "ReadExactBoundedAgentCoreRuntimeLifecycle"
+    effect  = "Allow"
+    actions = ["bedrock-agentcore:GetAgentRuntime"]
+
+    resources = [
+      local.dev_agentcore_runtime_arn,
+    ]
+  }
+
+  statement {
     sid    = "ManageExactBoundedAgentCoreRuntime"
     effect = "Allow"
 
     actions = [
       "bedrock-agentcore:DeleteAgentRuntime",
-      "bedrock-agentcore:GetAgentRuntime",
       "bedrock-agentcore:ListTagsForResource",
       "bedrock-agentcore:TagResource",
       "bedrock-agentcore:UntagResource",
