@@ -6,7 +6,7 @@
 
 ### Verifiable Software Supply Chain & Threat Intelligence on AWS
 
-**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Public Analysis · Operational Evidence · Bounded Agent Reasoning · MCP Interoperability · AgentCore Runtime Evidence · Deterministic Authority**
+**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Bounded Agent Reasoning · MCP · AgentCore · A2A · Deterministic Authority**
 
 </div>
 
@@ -20,21 +20,7 @@ The project deliberately separates deterministic truth, evidence admission, mode
 
 > **Agents reason. Code verifies evidence.**
 
-> **MCP is an interoperability boundary, not new business authority.**
-
-Permanent boundaries:
-
-> **Not every question is a RAG problem.**
-
-> **Structured facts use structured retrieval.**
-
-> **READ, NEVER EXECUTE third-party repository code.**
-
 > **Repository Risk != Runtime Exposure.**
-
-> **Intent classification != execution authority.**
-
-> **No unrestricted text-to-SQL.**
 
 ## Current status
 
@@ -53,16 +39,16 @@ Permanent boundaries:
 | Phase 10 | Observability & Operational Excellence | ✅ Complete |
 | Phase 11 | Single-Agent Baseline | ✅ Complete |
 | Phase 12 | Multi-Agent Architecture | ✅ Complete |
-| Phase 13 | MCP | ✅ Complete — bounded offline MCP retained |
+| Phase 13 | MCP | ✅ Complete — bounded offline interoperability retained |
 | Phase 14 | Amazon Bedrock AgentCore | ✅ Complete — optional lab target retained; standing experiment IAM removed |
-| Phase 15 | A2A | ▶️ Next / planned |
-| Phase 16 | Runtime Exposure with Amazon Inspector | ⏳ Planned |
+| Phase 15 | A2A | ✅ Complete — bounded offline reference interoperability + official SDK conformance retained |
+| Phase 16 | Runtime Exposure with Amazon Inspector | ▶️ Next / Planned |
 | Phase 17 | Security Hardening | ⏳ Planned |
 | Phase 18 | Evaluation, Cost & Portfolio Readiness | ⏳ Planned |
 
-See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), the [Phase 13 MCP closeout](labs/phase-13-gate-13-5-mcp-closeout.md), and the [Phase 14 Gate 14.4 closeout](labs/phase-14-gate-14-4-agentcore-iam-cleanup.md).
+See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), the [ADR index](docs/adr/README.md), and the [Phase 15 closeout](labs/phase-15-closeout.md).
 
-## Implemented governed system
+## Core architecture
 
 ### 1. Structured vulnerability and risk authority
 
@@ -86,7 +72,7 @@ public GitHub repository
 
 The model never decides vulnerability applicability, Risk Policy truth, KEV/EPSS/CVSS facts, or runtime exposure.
 
-### 2. Structured natural-language query path
+### 2. Bounded semantic query
 
 ```text
 natural-language factual question
@@ -99,9 +85,9 @@ natural-language factual question
  -> structured evidence
 ```
 
-The planner never receives arbitrary SQL authority.
+No unrestricted text-to-SQL authority is granted to the model.
 
-### 3. Grounded knowledge retrieval
+### 3. Grounded retrieval on Bedrock
 
 ```text
 immutable official source pins
@@ -114,10 +100,10 @@ immutable official source pins
  -> bounded context assembly
  -> bounded Bedrock Converse synthesis
  -> deterministic citation identity
- -> explicit groundedness evaluation
+ -> groundedness evaluation
 ```
 
-`RetrieveAndGenerate` is deliberately not used. Retrieval, context admission, synthesis, citations, and evaluation remain independently testable.
+`RetrieveAndGenerate` is deliberately not used. Retrieval, evidence admission, synthesis, citations, and evaluation remain independently testable.
 
 ### 4. Hybrid evidence authority
 
@@ -126,76 +112,29 @@ EvidenceNeed[]
  -> deterministic route authority
  -> STRUCTURED | SEMANTIC | HYBRID | UNSUPPORTED
  -> authority-separated evidence composition
- -> ALL_REQUIRED completeness
+ -> completeness checks
  -> HybridEvidenceEnvelope
- -> deterministic F* / S* projections
  -> bounded route-aware synthesis
  -> deterministic output admission
 ```
 
-Structured vulnerability/risk facts and semantic remediation evidence remain separate authority classes. Runtime exposure remains `UNSUPPORTED` until an independent runtime authority exists.
+Structured vulnerability/risk facts and semantic remediation evidence remain separate authority classes.
 
-### 5. Governed public-analysis boundary
+### 5. Bounded agent reasoning
 
-```text
-untrusted public JSON
- -> deterministic request admission
- -> immutable public GitHub evidence
- -> deterministic repository analysis
- -> proposal-only semantic planning
- -> deterministic public-v1 scope admission
- -> existing hybrid authority
- -> PublicAnalysisAdmissionHandoff
- -> STOP
-```
-
-Public v1 scope is code-owned, not model-owned.
-
-### 6. Operational evidence
-
-Phase 10 freezes:
-
-```text
-operational-telemetry:v1
-cloudwatch-emf:v1
-```
-
-Operational evidence is content-minimized and low-cardinality. CloudWatch EMF serialization is a deterministic representation boundary, not proof of CloudWatch ingestion.
-
-```text
-telemetry evidence != business truth
-telemetry evidence != route authority
-EMF document created != CloudWatch ingestion proven
-```
-
-### 7. Bounded single-agent reasoning
-
-Phase 11 freezes:
-
-```text
-single-agent-authority:v1
-single-agent-execution:v1
-single-agent-evaluation:v1
-single-agent-reasoning:v1
-single-agent-reasoning-evaluation:v1
-```
-
-Permanent reasoning boundary:
+Phase 11 remains the default/reference measured reasoning path:
 
 ```text
 SingleAgentTask
  -> code-owned AgentCapability allowlist
- -> one bounded model reasoning invocation
- -> transient untrusted {decision, capability}
+ -> one bounded model invocation
+ -> untrusted action proposal
  -> deterministic parser
- -> AgentActionProposal
- -> deterministic authorize_agent_action(...)
- -> AuthorizedAgentAction | AgentAbstention | stable rejection
+ -> authorize_agent_action(...)
+ -> AuthorizedAgentAction | AgentAbstention | rejection
 ```
 
-The real Gate 11.4 model-quality baseline intentionally stops before capability execution. Typed capability execution remains a separate deterministic boundary.
-
-Measured reference:
+Measured six-case reference:
 
 ```text
 quality:                    6/6
@@ -205,41 +144,16 @@ provider latency median:    809.5 ms
 client elapsed median:      977.5 ms
 SDK retries:                0
 capability executions:      0
-derived six-case cost:      USD 0.0041921
+derived inference cost:     USD 0.0041921
 ```
 
-### 8. Bounded multi-agent handoff authority
+Phase 12 retained deterministic specialization/handoff but rejected the measured two-model topology as the default because it produced no quality lift while increasing calls, tokens, latency, and cost.
 
-Phase 12 retains deterministic specialization and handoff admission:
+## Interoperability and runtime experiments
 
-```text
-SingleAgentTask
- -> TriageAgentTask
- -> untrusted MultiAgentHandoffProposal
- -> deterministic source-task binding
- -> code-owned specialization scope
- -> deterministic intersection with source allowed_capabilities
- -> empty intersection? FAIL CLOSED
- -> AuthorizedMultiAgentHandoff | MultiAgentHandoffAbstention
- -> narrowed SpecialistAgentTask
- -> STOP
-```
+### MCP — Phase 13
 
-The measured two-model topology was not retained as the default because it produced no quality lift while increasing model calls, tokens, latency, and cost.
-
-Retained decision:
-
-```text
-Phase 11 single-agent reasoning reference:      RETAIN
-Gate 12.1 deterministic specialization/handoff: RETAIN
-Gate 12.2 deterministic comparison discipline: RETAIN
-Gate 12.3 two-model topology as default:        DO NOT RETAIN
-Gate 12.3 implementation/evidence:              PRESERVE HISTORICALLY
-```
-
-### 9. Bounded MCP interoperability and result disclosure
-
-Phase 13 freezes:
+Retained contracts:
 
 ```text
 mcp-capability-exposure:v1
@@ -247,175 +161,135 @@ mcp-capability-execution:v1
 mcp-result-projection:v1
 ```
 
-Closed one-to-one MCP surface:
+MCP remains a bounded offline interoperability layer over existing typed capability authority.
 
 ```text
-opslens.structured_security_query   -> structured_security_query
-opslens.knowledge_guidance          -> knowledge_guidance
-opslens.hybrid_security_answer      -> hybrid_security_answer
-opslens.public_repository_analysis  -> public_repository_analysis
+MCP tool name != capability authorization
+MCP call admission != capability execution
+MCP result projection != public runtime exposure
 ```
 
-Retained path:
+A public/network MCP runtime is not currently retained.
+
+### Amazon Bedrock AgentCore — Phase 14
+
+Phase 14 measured one bounded HTTP/SigV4 Runtime experiment.
 
 ```text
-existing typed Phase 11 capability authority
- -> closed MCP tool identity
- -> official MCP SDK reference-only adapter
- -> raw exact-key-set argument refusal
- -> deterministic invocation resolution + admission
- -> exactly one existing typed executor attempt
- -> existing typed result admission
- -> explicit result projection for structured_security_query only
- -> bounded CVE + EPSS rows
- -> STOP before public/network runtime
+Gate 14.2 replay:          6 / 6 PASS
+AgentCore Runtime cost:    USD 0.002380345136128484
+Bedrock inference cost:    USD 0.0041921
+total observed cost:       USD 0.006572445136128483
+runtime cleanup:           RESOURCE_NOT_FOUND
+Gate 14.4 IAM cleanup:     0 add / 0 change / 4 destroy
 ```
 
-MCP does not author `SemanticQuery`, SQL, URLs, shell commands, credentials, provider/model selection, retry/fallback policy, or arbitrary executable arguments. Public/network MCP hosting remains a non-claim.
-
-### 10. Measured AgentCore Runtime experiment
-
-Phase 14 Gate 14.1 authorized one bounded Runtime experiment only. Gate 14.2 hosted the retained Phase 11 reasoning boundary without adding capability execution authority:
+Final retention:
 
 ```text
-AgentCore Runtime HTTP / IAM SigV4
- -> exact request admission
- -> retained SingleAgentTask authority
- -> one fixed Bedrock reasoning invocation
- -> deterministic parser
- -> existing authorize_agent_action(...)
- -> metadata-only AgentCoreReasoningProjection
- -> STOP before capability execution
+Phase 11 direct Bedrock reasoning:          RETAIN / DEFAULT
+AgentCore implementation/evidence:          RETAIN AS OPTIONAL LAB TARGET
+AgentCore managed Runtime as default:        DO NOT RETAIN
+standing AgentCore Runtime resources:        NONE
+standing experiment-specific GitHub IAM:    REMOVED
+Gate 14.2 PUBLIC exception:                  NOT RETAINED
 ```
 
-Terminal successful run #11:
+### A2A — Phase 15
+
+Phase 15 evaluated A2A without assuming that protocol adoption requires another network runtime.
+
+Authoritative protocol baseline:
 
 ```text
-source main:                e5072ec68b421677359cebb1eb449578ef7d5b49
-workflow run:               34378942784 / SUCCESS
-runtime:                    opslens_dev_bounded_runtime-Cl8aNBDGzh
-protocol:                   HTTP
-network:                    PUBLIC — dev-only experiment exception
-artifact SHA256:            a846034ad646c4f6383ac08e47d9ed065b4a9f3349c14104db49a2d510b3ec88
-replay:                     6 / 6 PASS
-input/output/total tokens:  3291 / 104 / 3395
-SDK retries:                0
-capability executions:      0
-transport elapsed sum:      19981 ms
-deployment-role invocation: AccessDeniedException / HTTP 403
-cleanup verifier:           RESOURCE_NOT_FOUND
+A2A release:                 1.0.0
+standard bindings:           JSONRPC / GRPC / HTTP+JSON
+first OpsLens binding:       JSONRPC
+selected operation:          SendMessage
 ```
 
-Observed experiment cost:
+Retained bounded path:
 
 ```text
-AgentCore Runtime:  USD 0.002380345136128484
-Bedrock inference:  USD 0.004192100000000000
-TOTAL:              USD 0.006572445136128483
+pre-admitted SpecialistAgentTask
+ -> content-addressed A2AReference
+ -> code-owned local reference registry
+ -> strict A2A 1.0 JSON-RPC SendMessage projection
+ -> duplicate-key / exact-shape validation
+ -> code-owned reference resolution
+ -> Message or terminal completed Task metadata
+ -> deterministic OpsLens admission
+ -> STOP before model/capability execution
 ```
 
-Attempts #1–#10 remain preserved as measured IAM/lifecycle remediation evidence. The successful run does not rewrite those failures away.
-
-Gate 14.2 did **not** approve AgentCore or `PUBLIC` networking for production, establish a production SLO, create runtime-exposure truth, or authorize capability execution.
-
-## Phase 14 retention and closeout
-
-Gate 14.3 compared the measured AgentCore result with the retained Phase 11 reference using only comparable evidence.
-
-Final retention decision:
+Gate 15.2 measured:
 
 ```text
-overall decision:                         RETAIN WITH CHANGES
-Phase 11 direct Bedrock reasoning:        RETAIN / DEFAULT
-AgentCore implementation/evidence:        RETAIN AS OPTIONAL LAB TARGET
-AgentCore managed Runtime as default:      DO NOT RETAIN
-PUBLIC network mode:                      DO NOT RETAIN
-standing AgentCore Runtime resources:     DO NOT RETAIN
-standing experiment-specific GitHub IAM: REMOVE
+Agent Card bytes:          582
+protocol requests:         2
+request bytes total:       1308
+response bytes total:      989
+client elapsed sum:        0.353039 ms
+handler elapsed sum:       0.239397 ms
+retries:                   0
+model invocations:         0
+capability executions:     0
+new AWS resources:         0
+new IAM roles/policies:    0
+incremental AWS cost:      USD 0.00
 ```
 
-The six-case quality, model-count, and token evidence was identical between Phase 11 and the AgentCore-hosted replay. The underlying Bedrock inference cost remained USD 0.0041921; AgentCore added USD 0.002380345136128484 of measured Runtime compute, or 56.78168784448091% relative to the inference component for this experiment.
-
-Raw latency boundaries are preserved but not normalized into a comparative percentage because they are not sufficiently controlled to support that claim.
-
-### Gate 14.4 standing-IAM cleanup
-
-Repository cleanup was protected-merged in PR #225:
+Gate 15.3 verified the frozen profile against the official Python A2A SDK source:
 
 ```text
-merge SHA:                 9913c3cbf5f2239d6445042a139a9cca890590c8
-exact-head AgentCore CI:   34396085154 / run #63 / PASS
-exact-head Terraform CI:   34396085123 / run #267 / PASS
+a2a-sdk version:             1.1.4
+release tag:                 v1.1.4
+source commit:               2d4d3048b245d2af854bad804f0e722ea9febc08
+AgentCard conformance:       PASS
+SendMessage request:         PASS
+JSON-RPC construction:       PASS
+Message response:            PASS
+Task response:               PASS
+project/runtime dependency:  0
+protocol network requests:   0
 ```
 
-Human bootstrap result:
+The SDK is retained only as an exact-source CI conformance oracle.
+
+Final Phase 15 decision:
 
 ```text
-reviewed plan:          0 add / 0 change / 4 destroy
-apply:                  0 add / 0 change / 4 destroy
-post-apply convergence: NO CHANGES
+content-addressed A2AReference:                 RETAIN
+strict raw JSON admission:                      RETAIN
+A2A 1.0 JSONRPC SendMessage profile:            RETAIN
+Message / terminal Task metadata admission:     RETAIN
+A2A fixtures / CI:                              RETAIN
+official exact-source SDK oracle:               RETAIN FOR CI
+public/network A2A runtime:                      DO NOT CREATE
+standing A2A cloud resources / IAM:             NONE
+A2A capability/business-result authority:        DO NOT CREATE
+a2a-sdk project/runtime dependency:              DO NOT ADD
 ```
 
-Independent IAM verification:
-
 ```text
-OpsLensAgentCoreReplayRole:                 ABSENT / NoSuchEntity
-OpsLensAgentCoreDeployDevAccess:            ABSENT / NoSuchEntity
-AgentCore deploy policy attachment:         []
-OpsLensGitHubDeployRole:                    PRESENT
-AWSServiceRoleForBedrockAgentCoreRuntimeIdentity:
-                                            PRESENT / intentionally retained
+A2A SDK acceptance != OpsLens admission authority
+A2A transport success != business/evidence truth
+A2A protocol binding != business authority
 ```
 
-The Runtime Identity service-linked role remains protected because safe account-level deletion has not been proven. It is AWS-service scoped and is not equivalent to standing GitHub experiment authority.
+## What is deliberately not claimed
 
-The historical AgentCore workflow/code remains reproducible lab material, but it is intentionally non-operational until a future evidence-backed re-bootstrap of minimum authority. The Gate 14.2 `PUBLIC` exception is not inherited by any future experiment.
-
-## Security and authority invariants
-
-- Raw third-party evidence is preserved before transformation.
-- Exact source versions and hashes participate in evidence identity.
-- Package normalization, version/range matching, vulnerability applicability, KEV/EPSS/CVSS evidence, and Risk Policy remain deterministic.
-- Third-party repository code is never executed.
-- Public request admission never grants arbitrary fetch authority.
-- Natural-language planning cannot emit unrestricted SQL authority.
-- Retrieval output is evidence, not deterministic truth.
-- Hybrid routing and required-evidence completeness are deterministic.
-- Citation IDs come only from admitted evidence.
-- Agent action proposal is not capability authorization.
-- Handoff proposal is not handoff admission.
-- Handoff admission is not capability authorization.
-- Authorized action is not capability invocation.
-- Capability invocation is not execution result.
-- MCP tool name is not capability authorization.
-- MCP exposure is not executable argument authority.
-- MCP admission is not capability execution.
-- MCP capability execution is not business-result transport authority.
-- MCP result projection is not public runtime exposure.
-- AgentCore hosting is not business authorization.
-- Runtime authentication is not capability authorization.
-- Runtime execution role is not model/tool authority.
-- Runtime telemetry is not business truth.
-- Runtime deployment is not runtime-exposure truth.
-- Provider/model selection and retry/fallback policy remain code-owned.
-- Unsupported runtime exposure is not inferred from repository risk.
-- IAM least privilege, observability, failure diagnosis, and cost accounting are architecture requirements.
-
-## What the current agentic/runtime evidence does not prove
+OpsLens currently does **not** claim:
 
 ```text
-generic business-result serialization
-knowledge-guidance business-result transport
-hybrid-security-answer business-result transport
-public-repository-analysis business-result transport
-persistent invocation/result registry
-public MCP endpoint
-production MCP network SLOs
+public MCP production runtime
 AgentCore as the default/production OpsLens runtime
 PUBLIC AgentCore networking as a production decision
-production AgentCore SLOs or security posture
-A2A interoperability
+public/network A2A runtime
+A2A-derived capability authorization
+A2A business-result authority
 runtime exposure / Amazon Inspector evidence
+production SLOs for the experimental runtime boundaries
 ```
 
 ## AWS baseline
@@ -435,7 +309,6 @@ synthesis profile:       us.anthropic.claude-haiku-4-5-20251001-v1:0
 reasoning profile:       us.anthropic.claude-haiku-4-5-20251001-v1:0
 streaming:               no
 tools in reasoning:      none
-AgentCore retained state: optional disabled-by-default lab target; no standing experiment GitHub IAM
 ```
 
 ## Documentation and evidence
@@ -449,34 +322,23 @@ AgentCore retained state: optional disabled-by-default lab target; no standing e
 - [Phase 11 closeout](labs/phase-11-gate-11-6-closeout.md)
 - [Phase 12 closeout](labs/phase-12-gate-12-5-multi-agent-closeout.md)
 - [Phase 13 MCP closeout](labs/phase-13-gate-13-5-mcp-closeout.md)
-- [Gate 14.2 measured AgentCore experiment](labs/phase-14-gate-14-2-bounded-agentcore-runtime.md)
-- [Gate 14.3 AgentCore retention decision](labs/phase-14-gate-14-3-agentcore-retention-decision.md)
-- [Gate 14.4 standing-IAM cleanup](labs/phase-14-gate-14-4-agentcore-iam-cleanup.md)
-- [ADR 0054 — retain AgentCore only as optional lab target](docs/adr/0054-retain-agentcore-only-as-optional-lab-target.md)
-- [ADR 0055 — remove standing AgentCore experiment IAM](docs/adr/0055-remove-standing-agentcore-experiment-iam.md)
-- [Gate 14.4 post-apply evidence](labs/evidence/phase-14-gate-14-4-agentcore-iam-cleanup-postapply-v1.json)
+- [Phase 14 AgentCore retention decision](labs/phase-14-gate-14-3-agentcore-retention-decision.md)
+- [Phase 14 IAM cleanup](labs/phase-14-gate-14-4-agentcore-iam-cleanup.md)
+- [Phase 15 A2A closeout](labs/phase-15-closeout.md)
+- [Phase 15 closeout evidence](labs/evidence/phase-15-closeout-v1.json)
 
-## Next — Phase 15 A2A
-
-Phase 15 begins with capability fit, not implementation by default.
-
-The first architectural question is:
-
-> Which existing agent/service boundary has a concrete interoperability problem that justifies A2A, and what identity, message, provenance, replay, failure, observability, cost, and authority contracts must be frozen before any network transport exists?
-
-Permanent Phase 15 constraints:
+## Next planned phase
 
 ```text
-A2A message != capability authorization
-A2A peer identity != business authority
-A2A transport success != business/evidence truth
-A2A handoff proposal != handoff admission
-A2A must not assume AgentCore hosting
-A2A must not promote MCP into a public runtime as a side effect
+Phase 16 — Runtime Exposure with Amazon Inspector
 ```
 
-The long-lived Governed LLM Gateway PR #89 remains deferred cross-project work and must be re-evaluated separately against the current OpsLens architecture before any merge.
+Phase 16 will add an independent runtime-exposure authority while preserving:
+
+> **Repository Risk != Runtime Exposure.**
+
+No Phase 16 AWS mutation is authorized by Phase 15 closeout alone.
 
 ---
 
-OpsLens is intentionally built as an evidence system first and an agentic/interoperability system only where measured evidence justifies the added complexity.
+PR #89 / `feat/governed-gateway-semantic-planner` is unrelated Governed LLM Gateway work and remains intentionally outside this phase scope.
