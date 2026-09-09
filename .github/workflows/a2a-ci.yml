@@ -1,0 +1,68 @@
+name: A2A CI
+
+on:
+  pull_request:
+    paths:
+      - "src/opslens/a2a_boundary/**/*.py"
+      - "tests/unit/a2a_boundary/**/*.py"
+      - "tests/fixtures/a2a/**"
+      - "scripts/run_a2a_reference_experiment.py"
+      - "docs/adr/0057-*.md"
+      - "labs/phase-15-gate-15-2-*.md"
+      - "labs/evidence/phase-15-gate-15-2-*.json"
+      - ".github/workflows/a2a-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  a2a-quality:
+    name: A2A quality gates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+        with:
+          enable-cache: true
+
+      - name: Verify lockfile is current
+        run: uv lock --check
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen
+
+      - name: Validate A2A protocol fixture JSON
+        run: python -m json.tool tests/fixtures/a2a/protocol-contract-v1.json > /dev/null
+
+      - name: Run bounded offline A2A reference experiment
+        run: |
+          PYTHONPATH=src uv run python scripts/run_a2a_reference_experiment.py | tee /tmp/a2a-reference-experiment.json
+          python -m json.tool /tmp/a2a-reference-experiment.json > /dev/null
+          cat /tmp/a2a-reference-experiment.json
+
+      - name: Ruff A2A slice
+        run: >-
+          uv run ruff check
+          src/opslens/a2a_boundary
+          tests/unit/a2a_boundary
+          scripts/run_a2a_reference_experiment.py
+
+      - name: Pyright strict A2A slice
+        run: >-
+          uv run pyright
+          src/opslens/a2a_boundary
+          tests/unit/a2a_boundary
+          scripts/run_a2a_reference_experiment.py
+
+      - name: Pytest A2A slice
+        run: uv run pytest tests/unit/a2a_boundary
