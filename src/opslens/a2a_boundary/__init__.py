@@ -1,0 +1,55 @@
+"""Bounded A2A 1.0 reference-only interoperability boundary."""
+
+from opslens.a2a_boundary.adapters import (
+    A2A_PROTOCOL_BINDING,
+    A2A_PROTOCOL_RELEASE,
+    A2A_PROTOCOL_VERSION,
+    A2AOfflineExchange,
+    A2AOfflineExchangeEvidence,
+    A2AReferenceResult,
+    A2AResponseKind,
+    OfflineA2AReferencePeer,
+    admit_agent_card,
+    admit_send_message_response,
+    build_agent_card,
+    build_send_message_request,
+    evidence_as_dict,
+    parse_send_message_request,
+    run_offline_exchange,
+)
+from opslens.a2a_boundary.application import A2AReferenceRegistry
+from opslens.a2a_boundary.domain import (
+    A2A_REFERENCE_INTEROPERABILITY_CONTRACT_VERSION,
+    A2ABoundaryError,
+    A2ABoundaryValidationError,
+    A2AReference,
+    A2AReferenceNotFoundError,
+    A2AReplayError,
+    create_a2a_reference,
+)
+
+__all__ = [
+    "A2A_PROTOCOL_BINDING",
+    "A2A_PROTOCOL_RELEASE",
+    "A2A_PROTOCOL_VERSION",
+    "A2A_REFERENCE_INTEROPERABILITY_CONTRACT_VERSION",
+    "A2ABoundaryError",
+    "A2ABoundaryValidationError",
+    "A2AOfflineExchange",
+    "A2AOfflineExchangeEvidence",
+    "A2AReference",
+    "A2AReferenceNotFoundError",
+    "A2AReferenceRegistry",
+    "A2AReferenceResult",
+    "A2AReplayError",
+    "A2AResponseKind",
+    "OfflineA2AReferencePeer",
+    "admit_agent_card",
+    "admit_send_message_response",
+    "build_agent_card",
+    "build_send_message_request",
+    "create_a2a_reference",
+    "evidence_as_dict",
+    "parse_send_message_request",
+    "run_offline_exchange",
+]

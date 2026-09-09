@@ -1,0 +1,180 @@
+{
+  "artifact_version": "phase-15-gate-15-2-bounded-offline-a2a-reference-adapter:v1",
+  "evidence_date": "2026-09-09",
+  "phase": "Phase 15 — A2A",
+  "gate": "15.2 — bounded offline A2A 1.0 reference adapter",
+  "issue": 230,
+  "pull_request": 231,
+  "source_main_sha": "ef6d59916d415ed16564543cf39ff5eb82384e12",
+  "measurement_head_sha": "c27a2362df4971a7b619be33dcaacd2bfe2a2369",
+  "contract": "a2a-reference-interoperability:v1",
+  "protocol": {
+    "release": "1.0.0",
+    "protocol_version": "1.0",
+    "binding": "JSONRPC",
+    "jsonrpc_version": "2.0",
+    "operation": "SendMessage",
+    "agent_card_supported_interfaces": 1,
+    "streaming": false,
+    "push_notifications": false,
+    "extended_agent_card": false,
+    "network_endpoint": false
+  },
+  "reference_boundary": {
+    "input_authority": "PRE_ADMITTED_SPECIALIST_AGENT_TASK_ONLY",
+    "protocol_fields": [
+      "handoff_id",
+      "specialist_task_id",
+      "reference_sha256"
+    ],
+    "registry": "LAB_ONLY_IN_MEMORY_CODE_OWNED",
+    "business_result_transport": false,
+    "model_invocation_allowed": false,
+    "capability_execution_allowed": false
+  },
+  "dependency_decision": {
+    "a2a_sdk_version_inspected": "1.1.4",
+    "a2a_sdk_added": false,
+    "new_runtime_dependencies": 0,
+    "decision": "KEEP_GATE_15_2_STDLIB_AND_SPEC_DRIVEN",
+    "reason": "The bounded JSON-RPC wire contract can be validated deterministically without expanding deployed dependencies. Official SDK compatibility remains a separate conformance question, not an admission authority requirement."
+  },
+  "first_ci_attempt": {
+    "head_sha": "025d032c0d5cf26fd03188f103c5a710fc631784",
+    "workflow": "A2A CI",
+    "run_id": 34403479455,
+    "run_number": 1,
+    "job_id": 102640742076,
+    "conclusion": "failure",
+    "functional_experiment": "success",
+    "failure_step": "Ruff A2A slice",
+    "failure_rule": "RUF022",
+    "remediation": "sort __all__ exports; no protocol/runtime semantic change"
+  },
+  "successful_ci": {
+    "head_sha": "c27a2362df4971a7b619be33dcaacd2bfe2a2369",
+    "workflow": "A2A CI",
+    "run_id": 34405966213,
+    "run_number": 2,
+    "job_id": 102648874518,
+    "conclusion": "success",
+    "checks": {
+      "uv_lock_check": "PASS",
+      "locked_dependency_sync": "PASS",
+      "protocol_fixture_json": "PASS",
+      "offline_reference_experiment": "PASS",
+      "ruff": "PASS",
+      "pyright": "PASS — 0 errors, 0 warnings",
+      "pytest": "PASS — 25 passed in 0.08s"
+    }
+  },
+  "measured_experiment": {
+    "agent_card_bytes": 582,
+    "protocol_request_count": 2,
+    "peer_handler_count": 2,
+    "retry_count": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "new_aws_resources": 0,
+    "new_iam_roles_or_policies": 0,
+    "incremental_aws_cost_usd": 0.0,
+    "total_request_bytes": 1308,
+    "total_response_bytes": 989,
+    "total_client_elapsed_ms": 0.353039,
+    "total_handler_elapsed_ms": 0.239397,
+    "runs": [
+      {
+        "response_kind": "message",
+        "request_bytes": 654,
+        "response_bytes": 564,
+        "client_elapsed_ms": 0.210263,
+        "handler_elapsed_ms": 0.14448,
+        "reference_admission_outcome": "ADMITTED",
+        "failure_class": null,
+        "retry_count": 0
+      },
+      {
+        "response_kind": "task",
+        "request_bytes": 654,
+        "response_bytes": 425,
+        "client_elapsed_ms": 0.142776,
+        "handler_elapsed_ms": 0.094917,
+        "reference_admission_outcome": "ADMITTED",
+        "failure_class": null,
+        "retry_count": 0
+      }
+    ]
+  },
+  "identity_evidence": {
+    "handoff_id": "multi-agent-handoff:v1:handoff:c6a876d61a927a1f900d892819e0a43d54d64b281d970191cefdc86b15c31778",
+    "specialist_task_id": "single-agent-authority:v1:task:87ec895bc0a21460fad3e46ca679c132d6733fcab892dabb78a5d5c9f9a3055f",
+    "reference_id": "a2a-reference-interoperability:v1:reference:6ceba04c03f107c67ec599270b699d5231138f4acf05ab0a63b5ebaf7687a254",
+    "reference_sha256": "6ceba04c03f107c67ec599270b699d5231138f4acf05ab0a63b5ebaf7687a254",
+    "request_id": "a2a-reference-interoperability:v1:request:5024a569639298ebd1b38a935f5abab47f71e72e3d250d3e516549bbeec0ab1d",
+    "context_id": "a2a-reference-interoperability:v1:context:ca9338f0cf359017b7a4167e5ad133d86941b6e95b60bce9b30b5ffad3e42dda",
+    "message_response_id": "a2a-reference-interoperability:v1:response-message:f287dabfaccc3cf496443d81ced2e02b8d7fe751ae6a4cfd861a0a741f19b7f6",
+    "task_response_id": "a2a-reference-interoperability:v1:task:945c668dc4d1f0d8c813380a60bda59d650efeb029bba94778e318fa559e78d9",
+    "protocol_ids_are_authority": false
+  },
+  "fail_closed_contract": [
+    "duplicate JSON keys rejected before coercion",
+    "unknown object keys rejected by exact-key-set validation",
+    "wrong JSON-RPC version rejected",
+    "unsupported method rejected",
+    "request id must bind to reference digest",
+    "messageId must bind to reference digest",
+    "unknown reference rejected",
+    "tampered reference digest rejected",
+    "handoff/specialist mismatch rejected through code-owned registry re-binding",
+    "duplicate request id rejected",
+    "duplicate messageId rejected",
+    "only bounded response Message metadata admitted",
+    "only terminal completed Task metadata admitted",
+    "artifact and business-result payloads not admitted"
+  ],
+  "permanent_invariants": [
+    "A2A message != capability authorization",
+    "A2A peer identity != business authority",
+    "A2A AgentCard skill != OpsLens capability authorization",
+    "A2A task state != business/evidence truth",
+    "A2A transport success != business/evidence truth",
+    "A2A artifact != admitted OpsLens evidence",
+    "A2A authentication != capability authorization",
+    "A2A protocol binding != business authority",
+    "A2A generated id != OpsLens content identity",
+    "A2A SDK acceptance != OpsLens admission authority"
+  ],
+  "claims_supported": [
+    "The bounded OpsLens reference can be projected and re-admitted through a local A2A 1.0 JSON-RPC profile without model or capability execution.",
+    "Raw duplicate-key and exact-shape validation can remain deterministic and code-owned before domain admission.",
+    "Both direct Message and terminal completed Task metadata paths passed the local experiment.",
+    "The Gate 15.2 implementation required no A2A SDK, AWS resource, IAM permission, network endpoint, model invocation, or capability execution."
+  ],
+  "explicit_non_claims": [
+    "cross-implementation A2A interoperability is not yet proven",
+    "official SDK conformance is not yet proven",
+    "production network transport is not proven",
+    "production TLS or peer authentication is not proven",
+    "exactly-once execution is not proven",
+    "A2A is not retained as production architecture",
+    "A2A does not create capability authorization",
+    "A2A task or artifact metadata is not business truth",
+    "AgentCore is not selected as A2A hosting",
+    "MCP is not promoted to a public runtime",
+    "runtime exposure truth is not created"
+  ],
+  "next_gate_recommendation": {
+    "gate": "15.3",
+    "decision": "ONE_BOUNDED_OFFLINE_OFFICIAL_SDK_CONFORMANCE_CHECK",
+    "purpose": "Use the official Python SDK only as an independent protocol-conformance oracle for the frozen happy-path AgentCard/SendMessage profile while preserving OpsLens raw validation and business authority in deterministic code.",
+    "network_deployment": false,
+    "aws_or_iam_change": false,
+    "model_invocations": 0,
+    "capability_executions": 0
+  },
+  "deferred_cross_project_work": {
+    "pull_request": 89,
+    "branch": "feat/governed-gateway-semantic-planner",
+    "changed_by_gate_15_2": false
+  }
+}
