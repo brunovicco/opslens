@@ -17,8 +17,3 @@ output "github_actions_deploy_role_arn" {
   description = "ARN of the IAM role assumed by OpsLens GitHub Actions."
   value       = aws_iam_role.github_actions_deploy.arn
 }
-
-output "github_actions_agentcore_replay_role_arn" {
-  description = "ARN of the invocation-only GitHub Actions role for the bounded AgentCore replay."
-  value       = aws_iam_role.github_actions_agentcore_replay.arn
-}

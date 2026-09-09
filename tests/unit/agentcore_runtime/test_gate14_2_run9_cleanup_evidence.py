@@ -7,7 +7,9 @@ from pathlib import Path
 from typing import Any
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
-_POLICY_PATH = _PROJECT_ROOT / "infra" / "bootstrap" / "github_agentcore_deploy_permissions.tf"
+_RETIRED_POLICY_PATH = (
+    _PROJECT_ROOT / "infra" / "bootstrap" / "github_agentcore_deploy_permissions.tf"
+)
 _EVIDENCE_PATH = (
     _PROJECT_ROOT
     / "labs"
@@ -18,24 +20,6 @@ _EVIDENCE_PATH = (
 
 def _load_evidence() -> dict[str, Any]:
     return json.loads(_EVIDENCE_PATH.read_text(encoding="utf-8"))
-
-
-def test_workload_identity_delete_authorizes_only_measured_dual_resource_scope() -> None:
-    """Cleanup must cover the measured directory plus exact OpsLens identity family only."""
-    text = _POLICY_PATH.read_text(encoding="utf-8")
-
-    statement = text.split(
-        'sid     = "DeleteAgentCoreGeneratedWorkloadIdentityDependency"', maxsplit=1
-    )[1].split("\n  }", maxsplit=1)[0]
-
-    assert 'actions = ["bedrock-agentcore:DeleteWorkloadIdentity"]' in statement
-    assert "local.dev_agentcore_workload_identity_directory_arn" in statement
-    assert "local.dev_agentcore_workload_identity_arn" in statement
-    assert "local.dev_agentcore_workload_identity_precreation_arn" not in statement
-    assert 'resources = ["*"]' not in statement
-    assert "bedrock-agentcore:GetWorkloadIdentity" not in statement
-    assert "bedrock-agentcore:CreateWorkloadIdentity" not in statement
-    assert "bedrock-agentcore:TagResource" not in statement
 
 
 def test_run9_evidence_preserves_successful_replay_and_cleanup_failure() -> None:
@@ -68,9 +52,8 @@ def test_run9_cloudtrail_classification_matches_measured_delete_dependency() -> 
     assert event["request_id"] == "a83c40f9-bc85-4c84-a1da-c20e3d3f24eb"
 
 
-def test_run9_remediation_preserves_authority_separation() -> None:
-    """Measured cleanup remediation must not grow unrelated deployment authority."""
-    policy = _POLICY_PATH.read_text(encoding="utf-8")
+def test_run9_historical_invariants_survive_policy_retirement() -> None:
+    """Retiring the policy must preserve the historical run 9 least-privilege evidence."""
     evidence = _load_evidence()
     invariants = evidence["authority_invariants"]
 
@@ -78,7 +61,4 @@ def test_run9_remediation_preserves_authority_separation() -> None:
     assert invariants["github_deployment_create_service_linked_role_authority"] is False
     assert invariants["github_deployment_runtime_invoke_authority"] is False
     assert invariants["delete_workload_identity_wildcard_resource_authority"] is False
-
-    assert '"bedrock-agentcore:GetWorkloadIdentity"' not in policy
-    assert '"iam:CreateServiceLinkedRole"' not in policy
-    assert '"bedrock-agentcore:InvokeAgentRuntime"' not in policy
+    assert not _RETIRED_POLICY_PATH.exists()
