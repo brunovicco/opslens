@@ -31,7 +31,7 @@ Phase 13 MCP                                    COMPLETE
 Phase 14 Amazon Bedrock AgentCore               COMPLETE
 Phase 15 A2A                                    COMPLETE
 Phase 16 Runtime Exposure with Inspector        COMPLETE
-Phase 17 Security Hardening                     NEXT
+Phase 17 Security Hardening                     IN PROGRESS / Gate 17.2 next
 Phase 18 Evaluation, Cost & Portfolio           PLANNED
 ```
 
@@ -63,6 +63,10 @@ Inspector finding status != business remediation state
 Inspector evidence != model authority
 runtime evidence correlation != capability authorization
 Repository Risk != Runtime Exposure
+security control name != proven enforcement
+historical workflow != inert workflow
+plan-only intent != write-authority requirement
+CI evidence != enforced merge gate
 ```
 
 ## Retained measured reasoning reference
@@ -166,6 +170,34 @@ References:
 - [`../labs/evidence/phase-16-closeout-v1.json`](../labs/evidence/phase-16-closeout-v1.json)
 - [`../labs/evidence/phase-16-gate-16-5-inspector-iam-cleanup-postapply-v1.json`](../labs/evidence/phase-16-gate-16-5-inspector-iam-cleanup-postapply-v1.json)
 
-## Next — Phase 17 Security Hardening
+## Phase 17 — Security Hardening — in progress
 
-Phase 17 begins with a cross-cutting threat-model and control-gap inventory. The first gate should map existing controls and residual risks before authorizing implementation changes or new AWS services.
+### Gate 17.1 — threat model and control-gap inventory — complete
+
+Gate 17.1 froze a repository-wide evidence inventory before authorizing security implementation work.
+
+High-priority gaps:
+
+```text
+SEC17-CICD-001  main ruleset does not require CI status checks
+SEC17-IAM-002   EPSS plan-only paths receive write/invoke-capable coordinator authority
+SEC17-IAM-003   historical AgentCore workflow can still use shared deployment mutation authority
+```
+
+Medium-priority gaps include unnecessary persisted checkout credentials and missing repository-local continuous dependency-security automation. Architecture header drift is tracked separately as a low-priority documentation gap.
+
+Gate 17.1 also records proven non-gaps across OIDC trust, action SHA pinning, public input/repository acquisition, prompt/RAG trust separation, agent authorization/result admission, MCP/A2A raw admission, telemetry minimization, and bounded model use.
+
+References:
+
+- [`adr/0064-evidence-first-security-hardening-priorities.md`](adr/0064-evidence-first-security-hardening-priorities.md)
+- [`../labs/phase-17-gate-17-1-threat-model.md`](../labs/phase-17-gate-17-1-threat-model.md)
+- [`../labs/evidence/phase-17-gate-17-1-threat-model-v1.json`](../labs/evidence/phase-17-gate-17-1-threat-model-v1.json)
+
+### Next — Gate 17.2 CI/CD and workflow authority hardening
+
+The next slice is deliberately limited to evidenced workflow/control-plane authority gaps. It may enforce full-SHA external-action invariants, block privileged workflow triggers by default, disable persisted checkout credentials where unnecessary, separate EPSS plan-only authority from mutating execution authority, constrain long STS sessions to actual execution, and make the historical AgentCore mutating workflow inert by default.
+
+Changing GitHub `main` required status checks remains a human/platform administration boundary after exact required contexts are defined and proven.
+
+Gate 17.2 does not authorize AWS IAM mutation, a new AWS service, a public runtime, Inspector reactivation, dependency-platform rollout in the same slice, or PR #89 changes.
