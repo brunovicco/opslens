@@ -1,0 +1,126 @@
+{
+  "artifact_version": "phase-14-gate-14-2-tenth-runtime-attempt-delete-waiter-read-failure:v1",
+  "decision_date": "2026-09-09",
+  "phase": "Phase 14 — Amazon Bedrock AgentCore",
+  "gate": "14.2 — first bounded AgentCore HTTP/SigV4 runtime experiment",
+  "source_main_sha": "ac944c4c2592c428a8005b1c18fd35229c5324cf",
+  "workflow_run": {
+    "id": 34375198394,
+    "job_id": 102546130885,
+    "conclusion": "failure",
+    "runtime_id": "opslens_dev_bounded_runtime-FePyyn4QrA",
+    "runtime_arn": "arn:aws:bedrock-agentcore:us-east-1:487757851499:runtime/opslens_dev_bounded_runtime-FePyyn4QrA",
+    "runtime_version": "1",
+    "runtime_ready": true,
+    "network_mode": "PUBLIC",
+    "protocol": "HTTP"
+  },
+  "bounded_runtime_evidence": {
+    "artifact_sha256": "a846034ad646c4f6383ac08e47d9ed065b4a9f3349c14104db49a2d510b3ec88",
+    "artifact_version_id": "zbr0hWXEjhjAlBEFZO4782AHyhL5mbfm",
+    "publication_status": "replay_verified",
+    "phase_11_corpus_sha256": "3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc",
+    "replay_cases": 6,
+    "replay_passed": 6,
+    "capability_executions": 0,
+    "input_tokens": 3291,
+    "output_tokens": 104,
+    "total_tokens": 3395,
+    "sdk_retry_attempts": 0,
+    "transport_elapsed_sum_ms": 22521,
+    "deployment_role_invoke_denial": "AccessDeniedException / HTTP 403"
+  },
+  "terraform_cleanup": {
+    "planned": "0 to add, 0 to change, 3 to destroy",
+    "delete_agent_runtime_started": true,
+    "provider_waiter_failed_action": "bedrock-agentcore:GetAgentRuntime",
+    "provider_waiter_error": "AccessDeniedException",
+    "independent_verifier_failed_action": "bedrock-agentcore:GetAgentRuntime",
+    "independent_verifier_error": "AccessDeniedException",
+    "runtime_cleanup_proven_by_workflow": false
+  },
+  "human_control_plane_checkpoint": {
+    "observed_at": "2026-09-09T16:21:31Z",
+    "get_agent_runtime_result": "ResourceNotFoundException",
+    "exact_name_list_count": 0,
+    "get_workload_identity_result": "ResourceNotFoundException",
+    "runtime_absent": true,
+    "managed_workload_identity_absent": true
+  },
+  "cloudtrail_delete_event": {
+    "event_time": "2026-09-09T16:14:37Z",
+    "event_name": "DeleteAgentRuntime",
+    "event_source": "bedrock-agentcore.amazonaws.com",
+    "principal": "arn:aws:sts::487757851499:assumed-role/OpsLensGitHubDeployRole/GitHubActions",
+    "error_code": null,
+    "request_agent_runtime_id": "opslens_dev_bounded_runtime-FePyyn4QrA",
+    "response_status": "DELETING",
+    "request_id": "be5fde9b-94db-40bf-8826-28a680816b0d"
+  },
+  "cloudtrail_get_agent_runtime_sequence": [
+    {
+      "event_time": "2026-09-09T16:14:37Z",
+      "error_code": null,
+      "request_id": "25d5a489-dc9b-4fd3-b676-334a1f0f4d78"
+    },
+    {
+      "event_time": "2026-09-09T16:14:38Z",
+      "error_code": null,
+      "request_id": "5f017b29-ed94-4c63-9df7-28ccea95d00f"
+    },
+    {
+      "event_time": "2026-09-09T16:14:38Z",
+      "error_code": null,
+      "request_id": "03c3ea04-3ae3-4319-9daf-049029b9ee61"
+    },
+    {
+      "event_time": "2026-09-09T16:14:39Z",
+      "error_code": null,
+      "request_id": "32e90cec-8984-4720-b814-a3e68069258d"
+    },
+    {
+      "event_time": "2026-09-09T16:14:41Z",
+      "error_code": "AccessDenied",
+      "request_id": "79edf82d-9a06-4e8d-8b55-228df0f289dd"
+    },
+    {
+      "event_time": "2026-09-09T16:14:42Z",
+      "error_code": "AccessDenied",
+      "request_id": "5988d864-846a-4065-bbd1-4faa94072af3"
+    }
+  ],
+  "failure_classification": {
+    "layer": "AgentCore runtime delete waiter lifecycle observation authority",
+    "cause": "GetAgentRuntime is currently authorized through a runtime resource-tag-conditioned statement; CloudTrail proves that the same principal could read the exact runtime immediately after DeleteAgentRuntime entered DELETING and then lost effective GetAgentRuntime authority late in the deletion lifecycle, while a later human checkpoint proved the runtime and managed workload identity were actually deleted",
+    "selected_remediation": "move only bedrock-agentcore:GetAgentRuntime into a read-only statement scoped to the exact OpsLens runtime family without runtime resource-tag conditions; keep delete, update, and tag mutation under the existing resource-tag gate"
+  },
+  "authority_invariants": {
+    "github_deployment_runtime_read_wildcard_resource_authority": false,
+    "github_deployment_runtime_invoke_authority": false,
+    "github_deployment_get_workload_identity_authority": false,
+    "github_deployment_create_service_linked_role_authority": false,
+    "runtime_mutation_without_resource_tag_authority": false
+  },
+  "preserved_workflow_artifact": {
+    "artifact_id": 10113653150,
+    "name": "phase-14-gate-14-2-agentcore-runtime-evidence-34375198394",
+    "digest": "sha256:7ee7a49c4213719816c3541cfccc07df93de2f7a43da8009b15db3d82c300a03",
+    "size_bytes": 4842,
+    "expires_at": "2026-10-09T16:14:42Z",
+    "files": [
+      "opslens-agentcore-lifecycle.json",
+      "opslens-agentcore-publication.json",
+      "opslens-agentcore-runtime.json",
+      "opslens-agentcore-replay.json",
+      "opslens-agentcore-deploy-role-denial.json"
+    ]
+  },
+  "pre_next_experiment_requirements": [
+    "merge the exact read-only GetAgentRuntime lifecycle statement through protected main",
+    "human bootstrap plan shows only the intended OpsLensAgentCoreDeployDevAccess policy delta",
+    "human bootstrap applies the reviewed policy delta and Terraform converges with no drift",
+    "human exact-name runtime and managed workload-identity checks remain absent",
+    "use a fresh workflow_dispatch on main rather than rerunning run 10"
+  ],
+  "retention_rule": "preserve run 10 as successful bounded runtime, replay, and negative-authorization evidence while retaining the workflow conclusion as a measured cleanup waiter authorization failure"
+}
