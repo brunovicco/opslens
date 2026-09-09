@@ -1,0 +1,187 @@
+{
+  "artifact_version": "phase-14-gate-14-2-final-runtime-experiment:v1",
+  "decision_date": "2026-09-09",
+  "phase": "Phase 14 — Amazon Bedrock AgentCore",
+  "gate": "14.2 — first bounded AgentCore HTTP/SigV4 runtime experiment",
+  "status": "complete",
+  "source_main_sha": "e5072ec68b421677359cebb1eb449578ef7d5b49",
+  "workflow_run": {
+    "name": "AgentCore Runtime Experiment",
+    "id": 34378942784,
+    "run_number": 11,
+    "job_id": 102558703872,
+    "conclusion": "success"
+  },
+  "preserved_workflow_artifact": {
+    "artifact_id": 10115123076,
+    "name": "phase-14-gate-14-2-agentcore-runtime-evidence-34378942784",
+    "digest": "sha256:7006a7c2bfda1658a9e66fcfe38f61b06dc64e6f54705ffbf6b02574870ef65c",
+    "files": [
+      "opslens-agentcore-lifecycle.json",
+      "opslens-agentcore-publication.json",
+      "opslens-agentcore-runtime.json",
+      "opslens-agentcore-replay.json",
+      "opslens-agentcore-deploy-role-denial.json"
+    ]
+  },
+  "runtime": {
+    "id": "opslens_dev_bounded_runtime-Cl8aNBDGzh",
+    "arn": "arn:aws:bedrock-agentcore:us-east-1:487757851499:runtime/opslens_dev_bounded_runtime-Cl8aNBDGzh",
+    "version": "1",
+    "protocol": "HTTP",
+    "network_mode": "PUBLIC",
+    "network_mode_disposition": "time-bounded development experiment exception only; not a production decision",
+    "artifact_sha256": "a846034ad646c4f6383ac08e47d9ed065b4a9f3349c14104db49a2d510b3ec88",
+    "artifact_size_bytes": 16058438,
+    "artifact_version_id": "zbr0hWXEjhjAlBEFZO4782AHyhL5mbfm",
+    "execution_role": "OpsLensAgentCoreRuntimeExecutionRole"
+  },
+  "frozen_contract": {
+    "contract_version": "agentcore-runtime-invocation:v1",
+    "model_profile": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "phase_11_corpus_sha256": "3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc",
+    "request_envelope_max_utf8_bytes": 4096,
+    "single_agent_task_text_max_utf8_bytes": 2048,
+    "model_invocations_per_request_max": 1,
+    "capability_executions_max": 0,
+    "adaptive_application_retries_max": 0,
+    "adaptive_fallbacks_max": 0,
+    "mcp_runtime_calls_max": 0,
+    "a2a_handoffs_max": 0,
+    "gateway_policy_calls_max": 0,
+    "memory_calls_max": 0,
+    "browser_calls_max": 0,
+    "code_interpreter_calls_max": 0,
+    "runtime_exposure_authority": false
+  },
+  "authenticated_replay": {
+    "cases": 6,
+    "passed_cases": 6,
+    "http_status": 200,
+    "capability_executions": 0,
+    "sdk_retry_attempts": 0,
+    "input_tokens": 3291,
+    "output_tokens": 104,
+    "total_tokens": 3395,
+    "transport_elapsed_ms_sum": 19981,
+    "report_sha256": "736d573ea31222c39401eccad23af342ffd24ce1fb29b3876f07b8732bfc7f1a"
+  },
+  "negative_authorization_proof": {
+    "principal": "OpsLensGitHubDeployRole",
+    "action": "bedrock-agentcore:InvokeAgentRuntime",
+    "result": "AccessDeniedException",
+    "http_status_code": 403,
+    "capability_executions": 0
+  },
+  "cleanup": {
+    "terraform_plan": "0 to add, 0 to change, 3 to destroy",
+    "terraform_apply": "0 added, 0 changed, 3 destroyed",
+    "independent_runtime_verifier": "RESOURCE_NOT_FOUND",
+    "cleanup_proven": true
+  },
+  "observed_cost": {
+    "provenance": "Delayed CloudWatch AgentCore Runtime telemetry was observed after run #11 and recorded in issue #200; resource quantities and prices are preserved here as the final Gate 14.2 cost checkpoint.",
+    "cpu_used_vcpu_hours": 0.005455525277778,
+    "memory_used_gb_hours": 0.200219642726704,
+    "agentcore_cpu_usd_per_vcpu_hour": 0.0895,
+    "agentcore_memory_usd_per_gb_hour": 0.00945,
+    "agentcore_cpu_cost_usd": 0.000488269512361131,
+    "agentcore_memory_cost_usd": 0.001892075623767353,
+    "agentcore_runtime_cost_usd": 0.002380345136128484,
+    "bedrock_inference_cost_usd": 0.0041921,
+    "total_experiment_cost_usd": 0.006572445136128483,
+    "monthly_extrapolation": null
+  },
+  "attempt_history": [
+    {
+      "attempt": 1,
+      "workflow_run_id": 34299888243,
+      "outcome": "failure",
+      "learning": "GitHub Actions source-layout CLI import must make src/opslens importable before the publisher/replay CLI runs."
+    },
+    {
+      "attempt": 2,
+      "workflow_run_id": 34301232610,
+      "outcome": "failure",
+      "learning": "CreateAgentRuntime requires the dependent CreateAgentRuntimeEndpoint permission on the runtime pre-creation family."
+    },
+    {
+      "attempt": 3,
+      "workflow_run_id": 34302810527,
+      "outcome": "failure",
+      "learning": "CreateAgentRuntime requires create-time TagResource on the runtime pre-creation family; request-tag constraints remain the least-privilege boundary."
+    },
+    {
+      "attempt": 4,
+      "workflow_run_id": 34304163709,
+      "outcome": "failure",
+      "learning": "The AgentCore Runtime Identity service-linked role is an account bootstrap prerequisite; iam:CreateServiceLinkedRole remains outside the GitHub deployment role."
+    },
+    {
+      "attempt": 5,
+      "workflow_run_id": 34305577967,
+      "outcome": "failure",
+      "learning": "Managed workload-identity creation requires create-time TagResource on the workload-identity pre-creation family."
+    },
+    {
+      "attempt": 6,
+      "workflow_run_id": 34306870906,
+      "outcome": "failure",
+      "learning": "Managed workload-identity creation requires CreateWorkloadIdentity on the workload-identity pre-creation family."
+    },
+    {
+      "attempt": 7,
+      "workflow_run_id": 34307984723,
+      "outcome": "failure",
+      "learning": "CreateWorkloadIdentity authorization also evaluates the exact default workload-identity directory resource."
+    },
+    {
+      "attempt": 8,
+      "workflow_run_id": 34309162599,
+      "outcome": "failure",
+      "learning": "Create-time TagResource authorization also evaluates the exact default workload-identity directory."
+    },
+    {
+      "attempt": 9,
+      "workflow_run_id": 34357918962,
+      "outcome": "partial_success_cleanup_failure",
+      "learning": "DeleteAgentRuntime requires DeleteWorkloadIdentity on the exact default workload-identity directory; provider state removal alone is not cleanup proof."
+    },
+    {
+      "attempt": 10,
+      "workflow_run_id": 34375198394,
+      "outcome": "partial_success_cleanup_waiter_failure",
+      "learning": "GetAgentRuntime must remain readable through the delete lifecycle; resource-tag-conditioned read authority can disappear while the resource is DELETING."
+    },
+    {
+      "attempt": 11,
+      "workflow_run_id": 34378942784,
+      "outcome": "success",
+      "learning": "The bounded runtime, replay, negative authorization proof, delete lifecycle, and independent cleanup verification all completed under the corrected least-privilege authority."
+    }
+  ],
+  "retained_iam_boundaries": {
+    "github_oidc": "main-only",
+    "deployment_role_invoke_agent_runtime": false,
+    "deployment_role_create_service_linked_role": false,
+    "deployment_role_get_workload_identity": false,
+    "feature_branch_oidc_widening": false,
+    "runtime_read_authority": "GetAgentRuntime on the exact OpsLens runtime family without runtime ResourceTag conditions so delete waiters can observe lifecycle completion",
+    "runtime_mutation_authority": "DeleteAgentRuntime, ListTagsForResource, TagResource, UntagResource, and UpdateAgentRuntime remain resource-tag-gated"
+  },
+  "non_claims": [
+    "AgentCore Runtime is approved as the production or default OpsLens reasoning runtime",
+    "PUBLIC network mode is approved for production",
+    "the experiment establishes production SLOs or a production security posture",
+    "runtime deployment or telemetry establishes runtime-exposure truth",
+    "AgentCore hosting creates capability authorization",
+    "MCP hosting, A2A, Gateway/Policy, Memory, Browser, or Code Interpreter were exercised",
+    "capability execution occurred",
+    "a monthly AgentCore cost can be inferred from this experiment"
+  ],
+  "next_decision": {
+    "status": "not_yet_formalized_as_a_gate",
+    "question": "Does the measured AgentCore hosting/session/operational value justify its IAM, lifecycle, network, latency, cost, and operational surface for the retained OpsLens reasoning architecture?",
+    "precommitted_answer": null
+  }
+}
