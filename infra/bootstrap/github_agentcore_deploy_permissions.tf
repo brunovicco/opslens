@@ -375,6 +375,7 @@ data "aws_iam_policy_document" "github_actions_agentcore_deploy" {
     actions = ["bedrock-agentcore:DeleteWorkloadIdentity"]
 
     resources = [
+      local.dev_agentcore_workload_identity_directory_arn,
       local.dev_agentcore_workload_identity_arn,
     ]
   }
