@@ -1,0 +1,573 @@
+{
+  "artifact_version": "phase-17-gate-17-1-threat-model:v1",
+  "evidence_date": "2026-09-09",
+  "source_main_sha": "f6fc614fbeaf7b3f294d7dba10c31e6f0e96313c",
+  "phase": "Phase 17 — Security Hardening",
+  "gate": "17.1 — Cross-cutting threat model and control-gap inventory",
+  "issue": 250,
+  "decision": "GO_TO_ONE_BOUNDED_CICD_AND_WORKFLOW_AUTHORITY_HARDENING_SLICE",
+  "classification_vocabulary": [
+    "PROVEN_CONTROL",
+    "GAP",
+    "DEFERRED",
+    "NOT_APPLICABLE"
+  ],
+  "priority_vocabulary": [
+    "HIGH",
+    "MEDIUM",
+    "LOW"
+  ],
+  "external_guidance": [
+    {
+      "authority": "GitHub Docs",
+      "topic": "GitHub Actions secure use; full-length commit SHA pinning",
+      "url": "https://docs.github.com/en/actions/reference/security/secure-use"
+    },
+    {
+      "authority": "actions/checkout",
+      "topic": "persist-credentials defaults to true",
+      "url": "https://github.com/actions/checkout/blob/main/action.yml"
+    },
+    {
+      "authority": "AWS IAM User Guide",
+      "topic": "limit GitHub OIDC trust with aud/sub conditions for repository and branch",
+      "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-idp_oidc.html"
+    },
+    {
+      "authority": "AWS Well-Architected Generative AI Lens",
+      "topic": "security and least-privilege permissions for agentic workflows",
+      "url": "https://docs.aws.amazon.com/wellarchitected/latest/generative-ai-lens/gensec05-bp01.html"
+    },
+    {
+      "authority": "OWASP GenAI Security Project",
+      "topic": "Top 10 for LLM and Generative AI Applications 2025",
+      "url": "https://genai.owasp.org/initiatives/top-10-for-llm-and-genai/"
+    }
+  ],
+  "threats": [
+    {
+      "threat_id": "SEC17-CICD-001",
+      "asset_or_boundary": "GitHub default-branch merge authority",
+      "threat": "A pull request can satisfy the active main ruleset without any required CI status check, even though OpsLens engineering decisions rely on exact-head CI evidence before merge.",
+      "existing_controls": [
+        "active Protect main repository ruleset",
+        "pull request required",
+        "review-thread resolution required",
+        "squash-only merge",
+        "linear history required",
+        "branch deletion and non-fast-forward blocked",
+        "no bypass actors"
+      ],
+      "proof_refs": [
+        "GitHub ruleset 20873628",
+        "https://api.github.com/repos/brunovicco/opslens/rulesets/20873628"
+      ],
+      "residual_risk": "The ruleset contains no required_status_checks rule. required_approving_review_count is 0; this is recorded separately as a governance choice, not treated by itself as the primary technical gap.",
+      "classification": "GAP",
+      "recommended_action": "Gate 17.2 should define the exact required CI contexts and stop at a human GitHub ruleset administration boundary for enforcement.",
+      "priority": "HIGH"
+    },
+    {
+      "threat_id": "SEC17-CICD-002",
+      "asset_or_boundary": "Third-party GitHub Actions supply chain",
+      "threat": "Mutable action tags or branches could change workflow code without an OpsLens commit.",
+      "existing_controls": [
+        "sampled CI and AWS workflows pin actions to full 40-hex commit SHAs",
+        "repository searches found no tag-style actions/checkout@v or aws-actions/configure-aws-credentials@v references"
+      ],
+      "proof_refs": [
+        ".github/workflows/python-ci.yml",
+        ".github/workflows/terraform-ci.yml",
+        ".github/workflows/a2a-ci.yml",
+        ".github/workflows/mcp-ci.yml",
+        ".github/workflows/multi-agent-ci.yml",
+        ".github/workflows/agentcore-ci.yml",
+        ".github/workflows/runtime-exposure-ci.yml"
+      ],
+      "residual_risk": "Without an automated repository-wide policy, a future workflow edit could accidentally introduce a mutable action reference.",
+      "classification": "PROVEN_CONTROL",
+      "recommended_action": "Add a read-only security CI invariant that rejects non-SHA external action references so the current practice becomes continuously verified.",
+      "priority": "MEDIUM"
+    },
+    {
+      "threat_id": "SEC17-CICD-003",
+      "asset_or_boundary": "GitHub checkout credentials inside jobs",
+      "threat": "actions/checkout defaults persist-credentials to true, leaving the job token available to later git commands even when the workflow does not need authenticated git after checkout.",
+      "existing_controls": [
+        "explicit workflow-level GITHUB_TOKEN permissions are generally contents:read",
+        "AWS workflows add only id-token:write where OIDC is required",
+        "actions/checkout is commit-SHA pinned"
+      ],
+      "proof_refs": [
+        "repository search: no persist-credentials setting",
+        ".github/workflows/python-ci.yml",
+        ".github/workflows/terraform-dev-plan.yml",
+        "https://github.com/actions/checkout/blob/main/action.yml"
+      ],
+      "residual_risk": "Read-only persisted credentials are still unnecessary ambient job credentials in workflows that never perform authenticated git operations.",
+      "classification": "GAP",
+      "recommended_action": "Gate 17.2 should set persist-credentials:false on checkout steps unless an exact workflow demonstrates a post-checkout authenticated git requirement.",
+      "priority": "MEDIUM"
+    },
+    {
+      "threat_id": "SEC17-CICD-004",
+      "asset_or_boundary": "Privileged GitHub Actions event triggers",
+      "threat": "pull_request_target or workflow_run can execute with elevated base-repository context and become dangerous when combined with untrusted checkout/execution.",
+      "existing_controls": [
+        "repository searches found no pull_request_target trigger",
+        "repository searches found no workflow_run trigger"
+      ],
+      "proof_refs": [
+        ".github/workflows/"
+      ],
+      "residual_risk": "A future workflow could introduce one of these triggers without a dedicated trust analysis.",
+      "classification": "PROVEN_CONTROL",
+      "recommended_action": "Continuously reject these privileged trigger types unless an explicit later ADR authorizes a narrowly reviewed use case.",
+      "priority": "MEDIUM"
+    },
+    {
+      "threat_id": "SEC17-IAM-001",
+      "asset_or_boundary": "GitHub Actions to AWS OIDC trust",
+      "threat": "A broad OIDC subject could let workflows from another repository or branch assume OpsLens AWS roles.",
+      "existing_controls": [
+        "GitHub OIDC audience is exactly sts.amazonaws.com",
+        "trust subject uses immutable numeric owner/repository IDs",
+        "trust subject is exact refs/heads/main",
+        "deployment and evidence roles use the same main-only immutable subject pattern"
+      ],
+      "proof_refs": [
+        "infra/bootstrap/github_role.tf",
+        "infra/bootstrap/github_epss_history_evidence_role.tf",
+        "infra/environments/dev/epss_history_coordinator_iam.tf"
+      ],
+      "residual_risk": "Future roles can drift unless the trust pattern is continuously checked.",
+      "classification": "PROVEN_CONTROL",
+      "recommended_action": "Retain exact aud/sub validation and add repository-wide static verification for OIDC roles/workflows in Gate 17.2.",
+      "priority": "HIGH"
+    },
+    {
+      "threat_id": "SEC17-IAM-002",
+      "asset_or_boundary": "EPSS historical canary/backfill plan-only workflows",
+      "threat": "The default read-only planning path assumes OpsLensEpssHistoryCoordinatorRole before branching on execute, so plan-only runs receive write/invoke authority they do not need.",
+      "existing_controls": [
+        "workflow_dispatch only",
+        "main-only job condition",
+        "execute defaults false",
+        "exact confirmation phrase required before execution",
+        "coordinator role is bounded to the EPSS history workload"
+      ],
+      "proof_refs": [
+        ".github/workflows/epss-history-canary.yml",
+        ".github/workflows/epss-history-backfill.yml",
+        ".github/workflows/epss-history-evidence.yml",
+        "infra/environments/dev/epss_history_coordinator_iam.tf"
+      ],
+      "residual_risk": "Plan-only runs hold S3 write and Lambda invocation permissions. The full-backfill workflow also requests a 21,600-second session before knowing whether execution is requested.",
+      "classification": "GAP",
+      "recommended_action": "Gate 17.2 should separate plan/evidence credentials from execution credentials or move coordinator-role assumption into execute-only steps; long STS duration must exist only for the actual bounded execution path.",
+      "priority": "HIGH"
+    },
+    {
+      "threat_id": "SEC17-IAM-003",
+      "asset_or_boundary": "Historical AgentCore experiment workflow",
+      "threat": "The retained historical workflow is intended to be non-operational after experiment IAM cleanup, but it can still assume the standing shared deployment role and perform shared-role-authorized mutations before later AgentCore-specific permission checks fail.",
+      "existing_controls": [
+        "manual workflow_dispatch",
+        "explicit confirmation input",
+        "main-only job condition",
+        "AgentCore-specific standing IAM was removed after Phase 14",
+        "runtime resources are not standing"
+      ],
+      "proof_refs": [
+        ".github/workflows/agentcore-runtime-experiment.yml",
+        "labs/phase-14-gate-14-4-agentcore-iam-cleanup.md",
+        "infra/bootstrap/github_s3_permissions.tf"
+      ],
+      "residual_risk": "The workflow still configures OpsLensGitHubDeployRole and publishes deployment artifacts before the AgentCore create/apply path. Historical reproducibility is therefore not equivalent to non-operational authority.",
+      "classification": "GAP",
+      "recommended_action": "Gate 17.2 should disable this historical workflow by default behind an explicit future-authority input and require future AgentCore re-entry to recreate a dedicated minimum principal instead of inheriting the shared deployment role path.",
+      "priority": "HIGH"
+    },
+    {
+      "threat_id": "SEC17-IAM-004",
+      "asset_or_boundary": "Historical Amazon Inspector discovery workflow",
+      "threat": "A historical cloud experiment could retain standing read authority after its value experiment completes.",
+      "existing_controls": [
+        "temporary Inspector role removed and independently verified absent",
+        "retained bootstrap Terraform contains no inspector2 actions",
+        "historical workflow defaults confirm_temporary_role_exists to false",
+        "future execution requires separately recreated role authority"
+      ],
+      "proof_refs": [
+        ".github/workflows/inspector-readonly-discovery.yml",
+        "labs/evidence/phase-16-gate-16-5-inspector-iam-cleanup-postapply-v1.json",
+        "labs/evidence/phase-16-closeout-v1.json"
+      ],
+      "residual_risk": "A future re-entry still requires human review to avoid recreating standing authority without a new hypothesis.",
+      "classification": "PROVEN_CONTROL",
+      "recommended_action": "Retain the disabled-by-default historical workflow and no standing Inspector IAM.",
+      "priority": "LOW"
+    },
+    {
+      "threat_id": "SEC17-SUPPLY-001",
+      "asset_or_boundary": "Python dependency vulnerability discovery and update workflow",
+      "threat": "Known vulnerable dependencies can remain locked if the repository has no current automated dependency-update/review/vulnerability-scanning control.",
+      "existing_controls": [
+        "uv.lock resolves exact dependency versions",
+        "CI runs uv lock --check and uv sync --frozen",
+        "Lambda packaging exports production requirements from the lockfile with --locked",
+        "historical Phase 2 pip-audit evidence exists for an earlier runtime snapshot"
+      ],
+      "proof_refs": [
+        "pyproject.toml",
+        "uv.lock",
+        "scripts/build_lambda_package.py",
+        "docs/labs/phase-2-nvd-glue-athena-runtime-terraform.md",
+        ".github/dependabot.yml -> NOT FOUND",
+        "repository workflow search -> no dependency-review-action",
+        "repository workflow search -> no github/codeql-action",
+        "repository workflow search -> no active pip-audit"
+      ],
+      "residual_risk": "No repository-configured continuous dependency update/review/code-scanning workflow is present. Account/repository platform security settings outside repository files were not observable and are not claimed disabled.",
+      "classification": "GAP",
+      "recommended_action": "After workflow-authority hardening, evaluate a separate Gate 17.3 for Dependabot version updates, dependency review, current vulnerability audit, and CodeQL where each control is supported for this repository.",
+      "priority": "MEDIUM"
+    },
+    {
+      "threat_id": "SEC17-SUPPLY-002",
+      "asset_or_boundary": "Deployment artifact reproducibility",
+      "threat": "Unpinned package resolution or non-deterministic archives could make deployed bytes differ from reviewed source/lock evidence.",
+      "existing_controls": [
+        "production requirements exported from uv.lock with --locked",
+        "binary-only Linux-compatible dependency installation for Lambda package builders",
+        "deterministic ZIP ordering, timestamps, and permissions",
+        "artifact SHA-256/version evidence is preserved by prior deployment gates"
+      ],
+      "proof_refs": [
+        "scripts/build_lambda_package.py",
+        "scripts/build_agentcore_runtime_package.py",
+        "Phase 2 and Phase 14 immutable artifact evidence"
+      ],
+      "residual_risk": "GitHub artifact attestations are not currently part of the retained deployment path, but current deterministic/content-addressed controls materially reduce ambiguity.",
+      "classification": "DEFERRED",
+      "recommended_action": "Revisit provenance attestations only if Phase 17/18 introduces a release/distribution requirement not already covered by deterministic SHA/version evidence.",
+      "priority": "LOW"
+    },
+    {
+      "threat_id": "SEC17-INPUT-001",
+      "asset_or_boundary": "Public repository analysis request admission",
+      "threat": "A user-controlled repository URL could become SSRF, path-confusion, oversized-input, duplicate-key, or arbitrary-source authority.",
+      "existing_controls": [
+        "2 KiB request byte limit",
+        "strict UTF-8 and JSON object admission",
+        "duplicate-key rejection before ordinary mapping coercion",
+        "exact known field set",
+        "HTTPS-only github.com repository-root grammar",
+        "userinfo, port, query, fragment, percent-encoded path, and non-root repository paths rejected",
+        "raw URL is converted to validated owner/name coordinates"
+      ],
+      "proof_refs": [
+        "src/opslens/public_analysis/application/request_admission.py",
+        "src/opslens/public_analysis/domain/request.py"
+      ],
+      "residual_risk": "No deployed public HTTP runtime is currently claimed; transport-layer abuse controls remain outside the retained application boundary.",
+      "classification": "PROVEN_CONTROL",
+      "recommended_action": "Retain deterministic admission. Treat rate limiting/WAF/runtime authentication as NOT_APPLICABLE until a real public transport is introduced.",
+      "priority": "HIGH"
+    },
+    {
+      "threat_id": "SEC17-INPUT-002",
+      "asset_or_boundary": "Public GitHub repository acquisition",
+      "threat": "Repository coordinates could pivot outbound requests, follow redirects, consume unbounded response bodies, or trigger adaptive retry amplification.",
+      "existing_controls": [
+        "fixed api.github.com HTTPS host",
+        "GET-only transport",
+        "no redirect behavior",
+        "no adaptive transport retry behavior",
+        "bounded timeout and response byte budgets",
+        "validated path segments",
+        "exact full commit SHA required before uv.lock acquisition",
+        "strict response media type and UTF-8 JSON checks"
+      ],
+      "proof_refs": [
+        "src/opslens/repository_intelligence/adapters/github_http.py"
+      ],
+      "residual_risk": "GitHub availability/rate limits can fail acquisition, but typed fail-closed errors preserve authority rather than broadening transport behavior.",
+      "classification": "PROVEN_CONTROL",
+      "recommended_action": "Retain fixed-host bounded GET semantics; do not add redirect following or arbitrary repository code execution.",
+      "priority": "HIGH"
+    },
+    {
+      "threat_id": "SEC17-LLM-001",
+      "asset_or_boundary": "Public semantic planning",
+      "threat": "Third-party repository text or an LLM response could alter structured query/evidence authority or inject executable inputs.",
+      "existing_controls": [
+        "planner receives bounded content-free metadata rather than repository content",
+        "response byte limit",
+        "duplicate-key and exact-field admission",
+        "request-hash binding",
+        "evidence needs restricted to a closed enum",
+        "deterministic route authority validates the proposal"
+      ],
+      "proof_refs": [
+        "src/opslens/public_analysis/application/semantic_planning.py",
+        "docs/adr/0030-public-semantic-planning-authority.md"
+      ],
+      "residual_risk": "Model behavior can still be wrong within the proposal grammar, so deterministic output admission remains mandatory.",
+      "classification": "PROVEN_CONTROL",
+      "recommended_action": "Retain proposal-only planning and never pass raw repository instructions, SQL, credentials, provider/model/tool selection, or executable content to this planner.",
+      "priority": "HIGH"
+    },
+    {
+      "threat_id": "SEC17-LLM-002",
+      "asset_or_boundary": "RAG / grounded synthesis prompt boundary",
+      "threat": "Retrieved third-party guidance can contain indirect prompt injection that attempts to become system policy or request tools/actions.",
+      "existing_controls": [
+        "retrieved evidence is explicitly serialized as untrusted data",
+        "trusted instructions are frozen separately",
+        "trusted contract forbids following policy/tool/role-change commands from retrieved evidence",
+        "citation IDs are deterministic and output claims must cite admitted evidence",
+        "insufficient evidence returns a closed response",
+        "unit tests inject administrative instructions and verify they remain outside system control"
+      ],
+      "proof_refs": [
+        "src/opslens/knowledge_retrieval/application/grounded_synthesis_prompt.py",
+        "tests/unit/knowledge_retrieval/test_bedrock_synthesis_request.py",
+        "tests/unit/knowledge_retrieval/test_bedrock_grounded_synthesis_request.py",
+        "tests/unit/knowledge_retrieval/test_synthesis_contract.py"
+      ],
+      "residual_risk": "Structural separation does not prove every future model behavior is safe against every adversarial corpus; live adversarial evaluation remains a later test concern, not current authorization authority.",
+      "classification": "PROVEN_CONTROL",
+      "recommended_action": "Preserve the frozen trust separation; consider broader adversarial evaluation only after higher-priority workflow authority gaps close.",
+      "priority": "HIGH"
+    },
+    {
+      "threat_id": "SEC17-AGENT-001",
+      "asset_or_boundary": "Single-agent proposal to capability execution",
+      "threat": "A model could propose a capability outside task scope or forge a proposal for another task, creating excessive agency.",
+      "existing_controls": [
+        "proposal task_id must exactly match admitted task",
+        "capability must exist in the task-owned allowlist",
+        "authorization does not execute",
+        "executor set is closed and typed rather than a dynamic tool-name registry",
+        "typed invocation/result identities are rebound after execution",
+        "downstream exceptions become content-free failure categories"
+      ],
+      "proof_refs": [
+        "src/opslens/agent_baseline/application/authorization.py",
+        "src/opslens/agent_baseline/application/execution.py",
+        "docs/adr/0036-bounded-single-agent-capability-authorization.md"
+      ],
+      "residual_risk": "Executor implementations still require their own least-privilege provider/runtime identities; no model proposal can waive that requirement.",
+      "classification": "PROVEN_CONTROL",
+      "recommended_action": "Retain deterministic authorization and typed execution/result binding. Do not move authorization into model output or protocol metadata.",
+      "priority": "HIGH"
+    },
+    {
+      "threat_id": "SEC17-PROTOCOL-001",
+      "asset_or_boundary": "MCP interoperability boundary",
+      "threat": "Framework coercion or extra protocol arguments could smuggle SQL/business inputs into a supposedly reference-only tool call.",
+      "existing_controls": [
+        "raw request arguments are inspected before SDK/Pydantic coercion",
+        "exact key sets are required",
+        "protocol-visible input remains content-addressed reference data",
+        "deterministic OpsLens capability admission remains authoritative"
+      ],
+      "proof_refs": [
+        "docs/adr/0048-bounded-offline-mcp-protocol-adapter.md",
+        "docs/adr/0049-bounded-mcp-capability-execution-bridge.md",
+        "labs/phase-13-gate-13-2-bounded-mcp-protocol-adapter.md"
+      ],
+      "residual_risk": "No public/network MCP runtime is retained, so network authentication/tenant isolation is not a current runtime claim.",
+      "classification": "PROVEN_CONTROL",
+      "recommended_action": "Keep raw pre-coercion validation and treat network-runtime threats as NOT_APPLICABLE until deployment is explicitly authorized.",
+      "priority": "HIGH"
+    },
+    {
+      "threat_id": "SEC17-PROTOCOL-002",
+      "asset_or_boundary": "A2A interoperability boundary",
+      "threat": "Duplicate keys, unknown fields, protocol identifiers, AgentCard skills, task state, or artifacts could be mistaken for OpsLens authority/evidence.",
+      "existing_controls": [
+        "raw UTF-8 JSON duplicate-key rejection before coercion",
+        "exact object-key validation",
+        "strict JSON-RPC version/method/id/reference binding",
+        "code-owned reference resolution",
+        "only Message or terminal completed Task metadata is admitted",
+        "A2A identifiers and artifacts do not become business/evidence authority"
+      ],
+      "proof_refs": [
+        "src/opslens/a2a_boundary/adapters/_contract.py",
+        "tests/unit/a2a_boundary/test_jsonrpc.py",
+        "docs/adr/0057-bounded-offline-a2a-reference-adapter.md",
+        "labs/evidence/phase-15-gate-15-2-bounded-offline-a2a-reference-adapter-v1.json"
+      ],
+      "residual_risk": "No public/network A2A peer runtime is retained, so peer network authentication and multi-tenant runtime threats are not current deployment claims.",
+      "classification": "PROVEN_CONTROL",
+      "recommended_action": "Retain reference-only offline admission and keep future peer deployment behind a new trust/identity decision.",
+      "priority": "HIGH"
+    },
+    {
+      "threat_id": "SEC17-DATA-001",
+      "asset_or_boundary": "Operational telemetry and sensitive content",
+      "threat": "Raw repository content, prompts, retrieved evidence, secrets, or provider output could leak into operational logs/metrics.",
+      "existing_controls": [
+        "operational-telemetry:v1 is explicitly content-minimized",
+        "correlation uses content-addressed identifiers rather than source content",
+        "public-analysis tests assert inert uv.lock content does not leak into telemetry",
+        "provider failures are mapped to bounded categories in agent execution paths"
+      ],
+      "proof_refs": [
+        "docs/adr/0032-content-minimized-operational-telemetry-contract.md",
+        "docs/adr/0034-bounded-cloudwatch-emf-telemetry-adapter.md",
+        "tests/unit/public_analysis/test_operational_orchestration.py"
+      ],
+      "residual_risk": "Other ingestion/runtime logs outside the Phase 10 public-analysis telemetry contract still require ordinary secret/log hygiene; this inventory found no repository-carried AWS access key pattern.",
+      "classification": "PROVEN_CONTROL",
+      "recommended_action": "Retain content-minimized telemetry and verify any newly introduced runtime logger against the same no-raw-content principle.",
+      "priority": "MEDIUM"
+    },
+    {
+      "threat_id": "SEC17-COST-001",
+      "asset_or_boundary": "LLM/model consumption",
+      "threat": "Unbounded prompts or output generation can create denial-of-wallet and resource exhaustion.",
+      "existing_controls": [
+        "public input byte/character limits",
+        "bounded retrieval/context assembly",
+        "semantic planner max_tokens = 256",
+        "single-agent reasoning max_tokens = 96",
+        "triage reasoning max_tokens = 64",
+        "knowledge synthesis max_tokens = 2048",
+        "provider stop reasons such as max_tokens are tested and can fail closed",
+        "bounded experiments retain measured cost evidence"
+      ],
+      "proof_refs": [
+        "src/opslens/semantic_query/planner/bedrock.py",
+        "src/opslens/agent_baseline/adapters/bedrock_reasoning.py",
+        "src/opslens/multi_agent/adapters/bedrock_triage_reasoning.py",
+        "src/opslens/knowledge_retrieval/application/bedrock_synthesis.py",
+        "src/opslens/public_analysis/application/request_admission.py"
+      ],
+      "residual_risk": "There is no retained public HTTP runtime, so external per-client rate limiting, WAF, and multi-tenant quota controls are not currently applicable deployment controls.",
+      "classification": "PROVEN_CONTROL",
+      "recommended_action": "Retain call-level budgets. Revisit transport/client quotas only if a public runtime is actually deployed.",
+      "priority": "MEDIUM"
+    },
+    {
+      "threat_id": "SEC17-SECRETS-001",
+      "asset_or_boundary": "AWS credentials in repository and GitHub automation",
+      "threat": "Long-lived AWS access keys committed to source or stored as deployment credentials could be exfiltrated and reused outside intended workflows.",
+      "existing_controls": [
+        "AWS GitHub workflows use OIDC rather than static AWS access keys",
+        "human administration uses temporary IAM Identity Center credentials",
+        "repository search found no AKIA access-key identifier pattern"
+      ],
+      "proof_refs": [
+        "infra/bootstrap/github_oidc.tf",
+        "infra/bootstrap/github_role.tf",
+        "docs/architecture.md",
+        ".github/workflows/terraform-dev-plan.yml"
+      ],
+      "residual_risk": "GitHub repository/organization secret settings are outside the observable repository content and are not claimed empty.",
+      "classification": "PROVEN_CONTROL",
+      "recommended_action": "Continue OIDC/Identity Center only; add secret scanning evidence later only if repository/platform configuration can be observed or enforced.",
+      "priority": "HIGH"
+    },
+    {
+      "threat_id": "SEC17-DOC-001",
+      "asset_or_boundary": "Architecture documentation as operator/security guidance",
+      "threat": "Stale architecture headers can cause operators/reviewers to reason about an obsolete control plane and miss retained/decommissioned runtime boundaries.",
+      "existing_controls": [
+        "docs/current-state.md and docs/roadmap.md are authoritative and current through Phase 16",
+        "ADRs and immutable gate evidence preserve later-phase decisions"
+      ],
+      "proof_refs": [
+        "docs/architecture.md currently says baseline through Phase 9 and next Phase 10",
+        "docs/architecture.pt-br.md currently says baseline through Phase 9 and next Phase 10",
+        "docs/current-state.md",
+        "docs/roadmap.md"
+      ],
+      "residual_risk": "The accumulated architecture files can misrepresent phase completion even when detailed later sections exist elsewhere.",
+      "classification": "GAP",
+      "recommended_action": "Synchronize the architecture document headers/current-phase summary during Gate 17.1 without changing runtime behavior.",
+      "priority": "LOW"
+    },
+    {
+      "threat_id": "SEC17-GOV-001",
+      "asset_or_boundary": "Human approval governance for main",
+      "threat": "Single-maintainer repositories may not have an independent reviewer for security-sensitive changes.",
+      "existing_controls": [
+        "PR required",
+        "review-thread resolution required",
+        "no bypass actors",
+        "squash-only linear history"
+      ],
+      "proof_refs": [
+        "GitHub ruleset 20873628"
+      ],
+      "residual_risk": "required_approving_review_count is 0 and CODEOWNERS review is not required. For the current single-maintainer portfolio context this is not automatically classified as a vulnerability.",
+      "classification": "DEFERRED",
+      "recommended_action": "Revisit required independent approval when a second maintainer, production ownership model, or organizational governance requirement exists.",
+      "priority": "LOW"
+    },
+    {
+      "threat_id": "SEC17-RUNTIME-001",
+      "asset_or_boundary": "Public application abuse controls",
+      "threat": "A public endpoint would require transport authentication policy, rate limits, WAF/abuse controls, quotas, and production SLO/incident controls.",
+      "existing_controls": [
+        "Phase 9 deliberately closed at an application boundary",
+        "no public HTTP compute or endpoint is retained",
+        "no public runtime principal is claimed"
+      ],
+      "proof_refs": [
+        "docs/adr/0031-phase9-public-analysis-closeout.md",
+        "labs/phase-9-gate-9-4-closeout.md"
+      ],
+      "residual_risk": "These controls become mandatory if a future phase actually deploys a public runtime.",
+      "classification": "NOT_APPLICABLE",
+      "recommended_action": "Do not invent production transport controls until a deployment requirement exists; require a fresh threat model if one is introduced.",
+      "priority": "LOW"
+    }
+  ],
+  "gap_summary": {
+    "high_priority": [
+      "SEC17-CICD-001",
+      "SEC17-IAM-002",
+      "SEC17-IAM-003"
+    ],
+    "medium_priority": [
+      "SEC17-CICD-003",
+      "SEC17-SUPPLY-001"
+    ],
+    "low_priority": [
+      "SEC17-DOC-001"
+    ]
+  },
+  "next_gate": {
+    "gate": "17.2 — CI/CD and workflow authority hardening",
+    "authorized_repository_scope": [
+      "freeze repository-wide external-action full-SHA invariant",
+      "reject privileged pull_request_target/workflow_run triggers unless separately authorized",
+      "set checkout persist-credentials:false where authenticated git is unnecessary",
+      "make EPSS history plan-only paths use read-only/no-write credentials",
+      "limit 21600-second EPSS coordinator session to actual execution only",
+      "disable the historical AgentCore mutating workflow by default until dedicated minimum authority is explicitly recreated",
+      "define exact required CI status contexts for main"
+    ],
+    "human_or_platform_boundary": [
+      "changing GitHub ruleset required status checks"
+    ],
+    "not_authorized": [
+      "AWS IAM mutation",
+      "new AWS service",
+      "new public runtime",
+      "Inspector reactivation",
+      "dependency platform enablement in the same slice",
+      "PR #89 modification"
+    ]
+  },
+  "aws_mutation_count": 0,
+  "new_iam_count": 0,
+  "model_invocations": 0,
+  "capability_executions": 0,
+  "pr_89_touched": false
+}
