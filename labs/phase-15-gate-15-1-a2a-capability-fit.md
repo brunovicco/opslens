@@ -7,17 +7,43 @@ _Date: 2026-09-09_
 **COMPLETE — ONE BOUNDED OFFLINE REFERENCE-ONLY A2A INTEROPERABILITY EXPERIMENT AUTHORIZED.**
 
 ```text
-source main: b4854fd6aeef4b3f041cd89b3fe45d63c8b72be5
-issue:       #227
-protocol:    A2A stable 0.3.0 assessed
-AWS/IAM:     no change
+issue:                #227
+original merge:       18fe6bd4e4dac8dab81ce11ac15e204d077fabd4
+current protocol:     A2A 1.0.0
+first binding choice: JSONRPC
+AWS/IAM:              no change
+```
+
+## Protocol-baseline correction
+
+The first Gate 15.1 revision used the historical versioned A2A `0.3.0` documentation page and incorrectly described it as the latest stable release.
+
+Fresh verification against the current official A2A documentation on 2026-09-09 establishes:
+
+```text
+latest released A2A protocol: 1.0.0
+release date:                 2026-03-12
+previous version:             0.3.0
+standard bindings:            JSONRPC / GRPC / HTTP+JSON
+official Python SDK latest:   1.1.4 (2026-09-07)
+```
+
+The architecture decision is unchanged. Only the protocol baseline is corrected.
+
+Evidence policy:
+
+```text
+phase-15-gate-15-1-a2a-capability-fit-v1.json
+ -> preserved historical first assessment
+ -> superseded for protocol-version claims
+
+phase-15-gate-15-1-a2a-capability-fit-v2.json
+ -> authoritative corrected Gate 15.1 evidence
 ```
 
 ## Why this gate exists
 
-Phase 15 does not start by installing an A2A SDK or deploying another service.
-
-OpsLens already has a deterministic Gate 12.1 specialization/handoff contract, but the retained runtime architecture does not contain an independently deployed peer. The Phase 12 two-model topology was measured and rejected as the default.
+OpsLens already has a deterministic Gate 12.1 specialization/handoff contract, but the retained architecture does not contain an independently deployed peer. The measured Phase 12 two-model topology was rejected as the default.
 
 Therefore:
 
@@ -29,9 +55,7 @@ existing distributed-agent requirement
 
 A2A must solve an interoperability problem rather than manufacture one.
 
-## Current retained handoff
-
-The real current boundary is:
+## Retained handoff boundary
 
 ```text
 SingleAgentTask
@@ -39,69 +63,60 @@ SingleAgentTask
  -> untrusted MultiAgentHandoffProposal
  -> deterministic source-task binding
  -> code-owned specialization mapping
- -> deterministic intersection with source allowed_capabilities
+ -> deterministic source/specialist capability intersection
  -> empty intersection? FAIL CLOSED
  -> AuthorizedMultiAgentHandoff | MultiAgentHandoffAbstention
  -> narrowed SpecialistAgentTask
 ```
 
-Current implementation references:
+Implementation references:
 
 ```text
 src/opslens/multi_agent/domain/handoff.py
 src/opslens/multi_agent/application/handoff.py
 ```
 
-Measured Phase 12 evidence already established that deterministic specialization narrowing is useful independently from a second model call. The two-model topology itself is not the retained default.
+The deterministic handoff remains useful independently from a second model call.
 
-## Official A2A baseline assessed
+## A2A v1.0 facts relevant to OpsLens
 
-Official stable specification assessed on 2026-09-09:
-
-```text
-Agent2Agent Protocol 0.3.0
-https://a2a-protocol.org/v0.3.0/specification/
-```
-
-Relevant concepts for OpsLens:
+The official A2A v1.0 semantic model supports multiple standard bindings:
 
 ```text
-AgentCard
-security schemes
-HTTP(S)
-JSON-RPC 2.0
-message/send
-Task
-Message
-Part
-Artifact
-TaskState
-task/context correlation identity
+JSONRPC
+GRPC
+HTTP+JSON
 ```
 
-The full protocol is intentionally not the first experiment surface.
+The Agent Card declares `supportedInterfaces`; each interface carries its own:
 
-## Capability-fit finding
+```text
+url
+protocolBinding
+protocolVersion
+```
 
-### Finding 1 — no retained independent peer exists today
+For Gate 15.2, OpsLens deliberately selects **one JSON-RPC binding** as the smallest local experiment surface. This is an OpsLens scope decision, not a claim that A2A v1.0 is JSON-RPC-only.
 
-The retained architecture does not currently have a separately hosted specialist agent whose operation requires A2A.
+The core operation used by the experiment is `SendMessage`.
 
-The historical Phase 12 second model is not treated as that peer because:
+## Capability-fit findings
+
+### Finding 1 — no retained independent peer exists
+
+There is no separately hosted specialist agent whose current operation requires A2A.
+
+The historical Phase 12 second model is not reclassified as a peer because:
 
 ```text
 Gate 12.3 two-model topology as default: DO NOT RETAIN
 ```
 
-Reactivating it solely to justify A2A would violate the measured architecture decision.
+### Finding 2 — a narrow protocol hypothesis exists
 
-### Finding 2 — a narrow interoperability hypothesis still exists
+The Gate 12.1 content-addressed handoff provides a falsifiable protocol boundary:
 
-The Gate 12.1 content-addressed handoff provides a useful protocol-boundary experiment:
-
-> Can an A2A adapter carry only a reference to one already-admitted `SpecialistAgentTask`, then re-bind the protocol response to existing OpsLens identities, without allowing A2A input or peer-generated metadata to create authority?
-
-This is falsifiable and does not require production hosting.
+> Can an A2A adapter carry only a reference to one already-admitted `SpecialistAgentTask` and re-bind protocol results to existing OpsLens identities without allowing protocol data to create capability or business authority?
 
 ## Decision
 
@@ -115,42 +130,38 @@ Not authorized:
 production/network A2A deployment
 new AWS runtime
 new IAM
-model call
+model invocation
 capability execution
 streaming
 push notifications
-secondary auth
+extended authentication flow
 business-result transport
 AgentCore hosting
 MCP public promotion
 ```
 
-## First experiment shape
-
-Preferred conceptual path:
+## Gate 15.2 reference-only shape
 
 ```text
 already-admitted SpecialistAgentTask
  -> code-owned local reference registry
- -> reference-only A2A projection
+ -> reference-only projection
       handoff_id
       specialist_task_id
       reference_sha256
- -> minimal A2A message/send
+ -> A2A 1.0 SendMessage over selected JSONRPC binding
  -> bounded peer-side reference resolution
  -> terminal Message or Task metadata
  -> deterministic OpsLens result admission
  -> metadata-only evidence
- -> STOP before capability execution
+ -> STOP before model/capability execution
 ```
 
-The registry, if used, is lab-only in-memory state. Gate 15.1 does not create or imply a persistent invocation/task registry.
+The registry, if used, is lab-only in-memory state. No persistent invocation/task registry is implied.
 
 ## Why reference-only input
 
-A protocol request must not create executable or business authority.
-
-The request therefore must not author:
+Protocol input must not author:
 
 ```text
 SingleAgentTask
@@ -167,37 +178,37 @@ capability invocation args/kwargs
 business result
 ```
 
-Reference-only input lets deterministic code resolve already-admitted state and reject tampering before any downstream work.
+Deterministic code resolves already-admitted state and rejects tampering before downstream work.
 
-This follows the same general authority discipline learned in Phase 13 MCP without conflating the two protocols.
+## Minimum protocol surface
 
-## Protocol surface limit
-
-Gate 15.2 should start with the smallest official stable surface that can prove interoperability:
+Gate 15.2 may use only:
 
 ```text
 AgentCard
-JSON-RPC 2.0
-message/send
-structured data part if needed
+supportedInterfaces
+one AgentInterface
+  protocolBinding = JSONRPC
+  protocolVersion = 1.0
+SendMessage
+structured Part only when needed for the reference
 one terminal Message or Task
 ```
 
-Defer until justified:
+Deferred:
 
 ```text
+GRPC
+HTTP+JSON
 SSE streaming
 push notifications
-secondary authentication
 file payloads
 arbitrary URLs
 multi-turn context
 remote business execution
 ```
 
-## Identity map to freeze next
-
-Gate 15.2 must define deterministic relationships among:
+## Identity map to freeze
 
 ```text
 source_task_id
@@ -207,13 +218,15 @@ specialist_task_id
 reference_sha256
 JSON-RPC request id
 messageId
-task id
-contextId
-artifact id, if used
+task id if returned
+contextId if returned
+artifact id if used
 AgentCard identity/version
+AgentInterface protocolBinding
+AgentInterface protocolVersion
 ```
 
-Protocol-generated IDs are correlation evidence, never replacements for OpsLens content identities.
+Protocol-generated identifiers are correlation evidence only.
 
 ## Authority invariants
 
@@ -227,26 +240,14 @@ A2A artifact != admitted OpsLens evidence
 A2A handoff proposal != handoff admission
 A2A context/task identity != OpsLens source-task identity
 A2A authentication != capability authorization
+A2A protocol binding != business authority
 ```
 
-Existing authority remains code-owned:
+Existing OpsLens authority remains code-owned: source binding, specialization mapping, capability intersection, handoff admission, capability authorization, executable-input binding, execution-result admission, provider/model selection, retry/fallback policy, provenance, and result projection.
 
-```text
-source-task binding
-specialization mapping
-capability intersection
-handoff admission
-capability authorization
-executable-input binding
-execution-result admission
-provider/model selection
-retry/fallback policy
-business-result projection
-```
+## Replay / failure requirements for Gate 15.2
 
-## Replay / idempotency / failure scope
-
-Gate 15.2 must freeze fixtures for:
+Freeze fixtures for:
 
 ```text
 duplicate JSON-RPC request id
@@ -254,17 +255,15 @@ duplicate messageId
 unknown specialist reference
 reference hash mismatch
 source/handoff/specialist mismatch
-unknown or extra protocol fields
-malformed structured part
-non-terminal response where terminal required
-rejected task
-failed task
-canceled task
+unsupported protocolVersion
+unsupported protocolBinding
+unknown/extra protocol fields
+malformed structured Part
+non-terminal Task where terminal is required
+rejected / failed / canceled Task
 timeout / transport failure
-contradictory task/artifact identity
+contradictory Task / Artifact identity
 ```
-
-Important:
 
 ```text
 transport success != exactly-once execution
@@ -272,42 +271,33 @@ transport success != exactly-once execution
 
 No automatic retry is authorized until duplicate effects are bounded.
 
-## Authentication scope
-
-The official protocol supports declared security schemes and authenticates at the HTTP transport boundary. Production deployments require appropriate HTTPS/security posture.
-
-Gate 15.1 does not make a production authentication claim because the next experiment is offline/in-process or loopback-only.
-
-```text
-A2A authentication != capability authorization
-```
-
-Any later network experiment must separately decide TLS, peer authentication, credentials, AgentCard exposure, secret ownership, request bounds, and hosting.
-
 ## SDK/dependency rule
 
-No SDK is selected in Gate 15.1.
+Gate 15.1 pins no SDK.
 
-Gate 15.2 must inspect the official A2A implementation compatible with stable protocol `0.3.0`, then freeze:
+Fresh official Python implementation snapshot:
 
 ```text
-exact package/version
-exact dependency scope
-framework coercion behavior
-raw request validation boundary
-package-size/runtime impact
+repository:     a2aproject/a2a-python
+latest release: 1.1.4
+release date:   2026-09-07
 ```
 
-Default preference is a development/reference dependency unless a runtime requirement is proven.
+Gate 15.2 must inspect exact SDK `1.1.4` dependency/framework behavior and confirm A2A v1.0 compatibility before adding a pin.
 
-## Experiment success criteria
-
-The next experiment is useful only if it proves:
+Default preference:
 
 ```text
-official minimal protocol interoperability: PASS
+reference/dev dependency first
+```
+
+## Success criteria for the next experiment
+
+```text
+selected A2A 1.0 JSON-RPC surface: PASS
 reference -> pre-admitted SpecialistAgentTask binding: exact
 unknown/tampered reference: fail closed
+unsupported binding/version: fail closed
 A2A-generated identity authority: 0
 model invocations: 0
 capability executions: 0
@@ -318,11 +308,7 @@ protocol overhead: measured
 failure classes: observable
 ```
 
-If those properties cannot be maintained, A2A does not progress to a real peer/model experiment.
-
 ## Observability dimensions
-
-Freeze independent measures:
 
 ```text
 protocol requests
@@ -334,7 +320,8 @@ handler elapsed
 retry count
 failure class
 reference admission outcome
-task/message outcome
+Task/Message outcome
+protocol binding/version
 model invocation count
 capability execution count
 incremental cost
@@ -344,12 +331,9 @@ No composite score.
 
 ## Cost / AWS boundary
 
-Gate 15.1 itself:
-
 ```text
 model invocations:        0
 capability executions:    0
-AWS API calls:            0
 new AWS resources:        0
 new IAM roles/policies:   0
 AgentCore resources:      0
@@ -358,8 +342,6 @@ incremental AWS cost:     USD 0.00
 ```
 
 ## Non-claims
-
-This gate does not prove or authorize:
 
 ```text
 A2A as production architecture
@@ -372,6 +354,7 @@ push notifications
 multi-turn state
 business-result authority
 capability authorization via AgentCard/skill
+JSON-RPC as the only A2A v1.0 binding
 AgentCore hosting
 MCP public runtime
 runtime exposure truth
@@ -380,8 +363,8 @@ runtime exposure truth
 ## Phase 13 / Phase 14 separation
 
 ```text
-MCP  -> tool/capability interoperability boundary
-A2A  -> agent-peer interaction boundary
+MCP -> tool/capability interoperability boundary
+A2A -> agent-peer interaction boundary
 ```
 
 Neither creates business authority.
@@ -401,13 +384,14 @@ head:   3781831795d500b05fa4bc602d50f376b4b1539f
 
 ```text
 docs/adr/0056-bounded-a2a-capability-fit.md
-labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v1.json
+labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v1.json  # superseded version claim
+labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v2.json  # authoritative correction
 ```
 
 ## Next authorized gate
 
 Gate 15.2 only:
 
-> Freeze and implement the smallest official A2A `0.3.0` reference-only adapter contract offline, including raw protocol validation, exact identity binding, replay/failure fixtures, SDK/dependency placement evidence, observability, and zero model/capability execution.
+> Freeze and implement the smallest A2A `1.0` reference-only adapter contract offline using one explicitly selected JSON-RPC binding, including raw protocol validation, AgentInterface version/binding admission, exact identity binding, replay/failure fixtures, SDK `1.1.4` dependency-placement evidence, observability, and zero model/capability execution.
 
-No network deployment and no model invocation are authorized yet.
+No network deployment and no model invocation are authorized.
