@@ -33,7 +33,8 @@ Phase 15 A2A                                    COMPLETE
 Phase 16 Runtime Exposure with Inspector        IN PROGRESS
   Gate 16.1 Inspector capability fit            COMPLETE / GO READ-ONLY ONLY
   Gate 16.2 read-only Inspector discovery       COMPLETE / BLOCKED_BY_EXISTING_IAM
-  Gate 16.3 minimum Inspector read IAM          NEXT / DECISION ONLY
+  Gate 16.3 minimum Inspector read IAM          COMPLETE / DEDICATED TEMP ROLE
+  Gate 16.4 temporary role + discovery rerun    NEXT / IMPLEMENTATION AUTHORIZED
 Phase 17 Security Hardening                     PLANNED
 Phase 18 Evaluation, Cost & Portfolio           PLANNED
 ```
@@ -180,8 +181,44 @@ References:
 - GitHub Actions run `34411934819`
 - artifact `10127569570`, SHA-256 `8814b313261e2ac2cde2894e7ea428e437aaa66cd0d2f47e7187759565d6738e`
 
-### Next gate — Gate 16.3
+### Gate 16.3 — minimum Inspector read-only IAM boundary — complete
 
-Evaluate the minimum Inspector read-only IAM boundary as a decision-only gate. Compare widening the existing deployment role, introducing a dedicated read-only discovery identity, and stopping Phase 16 without additional IAM.
+The measured denial triggered a separate IAM decision instead of automatic privilege expansion.
 
-No IAM mutation, Inspector activation/configuration change, hybrid routing integration, repository/runtime automatic correlation, or runtime-risk composite scoring is authorized until that decision is separately accepted.
+Decision:
+
+```text
+widen OpsLensGitHubDeployRole:                 REJECT
+use dedicated temporary discovery role:       ACCEPT
+stop Phase 16:                                 REJECT FOR NOW
+```
+
+Frozen role contract:
+
+```text
+role:                       OpsLensInspectorDiscoveryRole
+allowed actions:            inspector2:ListCoverage
+                            inspector2:ListFindings
+resource:                   *
+region condition:           aws:RequestedRegion == us-east-1
+OIDC subject:               immutable OpsLens repository/main subject
+requested STS session:      900 seconds
+other AWS permissions:      0
+mandatory teardown:         YES after one measured experiment
+```
+
+The two Inspector list actions have no IAM resource type, so resource-level ARN scoping is unavailable. Principal separation, exact action allowlisting, regional restriction, short session request, and mandatory teardown compensate for that unavoidable scope.
+
+References:
+
+- [`adr/0061-dedicated-temporary-inspector-discovery-role.md`](adr/0061-dedicated-temporary-inspector-discovery-role.md)
+- [`../labs/phase-16-gate-16-3-inspector-readonly-iam-decision.md`](../labs/phase-16-gate-16-3-inspector-readonly-iam-decision.md)
+- [`../labs/evidence/phase-16-gate-16-3-inspector-readonly-iam-decision-v1.json`](../labs/evidence/phase-16-gate-16-3-inspector-readonly-iam-decision-v1.json)
+
+### Next gate — Gate 16.4
+
+Implement the temporary role/policy and switch the manual discovery workflow to that role in the repository. Validate Terraform and negative-permission guardrails before stopping at the human AWS apply boundary.
+
+After one measured discovery, remove the temporary role/policy and independently verify its absence before any retained runtime-identity decision.
+
+No change to `OpsLensGitHubDeployRole`, Inspector activation/configuration, hybrid routing, repository/runtime automatic correlation, runtime-risk composite scoring, model synthesis, or agent capability execution is authorized.
