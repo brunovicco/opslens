@@ -19,12 +19,16 @@ locals {
     "${local.dev_agentcore_runtime_arn}/runtime-endpoint/*"
   )
 
+  dev_agentcore_workload_identity_directory_arn = (
+    "arn:aws:bedrock-agentcore:${var.aws_region}:${data.aws_caller_identity.current.account_id}:workload-identity-directory/default"
+  )
+
   dev_agentcore_workload_identity_precreation_arn = (
-    "arn:aws:bedrock-agentcore:${var.aws_region}:${data.aws_caller_identity.current.account_id}:workload-identity-directory/default/workload-identity/*"
+    "${local.dev_agentcore_workload_identity_directory_arn}/workload-identity/*"
   )
 
   dev_agentcore_workload_identity_arn = (
-    "arn:aws:bedrock-agentcore:${var.aws_region}:${data.aws_caller_identity.current.account_id}:workload-identity-directory/default/workload-identity/${local.dev_agentcore_runtime_name}-*"
+    "${local.dev_agentcore_workload_identity_directory_arn}/workload-identity/${local.dev_agentcore_runtime_name}-*"
   )
 
   dev_agentcore_artifact_arn = (
@@ -270,6 +274,7 @@ data "aws_iam_policy_document" "github_actions_agentcore_deploy" {
     actions = ["bedrock-agentcore:CreateWorkloadIdentity"]
 
     resources = [
+      local.dev_agentcore_workload_identity_directory_arn,
       local.dev_agentcore_workload_identity_precreation_arn,
     ]
 
