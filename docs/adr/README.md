@@ -70,3 +70,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0060](0060-bounded-amazon-inspector-runtime-evidence-fit.md) | Treat Amazon Inspector as an independent runtime-evidence authority and authorize read-only discovery before activation or correlation | Accepted |
 | [0061](0061-dedicated-temporary-inspector-discovery-role.md) | Use a dedicated temporary least-privilege Inspector discovery role instead of widening the shared GitHub deployment role | Accepted |
 | [0062](0062-retain-inspector-read-contract-without-standing-iam-or-scan-activation.md) | Retain the bounded Inspector read/evidence contract while removing temporary IAM and avoiding scan activation solely to manufacture evidence | Accepted |
+| [0063](0063-phase16-runtime-exposure-closeout.md) | Close Phase 16 at the proven read-only Inspector boundary with zero current records and no standing experiment IAM | Accepted |

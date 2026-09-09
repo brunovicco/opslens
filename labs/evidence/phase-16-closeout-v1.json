@@ -1,0 +1,85 @@
+{
+  "artifact_version": "phase-16-closeout:v1",
+  "evidence_date": "2026-09-09",
+  "phase": "Phase 16 — Runtime Exposure with Amazon Inspector",
+  "status": "COMPLETE",
+  "gates": {
+    "16.1": "COMPLETE_CAPABILITY_FIT_READ_ONLY_ONLY",
+    "16.2": "COMPLETE_BLOCKED_BY_EXISTING_IAM",
+    "16.3": "COMPLETE_DEDICATED_TEMP_ROLE_ACCEPTED",
+    "16.4": "COMPLETE_SUCCESS_ZERO_RECORDS",
+    "16.5": "COMPLETE_TEMP_IAM_REMOVED_AND_CONVERGED"
+  },
+  "measured_discovery": {
+    "workflow_run_id": 34414116549,
+    "workflow_run_number": 2,
+    "job_id": 102675000098,
+    "source_main_sha": "bc3c79b4168ffbaa1374b50e60bb8a6d416a14c2",
+    "result": "SUCCESS",
+    "client_elapsed_ms": 465.877452,
+    "coverage": {
+      "outcome": "SUCCESS",
+      "page_count": 1,
+      "record_count": 0,
+      "sdk_retry_count": 0,
+      "page_content_sha256": [
+        "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      ]
+    },
+    "findings": {
+      "outcome": "SUCCESS",
+      "page_count": 1,
+      "record_count": 0,
+      "sdk_retry_count": 0,
+      "page_content_sha256": [
+        "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      ]
+    },
+    "artifact_id": 10128371987,
+    "artifact_sha256": "a6f917e62124b4c604891e1a83db9874e3ef34696110dfaead1af16d45a03365",
+    "aws_mutation_count": 0,
+    "new_iam_count": 0,
+    "model_invocations": 0,
+    "capability_executions": 0
+  },
+  "cleanup": {
+    "cleanup_source_main_sha": "28f0194dc932569a40fc6b54e1cd8cd81aa690b2",
+    "plan": {
+      "add": 0,
+      "change": 0,
+      "destroy": 2
+    },
+    "apply": {
+      "added": 0,
+      "changed": 0,
+      "destroyed": 2
+    },
+    "post_apply_plan": "NO_CHANGES",
+    "temporary_role": "ABSENT_NOSUCHENTITY",
+    "shared_deploy_role": "PRESENT"
+  },
+  "retained_state": {
+    "inspector_readonly_domain_adapter_contract": "RETAIN",
+    "historical_discovery_workflow": "RETAIN_DISABLED_BY_DEFAULT",
+    "measured_zero_record_evidence": "RETAIN",
+    "standing_inspector_discovery_iam": "NONE",
+    "shared_deploy_role_inspector_authority": "NONE_IN_RETAINED_OPSLENS_TERRAFORM",
+    "inspector_activation_configuration": "NOT_CREATED",
+    "hybrid_runtime_exposure_routing": "NOT_CREATED",
+    "automatic_repository_runtime_correlation": "NOT_CREATED",
+    "runtime_risk_composite_scoring": "NOT_CREATED",
+    "model_synthesis_over_inspector_evidence": "NOT_CREATED"
+  },
+  "permanent_boundaries": [
+    "Repository Risk != Runtime Exposure",
+    "AWS authentication != Inspector read authorization",
+    "Inspector API success != runtime evidence presence",
+    "Inspector coverage != vulnerability finding",
+    "Inspector finding != repository finding",
+    "Inspector resource presence != network exposure",
+    "Inspector evidence != model authority",
+    "runtime evidence correlation != capability authorization"
+  ],
+  "next_phase": "Phase 17 — Security Hardening",
+  "pr_89_touched": false
+}

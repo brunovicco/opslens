@@ -1,0 +1,66 @@
+{
+  "artifact_version": "phase-16-gate-16-5-inspector-iam-cleanup-postapply:v1",
+  "evidence_date": "2026-09-09",
+  "phase": "Phase 16 — Runtime Exposure with Amazon Inspector",
+  "gate": "16.5 — Temporary Amazon Inspector IAM teardown",
+  "issue": 247,
+  "source_main_sha": "28f0194dc932569a40fc6b54e1cd8cd81aa690b2",
+  "operator_evidence": {
+    "kind": "human-bootstrap-terminal-transcript",
+    "sha256": "404e2b11d4839eb4cfc7d388ccd06f4acd8f60d09e587779d0634cfa58d93ab9"
+  },
+  "reviewed_cleanup_plan": {
+    "add": 0,
+    "change": 0,
+    "destroy": 2,
+    "destroyed_addresses": [
+      "aws_iam_role.github_actions_inspector_discovery",
+      "aws_iam_role_policy.github_actions_inspector_discovery"
+    ],
+    "unexpected_actions": 0
+  },
+  "apply": {
+    "added": 0,
+    "changed": 0,
+    "destroyed": 2,
+    "result": "SUCCESS"
+  },
+  "post_apply_convergence": {
+    "result": "NO_CHANGES",
+    "message": "No changes. Your infrastructure matches the configuration."
+  },
+  "independent_verification": {
+    "temporary_role": {
+      "role_name": "OpsLensInspectorDiscoveryRole",
+      "result": "ABSENT",
+      "aws_error": "NoSuchEntity"
+    },
+    "shared_deploy_role": {
+      "role_name": "OpsLensGitHubDeployRole",
+      "role_id": "AROAXDEFCFNVTM36UV7S2",
+      "arn": "arn:aws:iam::487757851499:role/OpsLensGitHubDeployRole",
+      "result": "PRESENT"
+    }
+  },
+  "authority_evidence": {
+    "temporary_inspector_role_retained": false,
+    "temporary_inspector_policy_retained": false,
+    "shared_deploy_role_modified_by_gate_16_4_or_16_5": false,
+    "retained_bootstrap_terraform_contains_inspector2_actions": false,
+    "inspector_activation_or_configuration_changed": false,
+    "repository_runtime_correlation_created": false,
+    "model_invocations": 0,
+    "capability_executions": 0
+  },
+  "retention": {
+    "inspector_readonly_adapter_contract": "RETAIN",
+    "measured_zero_record_evidence": "RETAIN",
+    "standing_inspector_discovery_iam": "REMOVED",
+    "shared_deploy_role_inspector_authority": "NONE_IN_OPSLENS_TERRAFORM_AND_NO_GATE_MUTATION",
+    "inspector_activation_or_configuration": "DO_NOT_CREATE_IN_PHASE_16",
+    "automatic_repository_runtime_correlation": "DO_NOT_CREATE",
+    "runtime_risk_composite_scoring": "DO_NOT_CREATE",
+    "model_synthesis_over_inspector_evidence": "DO_NOT_CREATE"
+  },
+  "pr_89_touched": false
+}

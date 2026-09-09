@@ -30,13 +30,8 @@ Phase 12 Multi-Agent Architecture               COMPLETE
 Phase 13 MCP                                    COMPLETE
 Phase 14 Amazon Bedrock AgentCore               COMPLETE
 Phase 15 A2A                                    COMPLETE
-Phase 16 Runtime Exposure with Inspector        IN PROGRESS
-  Gate 16.1 capability fit                     COMPLETE / GO READ-ONLY ONLY
-  Gate 16.2 existing-role discovery            COMPLETE / BLOCKED_BY_EXISTING_IAM
-  Gate 16.3 minimum read IAM                   COMPLETE / DEDICATED TEMP ROLE
-  Gate 16.4 temporary role + rerun             COMPLETE / SUCCESS / ZERO RECORDS
-  Gate 16.5 temporary IAM teardown             HUMAN DESTROY PENDING
-Phase 17 Security Hardening                     PLANNED
+Phase 16 Runtime Exposure with Inspector        COMPLETE
+Phase 17 Security Hardening                     NEXT
 Phase 18 Evaluation, Cost & Portfolio           PLANNED
 ```
 
@@ -99,90 +94,78 @@ AgentCore remains an optional lab target, not the default OpsLens reasoning runt
 
 A2A retains a content-addressed reference-only JSON-RPC `SendMessage` profile plus exact-source official SDK conformance in CI. No public/network A2A runtime, A2A-specific IAM, or SDK runtime dependency is retained.
 
-Canonical Phase 15 closeout:
+Canonical closeout:
 
 - [`adr/0059-phase15-a2a-closeout.md`](adr/0059-phase15-a2a-closeout.md)
 - [`../labs/phase-15-closeout.md`](../labs/phase-15-closeout.md)
 - [`../labs/evidence/phase-15-closeout-v1.json`](../labs/evidence/phase-15-closeout-v1.json)
 
-## Phase 16 — Runtime Exposure with Amazon Inspector — in progress
+## Phase 16 — Runtime Exposure with Amazon Inspector — complete
 
-Phase 16 starts from:
+Phase 16 retained Amazon Inspector only as an **independent read-only runtime-evidence boundary**.
 
-> **Repository Risk != Runtime Exposure.**
-
-Amazon Inspector is treated as an independent runtime-evidence authority. The bounded read surface remains:
+Gate sequence:
 
 ```text
-ListCoverage
-ListFindings
+16.1 capability fit                 COMPLETE / READ-ONLY ONLY
+16.2 existing-role discovery       COMPLETE / BLOCKED_BY_EXISTING_IAM
+16.3 minimum IAM decision          COMPLETE / DEDICATED TEMP ROLE
+16.4 measured dedicated rerun      COMPLETE / SUCCESS / ZERO RECORDS
+16.5 mandatory temporary teardown  COMPLETE / ROLE ABSENT / CONVERGED
 ```
 
-### Gate 16.2 — first discovery
-
-The first main-only attempt used the shared deploy role without widening it:
+Measured successful rerun:
 
 ```text
-run:              34411934819 / #1
-ListCoverage:     ACCESS_DENIED
-ListFindings:     NOT_ATTEMPTED / fail-closed
-AWS mutations:    0
-new IAM:          0
+run:                    34414116549 / #2
+job:                    102675000098
+ListCoverage:           SUCCESS / 1 page / 0 records / 0 retries
+ListFindings:           SUCCESS / 1 page / 0 records / 0 retries
+client elapsed:         465.877452 ms
+AWS mutations:          0
+model invocations:      0
+capability executions:  0
+artifact:               10128371987
+artifact SHA-256:       a6f917e62124b4c604891e1a83db9874e3ef34696110dfaead1af16d45a03365
 ```
 
-That result triggered a separate IAM decision rather than automatic privilege expansion.
-
-### Gate 16.3 — dedicated temporary read role
-
-The accepted experiment identity was limited to the two Inspector list actions, the immutable OpsLens main OIDC subject, `aws:RequestedRegion == us-east-1`, and mandatory teardown after one measured run.
-
-Reference:
-
-- [`adr/0061-dedicated-temporary-inspector-discovery-role.md`](adr/0061-dedicated-temporary-inspector-discovery-role.md)
-
-### Gate 16.4 — measured rerun
-
-Human bootstrap created exactly the temporary role/policy and one main-only rerun succeeded:
+Mandatory IAM cleanup:
 
 ```text
-run:                      34414116549 / #2
-job:                      102675000098
-client elapsed:           465.877452 ms
-ListCoverage:             SUCCESS / 1 page / 0 records
-ListFindings:             SUCCESS / 1 page / 0 records
-SDK retries:              0
-AWS mutations:            0
-new IAM during discovery: 0
-model invocations:        0
-capability executions:    0
+plan:                    0 add / 0 change / 2 destroy
+apply:                   0 added / 0 changed / 2 destroyed
+post-apply plan:         No changes
+temporary role:          ABSENT / NoSuchEntity
+shared deploy role:      PRESENT
+standing Inspector IAM:  NONE
 ```
 
-The minimum IAM boundary worked, but the current dev account returned no Inspector coverage or finding evidence. The zero result is intentionally narrow: it does not prove Inspector is disabled, unsupported, or without value elsewhere.
+The zero-record result is evidence about the current dev account/region/time, not proof that Amazon Inspector is globally disabled or without value.
 
-Retained decision:
+Final retention:
 
 ```text
-Inspector read-only adapter/contract:        RETAIN
-measured zero-evidence result:               RETAIN
-standing Inspector discovery IAM:            REMOVE
-Inspector activation/configuration change:   DO NOT CREATE IN PHASE 16
-repository/runtime automatic correlation:    DO NOT CREATE
-runtime-risk composite scoring:              DO NOT CREATE
-model synthesis over Inspector evidence:     DO NOT CREATE
+Inspector read-only domain/adapter contract:   RETAIN
+historical discovery workflow:                 RETAIN / DISABLED BY DEFAULT
+measured zero-record evidence:                 RETAIN
+standing Inspector discovery IAM:              NONE
+Inspector activation/configuration:             NOT CREATED
+hybrid runtime_exposure routing:                NOT CREATED
+repository/runtime automatic correlation:       NOT CREATED
+runtime-risk composite scoring:                 NOT CREATED
+model synthesis over Inspector evidence:        NOT CREATED
 ```
 
 References:
 
+- [`adr/0060-bounded-amazon-inspector-runtime-evidence-fit.md`](adr/0060-bounded-amazon-inspector-runtime-evidence-fit.md)
+- [`adr/0061-dedicated-temporary-inspector-discovery-role.md`](adr/0061-dedicated-temporary-inspector-discovery-role.md)
 - [`adr/0062-retain-inspector-read-contract-without-standing-iam-or-scan-activation.md`](adr/0062-retain-inspector-read-contract-without-standing-iam-or-scan-activation.md)
-- [`../labs/phase-16-gate-16-4-inspector-readonly-rerun.md`](../labs/phase-16-gate-16-4-inspector-readonly-rerun.md)
-- [`../labs/evidence/phase-16-gate-16-4-inspector-readonly-rerun-v1.json`](../labs/evidence/phase-16-gate-16-4-inspector-readonly-rerun-v1.json)
-- GitHub Actions run `34414116549`
-- artifact `10128371987`, digest `sha256:a6f917e62124b4c604891e1a83db9874e3ef34696110dfaead1af16d45a03365`
+- [`adr/0063-phase16-runtime-exposure-closeout.md`](adr/0063-phase16-runtime-exposure-closeout.md)
+- [`../labs/phase-16-closeout.md`](../labs/phase-16-closeout.md)
+- [`../labs/evidence/phase-16-closeout-v1.json`](../labs/evidence/phase-16-closeout-v1.json)
+- [`../labs/evidence/phase-16-gate-16-5-inspector-iam-cleanup-postapply-v1.json`](../labs/evidence/phase-16-gate-16-5-inspector-iam-cleanup-postapply-v1.json)
 
-### Gate 16.5 — mandatory teardown
+## Next — Phase 17 Security Hardening
 
-The retained repository state removes the temporary Inspector IAM definition. The historical discovery workflow remains for reproducibility but is disabled by default and requires explicit confirmation that a separately authorized temporary role exists.
-
-After protected merge, the human bootstrap plane must prove an exact `0 add / 0 change / 2 destroy` cleanup, apply the reviewed saved plan, require post-apply convergence, and independently verify the temporary role is absent while the shared deployment role remains free of Inspector authority.
-
-Phase 16 closes only after that cleanup evidence is recorded.
+Phase 17 begins with a cross-cutting threat-model and control-gap inventory. The first gate should map existing controls and residual risks before authorizing implementation changes or new AWS services.

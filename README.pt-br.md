@@ -6,7 +6,7 @@
 
 ### Software Supply Chain e Threat Intelligence Verificáveis na AWS
 
-**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Bounded Agent Reasoning · MCP · AgentCore · A2A · Autoridade Determinística**
+**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Bounded Agent Reasoning · MCP · AgentCore · A2A · Amazon Inspector · Autoridade Determinística**
 
 </div>
 
@@ -42,11 +42,11 @@ O projeto mantém deliberadamente separados verdade determinística, admissão d
 | Phase 13 | MCP | ✅ Concluída — interoperabilidade offline limitada retida |
 | Phase 14 | Amazon Bedrock AgentCore | ✅ Concluída — lab opcional retido; IAM de experimento removido |
 | Phase 15 | A2A | ✅ Concluída — interoperabilidade offline por referência + conformidade com SDK oficial retidas |
-| Phase 16 | Runtime Exposure with Amazon Inspector | ▶️ Próxima / Planejada |
-| Phase 17 | Security Hardening | ⏳ Planejada |
+| Phase 16 | Runtime Exposure with Amazon Inspector | ✅ Concluída — read boundary provado; zero registros atuais; IAM temporário removido |
+| Phase 17 | Security Hardening | ▶️ Próxima |
 | Phase 18 | Evaluation, Cost & Portfolio Readiness | ⏳ Planejada |
 
-Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), o [índice de ADRs](docs/adr/README.md) e o [closeout da Phase 15](labs/phase-15-closeout.md).
+Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), o [índice de ADRs](docs/adr/README.md) e o [closeout da Phase 16](labs/phase-16-closeout.md).
 
 ## Arquitetura principal
 
@@ -277,6 +277,66 @@ A2A transport success != business/evidence truth
 A2A protocol binding != business authority
 ```
 
+### Amazon Inspector — Phase 16
+
+A Phase 16 avaliou o Amazon Inspector como autoridade independente de evidência de runtime sem permitir que runtime data redefinisse findings de repositório ou a Risk Policy v1.
+
+A role compartilhada de deployment mediu primeiro um boundary fail-closed de autorização:
+
+```text
+run:            34411934819 / #1
+ListCoverage:   ACCESS_DENIED / AccessDeniedException
+ListFindings:   NOT_ATTEMPTED
+AWS mutations:  0
+```
+
+Em vez de ampliar esse principal compartilhado, o OpsLens criou uma role temporária dedicada limitada a `ListCoverage` e `ListFindings` para exatamente uma nova medição.
+
+Rerun medido:
+
+```text
+run:                    34414116549 / #2
+job:                    102675000098
+ListCoverage:           SUCCESS / 1 page / 0 records / 0 retries
+ListFindings:           SUCCESS / 1 page / 0 records / 0 retries
+client elapsed:         465.877452 ms
+AWS mutations:          0
+model invocations:      0
+capability executions:  0
+artifact SHA-256:       a6f917e62124b4c604891e1a83db9874e3ef34696110dfaead1af16d45a03365
+```
+
+O read boundary funcionou, mas a conta dev atual retornou zero coverage/findings do Inspector. O OpsLens não ativou nem reconfigurou scanning apenas para fabricar dados de demonstração.
+
+O teardown obrigatório produziu:
+
+```text
+cleanup plan:       0 add / 0 change / 2 destroy
+cleanup apply:      0 added / 0 changed / 2 destroyed
+post-apply plan:    No changes
+temporary role:     ABSENT / NoSuchEntity
+standing IAM:       NONE
+```
+
+Retenção final:
+
+```text
+Inspector read-only domain/adapter contract:   RETAIN
+historical discovery workflow:                 RETAIN / DISABLED BY DEFAULT
+measured zero-record evidence:                 RETAIN
+standing Inspector discovery IAM:              NONE
+Inspector activation/configuration:             NOT CREATED
+hybrid runtime_exposure routing:                NOT CREATED
+repository/runtime automatic correlation:       NOT CREATED
+```
+
+```text
+AWS authentication != Inspector read authorization
+Inspector API success != runtime evidence presence
+Inspector finding != repository finding
+Inspector evidence != model authority
+```
+
 ## O que deliberadamente não é afirmado
 
 O OpsLens atualmente **não** afirma:
@@ -288,7 +348,8 @@ networking PUBLIC do AgentCore como decisão de produção
 runtime A2A público/de rede
 autorização de capability derivada de A2A
 autoridade de business result derivada de A2A
-runtime exposure / evidência do Amazon Inspector
+runtime exposure inferido a partir do experimento Inspector com zero registros
+IAM permanente de experimento do Inspector
 SLOs de produção para os boundaries experimentais de runtime
 ```
 
@@ -326,18 +387,16 @@ tools in reasoning:      none
 - [Cleanup IAM da Phase 14](labs/phase-14-gate-14-4-agentcore-iam-cleanup.md)
 - [Closeout A2A da Phase 15](labs/phase-15-closeout.md)
 - [Evidência de closeout da Phase 15](labs/evidence/phase-15-closeout-v1.json)
+- [Closeout Amazon Inspector da Phase 16](labs/phase-16-closeout.md)
+- [Evidência de closeout da Phase 16](labs/evidence/phase-16-closeout-v1.json)
 
 ## Próxima phase planejada
 
 ```text
-Phase 16 — Runtime Exposure with Amazon Inspector
+Phase 17 — Security Hardening
 ```
 
-A Phase 16 adicionará uma autoridade independente de runtime exposure preservando:
-
-> **Repository Risk != Runtime Exposure.**
-
-Nenhuma mutação AWS da Phase 16 é autorizada apenas pelo closeout da Phase 15.
+A Phase 17 começa com um threat model transversal e um inventário de gaps de controle. Controles já provados nas phases anteriores serão reutilizados; hardening novo será autorizado apenas quando houver risco residual evidenciado.
 
 ---
 
