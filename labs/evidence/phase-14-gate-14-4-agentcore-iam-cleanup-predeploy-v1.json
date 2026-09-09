@@ -1,0 +1,99 @@
+{
+  "artifact_version": "phase-14-gate-14-4-agentcore-iam-cleanup-predeploy:v1",
+  "decision_date": "2026-09-09",
+  "phase": "Phase 14 — Amazon Bedrock AgentCore",
+  "gate": "14.4 — standing AgentCore experiment IAM cleanup and phase closeout",
+  "issue": 224,
+  "source_main_sha": "9f044a47d4605d1624aec6784e1994e54e6e75e3",
+  "status": "predeploy_ready",
+  "retention_basis": {
+    "gate_14_3_decision": "RETAIN_WITH_CHANGES",
+    "default_runtime": "Phase 11 direct Amazon Bedrock reasoning path",
+    "agentcore_scope": "disabled-by-default optional lab/deployment target plus historical evidence",
+    "public_network_mode_retained": false,
+    "standing_experiment_iam_retained": false
+  },
+  "runtime_state": {
+    "gate_14_2_runtime_resource_present": false,
+    "last_cleanup_evidence": "RESOURCE_NOT_FOUND",
+    "new_runtime_deployment_authorized": false,
+    "capability_executions": 0
+  },
+  "repository_cleanup": {
+    "deleted_configuration_files": [
+      "infra/bootstrap/github_agentcore_deploy_permissions.tf",
+      "infra/bootstrap/github_agentcore_replay_role.tf"
+    ],
+    "removed_outputs": [
+      "github_actions_agentcore_replay_role_arn"
+    ],
+    "retained_configuration_files": [
+      "infra/bootstrap/agentcore_runtime_identity_service_linked_role.tf",
+      ".github/workflows/agentcore-runtime-experiment.yml",
+      "infra/environments/dev/agentcore_runtime.tf"
+    ]
+  },
+  "expected_human_bootstrap_destroy_set": [
+    "aws_iam_role_policy_attachment.github_actions_agentcore_deploy",
+    "aws_iam_policy.github_actions_agentcore_deploy",
+    "aws_iam_role_policy.github_actions_agentcore_replay",
+    "aws_iam_role.github_actions_agentcore_replay"
+  ],
+  "must_not_destroy": [
+    "aws_iam_role.github_actions_deploy",
+    "aws_iam_openid_connect_provider.github_actions",
+    "aws_iam_service_linked_role.bedrock_agentcore_runtime_identity",
+    "unrelated bootstrap resources"
+  ],
+  "expected_aws_semantic_outcome_after_apply": {
+    "OpsLensAgentCoreReplayRole": "ABSENT",
+    "OpsLensAgentCoreDeployDevAccess": "ABSENT",
+    "OpsLensGitHubDeployRole": "PRESENT",
+    "AWSServiceRoleForBedrockAgentCoreRuntimeIdentity": "PRESENT_INTENTIONALLY"
+  },
+  "service_linked_role_decision": {
+    "resource": "aws_iam_service_linked_role.bedrock_agentcore_runtime_identity",
+    "aws_service_name": "runtime-identity.bedrock-agentcore.amazonaws.com",
+    "prevent_destroy": true,
+    "gate_14_4_action": "RETAIN",
+    "reason": "safe account-level deletion is not proven and the resource is an AWS service-owned prerequisite rather than ambient GitHub experiment authority"
+  },
+  "workflow_disposition": {
+    "path": ".github/workflows/agentcore-runtime-experiment.yml",
+    "retained": true,
+    "post_cleanup_operational": false,
+    "reason": "the exact deploy policy and replay role are removed; a future experiment must explicitly re-bootstrap authority and re-decide network posture",
+    "gate_14_2_public_exception_inherited": false
+  },
+  "authority_invariants": {
+    "github_oidc_changed": false,
+    "feature_branch_oidc_widened": false,
+    "shared_github_deploy_role_removed": false,
+    "replacement_agentcore_standing_authority_added": false,
+    "new_agentcore_runtime_created": false,
+    "new_agentcore_invocation": false,
+    "capability_execution_added": false,
+    "runtime_exposure_authority_added": false
+  },
+  "aws_mutation": {
+    "feature_branch": false,
+    "current_gate_aws_deletions": 0,
+    "required_plane": "human opslens-bootstrap after protected merge",
+    "plan_is_authoritative": true
+  },
+  "post_merge_required_evidence": [
+    "exact human Terraform plan",
+    "plan shows only intended experiment IAM destroys",
+    "human apply result",
+    "post-apply Terraform convergence",
+    "OpsLensAgentCoreReplayRole absence",
+    "OpsLensAgentCoreDeployDevAccess absence",
+    "OpsLensGitHubDeployRole presence",
+    "Runtime Identity service-linked role intentional presence",
+    "final Phase 14 repository state synchronization"
+  ],
+  "separate_work": {
+    "opslens_pr_89": "untouched",
+    "branch": "feat/governed-gateway-semantic-planner"
+  }
+}
