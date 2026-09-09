@@ -20,7 +20,7 @@ _REPLAY_ROLE_PATH = (
 
 
 def test_runtime_identity_slr_is_human_bootstrap_owned_and_protected() -> None:
-    """The account-level Runtime Identity SLR remains explicit protected bootstrap infrastructure."""
+    """The account-level Runtime Identity SLR remains protected bootstrap infrastructure."""
     text = _SLR_PATH.read_text(encoding="utf-8")
 
     assert (
