@@ -1,0 +1,92 @@
+{
+  "artifact_version": "phase-16-gate-16-1-inspector-runtime-evidence-fit:v1",
+  "evidence_date": "2026-09-09",
+  "phase": "Phase 16 — Runtime Exposure with Amazon Inspector",
+  "gate": "16.1 — Amazon Inspector Runtime-Evidence Capability Fit",
+  "issue": 238,
+  "source_main_sha": "ba60a17fa9be2b3507661ba33014fde51c26ff88",
+  "decision": "GO_TO_ONE_BOUNDED_READ_ONLY_DISCOVERY_EXPERIMENT",
+  "authority": {
+    "repository_risk_is_runtime_exposure": false,
+    "inspector_is_independent_runtime_evidence_authority": true,
+    "runtime_evidence_dimensions": [
+      "runtime_coverage",
+      "runtime_vulnerability",
+      "network_reachability",
+      "code_vulnerability"
+    ],
+    "network_reachability_currently_ec2_only": true,
+    "package_vulnerability_is_network_reachability": false,
+    "coverage_is_finding": false,
+    "inspector_finding_is_repository_finding": false,
+    "inspector_score_replaces_risk_policy_v1": false,
+    "inspector_epss_replaces_existing_source_authority": false
+  },
+  "current_inspector_contract": {
+    "read_apis_selected_for_discovery": [
+      "ListCoverage",
+      "ListFindings"
+    ],
+    "finding_types_observed_in_current_api_contract": [
+      "NETWORK_REACHABILITY",
+      "PACKAGE_VULNERABILITY",
+      "CODE_VULNERABILITY"
+    ],
+    "relevant_aws_resource_types": [
+      "AWS_EC2_INSTANCE",
+      "AWS_ECR_CONTAINER_IMAGE",
+      "AWS_ECR_REPOSITORY",
+      "AWS_LAMBDA_FUNCTION",
+      "CODE_REPOSITORY"
+    ]
+  },
+  "gate_16_2_authorization": {
+    "experiment": "BOUNDED_READ_ONLY_DISCOVERY",
+    "allowed_api_actions": [
+      "inspector2:ListCoverage",
+      "inspector2:ListFindings"
+    ],
+    "use_existing_credentials_first": true,
+    "access_denied_is_valid_terminal_evidence": true,
+    "automatic_iam_widening": false,
+    "inspector_activation_or_deactivation": false,
+    "ecr_scanning_configuration_change": false,
+    "lambda_scan_activation": false,
+    "ec2_scan_mode_change": false,
+    "eventbridge_change": false,
+    "suppression_filter_change": false,
+    "model_invocations": 0,
+    "capability_executions": 0
+  },
+  "required_gate_16_2_measurements": [
+    "api_outcome_per_call",
+    "pagination_count",
+    "covered_resource_count",
+    "finding_count",
+    "finding_type_counts",
+    "resource_type_counts",
+    "scan_status_counts",
+    "elapsed_time",
+    "sdk_retry_count_when_observable",
+    "aws_mutation_count",
+    "new_iam_count",
+    "model_invocation_count",
+    "capability_execution_count"
+  ],
+  "not_authorized": [
+    "enable or disable Amazon Inspector",
+    "change ECR scanning configuration",
+    "change EC2 scan mode",
+    "activate Lambda scanning",
+    "create EventBridge integration",
+    "create suppression filters",
+    "create IAM roles or policies",
+    "enable hybrid runtime_exposure routing",
+    "create runtime-risk composite score",
+    "model synthesis over Inspector evidence",
+    "agent capability execution",
+    "automatic repository/runtime correlation"
+  ],
+  "next_gate": "Phase 16 Gate 16.2 — bounded read-only Amazon Inspector discovery",
+  "pr_89_touched": false
+}

@@ -1,0 +1,81 @@
+name: Runtime Exposure CI
+
+on:
+  pull_request:
+    paths:
+      - "src/opslens/runtime_exposure/**/*.py"
+      - "tests/unit/runtime_exposure/**/*.py"
+      - "tests/fixtures/runtime_exposure/**"
+      - "scripts/run_inspector_*.py"
+      - "docs/adr/0060-*.md"
+      - "docs/adr/0061-*.md"
+      - "labs/phase-16-*.md"
+      - "labs/evidence/phase-16-*.json"
+      - ".github/workflows/runtime-exposure-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-exposure-quality:
+    name: Runtime exposure quality gates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Validate Phase 16 evidence JSON
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          paths = sorted(Path("labs/evidence").glob("phase-16-*.json"))
+          if not paths:
+              raise SystemExit("Phase 16 requires at least one evidence artifact.")
+          for path in paths:
+              with path.open("r", encoding="utf-8") as handle:
+                  value = json.load(handle)
+              if not isinstance(value, dict):
+                  raise SystemExit(f"{path} must contain one JSON object.")
+              artifact_version = value.get("artifact_version")
+              if not isinstance(artifact_version, str) or not artifact_version:
+                  raise SystemExit(f"{path} artifact_version must be a non-empty string.")
+          PY
+
+      - name: Validate Gate 16.1 authority boundary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path(
+              "labs/evidence/phase-16-gate-16-1-inspector-runtime-evidence-fit-v1.json"
+          )
+          value = json.loads(path.read_text(encoding="utf-8"))
+          if value.get("decision") != "GO_TO_ONE_BOUNDED_READ_ONLY_DISCOVERY_EXPERIMENT":
+              raise SystemExit("Gate 16.1 decision mismatch.")
+          authority = value.get("authority")
+          if not isinstance(authority, dict):
+              raise SystemExit("Gate 16.1 authority evidence missing.")
+          if authority.get("repository_risk_is_runtime_exposure") is not False:
+              raise SystemExit("Repository risk must not become runtime exposure.")
+          if authority.get("network_reachability_currently_ec2_only") is not True:
+              raise SystemExit("EC2-only network reachability boundary is required.")
+          gate = value.get("gate_16_2_authorization")
+          if not isinstance(gate, dict):
+              raise SystemExit("Gate 16.2 authorization evidence missing.")
+          if gate.get("automatic_iam_widening") is not False:
+              raise SystemExit("Automatic IAM widening is forbidden.")
+          if gate.get("inspector_activation_or_deactivation") is not False:
+              raise SystemExit("Inspector activation/deactivation is forbidden in Gate 16.2.")
+          if value.get("pr_89_touched") is not False:
+              raise SystemExit("PR #89 must remain untouched.")
+          PY
