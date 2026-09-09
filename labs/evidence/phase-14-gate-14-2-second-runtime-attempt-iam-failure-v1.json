@@ -1,0 +1,59 @@
+{
+  "artifact_version": "phase-14-gate-14-2-second-runtime-attempt-iam-failure:v1",
+  "decision_date": "2026-09-09",
+  "phase": "Phase 14 — Amazon Bedrock AgentCore",
+  "gate": "14.2 — first bounded AgentCore HTTP/SigV4 runtime experiment",
+  "source_main_sha": "f32ee48c9f89a1886f400477f0ce97199c30697a",
+  "workflow_run": {
+    "id": 34301232610,
+    "job_id": 102308376540,
+    "conclusion": "failure",
+    "failed_step": "Apply bounded AgentCore resources only",
+    "error_type": "AccessDeniedException",
+    "denied_action": "bedrock-agentcore:CreateAgentRuntimeEndpoint",
+    "authorization_resource": "arn:aws:bedrock-agentcore:us-east-1:487757851499:runtime/*"
+  },
+  "failure_classification": {
+    "layer": "AgentCore control-plane deployment IAM",
+    "cause": "CreateAgentRuntime automatically creates the DEFAULT endpoint and authorizes the dependent CreateAgentRuntimeEndpoint action against the runtime/* pre-creation resource scope, while the deployment policy admitted only the post-creation OpsLens runtime-family ARN",
+    "source_cli_boundary_fixed": true,
+    "artifact_publication_completed": true,
+    "terraform_create_plan_reached": true,
+    "runtime_created": false,
+    "runtime_ready": false,
+    "runtime_invocations": 0,
+    "capability_executions": 0
+  },
+  "artifact_publication": {
+    "bucket": "opslens-dev-artifacts-487757851499-us-east-1",
+    "key": "agentcore/runtime/a846034ad646c4f6383ac08e47d9ed065b4a9f3349c14104db49a2d510b3ec88/opslens-agentcore-runtime.zip",
+    "sha256": "a846034ad646c4f6383ac08e47d9ed065b4a9f3349c14104db49a2d510b3ec88",
+    "version_id": "zbr0hWXEjhjAlBEFZO4782AHyhL5mbfm",
+    "status": "created"
+  },
+  "cleanup": {
+    "cleanup_steps_executed": true,
+    "execution_role_created_before_failure": true,
+    "execution_role_policy_created_before_failure": true,
+    "execution_role_destroyed": true,
+    "execution_role_policy_destroyed": true,
+    "runtime_id_captured": false,
+    "runtime_cleanup_verification_required": false
+  },
+  "preserved_workflow_artifact": {
+    "artifact_id": 10085023217,
+    "name": "phase-14-gate-14-2-agentcore-runtime-evidence-34301232610",
+    "digest": "sha256:4793c28a86fc2fdd5676985ddb32c86fcb498b1dd35b5dade9227cbf4dd14fb6",
+    "expires_at": "2026-10-09T01:58:42Z",
+    "files": [
+      "opslens-agentcore-lifecycle.json",
+      "opslens-agentcore-publication.json"
+    ]
+  },
+  "authority_learning": {
+    "aws_documentation": "CreateAgentRuntime automatically creates the DEFAULT endpoint; the service authorization reference marks CreateAgentRuntimeEndpoint as a dependent permission of CreateAgentRuntime and scopes CreateAgentRuntimeEndpoint to a runtime resource",
+    "measured_authorization_scope": "arn:aws:bedrock-agentcore:us-east-1:487757851499:runtime/*",
+    "required_change": "admit only CreateAgentRuntimeEndpoint on the account-and-region runtime/* pre-creation scope while retaining post-creation runtime management on the exact OpsLens runtime family"
+  },
+  "retention_rule": "preserve this failed authenticated attempt as runtime deployment IAM evidence; do not rewrite it as successful AgentCore runtime evidence"
+}
