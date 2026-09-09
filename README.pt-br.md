@@ -54,13 +54,13 @@ Boundaries permanentes:
 | Phase 11 | Single-Agent Baseline | ✅ Concluída |
 | Phase 12 | Multi-Agent Architecture | ✅ Concluída |
 | Phase 13 | MCP | ✅ Concluída — boundary MCP offline limitado retido |
-| Phase 14 | Amazon Bedrock AgentCore | 🚧 Em andamento — Gates 14.1 e 14.2 concluídas; decisão de retenção pendente |
-| Phase 15 | A2A | ⏳ Planejada |
+| Phase 14 | Amazon Bedrock AgentCore | ✅ Concluída — lab opcional retido; IAM de experimento removido |
+| Phase 15 | A2A | ▶️ Próxima / planejada |
 | Phase 16 | Runtime Exposure with Amazon Inspector | ⏳ Planejada |
 | Phase 17 | Security Hardening | ⏳ Planejada |
 | Phase 18 | Evaluation, Cost & Portfolio Readiness | ⏳ Planejada |
 
-Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), o [closeout MCP da Phase 13](labs/phase-13-gate-13-5-mcp-closeout.md) e o [experimento medido da Gate 14.2 com AgentCore](labs/phase-14-gate-14-2-bounded-agentcore-runtime.md).
+Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), o [closeout MCP da Phase 13](labs/phase-13-gate-13-5-mcp-closeout.md) e o [closeout da Gate 14.4](labs/phase-14-gate-14-4-agentcore-iam-cleanup.md).
 
 ## Sistema governado implementado
 
@@ -193,29 +193,24 @@ SingleAgentTask
  -> AuthorizedAgentAction | AgentAbstention | stable rejection
 ```
 
-O baseline real da Gate 11.4 termina intencionalmente antes da capability execution. A execução tipada permanece um boundary determinístico separado.
+O baseline real termina antes de capability execution. A execução tipada permanece um boundary determinístico separado.
+
+Referência medida:
+
+```text
+quality:                    6/6
+model invocations:          6
+input/output/total tokens:  3291 / 104 / 3395
+provider latency median:    809.5 ms
+client elapsed median:      977.5 ms
+SDK retries:                0
+capability executions:      0
+derived six-case cost:      USD 0.0041921
+```
 
 ### 8. Autoridade limitada de handoff multi-agent
 
-A Phase 12 Gate 12.1 congela:
-
-```text
-multi-agent-handoff:v1
-```
-
-Partição de especializações controlada por código:
-
-```text
-EVIDENCE_ANALYSIS
- -> public_repository_analysis
- -> structured_security_query
-
-GUIDANCE_SYNTHESIS
- -> hybrid_security_answer
- -> knowledge_guidance
-```
-
-Boundary de handoff:
+A Phase 12 retém especialização e admissão de handoff determinísticas:
 
 ```text
 SingleAgentTask
@@ -230,56 +225,9 @@ SingleAgentTask
  -> STOP
 ```
 
-A redução `4 -> <=2` é narrowing da superfície de raciocínio, não uma alegação de redução de privilégio em runtime. Os modelos continuam sem autoridade de execução.
+A topologia medida com dois modelos não foi retida como default porque não trouxe ganho de qualidade e aumentou invocações, tokens, latência e custo.
 
-### 9. Autoridade determinística da comparação multi-agent
-
-A Phase 12 Gate 12.2 congela:
-
-```text
-multi-agent-comparison:v1
-```
-
-O contrato de comparação foi congelado antes de existir uma segunda invocação real de modelo. O resultado sintético `6/6` é conformidade do evaluator/contrato, não qualidade de modelo.
-
-Identidades exatas:
-
-```text
-Phase 11 corpus_sha256:   3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
-Phase 11 report_sha256:   724a4c2918e5628949445d67493e893d7700cffd86fb3c4e74cebb105a357145
-Gate 12.2 dataset_sha256: 1ad7f6274edea7d515f5827859d8a39bdde8edecc9a2ed58dc09df16b09dd491
-Gate 12.2 report_sha256:  0586822800f028d0bb5c7cdb937db4af2f685abde3e09c76afd979d4e1abc222
-```
-
-### 10. Experimento multi-agent medido e decisão de retenção
-
-A Gate 12.3 introduziu o primeiro experimento autenticado e limitado com dois modelos, mantendo handoff e capability authorization determinísticos.
-
-Resultado observado:
-
-```text
-quality:                           6/6
-model invocations:                 10
-input/output/total tokens:          5788 / 194 / 5982
-provider latency median per task:  1694.0 ms
-client elapsed median per task:    2135.0 ms
-SDK retries:                       0
-capability executions:             0
-derived six-case cost:             USD 0.0074338
-```
-
-A Gate 12.4 comparou esse resultado com a referência da Phase 11:
-
-```text
-quality:                    6/6 -> 6/6      sem ganho
-model invocations:          6 -> 10         +66.67%
-total tokens:               3395 -> 5982    +76.20%
-provider latency median:    809.5 -> 1694   +109.26%
-client elapsed median:      977.5 -> 2135   +118.41%
-derived cost:               0.0041921 -> 0.0074338 USD  +77.33%
-```
-
-Decisão congelada:
+Decisão retida:
 
 ```text
 Phase 11 single-agent reasoning reference:      RETAIN
@@ -289,11 +237,9 @@ Gate 12.3 two-model topology as default:        DO NOT RETAIN
 Gate 12.3 implementation/evidence:              PRESERVE HISTORICALLY
 ```
 
-A Phase 12 foi encerrada em torno da arquitetura que sobreviveu à medição, não da topologia mais complexa implementada.
+### 9. Interoperabilidade MCP limitada e divulgação de resultados
 
-### 11. Interoperabilidade MCP limitada e divulgação de resultados
-
-A Phase 13 congela três contratos voltados ao protocolo:
+A Phase 13 congela:
 
 ```text
 mcp-capability-exposure:v1
@@ -310,7 +256,7 @@ opslens.hybrid_security_answer      -> hybrid_security_answer
 opslens.public_repository_analysis  -> public_repository_analysis
 ```
 
-Caminho retido da Phase 13:
+Caminho retido:
 
 ```text
 autoridade tipada existente da Phase 11
@@ -319,23 +265,17 @@ autoridade tipada existente da Phase 11
  -> recusa exata de raw argument keys
  -> resolução + admissão determinísticas
  -> exatamente uma tentativa do executor tipado existente
- -> bridge de execução MCP content-addressed
- -> mcp-result-projection:v1 explícito apenas para structured_security_query
+ -> admissão tipada de resultado existente
+ -> projeção explícita apenas para structured_security_query
  -> linhas CVE + EPSS limitadas
  -> STOP antes de runtime público/de rede
 ```
 
-A entrada do protocolo continua sendo apenas `invocation_id` e `invocation_sha256`. MCP não pode criar `SemanticQuery`, SQL, URLs, shell commands, credenciais, seleção de provider/model, política de retry/fallback nem `args`/`kwargs` executáveis arbitrários.
+MCP não pode criar `SemanticQuery`, SQL, URLs, shell commands, credenciais, seleção de provider/model, política de retry/fallback nem argumentos executáveis arbitrários. Hosting MCP público/de rede continua como non-claim.
 
-O MCP Python SDK oficial está pinado como `mcp==2.2.0` apenas nas dependências de desenvolvimento. Testes reais de interoperabilidade mostraram que a coerção de argumentos gerada pelo SDK/Pydantic pode ignorar campos inesperados; por isso o OpsLens valida o conjunto exato de chaves do request antes da coerção do framework. Um experimento separado de dependency placement mostrou que mover MCP para runtime dependencies aumentava pacotes Lambda não relacionados e quebrava um package-size gate existente; o limite de deploy não foi enfraquecido.
+### 10. Experimento medido com AgentCore Runtime
 
-A divulgação de business result é deliberadamente mais estreita que capability execution. A Phase 13 transporta conteúdo de negócio apenas para `structured_security_query`, por meio de um projector explícito que mapeia o shape interno já admitido `("cve", "epss")` para linhas limitadas com `cve` + `epss_score`. Resultados de knowledge, hybrid e public-repository permanecem sem transporte de business content.
-
-A Phase 13 é encerrada nesse boundary offline/in-process limitado. Ela não cria runtime MCP público apenas por completude.
-
-### 12. Experimento limitado e medido com AgentCore Runtime
-
-A Phase 14 Gate 14.1 autorizou apenas um experimento limitado de runtime. A Gate 14.2 hospedou o boundary de raciocínio retido da Phase 11 sem adicionar autoridade de capability execution:
+A Gate 14.1 autorizou apenas um experimento limitado de Runtime. A Gate 14.2 hospedou o boundary de raciocínio retido da Phase 11 sem adicionar autoridade de capability execution:
 
 ```text
 AgentCore Runtime HTTP / IAM SigV4
@@ -366,7 +306,7 @@ deployment-role invocation: AccessDeniedException / HTTP 403
 cleanup verifier:           RESOURCE_NOT_FOUND
 ```
 
-Custo observado após a chegada da telemetria atrasada do AgentCore Runtime:
+Custo observado:
 
 ```text
 AgentCore Runtime:  USD 0.002380345136128484
@@ -374,86 +314,62 @@ Bedrock inference:  USD 0.004192100000000000
 TOTAL:              USD 0.006572445136128483
 ```
 
-As tentativas #1–#10 permanecem preservadas como evidência de remediação medida para execução source-layout e dependências IAM/lifecycle do AgentCore. O run bem-sucedido não reescreve essas falhas.
+As tentativas #1–#10 permanecem preservadas como evidência medida das dependências IAM/lifecycle. O run bem-sucedido não reescreve essas falhas.
 
-A Gate 14.2 **não** aprova AgentCore nem `PUBLIC` para produção, não estabelece production SLO, não cria runtime-exposure truth e não autoriza capability execution. A decisão de retenção continua deliberadamente aberta.
+A Gate 14.2 **não** aprovou AgentCore nem `PUBLIC` para produção, não estabeleceu production SLO, não criou runtime-exposure truth e não autorizou capability execution.
 
-## Baseline real Bedrock da Phase 11
+## Retenção e closeout da Phase 14
 
-```text
-Amazon Bedrock Converse
-region:          us-east-1
-model/profile:   us.anthropic.claude-haiku-4-5-20251001-v1:0
-temperature:     0.0
-maxTokens:       96
-tools:           disabled
-```
+A Gate 14.3 comparou o resultado medido do AgentCore com a referência retida da Phase 11 usando somente evidência comparável.
 
-Resultado medido:
+Decisão final:
 
 ```text
-proposal quality:             6/6
-bounds compliance:            6/6
-SDK retries:                  0
-capability executions:        0
-input/output/total tokens:    3291 / 104 / 3395
-provider latency median:      809.5 ms
-client elapsed median:        977.5 ms
-derived six-case cost:        USD 0.0041921
+overall decision:                         RETAIN WITH CHANGES
+Phase 11 direct Bedrock reasoning:        RETAIN / DEFAULT
+AgentCore implementation/evidence:        RETAIN AS OPTIONAL LAB TARGET
+AgentCore managed Runtime as default:      DO NOT RETAIN
+PUBLIC network mode:                      DO NOT RETAIN
+standing AgentCore Runtime resources:     DO NOT RETAIN
+standing experiment-specific GitHub IAM: REMOVE
 ```
 
-Evidência preservada:
+A qualidade, quantidade de chamadas e tokens do corpus de seis casos foram idênticas entre Phase 11 e replay hospedado no AgentCore. O custo de inferência Bedrock permaneceu USD 0.0041921; o AgentCore adicionou USD 0.002380345136128484 de Runtime compute medido, ou 56.78168784448091% em relação ao componente de inferência nesse experimento.
+
+Os boundaries brutos de latência são preservados, mas não são convertidos em uma comparação percentual normalizada porque não estão controlados o suficiente para sustentar essa afirmação.
+
+### Gate 14.4 — limpeza do IAM de experimento
+
+A limpeza de desired state foi mergeada de forma protegida na PR #225:
 
 ```text
-labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json
+merge SHA:                 9913c3cbf5f2239d6445042a139a9cca890590c8
+exact-head AgentCore CI:   34396085154 / run #63 / PASS
+exact-head Terraform CI:   34396085123 / run #267 / PASS
 ```
 
-O resultado 6/6 é resultado de um acceptance corpus congelado, não uma afirmação de correção universal do modelo.
-
-## Evidência de closeout da Phase 13
+Resultado do bootstrap humano:
 
 ```text
-issue:                  #192
-PR:                     #193
-final head:             99dd3d979a5205e38f2c1a4dfc84dc9f82d0e0c7
-PR merge test commit:   7ec68aa12bc0a08b698ed0ddf76434e7bd97fe85
-MCP CI:                 34250265151 / run #52 / PASS
-job:                    102142600531
-uv lock --check:        PASS
-MCP SDK pin:            PASS
-MCP import smoke:       PASS
-Ruff:                   PASS
-Pyright strict:         0 errors / 0 warnings / 0 informations
-pytest MCP slice:       29 passed in 0.90s
-review threads:         0
-PR comments:            0
-model invocations:      0
-new AWS/IAM:            0
-public MCP endpoint:    0
-MCP deployed runtime:   0
-merge SHA:              c449cfc8e18dfd240ceedbe6e8e4d143601f0254
+plano revisado:         0 add / 0 change / 4 destroy
+apply:                  0 add / 0 change / 4 destroy
+convergência pós-apply: NO CHANGES
 ```
 
-Artefatos de closeout:
+Verificação IAM independente:
 
 ```text
-labs/evidence/phase-13-closeout-v1.json
-labs/phase-13-gate-13-5-mcp-closeout.md
-docs/adr/0051-phase13-mcp-closeout.md
+OpsLensAgentCoreReplayRole:                 AUSENTE / NoSuchEntity
+OpsLensAgentCoreDeployDevAccess:            AUSENTE / NoSuchEntity
+attachment AgentCore no deploy role:        []
+OpsLensGitHubDeployRole:                    PRESENTE
+AWSServiceRoleForBedrockAgentCoreRuntimeIdentity:
+                                            PRESENTE / retido intencionalmente
 ```
 
-## Evidência medida da Gate 14.2
+O Runtime Identity service-linked role continua protegido porque a segurança de sua remoção no nível da conta não foi provada. Ele é service-scoped da AWS e não equivale a autoridade ambiente de experimento do GitHub.
 
-```text
-workflow artifact: 10115123076
-workflow digest:   sha256:7006a7c2bfda1658a9e66fcfe38f61b06dc64e6f54705ffbf6b02574870ef65c
-repository evidence:
-  labs/evidence/phase-14-gate-14-2-final-runtime-experiment-v1.json
-lab:
-  labs/phase-14-gate-14-2-bounded-agentcore-runtime.md
-ADR:
-  docs/adr/0053-bounded-agentcore-direct-code-public-network-experiment.md
-```
+O workflow/código histórico do AgentCore permanece como material de laboratório reproduzível, mas está intencionalmente não operacional até que um futuro experimento faça novo re-bootstrap mínimo e orientado por evidência. A exceção `PUBLIC` da Gate 14.2 não é herdada.
 
 ## Invariantes de segurança e autoridade
 
@@ -464,7 +380,6 @@ ADR:
 - Public request admission não concede fetch authority arbitrária.
 - Planejamento em linguagem natural não recebe autoridade SQL irrestrita.
 - Retrieval output é evidência, não verdade determinística.
-- Texto recuperado continua não confiável como instrução após validação de proveniência.
 - Hybrid routing e completude obrigatória permanecem determinísticos.
 - Citation IDs vêm somente de evidência admitida.
 - Agent action proposal não é capability authorization.
@@ -476,15 +391,12 @@ ADR:
 - MCP exposure não é autoridade para argumentos executáveis.
 - MCP admission não é capability execution.
 - MCP capability execution não é autoridade para business-result transport.
-- MCP result admission não é autoridade para protocol result projection.
 - MCP result projection não é public runtime exposure.
-- Sucesso de transporte MCP não é verdade de negócio/evidência.
 - AgentCore hosting não é business authorization.
 - Runtime authentication não é capability authorization.
 - Runtime execution role não é model/tool authority.
 - Runtime telemetry não é business truth.
 - Runtime deployment não é runtime-exposure truth.
-- Raw output de modelo/provider/downstream não vira autoridade canônica apenas porque foi transportado por um protocolo.
 - Seleção de provider/model e política de retry/fallback permanecem controladas por código.
 - Runtime exposure não é inferido de repository risk.
 - Least privilege, observabilidade, diagnóstico de falhas e cost accounting são requisitos arquiteturais.
@@ -498,7 +410,6 @@ hybrid-security-answer business-result transport
 public-repository-analysis business-result transport
 persistent invocation/result registry
 public MCP endpoint
-MCP transport authentication ou authorization
 production MCP network SLOs
 AgentCore como runtime default/de produção do OpsLens
 PUBLIC no AgentCore como decisão de rede para produção
@@ -524,10 +435,10 @@ synthesis profile:       us.anthropic.claude-haiku-4-5-20251001-v1:0
 reasoning profile:       us.anthropic.claude-haiku-4-5-20251001-v1:0
 streaming:               não
 tools no reasoning:      nenhum
-AgentCore Gate 14.2:     runtime HTTP/SigV4 temporário medido; removido após o run
+AgentCore retained state: lab opcional disabled-by-default; sem IAM GitHub de experimento ativo
 ```
 
-## Documentação
+## Documentação e evidência
 
 - [Current State](docs/current-state.md)
 - [Roadmap](docs/roadmap.md)
@@ -538,18 +449,31 @@ AgentCore Gate 14.2:     runtime HTTP/SigV4 temporário medido; removido após o
 - [Closeout da Phase 11](labs/phase-11-gate-11-6-closeout.md)
 - [Closeout da Phase 12](labs/phase-12-gate-12-5-multi-agent-closeout.md)
 - [Closeout MCP da Phase 13](labs/phase-13-gate-13-5-mcp-closeout.md)
-- [Experimento medido da Gate 14.2 com AgentCore](labs/phase-14-gate-14-2-bounded-agentcore-runtime.md)
-- [ADR 0053 — experimento limitado AgentCore direct-code PUBLIC](docs/adr/0053-bounded-agentcore-direct-code-public-network-experiment.md)
+- [Experimento medido da Gate 14.2](labs/phase-14-gate-14-2-bounded-agentcore-runtime.md)
+- [Decisão de retenção da Gate 14.3](labs/phase-14-gate-14-3-agentcore-retention-decision.md)
+- [Limpeza de IAM da Gate 14.4](labs/phase-14-gate-14-4-agentcore-iam-cleanup.md)
+- [ADR 0054 — AgentCore somente como lab opcional](docs/adr/0054-retain-agentcore-only-as-optional-lab-target.md)
+- [ADR 0055 — remoção do IAM permanente do experimento AgentCore](docs/adr/0055-remove-standing-agentcore-experiment-iam.md)
+- [Evidência pós-apply da Gate 14.4](labs/evidence/phase-14-gate-14-4-agentcore-iam-cleanup-postapply-v1.json)
 
-## Próxima — decisão baseada em evidência sobre retenção do AgentCore
+## Próxima — Phase 15 A2A
 
-A Gate 14.2 está concluída. O roadmap deliberadamente não inventa o número da próxima gate antes de existir um escopo concreto de decisão.
+A Phase 15 começa por capability fit, não por implementação automática.
 
-A próxima pergunta arquitetural é:
+A primeira pergunta arquitetural é:
 
-> Does the measured AgentCore hosting/session/operational value justify its IAM, lifecycle, network, latency, cost, and operational surface for the retained OpsLens reasoning architecture?
+> Qual boundary existente entre agentes/serviços tem um problema concreto de interoperabilidade que justifique A2A, e quais contratos de identidade, mensagem, proveniência, replay, falha, observabilidade, custo e autoridade precisam ser congelados antes de qualquer transporte de rede?
 
-A resposta não está pré-selecionada. Reter, alterar ou rejeitar AgentCore Runtime como default continuam sendo resultados válidos orientados por evidência.
+Restrições permanentes da Phase 15:
+
+```text
+A2A message != capability authorization
+A2A peer identity != business authority
+A2A transport success != business/evidence truth
+A2A handoff proposal != handoff admission
+A2A must not assume AgentCore hosting
+A2A must not promote MCP into a public runtime as a side effect
+```
 
 A PR #89 de Governed LLM Gateway continua como trabalho cross-project deferred e precisa ser reavaliada separadamente contra a arquitetura vigente do OpsLens antes de qualquer merge.
 

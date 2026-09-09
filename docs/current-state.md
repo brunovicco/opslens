@@ -21,97 +21,16 @@ Phase 10   Observability & Operational Excellence              COMPLETE
 Phase 11   Single-Agent Baseline                               COMPLETE
 Phase 12   Multi-Agent Architecture                            COMPLETE
 Phase 13   MCP                                                 COMPLETE
-Phase 14   Amazon Bedrock AgentCore                            IN PROGRESS
+Phase 14   Amazon Bedrock AgentCore                            COMPLETE
   Gate 14.1 AgentCore Runtime capability-fit / authority       COMPLETE / MERGED
   Gate 14.2 First bounded HTTP/SigV4 runtime experiment        COMPLETE / MEASURED
   Gate 14.3 AgentCore Runtime retention decision               COMPLETE / RETAIN WITH CHANGES
-  next       bounded standing-IAM cleanup                       PENDING SEPARATE ISSUE
-Phase 15   A2A                                                 PLANNED
+  Gate 14.4 Standing experiment IAM cleanup                    COMPLETE / VERIFIED
+Phase 15   A2A                                                 NEXT / PLANNED
 Phase 16   Runtime Exposure with Amazon Inspector              PLANNED
 Phase 17   Security Hardening                                  PLANNED
 Phase 18   Evaluation, Cost & Portfolio Readiness              PLANNED
 ```
-
-## Latest measured checkpoint — Phase 14 Gate 14.2
-
-Terminal successful experiment:
-
-```text
-source main:                e5072ec68b421677359cebb1eb449578ef7d5b49
-merge:                      fix(phase14): preserve runtime delete waiter read authority (#220)
-workflow:                   AgentCore Runtime Experiment
-run:                        34378942784 / run #11 / SUCCESS
-job:                        102558703872
-runtime:                    opslens_dev_bounded_runtime-Cl8aNBDGzh
-runtime version:            1
-protocol:                   HTTP
-network:                    PUBLIC — dev-only experiment exception
-artifact SHA256:            a846034ad646c4f6383ac08e47d9ed065b4a9f3349c14104db49a2d510b3ec88
-Phase 11 corpus SHA256:     3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
-```
-
-Authenticated replay:
-
-```text
-cases:                      6 / 6 PASS
-HTTP responses:             200
-capability executions:      0
-SDK retries:                0
-input/output/total tokens:  3291 / 104 / 3395
-transport elapsed sum:      19981 ms
-```
-
-Negative authorization proof:
-
-```text
-OpsLensGitHubDeployRole
- -> bedrock-agentcore:InvokeAgentRuntime
- -> AccessDeniedException / HTTP 403
-```
-
-Cleanup proof:
-
-```text
-Terraform:                  0 add / 0 change / 3 destroy
-independent verifier:       RESOURCE_NOT_FOUND
-```
-
-Preserved workflow artifact:
-
-```text
-artifact ID: 10115123076
-digest:      sha256:7006a7c2bfda1658a9e66fcfe38f61b06dc64e6f54705ffbf6b02574870ef65c
-```
-
-Immutable repository closeout evidence:
-
-```text
-labs/evidence/phase-14-gate-14-2-final-runtime-experiment-v1.json
-```
-
-## Observed Gate 14.2 cost
-
-Delayed AgentCore Runtime CloudWatch telemetry arrived after the successful run.
-
-Observed resource usage:
-
-```text
-CPUUsed-vCPUHours:   0.005455525277778
-MemoryUsed-GBHours:  0.200219642726704
-```
-
-Recorded cost checkpoint:
-
-```text
-AgentCore CPU:       USD 0.000488269512361131
-AgentCore memory:    USD 0.001892075623767353
-AgentCore Runtime:   USD 0.002380345136128484
-Bedrock inference:   USD 0.004192100000000000
-------------------------------------------------
-TOTAL:               USD 0.006572445136128483
-```
-
-This is the observed cost of the successful six-case experiment. No monthly extrapolation is authorized.
 
 ## Permanent architecture boundaries
 
@@ -237,9 +156,13 @@ labs/evidence/phase-13-closeout-v1.json
 docs/adr/0051-phase13-mcp-closeout.md
 ```
 
-## Phase 14 Gate 14.1 — capability-fit decision
+## Phase 14 closeout — Amazon Bedrock AgentCore
 
-Gate 14.1 authorized only one bounded experiment:
+Phase 14 evaluated AgentCore as a measured capability rather than assuming that managed hosting should become the default architecture.
+
+### Gate 14.1 — capability fit
+
+Gate 14.1 authorized one bounded experiment only:
 
 ```text
 AgentCore Runtime:       GO TO ONE BOUNDED EXPERIMENT ONLY
@@ -261,89 +184,66 @@ docs/adr/0052-agentcore-runtime-capability-fit.md
 labs/phase-14-gate-14-1-agentcore-runtime-capability-fit.md
 ```
 
-## Phase 14 Gate 14.2 — final measured outcome
+### Gate 14.2 — measured Runtime experiment
 
-Frozen contract:
-
-```text
-agentcore-runtime-invocation:v1
-```
-
-Path:
+Terminal successful experiment:
 
 ```text
-raw JSON
- -> exact admission
- -> SingleAgentTask
- -> exactly one fixed-model reasoning proposal
- -> deterministic authorize_agent_action(...)
- -> content-addressed projection
- -> metadata-only response
- -> STOP before capability execution
+source main:                e5072ec68b421677359cebb1eb449578ef7d5b49
+workflow:                   AgentCore Runtime Experiment
+run:                        34378942784 / run #11 / SUCCESS
+job:                        102558703872
+runtime:                    opslens_dev_bounded_runtime-Cl8aNBDGzh
+runtime version:            1
+protocol:                   HTTP
+network:                    PUBLIC — dev-only experiment exception
+artifact SHA256:            a846034ad646c4f6383ac08e47d9ed065b4a9f3349c14104db49a2d510b3ec88
+Phase 11 corpus SHA256:     3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc
+replay:                     6 / 6 PASS
+HTTP responses:             200
+capability executions:      0
+SDK retries:                0
+input/output/total tokens:  3291 / 104 / 3395
+transport elapsed sum:      19981 ms
 ```
 
-### Measured attempt history
-
-Attempts #1–#10 remain preserved as remediation evidence rather than being hidden by the successful run. They exposed, in sequence, source-layout execution, `CreateAgentRuntimeEndpoint`, runtime create-time tagging, service-linked-role bootstrap, workload-identity tagging/creation/directory scopes, cleanup `DeleteWorkloadIdentity`, and late-delete `GetAgentRuntime` lifecycle-read requirements.
-
-Detailed evidence remains under:
+Negative authorization proof:
 
 ```text
-labs/evidence/phase-14-gate-14-2-*.json
+OpsLensGitHubDeployRole
+ -> bedrock-agentcore:InvokeAgentRuntime
+ -> AccessDeniedException / HTTP 403
 ```
 
-### Final IAM boundary
-
-The deployment principal remains main-only GitHub OIDC and still does **not** have:
+Runtime cleanup proof:
 
 ```text
-bedrock-agentcore:InvokeAgentRuntime
-iam:CreateServiceLinkedRole
-bedrock-agentcore:GetWorkloadIdentity
-feature-branch OIDC trust
+Terraform:                  0 add / 0 change / 3 destroy
+independent verifier:       RESOURCE_NOT_FOUND
 ```
 
-Deletion lifecycle reads are separated from mutation authority:
+Observed successful six-case cost:
 
 ```text
-ReadExactBoundedAgentCoreRuntimeLifecycle
- -> GetAgentRuntime
- -> exact OpsLens runtime family
- -> no runtime ResourceTag condition
+AgentCore CPU:       USD 0.000488269512361131
+AgentCore memory:    USD 0.001892075623767353
+AgentCore Runtime:   USD 0.002380345136128484
+Bedrock inference:   USD 0.004192100000000000
+------------------------------------------------
+TOTAL:               USD 0.006572445136128483
 ```
 
-Mutation remains resource-tag-gated for:
+No monthly extrapolation is authorized from this experiment.
+
+Immutable evidence:
 
 ```text
-DeleteAgentRuntime
-ListTagsForResource
-TagResource
-UntagResource
-UpdateAgentRuntime
+labs/evidence/phase-14-gate-14-2-final-runtime-experiment-v1.json
 ```
 
-This is required because a delete waiter must be able to observe the exact resource even after lifecycle transitions make resource tags unavailable.
+### Gate 14.3 — retention decision
 
-### Gate 14.2 non-claims
-
-Gate 14.2 does not establish:
-
-```text
-AgentCore as the default/production runtime
-PUBLIC as a production network decision
-production SLOs
-production security approval
-runtime deployment == runtime exposure
-runtime telemetry == business truth
-runtime authentication == capability authorization
-AgentCore hosting == business authorization
-```
-
-No MCP runtime, A2A, Gateway/Policy, Memory, Browser, Code Interpreter, or capability execution was exercised.
-
-## Phase 14 Gate 14.3 — retention decision
-
-Gate 14.3 compares only evidence that is actually comparable and records:
+Gate 14.3 recorded:
 
 ```text
 overall decision class:                    RETAIN WITH CHANGES
@@ -363,7 +263,7 @@ Phase 11:  6/6, 6 model calls, 3291/104/3395 tokens
 AgentCore: 6/6, 6 model calls, 3291/104/3395 tokens
 ```
 
-The underlying Bedrock inference cost remained USD 0.0041921. AgentCore added measured Runtime compute cost of USD 0.002380345136128484, or 56.78168784448091% relative to the unchanged inference component for the six-case experiment.
+The unchanged Bedrock inference cost was USD 0.0041921. AgentCore added USD 0.002380345136128484 of measured Runtime compute, 56.78168784448091% relative to the inference component for this experiment.
 
 Latency remains deliberately non-normalized:
 
@@ -373,8 +273,6 @@ Gate 14.2 transport elapsed sum: 19981 ms
 normalized percentage delta:     NOT PROVEN
 ```
 
-Gate 14.3 retains the AgentCore HTTP/direct-code implementation as disabled-by-default lab value, but it does not promote managed Runtime hosting into the default architecture.
-
 Decision records:
 
 ```text
@@ -382,6 +280,96 @@ docs/adr/0054-retain-agentcore-only-as-optional-lab-target.md
 labs/phase-14-gate-14-3-agentcore-retention-decision.md
 labs/evidence/phase-14-gate-14-3-agentcore-retention-decision-v1.json
 ```
+
+### Gate 14.4 — standing experiment IAM cleanup
+
+Repository desired-state cleanup was protected-merged in PR #225:
+
+```text
+merge SHA:                 9913c3cbf5f2239d6445042a139a9cca890590c8
+exact-head AgentCore CI:   34396085154 / run #63 / PASS
+exact-head Terraform CI:   34396085123 / run #267 / PASS
+```
+
+Human bootstrap plan:
+
+```text
+0 add / 0 change / 4 destroy
+```
+
+Applied exactly:
+
+```text
+aws_iam_policy.github_actions_agentcore_deploy
+aws_iam_role.github_actions_agentcore_replay
+aws_iam_role_policy.github_actions_agentcore_replay
+aws_iam_role_policy_attachment.github_actions_agentcore_deploy
+```
+
+Apply result:
+
+```text
+0 added / 0 changed / 4 destroyed
+```
+
+Post-apply convergence:
+
+```text
+No changes. Your infrastructure matches the configuration.
+```
+
+Independent IAM verification:
+
+```text
+OpsLensAgentCoreReplayRole:                 ABSENT / NoSuchEntity
+OpsLensAgentCoreDeployDevAccess:            ABSENT / NoSuchEntity
+AgentCore policy attachment on shared role: []
+OpsLensGitHubDeployRole:                    PRESENT
+AWSServiceRoleForBedrockAgentCoreRuntimeIdentity:
+                                            PRESENT / intentionally retained
+```
+
+The service-linked role remains protected because safe account-level deletion has not been proven. It is not equivalent to standing GitHub experiment authority.
+
+Gate 14.4 evidence:
+
+```text
+docs/adr/0055-remove-standing-agentcore-experiment-iam.md
+labs/phase-14-gate-14-4-agentcore-iam-cleanup.md
+labs/evidence/phase-14-gate-14-4-agentcore-iam-cleanup-predeploy-v1.json
+labs/evidence/phase-14-gate-14-4-agentcore-iam-cleanup-postapply-v1.json
+```
+
+## Final Phase 14 retained state
+
+```text
+Phase 11 direct Bedrock reasoning reference:  RETAIN / DEFAULT
+AgentCore implementation/evidence:           RETAIN
+AgentCore managed Runtime as default:         DO NOT RETAIN
+AgentCore standing Runtime resources:         NONE RETAINED
+AgentCore standing experiment GitHub IAM:     REMOVED
+Gate 14.2 PUBLIC network exception:           NOT RETAINED
+Runtime Identity service-linked role:         RETAINED pending separate safety proof
+```
+
+The historical AgentCore workflow/code remains reproducible lab material, but it is intentionally non-operational without a future evidence-backed re-bootstrap of minimum authority.
+
+## Phase 14 non-claims
+
+Phase 14 does not establish:
+
+```text
+AgentCore as the default/production runtime
+PUBLIC as a production network decision
+production SLOs
+production security approval
+runtime deployment == runtime exposure
+runtime telemetry == business truth
+runtime authentication == capability authorization
+AgentCore hosting == business authorization
+```
+
+No AgentCore Memory, Gateway/Policy, Browser, Code Interpreter, MCP/A2A hosting, or capability execution was retained as production architecture.
 
 ## Deferred Governed LLM Gateway integration
 
@@ -394,10 +382,17 @@ feat/governed-gateway-semantic-planner
 3781831795d500b05fa4bc602d50f376b4b1539f
 ```
 
-## Next authorized action
+## Next authorized phase
 
-The AgentCore runtime itself is already deleted, but Gate 14.3 removes the architectural justification for ambient experiment-only deployment/replay IAM when no experiment is active.
+Phase 15 — A2A is next.
 
-Create a separate bounded cleanup issue to review and remove the standing AgentCore experiment bootstrap authority where safe. The cleanup must preserve repository code/evidence and keep the optional Runtime experiment disabled by default.
+Its first gate must begin from a concrete interoperability problem and preserve the existing deterministic authority model. A2A must not be introduced merely because Phase 15 exists on the roadmap, and it must not assume AgentCore as the hosting substrate.
 
-No additional AgentCore deployment is authorized merely to gather more data for Gate 14.3. After cleanup, Phase 14 can close and Phase 15 A2A may begin without assuming AgentCore as its hosting substrate.
+The first Phase 15 issue should answer, before implementation:
+
+```text
+Which agent/service boundary actually requires A2A interoperability?
+What identity and message contract is needed?
+What remains proposal/admission authority versus capability authorization?
+What failure, replay, provenance, observability, and cost evidence is required?
+```

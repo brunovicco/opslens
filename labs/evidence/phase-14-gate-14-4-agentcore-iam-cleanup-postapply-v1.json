@@ -1,0 +1,94 @@
+{
+  "artifact_version": "phase-14-gate-14-4-agentcore-iam-cleanup-postapply:v1",
+  "evidence_date": "2026-09-09",
+  "phase": "Phase 14 — Amazon Bedrock AgentCore",
+  "gate": "14.4 — Standing AgentCore Experiment IAM Cleanup",
+  "issue": 224,
+  "implementation_pr": 225,
+  "implementation_merge_sha": "9913c3cbf5f2239d6445042a139a9cca890590c8",
+  "implementation_parent_main_sha": "9f044a47d4605d1624aec6784e1994e54e6e75e3",
+  "exact_head_ci": {
+    "head_sha": "7d4fd0ec4370599965db57fb51db8974348788de",
+    "agentcore_ci": {
+      "workflow_run_id": 34396085154,
+      "run_number": 63,
+      "result": "PASS"
+    },
+    "terraform_ci": {
+      "workflow_run_id": 34396085123,
+      "run_number": 267,
+      "result": "PASS"
+    }
+  },
+  "human_bootstrap": {
+    "profile": "opslens-bootstrap",
+    "source_git_sha": "9913c3cbf5f2239d6445042a139a9cca890590c8",
+    "pre_apply_plan": {
+      "add": 0,
+      "change": 0,
+      "destroy": 4,
+      "unexpected_changes": 0,
+      "review_result": "EXACT_EXPECTED_BOUNDARY"
+    },
+    "apply": {
+      "added": 0,
+      "changed": 0,
+      "destroyed": 4,
+      "result": "SUCCESS"
+    },
+    "post_apply_convergence": {
+      "result": "NO_CHANGES",
+      "terraform_message": "No changes. Your infrastructure matches the configuration."
+    }
+  },
+  "destroyed_resources": [
+    "aws_iam_policy.github_actions_agentcore_deploy",
+    "aws_iam_role.github_actions_agentcore_replay",
+    "aws_iam_role_policy.github_actions_agentcore_replay",
+    "aws_iam_role_policy_attachment.github_actions_agentcore_deploy"
+  ],
+  "independent_iam_verification": {
+    "OpsLensAgentCoreReplayRole": "ABSENT_NO_SUCH_ENTITY",
+    "OpsLensAgentCoreDeployDevAccess": "ABSENT_NO_SUCH_ENTITY",
+    "agentcore_policy_attachment_on_OpsLensGitHubDeployRole": [],
+    "OpsLensGitHubDeployRole": "PRESENT",
+    "AWSServiceRoleForBedrockAgentCoreRuntimeIdentity": "PRESENT_INTENTIONALLY_RETAINED"
+  },
+  "retained_resources_and_boundaries": [
+    "OpsLensGitHubDeployRole",
+    "GitHub Actions OIDC provider",
+    "AWSServiceRoleForBedrockAgentCoreRuntimeIdentity",
+    "AgentCore runtime/module/package/workflow code",
+    "Gate 14.1 through Gate 14.4 historical evidence",
+    "Phase 11 direct Bedrock reasoning path as default/reference runtime"
+  ],
+  "removed_ambient_authority": [
+    "standing GitHub AgentCore deployment policy attachment",
+    "standing AgentCore deployment managed policy",
+    "standing AgentCore replay invocation inline policy",
+    "standing AgentCore replay role"
+  ],
+  "non_claims": [
+    "service-linked-role deletion safety is not proven",
+    "AgentCore is not the default or production OpsLens reasoning runtime",
+    "Gate 14.2 PUBLIC networking is not retained for production or future experiments",
+    "runtime deployment is not runtime-exposure truth",
+    "runtime authentication is not capability authorization",
+    "AgentCore hosting is not business authorization",
+    "A2A does not assume AgentCore as its hosting substrate"
+  ],
+  "phase_14_closeout": {
+    "status": "COMPLETE",
+    "retention_outcome": "RETAIN_WITH_CHANGES",
+    "default_reasoning_runtime": "PHASE_11_DIRECT_BEDROCK_REFERENCE",
+    "agentcore_runtime_status": "OPTIONAL_DISABLED_BY_DEFAULT_LAB_TARGET",
+    "standing_agentcore_runtime_resources": "NONE_RETAINED",
+    "standing_experiment_specific_github_iam": "REMOVED",
+    "service_linked_role": "RETAINED_PENDING_SEPARATE_SAFETY_PROOF",
+    "next_phase": "Phase 15 — A2A"
+  },
+  "durable_human_evidence_reference": {
+    "issue": 224,
+    "comment_id": 5607892995
+  }
+}
