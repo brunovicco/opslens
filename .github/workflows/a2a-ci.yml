@@ -7,9 +7,13 @@ on:
       - "tests/unit/a2a_boundary/**/*.py"
       - "tests/fixtures/a2a/**"
       - "scripts/run_a2a_reference_experiment.py"
+      - "scripts/run_a2a_sdk_conformance.py"
       - "docs/adr/0057-*.md"
+      - "docs/adr/0058-*.md"
       - "labs/phase-15-gate-15-2-*.md"
+      - "labs/phase-15-gate-15-3-*.md"
       - "labs/evidence/phase-15-gate-15-2-*.json"
+      - "labs/evidence/phase-15-gate-15-3-*.json"
       - ".github/workflows/a2a-ci.yml"
   workflow_dispatch:
 
@@ -41,6 +45,17 @@ jobs:
       - name: Sync locked dependencies
         run: uv sync --frozen
 
+      - name: Verify A2A SDK is not a project dependency
+        run: |
+          if grep -q 'a2a-sdk' pyproject.toml; then
+            echo "a2a-sdk must not be added to OpsLens project dependencies"
+            exit 1
+          fi
+          if grep -q 'name = "a2a-sdk"' uv.lock; then
+            echo "a2a-sdk must not enter the OpsLens project lockfile in Gate 15.3"
+            exit 1
+          fi
+
       - name: Validate A2A protocol fixture JSON
         run: python -m json.tool tests/fixtures/a2a/protocol-contract-v1.json > /dev/null
 
@@ -65,11 +80,80 @@ jobs:
               raise SystemExit("Gate 15.2 evidence contract mismatch.")
           PY
 
+      - name: Validate Gate 15.3 evidence JSON
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path(
+              "labs/evidence/phase-15-gate-15-3-official-sdk-conformance-v1.json"
+          )
+          with path.open("r", encoding="utf-8") as handle:
+              value = json.load(handle)
+          if not isinstance(value, dict):
+              raise SystemExit("Gate 15.3 evidence must contain one JSON object.")
+          if value.get("artifact_version") != (
+              "phase-15-gate-15-3-official-sdk-conformance:v1"
+          ):
+              raise SystemExit("Gate 15.3 evidence artifact_version mismatch.")
+          oracle = value.get("official_sdk_oracle")
+          if not isinstance(oracle, dict):
+              raise SystemExit("Gate 15.3 evidence is missing official_sdk_oracle.")
+          if oracle.get("version") != "1.1.4":
+              raise SystemExit("Gate 15.3 evidence SDK version mismatch.")
+          if oracle.get("source_commit") != (
+              "2d4d3048b245d2af854bad804f0e722ea9febc08"
+          ):
+              raise SystemExit("Gate 15.3 evidence SDK source mismatch.")
+          PY
+
       - name: Run bounded offline A2A reference experiment
         run: |
           PYTHONPATH=src uv run python scripts/run_a2a_reference_experiment.py | tee /tmp/a2a-reference-experiment.json
           python -m json.tool /tmp/a2a-reference-experiment.json > /dev/null
           cat /tmp/a2a-reference-experiment.json
+
+      - name: Run isolated official A2A SDK source conformance probe
+        run: |
+          PYTHONPATH=src uv run \
+            --with 'a2a-sdk @ git+https://github.com/a2aproject/a2a-python.git@2d4d3048b245d2af854bad804f0e722ea9febc08' \
+            python scripts/run_a2a_sdk_conformance.py | tee /tmp/a2a-sdk-conformance.json
+          python -m json.tool /tmp/a2a-sdk-conformance.json > /dev/null
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          value = json.loads(Path("/tmp/a2a-sdk-conformance.json").read_text(encoding="utf-8"))
+          if value["sdk"]["version"] != "1.1.4":
+              raise SystemExit("unexpected A2A SDK version")
+          if value["sdk"]["source_commit"] != "2d4d3048b245d2af854bad804f0e722ea9febc08":
+              raise SystemExit("unexpected A2A SDK source commit")
+          for key in (
+              "agent_card",
+              "send_message_request",
+              "message_response",
+              "task_response",
+          ):
+              if value[key]["parse"] != "PASS":
+                  raise SystemExit(f"{key} SDK parse did not pass")
+              if value[key]["semantic_roundtrip"] != "PASS":
+                  raise SystemExit(f"{key} SDK semantic round-trip did not pass")
+          impact = value["impact"]
+          for key in (
+              "protocol_network_requests",
+              "model_invocations",
+              "capability_executions",
+              "new_aws_resources",
+              "new_iam_roles_or_policies",
+              "business_result_transport",
+          ):
+              if impact[key] != 0:
+                  raise SystemExit(f"Gate 15.3 impact widened: {key}={impact[key]}")
+          if impact["dependency_acquisition_network_is_ci_setup_only"] is not True:
+              raise SystemExit("dependency acquisition boundary was not recorded")
+          PY
+          cat /tmp/a2a-sdk-conformance.json
 
       - name: Ruff A2A slice
         run: >-
@@ -77,6 +161,7 @@ jobs:
           src/opslens/a2a_boundary
           tests/unit/a2a_boundary
           scripts/run_a2a_reference_experiment.py
+          scripts/run_a2a_sdk_conformance.py
 
       - name: Pyright strict A2A slice
         run: >-

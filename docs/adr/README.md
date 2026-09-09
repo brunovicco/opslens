@@ -65,3 +65,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0055](0055-remove-standing-agentcore-experiment-iam.md) | Remove standing GitHub AgentCore experiment IAM after the retention decision while preserving the optional lab and service-linked-role safety boundary | Accepted |
 | [0056](0056-bounded-a2a-capability-fit.md) | Authorize one bounded offline reference-only A2A interoperability experiment before any network or execution authority | Accepted |
 | [0057](0057-bounded-offline-a2a-reference-adapter.md) | Retain a strict offline A2A 1.0 reference adapter and defer any real peer runtime until independent conformance/value is proven | Accepted |
+| [0058](0058-official-a2a-sdk-as-ci-conformance-oracle.md) | Use the official A2A SDK only as an isolated exact-source CI conformance oracle while keeping OpsLens admission authoritative | Accepted |
