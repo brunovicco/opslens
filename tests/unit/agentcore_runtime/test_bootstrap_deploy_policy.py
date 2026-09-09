@@ -86,6 +86,24 @@ def test_precreation_workload_identity_tag_dependency_is_request_tag_bounded() -
     _assert_exact_create_time_tags(tag_statement)
 
 
+def test_managed_workload_identity_create_uses_only_measured_scope_and_tags() -> None:
+    """Managed workload-identity creation must remain isolated to the measured dependency."""
+    text = _POLICY_PATH.read_text(encoding="utf-8")
+
+    assert 'sid     = "CreateAgentCoreManagedWorkloadIdentityDependency"' in text
+    create_statement = text.split(
+        'sid     = "CreateAgentCoreManagedWorkloadIdentityDependency"', maxsplit=1
+    )[1].split("\n  }", maxsplit=1)[0]
+
+    assert 'actions = ["bedrock-agentcore:CreateWorkloadIdentity"]' in create_statement
+    assert "local.dev_agentcore_workload_identity_precreation_arn" in create_statement
+    assert 'resources = ["*"]' not in create_statement
+    assert "bedrock-agentcore:GetWorkloadIdentity" not in create_statement
+    assert "bedrock-agentcore:DeleteWorkloadIdentity" not in create_statement
+    assert "bedrock-agentcore:TagResource" not in create_statement
+    _assert_exact_create_time_tags(create_statement)
+
+
 def test_postcreation_runtime_tagging_remains_exact_family_scoped() -> None:
     """Post-creation tag mutation must retain exact-family resource-tag authority."""
     text = _POLICY_PATH.read_text(encoding="utf-8")
@@ -135,3 +153,4 @@ def test_deployment_role_never_receives_runtime_invoke_authority() -> None:
 
     assert '"bedrock-agentcore:InvokeAgentRuntime"' not in text
     assert '"iam:CreateServiceLinkedRole"' not in text
+    assert '"bedrock-agentcore:GetWorkloadIdentity"' not in text
