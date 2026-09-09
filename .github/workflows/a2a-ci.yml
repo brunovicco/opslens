@@ -80,6 +80,34 @@ jobs:
               raise SystemExit("Gate 15.2 evidence contract mismatch.")
           PY
 
+      - name: Validate Gate 15.3 evidence JSON
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path(
+              "labs/evidence/phase-15-gate-15-3-official-sdk-conformance-v1.json"
+          )
+          with path.open("r", encoding="utf-8") as handle:
+              value = json.load(handle)
+          if not isinstance(value, dict):
+              raise SystemExit("Gate 15.3 evidence must contain one JSON object.")
+          if value.get("artifact_version") != (
+              "phase-15-gate-15-3-official-sdk-conformance:v1"
+          ):
+              raise SystemExit("Gate 15.3 evidence artifact_version mismatch.")
+          oracle = value.get("official_sdk_oracle")
+          if not isinstance(oracle, dict):
+              raise SystemExit("Gate 15.3 evidence is missing official_sdk_oracle.")
+          if oracle.get("version") != "1.1.4":
+              raise SystemExit("Gate 15.3 evidence SDK version mismatch.")
+          if oracle.get("source_commit") != (
+              "2d4d3048b245d2af854bad804f0e722ea9febc08"
+          ):
+              raise SystemExit("Gate 15.3 evidence SDK source mismatch.")
+          PY
+
       - name: Run bounded offline A2A reference experiment
         run: |
           PYTHONPATH=src uv run python scripts/run_a2a_reference_experiment.py | tee /tmp/a2a-reference-experiment.json
