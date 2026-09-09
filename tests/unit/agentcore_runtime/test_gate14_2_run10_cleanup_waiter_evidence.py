@@ -7,7 +7,9 @@ from pathlib import Path
 from typing import Any
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
-_POLICY_PATH = _PROJECT_ROOT / "infra" / "bootstrap" / "github_agentcore_deploy_permissions.tf"
+_RETIRED_POLICY_PATH = (
+    _PROJECT_ROOT / "infra" / "bootstrap" / "github_agentcore_deploy_permissions.tf"
+)
 _EVIDENCE_PATH = (
     _PROJECT_ROOT
     / "labs"
@@ -18,45 +20,6 @@ _EVIDENCE_PATH = (
 
 def _load_evidence() -> dict[str, Any]:
     return json.loads(_EVIDENCE_PATH.read_text(encoding="utf-8"))
-
-
-def test_runtime_lifecycle_read_is_exact_family_scoped_without_tag_dependency() -> None:
-    """Delete waiters must retain exact-family read authority after runtime tags stop matching."""
-    text = _POLICY_PATH.read_text(encoding="utf-8")
-
-    read_statement = text.split(
-        'sid     = "ReadExactBoundedAgentCoreRuntimeLifecycle"', maxsplit=1
-    )[1].split("\n  }", maxsplit=1)[0]
-
-    assert 'actions = ["bedrock-agentcore:GetAgentRuntime"]' in read_statement
-    assert "local.dev_agentcore_runtime_arn" in read_statement
-    assert "local.dev_agentcore_runtime_precreation_arn" not in read_statement
-    assert 'resources = ["*"]' not in read_statement
-    assert "aws:ResourceTag/" not in read_statement
-    assert "DeleteAgentRuntime" not in read_statement
-    assert "UpdateAgentRuntime" not in read_statement
-    assert "TagResource" not in read_statement
-    assert "UntagResource" not in read_statement
-    assert "InvokeAgentRuntime" not in read_statement
-
-
-def test_runtime_mutation_remains_resource_tag_bounded() -> None:
-    """Separating lifecycle reads must not weaken mutation/delete authorization."""
-    text = _POLICY_PATH.read_text(encoding="utf-8")
-
-    manage_statement = text.split(
-        'sid    = "ManageExactBoundedAgentCoreRuntime"', maxsplit=1
-    )[1].split("\n  }", maxsplit=1)[0]
-
-    assert '"bedrock-agentcore:GetAgentRuntime"' not in manage_statement
-    assert '"bedrock-agentcore:DeleteAgentRuntime"' in manage_statement
-    assert '"bedrock-agentcore:UpdateAgentRuntime"' in manage_statement
-    assert '"bedrock-agentcore:TagResource"' in manage_statement
-    assert '"bedrock-agentcore:UntagResource"' in manage_statement
-    assert "local.dev_agentcore_runtime_arn" in manage_statement
-    assert 'variable = "aws:ResourceTag/Project"' in manage_statement
-    assert 'variable = "aws:ResourceTag/Environment"' in manage_statement
-    assert 'variable = "aws:ResourceTag/Purpose"' in manage_statement
 
 
 def test_run10_evidence_preserves_successful_bounded_execution_and_failed_waiter() -> None:
@@ -103,9 +66,8 @@ def test_run10_human_checkpoint_proves_final_control_plane_absence() -> None:
     assert checkpoint["managed_workload_identity_absent"] is True
 
 
-def test_run10_remediation_preserves_authority_separation() -> None:
-    """Measured waiter remediation must not widen data-plane or account-level authority."""
-    policy = _POLICY_PATH.read_text(encoding="utf-8")
+def test_run10_historical_invariants_survive_policy_retirement() -> None:
+    """Retiring the policy must preserve the measured run 10 authority-separation evidence."""
     invariants = _load_evidence()["authority_invariants"]
 
     assert invariants["github_deployment_runtime_read_wildcard_resource_authority"] is False
@@ -113,7 +75,4 @@ def test_run10_remediation_preserves_authority_separation() -> None:
     assert invariants["github_deployment_get_workload_identity_authority"] is False
     assert invariants["github_deployment_create_service_linked_role_authority"] is False
     assert invariants["runtime_mutation_without_resource_tag_authority"] is False
-
-    assert '"bedrock-agentcore:InvokeAgentRuntime"' not in policy
-    assert '"bedrock-agentcore:GetWorkloadIdentity"' not in policy
-    assert '"iam:CreateServiceLinkedRole"' not in policy
+    assert not _RETIRED_POLICY_PATH.exists()
