@@ -6,7 +6,7 @@
 
 ### Software Supply Chain e Threat Intelligence Verificáveis na AWS
 
-**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Public Analysis · Operational Evidence · Bounded Agent Reasoning · MCP Interoperability · Autoridade Determinística**
+**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Public Analysis · Operational Evidence · Bounded Agent Reasoning · MCP Interoperability · Evidência de AgentCore Runtime · Autoridade Determinística**
 
 </div>
 
@@ -16,7 +16,7 @@ Ela foi projetada para responder:
 
 > Considerando o software que eu realmente utilizo, quais vulnerabilidades o afetam, qual evidência exata prova isso, quais findings devo priorizar e qual orientação verificável pode me ajudar a agir?
 
-O projeto mantém deliberadamente separados verdade determinística, admissão de evidência, raciocínio de modelos, autorização, admissão de handoff, interoperabilidade, execução, divulgação de resultados e runtime exposure.
+O projeto mantém deliberadamente separados verdade determinística, admissão de evidência, raciocínio de modelos, autorização, admissão de handoff, interoperabilidade, execução, divulgação de resultados, comportamento de hosting/runtime e runtime exposure.
 
 > **Agents reason. Code verifies evidence.**
 
@@ -54,13 +54,13 @@ Boundaries permanentes:
 | Phase 11 | Single-Agent Baseline | ✅ Concluída |
 | Phase 12 | Multi-Agent Architecture | ✅ Concluída |
 | Phase 13 | MCP | ✅ Concluída — boundary MCP offline limitado retido |
-| Phase 14 | Amazon Bedrock AgentCore | ▶️ Próxima |
+| Phase 14 | Amazon Bedrock AgentCore | 🚧 Em andamento — Gates 14.1 e 14.2 concluídas; decisão de retenção pendente |
 | Phase 15 | A2A | ⏳ Planejada |
 | Phase 16 | Runtime Exposure with Amazon Inspector | ⏳ Planejada |
 | Phase 17 | Security Hardening | ⏳ Planejada |
 | Phase 18 | Evaluation, Cost & Portfolio Readiness | ⏳ Planejada |
 
-Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), o [closeout da Phase 12](labs/phase-12-gate-12-5-multi-agent-closeout.md) e o [closeout MCP da Phase 13](labs/phase-13-gate-13-5-mcp-closeout.md).
+Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), o [closeout MCP da Phase 13](labs/phase-13-gate-13-5-mcp-closeout.md) e o [experimento medido da Gate 14.2 com AgentCore](labs/phase-14-gate-14-2-bounded-agentcore-runtime.md).
 
 ## Sistema governado implementado
 
@@ -333,6 +333,51 @@ A divulgação de business result é deliberadamente mais estreita que capabilit
 
 A Phase 13 é encerrada nesse boundary offline/in-process limitado. Ela não cria runtime MCP público apenas por completude.
 
+### 12. Experimento limitado e medido com AgentCore Runtime
+
+A Phase 14 Gate 14.1 autorizou apenas um experimento limitado de runtime. A Gate 14.2 hospedou o boundary de raciocínio retido da Phase 11 sem adicionar autoridade de capability execution:
+
+```text
+AgentCore Runtime HTTP / IAM SigV4
+ -> admissão exata do request
+ -> autoridade SingleAgentTask retida
+ -> uma invocação fixa de raciocínio Bedrock
+ -> parser determinístico
+ -> authorize_agent_action(...) existente
+ -> AgentCoreReasoningProjection apenas com metadata
+ -> STOP antes de capability execution
+```
+
+Run #11 terminal bem-sucedido:
+
+```text
+source main:                e5072ec68b421677359cebb1eb449578ef7d5b49
+workflow run:               34378942784 / SUCCESS
+runtime:                    opslens_dev_bounded_runtime-Cl8aNBDGzh
+protocol:                   HTTP
+network:                    PUBLIC — exceção apenas para experimento dev
+artifact SHA256:            a846034ad646c4f6383ac08e47d9ed065b4a9f3349c14104db49a2d510b3ec88
+replay:                     6 / 6 PASS
+input/output/total tokens:  3291 / 104 / 3395
+SDK retries:                0
+capability executions:      0
+transport elapsed sum:      19981 ms
+deployment-role invocation: AccessDeniedException / HTTP 403
+cleanup verifier:           RESOURCE_NOT_FOUND
+```
+
+Custo observado após a chegada da telemetria atrasada do AgentCore Runtime:
+
+```text
+AgentCore Runtime:  USD 0.002380345136128484
+Bedrock inference:  USD 0.004192100000000000
+TOTAL:              USD 0.006572445136128483
+```
+
+As tentativas #1–#10 permanecem preservadas como evidência de remediação medida para execução source-layout e dependências IAM/lifecycle do AgentCore. O run bem-sucedido não reescreve essas falhas.
+
+A Gate 14.2 **não** aprova AgentCore nem `PUBLIC` para produção, não estabelece production SLO, não cria runtime-exposure truth e não autoriza capability execution. A decisão de retenção continua deliberadamente aberta.
+
 ## Baseline real Bedrock da Phase 11
 
 ```text
@@ -397,6 +442,19 @@ labs/phase-13-gate-13-5-mcp-closeout.md
 docs/adr/0051-phase13-mcp-closeout.md
 ```
 
+## Evidência medida da Gate 14.2
+
+```text
+workflow artifact: 10115123076
+workflow digest:   sha256:7006a7c2bfda1658a9e66fcfe38f61b06dc64e6f54705ffbf6b02574870ef65c
+repository evidence:
+  labs/evidence/phase-14-gate-14-2-final-runtime-experiment-v1.json
+lab:
+  labs/phase-14-gate-14-2-bounded-agentcore-runtime.md
+ADR:
+  docs/adr/0053-bounded-agentcore-direct-code-public-network-experiment.md
+```
+
 ## Invariantes de segurança e autoridade
 
 - Evidência bruta de terceiros é preservada antes da transformação.
@@ -421,12 +479,17 @@ docs/adr/0051-phase13-mcp-closeout.md
 - MCP result admission não é autoridade para protocol result projection.
 - MCP result projection não é public runtime exposure.
 - Sucesso de transporte MCP não é verdade de negócio/evidência.
+- AgentCore hosting não é business authorization.
+- Runtime authentication não é capability authorization.
+- Runtime execution role não é model/tool authority.
+- Runtime telemetry não é business truth.
+- Runtime deployment não é runtime-exposure truth.
 - Raw output de modelo/provider/downstream não vira autoridade canônica apenas porque foi transportado por um protocolo.
 - Seleção de provider/model e política de retry/fallback permanecem controladas por código.
 - Runtime exposure não é inferido de repository risk.
 - Least privilege, observabilidade, diagnóstico de falhas e cost accounting são requisitos arquiteturais.
 
-## O que a Phase 13 não prova
+## O que a evidência agentic/runtime atual não prova
 
 ```text
 generic business-result serialization
@@ -434,12 +497,12 @@ knowledge-guidance business-result transport
 hybrid-security-answer business-result transport
 public-repository-analysis business-result transport
 persistent invocation/result registry
-stdio subprocess deployment interoperability
-Streamable HTTP production interoperability
 public MCP endpoint
 MCP transport authentication ou authorization
-network reliability ou production SLOs
-comportamento do Amazon Bedrock AgentCore
+production MCP network SLOs
+AgentCore como runtime default/de produção do OpsLens
+PUBLIC no AgentCore como decisão de rede para produção
+production AgentCore SLOs ou security posture
 interoperabilidade A2A
 runtime exposure / evidência Amazon Inspector
 ```
@@ -461,6 +524,7 @@ synthesis profile:       us.anthropic.claude-haiku-4-5-20251001-v1:0
 reasoning profile:       us.anthropic.claude-haiku-4-5-20251001-v1:0
 streaming:               não
 tools no reasoning:      nenhum
+AgentCore Gate 14.2:     runtime HTTP/SigV4 temporário medido; removido após o run
 ```
 
 ## Documentação
@@ -474,13 +538,18 @@ tools no reasoning:      nenhum
 - [Closeout da Phase 11](labs/phase-11-gate-11-6-closeout.md)
 - [Closeout da Phase 12](labs/phase-12-gate-12-5-multi-agent-closeout.md)
 - [Closeout MCP da Phase 13](labs/phase-13-gate-13-5-mcp-closeout.md)
-- [ADR 0051 — Phase 13 MCP Closeout](docs/adr/0051-phase13-mcp-closeout.md)
+- [Experimento medido da Gate 14.2 com AgentCore](labs/phase-14-gate-14-2-bounded-agentcore-runtime.md)
+- [ADR 0053 — experimento limitado AgentCore direct-code PUBLIC](docs/adr/0053-bounded-agentcore-direct-code-public-network-experiment.md)
 
-## Próxima — Phase 14: Amazon Bedrock AgentCore
+## Próxima — decisão baseada em evidência sobre retenção do AgentCore
 
-A Phase 14 começa avaliando o Amazon Bedrock AgentCore contra uma necessidade concreta de runtime/workload do OpsLens. A adoção de managed runtime não é automática e não transforma retroativamente a prova MCP offline da Phase 13 em runtime público.
+A Gate 14.2 está concluída. O roadmap deliberadamente não inventa o número da próxima gate antes de existir um escopo concreto de decisão.
 
-A primeira gate da Phase 14 deve preservar a referência de reasoning da Phase 11, a decisão medida de topologia da Phase 12 e os boundaries de admissão/execução/result projection MCP da Phase 13. Identidade, IAM, observabilidade, falhas, retry policy, lifecycle e custo precisam ser definidos antes de provisionar recursos de runtime.
+A próxima pergunta arquitetural é:
+
+> Does the measured AgentCore hosting/session/operational value justify its IAM, lifecycle, network, latency, cost, and operational surface for the retained OpsLens reasoning architecture?
+
+A resposta não está pré-selecionada. Reter, alterar ou rejeitar AgentCore Runtime como default continuam sendo resultados válidos orientados por evidência.
 
 A PR #89 de Governed LLM Gateway continua como trabalho cross-project deferred e precisa ser reavaliada separadamente contra a arquitetura vigente do OpsLens antes de qualquer merge.
 
