@@ -11,7 +11,10 @@ on:
       - "docs/adr/0042-*.md"
       - "docs/adr/0043-*.md"
       - "docs/adr/0044-*.md"
+      - "docs/adr/0056-*.md"
       - "labs/phase-12-gate-12-*.md"
+      - "labs/phase-15-gate-15-*.md"
+      - "labs/evidence/phase-15-*.json"
       - ".github/workflows/multi-agent-ci.yml"
   workflow_dispatch:
 
@@ -42,6 +45,24 @@ jobs:
 
       - name: Sync locked dependencies
         run: uv sync --frozen
+
+      - name: Validate Phase 15 evidence JSON
+        run: |
+          uv run python - <<'PY'
+          import json
+          from pathlib import Path
+
+          paths = sorted(Path("labs/evidence").glob("phase-15-*.json"))
+          if not paths:
+              raise SystemExit("No Phase 15 evidence JSON files found.")
+          for path in paths:
+              with path.open("r", encoding="utf-8") as handle:
+                  value = json.load(handle)
+              if not isinstance(value, dict):
+                  raise SystemExit(f"{path} must contain one JSON object.")
+              if not isinstance(value.get("artifact_version"), str):
+                  raise SystemExit(f"{path} is missing artifact_version.")
+          PY
 
       - name: Run offline comparison fixture
         run: PYTHONPATH=src uv run python scripts/run_multi_agent_comparison_fixture.py > /tmp/multi-agent-comparison.json
