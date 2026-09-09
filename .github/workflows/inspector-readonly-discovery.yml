@@ -2,6 +2,12 @@ name: Inspector Read-Only Discovery
 
 on:
   workflow_dispatch:
+    inputs:
+      confirm_temporary_role_exists:
+        description: "Confirm a separately authorized temporary Inspector discovery role exists"
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -10,7 +16,7 @@ permissions:
 jobs:
   inspector-discovery:
     name: Bounded Inspector read-only discovery
-    if: github.ref == 'refs/heads/main'
+    if: ${{ github.ref == 'refs/heads/main' && inputs.confirm_temporary_role_exists == true }}
     runs-on: ubuntu-latest
 
     steps:
