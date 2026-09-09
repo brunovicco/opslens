@@ -28,6 +28,7 @@ Phase 14   Amazon Bedrock AgentCore                            COMPLETE
   Gate 14.4 Standing experiment IAM cleanup                    COMPLETE / VERIFIED
 Phase 15   A2A                                                 IN PROGRESS
   Gate 15.1 A2A capability fit / authority boundary            COMPLETE / GO OFFLINE ONLY
+  Gate 15.1 protocol-baseline correction                       COMPLETE / A2A 1.0.0
   Gate 15.2 Reference-only A2A adapter contract                NEXT / AUTHORIZED
 Phase 16   Runtime Exposure with Amazon Inspector              PLANNED
 Phase 17   Security Hardening                                  PLANNED
@@ -85,6 +86,7 @@ A2A artifact != admitted OpsLens evidence
 A2A handoff proposal != handoff admission
 A2A context/task identity != OpsLens source-task identity
 A2A authentication != capability authorization
+A2A protocol binding != business authority
 ```
 
 Deterministic code continues to own package/version semantics, vulnerability applicability, source evidence, KEV/EPSS/CVSS facts, Risk Policy v1, semantic-query validation, SQL compilation, retrieval/evidence admission, hybrid completeness, citation/evidence identity, public request admission, immutable repository evidence binding, capability allowlists, capability authorization, executable-input bindings, result admission, handoff admission, MCP mapping/admission/projection authority, A2A reference resolution/admission authority, provider/model selection, retry/fallback policy, application session ownership, cost/execution bounds, and runtime-exposure truth.
@@ -152,7 +154,7 @@ TriageAgentTask
  -> SpecialistAgentTask
 ```
 
-This authority boundary is now the reference input for Phase 15 A2A capability-fit work, without reactivating the rejected two-model topology.
+This authority boundary is the reference input for Phase 15 A2A capability-fit work, without reactivating the rejected two-model topology.
 
 ## Retained Phase 13 MCP boundary
 
@@ -318,9 +320,23 @@ labs/evidence/phase-14-gate-14-4-agentcore-iam-cleanup-postapply-v1.json
 
 ## Phase 15 Gate 15.1 — A2A capability fit
 
-Gate 15.1 assessed the official stable A2A `0.3.0` protocol against the real retained OpsLens architecture.
+Gate 15.1 originally used the historical versioned A2A `0.3.0` documentation page and incorrectly described it as the current latest stable protocol. The correction preserves that first artifact historically but supersedes its protocol-version claim.
 
-Finding:
+Correct official protocol baseline verified on 2026-09-09:
+
+```text
+latest released protocol:      A2A 1.0.0
+release date:                  2026-03-12
+previous protocol:             0.3.0
+standard bindings:             JSONRPC / GRPC / HTTP+JSON
+OpsLens first binding choice:  JSONRPC
+Python SDK latest observed:    1.1.4
+SDK pinned by Gate 15.1:       NO
+```
+
+A2A v1.0 Agent Cards expose `supportedInterfaces`; each interface declares `url`, `protocolBinding`, and `protocolVersion`. The binding is protocol metadata, never business authority.
+
+The capability-fit finding is unchanged:
 
 ```text
 retained independently deployed OpsLens agent peer: NO
@@ -328,9 +344,9 @@ current in-process handoff requires network A2A:    NO
 bounded protocol-fit hypothesis exists:            YES
 ```
 
-The useful hypothesis is narrower than production deployment:
+The useful hypothesis remains:
 
-> Can an A2A adapter carry only an already-admitted specialist-task reference across a bounded peer boundary and re-bind protocol results to existing OpsLens content identities without allowing A2A input, peer metadata, task state, or artifacts to create capability or business authority?
+> Can an A2A adapter carry only an already-admitted specialist-task reference across a bounded peer boundary and re-bind protocol results to existing OpsLens content identities without allowing A2A input, peer metadata, task state, protocol binding, or artifacts to create capability or business authority?
 
 Decision:
 
@@ -344,7 +360,7 @@ The first experiment must remain reference-only and stop before model or capabil
 already-admitted SpecialistAgentTask
  -> code-owned local reference registration
  -> {handoff_id, specialist_task_id, reference_sha256}
- -> minimal A2A message/send
+ -> A2A 1.0 SendMessage over explicitly selected JSONRPC binding
  -> bounded peer reference resolution
  -> terminal Message or Task metadata
  -> deterministic OpsLens admission
@@ -356,18 +372,23 @@ Minimum protocol surface authorized for Gate 15.2:
 
 ```text
 AgentCard
-JSON-RPC 2.0
-message/send
-structured data part only if needed
+supportedInterfaces
+one AgentInterface
+  protocolBinding = JSONRPC
+  protocolVersion = 1.0
+SendMessage
+structured Part only if needed
 one terminal Message or Task
 ```
 
 Deferred:
 
 ```text
+GRPC
+HTTP+JSON
 streaming
 push notifications
-secondary authentication
+extended authentication flow
 file payloads
 multi-turn context
 public/network deployment
@@ -393,7 +414,8 @@ Decision records:
 ```text
 docs/adr/0056-bounded-a2a-capability-fit.md
 labs/phase-15-gate-15-1-a2a-capability-fit.md
-labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v1.json
+labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v1.json  # historical / protocol claim superseded
+labs/evidence/phase-15-gate-15-1-a2a-capability-fit-v2.json  # authoritative corrected evidence
 ```
 
 ## Deferred Governed LLM Gateway integration
@@ -411,6 +433,6 @@ feat/governed-gateway-semantic-planner
 
 Phase 15 Gate 15.2 only:
 
-> Freeze and implement the smallest official A2A `0.3.0` reference-only adapter contract offline, including raw protocol validation, exact identity binding, duplicate/replay/failure fixtures, SDK/dependency placement evidence, observability, and zero model/capability execution.
+> Freeze and implement the smallest A2A `1.0` reference-only adapter contract offline using one explicitly selected JSON-RPC binding, including raw protocol validation, AgentInterface version/binding admission, exact identity binding, duplicate/replay/failure fixtures, SDK `1.1.4` dependency-placement evidence, observability, and zero model/capability execution.
 
 Gate 15.2 must not deploy a network service, create AWS/IAM resources, invoke a model, execute a capability, assume AgentCore hosting, or promote MCP into a public runtime.
