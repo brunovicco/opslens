@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-import pytest
-
 from botocore.exceptions import ClientError
+import pytest
 
 from opslens.runtime_exposure.adapters.inspector_readonly import (
     run_readonly_inspector_discovery,
@@ -83,7 +82,10 @@ def _findings_page() -> dict[str, object]:
         "findings": [
             {
                 "awsAccountId": _ACCOUNT,
-                "findingArn": "arn:aws:inspector2:us-east-1:487757851499:finding/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "findingArn": (
+                    "arn:aws:inspector2:us-east-1:487757851499:finding/"
+                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                ),
                 "type": "PACKAGE_VULNERABILITY",
                 "status": "ACTIVE",
                 "resources": [
@@ -95,7 +97,10 @@ def _findings_page() -> dict[str, object]:
             },
             {
                 "awsAccountId": _ACCOUNT,
-                "findingArn": "arn:aws:inspector2:us-east-1:487757851499:finding/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "findingArn": (
+                    "arn:aws:inspector2:us-east-1:487757851499:finding/"
+                    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                ),
                 "type": "NETWORK_REACHABILITY",
                 "status": "ACTIVE",
                 "resources": [{"id": "i-0123456789abcdef0", "type": "AWS_EC2_INSTANCE"}],
