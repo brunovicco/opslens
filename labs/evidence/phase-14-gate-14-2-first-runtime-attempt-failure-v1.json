@@ -1,0 +1,39 @@
+{
+  "artifact_version": "phase-14-gate-14-2-first-runtime-attempt-failure:v1",
+  "decision_date": "2026-09-09",
+  "phase": "Phase 14 — Amazon Bedrock AgentCore",
+  "gate": "14.2 — first bounded AgentCore HTTP/SigV4 runtime experiment",
+  "source_main_sha": "ae5c8af6831758adbfceea9a96932ac747e40718",
+  "workflow_run": {
+    "id": 34299888243,
+    "job_id": 102304350075,
+    "conclusion": "failure",
+    "failed_step": "Publish exact AgentCore artifact create-only",
+    "error_type": "ModuleNotFoundError",
+    "error_message": "No module named 'opslens'"
+  },
+  "failure_classification": {
+    "layer": "GitHub Actions source-layout execution",
+    "cause": "source CLI imported opslens.* without src being importable",
+    "agentcore_service_reached": false,
+    "terraform_create_plan_reached": false,
+    "runtime_created": false,
+    "runtime_invocations": 0,
+    "capability_executions": 0
+  },
+  "cleanup": {
+    "cleanup_steps_executed": true,
+    "runtime_id_captured": false,
+    "runtime_cleanup_verification_required": false
+  },
+  "preserved_workflow_artifact": {
+    "artifact_id": 10084550861,
+    "name": "phase-14-gate-14-2-agentcore-runtime-evidence-34299888243",
+    "digest": "sha256:713014d5876a43fbfbf598ff85d032c6846fb65320e5e10af421af9fbf001df0",
+    "expires_at": "2026-10-09T01:38:05Z",
+    "files": [
+      "opslens-agentcore-lifecycle.json"
+    ]
+  },
+  "retention_rule": "preserve this first failed authenticated workflow attempt; do not rewrite it as successful AgentCore runtime evidence"
+}

@@ -5,12 +5,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Protocol, cast
 
 import boto3
 
-from opslens.agentcore_runtime.artifact_publication import (
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+_PROJECT_SRC = _PROJECT_ROOT / "src"
+if str(_PROJECT_SRC) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_SRC))
+
+from opslens.agentcore_runtime.artifact_publication import (  # noqa: E402
     S3AgentCoreArtifactClient,
     publish_agentcore_artifact,
     verify_agentcore_artifact,
@@ -19,7 +25,6 @@ from opslens.agentcore_runtime.artifact_publication import (
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _DEFAULT_OUTPUT_DIR = _PROJECT_ROOT / "dist" / "agentcore-runtime"
 _DEFAULT_ARTIFACT = _DEFAULT_OUTPUT_DIR / "opslens-agentcore-runtime.zip"
 _DEFAULT_MANIFEST = _DEFAULT_OUTPUT_DIR / "opslens-agentcore-runtime-package.json"
