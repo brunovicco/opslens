@@ -31,6 +31,8 @@ Phase 13 MCP                                    COMPLETE
 Phase 14 Amazon Bedrock AgentCore               IN PROGRESS
   Gate 14.1 Runtime capability-fit              COMPLETE / MERGED
   Gate 14.2 bounded HTTP/SigV4 runtime          COMPLETE / MEASURED
+  Gate 14.3 Runtime retention decision          COMPLETE / RETAIN WITH CHANGES
+  next      standing experiment-IAM cleanup     PENDING SEPARATE ISSUE
 Phase 15 A2A                                    PLANNED
 ```
 
@@ -146,17 +148,39 @@ References:
 - [`../labs/phase-14-gate-14-2-bounded-agentcore-runtime.md`](../labs/phase-14-gate-14-2-bounded-agentcore-runtime.md)
 - [`../labs/evidence/phase-14-gate-14-2-final-runtime-experiment-v1.json`](../labs/evidence/phase-14-gate-14-2-final-runtime-experiment-v1.json)
 
-## Next architecture decision
+### Gate 14.3 — AgentCore Runtime retention decision
 
-Gate 14.2 is complete. The next AgentCore retention/optimization decision has not yet been assigned a gate number by the roadmap.
+Gate 14.3 records an evidence-backed split decision:
 
-The evidence-based question is:
+```text
+overall decision:                     RETAIN WITH CHANGES
+default OpsLens reasoning runtime:    DO NOT RETAIN AgentCore
+Phase 11 direct Bedrock reference:    RETAIN
+AgentCore implementation/evidence:   RETAIN
+AgentCore deployment role:           OPTIONAL LAB / FUTURE CONSUMER TARGET ONLY
+PUBLIC network mode:                 DO NOT RETAIN
+standing experiment-specific IAM:    CLEANUP REQUIRED
+```
 
-> Does the measured AgentCore hosting/session/operational value justify its IAM, lifecycle, network, latency, cost, and operational surface for the retained OpsLens reasoning architecture?
+The comparable six-case quality, model count, and token evidence is unchanged between Phase 11 and the AgentCore-hosted replay. AgentCore added USD 0.002380345136128484 of measured Runtime cost to the unchanged USD 0.0041921 Bedrock inference component, or 56.78168784448091% incremental runtime cost relative to inference for the experiment.
 
-No answer is preselected.
+Raw latency evidence is preserved, but no normalized percentage comparison is claimed because the measurement boundaries are not sufficiently controlled.
 
-PR #89 remains separate cross-project Governed LLM Gateway work and is not part of this state synchronization.
+References:
+
+- [`adr/0054-retain-agentcore-only-as-optional-lab-target.md`](adr/0054-retain-agentcore-only-as-optional-lab-target.md)
+- [`../labs/phase-14-gate-14-3-agentcore-retention-decision.md`](../labs/phase-14-gate-14-3-agentcore-retention-decision.md)
+- [`../labs/evidence/phase-14-gate-14-3-agentcore-retention-decision-v1.json`](../labs/evidence/phase-14-gate-14-3-agentcore-retention-decision-v1.json)
+
+## Next authorized action
+
+The Runtime resource itself is already deleted. Gate 14.3 concludes that ambient experiment-only AgentCore deployment/replay IAM is no longer justified without an active experiment.
+
+The next work must be a separate bounded cleanup issue. It should remove standing experiment authority where safe while preserving the disabled-by-default AgentCore lab implementation and historical evidence. The Runtime Identity service-linked role should be removed only if no remaining account dependency requires it.
+
+After that cleanup, Phase 14 can close and Phase 15 A2A may proceed without inheriting AgentCore as a hosting assumption.
+
+PR #89 remains separate cross-project Governed LLM Gateway work and is not part of this decision.
 
 ## Documentation update rule
 

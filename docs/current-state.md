@@ -24,6 +24,8 @@ Phase 13   MCP                                                 COMPLETE
 Phase 14   Amazon Bedrock AgentCore                            IN PROGRESS
   Gate 14.1 AgentCore Runtime capability-fit / authority       COMPLETE / MERGED
   Gate 14.2 First bounded HTTP/SigV4 runtime experiment        COMPLETE / MEASURED
+  Gate 14.3 AgentCore Runtime retention decision               COMPLETE / RETAIN WITH CHANGES
+  next       bounded standing-IAM cleanup                       PENDING SEPARATE ISSUE
 Phase 15   A2A                                                 PLANNED
 Phase 16   Runtime Exposure with Amazon Inspector              PLANNED
 Phase 17   Security Hardening                                  PLANNED
@@ -339,9 +341,51 @@ AgentCore hosting == business authorization
 
 No MCP runtime, A2A, Gateway/Policy, Memory, Browser, Code Interpreter, or capability execution was exercised.
 
+## Phase 14 Gate 14.3 — retention decision
+
+Gate 14.3 compares only evidence that is actually comparable and records:
+
+```text
+overall decision class:                    RETAIN WITH CHANGES
+default OpsLens reasoning runtime:         DO NOT RETAIN AgentCore
+Phase 11 direct Bedrock reference:         RETAIN
+AgentCore implementation/evidence:         RETAIN
+AgentCore active deployment role:          OPTIONAL LAB / FUTURE CONSUMER TARGET ONLY
+PUBLIC network mode:                       DO NOT RETAIN
+standing AgentCore Runtime resources:      DO NOT RETAIN
+standing experiment-specific IAM:          CLEANUP REQUIRED
+```
+
+Comparable quality/efficiency evidence:
+
+```text
+Phase 11:  6/6, 6 model calls, 3291/104/3395 tokens
+AgentCore: 6/6, 6 model calls, 3291/104/3395 tokens
+```
+
+The underlying Bedrock inference cost remained USD 0.0041921. AgentCore added measured Runtime compute cost of USD 0.002380345136128484, or 56.78168784448091% relative to the unchanged inference component for the six-case experiment.
+
+Latency remains deliberately non-normalized:
+
+```text
+Phase 11 client elapsed sum:     8279 ms
+Gate 14.2 transport elapsed sum: 19981 ms
+normalized percentage delta:     NOT PROVEN
+```
+
+Gate 14.3 retains the AgentCore HTTP/direct-code implementation as disabled-by-default lab value, but it does not promote managed Runtime hosting into the default architecture.
+
+Decision records:
+
+```text
+docs/adr/0054-retain-agentcore-only-as-optional-lab-target.md
+labs/phase-14-gate-14-3-agentcore-retention-decision.md
+labs/evidence/phase-14-gate-14-3-agentcore-retention-decision-v1.json
+```
+
 ## Deferred Governed LLM Gateway integration
 
-PR #89 remains open/draft and is separate cross-project work for the Governed LLM Gateway. It remains untouched by Gate 14.2 and must be re-evaluated independently before any merge.
+PR #89 remains open/draft and is separate cross-project work for the Governed LLM Gateway. It remains untouched by Phase 14 and must be re-evaluated independently before any merge.
 
 Preserved branch/head:
 
@@ -350,14 +394,10 @@ feat/governed-gateway-semantic-planner
 3781831795d500b05fa4bc602d50f376b4b1539f
 ```
 
-## Next architecture decision
+## Next authorized action
 
-Gate 14.2 is complete, but **AgentCore retention is not yet decided**.
+The AgentCore runtime itself is already deleted, but Gate 14.3 removes the architectural justification for ambient experiment-only deployment/replay IAM when no experiment is active.
 
-No Gate 14.3 number or implementation scope is authorized by this document yet. After the final Gate 14.2 state synchronization is merged, inspect the roadmap and formalize a separate issue only if a concrete decision gap remains.
+Create a separate bounded cleanup issue to review and remove the standing AgentCore experiment bootstrap authority where safe. The cleanup must preserve repository code/evidence and keep the optional Runtime experiment disabled by default.
 
-The evidence-based question is:
-
-> Does the measured AgentCore hosting/session/operational value justify its IAM, lifecycle, network, latency, cost, and operational surface for the retained OpsLens reasoning architecture?
-
-The answer is deliberately not pre-committed.
+No additional AgentCore deployment is authorized merely to gather more data for Gate 14.3. After cleanup, Phase 14 can close and Phase 15 A2A may begin without assuming AgentCore as its hosting substrate.

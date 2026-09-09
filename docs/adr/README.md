@@ -61,3 +61,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0051](0051-phase13-mcp-closeout.md) | Close Phase 13 at the bounded offline MCP boundary rather than inventing a public/deployed runtime without a concrete requirement | Accepted |
 | [0052](0052-agentcore-runtime-capability-fit.md) | Use AgentCore Runtime only for a bounded HTTP/SigV4 hosting experiment before capability execution | Accepted |
 | [0053](0053-bounded-agentcore-direct-code-public-network-experiment.md) | Use the reproducible direct-code package and a time-bounded PUBLIC network exception for the first AgentCore Runtime experiment | Accepted |
+| [0054](0054-retain-agentcore-only-as-optional-lab-target.md) | Retain AgentCore Runtime only as an optional lab target rather than the default OpsLens reasoning runtime | Accepted |

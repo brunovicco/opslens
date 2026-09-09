@@ -43,7 +43,7 @@ real gap
 | 11 | Single-Agent Baseline | ✅ Complete |
 | 12 | Multi-Agent Architecture | ✅ Complete |
 | 13 | MCP | ✅ Complete — bounded offline MCP retained |
-| 14 | Amazon Bedrock AgentCore | 🚧 In progress — Gates 14.1 and 14.2 complete; retention decision pending formalization |
+| 14 | Amazon Bedrock AgentCore | 🚧 In progress — Gate 14.3 retention decision complete; standing experiment-IAM cleanup pending |
 | 15 | A2A | ⏳ Planned |
 | 16 | Runtime Exposure with Amazon Inspector | ⏳ Planned |
 | 17 | Security Hardening | ⏳ Planned |
@@ -327,17 +327,73 @@ Code Interpreter
 capability execution
 ```
 
-### Phase 14 next decision — NOT YET NUMBERED
+### Gate 14.3 — AgentCore Runtime Retention Decision — COMPLETE / RETAIN WITH CHANGES
 
-Gate 14.2 is complete. The roadmap deliberately does **not** invent `Gate 14.3` merely because another step is expected.
+Gate 14.3 compares the retained Phase 11 reference with Gate 14.2 using only comparable evidence.
 
-After the final Gate 14.2 state sync is merged, a separate issue should formalize the next gate only if the evidence leaves a concrete decision gap.
+Decision:
 
-The current architectural question is:
+```text
+default OpsLens reasoning runtime:            DO NOT RETAIN AgentCore
+Phase 11 direct Bedrock reasoning reference: RETAIN
+AgentCore implementation/evidence:           RETAIN
+AgentCore deployment role:                   OPTIONAL LAB / FUTURE CONSUMER TARGET ONLY
+PUBLIC network mode:                         DO NOT RETAIN
+standing AgentCore Runtime resources:        DO NOT RETAIN
+standing experiment-specific IAM:            DO NOT RETAIN without an active experiment
+```
 
-> Does the measured AgentCore hosting/session/operational value justify its IAM, lifecycle, network, latency, cost, and operational surface for the retained OpsLens reasoning architecture?
+Overall classification:
 
-The decision may legitimately retain, modify, or reject AgentCore Runtime as a default. No outcome is preselected.
+```text
+RETAIN WITH CHANGES
+```
+
+Comparable evidence:
+
+```text
+Phase 11:  6/6, 6 calls, 3291/104/3395 tokens, USD 0.0041921 inference
+AgentCore: 6/6, 6 calls, 3291/104/3395 tokens,
+           USD 0.0041921 inference + USD 0.002380345136128484 Runtime
+```
+
+The measured Runtime compute increment is 56.78168784448091% relative to the unchanged Bedrock inference component for the six-case experiment.
+
+Latency is not normalized into a comparative percentage:
+
+```text
+Phase 11 client elapsed sum:     8279 ms
+Gate 14.2 transport elapsed sum: 19981 ms
+normalized latency delta:        NOT PROVEN
+```
+
+AgentCore demonstrated managed hosting, runtime/session identity, identity separation, lifecycle, cleanup, and CPU/memory telemetry. It did not demonstrate a current OpsLens need for multi-turn managed sessions, end-user identity, Memory, Gateway/Policy, Browser, Code Interpreter, MCP/A2A hosting, capability execution, production VPC networking, or production SLOs.
+
+References:
+
+```text
+docs/adr/0054-retain-agentcore-only-as-optional-lab-target.md
+labs/phase-14-gate-14-3-agentcore-retention-decision.md
+labs/evidence/phase-14-gate-14-3-agentcore-retention-decision-v1.json
+```
+
+### Phase 14 next action — bounded standing-IAM cleanup
+
+The AgentCore Runtime itself is already absent. Gate 14.3 concludes that ambient experiment-specific deployment/replay IAM is no longer justified without an active experiment.
+
+A separate issue must govern cleanup. That issue may be numbered as the next Phase 14 gate only after its exact scope is accepted. It should remove standing experiment authority where safe while preserving:
+
+```text
+AgentCore code/evidence
+reproducible direct-code package path
+disabled-by-default experiment Terraform
+historical run #1–#11 evidence
+all permanent authority boundaries
+```
+
+The Runtime Identity service-linked role must be removed only if control-plane verification proves no remaining account dependency requires it.
+
+No new AgentCore deployment is authorized merely to close Phase 14. After standing IAM cleanup, Phase 14 can close and Phase 15 A2A may start without assuming AgentCore as the hosting substrate.
 
 ## Phase 15 — A2A — PLANNED
 
@@ -359,4 +415,4 @@ Consolidate quality, latency, cost, failure, architecture, and portfolio evidenc
 
 ## Deferred cross-project integration
 
-OpsLens PR #89 remains separate consumer-side work for the Governed LLM Gateway project. It must not be modified or merged as a side effect of Phase 14 state synchronization.
+OpsLens PR #89 remains separate consumer-side work for the Governed LLM Gateway project. It must not be modified or merged as a side effect of Phase 14 work.
