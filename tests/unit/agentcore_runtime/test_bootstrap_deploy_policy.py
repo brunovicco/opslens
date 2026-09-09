@@ -65,8 +65,8 @@ def test_precreation_runtime_tag_dependency_is_request_tag_bounded() -> None:
     _assert_exact_create_time_tags(tag_statement)
 
 
-def test_precreation_workload_identity_tag_dependency_is_request_tag_bounded() -> None:
-    """Managed workload-identity tagging must use only the measured precreation scope."""
+def test_workload_identity_tag_dependency_requires_directory_and_identity_scopes() -> None:
+    """Managed identity create-time tagging must authorize both measured resource types."""
     text = _POLICY_PATH.read_text(encoding="utf-8")
 
     assert 'dev_agentcore_workload_identity_directory_arn = (' in text
@@ -85,8 +85,12 @@ def test_precreation_workload_identity_tag_dependency_is_request_tag_bounded() -
         'sid     = "TagAgentCoreWorkloadIdentityDuringCreateDependency"', maxsplit=1
     )[1].split("\n  }", maxsplit=1)[0]
     assert 'actions = ["bedrock-agentcore:TagResource"]' in tag_statement
+    assert "local.dev_agentcore_workload_identity_directory_arn" in tag_statement
     assert "local.dev_agentcore_workload_identity_precreation_arn" in tag_statement
+    assert 'resources = ["*"]' not in tag_statement
     assert "bedrock-agentcore:CreateWorkloadIdentity" not in tag_statement
+    assert "bedrock-agentcore:GetWorkloadIdentity" not in tag_statement
+    assert "bedrock-agentcore:DeleteWorkloadIdentity" not in tag_statement
     _assert_exact_create_time_tags(tag_statement)
 
 
