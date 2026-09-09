@@ -1,0 +1,154 @@
+{
+  "artifact_version": "phase-14-gate-14-3-agentcore-retention-decision:v1",
+  "decision_date": "2026-09-09",
+  "phase": "Phase 14 — Amazon Bedrock AgentCore",
+  "gate": "14.3 — AgentCore Runtime retention decision",
+  "issue": 222,
+  "source_main_sha": "8a9210edfd89ba0ceb1e2d0ea0ecda0190c843c2",
+  "decision_class": "RETAIN_WITH_CHANGES",
+  "default_runtime_decision": "DO_NOT_RETAIN_AGENTCORE",
+  "retained_reference": "Phase 11 direct Amazon Bedrock reasoning path",
+  "retained_agentcore_scope": "disabled-by-default optional lab/deployment target plus historical evidence",
+  "inputs": {
+    "phase_11": {
+      "artifact": "labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json",
+      "corpus_sha256": "3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc",
+      "passed_cases": 6,
+      "total_cases": 6,
+      "model_invocations": 6,
+      "input_tokens": 3291,
+      "output_tokens": 104,
+      "total_tokens": 3395,
+      "sdk_retry_attempts": 0,
+      "capability_executions": 0,
+      "provider_latency_ms_sum": 5063,
+      "provider_latency_ms_median": 809.5,
+      "client_elapsed_ms_sum": 8279,
+      "client_elapsed_ms_mean": 1379.833333,
+      "client_elapsed_ms_median": 977.5,
+      "bedrock_inference_cost_usd": 0.0041921
+    },
+    "gate_14_2": {
+      "artifact": "labs/evidence/phase-14-gate-14-2-final-runtime-experiment-v1.json",
+      "workflow_run_id": 34378942784,
+      "corpus_sha256": "3501237bcc8fac320db7e4583892a1dcaf182015e04b28ca585ef0509c7f36bc",
+      "passed_cases": 6,
+      "total_cases": 6,
+      "model_invocations": 6,
+      "input_tokens": 3291,
+      "output_tokens": 104,
+      "total_tokens": 3395,
+      "sdk_retry_attempts": 0,
+      "capability_executions": 0,
+      "transport_elapsed_ms_sum": 19981,
+      "transport_elapsed_ms_mean": 3330.166667,
+      "agentcore_runtime_cost_usd": 0.002380345136128484,
+      "bedrock_inference_cost_usd": 0.0041921,
+      "total_experiment_cost_usd": 0.006572445136128483,
+      "cleanup_proven": true,
+      "deployment_role_invoke_denied": true,
+      "network_mode": "PUBLIC",
+      "network_mode_disposition": "historical time-bounded dev-only exception"
+    }
+  },
+  "comparable_findings": {
+    "quality_lift": false,
+    "model_invocation_lift": false,
+    "token_efficiency_lift": false,
+    "authority_preserved": true,
+    "bedrock_inference_cost_unchanged": true,
+    "incremental_agentcore_runtime_cost_usd": 0.002380345136128484,
+    "incremental_runtime_cost_vs_bedrock_inference_percent": 56.78168784448091,
+    "runtime_share_of_gate_14_2_total_percent": 36.217040794206355
+  },
+  "latency_evidence": {
+    "phase_11_client_elapsed_ms_sum": 8279,
+    "phase_11_client_elapsed_ms_median": 977.5,
+    "gate_14_2_transport_elapsed_ms_sum": 19981,
+    "gate_14_2_transport_elapsed_ms_mean": 3330.166667,
+    "normalized_direct_vs_agentcore_comparison_supported": false,
+    "reason": "measurement boundaries, execution runs, and cold/warm decomposition are not normalized enough for a retained percentage latency claim"
+  },
+  "agentcore_value_demonstrated": [
+    "direct-code managed Runtime hosting",
+    "HTTP application protocol",
+    "IAM SigV4 invocation through an invocation-only identity",
+    "runtime/session identity",
+    "managed runtime isolation",
+    "separate deployment/replay/execution identities",
+    "READY/delete lifecycle evidence",
+    "CloudWatch CPU/memory runtime telemetry",
+    "bounded lifecycle configuration",
+    "independently verified runtime deletion"
+  ],
+  "agentcore_value_not_demonstrated": [
+    "OAuth/JWT end-user identity",
+    "application user to runtime-session ownership",
+    "multi-turn application session value",
+    "AgentCore Memory",
+    "AgentCore Gateway or Policy",
+    "Browser",
+    "Code Interpreter",
+    "MCP runtime hosting",
+    "A2A runtime hosting",
+    "AG-UI",
+    "capability execution inside AgentCore",
+    "production concurrency or scaling",
+    "production VPC/private connectivity",
+    "production SLO or security posture"
+  ],
+  "measured_iam_lifecycle_surface": [
+    "CreateAgentRuntimeEndpoint",
+    "runtime create-time TagResource",
+    "Runtime Identity service-linked-role bootstrap",
+    "managed workload-identity TagResource",
+    "CreateWorkloadIdentity on workload-identity family",
+    "CreateWorkloadIdentity on default workload-identity directory",
+    "TagResource on default workload-identity directory",
+    "DeleteWorkloadIdentity on default workload-identity directory",
+    "GetAgentRuntime throughout late DELETING lifecycle"
+  ],
+  "retained_authority_invariants": {
+    "github_oidc": "main-only",
+    "deployment_role_invoke_agent_runtime": false,
+    "deployment_role_create_service_linked_role": false,
+    "deployment_role_get_workload_identity": false,
+    "feature_branch_oidc_widening": false,
+    "capability_execution_added_by_agentcore": false,
+    "runtime_exposure_authority_added_by_agentcore": false
+  },
+  "retention_matrix": {
+    "phase_11_reasoning_reference": "RETAIN",
+    "agentcore_http_contract": "RETAIN",
+    "agentcore_direct_code_package_path": "RETAIN",
+    "agentcore_runtime_terraform": "RETAIN_DISABLED_BY_DEFAULT",
+    "agentcore_historical_evidence": "RETAIN",
+    "agentcore_as_default_runtime": "DO_NOT_RETAIN",
+    "public_network_mode": "DO_NOT_RETAIN",
+    "standing_agentcore_runtime_resource": "DO_NOT_RETAIN",
+    "standing_experiment_replay_deploy_iam": "DO_NOT_RETAIN",
+    "runtime_identity_service_linked_role": "REVIEW_FOR_CLEANUP_IF_UNUSED"
+  },
+  "cleanup_required": {
+    "separate_issue_required": true,
+    "reason": "AgentCore is not retained as the active/default runtime, so ambient experiment-specific IAM is no longer justified without an active experiment",
+    "candidate_scope": [
+      "OpsLensAgentCoreReplayRole",
+      "OpsLensAgentCoreDeployDevAccess policy and attachment",
+      "AgentCore experiment-specific bootstrap outputs/state",
+      "AWSServiceRoleForBedrockAgentCoreRuntimeIdentity only if no remaining account dependency requires it"
+    ]
+  },
+  "residual_evidence_gaps": {
+    "normalized_direct_vs_agentcore_latency": "NOT_PROVEN",
+    "production_vpc_private_connectivity_cost": "NOT_MEASURED",
+    "production_concurrency_scaling": "NOT_MEASURED",
+    "multi_turn_application_session_value": "NOT_MEASURED",
+    "production_slo_security_posture": "NOT_PROVEN"
+  },
+  "future_reentry_rule": "A new AgentCore deployment requires a concrete consumer or operational hypothesis plus explicit re-bootstrap; the Gate 14.2 PUBLIC exception must not be inherited.",
+  "separate_work": {
+    "opslens_pr_89": "untouched",
+    "branch": "feat/governed-gateway-semantic-planner"
+  }
+}
