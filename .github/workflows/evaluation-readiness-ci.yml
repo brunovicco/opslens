@@ -5,10 +5,14 @@ on:
     paths:
       - "src/opslens/evaluation_readiness/**/*.py"
       - "scripts/verify_phase18_evidence_inventory.py"
+      - "scripts/verify_phase18_consolidated_view.py"
       - "tests/unit/evaluation_readiness/**/*.py"
       - "labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json"
+      - "labs/evidence/phase-18-gate-18-2-*.json"
       - "labs/phase-18-gate-18-1-evidence-inventory.md"
+      - "labs/phase-18-gate-18-2-*.md"
       - "docs/adr/0071-cross-phase-evidence-classification-and-comparability.md"
+      - "docs/adr/0072-consolidated-evaluation-and-reliability-view.md"
       - "docs/adr/README.md"
       - ".github/workflows/evaluation-readiness-ci.yml"
       - "pyproject.toml"
@@ -20,7 +24,7 @@ permissions:
 
 jobs:
   cross-phase-evidence-inventory:
-    name: Cross-phase evidence inventory
+    name: Cross-phase evidence inventory and consolidated view
     runs-on: ubuntu-latest
 
     steps:
@@ -45,23 +49,29 @@ jobs:
       - name: Sync locked dependencies
         run: uv sync --frozen
 
-      - name: Ruff Phase 18 inventory slice
+      - name: Ruff Phase 18 evaluation-readiness slice
         run: >-
           uv run ruff check
           src/opslens/evaluation_readiness
           scripts/verify_phase18_evidence_inventory.py
+          scripts/verify_phase18_consolidated_view.py
           tests/unit/evaluation_readiness
 
-      - name: Pyright strict Phase 18 inventory slice
+      - name: Pyright strict Phase 18 evaluation-readiness slice
         run: >-
           uv run pyright
           src/opslens/evaluation_readiness
           tests/unit/evaluation_readiness
 
-      - name: Unit-test Phase 18 inventory invariants
+      - name: Unit-test Phase 18 evaluation-readiness invariants
         run: uv run pytest tests/unit/evaluation_readiness
 
       - name: Verify canonical cross-phase evidence inventory
         env:
           PYTHONPATH: src
         run: uv run python scripts/verify_phase18_evidence_inventory.py
+
+      - name: Verify consolidated evaluation and reliability view
+        env:
+          PYTHONPATH: src
+        run: uv run python scripts/verify_phase18_consolidated_view.py

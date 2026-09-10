@@ -1,0 +1,71 @@
+{
+  "artifact_version": "phase-18-gate-18-2-decision-signals:v1",
+  "evidence_date": "2026-09-10",
+  "source_main_sha": "ddc960f5ce0030b2822533a459d4754c7059187b",
+  "issue": 283,
+  "signals": [
+    {
+      "signal_id": "phase7-isolation-grounding-failure",
+      "kind": "FAILURE_SIGNAL",
+      "statement": "The Phase 7 isolation case emitted two claims and both human-reviewed claim/citation support judgments were false.",
+      "interpretation": "This is retained as a citation-attribution/grounding failure signal; the supporting lab records that the required isolation evidence was retrieved while the model cited an adjacent chunk.",
+      "evidence_path": "labs/evidence/phase-7-gate-7-7-first-run-review-v1.json",
+      "supporting_document": "labs/phase-7-gate-7-7-citations-groundedness.md",
+      "source_assertions": [
+        {"path": "cases.2.case_id", "expected": "grounding-isolation-01"},
+        {"path": "cases.2.runtime_claim_count", "expected": 2},
+        {"path": "cases.2.support_judgments.0.supports_claim", "expected": false},
+        {"path": "cases.2.support_judgments.1.supports_claim", "expected": false}
+      ]
+    },
+    {
+      "signal_id": "phase12-two-model-no-lift",
+      "kind": "REJECTED_DEFAULT",
+      "statement": "The bounded two-model experiment matched the Phase 11 quality result but added model calls, tokens, latency and derived inference cost, so it was not retained as the default reasoning topology.",
+      "interpretation": "Successful execution does not justify retaining additional agent topology without a predeclared measurable benefit.",
+      "evidence_path": "labs/evidence/phase-12-closeout-v1.json",
+      "supporting_document": "labs/phase-12-gate-12-5-multi-agent-closeout.md",
+      "source_assertions": [
+        {"path": "measured_comparison.phase11_quality", "expected": "6/6"},
+        {"path": "measured_comparison.gate12_3_quality", "expected": "6/6"},
+        {"path": "measured_comparison.quality_lift", "expected": false},
+        {"path": "gates.2.retained", "expected": false}
+      ]
+    },
+    {
+      "signal_id": "phase14-agentcore-not-default",
+      "kind": "REJECTED_DEFAULT",
+      "statement": "AgentCore Runtime was retained only as a disabled-by-default optional lab target and not as the default OpsLens reasoning runtime.",
+      "interpretation": "Managed hosting evidence is retained without converting a bounded successful experiment into default architecture authority.",
+      "evidence_path": "labs/evidence/phase-14-gate-14-3-agentcore-retention-decision-v1.json",
+      "supporting_document": "labs/phase-14-gate-14-3-agentcore-retention-decision.md",
+      "source_assertions": [
+        {"path": "decision_class", "expected": "RETAIN_WITH_CHANGES"},
+        {"path": "default_runtime_decision", "expected": "DO_NOT_RETAIN_AGENTCORE"},
+        {"path": "retention_matrix.agentcore_as_default_runtime", "expected": "DO_NOT_RETAIN"}
+      ]
+    },
+    {
+      "signal_id": "phase16-zero-records-not-zero-exposure",
+      "kind": "ZERO_OBSERVATION",
+      "statement": "The bounded Inspector discovery returned zero coverage records and zero finding records in the measured account, Region and time window.",
+      "interpretation": "A measured zero-record API result is retained evidence for that read only; it is not proof of zero runtime exposure or zero vulnerabilities.",
+      "evidence_path": "labs/evidence/phase-16-closeout-v1.json",
+      "supporting_document": "labs/phase-16-closeout.md",
+      "source_assertions": [
+        {"path": "measured_discovery.coverage.record_count", "expected": 0},
+        {"path": "measured_discovery.findings.record_count", "expected": 0},
+        {"path": "retained_state.measured_zero_record_evidence", "expected": "RETAIN"}
+      ]
+    }
+  ],
+  "authority_impact": {
+    "aws_mutations": 0,
+    "iam_mutations": 0,
+    "runtime_mutations": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "new_benchmark_runs": 0,
+    "pr_89_touched": false
+  }
+}
