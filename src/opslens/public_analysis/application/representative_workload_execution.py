@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from opslens.public_analysis.application.representative_hybrid_evidence import (
     build_representative_hybrid_evidence,
@@ -73,7 +73,7 @@ class RepresentativeThreatEvidenceLoad:
     """Pre-admitted threat evidence and exact request-time provider usage needed to load it."""
 
     evidence: RepresentativeRepositoryThreatEvidence
-    usage: ProviderResourceUsage = ProviderResourceUsage()
+    usage: ProviderResourceUsage = field(default_factory=ProviderResourceUsage)
 
     def __post_init__(self) -> None:
         """Require one typed deterministic threat-evidence bundle."""
@@ -185,7 +185,7 @@ class _ExecutionState:
 @dataclass(slots=True)
 class _RequestAdmissionAction:
     state: _ExecutionState
-    stage: RepresentativeWorkloadStage = RepresentativeWorkloadStage.PUBLIC_REQUEST_ADMISSION
+    stage: RepresentativeWorkloadStage = RepresentativeWorkloadStage.REQUEST_ADMISSION
 
     def execute(self) -> ProviderResourceUsage:
         self.state.admission = admit_public_analysis_request(self.state.raw_body)
