@@ -12,7 +12,7 @@ resource "aws_scheduler_schedule" "kev_daily" {
   group_name  = aws_scheduler_schedule_group.kev.name
   description = "Daily ingestion of the CISA KEV catalog into the OpsLens Bronze data lake."
 
-  state = "ENABLED"
+  state = local.scheduled_ingestion_state
 
   schedule_expression          = "cron(30 23 * * ? *)"
   schedule_expression_timezone = "UTC"
@@ -28,8 +28,8 @@ resource "aws_scheduler_schedule" "kev_daily" {
     input = jsonencode({})
 
     retry_policy {
-      maximum_event_age_in_seconds = 3600
-      maximum_retry_attempts       = 2
+      maximum_event_age_in_seconds = local.scheduled_ingestion_maximum_event_age_in_seconds
+      maximum_retry_attempts       = local.scheduled_ingestion_maximum_retry_attempts
     }
   }
 
