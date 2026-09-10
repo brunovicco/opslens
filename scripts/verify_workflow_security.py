@@ -236,6 +236,55 @@ def _verify_supply_chain_scanners() -> None:
         )
 
 
+def _verify_adversarial_security_ci() -> None:
+    """Keep Gate 17.4 adversarial evaluation repository-local and non-cloud-authoritative."""
+    path = WORKFLOW_DIR / "adversarial-security-ci.yml"
+    text = path.read_text(encoding="utf-8")
+
+    required = (
+        "name: Adversarial Security CI",
+        "pull_request:",
+        "workflow_dispatch:",
+        "contents: read",
+        "name: Adversarial authority boundaries",
+        "persist-credentials: false",
+        "uv lock --check",
+        "uv sync --frozen",
+        "uv run ruff check tests/security_hardening",
+        "uv run pyright tests/security_hardening",
+        "uv run pytest tests/security_hardening/test_adversarial_boundaries.py",
+        '"src/opslens/public_analysis/**/*.py"',
+        '"src/opslens/knowledge_retrieval/**/*.py"',
+        '"src/opslens/agent_baseline/**/*.py"',
+        '"src/opslens/multi_agent/**/*.py"',
+        '"src/opslens/mcp_boundary/**/*.py"',
+        '"src/opslens/a2a_boundary/**/*.py"',
+    )
+    missing = [fragment for fragment in required if fragment not in text]
+    if missing:
+        raise WorkflowSecurityError(
+            "adversarial-security workflow lost the frozen Gate 17.4 contract: "
+            + ", ".join(missing)
+        )
+
+    forbidden = (
+        "id-token: write",
+        "security-events: write",
+        "contents: write",
+        "pull-requests: write",
+        "configure-aws-credentials",
+        "role-to-assume:",
+        "terraform apply",
+        "aws bedrock",
+    )
+    present = [fragment for fragment in forbidden if fragment in text]
+    if present:
+        raise WorkflowSecurityError(
+            "adversarial-security workflow gained cloud/repository mutation authority: "
+            + ", ".join(present)
+        )
+
+
 def _verify_github_oidc_trust() -> None:
     """Require every GitHub OIDC trust policy to retain the frozen aud/sub boundary."""
     observed = 0
@@ -284,6 +333,7 @@ def verify() -> None:
 
     _capture(errors, _verify_epss_history_authority)
     _capture(errors, _verify_supply_chain_scanners)
+    _capture(errors, _verify_adversarial_security_ci)
     _capture(errors, _verify_github_oidc_trust)
 
     if errors:
