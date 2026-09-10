@@ -3,10 +3,7 @@ name: Operational Recovery CI
 on:
   pull_request:
     paths:
-      - "infra/environments/dev/operational_recovery.tf"
-      - "infra/environments/dev/scheduler.tf"
-      - "infra/environments/dev/kev_scheduler.tf"
-      - "infra/environments/dev/nvd_incremental_scheduler.tf"
+      - "infra/environments/dev/*.tf"
       - "scripts/verify_operational_recovery.py"
       - ".github/workflows/operational-recovery-ci.yml"
       - "docs/adr/0069-bounded-scheduled-ingestion-pause.md"
