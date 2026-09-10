@@ -7,7 +7,7 @@ This directory contains the retained architecture, operational state, decisions,
 ## Start here
 
 - [`current-state.md`](current-state.md) — authoritative current project state and next decision boundary.
-- [`roadmap.md`](roadmap.md) — phase/gate progression and evidence-gated direction.
+- [`roadmap.md`](roadmap.md) — evidence-gated phase/gate progression.
 - [`architecture.md`](architecture.md) — retained architecture and authority boundaries.
 - [`architecture.pt-br.md`](architecture.pt-br.md) — Portuguese architecture view.
 - [`portfolio-evidence.md`](portfolio-evidence.md) — recruiter/architect-facing evidence projection.
@@ -17,36 +17,25 @@ This directory contains the retained architecture, operational state, decisions,
 
 ## Retained security lineage
 
-Phase 18 remains downstream of Phase 17. **Gate 17.1** established the evidence-first threat/control-gap inventory and **Gate 17.2** hardened CI/CD and workflow authority. The `Repository security invariants` protected-main context and later Phase 17 hardening controls remain part of the retained documentation/evidence authority chain.
+Phase 19 remains downstream of the Phase 17 security controls and the Phase 18 evidence closeout. The `Repository security invariants` protected-main context, full-SHA external actions, Dependency Review, CodeQL, adversarial authority regression, content-minimized Lambda telemetry, and the narrowly scoped scheduled-ingestion pause remain part of the retained platform authority chain.
 
-## Phase 18 evidence chain
+## Phase 18 closeout
+
+Phase 18 is complete. Its protected closeout was squash-merged through PR #290 at:
 
 ```text
-Gate 18.1
-cross-phase evidence inventory + comparability matrix
-        |
-        v
-Gate 18.2
-consolidated evaluation & reliability view
-        |
-        v
-Gate 18.3
-cost accounting & configured budget envelopes
-        |
-        v
-Gate 18.4
-portfolio projection + AIP-C01 evidence map
-        |
-        v
-Gate 18.5
-Phase 18 evidence-backed closeout
+feca774535b7d83f57c26f4e9fe7da71ce268f0f
 ```
 
-Gates 18.1–18.4 are complete. Gate 18.5 closes the phase after exact-head CI and protected merge; it adds no AWS/IAM/model/capability authority and no new benchmark.
+The historical Phase 18 closeout artifacts intentionally preserve the state that existed before their protected merge:
 
-Canonical machine-readable artifacts live under `../labs/evidence/`. Human-readable experiment and closeout records live under `../labs/`.
+- [`../labs/phase-18-closeout.md`](../labs/phase-18-closeout.md)
+- [`../labs/evidence/phase-18-closeout-v1.json`](../labs/evidence/phase-18-closeout-v1.json)
+- [`adr/0075-phase18-evaluation-cost-portfolio-closeout.md`](adr/0075-phase18-evaluation-cost-portfolio-closeout.md)
 
-Phase 18 preserves:
+Do not rewrite those historical artifacts to make them look post-merge. Current-facing documents carry the post-merge state instead.
+
+The retained Phase 18 evidence semantics remain:
 
 ```text
 MEASURED != DERIVED
@@ -61,12 +50,29 @@ AIP-C01 coverage != certification guarantee
 historical experiment != standing authority
 ```
 
-The Phase 18 closeout record is [`../labs/phase-18-closeout.md`](../labs/phase-18-closeout.md), with machine-readable evidence at [`../labs/evidence/phase-18-closeout-v1.json`](../labs/evidence/phase-18-closeout-v1.json).
+## Phase 19 — Bounded Public Runtime & Productization
 
-## Historical phases
+Gate 19.1 is the current implementation boundary:
 
-The repository retains detailed ADRs/labs for AWS foundation and data ingestion, vulnerability correlation, repository intelligence, risk prioritization, semantic query, Bedrock Knowledge Bases/S3 Vectors, hybrid retrieval, observability, agents, MCP, AgentCore, A2A, Amazon Inspector, Security Hardening, and Evaluation/Cost/Portfolio Readiness.
+```text
+public-analysis-workload:v1
+runtime decision: DEFERRED_PENDING_MEASUREMENT
+leading hypothesis: ASYNC_SUBMIT_STATUS_RESULT
+AWS mutations: 0
+IAM mutations: 0
+new AWS resources: 0
+public endpoints: 0
+model/capability executions: 0
+```
 
-Use the ADR index when the question is **why** an architecture decision was made. Use labs/evidence when the question is **what was actually measured or proven**.
+The Gate 19.1 human-readable lab is [`../labs/phase-19-gate-19-1-public-runtime-hypothesis.md`](../labs/phase-19-gate-19-1-public-runtime-hypothesis.md). Its machine-readable contract is [`../labs/evidence/phase-19-gate-19-1-public-runtime-contract-v1.json`](../labs/evidence/phase-19-gate-19-1-public-runtime-contract-v1.json), with architecture decision rationale in [`adr/0076-bounded-public-runtime-hypothesis-and-launch-contract.md`](adr/0076-bounded-public-runtime-hypothesis-and-launch-contract.md).
 
-The next implementation phase is intentionally not pre-authorized. It must be selected from observed product/evidence gaps after the Phase 18 closeout protected merge. PR #89 remains separate deferred work unless explicitly re-evaluated and resumed.
+Gate 19.1 does not deploy API Gateway, Lambda Function URLs, public Lambda compute, SQS, a result store, WAF, ECS/Fargate, AgentCore, or runtime IAM. It first distinguishes the retained application boundary from the downstream capabilities that exist but are not yet composed into one public product execution.
+
+Current runtime selection remains deferred until Gate 19.2 measures a representative **non-public** product workload end to end. `ASYNC_SUBMIT_STATUS_RESULT` is a leading hypothesis, not a selected topology.
+
+## Evidence location rule
+
+Canonical machine-readable artifacts live under `../labs/evidence/`. Human-readable experiment and closeout records live under `../labs/`. ADRs explain why a decision was made; labs/evidence record what was measured, proven, rejected, or intentionally left `UNMEASURED`.
+
+PR #89 remains separate deferred Governed LLM Gateway work and is not a Phase 19 dependency unless explicitly re-evaluated later.
