@@ -96,19 +96,19 @@ _REQUIRED_DOC_MARKERS = {
         "Gate 19.1",
     ),
     "README.md": (
-        "Phases 0–18 are complete.",
+        "Phases 0\u201318 are complete.",
         "Phase 19 — Bounded Public Runtime & Productization",
     ),
     "README.pt-br.md": (
-        "Phases 0–18 estão completas.",
+        "Phases 0\u201318 estão completas.",
         "Phase 19 — Bounded Public Runtime & Productization",
     ),
     "docs/architecture.md": (
-        "Phases 0–18 are complete.",
+        "Phases 0\u201318 are complete.",
         "Phase 19 — Bounded Public Runtime & Productization",
     ),
     "docs/architecture.pt-br.md": (
-        "As Phases 0–18 estão completas.",
+        "As Phases 0\u201318 estão completas.",
         "Phase 19 — Bounded Public Runtime & Productization",
     ),
 }
