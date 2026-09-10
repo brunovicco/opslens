@@ -428,6 +428,7 @@ def test_composes_checked_semantic_evidence_under_exact_public_hybrid_route() ->
     assert "2.32.0" in semantic.request.query
     assert semantic.usage == ProviderResourceUsage(
         bedrock_retrieve_count=1,
+        bedrock_retrieve_client_elapsed_ms=12,
         retry_count=2,
     )
     assert envelope.authority_decision == handoff.route_decision
@@ -449,6 +450,8 @@ def test_admits_bounded_model_reasoning_and_serializable_representative_result()
         bedrock_model_call_count=1,
         bedrock_input_tokens=180,
         bedrock_output_tokens=32,
+        bedrock_model_client_elapsed_ms=30,
+        bedrock_model_latency_ms=25,
         retry_count=1,
     )
     assert semantic.retrieve_result.invocation.returned_result_count == 1
@@ -504,9 +507,12 @@ def test_executes_and_measures_complete_nine_stage_representative_workload() -> 
     assert measurement.provider_totals == ProviderResourceUsage(
         github_http_request_count=4,
         bedrock_retrieve_count=1,
+        bedrock_retrieve_client_elapsed_ms=12,
         bedrock_model_call_count=1,
         bedrock_input_tokens=180,
         bedrock_output_tokens=32,
+        bedrock_model_client_elapsed_ms=30,
+        bedrock_model_latency_ms=25,
         retry_count=3,
     )
     assert measurement.stage_measurements[1].usage.github_http_request_count == 3
