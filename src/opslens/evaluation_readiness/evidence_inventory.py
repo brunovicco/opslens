@@ -167,7 +167,6 @@ def _validate_classification(
 
 def validate_inventory(*, inventory_path: Path, repo_root: Path) -> ValidationSummary:
     """Validate the frozen Phase 18 evidence inventory against repository artifacts."""
-
     root = _object(_load_json(inventory_path), label="inventory root")
     artifact_version = _string(root.get("artifact_version"), label="artifact_version")
     if artifact_version != "phase-18-gate-18-1-evidence-inventory:v1":
