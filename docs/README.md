@@ -15,6 +15,10 @@ This directory contains the retained architecture, operational state, decisions,
 - [`adr/README.md`](adr/README.md) — Architecture Decision Record index.
 - [`runbooks/`](runbooks/) — bounded operational procedures.
 
+## Retained security lineage
+
+Phase 18 documentation remains downstream of Phase 17. **Gate 17.1** established the evidence-first threat/control-gap inventory and **Gate 17.2** hardened CI/CD and workflow authority. The `Repository security invariants` protected-main context and the later Phase 17 hardening controls remain part of the retained documentation/evidence authority chain.
+
 ## Phase 18 evidence chain
 
 ```text
