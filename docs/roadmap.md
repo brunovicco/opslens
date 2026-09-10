@@ -67,6 +67,7 @@ model proposal != authorization
 tool/protocol success != business truth
 MEASURED != DERIVED
 UNMEASURED != zero
+NOT_APPLICABLE != zero
 configured limit != measured utilization
 ```
 
@@ -102,7 +103,9 @@ Issue: #295. Draft implementation PR: #297.
 
 Purpose: close the measurements that Gate 19.1 correctly classifies as `UNMEASURED` before selecting a public runtime.
 
-The representative experiment remains non-public and must compose or invoke:
+#### Pre-live implementation — COMPLETE
+
+The non-public representative execution is now composed through the exact nine-stage workload:
 
 ```text
 public request admission
@@ -110,27 +113,70 @@ public request admission
  -> dependency evidence
  -> deterministic vulnerability correlation
  -> deterministic risk prioritization
- -> structured evidence when required
- -> semantic evidence when required
- -> bounded model reasoning when required
+ -> structured evidence
+ -> semantic evidence
+ -> bounded model reasoning
  -> deterministic final result admission
 ```
 
-The first implementation slice freezes a provider-neutral measurement harness with the exact ordered stage set and exact resource-accounting contract. It measures:
+The composed runner reuses retained OpsLens authority:
+
+```text
+repository evidence
+ -> retained GHSA applicability
+ -> retained NVD enrichment
+ -> retained KEV enrichment
+ -> retained EPSS enrichment
+ -> RepositoryAnalysisResult
+ -> Risk Policy v1
+ -> deterministic structured evidence
+ -> bounded Bedrock Knowledge Base Retrieve
+ -> deterministic hybrid evidence assembly
+ -> bounded Bedrock hybrid synthesis
+ -> deterministic final result admission
+```
+
+The measurement surface now includes:
 
 ```text
 end-to-end duration
 per-stage duration
-GitHub HTTP request count
+GitHub physical HTTP request count
 Athena query count + bytes scanned
 Bedrock Retrieve count
+Bedrock Retrieve client elapsed milliseconds
 Bedrock model call count + input/output tokens
+Bedrock model client elapsed milliseconds
+Bedrock provider latency milliseconds
 retry count
 throttle count
 serialized admitted-result bytes
 ```
 
-The measurement layer must not infer usage. Negative counters, stage reordering, incomplete plans, aggregate drift, empty serialized results, or invalid monotonic-clock evidence fail closed.
+Provider measurement authority is explicit and separate from numeric values. A zero counter does not prove that a provider dimension was observed.
+
+For the retained direct structured-evidence path in `public-analysis-workload:v1`:
+
+```text
+athena_query_count:   NOT_APPLICABLE
+athena_bytes_scanned: NOT_APPLICABLE
+```
+
+`throttle_count` remains `UNMEASURED` until a concrete complete provider path proves it. Missing instrumentation must never become measured zero.
+
+The frozen pre-live representative input is:
+
+```text
+repository:      whotracksme/whotracks.me
+commit/ref:      468f6e211a307f5f20d1d95c478ddd89efdb9b6b
+evidence file:  uv.lock
+dependency:     requests==2.31.0
+GHSA anchor:    GHSA-9wx4-h78v-vm56
+CVE anchor:     CVE-2024-35195
+patched from:   2.32.0
+```
+
+This identity freezes reproducibility only. The live threat-evidence bundle must still be materialized through retained authoritative source/transform contracts; the anchor itself is not sufficient authority to manufacture a positive finding.
 
 Current Gate 19.2 authority boundary:
 
@@ -142,16 +188,24 @@ third-party code exec:  0
 PR #89 modifications:  0
 ```
 
-Live AWS/model execution remains a human execution boundary.
+#### Gate 19.2 current boundary — HUMAN LIVE MEASUREMENT
 
-#### Gate 19.2 next slices
+The next step is the first point at which live AWS/model execution is required. Autonomous repository implementation should stop at this boundary rather than silently invoke paid/runtime services.
 
-1. Adapt retained repository-intelligence and Risk Policy capabilities into the representative non-public composition without copying business truth into the measurement layer.
-2. Adapt the retained structured and semantic retrieval boundaries while preserving route/evidence authority.
-3. Adapt bounded synthesis and deterministic result admission.
-4. Add deterministic success/failure coverage and exact provider/resource accounting for the composed runner.
-5. Prepare and human-execute the smallest reproducible non-public representative live measurement.
-6. Record the measurement artifact and decide exactly one of `SYNC`, `ASYNC`, or `DEFERRED_PENDING_MEASUREMENT`.
+The human operator runbook is:
+
+```text
+labs/phase-19-gate-19-2-human-live-measurement-runbook.md
+```
+
+Required remaining sequence:
+
+1. Ensure the exact PR head is green across the retained validation chain.
+2. Materialize the exact typed GHSA/NVD/KEV/EPSS threat-evidence bundle from retained authoritative evidence contracts.
+3. Human-execute exactly one non-public representative workload using the retained GitHub + Bedrock adapters and existing operator authority.
+4. Capture an immutable live measurement artifact under `labs/evidence/`.
+5. Preserve explicit `MEASURED`, `NOT_APPLICABLE`, and `UNMEASURED` semantics for every provider dimension.
+6. Evaluate exactly one runtime decision: `SYNC`, `ASYNC`, or `DEFERRED_PENDING_MEASUREMENT`.
 
 Decision rule:
 
