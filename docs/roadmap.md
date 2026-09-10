@@ -45,7 +45,7 @@ real gap
 | 14 | Amazon Bedrock AgentCore | ✅ Complete — optional lab target retained; standing experiment IAM removed |
 | 15 | A2A | ✅ Complete — bounded offline reference interoperability + official SDK conformance retained |
 | 16 | Runtime Exposure with Amazon Inspector | ✅ Complete — read contract proven; zero current records; temporary IAM removed |
-| 17 | Security Hardening | 🚧 In progress — Gate 17.1 complete; Gate 17.2 next |
+| 17 | Security Hardening | 🚧 In progress — Gate 17.2 repository changes implemented; ruleset enforcement pending |
 | 18 | Evaluation, Cost & Portfolio Readiness | ⏳ Planned |
 
 ## Permanent engineering boundaries
@@ -95,6 +95,8 @@ security control name != proven enforcement
 historical workflow != inert workflow
 plan-only intent != write-authority requirement
 CI evidence != enforced merge gate
+repository checkout != persisted Git credential requirement
+OIDC authentication != authorization to reuse a shared deployment role
 ```
 
 ## Completed platform through Phase 16
@@ -166,42 +168,43 @@ SEC17-DOC-001   architecture header/current-phase documentation drift
 
 Gate 17.1 also records already-proven controls so Phase 17 does not rebuild them without evidence: immutable main-only GitHub OIDC trust, full-SHA action pinning in sampled workflows, bounded public input/acquisition, proposal-only semantic planning, untrusted RAG content handling, deterministic agent authorization/result admission, strict MCP/A2A raw admission, content-minimized telemetry, and bounded model-call budgets.
 
-### Gate 17.2 — CI/CD and workflow authority hardening — NEXT / AUTHORIZED
+### Gate 17.2 — CI/CD and workflow authority hardening — IMPLEMENTED / RULESET ENFORCEMENT PENDING
 
-Gate 17.2 is intentionally narrow. It may change repository/workflow behavior only where Gate 17.1 proved an authority gap.
+Gate 17.2 implements the smallest authority-hardening slice supported by Gate 17.1 evidence.
 
-Authorized repository scope:
+Repository controls now freeze:
 
 ```text
-freeze repository-wide external-action full-SHA invariant
-reject privileged pull_request_target/workflow_run triggers unless separately authorized
-set checkout persist-credentials:false where authenticated git is unnecessary
-make EPSS history plan-only paths use read-only/no-write credentials
-limit 21600-second EPSS coordinator session to actual execution only
-disable historical AgentCore mutating workflow by default until dedicated minimum authority is explicitly recreated
-define exact required CI status contexts for main
+one always-running PR security context:        Repository security invariants
+external actions:                              full 40-hex SHA pins
+checkout:                                      persist-credentials:false
+pull_request_target/workflow_run:               rejected by default
+write-all / contents:write:                     rejected by default
+EPSS plan-only identity:                       OpsLensEpssHistoryEvidenceRole
+EPSS execution identity:                       OpsLensEpssHistoryCoordinatorRole
+21600-second STS session:                      full-backfill execute only
+historical AgentCore mutating automation:      retired / fail-closed
 ```
 
-Human/platform boundary:
+Canonical evidence:
 
 ```text
-change GitHub main ruleset required status checks
+docs/adr/0065-ci-cd-and-workflow-authority-hardening.md
+labs/phase-17-gate-17-2-workflow-authority-hardening.md
+labs/evidence/phase-17-gate-17-2-workflow-authority-hardening-v1.json
 ```
 
-Not authorized in Gate 17.2:
+The implementation itself creates no AWS resource and changes no IAM policy. The remaining control-plane step is intentionally external to repository code: after protected merge, a human must update active ruleset `Protect main` (`20873628`) so the exact proven context `Repository security invariants` is required, then independently verify the ruleset state.
+
+Until that happens:
 
 ```text
-AWS IAM mutation
-new AWS service
-new public runtime
-Inspector reactivation
-dependency-platform enablement
-PR #89 modification
+CI evidence != enforced merge gate
 ```
 
 ### Candidate later gates — EVIDENCE-DRIVEN
 
-The Gate 17.1 inventory justifies evaluating these later slices, but they remain separate decisions:
+Only after Gate 17.2 ruleset enforcement is proven should the next slice be selected. Gate 17.1 already identified these candidates:
 
 ```text
 17.3 dependency / dependency-review / code-scanning hardening
@@ -212,7 +215,7 @@ The Gate 17.1 inventory justifies evaluating these later slices, but they remain
 17.8 Security Hardening closeout
 ```
 
-Later gates must preserve the same distinction between a missing repository artifact, a platform setting that is not observable, a real implementation gap, and a control already proven by earlier phases.
+Later gates must preserve the distinction between a missing repository artifact, a platform setting that is not observable, a real implementation gap, and a control already proven by earlier phases.
 
 ## Phase 18 — Evaluation, Cost & Portfolio Readiness — PLANNED
 
