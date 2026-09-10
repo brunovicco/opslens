@@ -1,0 +1,49 @@
+{
+  "artifact_version": "phase-18-gate-18-2-implementation-checkpoint:v1",
+  "evidence_date": "2026-09-10",
+  "phase": "Phase 18 — Evaluation, Cost & Portfolio Readiness",
+  "gate": "18.2 — Consolidated Evaluation & Reliability View",
+  "issue": 283,
+  "source_main_sha": "ddc960f5ce0030b2822533a459d4754c7059187b",
+  "status": "IMPLEMENTED_PENDING_EXACT_HEAD_CI_AND_PROTECTED_MERGE",
+  "view_summary": {
+    "sections": 5,
+    "metrics": 27,
+    "decision_signals": 4,
+    "unmeasured": 3,
+    "not_applicable": 1,
+    "non_comparable_pairs": 11
+  },
+  "canonical_artifacts": [
+    "labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json",
+    "labs/evidence/phase-18-gate-18-2-decision-signals-v1.json",
+    "labs/evidence/phase-18-gate-18-2-consolidated-view-v1.json"
+  ],
+  "decision_signals": [
+    "phase7-isolation-grounding-failure",
+    "phase12-two-model-no-lift",
+    "phase14-agentcore-not-default",
+    "phase16-zero-records-not-zero-exposure"
+  ],
+  "authority_impact": {
+    "aws_mutations": 0,
+    "iam_mutations": 0,
+    "runtime_mutations": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "new_benchmark_runs": 0,
+    "pr_89_touched": false
+  },
+  "required_validation": [
+    "Gate 18.1 inventory verifier passes",
+    "Gate 18.2 consolidated-view verifier passes",
+    "Ruff passes",
+    "Pyright strict passes",
+    "unit tests pass",
+    "Security Hardening CI passes",
+    "Dependency Review passes",
+    "CodeQL Python passes",
+    "protected squash merge completes"
+  ],
+  "next_after_merge": "GATE_18_2_CLOSEOUT_THEN_GATE_18_3_COST_ACCOUNTING_AND_BUDGET_ENVELOPE"
+}
