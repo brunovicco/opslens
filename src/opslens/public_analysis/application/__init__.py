@@ -23,6 +23,12 @@ from opslens.public_analysis.application.representative_measurement import (
     RepresentativeWorkloadPlan,
     measure_representative_workload,
 )
+from opslens.public_analysis.application.representative_model_reasoning import (
+    REPRESENTATIVE_SYNTHESIS_QUESTION,
+    RepresentativeHybridSynthesizer,
+    RepresentativeModelReasoning,
+    execute_representative_model_reasoning,
+)
 from opslens.public_analysis.application.representative_repository_analysis import (
     RepresentativeRepositoryAnalysis,
     RepresentativeRepositoryThreatEvidence,
@@ -64,6 +70,7 @@ __all__ = [
     "MAX_PUBLIC_SEMANTIC_PLAN_RESPONSE_BYTES",
     "MAX_REPRESENTATIVE_STRUCTURED_FINDINGS",
     "REPRESENTATIVE_REMEDIATION_TOP_K",
+    "REPRESENTATIVE_SYNTHESIS_QUESTION",
     "AdmittedResultSerializer",
     "MeasurementClock",
     "MonotonicClock",
@@ -77,6 +84,8 @@ __all__ = [
     "PublicRepositoryEvidenceSource",
     "PublicSemanticPlanAdmissionError",
     "PublicSemanticPlanner",
+    "RepresentativeHybridSynthesizer",
+    "RepresentativeModelReasoning",
     "RepresentativeRepositoryAnalysis",
     "RepresentativeRepositoryThreatEvidence",
     "RepresentativeSemanticEvidence",
@@ -93,6 +102,7 @@ __all__ = [
     "build_representative_repository_analysis",
     "build_representative_structured_evidence",
     "execute_instrumented_public_analysis",
+    "execute_representative_model_reasoning",
     "measure_representative_workload",
     "parse_public_semantic_plan_proposal",
     "plan_public_analysis_handoff",
