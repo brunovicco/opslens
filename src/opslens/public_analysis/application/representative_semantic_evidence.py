@@ -41,7 +41,9 @@ class RepresentativeSemanticEvidence:
             retry_count=self.retrieve_result.invocation.retry_attempts,
         )
         if self.usage != expected_usage:
-            raise ValueError("semantic provider usage must match exact retrieval invocation evidence")
+            raise ValueError(
+                "semantic provider usage must match exact retrieval invocation evidence"
+            )
 
 
 def build_representative_remediation_request(
