@@ -12,7 +12,10 @@ from opslens.hybrid_retrieval.domain.evidence import (
     SemanticEvidenceChunk,
     StructuredEvidenceRow,
 )
-from opslens.hybrid_retrieval.domain.synthesis import HybridSynthesisResult
+from opslens.hybrid_retrieval.domain.synthesis import (
+    HybridSynthesisRequest,
+    HybridSynthesisResult,
+)
 from opslens.public_analysis.domain.product_result import (
     PUBLIC_ANALYSIS_SYNTHESIS_QUESTION,
     PublicAnalysisProductResult,
@@ -173,7 +176,7 @@ class PublicHybridSynthesisExecutor(Protocol):
 
     def synthesize_public_analysis(
         self,
-        request: object,
+        request: HybridSynthesisRequest,
     ) -> PublicSynthesisStageExecution:
         """Execute one admitted public-analysis synthesis request."""
         ...
