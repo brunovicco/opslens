@@ -4,451 +4,144 @@
 
 # OpsLens
 
-### Software Supply Chain e Threat Intelligence Verificáveis na AWS
+### Supply Chain Verificável e Arquitetura GenAI na AWS
 
-**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Bounded Agent Reasoning · MCP · AgentCore · A2A · Amazon Inspector · Security Hardening · Autoridade Determinística**
+**Threat Intelligence · Repository Intelligence · Risco Determinístico · Bedrock RAG · Hybrid Retrieval · Agentic AI · MCP · AgentCore · A2A · Inspector · Evaluation · Security Hardening · Cost Engineering**
 
 </div>
 
-OpsLens é uma plataforma open source de inteligência para software supply chain construída na AWS.
-
-Ela foi projetada para responder:
-
-> Considerando o software que eu realmente utilizo, quais vulnerabilidades o afetam, qual evidência exata prova isso, quais findings devo priorizar e qual orientação verificável pode me ajudar a agir?
-
-O projeto mantém deliberadamente separados verdade determinística, admissão de evidência, raciocínio de modelos, autorização, admissão de handoff, interoperabilidade, execução, divulgação de resultados, comportamento de hosting/runtime, runtime exposure, sinais de segurança e operational recovery.
+OpsLens é um laboratório open source de arquitetura AWS e uma plataforma de inteligência de supply chain de software construída em torno de um princípio:
 
 > **Agents reason. Code verifies evidence.**
+
+O projeto responde a uma pergunta prática: dado o software realmente usado por um repositório, quais vulnerabilidades o afetam, qual evidência exata comprova isso, o que deve ser priorizado e qual orientação verificada pode ajudar na ação?
+
+A plataforma separa deliberadamente raciocínio probabilístico da autoridade determinística responsável por package/version matching, correlação de vulnerabilidades, política de risco, admissão de consultas semânticas, compilação SQL, admissão de evidências, autorização de ferramentas, admissão de resultados e limites de custo/recursos.
 
 > **Repository Risk != Runtime Exposure.**
 
 ## Estado atual
 
-| Phase | Escopo | Estado |
-| --- | --- | --- |
-| Phase 0 | AWS Foundation | ✅ Concluída |
-| Phase 1 | EPSS Vertical Slice | ✅ Concluída |
-| Phase 2 | Threat Intelligence Data Lake | ✅ Concluída |
-| Phase 3 | Vulnerability Correlation Engine | ✅ Concluída |
-| Phase 4 | Repository Intelligence | ✅ Concluída |
-| Phase 5 | Risk Prioritization Engine | ✅ Concluída |
-| Phase 6 | Semantic Query Layer | ✅ Concluída |
-| Phase 7 | Knowledge Retrieval with Bedrock | ✅ Concluída |
-| Phase 8 | Hybrid Retrieval | ✅ Concluída |
-| Phase 9 | Public Analyze Your Repository | ✅ Concluída |
-| Phase 10 | Observability & Operational Excellence | ✅ Concluída |
-| Phase 11 | Single-Agent Baseline | ✅ Concluída |
-| Phase 12 | Multi-Agent Architecture | ✅ Concluída |
-| Phase 13 | MCP | ✅ Concluída — interoperabilidade offline limitada retida |
-| Phase 14 | Amazon Bedrock AgentCore | ✅ Concluída — lab opcional retido; IAM de experimento removido |
-| Phase 15 | A2A | ✅ Concluída — interoperabilidade offline por referência + conformidade com SDK oficial retidas |
-| Phase 16 | Runtime Exposure with Amazon Inspector | ✅ Concluída — read boundary provado; zero registros atuais; IAM temporário removido |
-| Phase 17 | Security Hardening | ✅ Concluída — hardening baseado em evidências + recovery medido retidos |
-| Phase 18 | Evaluation, Cost & Portfolio Readiness | ▶️ Próxima |
-
-Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.pt-br.md), o [índice de ADRs](docs/adr/README.md) e o [closeout da Phase 17](labs/phase-17-closeout.md).
-
-## Arquitetura principal
-
-### 1. Autoridade estruturada de vulnerabilidade e risco
+As Phases 0–17 estão completas. A **Phase 18 — Evaluation, Cost & Portfolio Readiness está em andamento**. Gates 18.1–18.3 estão completas; a Gate 18.4 sincroniza material de portfólio baseado em evidência e o mapa de aprendizagem AIP-C01.
 
 ```text
-NVD / CVE -----------+
-CISA KEV ------------+
-FIRST EPSS ----------+----> evidência de threat intelligence preservando origem
-GitHub Advisories ---+
-                              |
-                              v
-repositório GitHub público
- -> snapshot imutável do repositório
- -> aquisição limitada GET-only
- -> evidência inerte e exata de uv.lock
- -> normalização determinística PyPI / PEP 440 / purl
- -> aplicabilidade determinística de ranges vulneráveis
- -> enriquecimento NVD/CVSS + CISA KEV + FIRST EPSS
- -> RepositoryAnalysisResult content-addressed
- -> Risk Policy v1 determinística
+18.1  Cross-phase Evidence Inventory            COMPLETE
+18.2  Consolidated Evaluation & Reliability     COMPLETE
+18.3  Cost Accounting & Budget Envelopes        COMPLETE
+18.4  Portfolio Evidence + AIP-C01 Mapping       IN PROGRESS
 ```
 
-O modelo nunca decide aplicabilidade de vulnerabilidade, verdade da Risk Policy, fatos KEV/EPSS/CVSS ou runtime exposure.
+Veja [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [AIP-C01 Learning Map](docs/aip-c01-learning-map.md) e o [índice de ADRs](docs/adr/README.md).
 
-### 2. Semantic Query limitada
+## Arquitetura em resumo
 
 ```text
+NVD / CISA KEV / FIRST EPSS / GitHub Advisories
+        |
+        v
+evidência de ameaça preservando a fonte
+        |
+repositório público -> snapshot imutável -> uv.lock inerte
+        |
+        v
+correlação determinística PyPI + PEP 440
+        |
+NVD/CVSS + KEV + EPSS
+        |
+RepositoryAnalysisResult -> Risk Policy v1 determinística
+
 pergunta factual em linguagem natural
- -> planner de modelo limitado
- -> proposta estruturada
- -> parser determinístico
- -> SemanticQuery tipada
- -> compilador SQL determinístico
- -> Athena read-only limitado
- -> evidência estruturada
+        |
+        v
+proposta Bedrock limitada -> admissão SemanticQuery determinística
+        |
+        v
+compilador SQL tipado -> Athena read-only limitada
+
+fontes oficiais de conhecimento
+        |
+        v
+corpus canônico -> Bedrock Knowledge Base -> S3 Vectors
+        |
+        v
+Retrieve limitado -> evidência validada -> síntese + citações
+
+Evidência estruturada + semântica
+        |
+        v
+roteamento/composição determinísticos -> raciocínio de agente limitado
+        |
+        v
+autorização tipada de capability -> execução/admissão de resultado
 ```
 
-O modelo não recebe autoridade de text-to-SQL irrestrito.
+O LLM não recebe autoridade irrestrita de text-to-SQL. Conteúdo recuperado é evidência, não autoridade de instrução. Sucesso de protocolo/ferramenta não equivale à verdade de negócio.
 
-### 3. Grounded retrieval com Bedrock
+## Evidência medida retida
+
+O portfólio atual é propositalmente baseado em evidência. Exemplos:
+
+| Experimento | Evidência |
+| --- | --- |
+| Phase 7 grounding review | 11/13 claims suportados; razão derivada `0.8461538461538461` |
+| Phase 11 reasoning de referência | 6/6 casos; 3.395 tokens; mediana de provider latency 809,5 ms; custo derivado USD `0.0041921` |
+| Phase 12 comparação com dois modelos | 6/6 casos, porém 5.982 tokens, mediana derivada 1.694 ms e custo derivado USD `0.0074338`; não retida como default |
+| Phase 14 AgentCore | replay 6/6; total derivado USD `0.006572445136128483`; apenas lab opcional |
+| Phase 16 Inspector | leitura limitada bem-sucedida com zero registros; **não** interpretada como zero runtime exposure |
+| Phase 17 recovery | ciclo pause/resume dos três schedulers com convergência Terraform final |
+
+A cadeia machine-readable começa em `labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json` e é validada deterministicamente no CI.
+
+## Limites de custo e recursos
+
+A Gate 18.3 separa custo observado/derivado de limites configurados e proíbe agregação insegura entre experimentos não comparáveis.
 
 ```text
-pins imutáveis de fontes oficiais
- -> corpus canônico determinístico
- -> Amazon Bedrock Knowledge Base
- -> Titan Text Embeddings V2
- -> Amazon S3 Vectors
- -> Retrieve limitado
- -> admissão determinística no corpus verificado
- -> montagem de contexto limitada
- -> síntese limitada via Bedrock Converse
- -> identidade determinística de citações
- -> avaliação de groundedness
+semantic planner max output          256 tokens
+single-agent max output               96 tokens
+multi-agent triage max output         64 tokens
+knowledge synthesis max output      2048 tokens
+Athena scan cutoff/query         10485760 bytes
+Scheduler maximum event age         3600 seconds
+Scheduler maximum retry attempts        2
 ```
 
-`RetrieveAndGenerate` não é usado deliberadamente. Retrieval, admissão de evidência, síntese, citações e avaliação permanecem testáveis separadamente.
+São **limites configurados, não utilização medida**. OpsLens não fabrica TCO de produção ou run rate mensal a partir de labs limitados.
 
-### 4. Autoridade de evidência híbrida
+## Fronteiras retidas
 
-```text
-EvidenceNeed[]
- -> autoridade determinística de rota
- -> STRUCTURED | SEMANTIC | HYBRID | UNSUPPORTED
- -> composição de evidência separada por autoridade
- -> checagens de completude
- -> HybridEvidenceEnvelope
- -> síntese limitada por rota
- -> admissão determinística de saída
-```
+O reasoning direto via Bedrock da Phase 11 permanece como referência/default. A Phase 12 preserva specialization/handoff determinísticos, mas rejeita o default com dois modelos porque adicionou overhead sem ganho de qualidade. MCP e A2A permanecem camadas limitadas de interoperabilidade, não runtimes públicos. AgentCore fica como lab opcional, sem runtime/IAM de experimento permanente. Inspector permanece uma autoridade independente e read-only de runtime evidence; o resultado com zero registros não redefine repository risk.
 
-Fatos estruturados de vulnerabilidade/risco e evidência semântica de remediação permanecem classes de autoridade separadas.
+Security Hardening retém Actions em SHA completo, invariantes de segurança no `main` protegido, separação de identidades privilegiadas, Dependency Review, CodeQL, oito casos adversariais em sete classes de ameaça, telemetry content-minimized em 12 handlers Lambda com Powertools e um pause Terraform-owned para exatamente três schedules recorrentes de ingestão.
 
-### 5. Raciocínio de agente limitado
+## O que não é afirmado
 
-A Phase 11 permanece como caminho de referência/default medido:
+OpsLens não afirma atualmente runtime HTTP público de produção, MCP/A2A públicos, AgentCore como runtime default de produção, SLOs de produção derivados de labs, TCO/run rate de produção, zero runtime exposure por causa do Inspector ter retornado zero registros, limites configurados como utilização medida ou um global platform kill switch.
 
-```text
-SingleAgentTask
- -> allowlist code-owned de AgentCapability
- -> uma invocação limitada de modelo
- -> proposta de ação não confiável
- -> parser determinístico
- -> authorize_agent_action(...)
- -> AuthorizedAgentAction | AgentAbstention | rejeição
-```
+## Laboratório AIP-C01
 
-Referência medida em seis casos:
+OpsLens também é usado como preparação hands-on para **AWS Certified Generative AI Developer - Professional (AIP-C01)**. O mapa do repositório classifica cada tarefa do guia atual como `EVIDENCED`, `PARTIAL` ou `STUDY_ONLY`, sem transformar a amplitude do exame em requisito do produto.
 
-```text
-quality:                    6/6
-model invocations:          6
-input/output/total tokens:  3291 / 104 / 3395
-provider latency median:    809.5 ms
-client elapsed median:      977.5 ms
-SDK retries:                0
-capability executions:      0
-custo de inferência derivado: USD 0.0041921
-```
-
-A Phase 12 reteve especialização/handoff determinísticos, mas rejeitou a topologia medida com dois modelos como default porque não houve ganho de qualidade e houve aumento de chamadas, tokens, latência e custo.
-
-## Interoperabilidade e experimentos de runtime
-
-### MCP — Phase 13
-
-Contratos retidos:
-
-```text
-mcp-capability-exposure:v1
-mcp-capability-execution:v1
-mcp-result-projection:v1
-```
-
-MCP permanece uma camada offline limitada de interoperabilidade sobre a autoridade tipada já existente.
-
-```text
-MCP tool name != capability authorization
-MCP call admission != capability execution
-MCP result projection != public runtime exposure
-```
-
-Um runtime MCP público/de rede não é atualmente retido.
-
-### Amazon Bedrock AgentCore — Phase 14
-
-A Phase 14 mediu um único experimento limitado de Runtime HTTP/SigV4.
-
-```text
-Gate 14.2 replay:          6 / 6 PASS
-AgentCore Runtime cost:    USD 0.002380345136128484
-Bedrock inference cost:    USD 0.0041921
-total observed cost:       USD 0.006572445136128483
-runtime cleanup:           RESOURCE_NOT_FOUND
-Gate 14.4 IAM cleanup:     0 add / 0 change / 4 destroy
-```
-
-Retenção final:
-
-```text
-Phase 11 direct Bedrock reasoning:          RETAIN / DEFAULT
-AgentCore implementation/evidence:          RETAIN AS OPTIONAL LAB TARGET
-AgentCore managed Runtime as default:        DO NOT RETAIN
-standing AgentCore Runtime resources:        NONE
-standing experiment-specific GitHub IAM:    REMOVED
-Gate 14.2 PUBLIC exception:                  NOT RETAINED
-```
-
-### A2A — Phase 15
-
-A Phase 15 avaliou A2A sem assumir que adoção de protocolo exige outro runtime de rede.
-
-Baseline autoritativo do protocolo:
-
-```text
-A2A release:                 1.0.0
-standard bindings:           JSONRPC / GRPC / HTTP+JSON
-first OpsLens binding:       JSONRPC
-selected operation:          SendMessage
-```
-
-Caminho limitado retido:
-
-```text
-SpecialistAgentTask já admitida
- -> A2AReference content-addressed
- -> registry local code-owned
- -> projeção estrita A2A 1.0 JSON-RPC SendMessage
- -> validação de duplicate-key / exact-shape
- -> resolução de referência code-owned
- -> metadata de Message ou Task terminal completed
- -> admissão determinística do OpsLens
- -> STOP antes de model/capability execution
-```
-
-A Gate 15.2 mediu:
-
-```text
-Agent Card bytes:          582
-protocol requests:         2
-request bytes total:       1308
-response bytes total:      989
-client elapsed sum:        0.353039 ms
-handler elapsed sum:       0.239397 ms
-retries:                   0
-model invocations:         0
-capability executions:     0
-new AWS resources:         0
-new IAM roles/policies:    0
-incremental AWS cost:      USD 0.00
-```
-
-A Gate 15.3 verificou o perfil congelado contra o código-fonte do SDK oficial Python A2A:
-
-```text
-a2a-sdk version:             1.1.4
-release tag:                 v1.1.4
-source commit:               2d4d3048b245d2af854bad804f0e722ea9febc08
-AgentCard conformance:       PASS
-SendMessage request:         PASS
-JSON-RPC construction:       PASS
-Message response:            PASS
-Task response:               PASS
-project/runtime dependency:  0
-protocol network requests:   0
-```
-
-O SDK é retido somente como oracle de conformidade em CI, fixado pelo source commit exato.
-
-Decisão final da Phase 15:
-
-```text
-A2AReference content-addressed:                 RETAIN
-strict raw JSON admission:                      RETAIN
-A2A 1.0 JSONRPC SendMessage profile:            RETAIN
-Message / terminal Task metadata admission:     RETAIN
-A2A fixtures / CI:                              RETAIN
-official exact-source SDK oracle:               RETAIN FOR CI
-public/network A2A runtime:                      DO NOT CREATE
-standing A2A cloud resources / IAM:             NONE
-A2A capability/business-result authority:        DO NOT CREATE
-a2a-sdk project/runtime dependency:              DO NOT ADD
-```
-
-```text
-A2A SDK acceptance != OpsLens admission authority
-A2A transport success != business/evidence truth
-A2A protocol binding != business authority
-```
-
-### Amazon Inspector — Phase 16
-
-A Phase 16 avaliou o Amazon Inspector como autoridade independente de evidência de runtime sem permitir que runtime data redefinisse findings de repositório ou a Risk Policy v1.
-
-A role compartilhada de deployment mediu primeiro um boundary fail-closed de autorização:
-
-```text
-run:            34411934819 / #1
-ListCoverage:   ACCESS_DENIED / AccessDeniedException
-ListFindings:   NOT_ATTEMPTED
-AWS mutations:  0
-```
-
-Em vez de ampliar esse principal compartilhado, o OpsLens criou uma role temporária dedicada limitada a `ListCoverage` e `ListFindings` para exatamente uma nova medição.
-
-Rerun medido:
-
-```text
-run:                    34414116549 / #2
-job:                    102675000098
-ListCoverage:           SUCCESS / 1 page / 0 records / 0 retries
-ListFindings:           SUCCESS / 1 page / 0 records / 0 retries
-client elapsed:         465.877452 ms
-AWS mutations:          0
-model invocations:      0
-capability executions:  0
-artifact SHA-256:       a6f917e62124b4c604891e1a83db9874e3ef34696110dfaead1af16d45a03365
-```
-
-O read boundary funcionou, mas a conta dev atual retornou zero coverage/findings do Inspector. O OpsLens não ativou nem reconfigurou scanning apenas para fabricar dados de demonstração.
-
-O teardown obrigatório produziu:
-
-```text
-cleanup plan:       0 add / 0 change / 2 destroy
-cleanup apply:      0 added / 0 changed / 2 destroyed
-post-apply plan:    No changes
-temporary role:     ABSENT / NoSuchEntity
-standing IAM:       NONE
-```
-
-Retenção final:
-
-```text
-Inspector read-only domain/adapter contract:   RETAIN
-historical discovery workflow:                 RETAIN / DISABLED BY DEFAULT
-measured zero-record evidence:                 RETAIN
-standing Inspector discovery IAM:              NONE
-Inspector activation/configuration:             NOT CREATED
-hybrid runtime_exposure routing:                NOT CREATED
-repository/runtime automatic correlation:       NOT CREATED
-```
-
-```text
-AWS authentication != Inspector read authorization
-Inspector API success != runtime evidence presence
-Inspector finding != repository finding
-Inspector evidence != model authority
-```
-
-## Security Hardening — Phase 17
-
-A Phase 17 começou por um inventário transversal de ameaças/gaps de controle e adicionou somente controles sustentados por evidência.
-
-Postura de segurança retida:
-
-```text
-protected-main required context:          Repository security invariants
-external Actions references:              full commit SHA
-persisted checkout credentials:           disabled where unnecessary
-EPSS plan vs execution identity:          separated
-Dependency Review:                        retained
-CodeQL / Python:                          retained
-adversarial regression:                   8 cases / 7 threat classes
-Powertools Lambda handlers hardened:      12
-scheduled-ingestion recovery control:     retained / Terraform-owned
-```
-
-A prova medida de recovery da Gate 17.6 utilizou exatamente três recursos recorrentes do EventBridge Scheduler:
-
-```text
-aws_scheduler_schedule.epss_daily
-aws_scheduler_schedule.kev_daily
-aws_scheduler_schedule.nvd_incremental_hourly
-```
-
-e comprovou:
-
-```text
-0/3/0 pause plan + apply
- -> independent 3/3 DISABLED reads
- -> paused Terraform convergence
- -> 0/3/0 resume plan + apply
- -> independent 3/3 ENABLED reads
- -> final default Terraform convergence
-```
-
-O controle é deliberadamente um **scheduled-ingestion pause**, não um global kill switch. Ele não afirma interromper trabalho já admitido ou em execução.
-
-A Gate 17.7 sincronizou a arquitetura acumulada EN/PT-BR, fechando o drift documental restante.
-
-Closeout canônico:
-
-- [ADR 0070 — closeout da Phase 17 Security Hardening](docs/adr/0070-phase17-security-hardening-closeout.md)
-- [Closeout da Phase 17](labs/phase-17-closeout.md)
-- [Evidência de closeout da Phase 17](labs/evidence/phase-17-closeout-v1.json)
-
-## O que deliberadamente não é afirmado
-
-O OpsLens atualmente **não** afirma:
-
-```text
-public HTTP production runtime
-public WAF / tenant quota controls without a public runtime
-public MCP production runtime
-AgentCore as the default/production OpsLens runtime
-PUBLIC AgentCore networking as a production decision
-public/network A2A runtime
-A2A-derived capability authorization
-A2A business-result authority
-runtime exposure inferred from the zero-record Inspector experiment
-standing Inspector experiment IAM
-global platform kill switch
-termination of in-flight work through the Scheduler pause
-production SLOs for experimental runtime boundaries
-```
+Um serviço AWS não é adicionado apenas porque aparece no guia da certificação. Veja [docs/aip-c01-learning-map.md](docs/aip-c01-learning-map.md).
 
 ## Baseline AWS
 
 ```text
-environment:             dev
-Region:                  us-east-1
-knowledge base:          BTVJ2PBR2A
-data source:             IEL1LBE026
-vector store:            Amazon S3 Vectors
-embedding model:         amazon.titan-embed-text-v2:0
-dimensions:              1024
-chunking:                NONE
-canonical chunks:        9
-synthesis API:           bedrock-runtime / Converse
-synthesis profile:       us.anthropic.claude-haiku-4-5-20251001-v1:0
-reasoning profile:       us.anthropic.claude-haiku-4-5-20251001-v1:0
-streaming:               no
-tools in reasoning:      none
+environment:          dev
+region:               us-east-1
+vector store:         Amazon S3 Vectors
+embedding model:      amazon.titan-embed-text-v2:0
+embedding dimensions: 1024
+chunking:             NONE
+canonical chunks:     9
+synthesis API:        Amazon Bedrock Converse
+reasoning profile:    us.anthropic.claude-haiku-4-5-20251001-v1:0
 ```
 
-## Documentação e evidências
+## Documentação
 
-- [Current State](docs/current-state.md)
-- [Roadmap](docs/roadmap.md)
-- [Architecture — English](docs/architecture.md)
-- [Architecture — Português](docs/architecture.pt-br.md)
-- [Índice de ADRs](docs/adr/README.md)
-- [Índice da documentação](docs/README.md)
-- [Closeout da Phase 11](labs/phase-11-gate-11-6-closeout.md)
-- [Closeout da Phase 12](labs/phase-12-gate-12-5-multi-agent-closeout.md)
-- [Closeout MCP da Phase 13](labs/phase-13-gate-13-5-mcp-closeout.md)
-- [Decisão de retenção AgentCore da Phase 14](labs/phase-14-gate-14-3-agentcore-retention-decision.md)
-- [Cleanup IAM da Phase 14](labs/phase-14-gate-14-4-agentcore-iam-cleanup.md)
-- [Closeout A2A da Phase 15](labs/phase-15-closeout.md)
-- [Closeout Amazon Inspector da Phase 16](labs/phase-16-closeout.md)
-- [Closeout Security Hardening da Phase 17](labs/phase-17-closeout.md)
-- [Evidência de closeout da Phase 17](labs/evidence/phase-17-closeout-v1.json)
-
-## Próxima phase planejada
-
-```text
-Phase 18 — Evaluation, Cost & Portfolio Readiness
-```
-
-A Gate 18.1 começa com um inventário transversal de evidências e uma matriz de comparabilidade. Valores existentes devem ser classificados como `MEASURED`, `DERIVED`, `UNMEASURED` ou `NOT_APPLICABLE` antes de produzir visões consolidadas de qualidade, latência, custo, reliability, segurança e portfólio.
+Comece por [docs/README.md](docs/README.md). Para portfólio e arquitetura, os principais pontos de entrada são [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md) e o [índice de ADRs](docs/adr/README.md).
 
 ---
 
-A PR #89 / `feat/governed-gateway-semantic-planner` pertence ao trabalho separado do Governed LLM Gateway e permanece intencionalmente fora da Phase 18 salvo reautorização explícita.
+PR #89 / `feat/governed-gateway-semantic-planner` pertence ao Governed LLM Gateway e continua deliberadamente fora da Phase 18 até retomada explícita.

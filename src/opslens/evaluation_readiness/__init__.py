@@ -20,8 +20,15 @@ from opslens.evaluation_readiness.evidence_inventory import (
     ValidationSummary,
     validate_inventory,
 )
+from opslens.evaluation_readiness.portfolio_pack import (
+    AIPCoverageStatus,
+    PortfolioPackSummary,
+    PortfolioPackValidationError,
+    validate_portfolio_pack,
+)
 
 __all__ = [
+    "AIPCoverageStatus",
     "ComparisonRule",
     "ConsolidatedViewSummary",
     "ConsolidatedViewValidationError",
@@ -32,8 +39,11 @@ __all__ = [
     "DecisionSignalKind",
     "EvidenceClassification",
     "EvidenceInventoryValidationError",
+    "PortfolioPackSummary",
+    "PortfolioPackValidationError",
     "ValidationSummary",
     "validate_consolidated_view",
     "validate_cost_accounting",
     "validate_inventory",
+    "validate_portfolio_pack",
 ]
