@@ -1,11 +1,12 @@
 {
   "artifact_version": "phase-17-gate-17-3-dependency-code-scanning:v1",
   "source_main_sha": "c39984fe2f9832710350ae5939e34898661bb337",
-  "implementation_head_sha": "51fb761ec045c318573f3c2d3c53bf720059d268",
+  "implementation_head_sha": "9f180b4768bbd49d6702f46baef5d99d8ee5f4a0",
   "issue": 256,
+  "pr": 261,
   "decision": "RETAIN_BOUNDED_DEPENDENCY_REVIEW_AND_CODEQL_SIGNALS",
   "dependency_review": {
-    "state": "IMPLEMENTED_PENDING_EXACT_HEAD_VALIDATION",
+    "state": "MEASURED_SUCCESS_AFTER_REQUIRED_PLATFORM_ENABLEMENT",
     "workflow": ".github/workflows/dependency-review.yml",
     "action": "actions/dependency-review-action",
     "release": "v5.0.0",
@@ -16,10 +17,29 @@
       "contents: read"
     ],
     "oidc_authority": false,
-    "aws_authority": false
+    "aws_authority": false,
+    "run_id": 34423137362,
+    "run_number": 1,
+    "first_attempt": {
+      "attempt": 1,
+      "job_id": 102702675325,
+      "conclusion": "FAILURE",
+      "classification": "GITHUB_PLATFORM_CONFIGURATION_BOUNDARY",
+      "reason": "Dependency graph was disabled for the repository"
+    },
+    "platform_change": {
+      "dependency_graph_enabled_by_human": true,
+      "aws_or_iam_change": false,
+      "permission_widening": false
+    },
+    "successful_rerun": {
+      "attempt": 2,
+      "job_id": 102704585117,
+      "conclusion": "SUCCESS"
+    }
   },
   "codeql": {
-    "state": "IMPLEMENTED_PENDING_EXACT_HEAD_VALIDATION",
+    "state": "MEASURED_SUCCESS",
     "workflow": ".github/workflows/codeql.yml",
     "action": "github/codeql-action",
     "release_line": "v4.38.0",
@@ -36,7 +56,19 @@
       "security-events: write"
     ],
     "oidc_authority": false,
-    "aws_authority": false
+    "aws_authority": false,
+    "run_id": 34423137268,
+    "run_number": 1,
+    "job_id": 102702675060,
+    "conclusion": "SUCCESS"
+  },
+  "security_hardening_ci": {
+    "workflow": "Security Hardening CI",
+    "context": "Repository security invariants",
+    "run_id": 34423137266,
+    "run_number": 16,
+    "job_id": 102702674953,
+    "conclusion": "SUCCESS"
   },
   "workflow_policy": {
     "external_actions_require_full_commit_sha": true,
@@ -62,5 +94,5 @@
   "model_invocations": 0,
   "capability_executions": 0,
   "pr_89_touched": false,
-  "validation_state": "EXACT_PR_HEAD_CI_REQUIRED"
+  "validation_state": "MEASURED_FIRST_RUN_RECORDED_FINAL_PR_HEAD_CI_REQUIRED"
 }
