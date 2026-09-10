@@ -26,13 +26,3 @@ check "scheduled_ingestion_retry_budget" {
     error_message = "Scheduled source ingestion must retain the 3600-second event-age and two-retry delivery budget."
   }
 }
-
-output "scheduled_ingestion_control" {
-  description = "Terraform-owned operational state for recurring source-ingestion schedules."
-  value = {
-    enabled                   = var.scheduled_ingestion_enabled
-    scheduler_state           = local.scheduled_ingestion_state
-    maximum_event_age_seconds = local.scheduled_ingestion_maximum_event_age_in_seconds
-    maximum_retry_attempts    = local.scheduled_ingestion_maximum_retry_attempts
-  }
-}
