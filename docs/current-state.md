@@ -66,7 +66,7 @@ AIP-C01 topic != product requirement
 
 ## Retained public-analysis boundary
 
-The retained public-analysis application path is real but still stops before a public product runtime:
+The protected-main public-analysis application path still stops before a public product runtime:
 
 ```text
 untrusted JSON
@@ -81,25 +81,9 @@ untrusted JSON
  -> STOP
 ```
 
-`execute_instrumented_public_analysis` emits bounded operational evidence for the same path and still returns the handoff. There is no retained public HTTP endpoint, public application compute, final public product result, or public result store.
+`execute_instrumented_public_analysis` emits bounded operational evidence for that retained protected-main path and still returns the handoff. There is no protected public HTTP endpoint, public application compute, or public result store.
 
-Important adjacent capabilities already exist but are not yet composed downstream of that handoff into one public workload:
-
-```text
-deterministic vulnerability correlation
-NVD/CVSS + KEV + EPSS enrichment
-Risk Policy v1
-bounded Athena structured retrieval
-Bedrock Knowledge Base Retrieve
-bounded grounded/hybrid synthesis
-capability execution/result admission
-```
-
-Therefore:
-
-```text
-rich retained capabilities != executable public product workload
-```
+Gate 19.2 composes a **non-public representative execution** downstream of the retained handoff solely to measure the workload before runtime selection. That composition is not yet public runtime authority.
 
 ## Gate 19.1 retained launch contract
 
@@ -131,9 +115,7 @@ That hypothesis is not runtime authority. A concrete topology must follow repres
 
 ## Gate 19.2 active implementation
 
-Gate 19.2 closes the whole-request measurements that Gate 19.1 correctly left `UNMEASURED`.
-
-The first implementation slice introduces a provider-neutral, non-public measurement contract and harness. The contract requires the exact ordered representative stages:
+Gate 19.2 now has the complete nine-stage non-public representative composition implemented under draft PR #297:
 
 ```text
 public_request_admission
@@ -147,35 +129,89 @@ model_reasoning
 result_admission
 ```
 
-The harness records only concrete execution observations:
+The composition reuses retained OpsLens authority rather than copying business truth. Repository applicability continues through the retained GHSA/NVD/KEV/EPSS chain; risk continues through Risk Policy v1; structured evidence is projected deterministically; semantic remediation evidence uses the retained bounded Knowledge Base Retrieve path; model reasoning uses the retained bounded hybrid synthesis path; and final result admission remains deterministic.
+
+The measurement contract records:
 
 ```text
 end-to-end duration
 per-stage duration
-GitHub HTTP request count
+GitHub physical HTTP request count
 Athena query count + bytes scanned
 Bedrock Retrieve count
+Bedrock Retrieve client elapsed milliseconds
 Bedrock model call count
 Bedrock input/output tokens
+Bedrock model client elapsed milliseconds
+Bedrock provider latency milliseconds
 retry count
 throttle count
 serialized admitted-result bytes
 ```
 
-It rejects incomplete/reordered stage plans, negative resource observations, aggregate counter drift, empty final serialization, invalid clocks, and clock regression.
+Measurement authority is explicit per metric. Numeric zero does not prove observation. For the current direct structured-evidence path, Athena query count and bytes scanned are `NOT_APPLICABLE`; they are not represented as measured zero. `throttle_count` remains `UNMEASURED` unless the complete concrete live provider path can prove it.
 
-Current implementation surface:
+Provider latency is retained from provider invocation evidence rather than derived from stage duration:
 
 ```text
-issue: #295
-draft PR: #297
-branch: feat/phase19-gate19-2-representative-workload-measurement
-measurement contract: src/opslens/public_analysis/domain/representative_measurement.py
-measurement harness:  src/opslens/public_analysis/application/representative_measurement.py
-unit tests:            tests/unit/public_analysis/test_representative_measurement.py
+Bedrock Retrieve:
+  BedrockRetrieveInvocationEvidence.client_elapsed_ms
+
+Bedrock model:
+  BedrockHybridSynthesisInvocationEvidence.client_elapsed_ms
+  BedrockHybridSynthesisInvocationEvidence.bedrock_latency_ms
 ```
 
-The first Gate 19.2 code slice performs no live AWS/model calls. Live AWS/model execution, when needed for the representative measurement, remains a human execution boundary.
+Current implementation surface includes:
+
+```text
+measurement domain contract:
+  src/opslens/public_analysis/domain/representative_measurement.py
+
+measurement harness:
+  src/opslens/public_analysis/application/representative_measurement.py
+
+complete nine-stage runner:
+  src/opslens/public_analysis/application/representative_workload_execution.py
+
+repository analysis composition:
+  src/opslens/public_analysis/application/representative_repository_analysis.py
+
+structured evidence:
+  src/opslens/public_analysis/application/representative_structured_evidence.py
+
+semantic evidence:
+  src/opslens/public_analysis/application/representative_semantic_evidence.py
+
+hybrid evidence:
+  src/opslens/public_analysis/application/representative_hybrid_evidence.py
+
+model reasoning:
+  src/opslens/public_analysis/application/representative_model_reasoning.py
+
+result admission:
+  src/opslens/public_analysis/domain/representative_result.py
+
+GitHub physical transport measurement:
+  src/opslens/public_analysis/adapters/github_measurement.py
+
+human live-measurement runbook:
+  labs/phase-19-gate-19-2-human-live-measurement-runbook.md
+```
+
+The representative input is frozen for reproducibility at:
+
+```text
+repository:      whotracksme/whotracks.me
+commit/ref:      468f6e211a307f5f20d1d95c478ddd89efdb9b6b
+evidence file:  uv.lock
+dependency:     requests==2.31.0
+GHSA anchor:    GHSA-9wx4-h78v-vm56
+CVE anchor:     CVE-2024-35195
+patched from:   2.32.0
+```
+
+These identifiers do not grant vulnerability authority by themselves. Before the live representative run, the exact typed `RepresentativeRepositoryThreatEvidence` bundle must be materialized from retained authoritative evidence contracts. Missing source evidence must remain unavailable/unsupported rather than being fabricated.
 
 ## Gate 19.2 authority boundary
 
@@ -189,8 +225,22 @@ PR #89 modifications:  0
 
 No API Gateway, Function URL, queue, result store, worker fleet, WAF, ECS/Fargate, AgentCore public runtime, or broad runtime role is authorized by the current gate.
 
-## Next checkpoint
+## Current validation state
 
-Continue composing the provider-neutral harness with retained OpsLens stages without moving authority into the measurement layer. The next engineering slice must inspect and adapt the existing repository-intelligence, Risk Policy, structured-retrieval, semantic-retrieval, synthesis, and result-admission contracts rather than duplicating their business truth.
+The composed workload has deterministic offline coverage for the complete stage order, repository/risk authority chain, semantic evidence, hybrid evidence, model reasoning, final result serialization, provider accounting, measurement classification, malformed measurement rejection, GitHub physical-call counting, and rate-limit observation.
 
-After deterministic local/CI validation is green, prepare the smallest reproducible non-public live measurement procedure. Any live AWS or model invocation remains explicitly human-executed. Only measured evidence may move the runtime decision from `DEFERRED_PENDING_MEASUREMENT` to `SYNC` or `ASYNC`.
+An exact-head CI checkpoint at `bbe678c2702e0e1f69dc56f461025e19cde5689f` passed all eight retained workflows before the human runbook/current-state synchronization commits. The current PR head must independently pass the same validation chain before it becomes the next exact validated checkpoint.
+
+## Next checkpoint — human execution boundary
+
+Pre-live composition is complete enough to stop autonomous execution at the intended authority boundary.
+
+The next meaningful step is **not** public deployment. It is to:
+
+1. materialize the exact GHSA/NVD/KEV/EPSS threat-evidence bundle through retained authoritative source/transform contracts;
+2. human-execute exactly one non-public representative workload with the retained GitHub and Bedrock adapters;
+3. capture the live measurement as immutable evidence under `labs/evidence/`;
+4. validate measurement classifications without coercing `UNMEASURED` or `NOT_APPLICABLE` into zero;
+5. evaluate `SYNC`, `ASYNC`, or retain `DEFERRED_PENDING_MEASUREMENT` only from the measured evidence.
+
+Live AWS/model execution remains explicitly human-executed. No AWS/IAM/public runtime mutation is authorized by this step.
