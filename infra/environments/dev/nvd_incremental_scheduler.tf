@@ -136,7 +136,7 @@ resource "aws_scheduler_schedule" "nvd_incremental_hourly" {
 
   description = "Invoke the OpsLens NVD incremental ingestion runtime every two hours."
 
-  state = "ENABLED"
+  state = local.scheduled_ingestion_state
 
   schedule_expression          = local.nvd_incremental_scheduler_expression
   schedule_expression_timezone = "UTC"
@@ -152,8 +152,8 @@ resource "aws_scheduler_schedule" "nvd_incremental_hourly" {
     input = local.nvd_incremental_scheduler_input
 
     retry_policy {
-      maximum_event_age_in_seconds = 3600
-      maximum_retry_attempts       = 2
+      maximum_event_age_in_seconds = local.scheduled_ingestion_maximum_event_age_in_seconds
+      maximum_retry_attempts       = local.scheduled_ingestion_maximum_retry_attempts
     }
   }
 
