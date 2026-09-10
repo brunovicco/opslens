@@ -126,7 +126,6 @@ def _records(inventory: dict[str, object]) -> list[dict[str, object]]:
 
 def test_validate_inventory_accepts_explicit_evidence_semantics(tmp_path: Path) -> None:
     """The frozen valid shape resolves evidence and preserves null semantics."""
-
     inventory_path, _, _ = _prepare(tmp_path)
 
     summary = validate_inventory(inventory_path=inventory_path, repo_root=tmp_path)
@@ -139,7 +138,6 @@ def test_validate_inventory_accepts_explicit_evidence_semantics(tmp_path: Path) 
 
 def test_validate_inventory_rejects_unknown_classification(tmp_path: Path) -> None:
     """Classification vocabulary is frozen and fails closed on unknown values."""
-
     inventory_path, _, inventory = _prepare(tmp_path)
     _records(inventory)[0]["classification"] = "ESTIMATED"
     _write_json(inventory_path, inventory)
@@ -150,7 +148,6 @@ def test_validate_inventory_rejects_unknown_classification(tmp_path: Path) -> No
 
 def test_validate_inventory_rejects_unmeasured_zero(tmp_path: Path) -> None:
     """An unmeasured value may not be normalized to numeric zero."""
-
     inventory_path, _, inventory = _prepare(tmp_path)
     _records(inventory)[2]["value"] = 0.0
     _write_json(inventory_path, inventory)
@@ -161,7 +158,6 @@ def test_validate_inventory_rejects_unmeasured_zero(tmp_path: Path) -> None:
 
 def test_validate_inventory_rejects_not_applicable_zero(tmp_path: Path) -> None:
     """A not-applicable value may not be normalized to numeric zero."""
-
     inventory_path, _, inventory = _prepare(tmp_path)
     _records(inventory)[3]["value"] = 0.0
     _write_json(inventory_path, inventory)
@@ -172,7 +168,6 @@ def test_validate_inventory_rejects_not_applicable_zero(tmp_path: Path) -> None:
 
 def test_validate_inventory_rejects_missing_canonical_artifact(tmp_path: Path) -> None:
     """Every record must resolve to a repository evidence artifact."""
-
     inventory_path, evidence_path, _ = _prepare(tmp_path)
     evidence_path.unlink()
 
@@ -182,7 +177,6 @@ def test_validate_inventory_rejects_missing_canonical_artifact(tmp_path: Path) -
 
 def test_validate_inventory_rejects_measured_source_value_mismatch(tmp_path: Path) -> None:
     """Measured values must equal the field addressed in their canonical artifact."""
-
     inventory_path, _, inventory = _prepare(tmp_path)
     _records(inventory)[0]["value"] = 0.75
     _write_json(inventory_path, inventory)
@@ -193,7 +187,6 @@ def test_validate_inventory_rejects_measured_source_value_mismatch(tmp_path: Pat
 
 def test_validate_inventory_rejects_unknown_comparability_group(tmp_path: Path) -> None:
     """Records cannot self-declare an unregistered comparison group."""
-
     inventory_path, _, inventory = _prepare(tmp_path)
     _records(inventory)[0]["comparability_group"] = "unknown"
     _write_json(inventory_path, inventory)
@@ -204,7 +197,6 @@ def test_validate_inventory_rejects_unknown_comparability_group(tmp_path: Path) 
 
 def test_validate_inventory_rejects_duplicate_metric_membership(tmp_path: Path) -> None:
     """A metric belongs to exactly one comparison group."""
-
     inventory_path, _, inventory = _prepare(tmp_path)
     matrix = cast(dict[str, object], inventory["comparability_matrix"])
     groups = cast(list[dict[str, object]], matrix["groups"])
@@ -218,7 +210,6 @@ def test_validate_inventory_rejects_duplicate_metric_membership(tmp_path: Path) 
 
 def test_validate_inventory_rejects_cross_semantic_comparable_group(tmp_path: Path) -> None:
     """Comparable groups cannot mix dimensions or units merely because values are numeric."""
-
     inventory_path, _, inventory = _prepare(tmp_path)
     records = _records(inventory)
     records[1]["dimension"] = "latency"
