@@ -344,7 +344,10 @@ def validate_consolidated_view(
     root = _object(_load_json(view_path), label="consolidated view root")
     _reject_forbidden_presentation_keys(root)
 
-    if _string(root.get("artifact_version"), label="view artifact_version") != _VIEW_ARTIFACT_VERSION:
+    if (
+        _string(root.get("artifact_version"), label="view artifact_version")
+        != _VIEW_ARTIFACT_VERSION
+    ):
         raise ConsolidatedViewValidationError("unexpected consolidated view artifact version")
 
     source_inventory = _string(root.get("source_inventory"), label="source_inventory")
@@ -353,7 +356,9 @@ def validate_consolidated_view(
             f"source_inventory must remain {_EXPECTED_INVENTORY_PATH.as_posix()}"
         )
     if (repo_root / source_inventory).resolve() != inventory_path:
-        raise ConsolidatedViewValidationError("source_inventory path does not match validator input")
+        raise ConsolidatedViewValidationError(
+            "source_inventory path does not match validator input"
+        )
 
     source_signals = _string(root.get("decision_signal_manifest"), label="decision_signal_manifest")
     if (repo_root / source_signals).resolve() != signal_path:
@@ -369,7 +374,10 @@ def validate_consolidated_view(
 
     for section_index, section_value in enumerate(sections):
         section = _object(section_value, label=f"sections[{section_index}]")
-        section_id = _string(section.get("section_id"), label=f"sections[{section_index}].section_id")
+        section_id = _string(
+            section.get("section_id"),
+            label=f"sections[{section_index}].section_id",
+        )
         if section_id in seen_sections:
             raise ConsolidatedViewValidationError(f"duplicate section_id: {section_id}")
         seen_sections.add(section_id)
