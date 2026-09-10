@@ -1,0 +1,98 @@
+{
+  "artifact_version": "phase-17-gate-17-3-dependency-code-scanning:v1",
+  "source_main_sha": "c39984fe2f9832710350ae5939e34898661bb337",
+  "implementation_head_sha": "9f180b4768bbd49d6702f46baef5d99d8ee5f4a0",
+  "issue": 256,
+  "pr": 261,
+  "decision": "RETAIN_BOUNDED_DEPENDENCY_REVIEW_AND_CODEQL_SIGNALS",
+  "dependency_review": {
+    "state": "MEASURED_SUCCESS_AFTER_REQUIRED_PLATFORM_ENABLEMENT",
+    "workflow": ".github/workflows/dependency-review.yml",
+    "action": "actions/dependency-review-action",
+    "release": "v5.0.0",
+    "exact_sha": "a1d282b36b6f3519aa1f3fc636f609c47dddb294",
+    "trigger": "pull_request",
+    "fail_on_severity": "high",
+    "permissions": [
+      "contents: read"
+    ],
+    "oidc_authority": false,
+    "aws_authority": false,
+    "run_id": 34423137362,
+    "run_number": 1,
+    "first_attempt": {
+      "attempt": 1,
+      "job_id": 102702675325,
+      "conclusion": "FAILURE",
+      "classification": "GITHUB_PLATFORM_CONFIGURATION_BOUNDARY",
+      "reason": "Dependency graph was disabled for the repository"
+    },
+    "platform_change": {
+      "dependency_graph_enabled_by_human": true,
+      "aws_or_iam_change": false,
+      "permission_widening": false
+    },
+    "successful_rerun": {
+      "attempt": 2,
+      "job_id": 102704585117,
+      "conclusion": "SUCCESS"
+    }
+  },
+  "codeql": {
+    "state": "MEASURED_SUCCESS",
+    "workflow": ".github/workflows/codeql.yml",
+    "action": "github/codeql-action",
+    "release_line": "v4.38.0",
+    "exact_sha": "b96794f015dfd88f77b49b1c93e0fa7110f94c63",
+    "language": "python",
+    "triggers": [
+      "pull_request targeting main",
+      "push to main",
+      "weekly schedule",
+      "workflow_dispatch"
+    ],
+    "permissions": [
+      "contents: read",
+      "security-events: write"
+    ],
+    "oidc_authority": false,
+    "aws_authority": false,
+    "run_id": 34423137268,
+    "run_number": 1,
+    "job_id": 102702675060,
+    "conclusion": "SUCCESS"
+  },
+  "security_hardening_ci": {
+    "workflow": "Security Hardening CI",
+    "context": "Repository security invariants",
+    "run_id": 34423137266,
+    "run_number": 16,
+    "job_id": 102702674953,
+    "conclusion": "SUCCESS"
+  },
+  "workflow_policy": {
+    "external_actions_require_full_commit_sha": true,
+    "checkout_persist_credentials_false_required": true,
+    "scanner_contracts_verified_by_repository_security_invariants": true,
+    "required_protected_main_context": "Repository security invariants"
+  },
+  "authority_invariants": [
+    "dependency finding != vulnerability applicability authority",
+    "code-scanning alert != runtime exploitability truth",
+    "security scan success != absence of vulnerabilities",
+    "scanner output != model authority",
+    "GitHub security permission != AWS authority"
+  ],
+  "deferred": [
+    "Dependabot version-update automation",
+    "additional continuous pip-audit workflow",
+    "broad dependency upgrade"
+  ],
+  "aws_mutation_count": 0,
+  "new_iam_permission_count": 0,
+  "new_aws_service_count": 0,
+  "model_invocations": 0,
+  "capability_executions": 0,
+  "pr_89_touched": false,
+  "validation_state": "MEASURED_FIRST_RUN_RECORDED_FINAL_PR_HEAD_CI_REQUIRED"
+}
