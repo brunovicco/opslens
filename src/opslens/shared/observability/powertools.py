@@ -19,7 +19,7 @@ class _TraceProvider(Protocol):
 
 
 class PowertoolsTelemetry:
-    """Provide structured logs, EMF metrics, and X-Ray tracing."""
+    """Provide content-minimized logs, EMF metrics, and X-Ray tracing."""
 
     def __init__(
         self,
@@ -50,8 +50,8 @@ class PowertoolsTelemetry:
         *,
         fields: Mapping[str, object] | None = None,
     ) -> None:
-        """Record a structured exception log with stack trace."""
-        self._logger.exception(
+        """Record a bounded failure log without active exception or traceback content."""
+        self._logger.error(
             message,
             extra=dict(fields or {}),
         )
