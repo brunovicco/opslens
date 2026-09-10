@@ -1,0 +1,128 @@
+{
+  "artifact_version": "phase-17-gate-17-6-closeout:v1",
+  "evidence_date": "2026-09-10",
+  "experiment_timestamp_precision": "DATE_ONLY_SHELL_OUTPUT_DID_NOT_CAPTURE_WALL_CLOCK_TIMESTAMPS",
+  "issue": 270,
+  "implementation_pr": 273,
+  "implementation_head_sha": "ce68642f9e90ff3515ff33e0afac40fc08acba8c",
+  "protected_squash_merge_sha": "08b5cd8dc3416529455cd2d123127b6dc3dae748",
+  "experiment_source_main_sha": "08b5cd8dc3416529455cd2d123127b6dc3dae748",
+  "decision": "GATE_17_6_COMPLETE_RETAIN_BOUNDED_SCHEDULED_INGESTION_PAUSE",
+  "repository_validation": {
+    "operational_recovery_ci": {
+      "run_id": 34431690226,
+      "run_number": 1,
+      "conclusion": "SUCCESS"
+    },
+    "security_hardening_ci": {
+      "run_id": 34431690203,
+      "run_number": 32,
+      "conclusion": "SUCCESS"
+    },
+    "terraform_ci": {
+      "run_id": 34431690191,
+      "run_number": 275,
+      "conclusion": "SUCCESS"
+    },
+    "dependency_review": {
+      "run_id": 34431690259,
+      "run_number": 17,
+      "conclusion": "SUCCESS"
+    },
+    "codeql_python": {
+      "run_id": 34431690199,
+      "run_number": 23,
+      "conclusion": "SUCCESS"
+    }
+  },
+  "scheduler_resources": [
+    "aws_scheduler_schedule.epss_daily",
+    "aws_scheduler_schedule.kev_daily",
+    "aws_scheduler_schedule.nvd_incremental_hourly"
+  ],
+  "delivery_budget": {
+    "maximum_event_age_seconds": 3600,
+    "maximum_retry_attempts": 2
+  },
+  "live_experiment": {
+    "default_precondition": {
+      "terraform_converged": true,
+      "detailed_exit_code": 0
+    },
+    "pause_plan": {
+      "add": 0,
+      "change": 3,
+      "destroy": 0,
+      "only_scheduler_state_changes": true,
+      "transition": "ENABLED_TO_DISABLED"
+    },
+    "pause_apply": {
+      "add": 0,
+      "change": 3,
+      "destroy": 0,
+      "success": true
+    },
+    "pause_independent_scheduler_reads": {
+      "opslens-dev-epss-daily": "DISABLED",
+      "opslens-dev-kev-daily": "DISABLED",
+      "opslens-dev-nvd-incremental-hourly": "DISABLED"
+    },
+    "paused_convergence": {
+      "scheduled_ingestion_enabled": false,
+      "terraform_converged": true,
+      "detailed_exit_code": 0
+    },
+    "resume_plan": {
+      "add": 0,
+      "change": 3,
+      "destroy": 0,
+      "only_scheduler_state_changes": true,
+      "transition": "DISABLED_TO_ENABLED"
+    },
+    "resume_apply": {
+      "add": 0,
+      "change": 3,
+      "destroy": 0,
+      "success": true
+    },
+    "resume_independent_scheduler_reads": {
+      "opslens-dev-epss-daily": "ENABLED",
+      "opslens-dev-kev-daily": "ENABLED",
+      "opslens-dev-nvd-incremental-hourly": "ENABLED"
+    },
+    "final_default_convergence": {
+      "scheduled_ingestion_enabled": true,
+      "terraform_converged": true,
+      "detailed_exit_code": 0
+    }
+  },
+  "authority_impact": {
+    "new_iam_permissions": 0,
+    "new_iam_principals": 0,
+    "new_aws_services": 0,
+    "new_public_runtimes": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "resources_created": 0,
+    "resources_destroyed": 0,
+    "reversible_scheduler_state_updates": 6,
+    "pr_89_touched": false
+  },
+  "final_state": {
+    "all_three_schedulers": "ENABLED",
+    "terraform_default_converged": true,
+    "gate": "COMPLETE"
+  },
+  "interpretation_boundaries": [
+    "scheduler pause != global workload termination",
+    "scheduler state != business/evidence authority",
+    "recovery control != authorization bypass",
+    "pause request != applied AWS state",
+    "Terraform apply success != independent AWS state verification",
+    "bounded retry != guaranteed delivery",
+    "failure destination != successful recovery",
+    "model token budget != tenant quota",
+    "no public runtime != proof future edge controls are unnecessary"
+  ],
+  "next": "EVALUATE_DOCUMENTED_ARCHITECTURE_HEADER_DRIFT_BEFORE_PHASE_17_CLOSEOUT"
+}
