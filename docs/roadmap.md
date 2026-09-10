@@ -25,6 +25,7 @@ Phase 14  Amazon Bedrock AgentCore                            COMPLETE
 Phase 15  A2A                                                 COMPLETE
 Phase 16  Runtime Exposure with Amazon Inspector              COMPLETE
 Phase 17  Security Hardening                                  COMPLETE
+Phase 18  Evaluation, Cost & Portfolio Readiness              COMPLETE PENDING GATE 18.5 MERGE
 ```
 
 ### Retained Phase 17 security lineage
@@ -33,7 +34,7 @@ Phase 17  Security Hardening                                  COMPLETE
 
 ## Phase 18 — Evaluation, Cost & Portfolio Readiness
 
-**Status: IN PROGRESS**
+**Status: COMPLETE PENDING GATE 18.5 PROTECTED MERGE**
 
 ### Gate 18.1 — Cross-phase Evidence Inventory — COMPLETE
 
@@ -47,26 +48,39 @@ Retained result: 5 sections, 27 metrics, 4 negative/rejected-default decision si
 
 Retained result: 16 entries, 7 cost observations, 2 resource observations, 7 configured limits, 3 `UNMEASURED`, 1 `NOT_APPLICABLE`, and no production TCO.
 
-### Gate 18.4 — Portfolio Evidence Pack & AIP-C01 Synchronization — IN PROGRESS
+### Gate 18.4 — Portfolio Evidence Pack & AIP-C01 Synchronization — COMPLETE
 
-Create a portfolio projection that remains mechanically traceable to Gates 18.2/18.3 and a repository-local AIP-C01 learning map.
+Retained result:
 
-Exit criteria:
+```text
+headline metric claims:   11
+configured limit claims:   7
+decision signals:          4
+AIP-C01 tasks:             20
+EVIDENCED tasks:           14
+PARTIAL tasks:              6
+STUDY_ONLY tasks:           0
+```
 
-- 11 selected headline numeric claims stay bound to Gate 18.2 classification/value/unit/scope;
-- 7 configured budget claims stay bound to Gate 18.3 classification/value/unit;
-- all four Gate 18.2 negative/rejected-default signals remain visible;
-- portfolio documentation states explicitly what is not claimed;
-- all 20 current AIP-C01 tasks are mapped as `EVIDENCED`, `PARTIAL`, or `STUDY_ONLY`;
-- `EVIDENCED`/`PARTIAL` mappings require existing repository evidence;
-- no certification-readiness/composite score is created;
-- no AWS/IAM/model/tool mutation or pricing refresh is introduced;
-- exact-head CI passes before protected squash merge.
+The task map also preserves explicit study-only topics. Those topics are study scope only and do not imply product implementation or service adoption.
 
-### Candidate Gate 18.5 — Phase 18 closeout
+Gate 18.4 was protected-squash-merged through PR #288 as `4a8e5d3d98504451cef26df4e9f274f2f9fd8dd0` after exact-head Security Hardening, Dependency Review, Evaluation Readiness, AgentCore, and CodeQL checks succeeded.
 
-After Gate 18.4, perform a narrow evidence-backed Phase 18 closeout. Do not add new benchmarks merely for presentation. Close only if the portfolio, evaluation, cost, and learning-map surfaces agree with the retained architecture and no unresolved evidence gap justifies another technical experiment.
+### Gate 18.5 — Phase 18 closeout — IN PROGRESS
+
+Close Phase 18 without adding a new experiment. The closeout must:
+
+- preserve the Gate 18.1 evidence-classification and comparability rules;
+- preserve Gate 18.2 independent evaluation dimensions and all four negative/rejected-default signals;
+- preserve Gate 18.3 cost/resource accounting without unsupported cross-workload aggregation or production TCO;
+- preserve Gate 18.4 portfolio and AIP-C01 projections as evidence views rather than new authority;
+- synchronize repository-facing documentation with the retained architecture;
+- re-run the existing read-only Phase 18 validation chain on the exact closeout head;
+- add no AWS/IAM/model/capability authority and no benchmark replay;
+- leave the next implementation phase intentionally un-authorized.
 
 ## Beyond Phase 18
 
-Do not pre-authorize the next implementation phase. Choose it from observed product/evidence gaps after the Phase 18 closeout. The deferred Governed LLM Gateway integration represented by PR #89 remains separate unless explicitly resumed and re-evaluated against the current OpsLens architecture.
+Do not pre-authorize a Phase 19 implementation theme. Select the next phase from observed product/evidence gaps after this closeout. A future choice may be productization, deployment, additional measured evaluation, or a separately re-evaluated Governed LLM Gateway integration, but none is authorized by Phase 18 itself.
+
+PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred work unless explicitly resumed against the then-current OpsLens architecture.
