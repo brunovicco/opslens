@@ -5,7 +5,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from opslens.public_analysis.application.evidence_orchestration import PublicRepositoryEvidenceSource
+from opslens.public_analysis.application.evidence_orchestration import (
+    PublicRepositoryEvidenceSource,
+)
 from opslens.public_analysis.application.representative_hybrid_evidence import (
     build_representative_hybrid_evidence,
 )
@@ -89,7 +91,9 @@ REPRESENTATIVE_DEFAULT_PROVIDER_COVERAGE = provider_measurement_coverage(
 class RepresentativeThreatEvidenceLoad:
     """Pre-admitted threat evidence and exact request-time provider usage needed to load it."""
 
-    evidence: RepresentativeRepositoryThreatEvidence
+    evidence: RepresentativeRepositoryThreatEvidence = field(
+        default_factory=RepresentativeRepositoryThreatEvidence
+    )
     usage: ProviderResourceUsage = field(default_factory=ProviderResourceUsage)
 
     def __post_init__(self) -> None:
