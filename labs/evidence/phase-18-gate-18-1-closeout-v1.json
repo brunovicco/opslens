@@ -1,0 +1,77 @@
+{
+  "artifact_version": "phase-18-gate-18-1-closeout:v1",
+  "evidence_date": "2026-09-10",
+  "phase": "Phase 18 — Evaluation, Cost & Portfolio Readiness",
+  "gate": "18.1 — Cross-phase evidence inventory and comparability matrix",
+  "issue": 280,
+  "implementation_pr": 281,
+  "implementation_head_sha": "3737efacc72f54a8b31afeb4461532fe6d39657c",
+  "protected_squash_merge_sha": "2d059d6b406d2da2bf2151f7934f0279ca843de0",
+  "decision": "GATE_18_1_COMPLETE_RETAIN_CROSS_PHASE_EVIDENCE_CLASSIFICATION_AND_COMPARABILITY_CONTRACT",
+  "canonical_inventory": "labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json",
+  "inventory_summary": {
+    "records": 27,
+    "canonical_artifacts": 8,
+    "comparability_groups": 20,
+    "non_comparability_pairs": 11,
+    "allowed_classifications": [
+      "MEASURED",
+      "DERIVED",
+      "UNMEASURED",
+      "NOT_APPLICABLE"
+    ]
+  },
+  "repository_validation": {
+    "evaluation_readiness_ci": {
+      "run_id": 34481175326,
+      "run_number": 7,
+      "conclusion": "SUCCESS"
+    },
+    "security_hardening_ci": {
+      "run_id": 34481175251,
+      "run_number": 42,
+      "conclusion": "SUCCESS"
+    },
+    "dependency_review": {
+      "run_id": 34481175395,
+      "run_number": 27,
+      "conclusion": "SUCCESS"
+    },
+    "codeql_python": {
+      "run_id": 34481175336,
+      "run_number": 37,
+      "conclusion": "SUCCESS"
+    },
+    "verifier_marker": "phase18_evidence_inventory=PASS records=27 artifacts=8 groups=20 non_comparable_pairs=11",
+    "ruff": "PASS",
+    "pyright_strict": "PASS_0_ERRORS_0_WARNINGS",
+    "pytest": "PASS_9_TESTS"
+  },
+  "retained_boundaries": [
+    "measured value != derived estimate",
+    "unmeasured != zero",
+    "not applicable != zero",
+    "one experiment != production distribution",
+    "quality metric != security metric",
+    "latency metric != cost metric",
+    "offline protocol latency != model-provider latency",
+    "runtime transport latency != direct provider latency",
+    "derived cost != measured provider invoice",
+    "zero capability executions in a no-execution contract != capability success rate",
+    "portfolio summary != new technical authority"
+  ],
+  "authority_impact": {
+    "aws_mutations": 0,
+    "new_iam_permissions": 0,
+    "new_iam_principals": 0,
+    "new_aws_services": 0,
+    "runtime_mutations": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "business_authority_changed": false,
+    "pr_89_touched": false
+  },
+  "issue_state": "CLOSED_COMPLETED",
+  "gate_state": "COMPLETE",
+  "next": "GATE_18_2_CONSOLIDATED_EVALUATION_AND_RELIABILITY_VIEW"
+}
