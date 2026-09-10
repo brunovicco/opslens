@@ -5,6 +5,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
+from opslens.public_analysis.application.evidence_orchestration import (
+    PublicRepositoryEvidenceSource,
+)
 from opslens.public_analysis.application.representative_hybrid_evidence import (
     build_representative_hybrid_evidence,
 )
@@ -58,8 +61,6 @@ from opslens.repository_intelligence.application import (
 from opslens.repository_intelligence.parsers.uv_lock import parse_uv_lock_evidence
 from opslens.risk_policy.application import prioritize_repository_analysis
 from opslens.risk_policy.domain import RiskPrioritizationResult
-
-from .evidence_orchestration import PublicRepositoryEvidenceSource
 
 
 type ProviderUsageSnapshot = Callable[[], ProviderResourceUsage]
