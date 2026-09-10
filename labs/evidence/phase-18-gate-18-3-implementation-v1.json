@@ -1,0 +1,58 @@
+{
+  "artifact_version": "phase-18-gate-18-3-implementation:v1",
+  "evidence_date": "2026-09-10",
+  "phase": "Phase 18 — Evaluation, Cost & Portfolio Readiness",
+  "gate": "18.3 — Cost Accounting & Budget Envelopes",
+  "issue": 285,
+  "source_main_sha": "3009b9c25ff217e87f087c68d7ba6c7417a919e8",
+  "status": "IMPLEMENTED_PENDING_EXACT_HEAD_CI_AND_PROTECTED_MERGE",
+  "decision": "SEPARATE_RETAINED_COST_OBSERVATIONS_FROM_CONFIGURED_RESOURCE_LIMITS_WITHOUT_PRODUCTION_TCO",
+  "canonical_cost_accounting": "labs/evidence/phase-18-gate-18-3-cost-accounting-v1.json",
+  "first_slice": {
+    "entries": 16,
+    "cost_observations": 7,
+    "resource_observations": 2,
+    "configured_limits": 7,
+    "unmeasured": 3,
+    "not_applicable": 1
+  },
+  "aggregation_policy": {
+    "cross_component_sum": "FORBIDDEN",
+    "alternative_workload_sum": "FORBIDDEN",
+    "monthly_extrapolation_without_frozen_workload": "FORBIDDEN"
+  },
+  "validation": {
+    "expected_marker": "phase18_cost_accounting=PASS entries=16 cost_observations=7 resource_observations=2 configured_limits=7 unmeasured=3 not_applicable=1",
+    "exact_head_sha": null,
+    "evaluation_readiness_ci": null,
+    "security_hardening_ci": null,
+    "dependency_review": null,
+    "codeql_python": null,
+    "conclusion": "PENDING_EXACT_HEAD_CI"
+  },
+  "authority_impact": {
+    "aws_mutations": 0,
+    "iam_mutations": 0,
+    "runtime_mutations": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "new_benchmark_runs": 0,
+    "pricing_refresh": false,
+    "production_tco_created": false,
+    "business_authority_changed": false,
+    "pr_89_touched": false
+  },
+  "permanent_boundaries": [
+    "budget != observed spend",
+    "configured limit != measured utilization",
+    "derived inference cost != provider invoice",
+    "inference-only cost != hosted-experiment total",
+    "single experiment != monthly production estimate",
+    "UNMEASURED != zero",
+    "NOT_APPLICABLE != zero",
+    "token budget != tenant quota",
+    "retry budget != guaranteed delivery",
+    "Athena scan cap != query cost measurement",
+    "portfolio cost summary != billing authority"
+  ]
+}

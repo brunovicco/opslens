@@ -6,13 +6,17 @@ on:
       - "src/opslens/evaluation_readiness/**/*.py"
       - "scripts/verify_phase18_evidence_inventory.py"
       - "scripts/verify_phase18_consolidated_view.py"
+      - "scripts/verify_phase18_cost_accounting.py"
       - "tests/unit/evaluation_readiness/**/*.py"
       - "labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json"
       - "labs/evidence/phase-18-gate-18-2-*.json"
+      - "labs/evidence/phase-18-gate-18-3-*.json"
       - "labs/phase-18-gate-18-1-evidence-inventory.md"
       - "labs/phase-18-gate-18-2-*.md"
+      - "labs/phase-18-gate-18-3-*.md"
       - "docs/adr/0071-cross-phase-evidence-classification-and-comparability.md"
       - "docs/adr/0072-consolidated-evaluation-and-reliability-view.md"
+      - "docs/adr/0073-cost-accounting-and-budget-envelopes.md"
       - "docs/adr/README.md"
       - ".github/workflows/evaluation-readiness-ci.yml"
       - "pyproject.toml"
@@ -24,7 +28,7 @@ permissions:
 
 jobs:
   cross-phase-evidence-inventory:
-    name: Cross-phase evidence inventory and consolidated view
+    name: Cross-phase evidence, consolidated view, and cost accounting
     runs-on: ubuntu-latest
 
     steps:
@@ -55,6 +59,7 @@ jobs:
           src/opslens/evaluation_readiness
           scripts/verify_phase18_evidence_inventory.py
           scripts/verify_phase18_consolidated_view.py
+          scripts/verify_phase18_cost_accounting.py
           tests/unit/evaluation_readiness
 
       - name: Pyright strict Phase 18 evaluation-readiness slice
@@ -75,3 +80,8 @@ jobs:
         env:
           PYTHONPATH: src
         run: uv run python scripts/verify_phase18_consolidated_view.py
+
+      - name: Verify cost accounting and budget envelopes
+        env:
+          PYTHONPATH: src
+        run: uv run python scripts/verify_phase18_cost_accounting.py

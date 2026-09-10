@@ -1,0 +1,227 @@
+{
+  "artifact_version": "phase-18-gate-18-3-cost-accounting:v1",
+  "evidence_date": "2026-09-10",
+  "phase": "Phase 18 — Evaluation, Cost & Portfolio Readiness",
+  "gate": "18.3 — Cost Accounting & Budget Envelopes",
+  "issue": 285,
+  "source_main_sha": "3009b9c25ff217e87f087c68d7ba6c7417a919e8",
+  "source_consolidated_view": "labs/evidence/phase-18-gate-18-2-consolidated-view-v1.json",
+  "control_evidence": "labs/evidence/phase-17-gate-17-6-operational-recovery-v1.json",
+  "summary": {
+    "entries": 16,
+    "cost_observations": 7,
+    "resource_observations": 2,
+    "configured_limits": 7,
+    "unmeasured": 3,
+    "not_applicable": 1
+  },
+  "aggregation_policy": {
+    "cross_component_sum": "FORBIDDEN",
+    "alternative_workload_sum": "FORBIDDEN",
+    "monthly_extrapolation_without_frozen_workload": "FORBIDDEN"
+  },
+  "entries": [
+    {
+      "entry_id": "cost.p8.hybrid.complete",
+      "kind": "COST_OBSERVATION",
+      "classification": "UNMEASURED",
+      "value": null,
+      "unit": "usd",
+      "component_boundary": "hybrid_complete_cost",
+      "scope": "Gate 8 hybrid baseline complete USD cost remained unmeasured.",
+      "source_metric_id": "p8.hybrid.cost",
+      "reason": "Gate 18.2 preserves the canonical Gate 8 cost as UNMEASURED/null."
+    },
+    {
+      "entry_id": "cost.p11.reasoning.inference",
+      "kind": "COST_OBSERVATION",
+      "classification": "DERIVED",
+      "value": 0.0041921,
+      "unit": "usd",
+      "component_boundary": "bedrock_inference_only",
+      "scope": "Derived inference-only cost for the frozen six-case Phase 11 reasoning run.",
+      "source_metric_id": "p11.reasoning.derived_inference_cost"
+    },
+    {
+      "entry_id": "cost.p12.reasoning.inference",
+      "kind": "COST_OBSERVATION",
+      "classification": "DERIVED",
+      "value": 0.0074338,
+      "unit": "usd",
+      "component_boundary": "bedrock_inference_only",
+      "scope": "Derived inference-only cost for the frozen six-case Phase 12 two-model run.",
+      "source_metric_id": "p12.reasoning.derived_inference_cost"
+    },
+    {
+      "entry_id": "cost.p14.agentcore.experiment_total",
+      "kind": "COST_OBSERVATION",
+      "classification": "DERIVED",
+      "value": 0.006572445136128483,
+      "unit": "usd",
+      "component_boundary": "agentcore_bounded_experiment_total",
+      "scope": "Derived total for one bounded AgentCore experiment, including its declared runtime and inference components.",
+      "source_metric_id": "p14.agentcore.total_experiment_cost"
+    },
+    {
+      "entry_id": "cost.p14.agentcore.monthly",
+      "kind": "COST_OBSERVATION",
+      "classification": "UNMEASURED",
+      "value": null,
+      "unit": "usd_per_month",
+      "component_boundary": "agentcore_monthly_run_rate",
+      "scope": "No monthly production extrapolation is supported by the bounded AgentCore experiment.",
+      "source_metric_id": "p14.agentcore.monthly_extrapolation",
+      "reason": "Gate 18.2 preserves monthly_extrapolation as UNMEASURED/null."
+    },
+    {
+      "entry_id": "cost.p15.a2a.aws_runtime",
+      "kind": "COST_OBSERVATION",
+      "classification": "NOT_APPLICABLE",
+      "value": null,
+      "unit": "usd",
+      "component_boundary": "a2a_cloud_runtime_cost",
+      "scope": "The retained Phase 15 A2A experiment is local/offline and has no AWS runtime surface.",
+      "source_metric_id": "p15.a2a.aws_runtime_cost",
+      "reason": "Cloud-runtime cost is not applicable to the retained local/offline A2A experiment."
+    },
+    {
+      "entry_id": "cost.p16.inspector.complete",
+      "kind": "COST_OBSERVATION",
+      "classification": "UNMEASURED",
+      "value": null,
+      "unit": "usd",
+      "component_boundary": "inspector_complete_experiment_cost",
+      "scope": "The bounded Inspector discovery has no canonical complete USD experiment-cost measurement.",
+      "source_metric_id": "p16.inspector.aws_cost",
+      "reason": "Absence of a complete cost measurement remains UNMEASURED, not zero."
+    },
+    {
+      "entry_id": "resource.p11.reasoning.total_tokens",
+      "kind": "RESOURCE_OBSERVATION",
+      "classification": "OBSERVED",
+      "value": 3395,
+      "unit": "tokens",
+      "component_boundary": "reasoning_model_token_volume",
+      "scope": "Measured aggregate model-token volume for the frozen six-case Phase 11 run.",
+      "source_metric_id": "p11.reasoning.total_tokens"
+    },
+    {
+      "entry_id": "resource.p12.reasoning.total_tokens",
+      "kind": "RESOURCE_OBSERVATION",
+      "classification": "OBSERVED",
+      "value": 5982,
+      "unit": "tokens",
+      "component_boundary": "reasoning_model_token_volume",
+      "scope": "Measured aggregate triage-plus-specialist token volume for the frozen six-case Phase 12 run.",
+      "source_metric_id": "p12.reasoning.total_tokens"
+    },
+    {
+      "entry_id": "limit.semantic_planner.output_tokens",
+      "kind": "CONFIGURED_LIMIT",
+      "classification": "CONFIGURED_LIMIT",
+      "value": 256,
+      "unit": "tokens_per_model_response",
+      "component_boundary": "semantic_planner_output_tokens",
+      "scope": "Bounded semantic-planner output token ceiling.",
+      "source_repository_path": "src/opslens/semantic_query/planner/bedrock.py",
+      "source_literal": "BEDROCK_PLANNER_MAX_TOKENS: Final = 256",
+      "control_evidence_value_path": "existing_abuse_cost_controls.semantic_planner_max_tokens"
+    },
+    {
+      "entry_id": "limit.single_agent.output_tokens",
+      "kind": "CONFIGURED_LIMIT",
+      "classification": "CONFIGURED_LIMIT",
+      "value": 96,
+      "unit": "tokens_per_model_response",
+      "component_boundary": "single_agent_reasoning_output_tokens",
+      "scope": "Bounded single-agent reasoning output token ceiling.",
+      "source_repository_path": "src/opslens/agent_baseline/adapters/bedrock_reasoning.py",
+      "source_literal": "BEDROCK_AGENT_REASONING_MAX_TOKENS: Final = 96",
+      "control_evidence_value_path": "existing_abuse_cost_controls.single_agent_reasoning_max_tokens"
+    },
+    {
+      "entry_id": "limit.multi_agent_triage.output_tokens",
+      "kind": "CONFIGURED_LIMIT",
+      "classification": "CONFIGURED_LIMIT",
+      "value": 64,
+      "unit": "tokens_per_model_response",
+      "component_boundary": "multi_agent_triage_output_tokens",
+      "scope": "Bounded triage reasoning output token ceiling.",
+      "source_repository_path": "src/opslens/multi_agent/adapters/bedrock_triage_reasoning.py",
+      "source_literal": "BEDROCK_TRIAGE_REASONING_MAX_TOKENS: Final = 64",
+      "control_evidence_value_path": "existing_abuse_cost_controls.triage_reasoning_max_tokens"
+    },
+    {
+      "entry_id": "limit.knowledge_synthesis.output_tokens",
+      "kind": "CONFIGURED_LIMIT",
+      "classification": "CONFIGURED_LIMIT",
+      "value": 2048,
+      "unit": "tokens_per_model_response",
+      "component_boundary": "knowledge_synthesis_output_tokens",
+      "scope": "Bounded knowledge-synthesis output token ceiling.",
+      "source_repository_path": "src/opslens/knowledge_retrieval/application/bedrock_synthesis.py",
+      "source_literal": "BEDROCK_SYNTHESIS_MAX_TOKENS: Final = 2_048",
+      "control_evidence_value_path": "existing_abuse_cost_controls.knowledge_synthesis_max_tokens"
+    },
+    {
+      "entry_id": "limit.athena.bytes_scanned_per_query",
+      "kind": "CONFIGURED_LIMIT",
+      "classification": "CONFIGURED_LIMIT",
+      "value": 10485760,
+      "unit": "bytes_per_query",
+      "component_boundary": "athena_scan_limit",
+      "scope": "Enforced dev Athena workgroup bytes-scanned cutoff per query.",
+      "source_repository_path": "infra/environments/dev/analytics_athena.tf",
+      "source_literal": "bytes_scanned_cutoff_per_query = 10485760",
+      "control_evidence_value_path": "existing_abuse_cost_controls.athena_bytes_scanned_cutoff_per_query"
+    },
+    {
+      "entry_id": "limit.scheduler.maximum_event_age",
+      "kind": "CONFIGURED_LIMIT",
+      "classification": "CONFIGURED_LIMIT",
+      "value": 3600,
+      "unit": "seconds",
+      "component_boundary": "scheduler_delivery_window",
+      "scope": "Maximum retained EventBridge Scheduler target event age.",
+      "source_repository_path": "infra/environments/dev/operational_recovery.tf",
+      "source_literal": "scheduled_ingestion_maximum_event_age_in_seconds = 3600",
+      "control_evidence_value_path": "delivery_budget.maximum_event_age_seconds"
+    },
+    {
+      "entry_id": "limit.scheduler.maximum_retry_attempts",
+      "kind": "CONFIGURED_LIMIT",
+      "classification": "CONFIGURED_LIMIT",
+      "value": 2,
+      "unit": "retry_attempts",
+      "component_boundary": "scheduler_delivery_retry_budget",
+      "scope": "Maximum retained EventBridge Scheduler target retry attempts.",
+      "source_repository_path": "infra/environments/dev/operational_recovery.tf",
+      "source_literal": "scheduled_ingestion_maximum_retry_attempts       = 2",
+      "control_evidence_value_path": "delivery_budget.maximum_retry_attempts"
+    }
+  ],
+  "interpretation_boundaries": [
+    "budget != observed spend",
+    "configured limit != measured utilization",
+    "derived inference cost != provider invoice",
+    "inference-only cost != hosted-experiment total",
+    "single experiment != monthly production estimate",
+    "UNMEASURED != zero",
+    "NOT_APPLICABLE != zero",
+    "token budget != tenant quota",
+    "retry budget != guaranteed delivery",
+    "Athena scan cap != query cost measurement",
+    "portfolio cost summary != billing authority"
+  ],
+  "authority_impact": {
+    "aws_mutations": 0,
+    "iam_mutations": 0,
+    "runtime_mutations": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "new_benchmark_runs": 0,
+    "pricing_refresh": false,
+    "production_tco_created": false,
+    "pr_89_touched": false
+  }
+}
