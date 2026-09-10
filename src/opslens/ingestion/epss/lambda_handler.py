@@ -32,7 +32,7 @@ telemetry = PowertoolsTelemetry(
     clear_state=True,
     log_event=False,
 )
-@tracer.capture_lambda_handler
+@tracer.capture_lambda_handler(capture_response=False, capture_error=False)
 @metrics.log_metrics
 def lambda_handler(
     event: Mapping[str, object],
