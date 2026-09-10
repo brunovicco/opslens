@@ -77,3 +77,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0067](0067-bounded-adversarial-authority-regression-suite.md) | Retain a bounded offline adversarial authority regression suite without adding cloud/model/tool authority | Accepted |
 | [0068](0068-content-minimized-lambda-telemetry.md) | Disable implicit Lambda event/response/error/traceback capture while retaining bounded operational telemetry | Accepted |
 | [0069](0069-bounded-scheduled-ingestion-pause.md) | Pause only recurring source-ingestion scheduling through one bounded Terraform control without inventing a global kill switch | Accepted |
+| [0070](0070-phase17-security-hardening-closeout.md) | Close Phase 17 at the evidence-backed security hardening boundary and advance to Phase 18 | Accepted |

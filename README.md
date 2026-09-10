@@ -6,7 +6,7 @@
 
 ### Verifiable Software Supply Chain & Threat Intelligence on AWS
 
-**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Bounded Agent Reasoning · MCP · AgentCore · A2A · Amazon Inspector · Deterministic Authority**
+**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Bounded Agent Reasoning · MCP · AgentCore · A2A · Amazon Inspector · Security Hardening · Deterministic Authority**
 
 </div>
 
@@ -16,7 +16,7 @@ It is designed to answer:
 
 > Given the software I actually use, which vulnerabilities affect it, what exact evidence proves that, which findings should I prioritize, and what verified guidance can help me act on them?
 
-The project deliberately separates deterministic truth, evidence admission, model reasoning, authorization, handoff admission, interoperability, execution, result disclosure, hosting/runtime behavior, and runtime exposure.
+The project deliberately separates deterministic truth, evidence admission, model reasoning, authorization, handoff admission, interoperability, execution, result disclosure, hosting/runtime behavior, runtime exposure, security signals, and operational recovery.
 
 > **Agents reason. Code verifies evidence.**
 
@@ -43,10 +43,10 @@ The project deliberately separates deterministic truth, evidence admission, mode
 | Phase 14 | Amazon Bedrock AgentCore | ✅ Complete — optional lab target retained; standing experiment IAM removed |
 | Phase 15 | A2A | ✅ Complete — bounded offline reference interoperability + official SDK conformance retained |
 | Phase 16 | Runtime Exposure with Amazon Inspector | ✅ Complete — read boundary proven; zero current records; temporary IAM removed |
-| Phase 17 | Security Hardening | ▶️ Next |
-| Phase 18 | Evaluation, Cost & Portfolio Readiness | ⏳ Planned |
+| Phase 17 | Security Hardening | ✅ Complete — evidence-backed hardening + measured recovery retained |
+| Phase 18 | Evaluation, Cost & Portfolio Readiness | ▶️ Next |
 
-See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), the [ADR index](docs/adr/README.md), and the [Phase 16 closeout](labs/phase-16-closeout.md).
+See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), the [ADR index](docs/adr/README.md), and the [Phase 17 closeout](labs/phase-17-closeout.md).
 
 ## Core architecture
 
@@ -337,11 +337,60 @@ Inspector finding != repository finding
 Inspector evidence != model authority
 ```
 
+## Security Hardening — Phase 17
+
+Phase 17 started from a cross-cutting threat/control-gap inventory and added only evidence-backed controls.
+
+Retained security posture:
+
+```text
+protected-main required context:          Repository security invariants
+external Actions references:              full commit SHA
+persisted checkout credentials:           disabled where unnecessary
+EPSS plan vs execution identity:          separated
+Dependency Review:                        retained
+CodeQL / Python:                          retained
+adversarial regression:                   8 cases / 7 threat classes
+Powertools Lambda handlers hardened:      12
+scheduled-ingestion recovery control:     retained / Terraform-owned
+```
+
+The measured Gate 17.6 recovery proof used exactly three recurring EventBridge Scheduler resources:
+
+```text
+aws_scheduler_schedule.epss_daily
+aws_scheduler_schedule.kev_daily
+aws_scheduler_schedule.nvd_incremental_hourly
+```
+
+and proved:
+
+```text
+0/3/0 pause plan + apply
+ -> independent 3/3 DISABLED reads
+ -> paused Terraform convergence
+ -> 0/3/0 resume plan + apply
+ -> independent 3/3 ENABLED reads
+ -> final default Terraform convergence
+```
+
+The control is deliberately a **scheduled-ingestion pause**, not a global kill switch. It does not claim to stop already admitted or in-flight work.
+
+Gate 17.7 synchronized the accumulated EN/PT-BR architecture, closing the remaining documented architecture drift.
+
+Canonical closeout:
+
+- [ADR 0070 — Phase 17 Security Hardening closeout](docs/adr/0070-phase17-security-hardening-closeout.md)
+- [Phase 17 closeout](labs/phase-17-closeout.md)
+- [Phase 17 closeout evidence](labs/evidence/phase-17-closeout-v1.json)
+
 ## What is deliberately not claimed
 
 OpsLens currently does **not** claim:
 
 ```text
+public HTTP production runtime
+public WAF / tenant quota controls without a public runtime
 public MCP production runtime
 AgentCore as the default/production OpsLens runtime
 PUBLIC AgentCore networking as a production decision
@@ -350,7 +399,9 @@ A2A-derived capability authorization
 A2A business-result authority
 runtime exposure inferred from the zero-record Inspector experiment
 standing Inspector experiment IAM
-production SLOs for the experimental runtime boundaries
+global platform kill switch
+termination of in-flight work through the Scheduler pause
+production SLOs for experimental runtime boundaries
 ```
 
 ## AWS baseline
@@ -386,18 +437,18 @@ tools in reasoning:      none
 - [Phase 14 AgentCore retention decision](labs/phase-14-gate-14-3-agentcore-retention-decision.md)
 - [Phase 14 IAM cleanup](labs/phase-14-gate-14-4-agentcore-iam-cleanup.md)
 - [Phase 15 A2A closeout](labs/phase-15-closeout.md)
-- [Phase 15 closeout evidence](labs/evidence/phase-15-closeout-v1.json)
 - [Phase 16 Amazon Inspector closeout](labs/phase-16-closeout.md)
-- [Phase 16 closeout evidence](labs/evidence/phase-16-closeout-v1.json)
+- [Phase 17 Security Hardening closeout](labs/phase-17-closeout.md)
+- [Phase 17 closeout evidence](labs/evidence/phase-17-closeout-v1.json)
 
 ## Next planned phase
 
 ```text
-Phase 17 — Security Hardening
+Phase 18 — Evaluation, Cost & Portfolio Readiness
 ```
 
-Phase 17 starts with a cross-cutting threat-model and control-gap inventory. It will reuse proven controls from earlier phases and authorize hardening only where residual risk is evidenced.
+Gate 18.1 starts with a cross-phase evidence inventory and comparability matrix. Existing values must be classified as `MEASURED`, `DERIVED`, `UNMEASURED`, or `NOT_APPLICABLE` before consolidated quality, latency, cost, reliability, security, and portfolio views are produced.
 
 ---
 
-PR #89 / `feat/governed-gateway-semantic-planner` is unrelated Governed LLM Gateway work and remains intentionally outside this phase scope.
+PR #89 / `feat/governed-gateway-semantic-planner` is unrelated Governed LLM Gateway work and remains intentionally outside Phase 18 unless explicitly resumed.

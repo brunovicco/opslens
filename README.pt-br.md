@@ -6,7 +6,7 @@
 
 ### Software Supply Chain e Threat Intelligence Verificáveis na AWS
 
-**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Bounded Agent Reasoning · MCP · AgentCore · A2A · Amazon Inspector · Autoridade Determinística**
+**Threat Intelligence · Repository Intelligence · Vulnerability Correlation · Risk Prioritization · Semantic Query · Grounded Knowledge Retrieval · Hybrid Evidence · Bounded Agent Reasoning · MCP · AgentCore · A2A · Amazon Inspector · Security Hardening · Autoridade Determinística**
 
 </div>
 
@@ -16,7 +16,7 @@ Ela foi projetada para responder:
 
 > Considerando o software que eu realmente utilizo, quais vulnerabilidades o afetam, qual evidência exata prova isso, quais findings devo priorizar e qual orientação verificável pode me ajudar a agir?
 
-O projeto mantém deliberadamente separados verdade determinística, admissão de evidência, raciocínio de modelos, autorização, admissão de handoff, interoperabilidade, execução, divulgação de resultados, comportamento de hosting/runtime e runtime exposure.
+O projeto mantém deliberadamente separados verdade determinística, admissão de evidência, raciocínio de modelos, autorização, admissão de handoff, interoperabilidade, execução, divulgação de resultados, comportamento de hosting/runtime, runtime exposure, sinais de segurança e operational recovery.
 
 > **Agents reason. Code verifies evidence.**
 
@@ -43,10 +43,10 @@ O projeto mantém deliberadamente separados verdade determinística, admissão d
 | Phase 14 | Amazon Bedrock AgentCore | ✅ Concluída — lab opcional retido; IAM de experimento removido |
 | Phase 15 | A2A | ✅ Concluída — interoperabilidade offline por referência + conformidade com SDK oficial retidas |
 | Phase 16 | Runtime Exposure with Amazon Inspector | ✅ Concluída — read boundary provado; zero registros atuais; IAM temporário removido |
-| Phase 17 | Security Hardening | ▶️ Próxima |
-| Phase 18 | Evaluation, Cost & Portfolio Readiness | ⏳ Planejada |
+| Phase 17 | Security Hardening | ✅ Concluída — hardening baseado em evidências + recovery medido retidos |
+| Phase 18 | Evaluation, Cost & Portfolio Readiness | ▶️ Próxima |
 
-Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), o [índice de ADRs](docs/adr/README.md) e o [closeout da Phase 16](labs/phase-16-closeout.md).
+Veja [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.pt-br.md), o [índice de ADRs](docs/adr/README.md) e o [closeout da Phase 17](labs/phase-17-closeout.md).
 
 ## Arquitetura principal
 
@@ -144,7 +144,7 @@ provider latency median:    809.5 ms
 client elapsed median:      977.5 ms
 SDK retries:                0
 capability executions:      0
-custo inferido:             USD 0.0041921
+custo de inferência derivado: USD 0.0041921
 ```
 
 A Phase 12 reteve especialização/handoff determinísticos, mas rejeitou a topologia medida com dois modelos como default porque não houve ganho de qualidade e houve aumento de chamadas, tokens, latência e custo.
@@ -337,20 +337,71 @@ Inspector finding != repository finding
 Inspector evidence != model authority
 ```
 
+## Security Hardening — Phase 17
+
+A Phase 17 começou por um inventário transversal de ameaças/gaps de controle e adicionou somente controles sustentados por evidência.
+
+Postura de segurança retida:
+
+```text
+protected-main required context:          Repository security invariants
+external Actions references:              full commit SHA
+persisted checkout credentials:           disabled where unnecessary
+EPSS plan vs execution identity:          separated
+Dependency Review:                        retained
+CodeQL / Python:                          retained
+adversarial regression:                   8 cases / 7 threat classes
+Powertools Lambda handlers hardened:      12
+scheduled-ingestion recovery control:     retained / Terraform-owned
+```
+
+A prova medida de recovery da Gate 17.6 utilizou exatamente três recursos recorrentes do EventBridge Scheduler:
+
+```text
+aws_scheduler_schedule.epss_daily
+aws_scheduler_schedule.kev_daily
+aws_scheduler_schedule.nvd_incremental_hourly
+```
+
+e comprovou:
+
+```text
+0/3/0 pause plan + apply
+ -> independent 3/3 DISABLED reads
+ -> paused Terraform convergence
+ -> 0/3/0 resume plan + apply
+ -> independent 3/3 ENABLED reads
+ -> final default Terraform convergence
+```
+
+O controle é deliberadamente um **scheduled-ingestion pause**, não um global kill switch. Ele não afirma interromper trabalho já admitido ou em execução.
+
+A Gate 17.7 sincronizou a arquitetura acumulada EN/PT-BR, fechando o drift documental restante.
+
+Closeout canônico:
+
+- [ADR 0070 — closeout da Phase 17 Security Hardening](docs/adr/0070-phase17-security-hardening-closeout.md)
+- [Closeout da Phase 17](labs/phase-17-closeout.md)
+- [Evidência de closeout da Phase 17](labs/evidence/phase-17-closeout-v1.json)
+
 ## O que deliberadamente não é afirmado
 
 O OpsLens atualmente **não** afirma:
 
 ```text
-runtime MCP público de produção
-AgentCore como runtime default/de produção do OpsLens
-networking PUBLIC do AgentCore como decisão de produção
-runtime A2A público/de rede
-autorização de capability derivada de A2A
-autoridade de business result derivada de A2A
-runtime exposure inferido a partir do experimento Inspector com zero registros
-IAM permanente de experimento do Inspector
-SLOs de produção para os boundaries experimentais de runtime
+public HTTP production runtime
+public WAF / tenant quota controls without a public runtime
+public MCP production runtime
+AgentCore as the default/production OpsLens runtime
+PUBLIC AgentCore networking as a production decision
+public/network A2A runtime
+A2A-derived capability authorization
+A2A business-result authority
+runtime exposure inferred from the zero-record Inspector experiment
+standing Inspector experiment IAM
+global platform kill switch
+termination of in-flight work through the Scheduler pause
+production SLOs for experimental runtime boundaries
 ```
 
 ## Baseline AWS
@@ -386,18 +437,18 @@ tools in reasoning:      none
 - [Decisão de retenção AgentCore da Phase 14](labs/phase-14-gate-14-3-agentcore-retention-decision.md)
 - [Cleanup IAM da Phase 14](labs/phase-14-gate-14-4-agentcore-iam-cleanup.md)
 - [Closeout A2A da Phase 15](labs/phase-15-closeout.md)
-- [Evidência de closeout da Phase 15](labs/evidence/phase-15-closeout-v1.json)
 - [Closeout Amazon Inspector da Phase 16](labs/phase-16-closeout.md)
-- [Evidência de closeout da Phase 16](labs/evidence/phase-16-closeout-v1.json)
+- [Closeout Security Hardening da Phase 17](labs/phase-17-closeout.md)
+- [Evidência de closeout da Phase 17](labs/evidence/phase-17-closeout-v1.json)
 
 ## Próxima phase planejada
 
 ```text
-Phase 17 — Security Hardening
+Phase 18 — Evaluation, Cost & Portfolio Readiness
 ```
 
-A Phase 17 começa com um threat model transversal e um inventário de gaps de controle. Controles já provados nas phases anteriores serão reutilizados; hardening novo será autorizado apenas quando houver risco residual evidenciado.
+A Gate 18.1 começa com um inventário transversal de evidências e uma matriz de comparabilidade. Valores existentes devem ser classificados como `MEASURED`, `DERIVED`, `UNMEASURED` ou `NOT_APPLICABLE` antes de produzir visões consolidadas de qualidade, latência, custo, reliability, segurança e portfólio.
 
 ---
 
-A PR #89 / `feat/governed-gateway-semantic-planner` pertence ao trabalho separado do Governed LLM Gateway e permanece intencionalmente fora do escopo desta phase.
+A PR #89 / `feat/governed-gateway-semantic-planner` pertence ao trabalho separado do Governed LLM Gateway e permanece intencionalmente fora da Phase 18 salvo reautorização explícita.
