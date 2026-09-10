@@ -31,7 +31,7 @@ Phase 13 MCP                                    COMPLETE
 Phase 14 Amazon Bedrock AgentCore               COMPLETE
 Phase 15 A2A                                    COMPLETE
 Phase 16 Runtime Exposure with Inspector        COMPLETE
-Phase 17 Security Hardening                     IN PROGRESS / Gates 17.1–17.3 complete
+Phase 17 Security Hardening                     IN PROGRESS / Gates 17.1–17.4 complete
 Phase 18 Evaluation, Cost & Portfolio           PLANNED
 ```
 
@@ -63,6 +63,10 @@ security scan success != absence of vulnerabilities
 scanner output != model authority
 GitHub security permission != AWS authority
 scanner platform prerequisite != scanner permission requirement
+untrusted text != instruction authority
+retrieved content != system/developer authority
+failed/forged capability result != admissible business result
+adversarial test success != proof of universal safety
 ```
 
 ## Retained measured reasoning reference
@@ -194,8 +198,45 @@ References:
 - [`../labs/phase-17-gate-17-3-closeout.md`](../labs/phase-17-gate-17-3-closeout.md)
 - [`../labs/evidence/phase-17-gate-17-3-closeout-v1.json`](../labs/evidence/phase-17-gate-17-3-closeout-v1.json)
 
+### Gate 17.4 — adversarial authority-boundary regression — complete
+
+Gate 17.4 added a dedicated offline attacker-oriented suite over real retained boundaries, not a synthetic policy layer.
+
+```text
+cases:                 8
+threat classes:        7
+workflow:              Adversarial Security CI
+workflow permission:   contents: read
+AWS/OIDC authority:    none
+model invocations:     0
+capability executions: 0
+```
+
+Coverage includes public-request abuse, structural prompt injection, single/multi-agent capability widening, forged result binding, MCP dynamic/cross-capability tool abuse, A2A reference smuggling, and bounded amplification attempts.
+
+Final exact implementation PR-head validation:
+
+```text
+Adversarial Security CI          34426092786 / #5  / SUCCESS
+Repository security invariants   34426092824 / #25 / SUCCESS
+Dependency Review                34426092798 / #10 / SUCCESS
+CodeQL / Python                  34426092795 / #12 / SUCCESS
+```
+
+PR #264 was protected-squash merged as `cfad2680ca9e1977c754977ea58f9ab8865601dd`.
+
+References:
+
+- [`adr/0067-bounded-adversarial-authority-regression-suite.md`](adr/0067-bounded-adversarial-authority-regression-suite.md)
+- [`../labs/phase-17-gate-17-4-adversarial-boundaries.md`](../labs/phase-17-gate-17-4-adversarial-boundaries.md)
+- [`../labs/evidence/phase-17-gate-17-4-adversarial-boundaries-v1.json`](../labs/evidence/phase-17-gate-17-4-adversarial-boundaries-v1.json)
+- [`../labs/phase-17-gate-17-4-closeout.md`](../labs/phase-17-gate-17-4-closeout.md)
+- [`../labs/evidence/phase-17-gate-17-4-closeout-v1.json`](../labs/evidence/phase-17-gate-17-4-closeout-v1.json)
+
+No first-slice test justified business-logic redesign or new cloud/model/tool authority. `adversarial test success != proof of universal safety` remains a permanent interpretation boundary.
+
 ## Next
 
-Gate 17.4 will test application input, prompt-injection, retrieved-content, tool-abuse, MCP/A2A admission, contradictory evidence, and bounded-cost failure paths before any new runtime/model authority is considered.
+Gate 17.5 will inspect sensitive-data, logging, telemetry, failure-path, protocol-payload, and high-cardinality exposure before new observability functionality is authorized.
 
 OpsLens PR #89 / `feat/governed-gateway-semantic-planner` remains a separate deferred integration and must stay untouched unless explicitly resumed.
