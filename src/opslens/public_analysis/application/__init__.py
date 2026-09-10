@@ -45,6 +45,14 @@ from opslens.public_analysis.application.representative_structured_evidence impo
     MAX_REPRESENTATIVE_STRUCTURED_FINDINGS,
     build_representative_structured_evidence,
 )
+from opslens.public_analysis.application.representative_workload_execution import (
+    ProviderUsageSnapshot,
+    RepresentativeThreatEvidenceLoad,
+    RepresentativeThreatEvidenceLoader,
+    RepresentativeWorkloadDependencies,
+    RepresentativeWorkloadExecution,
+    execute_representative_workload,
+)
 from opslens.public_analysis.application.request_admission import (
     MAX_PUBLIC_ANALYSIS_REQUEST_BYTES,
     MAX_PUBLIC_REPOSITORY_URL_CHARS,
@@ -75,6 +83,7 @@ __all__ = [
     "MeasurementClock",
     "MonotonicClock",
     "OperationalEventSink",
+    "ProviderUsageSnapshot",
     "PublicAnalysisInstrumentationError",
     "PublicAnalysisInstrumentationFailure",
     "PublicAnalysisOperationalExecution",
@@ -91,6 +100,10 @@ __all__ = [
     "RepresentativeSemanticEvidence",
     "RepresentativeSemanticRetriever",
     "RepresentativeStageAction",
+    "RepresentativeThreatEvidenceLoad",
+    "RepresentativeThreatEvidenceLoader",
+    "RepresentativeWorkloadDependencies",
+    "RepresentativeWorkloadExecution",
     "RepresentativeWorkloadPlan",
     "admit_public_analysis_request",
     "admit_public_semantic_plan",
@@ -103,6 +116,7 @@ __all__ = [
     "build_representative_structured_evidence",
     "execute_instrumented_public_analysis",
     "execute_representative_model_reasoning",
+    "execute_representative_workload",
     "measure_representative_workload",
     "parse_public_semantic_plan_proposal",
     "plan_public_analysis_handoff",
