@@ -79,3 +79,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0069](0069-bounded-scheduled-ingestion-pause.md) | Pause only recurring source-ingestion scheduling through one bounded Terraform control without inventing a global kill switch | Accepted |
 | [0070](0070-phase17-security-hardening-closeout.md) | Close Phase 17 at the evidence-backed security hardening boundary and advance to Phase 18 | Accepted |
 | [0071](0071-cross-phase-evidence-classification-and-comparability.md) | Classify cross-phase evidence explicitly and compare only metrics with compatible measurement semantics | Accepted |
+| [0072](0072-consolidated-evaluation-and-reliability-view.md) | Project retained evidence into an independent-dimension evaluation and reliability view without creating new comparison authority | Accepted |
