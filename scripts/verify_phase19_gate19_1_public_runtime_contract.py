@@ -122,12 +122,12 @@ _REQUIRED_GATE19_2_MEASUREMENTS = {
 
 _REQUIRED_LIVE_DOC_MARKERS = {
     "README.md": (
-        "Phases 0–18 are complete.",
+        "Phases 0\u201318 are complete.",
         "Phase 19 — Bounded Public Runtime & Productization",
         "DEFERRED_PENDING_MEASUREMENT",
     ),
     "README.pt-br.md": (
-        "Phases 0–18 estão completas.",
+        "Phases 0\u201318 estão completas.",
         "Phase 19 — Bounded Public Runtime & Productization",
         "DEFERRED_PENDING_MEASUREMENT",
     ),
@@ -463,18 +463,31 @@ def _verify_operability(root: dict[str, object]) -> None:
     if by_control["ingress_disable"].get("current_mechanism") is not None:
         raise SystemExit("Gate 19.1 must not claim a current public ingress disable mechanism")
 
-    experiment = _object(root.get("gate19_2_minimum_experiment"), label="gate19_2_minimum_experiment")
-    if experiment.get("status") != "AUTHORIZED_DESIGN_ONLY_REQUIRES_HUMAN_EXECUTION_FOR_LIVE_AWS_CALLS":
+    experiment = _object(
+        root.get("gate19_2_minimum_experiment"),
+        label="gate19_2_minimum_experiment",
+    )
+    if experiment.get("status") != (
+        "AUTHORIZED_DESIGN_ONLY_REQUIRES_HUMAN_EXECUTION_FOR_LIVE_AWS_CALLS"
+    ):
         raise SystemExit("Gate 19.2 live AWS execution crossed the human boundary")
     if set(
-        _strings(experiment.get("must_measure"), label="gate19_2_minimum_experiment.must_measure")
+        _strings(
+            experiment.get("must_measure"),
+            label="gate19_2_minimum_experiment.must_measure",
+        )
     ) != _REQUIRED_GATE19_2_MEASUREMENTS:
         raise SystemExit("Gate 19.2 measurement contract drifted")
     must_not_create = set(
-        _strings(experiment.get("must_not_create"), label="gate19_2_minimum_experiment.must_not_create")
+        _strings(
+            experiment.get("must_not_create"),
+            label="gate19_2_minimum_experiment.must_not_create",
+        )
     )
     if "public_endpoint" not in must_not_create or "broad_runtime_role" not in must_not_create:
-        raise SystemExit("Gate 19.2 experiment silently authorized a public/runtime authority surface")
+        raise SystemExit(
+            "Gate 19.2 experiment silently authorized a public/runtime authority surface"
+        )
 
 
 def _verify_live_docs(repo_root: Path) -> None:
@@ -489,6 +502,7 @@ def _verify_live_docs(repo_root: Path) -> None:
 
 
 def main() -> int:
+    """Validate the frozen Gate 19.1 contract and current repository projection."""
     args = _parser().parse_args()
     repo_root = args.repo_root.resolve()
     root = _load(repo_root / _ARTIFACT)
