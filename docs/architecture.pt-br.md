@@ -2,9 +2,9 @@
 
 _Última atualização: 2026-09-10_
 
-Este documento é o baseline arquitetural acumulado até a **Phase 17 — Security Hardening, Gate 17.6 concluída**.
+Este documento é o baseline arquitetural acumulado até a **Phase 17 — Security Hardening: COMPLETE pelo PR de closeout da Phase 17**.
 
-A Gate 17.7 é somente sincronização documental. O próximo passo delimitado após esta sincronização é o **closeout da Phase 17**, seguido da **Phase 18 — Evaluation, Cost & Portfolio Readiness**.
+A próxima fase é a **Phase 18 — Evaluation, Cost & Portfolio Readiness**.
 
 ## 1. Propósito
 
@@ -44,7 +44,7 @@ Código determinístico continua sendo autoridade para:
 - fatos de KEV, EPSS, CVSS e Risk Policy;
 - parsing de consultas estruturadas e compilação SQL;
 - admissão de retrieval e completude de evidências obrigatórias;
-- identidade de citações e admissão da saída;
+- identidade de citações e admissão de saída;
 - autorização de capabilities e binding de inputs executáveis;
 - admissão de resultados de capabilities;
 - admissão de handoffs single-agent e multi-agent;
@@ -189,7 +189,7 @@ compute:                  AWS Lambda nos caminhos retidos de ingestão/transform
 recurring triggers:      Amazon EventBridge Scheduler
 ```
 
-O storage standing inclui o data bucket, deployment-artifact bucket, Terraform state bucket e o bucket vetorial de conhecimento no S3 Vectors.
+O storage standing inclui data bucket, deployment-artifact bucket, Terraform state bucket e o bucket vetorial de conhecimento no S3 Vectors.
 
 A arquitetura standing **não** afirma possuir:
 
@@ -218,7 +218,7 @@ canonical chunks:      9
 synthesis profile:     us.anthropic.claude-haiku-4-5-20251001-v1:0
 ```
 
-A fronteira permanente de interpretação é:
+Fronteiras permanentes de interpretação:
 
 ```text
 non-empty retrieval != sufficient evidence != authority to answer
@@ -253,11 +253,11 @@ runtime evidence correlation != capability authorization
 
 Repository risk e runtime exposure continuam classes distintas de evidência.
 
-## 8. Security hardening — estado retido da Phase 17
+## 8. Security Hardening — estado retido da Phase 17
 
 ### 8.1 Gate 17.1 — threat/control-gap inventory
 
-A Gate 17.1 estabeleceu um inventário evidence-first e priorizou somente gaps observados. O drift da documentação arquitetural registrado como `SEC17-DOC-001` é o gap documental tratado pela Gate 17.7.
+A Gate 17.1 estabeleceu um inventário evidence-first e priorizou somente gaps observados.
 
 ### 8.2 Gate 17.2 — autoridade de CI/CD e workflows
 
@@ -363,6 +363,55 @@ model token budget != tenant quota
 
 Desabilitar os schedules não afirma cancelar Lambdas já em execução, retries já aceitos, eventos S3 já emitidos, invocações manuais, caminhos separados de modelo ou autorização de capabilities.
 
+### 8.7 Gate 17.7 — sincronização arquitetural
+
+A Gate 17.7 fechou `SEC17-DOC-001` sincronizando os baselines arquiteturais EN/PT-BR com a plataforma retida.
+
+```text
+PR:                       #276
+exact head:               ea0460e549dd1b904d139632bfc2988671e23880
+protected merge:          3938c6469a979f5b574755ce9fd56a56523626dc
+Security Hardening CI:    34474712369 / #34 / SUCCESS
+Dependency Review:        34474712371 / #19 / SUCCESS
+CodeQL / Python:          34474712380 / #27 / SUCCESS
+```
+
+Sincronização documental não altera runtime nem autoridade de negócio.
+
+### 8.8 Closeout da Phase 17
+
+A Phase 17 fecha no menor boundary sustentado por evidência. Nenhuma evidência posterior na fase justificou outro controle de segurança/runtime.
+
+Retido:
+
+```text
+protected-main security enforcement
+Dependency Review + CodeQL
+adversarial authority regression
+content-minimized Lambda telemetry
+telemetry-safety verification
+bounded scheduled-ingestion pause
+operational recovery runbook
+synchronized EN/PT-BR architecture
+```
+
+Explicitamente deferred ou não criado:
+
+```text
+Dependabot version updates
+additional continuous pip-audit
+broad dependency upgrades
+mandatory independent review until governance requires it
+public WAF/rate/tenant quotas without a public runtime
+public HTTP runtime
+global platform kill switch
+broad S3/Lambda emergency stop controls
+automatic alarm remediation
+standing Inspector experiment IAM
+public MCP/A2A runtimes
+AgentCore as default runtime
+```
+
 ## 9. Princípios de IAM e trust
 
 - humanos usam credenciais temporárias do IAM Identity Center;
@@ -424,15 +473,26 @@ retained protocol contract != public peer endpoint
 
 Experimentos de AgentCore e Inspector são preservados como evidência enquanto a autoridade standing específica desses experimentos permanece removida. MCP e A2A são retidos como contratos delimitados de interoperabilidade/referência sem runtimes públicos de rede.
 
-## 14. Fronteira da fase atual
+## 14. Fronteira de entrada da Phase 18
 
-Após a Gate 17.6, nenhum novo controle de hardening em runtime está autorizado sem nova evidência.
+A Phase 17 está concluída após as Gates 17.1–17.7 e o registro de closeout da Phase 17.
 
-A Gate 17.7 existe somente para fechar `SEC17-DOC-001` sincronizando os baselines arquiteturais EN/PT-BR com a plataforma realmente retida.
+A próxima fase é **Phase 18 — Evaluation, Cost & Portfolio Readiness**. O primeiro passo deve consolidar evidências existentes e determinar comparabilidade antes de criar novos experimentos.
 
-O próximo passo delimitado é o closeout da Phase 17. A Phase 18 poderá então consolidar evidências de avaliação, latência, custo, failure paths, segurança e portfólio.
+Distinções obrigatórias:
 
-Trabalho deferred continua deferred salvo reautorização explícita, incluindo a integração com Governed LLM Gateway acompanhada fora deste slice da Phase 17.
+```text
+measured value != derived estimate
+unmeasured != zero
+one experiment != production distribution
+quality metric != security metric
+latency metric != cost metric
+portfolio summary != new technical authority
+```
+
+A Phase 18 não deve adicionar runtime público nem ampliar IAM apenas para melhorar a apresentação de portfólio.
+
+A integração deferred com Governed LLM Gateway permanece fora desta fase salvo reautorização explícita.
 
 ## 15. Principais architecture records
 
@@ -458,6 +518,7 @@ ADRs retidos importantes incluem:
 0067 bounded adversarial authority regression suite
 0068 content-minimized Lambda telemetry
 0069 bounded scheduled-ingestion pause
+0070 Phase 17 security-hardening closeout
 ```
 
-Medições históricas exatas, experimentos, hipóteses rejeitadas, provas de teardown e identidades de runs de CI permanecem em `labs/`, `labs/evidence/`, ADRs, PRs mergeados e histórico Git, em vez de serem reinterpretados como nova autoridade arquitetural neste documento.
+Medições históricas exatas, experimentos, hipóteses rejeitadas, provas de teardown e identidades de runs de CI permanecem em `labs/`, `labs/evidence/`, ADRs, PRs protegidos e histórico Git, em vez de serem reinterpretados como nova autoridade arquitetural neste documento.
