@@ -4,7 +4,7 @@ _Last updated: 2026-09-10_
 
 The roadmap is evidence-gated. A later phase does not invalidate earlier authority boundaries, and certification topics do not automatically become product requirements.
 
-## Completed phases
+## Phase status
 
 ```text
 Phase 0   AWS Foundation                                      COMPLETE
@@ -25,62 +25,160 @@ Phase 14  Amazon Bedrock AgentCore                            COMPLETE
 Phase 15  A2A                                                 COMPLETE
 Phase 16  Runtime Exposure with Amazon Inspector              COMPLETE
 Phase 17  Security Hardening                                  COMPLETE
-Phase 18  Evaluation, Cost & Portfolio Readiness              COMPLETE PENDING GATE 18.5 MERGE
+Phase 18  Evaluation, Cost & Portfolio Readiness              COMPLETE
+Phase 19  Bounded Public Runtime & Productization             IN PROGRESS
 ```
 
-### Retained Phase 17 security lineage
+Phase 18 was protected-squash-merged through PR #290 at `feca774535b7d83f57c26f4e9fe7da71ce268f0f`. Its historical pre-merge closeout artifacts remain immutable evidence.
 
-**Gate 17.1** established the cross-cutting evidence-first threat/control-gap inventory. **Gate 17.2** hardened CI/CD and workflow authority and introduced the retained `Repository security invariants` protected-main context. Later Phase 17 gates added bounded dependency/code scanning, adversarial regression, telemetry hardening, operational recovery, architecture synchronization, and closeout without weakening those earlier controls.
+PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work. Phase 19 does not rebase, merge, modify, or depend on it.
 
-## Phase 18 — Evaluation, Cost & Portfolio Readiness
+## Phase 19 — Bounded Public Runtime & Productization
 
-**Status: COMPLETE PENDING GATE 18.5 PROTECTED MERGE**
+### Goal
 
-### Gate 18.1 — Cross-phase Evidence Inventory — COMPLETE
+Move from the retained Phase 9 application boundary toward the smallest safe, measurable public product surface without selecting infrastructure before the workload justifies it.
 
-Retained result: 27 metrics, 8 source artifacts, 20 comparability groups, and 11 explicit non-comparability assertions.
-
-### Gate 18.2 — Consolidated Evaluation & Reliability View — COMPLETE
-
-Retained result: 5 sections, 27 metrics, 4 negative/rejected-default decision signals, 3 `UNMEASURED`, and 1 `NOT_APPLICABLE`.
-
-### Gate 18.3 — Cost Accounting & Budget Envelopes — COMPLETE
-
-Retained result: 16 entries, 7 cost observations, 2 resource observations, 7 configured limits, 3 `UNMEASURED`, 1 `NOT_APPLICABLE`, and no production TCO.
-
-### Gate 18.4 — Portfolio Evidence Pack & AIP-C01 Synchronization — COMPLETE
-
-Retained result:
+Retained starting point:
 
 ```text
-headline metric claims:   11
-configured limit claims:   7
-decision signals:          4
-AIP-C01 tasks:             20
-EVIDENCED tasks:           14
-PARTIAL tasks:              6
-STUDY_ONLY tasks:           0
+untrusted request
+ -> governed repository admission/evidence
+ -> bounded semantic planning
+ -> deterministic hybrid route admission
+ -> PublicAnalysisAdmissionHandoff
+ -> STOP
 ```
 
-The task map also preserves explicit study-only topics. Those topics are study scope only and do not imply product implementation or service adoption.
+Phase 19 must preserve:
 
-Gate 18.4 was protected-squash-merged through PR #288 as `4a8e5d3d98504451cef26df4e9f274f2f9fd8dd0` after exact-head Security Hardening, Dependency Review, Evaluation Readiness, AgentCore, and CodeQL checks succeeded.
+```text
+Agents reason. Code verifies evidence.
+READ, NEVER EXECUTE third-party repository code.
+Repository Risk != Runtime Exposure.
+retrieved content != instruction authority
+model proposal != authorization
+tool/protocol success != business truth
+MEASURED != DERIVED
+UNMEASURED != zero
+configured limit != measured utilization
+```
 
-### Gate 18.5 — Phase 18 closeout — IN PROGRESS
+### Gate 19.1 — Public Runtime Hypothesis & Launch Contract — IN PROGRESS
 
-Close Phase 18 without adding a new experiment. The closeout must:
+Purpose: freeze the first representative public workload, identify actual composition gaps, and define the experiment that can justify runtime topology before creating AWS resources.
 
-- preserve the Gate 18.1 evidence-classification and comparability rules;
-- preserve Gate 18.2 independent evaluation dimensions and all four negative/rejected-default signals;
-- preserve Gate 18.3 cost/resource accounting without unsupported cross-workload aggregation or production TCO;
-- preserve Gate 18.4 portfolio and AIP-C01 projections as evidence views rather than new authority;
-- synchronize repository-facing documentation with the retained architecture;
-- re-run the existing read-only Phase 18 validation chain on the exact closeout head;
-- add no AWS/IAM/model/capability authority and no benchmark replay;
-- leave the next implementation phase intentionally un-authorized.
+Frozen workload identity:
 
-## Beyond Phase 18
+```text
+public-analysis-workload:v1
+```
 
-Do not pre-authorize a Phase 19 implementation theme. Select the next phase from observed product/evidence gaps after this closeout. A future choice may be productization, deployment, additional measured evaluation, or a separately re-evaluated Governed LLM Gateway integration, but none is authorized by Phase 18 itself.
+Current runtime decision:
 
-PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred work unless explicitly resumed against the then-current OpsLens architecture.
+```text
+DEFERRED_PENDING_MEASUREMENT
+```
+
+Leading hypothesis:
+
+```text
+ASYNC_SUBMIT_STATUS_RESULT
+```
+
+The hypothesis is not authorization to create SQS, result storage, workers, or an async API.
+
+Gate 19.1 deliverables:
+
+- exact post-Phase-18 repository checkpoint;
+- current-facing documentation synchronization without rewriting historical Phase 18 evidence;
+- real `PublicAnalysisAdmissionHandoff` pipeline inventory;
+- frozen request/repository/evidence/response workload contract;
+- explicit `SYNC | ASYNC | DEFERRED_PENDING_MEASUREMENT` decision;
+- runtime candidate matrix grounded in current AWS documentation;
+- public threat/abuse model;
+- responsibility-to-permission IAM matrix with no role creation;
+- cost/abuse measurement contract;
+- content-minimized observability contract;
+- narrowly scoped disable/recovery requirements;
+- deterministic artifact verifier and read-only CI;
+- exact Gate 19.2 experiment boundary.
+
+Gate 19.1 AWS boundary:
+
+```text
+AWS mutations:          0
+IAM mutations:          0
+new AWS resources:      0
+model invocations:      0
+capability executions:  0
+public endpoints:       0
+```
+
+Exit criteria:
+
+1. `public-analysis-workload:v1` is versioned and deterministic where evidence exists.
+2. Missing whole-request limits remain explicit `UNMEASURED` rather than invented.
+3. The retained public path and all disconnected downstream capabilities are separately identified.
+4. Runtime selection is explicit and evidence-bound.
+5. Threat/abuse, IAM responsibility, cost, observability, retry/idempotency, and recovery contracts are frozen.
+6. Historical Phase 18 closeout evidence remains unchanged.
+7. Gate-specific read-only verification passes on the exact PR head.
+8. No public runtime or runtime IAM exists.
+9. PR #89 remains untouched.
+10. The smallest authorized Gate 19.2 experiment is explicit.
+
+### Gate 19.2 — Representative Workload Measurement — PENDING
+
+Purpose: close the measurements that Gate 19.1 correctly classifies as `UNMEASURED` before selecting a public runtime.
+
+The experiment must be non-public first and compose or invoke the representative product stages:
+
+```text
+public-analysis request contract
+ -> immutable repository acquisition
+ -> deterministic vulnerability/risk result
+ -> required structured/semantic evidence
+ -> bounded synthesis where authorized
+ -> deterministic final result admission
+```
+
+Measure at minimum:
+
+```text
+end-to-end duration
+per-stage duration
+GitHub request count
+Athena query count + bytes scanned when used
+Bedrock Retrieve count + latency when used
+Bedrock model calls + input/output tokens + latency when used
+retry/throttle count by provider
+serialized result bytes
+```
+
+Decision rule:
+
+```text
+SYNC
+  only if the complete bounded workload comfortably fits the selected
+  synchronous ingress envelope under representative upper-bound/p95 tests
+
+ASYNC
+  if latency variability, backpressure, failure isolation, retry safety,
+  or timeout evidence makes synchronous coupling unsafe
+
+otherwise
+  DEFERRED_PENDING_MEASUREMENT
+```
+
+Live AWS/model execution, if required by this measurement, remains a human execution boundary. Gate 19.2 must not create a public endpoint merely to benchmark the application workload.
+
+### Later Phase 19 gates — not yet authorized
+
+The exact post-19.2 gates depend on the measured runtime decision. Only after `SYNC` or `ASYNC` is evidence-backed should Phase 19 freeze concrete ingress/compute, least-privilege runtime IAM, abuse controls, persistence/queue topology if applicable, deployment Terraform, operational recovery controls, and a bounded public launch experiment.
+
+Do not introduce API Gateway, Lambda Function URLs, SQS, DynamoDB, Step Functions, ECS/Fargate, WAF, AgentCore, or another service solely because it is a plausible public architecture or appears in AIP-C01.
+
+```text
+AIP-C01 topic != product requirement
+```
