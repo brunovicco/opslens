@@ -110,6 +110,98 @@ jobs:
               raise SystemExit("Gate 17.1 must keep PR #89 out of scope")
           PY
 
+      - name: Validate Gate 17.2 workflow-authority evidence
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          evidence_path = Path(
+              "labs/evidence/phase-17-gate-17-2-workflow-authority-hardening-v1.json"
+          )
+          value = json.loads(evidence_path.read_text(encoding="utf-8"))
+
+          expected_scalar = {
+              "artifact_version": "phase-17-gate-17-2-workflow-authority-hardening:v1",
+              "source_main_sha": "8e0bfef5d53b1791af4ea876ddde5b451ed85553",
+              "implementation_head_sha": "dd2b5cea01009d8acbfe73f135fc5a7c8380aba7",
+              "issue": 252,
+              "pr": 255,
+              "decision": "IMPLEMENT_WORKFLOW_AUTHORITY_HARDENING_THEN_REQUIRE_ONE_UNIVERSAL_STATUS_CONTEXT",
+              "aws_mutation_count": 0,
+              "new_iam_permission_count": 0,
+              "new_aws_service_count": 0,
+              "model_invocations": 0,
+              "capability_executions": 0,
+              "pr_89_touched": False,
+          }
+          for key, expected in expected_scalar.items():
+              if value.get(key) != expected:
+                  raise SystemExit(f"Gate 17.2 evidence mismatch for {key}")
+
+          universal = value.get("universal_status")
+          if not isinstance(universal, dict):
+              raise SystemExit("Gate 17.2 universal status evidence is missing")
+          if universal.get("workflow") != "Security Hardening CI":
+              raise SystemExit("Gate 17.2 workflow name drifted")
+          if universal.get("context") != "Repository security invariants":
+              raise SystemExit("Gate 17.2 required context drifted")
+          if universal.get("implementation_validation_run_id") != 34420383193:
+              raise SystemExit("Gate 17.2 implementation validation run drifted")
+          if universal.get("implementation_validation_conclusion") != "SUCCESS":
+              raise SystemExit("Gate 17.2 implementation validation must remain successful")
+
+          policy = value.get("workflow_policy")
+          if not isinstance(policy, dict) or policy != {
+              "external_actions_require_full_commit_sha": True,
+              "checkout_persist_credentials_false_required": True,
+              "pull_request_target_allowed": False,
+              "workflow_run_allowed": False,
+              "write_all_allowed": False,
+              "contents_write_allowed": False,
+          }:
+              raise SystemExit("Gate 17.2 workflow policy drifted")
+
+          epss = value.get("epss_authority")
+          if not isinstance(epss, dict):
+              raise SystemExit("Gate 17.2 EPSS authority evidence is missing")
+          if epss.get("plan_role") != "OpsLensEpssHistoryEvidenceRole":
+              raise SystemExit("Gate 17.2 EPSS plan role drifted")
+          if epss.get("execute_role") != "OpsLensEpssHistoryCoordinatorRole":
+              raise SystemExit("Gate 17.2 EPSS execute role drifted")
+          if epss.get("full_backfill_execute_session_seconds") != 21600:
+              raise SystemExit("Gate 17.2 EPSS backfill session drifted")
+          if epss.get("long_session_on_plan_path") is not False:
+              raise SystemExit("Gate 17.2 long session entered plan authority")
+          if epss.get("new_iam_required") is not False:
+              raise SystemExit("Gate 17.2 must not require new IAM")
+
+          agentcore = value.get("agentcore_historical_workflow")
+          if not isinstance(agentcore, dict):
+              raise SystemExit("Gate 17.2 AgentCore retirement evidence is missing")
+          if agentcore != {
+              "state": "RETIRED_FAIL_CLOSED",
+              "id_token_write": False,
+              "aws_credentials_configured": False,
+              "shared_deploy_role_reference": False,
+              "terraform_apply": False,
+              "agentcore_runtime_invocation": False,
+          }:
+              raise SystemExit("Gate 17.2 AgentCore retirement evidence drifted")
+
+          ruleset = value.get("ruleset_boundary")
+          if not isinstance(ruleset, dict):
+              raise SystemExit("Gate 17.2 ruleset boundary evidence is missing")
+          if ruleset.get("ruleset_id") != 20873628:
+              raise SystemExit("Gate 17.2 ruleset id drifted")
+          if ruleset.get("required_status_context") != "Repository security invariants":
+              raise SystemExit("Gate 17.2 ruleset context drifted")
+          if ruleset.get("enforcement_change_performed_in_repository_gate") is not False:
+              raise SystemExit("Gate 17.2 repository work must not claim ruleset mutation")
+          if ruleset.get("human_platform_administration_required_after_merge") is not True:
+              raise SystemExit("Gate 17.2 must preserve the human ruleset boundary")
+          PY
+
       - name: Verify Gate 17 documentation references
         run: |
           python3 - <<'PY'
@@ -123,6 +215,15 @@ jobs:
               "labs/phase-17-gate-17-1-threat-model.md": (
                   "labs/evidence/phase-17-gate-17-1-threat-model-v1.json",
                   "17.2 — CI/CD and workflow authority hardening",
+              ),
+              "docs/adr/0065-ci-cd-and-workflow-authority-hardening.md": (
+                  "labs/evidence/phase-17-gate-17-2-workflow-authority-hardening-v1.json",
+                  "Repository security invariants",
+              ),
+              "labs/phase-17-gate-17-2-workflow-authority-hardening.md": (
+                  "Repository security invariants",
+                  "OpsLensEpssHistoryEvidenceRole",
+                  "AGENTCORE_RUNTIME_EXPERIMENT_RETIRED",
               ),
               "docs/current-state.md": (
                   "Gate 17.1",
@@ -141,5 +242,7 @@ jobs:
               text = Path(path_value).read_text(encoding="utf-8")
               for needle in needles:
                   if needle not in text:
-                      raise SystemExit(f"{path_value} is missing required Gate 17 reference {needle!r}")
+                      raise SystemExit(
+                          f"{path_value} is missing required Gate 17 reference {needle!r}"
+                      )
           PY

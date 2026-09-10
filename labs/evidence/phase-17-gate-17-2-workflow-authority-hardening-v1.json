@@ -1,0 +1,51 @@
+{
+  "artifact_version": "phase-17-gate-17-2-workflow-authority-hardening:v1",
+  "source_main_sha": "8e0bfef5d53b1791af4ea876ddde5b451ed85553",
+  "implementation_head_sha": "dd2b5cea01009d8acbfe73f135fc5a7c8380aba7",
+  "issue": 252,
+  "pr": 255,
+  "decision": "IMPLEMENT_WORKFLOW_AUTHORITY_HARDENING_THEN_REQUIRE_ONE_UNIVERSAL_STATUS_CONTEXT",
+  "universal_status": {
+    "workflow": "Security Hardening CI",
+    "context": "Repository security invariants",
+    "implementation_validation_run_id": 34420383193,
+    "implementation_validation_run_number": 12,
+    "implementation_validation_conclusion": "SUCCESS"
+  },
+  "workflow_policy": {
+    "external_actions_require_full_commit_sha": true,
+    "checkout_persist_credentials_false_required": true,
+    "pull_request_target_allowed": false,
+    "workflow_run_allowed": false,
+    "write_all_allowed": false,
+    "contents_write_allowed": false
+  },
+  "epss_authority": {
+    "plan_role": "OpsLensEpssHistoryEvidenceRole",
+    "execute_role": "OpsLensEpssHistoryCoordinatorRole",
+    "full_backfill_execute_session_seconds": 21600,
+    "long_session_on_plan_path": false,
+    "new_iam_required": false
+  },
+  "agentcore_historical_workflow": {
+    "state": "RETIRED_FAIL_CLOSED",
+    "id_token_write": false,
+    "aws_credentials_configured": false,
+    "shared_deploy_role_reference": false,
+    "terraform_apply": false,
+    "agentcore_runtime_invocation": false
+  },
+  "ruleset_boundary": {
+    "ruleset_id": 20873628,
+    "ruleset_name": "Protect main",
+    "required_status_context": "Repository security invariants",
+    "enforcement_change_performed_in_repository_gate": false,
+    "human_platform_administration_required_after_merge": true
+  },
+  "aws_mutation_count": 0,
+  "new_iam_permission_count": 0,
+  "new_aws_service_count": 0,
+  "model_invocations": 0,
+  "capability_executions": 0,
+  "pr_89_touched": false
+}

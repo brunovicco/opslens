@@ -72,3 +72,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0062](0062-retain-inspector-read-contract-without-standing-iam-or-scan-activation.md) | Retain the bounded Inspector read/evidence contract while removing temporary IAM and avoiding scan activation solely to manufacture evidence | Accepted |
 | [0063](0063-phase16-runtime-exposure-closeout.md) | Close Phase 16 at the proven read-only Inspector boundary with zero current records and no standing experiment IAM | Accepted |
 | [0064](0064-evidence-first-security-hardening-priorities.md) | Prioritize Phase 17 hardening from a cross-cutting evidence inventory before changing authority | Accepted |
+| [0065](0065-ci-cd-and-workflow-authority-hardening.md) | Harden CI/CD and workflow authority before adding broader security automation | Accepted |
