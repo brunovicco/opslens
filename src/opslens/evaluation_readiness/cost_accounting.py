@@ -8,7 +8,6 @@ from enum import StrEnum
 from pathlib import Path
 from typing import cast
 
-
 _ARTIFACT_VERSION = "phase-18-gate-18-3-cost-accounting:v1"
 _EXPECTED_VIEW = Path("labs/evidence/phase-18-gate-18-2-consolidated-view-v1.json")
 _EXPECTED_CONTROL_EVIDENCE = Path(
@@ -34,30 +33,37 @@ _EXPECTED_OBSERVATION_SOURCES = {
 _EXPECTED_CONFIGURED_SOURCES = {
     "limit.semantic_planner.output_tokens": (
         "src/opslens/semantic_query/planner/bedrock.py",
+        "BEDROCK_PLANNER_MAX_TOKENS: Final = 256",
         "existing_abuse_cost_controls.semantic_planner_max_tokens",
     ),
     "limit.single_agent.output_tokens": (
         "src/opslens/agent_baseline/adapters/bedrock_reasoning.py",
+        "BEDROCK_AGENT_REASONING_MAX_TOKENS: Final = 96",
         "existing_abuse_cost_controls.single_agent_reasoning_max_tokens",
     ),
     "limit.multi_agent_triage.output_tokens": (
         "src/opslens/multi_agent/adapters/bedrock_triage_reasoning.py",
+        "BEDROCK_TRIAGE_REASONING_MAX_TOKENS: Final = 64",
         "existing_abuse_cost_controls.triage_reasoning_max_tokens",
     ),
     "limit.knowledge_synthesis.output_tokens": (
         "src/opslens/knowledge_retrieval/application/bedrock_synthesis.py",
+        "BEDROCK_SYNTHESIS_MAX_TOKENS: Final = 2_048",
         "existing_abuse_cost_controls.knowledge_synthesis_max_tokens",
     ),
     "limit.athena.bytes_scanned_per_query": (
         "infra/environments/dev/analytics_athena.tf",
+        "bytes_scanned_cutoff_per_query = 10485760",
         "existing_abuse_cost_controls.athena_bytes_scanned_cutoff_per_query",
     ),
     "limit.scheduler.maximum_event_age": (
         "infra/environments/dev/operational_recovery.tf",
+        "scheduled_ingestion_maximum_event_age_in_seconds = 3600",
         "delivery_budget.maximum_event_age_seconds",
     ),
     "limit.scheduler.maximum_retry_attempts": (
         "infra/environments/dev/operational_recovery.tf",
+        "scheduled_ingestion_maximum_retry_attempts       = 2",
         "delivery_budget.maximum_retry_attempts",
     ),
 }
@@ -341,7 +347,14 @@ def _validate_configured_limit(
         label=f"{entry_id}.control_evidence_value_path",
     )
     expected_source = _EXPECTED_CONFIGURED_SOURCES.get(entry_id)
-    if expected_source is None or (source_path_text, evidence_value_path) != expected_source:
+    if expected_source is None:
+        raise CostAccountingValidationError(f"unknown configured limit: {entry_id}")
+    expected_path, expected_literal, expected_evidence_path = expected_source
+    if (source_path_text, source_literal, evidence_value_path) != (
+        expected_path,
+        expected_literal,
+        expected_evidence_path,
+    ):
         raise CostAccountingValidationError(
             f"configured limit {entry_id} source binding drifted from the frozen contract"
         )
