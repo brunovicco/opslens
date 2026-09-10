@@ -35,6 +35,8 @@ Phase 19  Bounded Public Runtime & Productization             IN PROGRESS
 
 Phase 18 was protected-squash-merged through PR #290 at `feca774535b7d83f57c26f4e9fe7da71ce268f0f`. Its historical pre-merge closeout artifacts remain immutable evidence.
 
+Gate 19.1 was protected-squash-merged through PR #292 at `ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1` after exact-head validation at `484e2b85fc1996b2419b4057c2cf585ab1f675a1`.
+
 PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work. Phase 19 does not rebase, merge, modify, or depend on it.
 
 ## Phase 19 — Bounded Public Runtime & Productization
@@ -68,17 +70,17 @@ UNMEASURED != zero
 configured limit != measured utilization
 ```
 
-### Gate 19.1 — Public Runtime Hypothesis & Launch Contract — IN PROGRESS
+### Gate 19.1 — Public Runtime Hypothesis & Launch Contract — COMPLETE
 
-Purpose: freeze the first representative public workload, identify actual composition gaps, and define the experiment that can justify runtime topology before creating AWS resources.
+Gate 19.1 froze the first representative public workload, identified the actual composition gaps, and defined the experiment required before runtime topology selection.
 
-Frozen workload identity:
+Retained workload identity:
 
 ```text
 public-analysis-workload:v1
 ```
 
-Current runtime decision:
+Retained runtime decision:
 
 ```text
 DEFERRED_PENDING_MEASUREMENT
@@ -90,75 +92,66 @@ Leading hypothesis:
 ASYNC_SUBMIT_STATUS_RESULT
 ```
 
-The hypothesis is not authorization to create SQS, result storage, workers, or an async API.
+The hypothesis remains non-authoritative. Gate 19.1 did not create SQS, result storage, workers, an async API, public compute, or runtime IAM.
 
-Gate 19.1 deliverables:
+Completed Gate 19.1 outputs include the `PublicAnalysisAdmissionHandoff` pipeline inventory, frozen request/repository/evidence/response workload contract, runtime candidate matrix, public threat/abuse model, responsibility-to-permission IAM matrix, cost/abuse and content-minimized observability contracts, bounded disable/recovery requirements, deterministic verifier/read-only CI, and the exact Gate 19.2 experiment boundary.
 
-- exact post-Phase-18 repository checkpoint;
-- current-facing documentation synchronization without rewriting historical Phase 18 evidence;
-- real `PublicAnalysisAdmissionHandoff` pipeline inventory;
-- frozen request/repository/evidence/response workload contract;
-- explicit `SYNC | ASYNC | DEFERRED_PENDING_MEASUREMENT` decision;
-- runtime candidate matrix grounded in current AWS documentation;
-- public threat/abuse model;
-- responsibility-to-permission IAM matrix with no role creation;
-- cost/abuse measurement contract;
-- content-minimized observability contract;
-- narrowly scoped disable/recovery requirements;
-- deterministic artifact verifier and read-only CI;
-- exact Gate 19.2 experiment boundary.
+### Gate 19.2 — Representative Workload Measurement — IN PROGRESS
 
-Gate 19.1 AWS boundary:
-
-```text
-AWS mutations:          0
-IAM mutations:          0
-new AWS resources:      0
-model invocations:      0
-capability executions:  0
-public endpoints:       0
-```
-
-Exit criteria:
-
-1. `public-analysis-workload:v1` is versioned and deterministic where evidence exists.
-2. Missing whole-request limits remain explicit `UNMEASURED` rather than invented.
-3. The retained public path and all disconnected downstream capabilities are separately identified.
-4. Runtime selection is explicit and evidence-bound.
-5. Threat/abuse, IAM responsibility, cost, observability, retry/idempotency, and recovery contracts are frozen.
-6. Historical Phase 18 closeout evidence remains unchanged.
-7. Gate-specific read-only verification passes on the exact PR head.
-8. No public runtime or runtime IAM exists.
-9. PR #89 remains untouched.
-10. The smallest authorized Gate 19.2 experiment is explicit.
-
-### Gate 19.2 — Representative Workload Measurement — PENDING
+Issue: #295. Draft implementation PR: #297.
 
 Purpose: close the measurements that Gate 19.1 correctly classifies as `UNMEASURED` before selecting a public runtime.
 
-The experiment must be non-public first and compose or invoke the representative product stages:
+The representative experiment remains non-public and must compose or invoke:
 
 ```text
-public-analysis request contract
+public request admission
  -> immutable repository acquisition
- -> deterministic vulnerability/risk result
- -> required structured/semantic evidence
- -> bounded synthesis where authorized
+ -> dependency evidence
+ -> deterministic vulnerability correlation
+ -> deterministic risk prioritization
+ -> structured evidence when required
+ -> semantic evidence when required
+ -> bounded model reasoning when required
  -> deterministic final result admission
 ```
 
-Measure at minimum:
+The first implementation slice freezes a provider-neutral measurement harness with the exact ordered stage set and exact resource-accounting contract. It measures:
 
 ```text
 end-to-end duration
 per-stage duration
-GitHub request count
-Athena query count + bytes scanned when used
-Bedrock Retrieve count + latency when used
-Bedrock model calls + input/output tokens + latency when used
-retry/throttle count by provider
-serialized result bytes
+GitHub HTTP request count
+Athena query count + bytes scanned
+Bedrock Retrieve count
+Bedrock model call count + input/output tokens
+retry count
+throttle count
+serialized admitted-result bytes
 ```
+
+The measurement layer must not infer usage. Negative counters, stage reordering, incomplete plans, aggregate drift, empty serialized results, or invalid monotonic-clock evidence fail closed.
+
+Current Gate 19.2 authority boundary:
+
+```text
+public endpoints:       0
+new AWS resources:      0
+new IAM roles/policies: 0
+third-party code exec:  0
+PR #89 modifications:  0
+```
+
+Live AWS/model execution remains a human execution boundary.
+
+#### Gate 19.2 next slices
+
+1. Adapt retained repository-intelligence and Risk Policy capabilities into the representative non-public composition without copying business truth into the measurement layer.
+2. Adapt the retained structured and semantic retrieval boundaries while preserving route/evidence authority.
+3. Adapt bounded synthesis and deterministic result admission.
+4. Add deterministic success/failure coverage and exact provider/resource accounting for the composed runner.
+5. Prepare and human-execute the smallest reproducible non-public representative live measurement.
+6. Record the measurement artifact and decide exactly one of `SYNC`, `ASYNC`, or `DEFERRED_PENDING_MEASUREMENT`.
 
 Decision rule:
 
@@ -175,7 +168,7 @@ otherwise
   DEFERRED_PENDING_MEASUREMENT
 ```
 
-Live AWS/model execution, if required by this measurement, remains a human execution boundary. Gate 19.2 must not create a public endpoint merely to benchmark the application workload.
+Gate 19.2 must not create a public endpoint merely to benchmark the application workload.
 
 ### Later Phase 19 gates — not yet authorized
 
