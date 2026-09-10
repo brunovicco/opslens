@@ -39,6 +39,8 @@ class RepresentativeModelReasoning:
             bedrock_model_call_count=1,
             bedrock_input_tokens=evidence.input_tokens,
             bedrock_output_tokens=evidence.output_tokens,
+            bedrock_model_client_elapsed_ms=evidence.client_elapsed_ms,
+            bedrock_model_latency_ms=evidence.bedrock_latency_ms,
             retry_count=evidence.retry_attempts,
         )
         if self.usage != expected_usage:
@@ -65,6 +67,8 @@ def execute_representative_model_reasoning(
         bedrock_model_call_count=1,
         bedrock_input_tokens=evidence.input_tokens,
         bedrock_output_tokens=evidence.output_tokens,
+        bedrock_model_client_elapsed_ms=evidence.client_elapsed_ms,
+        bedrock_model_latency_ms=evidence.bedrock_latency_ms,
         retry_count=evidence.retry_attempts,
     )
     return RepresentativeModelReasoning(
