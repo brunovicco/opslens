@@ -25,6 +25,10 @@ from opslens.public_analysis.application.representative_repository_analysis impo
     RepresentativeRepositoryThreatEvidence,
     build_representative_repository_analysis,
 )
+from opslens.public_analysis.application.representative_structured_evidence import (
+    MAX_REPRESENTATIVE_STRUCTURED_FINDINGS,
+    build_representative_structured_evidence,
+)
 from opslens.public_analysis.application.request_admission import (
     MAX_PUBLIC_ANALYSIS_REQUEST_BYTES,
     MAX_PUBLIC_REPOSITORY_URL_CHARS,
@@ -48,6 +52,7 @@ __all__ = [
     "MAX_PUBLIC_ANALYSIS_REQUEST_BYTES",
     "MAX_PUBLIC_REPOSITORY_URL_CHARS",
     "MAX_PUBLIC_SEMANTIC_PLAN_RESPONSE_BYTES",
+    "MAX_REPRESENTATIVE_STRUCTURED_FINDINGS",
     "AdmittedResultSerializer",
     "MeasurementClock",
     "MonotonicClock",
@@ -71,6 +76,7 @@ __all__ = [
     "build_public_repository_evidence",
     "build_public_semantic_planning_request",
     "build_representative_repository_analysis",
+    "build_representative_structured_evidence",
     "execute_instrumented_public_analysis",
     "measure_representative_workload",
     "parse_public_semantic_plan_proposal",
