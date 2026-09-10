@@ -7,16 +7,16 @@ OpsLens advances in small, demonstrable, observable, reversible gates.
 Default engineering loop:
 
 ```text
-real gap
+real gap or explicit hypothesis
  -> issue
- -> architecture decision
+ -> architecture/authority decision
  -> IAM / trust boundary when applicable
- -> small implementation or documentation slice
+ -> smallest implementation or documentation slice
  -> success test
  -> meaningful failure test
  -> observability
  -> cost
- -> evidence
+ -> immutable evidence
  -> draft PR
  -> exact-head CI
  -> protected squash merge
@@ -45,8 +45,8 @@ real gap
 | 14 | Amazon Bedrock AgentCore | ✅ Complete — optional lab target retained; standing experiment IAM removed |
 | 15 | A2A | ✅ Complete — bounded offline reference interoperability + official SDK conformance retained |
 | 16 | Runtime Exposure with Amazon Inspector | ✅ Complete — read contract proven; zero current records; temporary IAM removed |
-| 17 | Security Hardening | 🚧 In progress — Gates 17.1–17.5 complete; Gate 17.6 next |
-| 18 | Evaluation, Cost & Portfolio Readiness | ⏳ Planned |
+| 17 | Security Hardening | ✅ Complete — evidence-backed hardening + measured recovery retained |
+| 18 | Evaluation, Cost & Portfolio Readiness | ▶️ Next |
 
 ## Permanent engineering boundaries
 
@@ -67,69 +67,39 @@ real gap
 > **No unrestricted text-to-SQL.**
 
 ```text
-agent proposal != authorization
-handoff proposal != handoff admission
-handoff admission != capability authorization
-capability invocation != execution result
-MCP call admission != capability execution
-MCP result projection != public runtime exposure
-AgentCore hosting != business authorization
-A2A message != capability authorization
-A2A transport success != business/evidence truth
-AWS authentication != Inspector read authorization
-Inspector API success != runtime evidence presence
-Inspector finding != repository finding
-runtime evidence correlation != capability authorization
-security control name != proven enforcement
-historical workflow != inert workflow
-plan-only intent != write-authority requirement
+proposal != authorization
+retrieval result != sufficient evidence
+repository finding != runtime exposure
 CI evidence != enforced merge gate
-repository checkout != persisted Git credential requirement
-OIDC authentication != authorization to reuse a shared deployment role
+historical evidence != standing authority
 dependency finding != vulnerability applicability authority
 code-scanning alert != runtime exploitability truth
 security scan success != absence of vulnerabilities
-scanner output != model authority
-GitHub security permission != AWS authority
-scanner platform prerequisite != scanner permission requirement
 untrusted text != instruction authority
-retrieved content != system/developer authority
-failed/forged capability result != admissible business result
 adversarial test success != proof of universal safety
-log event suppression != trace response/error suppression
 exception text != safe telemetry by default
-trace metadata != business/evidence truth
-loggable identifier != authorization
-telemetry correlation != capability authorization
-content-minimized failure log != execution result
-redaction success != proof source content is non-sensitive
+scheduler pause != global workload termination
+Terraform apply success != independent AWS state verification
+measured value != derived estimate
+unmeasured != zero
+portfolio summary != new technical authority
 ```
 
 ## Completed platform through Phase 16
 
-Phases 0–10 established the AWS foundation, threat-intelligence ingestion, deterministic vulnerability correlation, repository intelligence, risk prioritization, bounded semantic query, Bedrock Knowledge Base retrieval with Amazon S3 Vectors, hybrid evidence, governed public analysis, and operational telemetry.
+Phases 0–10 established the AWS foundation, source-preserving threat-intelligence ingestion, deterministic vulnerability correlation, repository intelligence, deterministic Risk Policy v1, bounded semantic query, Bedrock Knowledge Base retrieval with Amazon S3 Vectors, hybrid evidence, governed public-analysis application boundaries, and content-minimized operational observability.
 
-Phase 11 retained the measured single-agent Bedrock reference. Phase 12 retained deterministic specialization/handoff but rejected the measured two-model topology as default. Phase 13 retained bounded offline MCP interoperability. Phase 14 retained AgentCore only as an optional lab target and removed standing experiment IAM. Phase 15 retained bounded offline A2A reference interoperability plus an exact-source official SDK CI oracle without creating a public A2A runtime.
+Phase 11 retained the measured single-agent Bedrock reference. Phase 12 retained deterministic specialization/handoff but rejected the measured two-model topology as the default because it added cost/latency without quality lift. Phase 13 retained bounded offline MCP interoperability. Phase 14 retained AgentCore only as an optional lab target and removed standing experiment IAM. Phase 15 retained bounded offline A2A reference interoperability plus an exact-source official SDK CI oracle. Phase 16 retained a typed read-only Inspector evidence boundary, preserved its zero-record measurement, and removed temporary Inspector IAM after the bounded experiment.
 
-Phase 16 added a typed read-only Amazon Inspector evidence boundary without equating runtime evidence with repository-risk truth. The existing shared deployment role correctly failed with `AccessDeniedException`; a temporary dedicated two-action role then proved `ListCoverage` and `ListFindings` access with zero current records. The role was removed afterward and Terraform reconverged.
-
-Canonical Phase 16 closeout:
-
-```text
-docs/adr/0063-phase16-runtime-exposure-closeout.md
-labs/phase-16-closeout.md
-labs/evidence/phase-16-closeout-v1.json
-```
-
-## Phase 17 — Security Hardening — IN PROGRESS
+## Phase 17 — Security Hardening — COMPLETE
 
 Purpose: evaluate the retained platform as an attacker and operator would, then harden only evidenced gaps while preserving deterministic authority and least privilege.
 
-### Gate 17.1 — cross-cutting threat model and control-gap inventory — COMPLETE
+### Gate 17.1 — threat/control-gap inventory — COMPLETE
 
-Gate 17.1 established an evidence-first security inventory before new implementation authority.
+Established the evidence-first inventory and prioritized observed CI/CD, IAM, supply-chain, telemetry, operational recovery, and documentation risks.
 
-Canonical evidence:
+Canonical records:
 
 ```text
 docs/adr/0064-evidence-first-security-hardening-priorities.md
@@ -137,250 +107,168 @@ labs/phase-17-gate-17-1-threat-model.md
 labs/evidence/phase-17-gate-17-1-threat-model-v1.json
 ```
 
-The initial highest-priority gaps were protected-main CI enforcement, EPSS plan/execution authority separation, and historical AgentCore shared-role reuse. Continuous dependency/code scanning was a medium-priority gap. Architecture-header drift remains a lower-priority documentation gap.
+### Gate 17.2 — CI/CD and workflow authority — COMPLETE
 
-### Gate 17.2 — CI/CD and workflow authority hardening — COMPLETE
-
-Gate 17.2 added one universal protected-main security context and froze repository-wide workflow authority:
+Retained:
 
 ```text
 required PR context:                         Repository security invariants
 external actions:                            full 40-hex SHA pins
-checkout persisted credentials:              disabled
+checkout persisted credentials:              disabled where unnecessary
 pull_request_target/workflow_run:             rejected by default
-EPSS plan identity:                          OpsLensEpssHistoryEvidenceRole
-EPSS execution identity:                     OpsLensEpssHistoryCoordinatorRole
-21600-second STS session:                    full-backfill execute only
-historical AgentCore mutating workflow:      retired / fail-closed
+EPSS plan identity:                          read-only evidence role
+EPSS execution identity:                     coordinator role
+21600-second STS session:                    execute-only full-backfill path
+historical AgentCore mutation workflow:      retired / fail-closed
 ```
 
-The active `Protect main` ruleset (`20873628`) now requires `Repository security invariants`. A later direct write attempt to `main` was rejected, independently proving enforcement.
+Protected `main` independently rejected a direct write, proving merge enforcement.
 
-Canonical records:
+### Gate 17.3 — dependency and code scanning — COMPLETE
+
+Retained bounded GitHub-native signals:
 
 ```text
-docs/adr/0065-ci-cd-and-workflow-authority-hardening.md
-labs/phase-17-gate-17-2-workflow-authority-hardening.md
-labs/evidence/phase-17-gate-17-2-workflow-authority-hardening-v1.json
-labs/phase-17-gate-17-2-main-ruleset-enforcement.md
-labs/evidence/phase-17-gate-17-2-main-ruleset-enforcement-v1.json
+Dependency Review  pull_request / fail-on-severity=high / contents:read
+CodeQL Python      PR + main + weekly + manual / security-events:write only where required
+AWS/OIDC authority none
 ```
 
-### Gate 17.3 — dependency and code-scanning hardening — COMPLETE
+Dependabot version updates and an additional continuous `pip-audit` remain explicit deferrals.
 
-Gate 17.3 retained two bounded GitHub-native security signals:
+### Gate 17.4 — adversarial authority regression — COMPLETE
+
+Retained eight deterministic cases across seven threat classes covering public input, prompt injection, capability widening, forged results, MCP, A2A, and amplification attempts.
 
 ```text
-Dependency Review
-  action:            actions/dependency-review-action
-  release:           v5.0.0
-  exact SHA:         a1d282b36b6f3519aa1f3fc636f609c47dddb294
-  fail threshold:    high
-  permission:        contents: read
-
-CodeQL / Python
-  action:            github/codeql-action
-  release line:      v4.38.0
-  exact SHA:         b96794f015dfd88f77b49b1c93e0fa7110f94c63
-  permissions:       contents: read + security-events: write
+AWS/OIDC authority:    none
+model invocations:     0
+capability executions: 0
 ```
 
-The first Dependency Review attempt identified a GitHub platform prerequisite rather than an authority gap: the repository Dependency graph was disabled. After a human enabled it, the unchanged read-only workflow succeeded. No permission widening occurred.
+### Gate 17.5 — telemetry hardening — COMPLETE
 
-Final exact PR-head CI:
+Across 12 retained Powertools Lambda handlers:
 
 ```text
-head:                           f9ee70d772d28987c45008b723e3efc07b65680e
-Repository security invariants: 34424002745 / #19 / SUCCESS
-Dependency Review:              34424002767 / #4  / SUCCESS
-CodeQL / Python:                34424003077 / #4  / SUCCESS
+automatic input-event logging:    disabled
+automatic trace response capture: disabled
+automatic trace error capture:    disabled
+implicit exception traceback:     disabled
+repository verifier:              retained
 ```
 
-Implementation PR #261 was protected-squash merged as:
+### Gate 17.6 — operational recovery / abuse-cost controls — COMPLETE
+
+One Terraform control governs exactly the three recurring source-ingestion schedules:
 
 ```text
-b3f4a11df1a826c850cc16f1a4e0dd44efb3edd3
+scheduled_ingestion_enabled=true   -> ENABLED
+scheduled_ingestion_enabled=false  -> DISABLED
 ```
 
-Canonical records:
+Scheduler delivery remains bounded to 3600 seconds of event age and two retries.
+
+The measured human AWS experiment proved exact three-resource pause/resume plans and applies, independent `DISABLED`/`ENABLED` reads, and final Terraform convergence. No resources were created or destroyed.
 
 ```text
-docs/adr/0066-bounded-dependency-and-code-scanning-signals.md
-labs/phase-17-gate-17-3-dependency-code-scanning.md
-labs/evidence/phase-17-gate-17-3-dependency-code-scanning-v1.json
-labs/phase-17-gate-17-3-closeout.md
-labs/evidence/phase-17-gate-17-3-closeout-v1.json
+scheduled-ingestion pause != global kill switch
 ```
 
-Deferred from Gate 17.3:
+### Gate 17.7 — architecture synchronization — COMPLETE
+
+Closed `SEC17-DOC-001` by synchronizing the accumulated EN/PT-BR architecture with the retained platform.
 
 ```text
-Dependabot version-update automation: DEFER
-additional continuous pip-audit:      DEFER
-broad dependency upgrades:            NOT AUTHORIZED
+PR:                       #276
+exact head:               ea0460e549dd1b904d139632bfc2988671e23880
+protected merge:          3938c6469a979f5b574755ce9fd56a56523626dc
+Security Hardening CI:    34474712369 / #34 / SUCCESS
+Dependency Review:        34474712371 / #19 / SUCCESS
+CodeQL / Python:          34474712380 / #27 / SUCCESS
 ```
 
-### Gate 17.4 — application input / prompt-injection / tool-abuse adversarial tests — COMPLETE
+### Gate 17.8 — Security Hardening closeout — COMPLETE BY CLOSEOUT PR
 
-Gate 17.4 retained a dedicated offline attacker-oriented regression suite over real OpsLens boundaries rather than introducing speculative guardrails.
-
-Evaluation coverage:
+Canonical closeout:
 
 ```text
-ADV17-PUBLIC  public request admission abuse
-ADV17-PROMPT  direct + indirect prompt injection
-ADV17-TOOL    single/multi-agent capability widening attempts
-ADV17-RESULT  forged result binding
-ADV17-MCP     dynamic/cross-capability MCP tool abuse
-ADV17-A2A     A2A reference authority smuggling
-ADV17-COST    input/call/retry/fallback amplification
+docs/adr/0070-phase17-security-hardening-closeout.md
+labs/phase-17-closeout.md
+labs/evidence/phase-17-closeout-v1.json
 ```
 
-Retained implementation:
+Final retained Phase 17 posture:
 
 ```text
-tests/security_hardening/test_adversarial_boundaries.py
-.github/workflows/adversarial-security-ci.yml
+protected-main security enforcement          RETAIN
+Dependency Review + CodeQL                    RETAIN
+adversarial authority regression              RETAIN
+content-minimized Lambda telemetry            RETAIN
+telemetry safety verifier                     RETAIN
+bounded scheduled-ingestion pause             RETAIN
+operational recovery runbook                  RETAIN
+synchronized EN/PT-BR architecture            RETAIN
 ```
 
-The first retained dataset contains eight deterministic cases across seven threat classes. Every case matched its expected reject or bounded disposition, so no business-logic redesign was justified by observed evidence.
-
-Final exact implementation PR-head CI:
+Explicitly not created or deferred:
 
 ```text
-head:                           60010d4fcb5d6142c9748bbf764fb074dc3a4dc8
-Adversarial Security CI:        34426092786 / #5  / SUCCESS
-Repository security invariants: 34426092824 / #25 / SUCCESS
-Dependency Review:              34426092798 / #10 / SUCCESS
-CodeQL / Python:                34426092795 / #12 / SUCCESS
+Dependabot version-update automation          DEFER
+additional continuous pip-audit               DEFER
+broad dependency upgrades                     NOT AUTHORIZED BY PHASE 17
+mandatory independent review                  DEFER UNTIL GOVERNANCE NEED EXISTS
+public WAF/rate limiting/tenant quota         NOT APPLICABLE WITHOUT PUBLIC RUNTIME
+public HTTP runtime                           NOT CREATED
+global platform kill switch                   NOT CREATED
+S3/Lambda broad emergency stop controls       NOT CREATED
+automatic alarm remediation                   NOT CREATED
+standing Inspector experiment IAM             NONE
+public MCP/A2A runtime                        NOT CREATED
+AgentCore as default runtime                  NOT RETAINED
 ```
 
-Implementation PR #264 was protected-squash merged as:
+## Phase 18 — Evaluation, Cost & Portfolio Readiness — NEXT
+
+Purpose: consolidate the evidence generated across prior phases into a coherent evaluation, cost, reliability, security, and portfolio view without converting unlike measurements into false precision.
+
+### Gate 18.1 — cross-phase evidence inventory and comparability matrix — NEXT
+
+Before new experiments, inventory the existing immutable evidence set and classify each metric/value as:
 
 ```text
-cfad2680ca9e1977c754977ea58f9ab8865601dd
+MEASURED
+DERIVED
+UNMEASURED
+NOT_APPLICABLE
 ```
 
-Canonical records:
+Build an explicit comparability matrix for quality, latency, cost, retries, capability executions, retrieval/groundedness, security regressions, and cloud/runtime measurements.
 
-```text
-docs/adr/0067-bounded-adversarial-authority-regression-suite.md
-labs/phase-17-gate-17-4-adversarial-boundaries.md
-labs/evidence/phase-17-gate-17-4-adversarial-boundaries-v1.json
-labs/phase-17-gate-17-4-closeout.md
-labs/evidence/phase-17-gate-17-4-closeout-v1.json
-```
+Exit criteria:
 
-Retained authority posture:
+- every retained headline metric points to a canonical evidence artifact;
+- values from different workloads are not silently compared as equivalents;
+- measured vs derived vs unmeasured is explicit;
+- no composite score is introduced without an explicit later hypothesis;
+- zero AWS/IAM/runtime mutation is required for the first slice.
 
-```text
-Adversarial Security CI permission:          contents: read
-AWS/OIDC authority:                          none
-model invocations during Gate 17.4:          0
-capability executions during Gate 17.4:      0
-new model/tool authority:                    none
-live-model jailbreak as authority proof:     rejected
-```
+### Candidate Gate 18.2 — consolidated evaluation and reliability view
 
-`adversarial test success != proof of universal safety` remains a permanent interpretation boundary.
+Use Gate 18.1 comparability decisions to build independent evaluation dimensions. Preserve failure-path evidence and rejected hypotheses rather than showing success-only metrics.
 
-### Gate 17.5 — sensitive-data / logging / telemetry hardening — COMPLETE
+### Candidate Gate 18.3 — cost accounting and budget envelope
 
-Gate 17.5 began from repository evidence and closed two concrete content-bearing telemetry gaps:
+Consolidate measured provider/runtime costs, Athena scan boundaries, token budgets, retry limits, and unmeasured infrastructure dimensions. Do not equate an unmeasured value with zero.
 
-```text
-TRACE17-001  bare Powertools Lambda tracer response/error capture
-LOG17-001    implicit active exception/traceback serialization through logger.exception
-```
+### Candidate Gate 18.4 — portfolio/demo evidence pack and AIP-C01 synchronization
 
-Retained implementation:
+Improve discoverability and recruiter/architect-facing presentation only after the underlying measurements are traceable. Synchronize learning-map references where evidence exists.
 
-```text
-Powertools Lambda handlers:                   12
-logger input-event capture:                    disabled / log_event=False
-tracer response capture:                       disabled / capture_response=False
-tracer error capture:                          disabled / capture_error=False
-shared active exception/traceback logging:     disabled
-shared failure logger:                         bounded logger.error
-repository verifier:                           scripts/verify_telemetry_safety.py
-regression test:                               tests/unit/shared/observability/test_powertools_telemetry_safety.py
-```
+### Candidate Gate 18.5 — Phase 18 / project-readiness closeout
 
-Final exact implementation PR-head validation:
-
-```text
-head:                           5ad6e7d9aae224d188f11b1f0bae27fc25ea59df
-Security Hardening CI:          34429102027 / #30 / SUCCESS
-Operational Observability CI:   34429102108 / #23 / SUCCESS
-Dependency Review:              34429102025 / #15 / SUCCESS
-CodeQL / Python:                34429102142 / #19 / SUCCESS
-```
-
-The repository-wide telemetry verifier emitted:
-
-```text
-telemetry_safety_invariants=PASS handlers=12
-```
-
-Implementation PR #268 was protected-squash merged as:
-
-```text
-9e967acdd1a5ae611a3a1db47aee164272d11380
-```
-
-Canonical records:
-
-```text
-docs/adr/0068-content-minimized-lambda-telemetry.md
-labs/phase-17-gate-17-5-telemetry-safety.md
-labs/evidence/phase-17-gate-17-5-telemetry-safety-v1.json
-labs/phase-17-gate-17-5-closeout.md
-labs/evidence/phase-17-gate-17-5-closeout-v1.json
-```
-
-Retained authority posture:
-
-```text
-AWS/IAM mutation:                  none
-new observability vendor/service:  none
-new public runtime:                none
-new model/tool authority:          none
-business/evidence authority move:  none
-PR #89 modification:               none
-```
-
-`log event suppression != trace response/error suppression` and `exception text != safe telemetry by default` are permanent interpretation boundaries.
-
-### Gate 17.6 — operational recovery / kill-switch / abuse-cost controls — NEXT
-
-Begin from concrete retained runtime and operational evidence. The first slice should inventory which workloads can incur repeated calls, writes, retries, or costs; which already have deterministic stop/retry bounds; and where an operator can safely halt or recover execution without creating broader authority.
-
-Minimum evaluation targets:
-
-```text
-existing retry/fallback/execution budgets
-scheduled/manual workflow execution authority
-Lambda asynchronous retry/failure destinations where retained
-Bedrock/model call budgets and cost-amplification paths
-bounded cancellation/disable mechanisms already present
-recovery from partial writes or failed deterministic evidence admission
-operator actions that could become over-broad kill-switch authority
-re-entry and rollback evidence after an operational stop
-```
-
-Gate 17.6 must not invent a global kill switch merely for portfolio completeness. Any new stop/recovery mechanism must correspond to a concrete retained runtime risk and must preserve least privilege, deterministic evidence, and reversibility.
-
-### Candidate later gates — EVIDENCE-DRIVEN
-
-```text
-17.7 architecture-document synchronization if still pending
-17.8 Security Hardening closeout
-```
-
-## Phase 18 — Evaluation, Cost & Portfolio Readiness — PLANNED
-
-Consolidate quality, latency, cost, failure-path, architecture, security, and portfolio evidence after Phase 17 closes.
+Close only after the evidence pack, cost/evaluation boundaries, and project-facing documentation agree with the retained implementation.
 
 ## Deferred cross-project integration
 
-OpsLens PR #89 / `feat/governed-gateway-semantic-planner` remains separate Governed LLM Gateway work and must not be modified or merged as a side effect of Phase 17.
+OpsLens PR #89 / `feat/governed-gateway-semantic-planner` remains separate Governed LLM Gateway work and must not be modified or merged as a side effect of Phase 18 unless explicitly re-authorized.
