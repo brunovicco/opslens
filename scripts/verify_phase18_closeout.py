@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the evidence-backed Phase 18 closeout record and documentation state."""
+"""Verify the historical Phase 18 closeout artifact and current post-merge docs."""
 
 from __future__ import annotations
 
@@ -81,42 +81,45 @@ _REQUIRED_BOUNDARIES = {
     "Repository Risk != Runtime Exposure.",
 }
 
+# Gate 18.5's own evidence is intentionally historical. Current-facing documentation,
+# however, must represent the fact that protected PR #290 has already merged.
 _REQUIRED_DOC_MARKERS = {
     "docs/current-state.md": (
-        "Gate 17.1",
-        "Gate 17.2",
-        "Gate 18.4 — Portfolio Evidence Pack & AIP-C01 Mapping       COMPLETE",
-        "Gate 18.5 — Phase 18 closeout                               IN PROGRESS",
-        "not authorized",
+        "feca774535b7d83f57c26f4e9fe7da71ce268f0f",
+        "Phase 18 — Evaluation, Cost & Portfolio Readiness",
+        "status: COMPLETE",
+        "Phase 19 — Bounded Public Runtime & Productization",
     ),
     "docs/roadmap.md": (
-        "Gate 17.1",
-        "Gate 17.2",
-        "Gate 18.4 — Portfolio Evidence Pack & AIP-C01 Synchronization — COMPLETE",
-        "Gate 18.5 — Phase 18 closeout — IN PROGRESS",
-        "Do not pre-authorize a Phase 19",
+        "Phase 18  Evaluation, Cost & Portfolio Readiness              COMPLETE",
+        "Phase 19  Bounded Public Runtime & Productization             IN PROGRESS",
+        "Gate 19.1",
     ),
     "README.md": (
-        "Phase 18 — Evaluation, Cost & Portfolio Readiness",
-        "18.4  Portfolio Evidence + AIP-C01 Mapping       COMPLETE",
-        "18.5  Phase 18 evidence-backed closeout          IN PROGRESS",
+        "Phases 0–18 are complete.",
+        "Phase 19 — Bounded Public Runtime & Productization",
     ),
     "README.pt-br.md": (
-        "Phase 18 — Evaluation, Cost & Portfolio Readiness",
-        "18.4  Portfolio Evidence + AIP-C01 Mapping       COMPLETE",
-        "18.5  Phase 18 evidence-backed closeout          IN PROGRESS",
+        "Phases 0–18 estão completas.",
+        "Phase 19 — Bounded Public Runtime & Productization",
     ),
     "docs/architecture.md": (
-        "accumulated architecture baseline through **Phase 18",
-        "Phase 18 — Evaluation, Cost & Portfolio Readiness",
-        "next implementation phase is intentionally **not authorized**",
+        "Phases 0–18 are complete.",
+        "Phase 19 — Bounded Public Runtime & Productization",
     ),
     "docs/architecture.pt-br.md": (
-        "baseline arquitetural acumulado até a **Phase 18",
-        "Phase 18 — Evaluation, Cost & Portfolio Readiness",
-        "próxima fase de implementação está intencionalmente **não autorizada**",
+        "As Phases 0–18 estão completas.",
+        "Phase 19 — Bounded Public Runtime & Productization",
     ),
 }
+
+_FORBIDDEN_LIVE_DOC_MARKERS = (
+    "Gate 18.5 — Phase 18 closeout                               IN PROGRESS",
+    "Gate 18.5 — Phase 18 closeout — IN PROGRESS",
+    "18.5  Phase 18 evidence-backed closeout          IN PROGRESS",
+    "COMPLETE PENDING GATE 18.5",
+    "COMPLETE PENDING GATE 18.5 MERGE",
+)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -145,6 +148,7 @@ def _string_set(value: object, *, label: str) -> set[str]:
 
 
 def _verify_closeout_artifact(repo_root: Path) -> None:
+    """Keep validating the exact pre-merge Gate 18.5 evidence rather than rewriting history."""
     root = _load_object(repo_root / _CLOSEOUT)
     expected_scalar = {
         "artifact_version": "phase-18-closeout:v1",
@@ -198,13 +202,15 @@ def _verify_closeout_artifact(repo_root: Path) -> None:
         if run != {"run_id": run_id, "conclusion": "SUCCESS"}:
             raise SystemExit(f"Gate 18.4 CI evidence drifted: {key}")
 
+    # This is the historical decision that existed at Gate 18.5 creation time.
+    # A later Phase 19 selection must not rewrite this source evidence.
     next_direction = _dict(root.get("next_direction"), label="next_direction")
     if next_direction != {
         "status": "NOT_AUTHORIZED_PENDING_EVIDENCE_BACKED_SELECTION",
         "phase_number_reserved": False,
         "governed_gateway_pr_89": "DEFERRED_SEPARATE_WORK",
     }:
-        raise SystemExit("Post-Phase-18 direction was pre-authorized")
+        raise SystemExit("Historical post-Phase-18 direction was rewritten")
 
 
 def _verify_docs(repo_root: Path) -> None:
@@ -212,11 +218,14 @@ def _verify_docs(repo_root: Path) -> None:
         text = (repo_root / path_text).read_text(encoding="utf-8")
         for marker in markers:
             if marker not in text:
-                raise SystemExit(f"{path_text} is missing Phase 18 closeout marker {marker!r}")
+                raise SystemExit(f"{path_text} is missing post-merge Phase 18 marker {marker!r}")
+        for marker in _FORBIDDEN_LIVE_DOC_MARKERS:
+            if marker in text:
+                raise SystemExit(f"{path_text} still contains stale post-merge marker {marker!r}")
 
 
 def main() -> int:
-    """Revalidate Gate 18.4 and the Phase 18 closeout projection."""
+    """Revalidate Gate 18.4/18.5 history and the current post-merge documentation projection."""
     args = _parser().parse_args()
     repo_root = args.repo_root.resolve()
 
@@ -243,9 +252,11 @@ def main() -> int:
 
     print(
         "phase18_closeout=PASS "
-        "gate18_4_revalidated=true "
-        "next_phase_authorized=false "
-        "aws_mutations=0 iam_mutations=0 model_invocations=0 capability_executions=0"
+        "historical_gate18_5_preserved=true "
+        "protected_closeout_merge=feca774535b7d83f57c26f4e9fe7da71ce268f0f "
+        "current_phase19_selected=true "
+        "phase18_aws_mutations=0 phase18_iam_mutations=0 "
+        "phase18_model_invocations=0 phase18_capability_executions=0"
     )
     return 0
 
