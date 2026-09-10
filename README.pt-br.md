@@ -22,13 +22,14 @@ A plataforma separa deliberadamente raciocínio probabilístico da autoridade de
 
 ## Estado atual
 
-As Phases 0–17 estão completas. A **Phase 18 — Evaluation, Cost & Portfolio Readiness está em andamento**. Gates 18.1–18.3 estão completas; a Gate 18.4 sincroniza material de portfólio baseado em evidência e o mapa de aprendizagem AIP-C01.
+As Phases 0–17 estão completas. A **Phase 18 — Evaluation, Cost & Portfolio Readiness está completa, pendente apenas do protected merge de closeout da Gate 18.5**. As Gates 18.1–18.4 estão completas; a Gate 18.5 congela o closeout baseado em evidência sem adicionar outro benchmark ou nova superfície de runtime.
 
 ```text
 18.1  Cross-phase Evidence Inventory            COMPLETE
 18.2  Consolidated Evaluation & Reliability     COMPLETE
 18.3  Cost Accounting & Budget Envelopes        COMPLETE
-18.4  Portfolio Evidence + AIP-C01 Mapping       IN PROGRESS
+18.4  Portfolio Evidence + AIP-C01 Mapping       COMPLETE
+18.5  Phase 18 evidence-backed closeout          IN PROGRESS
 ```
 
 Veja [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [AIP-C01 Learning Map](docs/aip-c01-learning-map.md) e o [índice de ADRs](docs/adr/README.md).
@@ -90,7 +91,7 @@ O portfólio atual é propositalmente baseado em evidência. Exemplos:
 | Phase 16 Inspector | leitura limitada bem-sucedida com zero registros; **não** interpretada como zero runtime exposure |
 | Phase 17 recovery | ciclo pause/resume dos três schedulers com convergência Terraform final |
 
-A cadeia machine-readable começa em `labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json` e é validada deterministicamente no CI.
+A cadeia machine-readable começa em `labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json`, termina em `labs/evidence/phase-18-closeout-v1.json` e é revalidada deterministicamente no CI.
 
 ## Limites de custo e recursos
 
@@ -116,13 +117,13 @@ Security Hardening retém Actions em SHA completo, invariantes de segurança no 
 
 ## O que não é afirmado
 
-OpsLens não afirma atualmente runtime HTTP público de produção, MCP/A2A públicos, AgentCore como runtime default de produção, SLOs de produção derivados de labs, TCO/run rate de produção, zero runtime exposure por causa do Inspector ter retornado zero registros, limites configurados como utilização medida ou um global platform kill switch.
+OpsLens não afirma atualmente runtime HTTP público de produção, MCP/A2A públicos, AgentCore como runtime default de produção, SLOs de produção derivados de labs, TCO/run rate de produção, zero runtime exposure por causa do Inspector ter retornado zero registros, limites configurados como utilização medida, um global platform kill switch ou um score/probabilidade de aprovação na certificação.
 
 ## Laboratório AIP-C01
 
 OpsLens também é usado como preparação hands-on para **AWS Certified Generative AI Developer - Professional (AIP-C01)**. O mapa do repositório classifica cada tarefa do guia atual como `EVIDENCED`, `PARTIAL` ou `STUDY_ONLY`, sem transformar a amplitude do exame em requisito do produto.
 
-Um serviço AWS não é adicionado apenas porque aparece no guia da certificação. Veja [docs/aip-c01-learning-map.md](docs/aip-c01-learning-map.md).
+Um serviço AWS não é adicionado apenas porque aparece no guia da certificação. Cobertura do exame não é garantia de certificação. Veja [docs/aip-c01-learning-map.md](docs/aip-c01-learning-map.md).
 
 ## Baseline AWS
 
@@ -140,8 +141,8 @@ reasoning profile:    us.anthropic.claude-haiku-4-5-20251001-v1:0
 
 ## Documentação
 
-Comece por [docs/README.md](docs/README.md). Para portfólio e arquitetura, os principais pontos de entrada são [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md) e o [índice de ADRs](docs/adr/README.md).
+Comece por [docs/README.md](docs/README.md). Para portfólio e arquitetura, os principais pontos de entrada são [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md), o [closeout da Phase 18](labs/phase-18-closeout.md) e o [índice de ADRs](docs/adr/README.md).
 
 ---
 
-PR #89 / `feat/governed-gateway-semantic-planner` pertence ao Governed LLM Gateway e continua deliberadamente fora da Phase 18 até retomada explícita.
+A próxima fase de implementação não é pré-autorizada pela Phase 18. PR #89 / `feat/governed-gateway-semantic-planner` permanece como trabalho deferred separado do Governed LLM Gateway, salvo reavaliação e retomada explícitas.

@@ -2,9 +2,9 @@
 
 _Última atualização: 2026-09-10_
 
-Este documento é o baseline arquitetural acumulado até a **Phase 17 — Security Hardening: COMPLETE pelo PR de closeout da Phase 17**.
+Este documento é o baseline arquitetural acumulado até a **Phase 18 — Evaluation, Cost & Portfolio Readiness: COMPLETE, pendente do protected merge de closeout da Gate 18.5**.
 
-A próxima fase é a **Phase 18 — Evaluation, Cost & Portfolio Readiness**.
+A próxima fase de implementação está intencionalmente **não autorizada** pela Phase 18. Ela deve ser escolhida a partir de gaps reais de produto/evidência após o closeout.
 
 ## 1. Propósito
 
@@ -473,26 +473,43 @@ retained protocol contract != public peer endpoint
 
 Experimentos de AgentCore e Inspector são preservados como evidência enquanto a autoridade standing específica desses experimentos permanece removida. MCP e A2A são retidos como contratos delimitados de interoperabilidade/referência sem runtimes públicos de rede.
 
-## 14. Fronteira de entrada da Phase 18
+## 14. Phase 18 — closeout de evaluation, cost e portfolio
 
-A Phase 17 está concluída após as Gates 17.1–17.7 e o registro de closeout da Phase 17.
+A Phase 18 está completa até as Gates 18.1–18.4 e está sendo fechada pela Gate 18.5.
 
-A próxima fase é **Phase 18 — Evaluation, Cost & Portfolio Readiness**. O primeiro passo deve consolidar evidências existentes e determinar comparabilidade antes de criar novos experimentos.
-
-Distinções obrigatórias:
+A cadeia de evidência retida é:
 
 ```text
-measured value != derived estimate
-unmeasured != zero
-one experiment != production distribution
-quality metric != security metric
-latency metric != cost metric
-portfolio summary != new technical authority
+18.1 cross-phase evidence inventory + comparability
+ -> 18.2 projeção independente de evaluation/reliability
+ -> 18.3 cost/resource accounting + configured limits
+ -> 18.4 portfolio evidence-bound + mapa AIP-C01
+ -> 18.5 closeout sem nova autoridade de runtime ou benchmark
 ```
 
-A Phase 18 não deve adicionar runtime público nem ampliar IAM apenas para melhorar a apresentação de portfólio.
+A Phase 18 preserva quatro classificações de evidência (`MEASURED`, `DERIVED`, `UNMEASURED`, `NOT_APPLICABLE`) e regras explícitas de comparabilidade. Métricas independentes não são colapsadas em um readiness score sintético.
 
-A integração deferred com Governed LLM Gateway permanece fora desta fase salvo reautorização explícita.
+A Gate 18.2 preserva quatro sinais negativos/rejected-default. A Gate 18.3 separa evidência de custo observada/derivada de limites configurados e proíbe agregação de production TCO sem suporte. A Gate 18.4 expõe claims de portfólio somente quando mecanicamente vinculados à evidência admitida e mapeia todos os 20 task IDs do AIP-C01 sem transformar amplitude da certificação em requisito de produto.
+
+Fronteiras permanentes da Phase 18 incluem:
+
+```text
+MEASURED != DERIVED
+UNMEASURED != zero
+NOT_APPLICABLE != zero
+configured limit != measured utilization
+portfolio claim != new evidence authority
+AIP-C01 topic != product requirement
+AIP-C01 coverage != certification guarantee
+lab metric != production SLO
+cost evidence != production TCO
+```
+
+A Gate 18.5 não introduz mutação AWS/IAM/model/capability, benchmark replay nem pricing refresh. Portanto, a Phase 18 altera superfícies de interpretação e apresentação de evidência ao redor da arquitetura retida, e não a autoridade standing de runtime.
+
+A próxima fase de implementação está intencionalmente **não autorizada**. Ela deve ser escolhida a partir de gaps observados de produto/evidência após o protected merge do closeout da Phase 18.
+
+A integração deferred com Governed LLM Gateway permanece fora desta cadeia de autoridade salvo reavaliação e retomada explícitas.
 
 ## 15. Principais architecture records
 
@@ -519,6 +536,11 @@ ADRs retidos importantes incluem:
 0068 content-minimized Lambda telemetry
 0069 bounded scheduled-ingestion pause
 0070 Phase 17 security-hardening closeout
+0071 cross-phase evidence classification and comparability
+0072 consolidated evaluation and reliability view
+0073 cost accounting and budget envelopes
+0074 portfolio evidence and AIP-C01 mapping
+0075 Phase 18 evaluation/cost/portfolio closeout
 ```
 
 Medições históricas exatas, experimentos, hipóteses rejeitadas, provas de teardown e identidades de runs de CI permanecem em `labs/`, `labs/evidence/`, ADRs, PRs protegidos e histórico Git, em vez de serem reinterpretados como nova autoridade arquitetural neste documento.

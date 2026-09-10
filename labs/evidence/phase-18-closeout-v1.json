@@ -1,0 +1,109 @@
+{
+  "artifact_version": "phase-18-closeout:v1",
+  "evidence_date": "2026-09-10",
+  "phase": "Phase 18 — Evaluation, Cost & Portfolio Readiness",
+  "gate": "18.5 — Phase closeout",
+  "issue": 289,
+  "source_main_sha": "4a8e5d3d98504451cef26df4e9f274f2f9fd8dd0",
+  "status": "PHASE_18_COMPLETE_PENDING_GATE_18_5_PROTECTED_MERGE",
+  "decision": "CLOSE_PHASE_18_AT_EVIDENCE_BACKED_EVALUATION_COST_PORTFOLIO_BOUNDARY",
+  "gate_progression": {
+    "18.1": "COMPLETE_CROSS_PHASE_EVIDENCE_INVENTORY_AND_COMPARABILITY",
+    "18.2": "COMPLETE_CONSOLIDATED_EVALUATION_AND_RELIABILITY_VIEW",
+    "18.3": "COMPLETE_COST_ACCOUNTING_AND_CONFIGURED_BUDGET_ENVELOPES",
+    "18.4": "COMPLETE_EVIDENCE_BOUND_PORTFOLIO_AND_AIP_C01_MAPPING",
+    "18.5": "CLOSEOUT_PENDING_EXACT_HEAD_CI_AND_PROTECTED_MERGE"
+  },
+  "gate_18_4_final_validation": {
+    "pull_request": 288,
+    "implementation_head_sha": "c1eef255e6a98fb9a556fea191db8a41d13c2437",
+    "protected_squash_merge_sha": "4a8e5d3d98504451cef26df4e9f274f2f9fd8dd0",
+    "security_hardening_ci": {
+      "run_id": 34508507768,
+      "conclusion": "SUCCESS"
+    },
+    "dependency_review": {
+      "run_id": 34508507778,
+      "conclusion": "SUCCESS"
+    },
+    "evaluation_readiness_ci": {
+      "run_id": 34508507792,
+      "conclusion": "SUCCESS"
+    },
+    "agentcore_ci": {
+      "run_id": 34508507802,
+      "conclusion": "SUCCESS"
+    },
+    "codeql": {
+      "run_id": 34508507840,
+      "conclusion": "SUCCESS"
+    }
+  },
+  "retained_phase_18_contract": {
+    "evidence_inventory_metrics": 27,
+    "evidence_source_artifacts": 8,
+    "comparability_groups": 20,
+    "explicit_non_comparability_assertions": 11,
+    "evaluation_dimensions": 5,
+    "retained_decision_signals": 4,
+    "cost_accounting_entries": 16,
+    "configured_limit_claims": 7,
+    "portfolio_headline_claims": 11,
+    "aip_c01_tasks": 20,
+    "aip_c01_evidenced_tasks": 14,
+    "aip_c01_partial_tasks": 6,
+    "aip_c01_study_only_tasks": 0
+  },
+  "canonical_artifacts": [
+    "labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json",
+    "labs/evidence/phase-18-gate-18-2-consolidated-view-v1.json",
+    "labs/evidence/phase-18-gate-18-2-decision-signals-v1.json",
+    "labs/evidence/phase-18-gate-18-3-cost-accounting-v1.json",
+    "labs/evidence/phase-18-gate-18-4-portfolio-evidence-pack-v1.json",
+    "labs/evidence/phase-18-gate-18-4-aip-c01-evidence-map-v1.json"
+  ],
+  "retained_boundaries": [
+    "MEASURED != DERIVED",
+    "UNMEASURED != zero",
+    "NOT_APPLICABLE != zero",
+    "configured limit != measured utilization",
+    "portfolio claim != new evidence authority",
+    "AIP-C01 topic != product requirement",
+    "AIP-C01 coverage != certification guarantee",
+    "lab metric != production SLO",
+    "cost evidence != production TCO",
+    "historical experiment != standing authority",
+    "Repository Risk != Runtime Exposure."
+  ],
+  "explicit_non_claims": [
+    "public_http_production_runtime",
+    "production_slo_from_lab_measurements",
+    "production_tco_or_monthly_run_rate",
+    "public_mcp_or_a2a_runtime",
+    "agentcore_as_default_runtime",
+    "zero_runtime_exposure_from_zero_inspector_records",
+    "global_platform_kill_switch",
+    "configured_limits_as_measured_utilization",
+    "certification_readiness_score_or_pass_probability"
+  ],
+  "gate_18_5_authority_impact": {
+    "aws_mutations": 0,
+    "iam_mutations": 0,
+    "new_aws_services": 0,
+    "runtime_mutations": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "benchmark_replays": 0,
+    "pricing_refresh": false,
+    "production_tco_created": false,
+    "business_authority_changed": false,
+    "pr_89_touched": false
+  },
+  "next_direction": {
+    "status": "NOT_AUTHORIZED_PENDING_EVIDENCE_BACKED_SELECTION",
+    "phase_number_reserved": false,
+    "governed_gateway_pr_89": "DEFERRED_SEPARATE_WORK"
+  },
+  "canonical_closeout_adr": "docs/adr/0075-phase18-evaluation-cost-portfolio-closeout.md",
+  "canonical_closeout_lab": "labs/phase-18-closeout.md"
+}

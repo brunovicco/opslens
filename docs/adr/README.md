@@ -82,3 +82,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0072](0072-consolidated-evaluation-and-reliability-view.md) | Project retained evidence into an independent-dimension evaluation and reliability view without creating new comparison authority | Accepted |
 | [0073](0073-cost-accounting-and-budget-envelopes.md) | Separate retained cost evidence from configured budget envelopes and forbid unsupported production TCO aggregation | Accepted |
 | [0074](0074-portfolio-evidence-and-aip-c01-mapping.md) | Keep portfolio claims and AIP-C01 coverage evidence-bound without creating synthetic readiness or product authority | Accepted |
+| [0075](0075-phase18-evaluation-cost-portfolio-closeout.md) | Close Phase 18 at the evidence-backed evaluation, cost, and portfolio boundary without pre-authorizing the next implementation phase | Accepted |

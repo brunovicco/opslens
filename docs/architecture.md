@@ -2,9 +2,9 @@
 
 _Last updated: 2026-09-10_
 
-This document is the accumulated architecture baseline through **Phase 17 — Security Hardening: COMPLETE by the Phase 17 closeout PR**.
+This document is the accumulated architecture baseline through **Phase 18 — Evaluation, Cost & Portfolio Readiness: COMPLETE pending the Gate 18.5 protected closeout merge**.
 
-The next phase is **Phase 18 — Evaluation, Cost & Portfolio Readiness**.
+The next implementation phase is intentionally **not authorized** by Phase 18. It must be selected from observed product/evidence gaps after closeout.
 
 ## 1. Purpose
 
@@ -473,26 +473,43 @@ retained protocol contract != public peer endpoint
 
 AgentCore and Inspector experiments are preserved as evidence while their experiment-specific standing authority remains removed. MCP and A2A are retained as bounded interoperability/reference contracts without public network runtimes.
 
-## 14. Phase 18 entry boundary
+## 14. Phase 18 — evaluation, cost, and portfolio closeout
 
-Phase 17 is complete after Gates 17.1–17.7 and the Phase 17 closeout record.
+Phase 18 is complete through Gates 18.1–18.4 and is being closed by Gate 18.5.
 
-Phase 18 — Evaluation, Cost & Portfolio Readiness is next. Its first step must consolidate existing evidence and determine comparability before creating new experiments.
-
-Required distinctions include:
+The retained evidence chain is:
 
 ```text
-measured value != derived estimate
-unmeasured != zero
-one experiment != production distribution
-quality metric != security metric
-latency metric != cost metric
-portfolio summary != new technical authority
+18.1 cross-phase evidence inventory + comparability
+ -> 18.2 independent evaluation/reliability projection
+ -> 18.3 cost/resource accounting + configured limits
+ -> 18.4 evidence-bound portfolio + AIP-C01 map
+ -> 18.5 closeout without new runtime or benchmark authority
 ```
 
-Phase 18 must not add public runtime or broaden IAM merely to improve portfolio presentation.
+Phase 18 preserves four evidence classifications (`MEASURED`, `DERIVED`, `UNMEASURED`, `NOT_APPLICABLE`) and explicit comparability rules. It does not collapse independent metrics into a synthetic readiness score.
 
-Deferred Governed LLM Gateway integration remains outside this phase unless separately re-authorized.
+Gate 18.2 preserves four negative/rejected-default decision signals. Gate 18.3 separates observed/derived cost evidence from configured limits and forbids unsupported production TCO aggregation. Gate 18.4 exposes portfolio claims only when mechanically bound to admitted source evidence and maps all 20 AIP-C01 task IDs without turning certification breadth into product requirements.
+
+Permanent Phase 18 boundaries include:
+
+```text
+MEASURED != DERIVED
+UNMEASURED != zero
+NOT_APPLICABLE != zero
+configured limit != measured utilization
+portfolio claim != new evidence authority
+AIP-C01 topic != product requirement
+AIP-C01 coverage != certification guarantee
+lab metric != production SLO
+cost evidence != production TCO
+```
+
+Gate 18.5 introduces no AWS/IAM/model/capability mutation, no benchmark replay, and no pricing refresh. Phase 18 therefore changes evidence interpretation and presentation surfaces around the retained architecture rather than standing runtime authority.
+
+The next implementation phase is intentionally **not authorized**. It must be selected from observed product/evidence gaps after the Phase 18 closeout protected merge.
+
+Deferred Governed LLM Gateway integration remains outside this authority chain unless separately re-evaluated and explicitly resumed.
 
 ## 15. Key architecture records
 
@@ -519,6 +536,11 @@ Important retained ADRs include:
 0068 content-minimized Lambda telemetry
 0069 bounded scheduled-ingestion pause
 0070 Phase 17 security-hardening closeout
+0071 cross-phase evidence classification and comparability
+0072 consolidated evaluation and reliability view
+0073 cost accounting and budget envelopes
+0074 portfolio evidence and AIP-C01 mapping
+0075 Phase 18 evaluation/cost/portfolio closeout
 ```
 
 Exact historical measurements, experiments, rejected hypotheses, teardown proof, and CI run identities remain in `labs/`, `labs/evidence/`, ADRs, protected PRs, and Git history rather than being reinterpreted as new architecture authority here.
