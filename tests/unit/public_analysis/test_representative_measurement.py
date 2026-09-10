@@ -11,11 +11,15 @@ from opslens.public_analysis.application import (
     measure_representative_workload,
 )
 from opslens.public_analysis.domain import (
+    PROVIDER_RESOURCE_METRICS,
     REPRESENTATIVE_PUBLIC_ANALYSIS_WORKLOAD_ID,
     REPRESENTATIVE_WORKLOAD_STAGE_ORDER,
+    MeasurementClassification,
+    ProviderResourceMetric,
     ProviderResourceUsage,
     PublicAnalysisValidationError,
     RepresentativeWorkloadStage,
+    provider_measurement_coverage,
 )
 
 
@@ -84,13 +88,19 @@ def _actions() -> tuple[FakeAction, ...]:
     )
 
 
+def _all_measured_coverage():  # type: ignore[no-untyped-def]
+    """Classify every synthetic provider counter as concretely measured."""
+    return provider_measurement_coverage(measured=PROVIDER_RESOURCE_METRICS)
+
+
 def test_measures_complete_representative_workload() -> None:
-    """Aggregate only concrete stage observations into one whole-run measurement."""
+    """Aggregate concrete counters without losing their measurement authority."""
     measurement = measure_representative_workload(
         run_id="gate19-2-run-001",
         plan=RepresentativeWorkloadPlan(actions=_actions()),
         serializer=FakeSerializer(),
         clock=FakeClock(),
+        provider_coverage=_all_measured_coverage(),
     )
 
     assert measurement.workload_id == REPRESENTATIVE_PUBLIC_ANALYSIS_WORKLOAD_ID
@@ -111,6 +121,9 @@ def test_measures_complete_representative_workload() -> None:
         retry_count=1,
         throttle_count=1,
     )
+    assert measurement.provider_coverage.classification_for(
+        ProviderResourceMetric.THROTTLE_COUNT
+    ) is MeasurementClassification.MEASURED
 
 
 def test_rejects_incomplete_or_reordered_stage_plan() -> None:
@@ -128,6 +141,42 @@ def test_rejects_negative_provider_measurement() -> None:
         ProviderResourceUsage(retry_count=-1)
 
 
+def test_rejects_nonzero_counter_without_measured_classification() -> None:
+    """An omitted instrument remains UNMEASURED instead of silently becoming zero authority."""
+    coverage = provider_measurement_coverage(
+        measured=tuple(
+            metric
+            for metric in PROVIDER_RESOURCE_METRICS
+            if metric is not ProviderResourceMetric.THROTTLE_COUNT
+        )
+    )
+    with pytest.raises(PublicAnalysisValidationError, match="unless it is MEASURED"):
+        measure_representative_workload(
+            run_id="gate19-2-run-unclassified-throttle",
+            plan=RepresentativeWorkloadPlan(actions=_actions()),
+            serializer=FakeSerializer(),
+            clock=FakeClock(),
+            provider_coverage=coverage,
+        )
+
+
+def test_preserves_explicit_unmeasured_and_not_applicable_zero_semantics() -> None:
+    """Numeric zero stays subordinate to explicit UNMEASURED/NOT_APPLICABLE authority."""
+    coverage = provider_measurement_coverage(
+        measured=(ProviderResourceMetric.GITHUB_HTTP_REQUEST_COUNT,),
+        not_applicable=(ProviderResourceMetric.ATHENA_QUERY_COUNT,),
+    )
+    assert coverage.classification_for(
+        ProviderResourceMetric.GITHUB_HTTP_REQUEST_COUNT
+    ) is MeasurementClassification.MEASURED
+    assert coverage.classification_for(
+        ProviderResourceMetric.ATHENA_QUERY_COUNT
+    ) is MeasurementClassification.NOT_APPLICABLE
+    assert coverage.classification_for(
+        ProviderResourceMetric.THROTTLE_COUNT
+    ) is MeasurementClassification.UNMEASURED
+
+
 def test_rejects_empty_serialized_result() -> None:
     """Require a concrete admitted result before response-size measurement is valid."""
     with pytest.raises(ValueError, match="non-empty bytes"):
@@ -136,6 +185,7 @@ def test_rejects_empty_serialized_result() -> None:
             plan=RepresentativeWorkloadPlan(actions=_actions()),
             serializer=FakeSerializer(payload=b""),
             clock=FakeClock(),
+            provider_coverage=_all_measured_coverage(),
         )
 
 
@@ -149,4 +199,5 @@ def test_rejects_clock_regression() -> None:
             plan=RepresentativeWorkloadPlan(actions=_actions()),
             serializer=FakeSerializer(),
             clock=clock,
+            provider_coverage=_all_measured_coverage(),
         )
