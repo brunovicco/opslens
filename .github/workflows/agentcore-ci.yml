@@ -38,6 +38,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
@@ -79,7 +81,7 @@ jobs:
                   raise SystemExit(f"{path} is missing artifact_version.")
           PY
 
-      - name: Validate main-only AgentCore experiment workflow guardrails
+      - name: Validate retired AgentCore experiment workflow guardrails
         run: |
           uv run python - <<'PY'
           from pathlib import Path
@@ -88,33 +90,30 @@ jobs:
           text = path.read_text(encoding="utf-8")
           required_fragments = (
               "workflow_dispatch:",
-              "confirm_public_experiment:",
-              "github.ref == 'refs/heads/main' && inputs.confirm_public_experiment",
-              "role/OpsLensGitHubDeployRole",
-              "role/OpsLensAgentCoreReplayRole",
-              "invoke_agent_runtime(",
-              "if: always()",
-              "agentcore_runtime_experiment_enabled=false",
-              "Verify AgentCore Runtime cleanup",
-              "runtime_cleanup_result",
-              "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
-              "opslens-agentcore-replay.json",
-              "opslens-agentcore-deploy-role-denial.json",
+              "permissions:\n  contents: read",
+              "AGENTCORE_RUNTIME_EXPERIMENT_RETIRED",
+              "exit 1",
+              "new architecture, network, and dedicated-IAM decision",
           )
           missing = [fragment for fragment in required_fragments if fragment not in text]
           if missing:
               raise SystemExit(
-                  "AgentCore experiment workflow lost required guardrails: "
+                  "Retired AgentCore workflow lost required fail-closed markers: "
                   + ", ".join(missing)
               )
           forbidden_fragments = (
-              "pull_request:",
-              "agentcore_runtime_experiment_enabled=true\n      - name: Configure",
+              "id-token: write",
+              "configure-aws-credentials",
+              "role-to-assume:",
+              "OpsLensGitHubDeployRole",
+              "terraform apply",
+              "invoke_agent_runtime(",
+              "actions/upload-artifact@",
           )
           present = [fragment for fragment in forbidden_fragments if fragment in text]
           if present:
               raise SystemExit(
-                  "AgentCore experiment workflow contains forbidden trigger/ordering: "
+                  "Retired AgentCore workflow regained execution/mutation authority: "
                   + ", ".join(present)
               )
           PY
