@@ -1,0 +1,66 @@
+{
+  "artifact_version": "phase-17-gate-17-3-dependency-code-scanning:v1",
+  "source_main_sha": "c39984fe2f9832710350ae5939e34898661bb337",
+  "implementation_head_sha": "51fb761ec045c318573f3c2d3c53bf720059d268",
+  "issue": 256,
+  "decision": "RETAIN_BOUNDED_DEPENDENCY_REVIEW_AND_CODEQL_SIGNALS",
+  "dependency_review": {
+    "state": "IMPLEMENTED_PENDING_EXACT_HEAD_VALIDATION",
+    "workflow": ".github/workflows/dependency-review.yml",
+    "action": "actions/dependency-review-action",
+    "release": "v5.0.0",
+    "exact_sha": "a1d282b36b6f3519aa1f3fc636f609c47dddb294",
+    "trigger": "pull_request",
+    "fail_on_severity": "high",
+    "permissions": [
+      "contents: read"
+    ],
+    "oidc_authority": false,
+    "aws_authority": false
+  },
+  "codeql": {
+    "state": "IMPLEMENTED_PENDING_EXACT_HEAD_VALIDATION",
+    "workflow": ".github/workflows/codeql.yml",
+    "action": "github/codeql-action",
+    "release_line": "v4.38.0",
+    "exact_sha": "b96794f015dfd88f77b49b1c93e0fa7110f94c63",
+    "language": "python",
+    "triggers": [
+      "pull_request targeting main",
+      "push to main",
+      "weekly schedule",
+      "workflow_dispatch"
+    ],
+    "permissions": [
+      "contents: read",
+      "security-events: write"
+    ],
+    "oidc_authority": false,
+    "aws_authority": false
+  },
+  "workflow_policy": {
+    "external_actions_require_full_commit_sha": true,
+    "checkout_persist_credentials_false_required": true,
+    "scanner_contracts_verified_by_repository_security_invariants": true,
+    "required_protected_main_context": "Repository security invariants"
+  },
+  "authority_invariants": [
+    "dependency finding != vulnerability applicability authority",
+    "code-scanning alert != runtime exploitability truth",
+    "security scan success != absence of vulnerabilities",
+    "scanner output != model authority",
+    "GitHub security permission != AWS authority"
+  ],
+  "deferred": [
+    "Dependabot version-update automation",
+    "additional continuous pip-audit workflow",
+    "broad dependency upgrade"
+  ],
+  "aws_mutation_count": 0,
+  "new_iam_permission_count": 0,
+  "new_aws_service_count": 0,
+  "model_invocations": 0,
+  "capability_executions": 0,
+  "pr_89_touched": false,
+  "validation_state": "EXACT_PR_HEAD_CI_REQUIRED"
+}
