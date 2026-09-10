@@ -13,7 +13,6 @@ from opslens.evaluation_readiness import (
     validate_cost_accounting,
 )
 
-
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _CANONICAL_ARTIFACT = (
     _REPO_ROOT / "labs/evidence/phase-18-gate-18-3-cost-accounting-v1.json"
@@ -203,6 +202,16 @@ def test_rejects_configured_source_binding_drift(tmp_path: Path) -> None:
     artifact_path, artifact = _prepare(tmp_path)
     entry = _entry(artifact, "limit.scheduler.maximum_event_age")
     entry["control_evidence_value_path"] = "delivery_budget.maximum_retry_attempts"
+    _write_json(artifact_path, artifact)
+    with pytest.raises(CostAccountingValidationError, match="source binding drifted"):
+        validate_cost_accounting(artifact_path=artifact_path, repo_root=tmp_path)
+
+
+def test_rejects_configured_literal_binding_swap(tmp_path: Path) -> None:
+    """An existing literal from the same file cannot replace the frozen source literal."""
+    artifact_path, artifact = _prepare(tmp_path)
+    entry = _entry(artifact, "limit.scheduler.maximum_event_age")
+    entry["source_literal"] = "scheduled_ingestion_maximum_retry_attempts       = 2"
     _write_json(artifact_path, artifact)
     with pytest.raises(CostAccountingValidationError, match="source binding drifted"):
         validate_cost_accounting(artifact_path=artifact_path, repo_root=tmp_path)
