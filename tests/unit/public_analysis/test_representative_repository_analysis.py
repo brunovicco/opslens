@@ -13,13 +13,16 @@ from opslens.correlation.adapters.ghsa import (
     GhsaPyPIVulnerabilityEvidence,
     GhsaSourceIdentifierEvidence,
 )
+from opslens.hybrid_retrieval.domain import EvidenceNeed, StructuredEvidenceAuthority
 from opslens.ingestion.epss.domain.models import EpssSnapshot
 from opslens.ingestion.epss.domain.parser import EpssSnapshotParser
 from opslens.ingestion.kev.domain.models import KevCatalogSnapshot
 from opslens.public_analysis.application import (
+    MAX_REPRESENTATIVE_STRUCTURED_FINDINGS,
     RepresentativeRepositoryThreatEvidence,
     build_public_repository_evidence,
     build_representative_repository_analysis,
+    build_representative_structured_evidence,
 )
 from opslens.public_analysis.domain import (
     PublicRepositoryTarget,
@@ -183,7 +186,7 @@ def _epss_snapshot() -> EpssSnapshot:
 
 
 def test_composes_retained_repository_truth_without_reinterpreting_risk() -> None:
-    """Build the Phase 4 chain from admitted public evidence, then reuse Risk Policy v1."""
+    """Build Phase 4/5 truth and project it directly into bounded structured evidence."""
     request = create_public_analysis_request(
         PublicRepositoryTarget(owner="brunovicco", name="opslens", requested_ref="main")
     )
@@ -207,3 +210,31 @@ def test_composes_retained_repository_truth_without_reinterpreting_risk() -> Non
     prioritization = prioritize_repository_analysis(composed.analysis)
     assert len(prioritization.ranked_findings) == 1
     assert prioritization.ranked_findings[0].evaluation.priority_tier is RiskPriorityTier.P0
+
+    structured = build_representative_structured_evidence(
+        analysis=composed.analysis,
+        prioritization=prioritization,
+    )
+    assert MAX_REPRESENTATIVE_STRUCTURED_FINDINGS == 8
+    assert tuple(row.evidence_need for row in structured) == (
+        EvidenceNeed.VULNERABILITY_FACTS,
+        EvidenceNeed.RISK_PRIORITY,
+    )
+    assert tuple(row.authority for row in structured) == (
+        StructuredEvidenceAuthority.REPOSITORY_ANALYSIS,
+        StructuredEvidenceAuthority.RISK_POLICY,
+    )
+    vulnerability_fields = {field.name: field.value for field in structured[0].fields}
+    risk_fields = {field.name: field.value for field in structured[1].fields}
+    assert vulnerability_fields == {
+        "cve_id": _CVE_ID,
+        "dependency_purl": "pkg:pypi/requests@2.31.0",
+        "ghsa_id": "GHSA-test-1234",
+        "installed_version": "2.31.0",
+    }
+    assert risk_fields == {
+        "priority_score": 90,
+        "priority_tier": "P0",
+        "rank": 1,
+        "review_required": False,
+    }
