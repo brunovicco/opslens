@@ -20,6 +20,11 @@ from opslens.public_analysis.application.representative_measurement import (
     RepresentativeWorkloadPlan,
     measure_representative_workload,
 )
+from opslens.public_analysis.application.representative_repository_analysis import (
+    RepresentativeRepositoryAnalysis,
+    RepresentativeRepositoryThreatEvidence,
+    build_representative_repository_analysis,
+)
 from opslens.public_analysis.application.request_admission import (
     MAX_PUBLIC_ANALYSIS_REQUEST_BYTES,
     MAX_PUBLIC_REPOSITORY_URL_CHARS,
@@ -56,6 +61,8 @@ __all__ = [
     "PublicRepositoryEvidenceSource",
     "PublicSemanticPlanAdmissionError",
     "PublicSemanticPlanner",
+    "RepresentativeRepositoryAnalysis",
+    "RepresentativeRepositoryThreatEvidence",
     "RepresentativeStageAction",
     "RepresentativeWorkloadPlan",
     "admit_public_analysis_request",
@@ -63,6 +70,7 @@ __all__ = [
     "build_public_analysis_admission_handoff",
     "build_public_repository_evidence",
     "build_public_semantic_planning_request",
+    "build_representative_repository_analysis",
     "execute_instrumented_public_analysis",
     "measure_representative_workload",
     "parse_public_semantic_plan_proposal",
