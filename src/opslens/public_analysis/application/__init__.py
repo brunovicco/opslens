@@ -13,6 +13,9 @@ from opslens.public_analysis.application.operational_orchestration import (
     PublicAnalysisOperationalFailure,
     execute_instrumented_public_analysis,
 )
+from opslens.public_analysis.application.representative_hybrid_evidence import (
+    build_representative_hybrid_evidence,
+)
 from opslens.public_analysis.application.representative_measurement import (
     AdmittedResultSerializer,
     MeasurementClock,
@@ -24,6 +27,13 @@ from opslens.public_analysis.application.representative_repository_analysis impo
     RepresentativeRepositoryAnalysis,
     RepresentativeRepositoryThreatEvidence,
     build_representative_repository_analysis,
+)
+from opslens.public_analysis.application.representative_semantic_evidence import (
+    REPRESENTATIVE_REMEDIATION_TOP_K,
+    RepresentativeSemanticEvidence,
+    RepresentativeSemanticRetriever,
+    build_representative_remediation_request,
+    retrieve_representative_semantic_evidence,
 )
 from opslens.public_analysis.application.representative_structured_evidence import (
     MAX_REPRESENTATIVE_STRUCTURED_FINDINGS,
@@ -53,6 +63,7 @@ __all__ = [
     "MAX_PUBLIC_REPOSITORY_URL_CHARS",
     "MAX_PUBLIC_SEMANTIC_PLAN_RESPONSE_BYTES",
     "MAX_REPRESENTATIVE_STRUCTURED_FINDINGS",
+    "REPRESENTATIVE_REMEDIATION_TOP_K",
     "AdmittedResultSerializer",
     "MeasurementClock",
     "MonotonicClock",
@@ -68,6 +79,8 @@ __all__ = [
     "PublicSemanticPlanner",
     "RepresentativeRepositoryAnalysis",
     "RepresentativeRepositoryThreatEvidence",
+    "RepresentativeSemanticEvidence",
+    "RepresentativeSemanticRetriever",
     "RepresentativeStageAction",
     "RepresentativeWorkloadPlan",
     "admit_public_analysis_request",
@@ -75,11 +88,14 @@ __all__ = [
     "build_public_analysis_admission_handoff",
     "build_public_repository_evidence",
     "build_public_semantic_planning_request",
+    "build_representative_hybrid_evidence",
+    "build_representative_remediation_request",
     "build_representative_repository_analysis",
     "build_representative_structured_evidence",
     "execute_instrumented_public_analysis",
     "measure_representative_workload",
     "parse_public_semantic_plan_proposal",
     "plan_public_analysis_handoff",
+    "retrieve_representative_semantic_evidence",
     "route_public_semantic_plan",
 ]
