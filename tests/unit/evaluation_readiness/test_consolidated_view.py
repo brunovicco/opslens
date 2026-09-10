@@ -293,7 +293,7 @@ def test_rejects_unknown_metric(tmp_path: Path) -> None:
     inventory_path, signal_path, view_path, _, _, view = _prepare(tmp_path)
     _metrics(_sections(view)[0])[0]["metric_id"] = "metric.unknown"
     _write_json(view_path, view)
-    with pytest.raises(ConsolidatedViewValidationError, match="unknown Gate 18.1 metric"):
+    with pytest.raises(ConsolidatedViewValidationError, match=r"unknown Gate 18\.1 metric"):
         _validate(tmp_path, inventory_path, signal_path, view_path)
 
 
@@ -372,7 +372,7 @@ def test_rejects_non_comparability_drift(tmp_path: Path) -> None:
     pairs = cast(list[dict[str, object]], view["non_comparable_pairs"])
     pairs[0]["reason"] = "Rewritten presentation reason."
     _write_json(view_path, view)
-    with pytest.raises(ConsolidatedViewValidationError, match="exactly match Gate 18.1"):
+    with pytest.raises(ConsolidatedViewValidationError, match=r"exactly match Gate 18\.1"):
         _validate(tmp_path, inventory_path, signal_path, view_path)
 
 
