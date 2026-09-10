@@ -39,7 +39,7 @@ class FakeAction:
     """Return one fixed measured usage record for a representative stage."""
 
     stage: RepresentativeWorkloadStage
-    usage: ProviderResourceUsage = ProviderResourceUsage()
+    usage: ProviderResourceUsage = field(default_factory=ProviderResourceUsage)
 
     def execute(self) -> ProviderResourceUsage:
         """Return the exact configured observation without external execution."""
