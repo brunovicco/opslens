@@ -29,6 +29,7 @@ def _write_json(tmp_path: Path, name: str, payload: dict[str, object]) -> Path:
 
 
 def test_canonical_portfolio_pack_passes() -> None:
+    """Validate the canonical portfolio and AIP-C01 artifacts end to end."""
     summary = validate_portfolio_pack(
         portfolio_path=_PORTFOLIO,
         aip_map_path=_AIP_MAP,
@@ -45,6 +46,7 @@ def test_canonical_portfolio_pack_passes() -> None:
 
 
 def test_rejects_headline_metric_value_drift(tmp_path: Path) -> None:
+    """Reject a portfolio metric whose value drifts from Gate 18.2 evidence."""
     payload = _json_object(_PORTFOLIO)
     claims = cast(list[dict[str, object]], payload["headline_metric_claims"])
     claims[0]["value"] = 1.0
@@ -58,6 +60,7 @@ def test_rejects_headline_metric_value_drift(tmp_path: Path) -> None:
 
 
 def test_rejects_missing_decision_signal(tmp_path: Path) -> None:
+    """Reject removal of a frozen negative or rejected-default signal."""
     payload = _json_object(_PORTFOLIO)
     signals = cast(list[object], payload["decision_signals"])
     signals.pop()
@@ -71,6 +74,7 @@ def test_rejects_missing_decision_signal(tmp_path: Path) -> None:
 
 
 def test_rejects_hidden_production_readiness_score(tmp_path: Path) -> None:
+    """Reject synthetic portfolio readiness scores outside evidence authority."""
     payload = _json_object(_PORTFOLIO)
     payload["readiness_score"] = 100
 
@@ -83,6 +87,7 @@ def test_rejects_hidden_production_readiness_score(tmp_path: Path) -> None:
 
 
 def test_rejects_not_claimed_boundary_drift(tmp_path: Path) -> None:
+    """Reject removal of a portfolio boundary that must remain explicitly unclaimed."""
     payload = _json_object(_PORTFOLIO)
     not_claimed = cast(list[object], payload["not_claimed"])
     not_claimed.pop()
@@ -96,6 +101,7 @@ def test_rejects_not_claimed_boundary_drift(tmp_path: Path) -> None:
 
 
 def test_rejects_missing_aip_task(tmp_path: Path) -> None:
+    """Reject an AIP-C01 map that omits any frozen task identifier."""
     payload = _json_object(_AIP_MAP)
     tasks = cast(list[object], payload["task_coverage"])
     tasks.pop()
@@ -109,6 +115,7 @@ def test_rejects_missing_aip_task(tmp_path: Path) -> None:
 
 
 def test_rejects_evidenced_task_without_repository_evidence(tmp_path: Path) -> None:
+    """Reject EVIDENCED coverage when no repository evidence path is retained."""
     payload = _json_object(_AIP_MAP)
     tasks = cast(list[dict[str, object]], payload["task_coverage"])
     tasks[0]["evidence_paths"] = []
@@ -122,6 +129,7 @@ def test_rejects_evidenced_task_without_repository_evidence(tmp_path: Path) -> N
 
 
 def test_rejects_study_only_task_with_implementation_evidence(tmp_path: Path) -> None:
+    """Reject STUDY_ONLY coverage that falsely implies implementation evidence."""
     payload = _json_object(_AIP_MAP)
     tasks = cast(list[dict[str, object]], payload["task_coverage"])
     tasks[0]["status"] = "STUDY_ONLY"
@@ -137,6 +145,7 @@ def test_rejects_study_only_task_with_implementation_evidence(tmp_path: Path) ->
 
 
 def test_rejects_aip_domain_weight_drift(tmp_path: Path) -> None:
+    """Reject domain-weight drift from the frozen human-reviewed exam baseline."""
     payload = _json_object(_AIP_MAP)
     guide = cast(dict[str, object], payload["exam_guide"])
     domains = cast(list[dict[str, object]], guide["domains"])
