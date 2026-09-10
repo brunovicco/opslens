@@ -143,9 +143,10 @@ def _load(path: Path) -> dict[str, object]:
 def _items(value: object, *, label: str) -> list[dict[str, object]]:
     if not isinstance(value, list):
         raise PortfolioPackValidationError(f"{label} must be a JSON array")
-    if not all(isinstance(item, dict) for item in value):
+    raw_items = cast(list[object], value)
+    if not all(isinstance(item, dict) for item in raw_items):
         raise PortfolioPackValidationError(f"{label} must contain JSON objects")
-    return cast(list[dict[str, object]], value)
+    return cast(list[dict[str, object]], raw_items)
 
 
 def _text(value: object, *, label: str) -> str:
@@ -304,7 +305,8 @@ def _validate_aip(path: Path, repo_root: Path) -> tuple[int, int, int, int]:
         raw_paths = task.get("evidence_paths")
         if not isinstance(raw_paths, list):
             raise PortfolioPackValidationError(f"{task_id}.evidence_paths must be a list")
-        evidence_paths = [_text(value, label="evidence_path") for value in raw_paths]
+        raw_path_values = cast(list[object], raw_paths)
+        evidence_paths = [_text(value, label="evidence_path") for value in raw_path_values]
         if status is AIPCoverageStatus.STUDY_ONLY:
             if evidence_paths:
                 raise PortfolioPackValidationError(
