@@ -52,7 +52,11 @@ historical experiment != standing authority
 
 ## Phase 19 — Bounded Public Runtime & Productization
 
-Gate 19.1 is the current implementation boundary:
+### Gate 19.1 — complete
+
+Gate 19.1 was protected-squash-merged through PR #292 at `ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1` after exact-head validation at `484e2b85fc1996b2419b4057c2cf585ab1f675a1`.
+
+Its retained launch contract is:
 
 ```text
 public-analysis-workload:v1
@@ -67,9 +71,29 @@ model/capability executions: 0
 
 The Gate 19.1 human-readable lab is [`../labs/phase-19-gate-19-1-public-runtime-hypothesis.md`](../labs/phase-19-gate-19-1-public-runtime-hypothesis.md). Its machine-readable contract is [`../labs/evidence/phase-19-gate-19-1-public-runtime-contract-v1.json`](../labs/evidence/phase-19-gate-19-1-public-runtime-contract-v1.json), with architecture decision rationale in [`adr/0076-bounded-public-runtime-hypothesis-and-launch-contract.md`](adr/0076-bounded-public-runtime-hypothesis-and-launch-contract.md).
 
-Gate 19.1 does not deploy API Gateway, Lambda Function URLs, public Lambda compute, SQS, a result store, WAF, ECS/Fargate, AgentCore, or runtime IAM. It first distinguishes the retained application boundary from the downstream capabilities that exist but are not yet composed into one public product execution.
+Gate 19.1 created no API Gateway, Lambda Function URL, public Lambda compute, SQS queue, result store, WAF, ECS/Fargate, AgentCore runtime, or runtime IAM.
 
-Current runtime selection remains deferred until Gate 19.2 measures a representative **non-public** product workload end to end. `ASYNC_SUBMIT_STATUS_RESULT` is a leading hypothesis, not a selected topology.
+### Gate 19.2 — in progress
+
+Gate 19.2 is the current implementation boundary. Issue #295 and draft PR #297 introduce the provider-neutral, non-public representative measurement harness before any live benchmark or public deployment.
+
+The exact measurement surface includes:
+
+```text
+end-to-end duration
+per-stage duration
+GitHub HTTP request count
+Athena query count + bytes scanned
+Bedrock Retrieve count
+Bedrock model call count + input/output tokens
+retry count
+throttle count
+serialized admitted-result bytes
+```
+
+The current code slice performs no live AWS/model invocation and creates no public endpoint, AWS resource, or IAM authority. Live AWS/model execution remains a human execution boundary.
+
+Runtime selection remains deferred until Gate 19.2 composes and measures a representative **non-public** product workload end to end. `ASYNC_SUBMIT_STATUS_RESULT` remains a leading hypothesis, not a selected topology.
 
 ## Evidence location rule
 

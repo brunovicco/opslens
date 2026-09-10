@@ -24,15 +24,17 @@ The platform deliberately separates probabilistic reasoning from deterministic a
 
 **Phases 0–18 are complete.** Phase 18 was protected-squash-merged through PR #290 at `feca774535b7d83f57c26f4e9fe7da71ce268f0f`.
 
-**Phase 19 — Bounded Public Runtime & Productization** is now in progress. Gate 19.1 freezes the first public workload and launch contract before creating public infrastructure.
+**Phase 19 — Bounded Public Runtime & Productization** is in progress. Gate 19.1 is complete and protected-squash-merged through PR #292 at `ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1`. Gate 19.2 is now measuring the representative non-public workload before runtime selection.
 
 ```text
-19.1  Public Runtime Hypothesis & Launch Contract       IN PROGRESS
+19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE
       workload: public-analysis-workload:v1
       runtime decision: DEFERRED_PENDING_MEASUREMENT
       leading hypothesis: ASYNC_SUBMIT_STATUS_RESULT
       AWS/IAM/public endpoint mutations: 0
-19.2  Representative Workload Measurement              PENDING
+19.2  Representative Workload Measurement              IN PROGRESS
+      issue: #295
+      draft PR: #297
 ```
 
 The async shape is only a hypothesis. OpsLens will not select API Gateway + Lambda, Lambda Function URLs, SQS, ECS/Fargate, AgentCore, or another public runtime until the representative product workload is composed and measured.
@@ -100,7 +102,9 @@ untrusted JSON
 
 Phase 19 Gate 19.1 found that the repository already contains the downstream deterministic correlation/risk, Athena, Knowledge Base retrieval, synthesis, agent/capability, and result-admission building blocks, but they are not yet composed into one representative public product execution.
 
-That gap is why the runtime decision is `DEFERRED_PENDING_MEASUREMENT` rather than a technology-first choice.
+Gate 19.2 now adds a provider-neutral non-public measurement harness that requires the exact representative stage order and records only concrete duration/resource observations. It does not move business authority into the measurement layer and does not create public infrastructure.
+
+That gap is why the runtime decision remains `DEFERRED_PENDING_MEASUREMENT` rather than a technology-first choice.
 
 ## Retained measured evidence
 
@@ -131,7 +135,7 @@ Scheduler maximum event age         3600 seconds
 Scheduler maximum retry attempts        2
 ```
 
-These are **configured limits, not measured utilization**. Gate 19.1 continues the same rule: whole-public-request latency, model-call count, Athena-query count, result size, concurrency, and cost remain `UNMEASURED` until the representative workload proves them.
+These are **configured limits, not measured utilization**. Gate 19.2 exists specifically to measure whole-public-request latency, provider-call counts, token/scan utilization, retries/throttles, and result size before runtime selection.
 
 ## Retained experimentation boundaries
 
@@ -143,7 +147,7 @@ Security Hardening retains full-SHA GitHub Actions, protected-main security inva
 
 OpsLens does not currently claim a public HTTP production runtime, public MCP/A2A runtime, AgentCore as the default production runtime, production SLOs from bounded experiments, production TCO/monthly run rate, zero runtime exposure from a zero-record Inspector read, configured limits as utilization, a global platform kill switch, or a certification readiness score/pass probability.
 
-Phase 19 Gate 19.1 also does not claim that async is already selected. `ASYNC_SUBMIT_STATUS_RESULT` is only the leading hypothesis pending representative workload measurement.
+Phase 19 also does not claim that async is already selected. `ASYNC_SUBMIT_STATUS_RESULT` remains only the leading hypothesis pending representative workload measurement.
 
 ## AIP-C01 learning laboratory
 
