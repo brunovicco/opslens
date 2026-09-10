@@ -1,0 +1,58 @@
+{
+  "artifact_version": "phase-17-gate-17-5-closeout:v1",
+  "gate": "17.5",
+  "source_main_sha": "9e967acdd1a5ae611a3a1db47aee164272d11380",
+  "issue": 266,
+  "implementation_pr": 268,
+  "implementation_pr_head_sha": "5ad6e7d9aae224d188f11b1f0bae27fc25ea59df",
+  "implementation_merge_sha": "9e967acdd1a5ae611a3a1db47aee164272d11380",
+  "decision": "COMPLETE_RETAIN_CONTENT_MINIMIZED_LAMBDA_TELEMETRY",
+  "retained_controls": {
+    "powertools_lambda_handler_count": 12,
+    "lambda_log_event_capture": false,
+    "lambda_trace_response_capture": false,
+    "lambda_trace_error_capture": false,
+    "shared_active_exception_traceback_logging": false,
+    "shared_failure_logger_method": "error",
+    "telemetry_safety_verifier": "scripts/verify_telemetry_safety.py",
+    "telemetry_regression_test": "tests/unit/shared/observability/test_powertools_telemetry_safety.py",
+    "security_hardening_ci_integration": true
+  },
+  "final_exact_head_ci": {
+    "security_hardening": {
+      "run_id": 34429102027,
+      "run_number": 30,
+      "job_id": 102720576186,
+      "conclusion": "SUCCESS",
+      "telemetry_verifier_marker": "telemetry_safety_invariants=PASS handlers=12"
+    },
+    "operational_observability": {
+      "run_id": 34429102108,
+      "run_number": 23,
+      "conclusion": "SUCCESS"
+    },
+    "dependency_review": {
+      "run_id": 34429102025,
+      "run_number": 15,
+      "conclusion": "SUCCESS"
+    },
+    "codeql": {
+      "run_id": 34429102142,
+      "run_number": 19,
+      "conclusion": "SUCCESS"
+    }
+  },
+  "authority_impact": {
+    "aws_mutation_count": 0,
+    "new_iam_permission_count": 0,
+    "new_aws_service_count": 0,
+    "new_observability_vendor_count": 0,
+    "new_public_runtime_count": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "new_tool_authority_count": 0,
+    "business_authority_changes": 0,
+    "pr_89_touched": false
+  },
+  "next_candidate_gate": "17.6 — operational recovery / kill-switch / abuse-cost controls"
+}
