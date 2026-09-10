@@ -1,0 +1,82 @@
+{
+  "artifact_version": "phase-17-gate-17-7-architecture-sync:v1",
+  "evidence_date": "2026-09-10",
+  "phase": "Phase 17 — Security Hardening",
+  "gate": "17.7 — Architecture documentation synchronization",
+  "issue": 275,
+  "source_main_sha": "6dd37cc6646f5481abd48bae4202682241e680ff",
+  "source_gate_17_6_closeout_pr": 274,
+  "source_gap": "SEC17-DOC-001",
+  "status": "IMPLEMENTED_PENDING_EXACT_HEAD_CI_AND_PROTECTED_MERGE",
+  "decision": "SYNCHRONIZE_ACCUMULATED_ARCHITECTURE_WITH_RETAINED_PLATFORM_THROUGH_GATE_17_6",
+  "updated_documents": [
+    "docs/architecture.md",
+    "docs/architecture.pt-br.md"
+  ],
+  "before": {
+    "english_baseline": "PHASE_9",
+    "english_next": "PHASE_10",
+    "pt_br_baseline": "PHASE_9",
+    "pt_br_next": "PHASE_10"
+  },
+  "after": {
+    "accumulated_baseline": "PHASE_17_GATE_17_6_COMPLETE",
+    "gate_17_7": "DOCUMENTATION_SYNCHRONIZATION_ONLY",
+    "next": "PHASE_17_SECURITY_HARDENING_CLOSEOUT",
+    "phase_18": "PLANNED_AFTER_PHASE_17_CLOSEOUT"
+  },
+  "preserved_boundaries": [
+    "Agents reason. Code verifies evidence.",
+    "MCP is an interoperability boundary, not new business authority.",
+    "Not every question is a RAG problem.",
+    "Structured facts use structured retrieval.",
+    "No unrestricted text-to-SQL.",
+    "READ, NEVER EXECUTE third-party repository code.",
+    "Repository Risk != Runtime Exposure.",
+    "Intent classification != execution authority.",
+    "scheduler pause != global workload termination",
+    "scheduler state != business/evidence authority",
+    "Terraform apply success != independent AWS state verification"
+  ],
+  "phase_17_retained_controls_represented": {
+    "gate_17_2": "CI_CD_AND_WORKFLOW_AUTHORITY_HARDENING",
+    "gate_17_3": "DEPENDENCY_REVIEW_AND_CODEQL",
+    "gate_17_4": "BOUNDED_ADVERSARIAL_AUTHORITY_REGRESSION",
+    "gate_17_5": "CONTENT_MINIMIZED_LAMBDA_TELEMETRY",
+    "gate_17_6": "BOUNDED_SCHEDULED_INGESTION_PAUSE"
+  },
+  "gate_17_6_recovery_semantics": {
+    "scheduler_resources": [
+      "aws_scheduler_schedule.epss_daily",
+      "aws_scheduler_schedule.kev_daily",
+      "aws_scheduler_schedule.nvd_incremental_hourly"
+    ],
+    "terraform_control": "scheduled_ingestion_enabled",
+    "normal_state": "ENABLED",
+    "pause_state": "DISABLED",
+    "maximum_event_age_in_seconds": 3600,
+    "maximum_retry_attempts": 2,
+    "global_kill_switch_claim": false
+  },
+  "authority_impact": {
+    "aws_mutations": 0,
+    "new_iam_permissions": 0,
+    "new_iam_principals": 0,
+    "new_aws_services": 0,
+    "new_public_runtimes": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "business_authority_changed": false,
+    "pr_89_touched": false
+  },
+  "acceptance_criteria": [
+    "EN architecture no longer claims Phase 9 as current baseline",
+    "PT-BR architecture no longer claims Phase 9 as current baseline",
+    "neither architecture document claims Phase 10 is next",
+    "EN and PT-BR describe the same retained architecture through Gate 17.6",
+    "scheduled-ingestion pause is not overstated as a global kill switch",
+    "historical/decommissioned surfaces remain distinct from standing authority",
+    "protected-main exact-head CI passes before merge"
+  ],
+  "next_after_merge": "PHASE_17_SECURITY_HARDENING_CLOSEOUT"
+}
