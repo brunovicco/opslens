@@ -1,0 +1,67 @@
+name: Evaluation Readiness CI
+
+on:
+  pull_request:
+    paths:
+      - "src/opslens/evaluation_readiness/**/*.py"
+      - "scripts/verify_phase18_evidence_inventory.py"
+      - "tests/unit/evaluation_readiness/**/*.py"
+      - "labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json"
+      - "labs/phase-18-gate-18-1-evidence-inventory.md"
+      - "docs/adr/0071-cross-phase-evidence-classification-and-comparability.md"
+      - "docs/adr/README.md"
+      - ".github/workflows/evaluation-readiness-ci.yml"
+      - "pyproject.toml"
+      - "uv.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cross-phase-evidence-inventory:
+    name: Cross-phase evidence inventory
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository without persisted credentials
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+        with:
+          enable-cache: true
+
+      - name: Verify lockfile is current
+        run: uv lock --check
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen
+
+      - name: Ruff Phase 18 inventory slice
+        run: >-
+          uv run ruff check
+          src/opslens/evaluation_readiness
+          scripts/verify_phase18_evidence_inventory.py
+          tests/unit/evaluation_readiness
+
+      - name: Pyright strict Phase 18 inventory slice
+        run: >-
+          uv run pyright
+          src/opslens/evaluation_readiness
+          tests/unit/evaluation_readiness
+
+      - name: Unit-test Phase 18 inventory invariants
+        run: uv run pytest tests/unit/evaluation_readiness
+
+      - name: Verify canonical cross-phase evidence inventory
+        env:
+          PYTHONPATH: src
+        run: uv run python scripts/verify_phase18_evidence_inventory.py
