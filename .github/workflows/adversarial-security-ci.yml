@@ -1,0 +1,55 @@
+name: Adversarial Security CI
+
+on:
+  pull_request:
+    paths:
+      - "src/opslens/public_analysis/**/*.py"
+      - "src/opslens/knowledge_retrieval/**/*.py"
+      - "src/opslens/agent_baseline/**/*.py"
+      - "src/opslens/multi_agent/**/*.py"
+      - "src/opslens/mcp_boundary/**/*.py"
+      - "src/opslens/a2a_boundary/**/*.py"
+      - "tests/security_hardening/**/*.py"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/adversarial-security-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  adversarial-authority-boundaries:
+    name: Adversarial authority boundaries
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository without persisted credentials
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+        with:
+          enable-cache: true
+
+      - name: Verify lockfile is current
+        run: uv lock --check
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen
+
+      - name: Ruff adversarial test slice
+        run: uv run ruff check tests/security_hardening
+
+      - name: Pyright strict adversarial test slice
+        run: uv run pyright tests/security_hardening
+
+      - name: Run adversarial authority suite
+        run: uv run pytest tests/security_hardening/test_adversarial_boundaries.py
