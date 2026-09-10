@@ -188,9 +188,14 @@ def _objects(value: object, *, label: str) -> list[dict[str, object]]:
 
 
 def _strings(value: object, *, label: str) -> list[str]:
-    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+    if not isinstance(value, list):
         raise SystemExit(f"{label} must be a string array")
-    return cast(list[str], value)
+    result: list[str] = []
+    for item in cast(list[object], value):
+        if not isinstance(item, str):
+            raise SystemExit(f"{label} must be a string array")
+        result.append(item)
+    return result
 
 
 def _load(path: Path) -> dict[str, object]:
