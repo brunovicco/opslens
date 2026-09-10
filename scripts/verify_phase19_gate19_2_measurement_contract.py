@@ -15,6 +15,7 @@ from opslens.public_analysis.domain import (
 
 _ARTIFACT = Path("labs/evidence/phase-19-gate-19-2-measurement-contract-v1.json")
 _GATE19_1 = Path("labs/evidence/phase-19-gate-19-1-public-runtime-contract-v1.json")
+_RUNBOOK = Path("labs/phase-19-gate-19-2-human-live-measurement-runbook.md")
 
 _EXPECTED_MEASUREMENTS = {
     "end_to_end_duration_ms",
@@ -23,9 +24,12 @@ _EXPECTED_MEASUREMENTS = {
     "athena_query_count",
     "athena_bytes_scanned",
     "bedrock_retrieve_count",
+    "bedrock_retrieve_client_elapsed_ms",
     "bedrock_model_call_count",
     "bedrock_input_tokens",
     "bedrock_output_tokens",
+    "bedrock_model_client_elapsed_ms",
+    "bedrock_model_latency_ms",
     "retry_count",
     "throttle_count",
     "serialized_result_bytes",
@@ -41,9 +45,42 @@ _EXPECTED_COMPONENTS = {
     "deterministic_repository_analysis_composition": (
         "src/opslens/public_analysis/application/representative_repository_analysis.py"
     ),
+    "structured_evidence_projection": (
+        "src/opslens/public_analysis/application/representative_structured_evidence.py"
+    ),
+    "semantic_evidence_retrieval": (
+        "src/opslens/public_analysis/application/representative_semantic_evidence.py"
+    ),
+    "hybrid_evidence_composition": (
+        "src/opslens/public_analysis/application/representative_hybrid_evidence.py"
+    ),
+    "bounded_model_reasoning": (
+        "src/opslens/public_analysis/application/representative_model_reasoning.py"
+    ),
+    "deterministic_result_admission": (
+        "src/opslens/public_analysis/domain/representative_result.py"
+    ),
+    "complete_representative_workload_execution": (
+        "src/opslens/public_analysis/application/representative_workload_execution.py"
+    ),
     "github_physical_transport_measurement": (
         "src/opslens/public_analysis/adapters/github_measurement.py"
     ),
+}
+
+_EXPECTED_CLASSIFICATIONS = {
+    "github_http_request_count": "MEASURED",
+    "athena_query_count": "NOT_APPLICABLE",
+    "athena_bytes_scanned": "NOT_APPLICABLE",
+    "bedrock_retrieve_count": "MEASURED",
+    "bedrock_retrieve_client_elapsed_ms": "MEASURED",
+    "bedrock_model_call_count": "MEASURED",
+    "bedrock_input_tokens": "MEASURED",
+    "bedrock_output_tokens": "MEASURED",
+    "bedrock_model_client_elapsed_ms": "MEASURED",
+    "bedrock_model_latency_ms": "MEASURED",
+    "retry_count": "MEASURED",
+    "throttle_count": "UNMEASURED",
 }
 
 _EXPECTED_RULES = {
@@ -55,6 +92,8 @@ _EXPECTED_RULES = {
     "clock_regression_rejected",
     "missing_instrumentation_must_not_be_reported_as_measured_zero",
     "physical_github_requests_measured_at_transport_boundary",
+    "provider_latency_must_come_from_retained_invocation_evidence",
+    "not_applicable_is_not_measured_zero",
 }
 
 _REQUIRED_INVARIANTS = {
@@ -184,7 +223,45 @@ def _verify_components(root: dict[str, object], repo_root: Path) -> None:
             raise SystemExit(f"Gate 19.2 implementation component missing: {path_text}")
 
 
-def _verify_boundaries(root: dict[str, object]) -> None:
+def _verify_input_and_classifications(root: dict[str, object]) -> None:
+    """Freeze reproducible input coordinates and explicit provider evidence semantics."""
+    representative_input = _object(
+        root.get("representative_input"),
+        label="representative_input",
+    )
+    expected_input: dict[str, object] = {
+        "status": "FROZEN_FOR_PRE_LIVE_MEASUREMENT",
+        "repository_full_name": "whotracksme/whotracks.me",
+        "requested_ref": "468f6e211a307f5f20d1d95c478ddd89efdb9b6b",
+        "dependency_evidence_path": "uv.lock",
+        "dependency_name": "requests",
+        "dependency_version": "2.31.0",
+    }
+    for key, value in expected_input.items():
+        if representative_input.get(key) != value:
+            raise SystemExit(f"Gate 19.2 representative input drifted at {key}")
+
+    vulnerability = _object(
+        representative_input.get("vulnerability_anchor"),
+        label="representative_input.vulnerability_anchor",
+    )
+    if vulnerability != {
+        "ghsa_id": "GHSA-9wx4-h78v-vm56",
+        "cve_id": "CVE-2024-35195",
+        "affected_version_range": "< 2.32.0",
+        "first_patched_version": "2.32.0",
+    }:
+        raise SystemExit("Gate 19.2 vulnerability anchor drifted")
+
+    classifications = _object(
+        root.get("provider_measurement_classification"),
+        label="provider_measurement_classification",
+    )
+    if classifications != _EXPECTED_CLASSIFICATIONS:
+        raise SystemExit("Gate 19.2 provider measurement classifications drifted")
+
+
+def _verify_boundaries(root: dict[str, object], repo_root: Path) -> None:
     """Keep live execution and public runtime authority outside the current slice."""
     live = _object(root.get("live_execution_boundary"), label="live_execution_boundary")
     if live != {
@@ -209,6 +286,8 @@ def _verify_boundaries(root: dict[str, object]) -> None:
     )
     if not _REQUIRED_INVARIANTS.issubset(invariants):
         raise SystemExit("Gate 19.2 retained invariants are incomplete")
+    if not (repo_root / _RUNBOOK).is_file():
+        raise SystemExit("Gate 19.2 human live-measurement runbook is missing")
 
 
 def _verify_gate19_1_history(repo_root: Path) -> None:
@@ -240,7 +319,8 @@ def main() -> int:
     _verify_identity(root)
     _verify_stage_and_measurement_contract(root)
     _verify_components(root, repo_root)
-    _verify_boundaries(root)
+    _verify_input_and_classifications(root)
+    _verify_boundaries(root, repo_root)
     _verify_gate19_1_history(repo_root)
     _verify_docs(repo_root)
 
