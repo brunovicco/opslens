@@ -1,0 +1,78 @@
+{
+  "artifact_version": "phase-17-gate-17-3-closeout:v1",
+  "issue": 256,
+  "implementation_pr": 261,
+  "source_main_sha": "c39984fe2f9832710350ae5939e34898661bb337",
+  "final_pr_head_sha": "f9ee70d772d28987c45008b723e3efc07b65680e",
+  "merged_main_sha": "b3f4a11df1a826c850cc16f1a4e0dd44efb3edd3",
+  "decision": "CLOSE_GATE_17_3_WITH_BOUNDED_DEPENDENCY_REVIEW_AND_CODEQL_RETAINED",
+  "final_pr_head_ci": {
+    "security_hardening": {
+      "run_id": 34424002745,
+      "run_number": 19,
+      "job_id": 102705238305,
+      "context": "Repository security invariants",
+      "conclusion": "SUCCESS"
+    },
+    "dependency_review": {
+      "run_id": 34424002767,
+      "run_number": 4,
+      "job_id": 102705238338,
+      "conclusion": "SUCCESS"
+    },
+    "codeql_python": {
+      "run_id": 34424003077,
+      "run_number": 4,
+      "job_id": 102705239118,
+      "conclusion": "SUCCESS"
+    }
+  },
+  "measured_platform_prerequisite": {
+    "dependency_review_initial_run_id": 34423137362,
+    "initial_attempt": 1,
+    "initial_job_id": 102702675325,
+    "initial_conclusion": "FAILURE",
+    "initial_reason": "Repository Dependency graph disabled",
+    "human_platform_change": "Enable repository Dependency graph",
+    "permission_widening": false,
+    "successful_attempt": 2,
+    "successful_job_id": 102704585117,
+    "successful_conclusion": "SUCCESS"
+  },
+  "retained_controls": {
+    "dependency_review": {
+      "action": "actions/dependency-review-action",
+      "release": "v5.0.0",
+      "exact_sha": "a1d282b36b6f3519aa1f3fc636f609c47dddb294",
+      "fail_on_severity": "high",
+      "permissions": ["contents: read"]
+    },
+    "codeql": {
+      "action": "github/codeql-action",
+      "release_line": "v4.38.0",
+      "exact_sha": "b96794f015dfd88f77b49b1c93e0fa7110f94c63",
+      "language": "python",
+      "permissions": ["contents: read", "security-events: write"]
+    }
+  },
+  "authority_invariants": [
+    "dependency finding != vulnerability applicability authority",
+    "code-scanning alert != runtime exploitability truth",
+    "security scan success != absence of vulnerabilities",
+    "scanner output != model authority",
+    "GitHub security permission != AWS authority",
+    "scanner platform prerequisite != scanner permission requirement"
+  ],
+  "deferred": [
+    "Dependabot version-update automation",
+    "additional continuous pip-audit workflow",
+    "broad dependency upgrade"
+  ],
+  "aws_mutation_count": 0,
+  "new_iam_permission_count": 0,
+  "new_aws_service_count": 0,
+  "model_invocations": 0,
+  "capability_executions": 0,
+  "pr_89_touched": false,
+  "gate_status": "COMPLETE_AFTER_CLOSEOUT_DOCS_MERGE"
+}
