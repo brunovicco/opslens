@@ -173,7 +173,7 @@ class RepresentativePublicAnalysisResult:
                     "provider": snapshot.repository.provider.value,
                     "snapshot_id": snapshot.snapshot_id,
                 },
-                "request_id": source_execution.request.request_id,
+                "request_id": self.handoff.source_execution.request.request_id,
                 "workload_id": "public-analysis-workload:v1",
             }
         )
