@@ -90,9 +90,7 @@ REPRESENTATIVE_DEFAULT_PROVIDER_COVERAGE = provider_measurement_coverage(
 class RepresentativeThreatEvidenceLoad:
     """Pre-admitted threat evidence and exact request-time provider usage needed to load it."""
 
-    evidence: RepresentativeRepositoryThreatEvidence = field(
-        default_factory=RepresentativeRepositoryThreatEvidence
-    )
+    evidence: RepresentativeRepositoryThreatEvidence
     usage: ProviderResourceUsage = field(default_factory=ProviderResourceUsage)
 
     def __post_init__(self) -> None:
