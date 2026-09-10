@@ -36,9 +36,11 @@ class RepresentativeSemanticEvidence:
         expected_chunks = project_semantic_retrieval_evidence(self.retrieve_result.evidence)
         if self.semantic_chunks != expected_chunks:
             raise ValueError("semantic chunks must preserve the exact admitted retrieval evidence")
+        invocation = self.retrieve_result.invocation
         expected_usage = ProviderResourceUsage(
             bedrock_retrieve_count=1,
-            retry_count=self.retrieve_result.invocation.retry_attempts,
+            bedrock_retrieve_client_elapsed_ms=invocation.client_elapsed_ms,
+            retry_count=invocation.retry_attempts,
         )
         if self.usage != expected_usage:
             raise ValueError(
@@ -100,9 +102,11 @@ def retrieve_representative_semantic_evidence(
     if type(result) is not BedrockRetrieveResult:
         raise TypeError("representative retriever must return BedrockRetrieveResult")
     semantic_chunks = project_semantic_retrieval_evidence(result.evidence)
+    invocation = result.invocation
     usage = ProviderResourceUsage(
         bedrock_retrieve_count=1,
-        retry_count=result.invocation.retry_attempts,
+        bedrock_retrieve_client_elapsed_ms=invocation.client_elapsed_ms,
+        retry_count=invocation.retry_attempts,
     )
     return RepresentativeSemanticEvidence(
         source_analysis_id=analysis.analysis_id,
