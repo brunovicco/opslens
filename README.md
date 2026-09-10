@@ -22,15 +22,20 @@ The platform deliberately separates probabilistic reasoning from deterministic a
 
 ## Current status
 
-Phases 0–17 are complete. **Phase 18 — Evaluation, Cost & Portfolio Readiness is complete pending the Gate 18.5 protected closeout merge.** Gates 18.1–18.4 are complete; Gate 18.5 freezes the evidence-backed closeout without adding another benchmark or runtime surface.
+**Phases 0–18 are complete.** Phase 18 was protected-squash-merged through PR #290 at `feca774535b7d83f57c26f4e9fe7da71ce268f0f`.
+
+**Phase 19 — Bounded Public Runtime & Productization** is now in progress. Gate 19.1 freezes the first public workload and launch contract before creating public infrastructure.
 
 ```text
-18.1  Cross-phase Evidence Inventory            COMPLETE
-18.2  Consolidated Evaluation & Reliability     COMPLETE
-18.3  Cost Accounting & Budget Envelopes        COMPLETE
-18.4  Portfolio Evidence + AIP-C01 Mapping       COMPLETE
-18.5  Phase 18 evidence-backed closeout          IN PROGRESS
+19.1  Public Runtime Hypothesis & Launch Contract       IN PROGRESS
+      workload: public-analysis-workload:v1
+      runtime decision: DEFERRED_PENDING_MEASUREMENT
+      leading hypothesis: ASYNC_SUBMIT_STATUS_RESULT
+      AWS/IAM/public endpoint mutations: 0
+19.2  Representative Workload Measurement              PENDING
 ```
+
+The async shape is only a hypothesis. OpsLens will not select API Gateway + Lambda, Lambda Function URLs, SQS, ECS/Fargate, AgentCore, or another public runtime until the representative product workload is composed and measured.
 
 See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), [Portfolio Evidence](docs/portfolio-evidence.md), [AIP-C01 Learning Map](docs/aip-c01-learning-map.md), and the [ADR index](docs/adr/README.md).
 
@@ -78,9 +83,28 @@ typed capability authorization -> execution/result admission
 
 No unrestricted text-to-SQL authority is granted to an LLM. Retrieved content is evidence, not instruction authority. Tool/protocol success is not business truth.
 
+## Public product boundary
+
+The retained public-analysis code is currently an **application boundary**, not a deployed HTTP service:
+
+```text
+untrusted JSON
+ -> strict request admission
+ -> validated GitHub coordinates
+ -> immutable repository evidence
+ -> bounded metadata-only semantic planning
+ -> deterministic hybrid route admission
+ -> PublicAnalysisAdmissionHandoff
+ -> STOP
+```
+
+Phase 19 Gate 19.1 found that the repository already contains the downstream deterministic correlation/risk, Athena, Knowledge Base retrieval, synthesis, agent/capability, and result-admission building blocks, but they are not yet composed into one representative public product execution.
+
+That gap is why the runtime decision is `DEFERRED_PENDING_MEASUREMENT` rather than a technology-first choice.
+
 ## Retained measured evidence
 
-The current portfolio projection is deliberately evidence-bound rather than promotional. Examples include:
+The portfolio projection remains evidence-bound rather than promotional. Examples include:
 
 | Experiment | Evidence |
 | --- | --- |
@@ -91,11 +115,11 @@ The current portfolio projection is deliberately evidence-bound rather than prom
 | Phase 16 Inspector read experiment | successful bounded read with zero returned records; **not** interpreted as zero runtime exposure |
 | Phase 17 recovery | exact three-scheduler pause/resume cycle with final Terraform convergence |
 
-The machine-readable evidence chain begins at `labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json`, ends at `labs/evidence/phase-18-closeout-v1.json`, and is deterministically revalidated in CI.
+The Phase 18 machine-readable evidence chain begins at `labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json` and ends at `labs/evidence/phase-18-closeout-v1.json`. The historical closeout record intentionally preserves its pre-merge state; current-facing documentation reflects the completed protected merge.
 
 ## Cost and resource envelopes
 
-Gate 18.3 separates observed/derived cost evidence from configured limits and forbids unsafe aggregation across unrelated experiments.
+OpsLens separates measured/derived cost evidence from configured limits and forbids unsafe aggregation across unrelated experiments.
 
 ```text
 semantic planner max output          256 tokens
@@ -107,7 +131,7 @@ Scheduler maximum event age         3600 seconds
 Scheduler maximum retry attempts        2
 ```
 
-These are **configured limits, not measured utilization**. OpsLens does not manufacture a production TCO or monthly run rate from bounded lab measurements.
+These are **configured limits, not measured utilization**. Gate 19.1 continues the same rule: whole-public-request latency, model-call count, Athena-query count, result size, concurrency, and cost remain `UNMEASURED` until the representative workload proves them.
 
 ## Retained experimentation boundaries
 
@@ -119,11 +143,15 @@ Security Hardening retains full-SHA GitHub Actions, protected-main security inva
 
 OpsLens does not currently claim a public HTTP production runtime, public MCP/A2A runtime, AgentCore as the default production runtime, production SLOs from bounded experiments, production TCO/monthly run rate, zero runtime exposure from a zero-record Inspector read, configured limits as utilization, a global platform kill switch, or a certification readiness score/pass probability.
 
+Phase 19 Gate 19.1 also does not claim that async is already selected. `ASYNC_SUBMIT_STATUS_RESULT` is only the leading hypothesis pending representative workload measurement.
+
 ## AIP-C01 learning laboratory
 
-OpsLens is also used as hands-on preparation for **AWS Certified Generative AI Developer - Professional (AIP-C01)**. The repository map classifies each current exam task as `EVIDENCED`, `PARTIAL`, or `STUDY_ONLY` and keeps exam-service breadth separate from product requirements.
+OpsLens is also used as hands-on preparation for **AWS Certified Generative AI Developer - Professional (AIP-C01)**. Phase 19 adds practical architecture reasoning around enterprise integration, synchronous versus asynchronous APIs, IAM responsibility boundaries, abuse controls, monitoring, performance, cost, and troubleshooting without converting exam breadth into product requirements.
 
-A service is not added merely because it appears in the exam guide. Exam coverage is not a certification guarantee. See [docs/aip-c01-learning-map.md](docs/aip-c01-learning-map.md).
+```text
+AIP-C01 topic != product requirement
+```
 
 ## AWS baseline
 
@@ -137,12 +165,13 @@ chunking:             NONE
 canonical chunks:     9
 synthesis API:        Amazon Bedrock Converse
 reasoning profile:    us.anthropic.claude-haiku-4-5-20251001-v1:0
+public HTTP runtime:  NONE
 ```
 
 ## Documentation
 
-Start with [docs/README.md](docs/README.md). The strongest portfolio entry points are [Architecture](docs/architecture.md), [Portfolio Evidence](docs/portfolio-evidence.md), [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), the [Phase 18 closeout](labs/phase-18-closeout.md), and the [ADR index](docs/adr/README.md).
+Start with [docs/README.md](docs/README.md). The strongest portfolio entry points are [Architecture](docs/architecture.md), [Portfolio Evidence](docs/portfolio-evidence.md), [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), the [Phase 18 closeout](labs/phase-18-closeout.md), the [Gate 19.1 launch contract](labs/phase-19-gate-19-1-public-runtime-hypothesis.md), and the [ADR index](docs/adr/README.md).
 
 ---
 
-The next implementation phase is intentionally not pre-authorized by Phase 18. PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work unless explicitly re-evaluated and resumed.
+PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work and is not a Phase 19 dependency unless explicitly re-evaluated later.
