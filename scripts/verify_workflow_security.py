@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -184,22 +185,37 @@ def _verify_github_oidc_trust() -> None:
         )
 
 
+def _capture(errors: list[str], check: Callable[[], None]) -> None:
+    """Capture one deterministic invariant failure so CI reports all observed drift at once."""
+    try:
+        check()
+    except WorkflowSecurityError as exc:
+        errors.append(str(exc))
+
+
 def verify() -> None:
     """Run all deterministic repository security checks."""
     workflows = _workflow_paths()
     if not workflows:
         raise WorkflowSecurityError("No GitHub Actions workflows were found")
 
+    errors: list[str] = []
     for path in workflows:
         text = path.read_text(encoding="utf-8")
         lines = text.splitlines()
-        _verify_external_action_pins(path, lines)
-        _verify_checkout_credentials(path, lines)
-        _verify_trigger_and_permission_bounds(path, lines)
-        _verify_agentcore_retirement(path, text)
+        _capture(errors, lambda path=path, lines=lines: _verify_external_action_pins(path, lines))
+        _capture(errors, lambda path=path, lines=lines: _verify_checkout_credentials(path, lines))
+        _capture(
+            errors,
+            lambda path=path, lines=lines: _verify_trigger_and_permission_bounds(path, lines),
+        )
+        _capture(errors, lambda path=path, text=text: _verify_agentcore_retirement(path, text))
 
-    _verify_epss_history_authority()
-    _verify_github_oidc_trust()
+    _capture(errors, _verify_epss_history_authority)
+    _capture(errors, _verify_github_oidc_trust)
+
+    if errors:
+        raise WorkflowSecurityError("\n".join(errors))
 
 
 def main() -> None:
