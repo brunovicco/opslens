@@ -1,0 +1,147 @@
+{
+  "artifact_version": "phase-17-closeout:v1",
+  "evidence_date": "2026-09-10",
+  "phase": "Phase 17 — Security Hardening",
+  "gate": "17.8 — Phase closeout",
+  "issue": 277,
+  "source_main_sha": "3938c6469a979f5b574755ce9fd56a56523626dc",
+  "status": "PHASE_17_COMPLETE_PENDING_THIS_CLOSEOUT_PR_PROTECTED_MERGE",
+  "decision": "CLOSE_PHASE_17_AT_EVIDENCE_BACKED_SECURITY_BOUNDARY_AND_ADVANCE_TO_PHASE_18",
+  "gate_progression": {
+    "17.1": "COMPLETE_EVIDENCE_FIRST_THREAT_CONTROL_GAP_INVENTORY",
+    "17.2": "COMPLETE_CICD_WORKFLOW_AUTHORITY_HARDENING_REQUIRED_CONTEXT_ENFORCED",
+    "17.3": "COMPLETE_DEPENDENCY_REVIEW_AND_CODEQL_RETAINED",
+    "17.4": "COMPLETE_8_CASES_7_THREAT_CLASSES",
+    "17.5": "COMPLETE_12_POWERTOOLS_LAMBDA_HANDLERS_CONTENT_MINIMIZED",
+    "17.6": "COMPLETE_BOUNDED_SCHEDULED_INGESTION_PAUSE_LIVE_PROOF",
+    "17.7": "COMPLETE_ARCHITECTURE_SYNCHRONIZATION_SEC17_DOC_001_CLOSED",
+    "17.8": "CLOSEOUT_PENDING_EXACT_HEAD_CI_AND_PROTECTED_MERGE"
+  },
+  "gate_17_7_final_validation": {
+    "pull_request": 276,
+    "implementation_head_sha": "ea0460e549dd1b904d139632bfc2988671e23880",
+    "protected_squash_merge_sha": "3938c6469a979f5b574755ce9fd56a56523626dc",
+    "security_hardening_ci": {
+      "run_id": 34474712369,
+      "run_number": 34,
+      "conclusion": "SUCCESS"
+    },
+    "dependency_review": {
+      "run_id": 34474712371,
+      "run_number": 19,
+      "conclusion": "SUCCESS"
+    },
+    "codeql_python": {
+      "run_id": 34474712380,
+      "run_number": 27,
+      "conclusion": "SUCCESS"
+    }
+  },
+  "closed_gaps": {
+    "SEC17-CICD-001": "GATE_17_2_REQUIRED_STATUS_ENFORCEMENT",
+    "SEC17-CICD-003": "GATE_17_2_CHECKOUT_PERSISTED_CREDENTIAL_HARDENING",
+    "SEC17-IAM-002": "GATE_17_2_EPSS_PLAN_EXECUTION_AUTHORITY_SEPARATION",
+    "SEC17-IAM-003": "GATE_17_2_HISTORICAL_AGENTCORE_MUTATION_RETIREMENT",
+    "SEC17-SUPPLY-001": "GATE_17_3_CONTINUOUS_DEPENDENCY_REVIEW_AND_CODEQL_FOR_RETAINED_SCOPE",
+    "SEC17-DOC-001": "GATE_17_7_ARCHITECTURE_SYNCHRONIZATION",
+    "OPS17-001": "GATE_17_6_BOUNDED_SCHEDULED_INGESTION_PAUSE"
+  },
+  "retained_controls": {
+    "protected_main_required_context": "Repository security invariants",
+    "external_actions_full_sha_pinning": true,
+    "checkout_persist_credentials_disabled": true,
+    "privileged_trigger_rejection_by_default": true,
+    "epss_plan_execution_identity_separation": true,
+    "dependency_review": "RETAIN",
+    "codeql_python": "RETAIN",
+    "adversarial_regression": {
+      "cases": 8,
+      "threat_classes": 7,
+      "aws_oidc_authority": false,
+      "model_invocations": 0,
+      "capability_executions": 0
+    },
+    "telemetry_safety": {
+      "powertools_lambda_handlers": 12,
+      "automatic_event_capture": "DISABLED",
+      "automatic_trace_response_capture": "DISABLED",
+      "automatic_trace_error_capture": "DISABLED",
+      "implicit_exception_traceback_logging": "DISABLED"
+    },
+    "scheduled_ingestion_recovery": {
+      "terraform_control": "scheduled_ingestion_enabled",
+      "scheduler_count": 3,
+      "maximum_event_age_in_seconds": 3600,
+      "maximum_retry_attempts": 2,
+      "measured_pause_resume": "PASS",
+      "final_state": "ENABLED_AND_TERRAFORM_CONVERGED",
+      "global_kill_switch_claim": false
+    },
+    "architecture_documentation": "EN_AND_PT_BR_SYNCHRONIZED"
+  },
+  "explicit_deferrals": {
+    "dependabot_version_updates": "DEFER",
+    "additional_continuous_pip_audit": "DEFER",
+    "broad_dependency_upgrades": "NOT_AUTHORIZED_BY_PHASE_17",
+    "mandatory_independent_human_approval": "DEFER_UNTIL_GOVERNANCE_REQUIREMENT",
+    "public_waf_rate_limits_tenant_quotas": "NOT_APPLICABLE_WITHOUT_PUBLIC_RUNTIME",
+    "public_http_runtime": "NOT_CREATED",
+    "global_kill_switch": "NOT_CREATED",
+    "s3_event_chain_kill_switch": "NOT_CREATED",
+    "lambda_reserved_concurrency_kill_switch": "NOT_CREATED",
+    "automatic_alarm_remediation": "NOT_CREATED",
+    "standing_inspector_experiment_iam": "NONE",
+    "inspector_activation_to_manufacture_evidence": "NOT_CREATED",
+    "automatic_repository_runtime_correlation": "NOT_CREATED",
+    "runtime_risk_composite_scoring": "NOT_CREATED",
+    "public_mcp_runtime": "NOT_CREATED",
+    "public_a2a_runtime": "NOT_CREATED",
+    "agentcore_default_runtime": "NOT_RETAINED"
+  },
+  "gate_17_8_authority_impact": {
+    "aws_mutations": 0,
+    "new_iam_permissions": 0,
+    "new_iam_principals": 0,
+    "new_aws_services": 0,
+    "runtime_mutations": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "incremental_aws_cost_usd": 0.0,
+    "business_authority_changed": false,
+    "pr_89_touched": false
+  },
+  "permanent_boundaries": [
+    "Agents reason. Code verifies evidence.",
+    "Repository Risk != Runtime Exposure.",
+    "CI evidence != enforced merge gate",
+    "dependency finding != vulnerability applicability authority",
+    "code-scanning alert != runtime exploitability truth",
+    "security scan success != absence of vulnerabilities",
+    "untrusted text != instruction authority",
+    "retrieved content != system/developer authority",
+    "failed/forged capability result != admissible business result",
+    "adversarial test success != proof of universal safety",
+    "log event suppression != trace response/error suppression",
+    "exception text != safe telemetry by default",
+    "scheduler pause != global workload termination",
+    "Terraform apply success != independent AWS state verification",
+    "bounded retry != guaranteed delivery",
+    "model token budget != tenant quota",
+    "historical evidence != standing authority"
+  ],
+  "phase_18_entry": {
+    "phase": "Phase 18 — Evaluation, Cost & Portfolio Readiness",
+    "first_principle": "CONSOLIDATE_EXISTING_EVIDENCE_BEFORE_NEW_EXPERIMENTS",
+    "required_distinctions": [
+      "measured value != derived estimate",
+      "unmeasured != zero",
+      "one experiment != production distribution",
+      "quality metric != security metric",
+      "latency metric != cost metric",
+      "portfolio summary != new technical authority"
+    ]
+  },
+  "canonical_closeout_adr": "docs/adr/0070-phase17-security-hardening-closeout.md",
+  "canonical_closeout_lab": "labs/phase-17-closeout.md",
+  "next_phase": "Phase 18 — Evaluation, Cost & Portfolio Readiness"
+}
