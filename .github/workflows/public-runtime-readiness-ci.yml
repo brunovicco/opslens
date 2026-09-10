@@ -1,0 +1,76 @@
+name: Public Runtime Readiness CI
+
+on:
+  pull_request:
+    paths:
+      - "src/opslens/public_analysis/**/*.py"
+      - "src/opslens/repository_intelligence/**/*.py"
+      - "src/opslens/semantic_query/**/*.py"
+      - "src/opslens/knowledge_retrieval/**/*.py"
+      - "src/opslens/hybrid_retrieval/**/*.py"
+      - "tests/unit/public_analysis/**/*.py"
+      - "labs/evidence/phase-19-gate-19-1-*.json"
+      - "labs/phase-19-gate-19-1-*.md"
+      - "docs/adr/0076-*.md"
+      - "scripts/verify_phase19_gate19_1_public_runtime_contract.py"
+      - "scripts/verify_phase18_closeout.py"
+      - "README.md"
+      - "README.pt-br.md"
+      - "docs/README.md"
+      - "docs/current-state.md"
+      - "docs/roadmap.md"
+      - "docs/architecture.md"
+      - "docs/architecture.pt-br.md"
+      - ".github/workflows/public-runtime-readiness-ci.yml"
+      - "pyproject.toml"
+      - "uv.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-runtime-readiness:
+    name: Gate 19.1 public runtime contract
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository without persisted credentials
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+        with:
+          enable-cache: true
+
+      - name: Verify lockfile is current
+        run: uv lock --check
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen
+
+      - name: Ruff Gate 19.1 verifier
+        run: uv run ruff check scripts/verify_phase19_gate19_1_public_runtime_contract.py scripts/verify_phase18_closeout.py
+
+      - name: Pyright strict Gate 19.1 verifier
+        run: uv run pyright scripts/verify_phase19_gate19_1_public_runtime_contract.py scripts/verify_phase18_closeout.py
+
+      - name: Run retained public-analysis unit tests
+        run: uv run pytest tests/unit/public_analysis
+
+      - name: Verify historical Phase 18 closeout and live post-merge state
+        env:
+          PYTHONPATH: src
+        run: uv run python scripts/verify_phase18_closeout.py
+
+      - name: Verify Gate 19.1 public runtime launch contract
+        env:
+          PYTHONPATH: src
+        run: uv run python scripts/verify_phase19_gate19_1_public_runtime_contract.py
