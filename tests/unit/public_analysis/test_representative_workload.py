@@ -6,7 +6,6 @@ import base64
 import json
 from dataclasses import dataclass, field
 from hashlib import sha256
-from typing import cast
 
 import pytest
 
@@ -38,7 +37,10 @@ from opslens.public_analysis.application.representative_workload import (
     RepresentativePublicWorkloadExecutors,
     execute_representative_public_workload,
 )
-from opslens.public_analysis.domain import PUBLIC_ANALYSIS_V1_REQUIRED_EVIDENCE_NEEDS
+from opslens.public_analysis.domain import (
+    PUBLIC_ANALYSIS_V1_REQUIRED_EVIDENCE_NEEDS,
+    PublicAnalysisAdmissionHandoff,
+)
 from opslens.public_analysis.domain.product_result import (
     PUBLIC_ANALYSIS_PRODUCT_RESULT_CONTRACT_VERSION,
     PUBLIC_ANALYSIS_SYNTHESIS_QUESTION,
@@ -107,6 +109,7 @@ class _RepositorySource:
 
 
 def _need_values() -> tuple[str, ...]:
+    """Return the exact public-v1 semantic evidence-need values."""
     return tuple(need.value for need in PUBLIC_ANALYSIS_V1_REQUIRED_EVIDENCE_NEEDS)
 
 
@@ -125,7 +128,8 @@ class _Planner:
         ).encode()
 
 
-def _handoff():  # type: ignore[no-untyped-def]
+def _handoff() -> PublicAnalysisAdmissionHandoff:
+    """Build one real admitted public-analysis handoff over inert fake source evidence."""
     raw = (
         b'{"repository_url":"https://github.com/brunovicco/opslens",'
         b'"requested_ref":null}'
@@ -135,7 +139,10 @@ def _handoff():  # type: ignore[no-untyped-def]
     return plan_public_analysis_handoff(execution, _Planner())
 
 
-def _structured_evidence(handoff) -> tuple[StructuredEvidenceRow, ...]:  # type: ignore[no-untyped-def]
+def _structured_evidence(
+    handoff: PublicAnalysisAdmissionHandoff,
+) -> tuple[StructuredEvidenceRow, ...]:
+    """Build exact structured evidence for the two public structured needs."""
     source = handoff.source_execution
     vulnerability = StructuredEvidenceRow(
         evidence_need=EvidenceNeed.VULNERABILITY_FACTS,
@@ -160,6 +167,7 @@ def _structured_evidence(handoff) -> tuple[StructuredEvidenceRow, ...]:  # type:
 
 
 def _semantic_evidence() -> tuple[SemanticEvidenceChunk, ...]:
+    """Build one admitted remediation-guidance chunk with complete provenance."""
     text = "Upgrade the affected package to the first fixed version after validation."
     return (
         SemanticEvidenceChunk(
@@ -182,15 +190,12 @@ def _semantic_evidence() -> tuple[SemanticEvidenceChunk, ...]:
 
 @dataclass(slots=True)
 class _HandoffExecutor:
-    handoff: object
+    handoff: PublicAnalysisAdmissionHandoff
 
     def execute_public_handoff(self, raw_body: bytes) -> PublicHandoffStageExecution:
         assert raw_body.startswith(b"{")
-        from opslens.public_analysis.domain import PublicAnalysisAdmissionHandoff
-
-        admitted = cast(PublicAnalysisAdmissionHandoff, self.handoff)
         return PublicHandoffStageExecution(
-            handoff=admitted,
+            handoff=self.handoff,
             measurement=PublicAnalysisStageMeasurement(
                 stage=PublicAnalysisWorkloadStage.PUBLIC_HANDOFF,
                 duration_ms=10,
@@ -208,7 +213,7 @@ class _StructuredExecutor:
 
     def acquire_structured_evidence(
         self,
-        handoff,  # type: ignore[no-untyped-def]
+        handoff: PublicAnalysisAdmissionHandoff,
     ) -> PublicStructuredEvidenceStageExecution:
         self.handoff_ids.append(handoff.handoff_id)
         return PublicStructuredEvidenceStageExecution(
@@ -230,7 +235,7 @@ class _SemanticExecutor:
 
     def acquire_semantic_evidence(
         self,
-        handoff,  # type: ignore[no-untyped-def]
+        handoff: PublicAnalysisAdmissionHandoff,
     ) -> PublicSemanticEvidenceStageExecution:
         assert handoff.handoff_id
         return PublicSemanticEvidenceStageExecution(
@@ -251,11 +256,12 @@ class _SynthesisExecutor:
     fail: bool = False
     request_sha256: str | None = None
 
-    def synthesize_public_analysis(self, request: object) -> PublicSynthesisStageExecution:
+    def synthesize_public_analysis(
+        self,
+        request: HybridSynthesisRequest,
+    ) -> PublicSynthesisStageExecution:
         if self.fail:
             raise RuntimeError("provider output must not escape")
-        if not isinstance(request, HybridSynthesisRequest):
-            raise TypeError("expected HybridSynthesisRequest")
         self.request_sha256 = request.request_sha256
         claim = HybridSynthesisClaim.create(
             request=request,
@@ -294,7 +300,11 @@ class _Clock:
         return self.values.pop(0)
 
 
-def _executors(*, synthesis: _SynthesisExecutor | None = None):  # type: ignore[no-untyped-def]
+def _executors(
+    *,
+    synthesis: _SynthesisExecutor | None = None,
+) -> tuple[PublicAnalysisAdmissionHandoff, RepresentativePublicWorkloadExecutors]:
+    """Build one closed fake executor set around a real admitted public handoff."""
     handoff = _handoff()
     return handoff, RepresentativePublicWorkloadExecutors(
         public_handoff=_HandoffExecutor(handoff),
