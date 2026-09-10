@@ -1,0 +1,509 @@
+{
+  "artifact_version": "phase-19-gate-19-1-public-runtime-contract:v1",
+  "workload_id": "public-analysis-workload:v1",
+  "phase": 19,
+  "gate": "19.1",
+  "issue": 291,
+  "source_main_sha": "feca774535b7d83f57c26f4e9fe7da71ce268f0f",
+  "source_phase18_closeout_pr": 290,
+  "source_phase18_closeout_issue": 289,
+  "decision": "DEFERRED_PENDING_MEASUREMENT",
+  "leading_runtime_hypothesis": "ASYNC_SUBMIT_STATUS_RESULT",
+  "decision_reason": "The retained public-analysis application path stops at PublicAnalysisAdmissionHandoff. Vulnerability/risk evidence acquisition, Athena/knowledge retrieval, bounded synthesis, final result admission, end-to-end latency distribution, retry amplification, and response size are not composed into one executable public workload. Selecting a synchronous or asynchronous public topology before representative measurement would turn an architecture hypothesis into unsupported authority.",
+  "authority_impact": {
+    "aws_mutations": 0,
+    "iam_mutations": 0,
+    "new_aws_resources": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "public_endpoints": 0,
+    "pr_89_touched": false
+  },
+  "classification_vocabulary": [
+    "MEASURED",
+    "DERIVED",
+    "UNMEASURED",
+    "NOT_APPLICABLE",
+    "CONFIGURED_LIMIT"
+  ],
+  "repository_evidence": {
+    "phase18_closeout": {
+      "main_sha": "feca774535b7d83f57c26f4e9fe7da71ce268f0f",
+      "pr_290_merged": true,
+      "issue_289_closed_completed": true,
+      "historical_closeout_artifact_remains_pre_merge_evidence": true
+    },
+    "public_pipeline": [
+      {
+        "stage": "public_request_admission",
+        "status": "IMPLEMENTED_OFFLINE",
+        "notes": "Strict JSON admission, exact GitHub URL projection, unknown-field rejection, no network call."
+      },
+      {
+        "stage": "repository_acquisition",
+        "status": "IMPLEMENTED_NETWORK_ADAPTER",
+        "notes": "Fixed api.github.com host, no redirect following, no automatic adapter retry, immutable commit resolution, exact-commit uv.lock acquisition."
+      },
+      {
+        "stage": "dependency_evidence",
+        "status": "IMPLEMENTED",
+        "notes": "Only inert uv.lock is read and parsed; repository code is never executed."
+      },
+      {
+        "stage": "vulnerability_correlation",
+        "status": "IMPLEMENTED_SEPARATELY_NOT_PUBLICLY_COMPOSED",
+        "notes": "Deterministic Phase 3/4 applicability and repository finding code exists but execute_instrumented_public_analysis does not call it."
+      },
+      {
+        "stage": "risk_prioritization",
+        "status": "IMPLEMENTED_SEPARATELY_NOT_PUBLICLY_COMPOSED",
+        "notes": "Deterministic Risk Policy v1 exists outside the retained public handoff executor."
+      },
+      {
+        "stage": "structured_evidence",
+        "status": "IMPLEMENTED_SEPARATELY_NOT_PUBLICLY_COMPOSED",
+        "notes": "Bounded Athena executor exists, including polling, cancellation, result bounds, and data-scan evidence, but is not invoked by the public-analysis executor."
+      },
+      {
+        "stage": "semantic_evidence",
+        "status": "IMPLEMENTED_SEPARATELY_NOT_PUBLICLY_COMPOSED",
+        "notes": "Bounded Bedrock Knowledge Base Retrieve and deterministic evidence admission exist, but are not invoked downstream of PublicAnalysisAdmissionHandoff."
+      },
+      {
+        "stage": "model_reasoning",
+        "status": "IMPLEMENTED_SEPARATELY_NOT_PUBLICLY_COMPOSED",
+        "notes": "Bounded Bedrock synthesis/agent baselines exist. PublicSemanticPlanner is an injected Protocol with no retained production implementation on main."
+      },
+      {
+        "stage": "result_admission",
+        "status": "MISSING_PUBLIC_END_TO_END_RESULT",
+        "notes": "The retained public path returns PublicAnalysisAdmissionHandoff and stops. No public product response is admitted or persisted."
+      },
+      {
+        "stage": "http_transport",
+        "status": "NOT_IMPLEMENTED",
+        "notes": "No public HTTP endpoint or public application compute is retained."
+      }
+    ]
+  },
+  "workload": {
+    "request": {
+      "contract": "public-analysis-request:v1",
+      "content_type": "application/json hypothesis; transport not yet selected",
+      "max_body_bytes": {
+        "classification": "CONFIGURED_LIMIT",
+        "value": 2048,
+        "source": "MAX_PUBLIC_ANALYSIS_REQUEST_BYTES"
+      },
+      "max_repository_url_chars": {
+        "classification": "CONFIGURED_LIMIT",
+        "value": 256,
+        "source": "MAX_PUBLIC_REPOSITORY_URL_CHARS"
+      },
+      "allowed_fields": [
+        "repository_url",
+        "requested_ref"
+      ],
+      "unknown_fields": "REJECT",
+      "malformed_or_duplicate_json_keys": "REJECT"
+    },
+    "repository": {
+      "provider": "github",
+      "visibility": "public_only",
+      "repositories_per_request": 1,
+      "url_policy": "https://github.com/{owner}/{repository} only; URL is projected to coordinates and is never reused as a fetch target",
+      "reference_policy": "requested_ref is optional; missing ref resolves the source-confirmed default branch; all downstream file evidence binds to an immutable resolved commit SHA",
+      "supported_dependency_evidence": [
+        "uv.lock"
+      ],
+      "max_repository_files_read": {
+        "classification": "CONFIGURED_LIMIT",
+        "value": 1,
+        "note": "The current public repository evidence path requests only uv.lock."
+      },
+      "max_dependency_records": {
+        "classification": "CONFIGURED_LIMIT",
+        "value": 5000,
+        "source": "MAX_UV_LOCK_PACKAGE_RECORDS"
+      },
+      "third_party_code_execution": "FORBIDDEN"
+    },
+    "operation": "analyze_public_repository",
+    "required_evidence_needs": [
+      "remediation_guidance",
+      "risk_priority",
+      "vulnerability_facts"
+    ],
+    "evidence_completeness": "ALL_REQUIRED",
+    "response_model": {
+      "status": "UNMEASURED",
+      "required_future_properties": [
+        "workload_id",
+        "request_id",
+        "immutable_repository_identity",
+        "outcome",
+        "admitted_findings_or_explicit_no-result_reason",
+        "evidence_and_citations",
+        "bounded_operational_metadata"
+      ],
+      "max_response_bytes": {
+        "classification": "UNMEASURED",
+        "value": null
+      }
+    },
+    "latency": {
+      "end_to_end_timeout_target_ms": {
+        "classification": "UNMEASURED",
+        "value": null
+      },
+      "end_to_end_p50_ms": {
+        "classification": "UNMEASURED",
+        "value": null
+      },
+      "end_to_end_p95_ms": {
+        "classification": "UNMEASURED",
+        "value": null
+      }
+    },
+    "call_envelopes": {
+      "github_http_success_path_calls": {
+        "classification": "DERIVED",
+        "value": 4,
+        "derivation": "get_repository=1; get_commit performs SHA resolution + exact commit fetch=2; get_uv_lock=1"
+      },
+      "github_http_automatic_retries": {
+        "classification": "CONFIGURED_LIMIT",
+        "value": 0,
+        "note": "The retained GitHub HTTP adapter follows neither redirects nor automatic adapter retries."
+      },
+      "github_http_timeout_seconds_per_call": {
+        "classification": "CONFIGURED_LIMIT",
+        "value": 10.0
+      },
+      "athena_queries_per_public_analysis": {
+        "classification": "UNMEASURED",
+        "value": null,
+        "note": "Athena is retained and bounded, but no public-analysis composition currently proves how many structured queries the v1 workload requires."
+      },
+      "bedrock_retrieve_calls_per_public_analysis": {
+        "classification": "UNMEASURED",
+        "value": null
+      },
+      "bedrock_model_calls_per_public_analysis": {
+        "classification": "UNMEASURED",
+        "value": null
+      },
+      "capability_executions_per_public_analysis": {
+        "classification": "UNMEASURED",
+        "value": null
+      }
+    },
+    "retained_component_limits": {
+      "athena_bytes_scanned_cutoff_per_query": {
+        "classification": "CONFIGURED_LIMIT",
+        "value": 10485760
+      },
+      "semantic_planner_max_output_tokens": {
+        "classification": "CONFIGURED_LIMIT",
+        "value": 256
+      },
+      "knowledge_retrieval_top_k_max": {
+        "classification": "CONFIGURED_LIMIT",
+        "value": 10
+      },
+      "knowledge_context_max_utf8_bytes": {
+        "classification": "CONFIGURED_LIMIT",
+        "value": 16384
+      },
+      "knowledge_synthesis_max_output_tokens": {
+        "classification": "CONFIGURED_LIMIT",
+        "value": 2048
+      },
+      "ghsa_occurrences_per_repository_scan": {
+        "classification": "CONFIGURED_LIMIT",
+        "value": 50000
+      },
+      "vulnerability_candidate_evaluations_per_repository_scan": {
+        "classification": "CONFIGURED_LIMIT",
+        "value": 100000
+      }
+    },
+    "retry_contract": {
+      "overall_public_retry_budget": {
+        "classification": "UNMEASURED",
+        "value": null
+      },
+      "rule": "No public retry policy is authorized until duplicate-work and provider-SDK retry behavior are measured and bound."
+    },
+    "idempotency_contract": {
+      "status": "DESIGN_HYPOTHESIS",
+      "proposed_key": "sha256(workload_id + admitted_request_identity + resolved_snapshot_id)",
+      "rule": "A mutable branch name cannot be the sole idempotency key; the resolved immutable repository snapshot must participate."
+    },
+    "cancellation_contract": {
+      "status": "UNMEASURED",
+      "note": "Athena has best-effort cancellation on its own polling timeout, but no public job-level cancellation contract exists."
+    }
+  },
+  "runtime_decision_matrix": [
+    {
+      "candidate": "API_GATEWAY_HTTP_API_PLUS_LAMBDA_SYNC",
+      "status": "MEASUREMENT_GATED",
+      "aws_facts": [
+        "HTTP API maximum integration timeout is 30 seconds and is not increaseable.",
+        "Lambda function timeout can be configured up to 900 seconds."
+      ],
+      "fit": "Only if representative end-to-end p95 remains comfortably below the transport timeout after upper-bound workload testing.",
+      "tradeoffs": "Small operational surface, but client lifetime and integration timeout couple directly to variable GitHub/Athena/Bedrock latency."
+    },
+    {
+      "candidate": "API_GATEWAY_REGIONAL_REST_PLUS_LAMBDA_SYNC",
+      "status": "MEASUREMENT_GATED",
+      "aws_facts": [
+        "Regional REST API integration timeout defaults to a range ending at 29 seconds and can be increased, potentially requiring a reduction in the account-level throttle quota."
+      ],
+      "fit": "Possible for a measured bounded synchronous workload but not justified merely to stretch a long request across a synchronous transport.",
+      "tradeoffs": "More API-management capability than HTTP API, with no evidence yet that a longer synchronous hold is the right product contract."
+    },
+    {
+      "candidate": "API_GATEWAY_PLUS_LAMBDA_SUBMIT_SQS_WORKER_RESULT_STORE",
+      "status": "LEADING_HYPOTHESIS",
+      "aws_facts": [
+        "SQS standard queues use at-least-once delivery semantics, so consumers must tolerate duplicate delivery."
+      ],
+      "fit": "Favored if representative public analysis has variable or >synchronous-envelope latency, requires backpressure, or benefits from independent failure isolation.",
+      "tradeoffs": "Adds queue, worker, persistence, idempotency, status/result lifecycle, cancellation semantics, IAM surfaces, and operational complexity."
+    },
+    {
+      "candidate": "LAMBDA_FUNCTION_URL_SYNC",
+      "status": "NOT_FAVORED_FOR_PUBLIC_V1",
+      "aws_facts": [
+        "Function URL auth types are AWS_IAM or NONE; NONE permits unauthenticated public invocation when the resource policy grants access.",
+        "Reserved concurrency can bound function concurrency and produce 429 throttling."
+      ],
+      "fit": "Technically small, but it does not by itself establish the complete public abuse/quota/product boundary OpsLens needs.",
+      "tradeoffs": "Lower ingress surface complexity, weaker fit for explicit API product controls and future submit/status/result lifecycle."
+    },
+    {
+      "candidate": "ECS_FARGATE_OR_ALB_RUNTIME",
+      "status": "DEFERRED_NO_CURRENT_NEED",
+      "aws_facts": [],
+      "fit": "No repository evidence currently requires a long-lived container, custom connection lifecycle, or server process.",
+      "tradeoffs": "Would add standing compute and operational surface before a concrete workload requirement exists."
+    },
+    {
+      "candidate": "BEDROCK_AGENTCORE_AS_PUBLIC_RUNTIME",
+      "status": "DEFERRED_NO_CURRENT_NEED",
+      "aws_facts": [],
+      "fit": "Phase 14 retained AgentCore as an optional experiment target rather than the default runtime.",
+      "tradeoffs": "Using it for Phase 19 solely for productization or certification breadth would violate the evidence-first service-selection rule."
+    }
+  ],
+  "threat_abuse_model": [
+    "oversized_request",
+    "malformed_json",
+    "repository_url_abuse",
+    "ssrf_style_source_redirection",
+    "repository_enumeration",
+    "large_repository_amplification",
+    "dependency_explosion",
+    "github_api_abuse",
+    "prompt_injection_from_repository_content",
+    "retrieval_poisoning",
+    "model_amplification",
+    "athena_scan_amplification",
+    "bedrock_token_amplification",
+    "retry_amplification",
+    "concurrency_exhaustion",
+    "cost_denial_of_wallet",
+    "result_tampering",
+    "identity_replay",
+    "telemetry_data_leakage"
+  ],
+  "threat_controls": {
+    "oversized_request": "Existing 2048-byte pre-parse request cutoff.",
+    "malformed_json": "Strict UTF-8 JSON object admission, duplicate-key and unknown-field rejection.",
+    "repository_url_abuse": "Only canonical HTTPS github.com owner/repository coordinates are admitted.",
+    "ssrf_style_source_redirection": "User URL is never used as a fetch target; the adapter calls fixed api.github.com endpoints and does not follow redirects.",
+    "repository_enumeration": "Public GitHub only; public ingress identity/rate policy remains to be selected and measured.",
+    "large_repository_amplification": "Only exact-commit uv.lock is read in the v1 repository evidence path; no clone/build/tree crawl.",
+    "dependency_explosion": "uv.lock package records are bounded at 5000; repository scan candidate evaluations are bounded at 100000.",
+    "github_api_abuse": "Fixed success-path provider-call shape and no adapter retry; public rate/backpressure layer remains unimplemented.",
+    "prompt_injection_from_repository_content": "Repository contents do not become planner instruction authority; only bounded metadata enters public semantic planning.",
+    "retrieval_poisoning": "Knowledge retrieval requires admitted source provenance and content identity; retrieved content remains evidence, not instruction authority.",
+    "model_amplification": "Existing model output limits are retained, but per-public-analysis model-call count is UNMEASURED and must be frozen before deploy.",
+    "athena_scan_amplification": "Retained Athena workgroup cutoff is 10485760 bytes/query; per-public-analysis query count remains UNMEASURED.",
+    "bedrock_token_amplification": "Retained synthesis max output is 2048 tokens and context is bounded; aggregate public token budget remains UNMEASURED.",
+    "retry_amplification": "GitHub adapter has zero automatic adapter retries; aggregate SDK/queue/public retry budget remains unmeasured.",
+    "concurrency_exhaustion": "No public concurrency is authorized yet; future ingress/worker concurrency must be an explicit configured limit.",
+    "cost_denial_of_wallet": "No public runtime is deployed until per-request resource dimensions and global admission controls are measurable and independently enforceable.",
+    "result_tampering": "Future result must be deterministically admitted and bound to request, snapshot, evidence, workload version, and result identity before exposure.",
+    "identity_replay": "Request content identity exists; replay/idempotency must additionally bind the immutable resolved snapshot and workload version.",
+    "telemetry_data_leakage": "Retain Phase 17 content minimization; emit identifiers/counts/durations/outcomes rather than raw request, source, prompt, or response content."
+  },
+  "iam_responsibility_matrix": [
+    {
+      "responsibility": "public_ingress",
+      "required_service_actions": [],
+      "required_resource_scope": "UNMEASURED until ingress/runtime selection",
+      "iam_statement": "NOT_AUTHORIZED",
+      "note": "Do not create a broad application role before the ingress trust and invocation topology are selected."
+    },
+    {
+      "responsibility": "repository_acquisition",
+      "required_service_actions": [],
+      "required_resource_scope": "No AWS API permission required for unauthenticated public GitHub HTTPS acquisition in the current adapter",
+      "iam_statement": "NONE_FOR_CURRENT_RESPONSIBILITY",
+      "note": "A future GitHub token/Secrets Manager dependency would require a separate justified responsibility and is not authorized by Gate 19.1."
+    },
+    {
+      "responsibility": "athena_structured_retrieval",
+      "required_service_actions": [
+        "athena:StartQueryExecution",
+        "athena:GetQueryExecution",
+        "athena:GetQueryResults",
+        "athena:StopQueryExecution"
+      ],
+      "required_resource_scope": "Existing opslens-dev workgroup plus the exact Glue/S3 data and query-result resources required by the retained compiler-owned query path",
+      "iam_statement": "DESIGN_ONLY_NO_MUTATION",
+      "note": "GetQueryResults also depends on access to the query-result location unless Athena managed query results are deliberately adopted later."
+    },
+    {
+      "responsibility": "bedrock_knowledge_retrieval",
+      "required_service_actions": [
+        "bedrock:Retrieve"
+      ],
+      "required_resource_scope": "Existing approved OpsLens Knowledge Base only",
+      "iam_statement": "DESIGN_ONLY_NO_MUTATION"
+    },
+    {
+      "responsibility": "bedrock_model_invocation",
+      "required_service_actions": [
+        "bedrock:InvokeModel"
+      ],
+      "required_resource_scope": "Only the retained approved inference target/profile and required underlying model resources",
+      "iam_statement": "DESIGN_ONLY_NO_MUTATION",
+      "note": "Converse uses bedrock:InvokeModel; streaming permission is not required for the retained non-streaming baseline."
+    },
+    {
+      "responsibility": "result_persistence",
+      "required_service_actions": [],
+      "required_resource_scope": "UNMEASURED; no result store selected",
+      "iam_statement": "NOT_AUTHORIZED"
+    },
+    {
+      "responsibility": "telemetry_emission",
+      "required_service_actions": [],
+      "required_resource_scope": "UNMEASURED until compute/runtime is selected; preserve existing content-minimized CloudWatch/X-Ray patterns",
+      "iam_statement": "NOT_AUTHORIZED"
+    },
+    {
+      "responsibility": "async_queue_job_coordination",
+      "required_service_actions": [],
+      "required_resource_scope": "NOT_APPLICABLE until ASYNC is selected",
+      "iam_statement": "NOT_AUTHORIZED"
+    }
+  ],
+  "cost_and_abuse_measurement_contract": [
+    {"dimension": "cost_per_request", "classification": "UNMEASURED", "required": true},
+    {"dimension": "bedrock_input_tokens", "classification": "UNMEASURED", "required": true},
+    {"dimension": "bedrock_output_tokens", "classification": "UNMEASURED", "required": true},
+    {"dimension": "athena_bytes_scanned", "classification": "CONFIGURED_LIMIT", "configured_value_per_query": 10485760, "required": true},
+    {"dimension": "github_http_request_count", "classification": "DERIVED", "current_success_path_value": 4, "required": true},
+    {"dimension": "runtime_duration_ms", "classification": "UNMEASURED", "required": true},
+    {"dimension": "queue_operations", "classification": "NOT_APPLICABLE", "required_if": "ASYNC"},
+    {"dimension": "result_storage_bytes", "classification": "NOT_APPLICABLE", "required_if": "persistence selected"},
+    {"dimension": "retry_count_by_provider", "classification": "UNMEASURED", "required": true},
+    {"dimension": "throttle_count_by_provider", "classification": "UNMEASURED", "required": true},
+    {"dimension": "admission_rejection_count_by_reason", "classification": "UNMEASURED", "required": true},
+    {"dimension": "concurrency", "classification": "UNMEASURED", "required": true}
+  ],
+  "observability_contract": {
+    "required_signals": [
+      "request_id",
+      "trace_id",
+      "workload_id",
+      "repository_identity_hash",
+      "stage",
+      "duration_ms",
+      "outcome",
+      "failure_category",
+      "provider_service_call_count",
+      "bedrock_input_tokens_when_available",
+      "bedrock_output_tokens_when_available",
+      "athena_bytes_scanned",
+      "retry_count",
+      "throttle_count",
+      "admission_rejection_reason",
+      "cost_attribution_identifier_when_available"
+    ],
+    "forbidden_by_default": [
+      "full_prompt",
+      "repository_source_code",
+      "repository_file_contents",
+      "full_model_response",
+      "sensitive_tokens",
+      "credentials",
+      "raw_user_payload"
+    ],
+    "rule": "Telemetry content is minimized and is never business/evidence authority."
+  },
+  "disable_recovery_contract": [
+    {"control": "ingress_disable", "status": "REQUIRED_BEFORE_DEPLOY", "current_mechanism": null},
+    {"control": "new_job_admission_disable", "status": "REQUIRED_IF_ASYNC", "current_mechanism": null},
+    {"control": "queue_consumer_pause", "status": "REQUIRED_IF_ASYNC", "current_mechanism": null},
+    {"control": "model_invocation_disable", "status": "REQUIRED_BEFORE_DEPLOY", "current_mechanism": null},
+    {"control": "athena_execution_disable", "status": "REQUIRED_BEFORE_DEPLOY_IF_USED", "current_mechanism": null},
+    {"control": "background_ingestion_pause", "status": "EXISTING_SEPARATE_CONTROL", "current_mechanism": "scheduled_ingestion_enabled=false for exactly three EventBridge Scheduler resources"}
+  ],
+  "predeploy_test_contract": [
+    "request_shape_and_size_fail_closed",
+    "non_github_and_ssrf_style_input_fail_closed",
+    "redirect_not_followed",
+    "repository_code_never_executed",
+    "dependency_bound_enforced",
+    "required_evidence_completeness_enforced",
+    "result_identity_and_evidence_binding_enforced",
+    "provider_call_count_budget_enforced",
+    "athena_scan_budget_enforced_if_used",
+    "bedrock_call_and_token_budget_enforced_if_used",
+    "retry_budget_and_duplicate_work_behavior_enforced",
+    "concurrency_and_backpressure_behavior_enforced",
+    "telemetry_forbidden_content_not_emitted",
+    "disable_controls_have_narrow_proven_semantics"
+  ],
+  "aws_documented_facts_reviewed_2026_09_10": [
+    "API Gateway HTTP API maximum integration timeout: 30 seconds, not increaseable.",
+    "API Gateway Regional REST integration timeout can exceed 29 seconds with quota implications.",
+    "Lambda function timeout maximum: 900 seconds.",
+    "Lambda reserved concurrency caps function concurrency; setting reserved concurrency to zero intentionally stops function processing.",
+    "Lambda function URL auth types: AWS_IAM or NONE.",
+    "SQS standard delivery is at least once; duplicate delivery must be tolerated.",
+    "Athena workgroups support BytesScannedCutoffPerQuery with a 10000000-byte minimum value.",
+    "Athena SQL on-demand pricing is driven by data scanned, with a 10 MB minimum per query in the documented pricing model.",
+    "Converse requires bedrock:InvokeModel.",
+    "Knowledge Base retrieval uses the Retrieve API and bedrock:Retrieve permission.",
+    "API Gateway REST usage-plan throttling/quotas are best effort and must not be the sole cost-control boundary."
+  ],
+  "gate19_2_minimum_experiment": {
+    "status": "AUTHORIZED_DESIGN_ONLY_REQUIRES_HUMAN_EXECUTION_FOR_LIVE_AWS_CALLS",
+    "goal": "Build or invoke a representative non-public public-analysis runner that composes the retained repository, deterministic finding/risk, structured/semantic evidence, synthesis, and result-admission stages; measure stage and end-to-end latency/call counts at bounded representative inputs before choosing SYNC or ASYNC.",
+    "must_measure": [
+      "end_to_end_duration_ms",
+      "stage_duration_ms",
+      "github_http_request_count",
+      "athena_query_count_and_bytes_scanned_if_used",
+      "bedrock_retrieve_count_and_latency_if_used",
+      "bedrock_model_call_count_tokens_latency_if_used",
+      "retry_and_throttle_counts",
+      "serialized_result_bytes"
+    ],
+    "must_not_create": [
+      "public_endpoint",
+      "broad_runtime_role",
+      "new_queue_or_result_store before ASYNC selection",
+      "AgentCore runtime solely for measurement"
+    ],
+    "decision_rule": "Select SYNC only if the complete representative workload is composed, bounded, retry-safe, and comfortably fits a chosen synchronous ingress timeout at measured upper-bound/p95 conditions. Select ASYNC if latency variability, backpressure, isolation, or timeout evidence makes synchronous coupling unsafe. Otherwise remain DEFERRED_PENDING_MEASUREMENT."
+  }
+}
