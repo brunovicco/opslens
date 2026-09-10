@@ -1,0 +1,96 @@
+{
+  "artifact_version": "phase-19-gate-19-2-measurement-contract:v1",
+  "phase": 19,
+  "gate": "19.2",
+  "issue": 295,
+  "draft_pr": 297,
+  "source_main_sha": "ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1",
+  "source_gate_19_1_pr": 292,
+  "source_gate_19_1_exact_head_sha": "484e2b85fc1996b2419b4057c2cf585ab1f675a1",
+  "workload_id": "public-analysis-workload:v1",
+  "status": "IMPLEMENTATION_IN_PROGRESS_NO_LIVE_MEASUREMENT",
+  "retained_runtime_decision": "DEFERRED_PENDING_MEASUREMENT",
+  "retained_leading_hypothesis": "ASYNC_SUBMIT_STATUS_RESULT",
+  "stage_order": [
+    "public_request_admission",
+    "repository_acquisition",
+    "dependency_evidence",
+    "vulnerability_correlation",
+    "risk_prioritization",
+    "structured_evidence",
+    "semantic_evidence",
+    "model_reasoning",
+    "result_admission"
+  ],
+  "required_measurements": [
+    "end_to_end_duration_ms",
+    "stage_duration_ms",
+    "github_http_request_count",
+    "athena_query_count",
+    "athena_bytes_scanned",
+    "bedrock_retrieve_count",
+    "bedrock_model_call_count",
+    "bedrock_input_tokens",
+    "bedrock_output_tokens",
+    "retry_count",
+    "throttle_count",
+    "serialized_result_bytes"
+  ],
+  "implemented_components": {
+    "provider_neutral_measurement_contract": "src/opslens/public_analysis/domain/representative_measurement.py",
+    "provider_neutral_measurement_harness": "src/opslens/public_analysis/application/representative_measurement.py",
+    "deterministic_repository_analysis_composition": "src/opslens/public_analysis/application/representative_repository_analysis.py",
+    "github_physical_transport_measurement": "src/opslens/public_analysis/adapters/github_measurement.py"
+  },
+  "retained_repository_analysis_chain": [
+    "build_repository_pypi_vulnerability_scan",
+    "enrich_repository_findings_with_nvd",
+    "enrich_repository_findings_with_kev",
+    "enrich_repository_findings_with_epss",
+    "build_repository_analysis_result",
+    "prioritize_repository_analysis"
+  ],
+  "measurement_rules": [
+    "measurement_layer_does_not_reimplement_business_truth",
+    "complete_exact_stage_order_required",
+    "provider_totals_equal_exact_stage_sum",
+    "negative_counters_rejected",
+    "empty_serialized_result_rejected",
+    "clock_regression_rejected",
+    "missing_instrumentation_must_not_be_reported_as_measured_zero",
+    "physical_github_requests_measured_at_transport_boundary"
+  ],
+  "live_execution_boundary": {
+    "aws_or_model_execution": "HUMAN_EXECUTION_REQUIRED",
+    "public_endpoint_required_for_measurement": false,
+    "public_endpoint_authorized": false
+  },
+  "authority_impact": {
+    "public_endpoints": 0,
+    "new_aws_resources": 0,
+    "new_iam_roles_or_policies": 0,
+    "third_party_repository_code_executions": 0,
+    "pr_89_touched": false
+  },
+  "retained_invariants": [
+    "Agents reason. Code verifies evidence.",
+    "READ, NEVER EXECUTE third-party repository code.",
+    "Repository Risk != Runtime Exposure.",
+    "retrieved content != instruction authority",
+    "model proposal != authorization",
+    "tool/protocol success != business truth",
+    "MEASURED != DERIVED",
+    "UNMEASURED != zero",
+    "configured limit != measured utilization"
+  ],
+  "remaining_before_live_measurement": [
+    "compose_structured_evidence_stage",
+    "compose_semantic_evidence_stage",
+    "compose_bounded_model_reasoning_stage",
+    "compose_deterministic_result_admission_stage",
+    "freeze_representative_input",
+    "add_exact_provider_measurement_for_composed_stages",
+    "validate_success_and_failure_paths"
+  ],
+  "runtime_selection_allowed": false
+}
