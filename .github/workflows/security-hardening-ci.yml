@@ -2,23 +2,14 @@ name: Security Hardening CI
 
 on:
   pull_request:
-    paths:
-      - "labs/phase-17-*.md"
-      - "labs/evidence/phase-17-*.json"
-      - "docs/adr/0064-*.md"
-      - "docs/adr/README.md"
-      - "docs/current-state.md"
-      - "docs/roadmap.md"
-      - "docs/README.md"
-      - ".github/workflows/security-hardening-ci.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  gate-17-security-evidence:
-    name: Gate 17 security evidence
+  repository-security-invariants:
+    name: Repository security invariants
     runs-on: ubuntu-latest
 
     steps:
@@ -26,6 +17,9 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+
+      - name: Verify repository workflow and OIDC security invariants
+        run: python3 scripts/verify_workflow_security.py
 
       - name: Validate Gate 17.1 threat-model evidence
         run: |
@@ -116,7 +110,7 @@ jobs:
               raise SystemExit("Gate 17.1 must keep PR #89 out of scope")
           PY
 
-      - name: Verify Gate 17.1 documentation references
+      - name: Verify Gate 17 documentation references
         run: |
           python3 - <<'PY'
           from pathlib import Path
