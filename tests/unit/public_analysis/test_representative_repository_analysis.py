@@ -48,6 +48,8 @@ from opslens.public_analysis.application import (
     REPRESENTATIVE_REMEDIATION_TOP_K,
     RepresentativeRepositoryAnalysis,
     RepresentativeRepositoryThreatEvidence,
+    RepresentativeThreatEvidenceLoad,
+    RepresentativeWorkloadDependencies,
     admit_public_semantic_plan,
     build_public_repository_evidence,
     build_public_semantic_planning_request,
@@ -55,6 +57,7 @@ from opslens.public_analysis.application import (
     build_representative_repository_analysis,
     build_representative_structured_evidence,
     execute_representative_model_reasoning,
+    execute_representative_workload,
     retrieve_representative_semantic_evidence,
 )
 from opslens.public_analysis.domain import (
@@ -63,6 +66,7 @@ from opslens.public_analysis.domain import (
     PublicRepositoryTarget,
     PublicSemanticPlanProposal,
     RepresentativePublicAnalysisResult,
+    RepresentativeWorkloadStage,
     create_public_analysis_request,
 )
 from opslens.repository_intelligence.domain import compute_git_blob_sha1
@@ -92,10 +96,13 @@ def _uv_lock_content() -> bytes:
 
 @dataclass(slots=True)
 class FakeRepositorySource:
-    """Return exact public repository metadata and inert lock evidence."""
+    """Return exact public repository evidence and model physical GitHub request accounting."""
+
+    request_count: int = 0
 
     def get_repository(self, owner: str, name: str) -> dict[str, object]:
         """Return source-confirmed public repository metadata."""
+        self.request_count += 1
         return {
             "id": _REPOSITORY_ID,
             "name": name,
@@ -107,7 +114,8 @@ class FakeRepositorySource:
         }
 
     def get_commit(self, owner: str, name: str, ref: str) -> dict[str, object]:
-        """Return one exact immutable commit/tree observation."""
+        """Return one commit while accounting for retained SHA + exact-object HTTP reads."""
+        self.request_count += 2
         assert (owner, name, ref) == ("brunovicco", "opslens", "main")
         return {"sha": _COMMIT_SHA, "commit": {"tree": {"sha": _TREE_SHA}}}
 
@@ -118,6 +126,7 @@ class FakeRepositorySource:
         commit_sha: str,
     ) -> dict[str, object]:
         """Return the exact-commit inert uv.lock evidence payload."""
+        self.request_count += 1
         assert (owner, name, commit_sha) == ("brunovicco", "opslens", _COMMIT_SHA)
         content = _uv_lock_content()
         return {
@@ -129,6 +138,22 @@ class FakeRepositorySource:
             "sha": compute_git_blob_sha1(content),
             "content": base64.encodebytes(content).decode("ascii"),
         }
+
+    def usage_snapshot(self) -> ProviderResourceUsage:
+        """Return cumulative physical GitHub request accounting for stage deltas."""
+        return ProviderResourceUsage(github_http_request_count=self.request_count)
+
+
+@dataclass(slots=True)
+class FakeClock:
+    """Return deterministic monotonic readings one millisecond apart."""
+
+    current_ns: int = 0
+
+    def monotonic_ns(self) -> int:
+        """Advance exactly one millisecond per measurement read."""
+        self.current_ns += 1_000_000
+        return self.current_ns
 
 
 def _ghsa() -> GhsaPyPIVulnerabilityEvidence:
@@ -222,21 +247,31 @@ def _epss_snapshot() -> EpssSnapshot:
     return EpssSnapshotParser().parse(gzip.compress(text.encode(), mtime=0))
 
 
+def _threat_evidence() -> RepresentativeRepositoryThreatEvidence:
+    """Build the exact pre-admitted request-time threat evidence bundle."""
+    ghsa = _ghsa()
+    return RepresentativeRepositoryThreatEvidence(
+        ghsa_vulnerabilities=(ghsa,),
+        nvd_records=(_nvd_record(),),
+        kev_snapshot=_kev_snapshot(),
+        epss_snapshot=_epss_snapshot(),
+    )
+
+
+def _threat_loader(_execution: object) -> RepresentativeThreatEvidenceLoad:
+    """Return pre-admitted fixture evidence without a request-time cloud query."""
+    return RepresentativeThreatEvidenceLoad(evidence=_threat_evidence())
+
+
 def _representative_analysis() -> RepresentativeRepositoryAnalysis:
     """Compose one exact repository finding through retained deterministic authority."""
     request = create_public_analysis_request(
         PublicRepositoryTarget(owner="brunovicco", name="opslens", requested_ref="main")
     )
     execution = build_public_repository_evidence(request, FakeRepositorySource())
-    ghsa = _ghsa()
     return build_representative_repository_analysis(
         execution=execution,
-        threat_evidence=RepresentativeRepositoryThreatEvidence(
-            ghsa_vulnerabilities=(ghsa,),
-            nvd_records=(_nvd_record(),),
-            kev_snapshot=_kev_snapshot(),
-            epss_snapshot=_epss_snapshot(),
-        ),
+        threat_evidence=_threat_evidence(),
     )
 
 
@@ -439,3 +474,43 @@ def test_admits_bounded_model_reasoning_and_serializable_representative_result()
     assert payload["evidence"]["semantic_citations"][0]["citation_id"] == "S1"
     assert b"Upgrade to version 2.32.0 or later and follow the vendor advisory." not in serialized
     assert len(admitted.result_sha256) == 64
+
+
+def test_executes_and_measures_complete_nine_stage_representative_workload() -> None:
+    """Measure one full offline composition without AWS mutation or public transport."""
+    source = FakeRepositorySource()
+    execution = execute_representative_workload(
+        run_id="gate19-2-offline-complete-001",
+        raw_body=(
+            b'{"repository_url":"https://github.com/brunovicco/opslens",'
+            b'"requested_ref":"main"}'
+        ),
+        dependencies=RepresentativeWorkloadDependencies(
+            repository_source=source,
+            repository_usage_snapshot=source.usage_snapshot,
+            threat_evidence_loader=_threat_loader,
+            semantic_retriever=_bedrock_retriever,
+            synthesizer=_bedrock_synthesizer,
+            clock=FakeClock(),
+        ),
+    )
+
+    measurement = execution.measurement
+    assert tuple(item.stage for item in measurement.stage_measurements) == tuple(
+        RepresentativeWorkloadStage
+    )
+    assert tuple(item.duration_ms for item in measurement.stage_measurements) == (1,) * 9
+    assert measurement.end_to_end_duration_ms == 19
+    assert measurement.provider_totals == ProviderResourceUsage(
+        github_http_request_count=4,
+        bedrock_retrieve_count=1,
+        bedrock_model_call_count=1,
+        bedrock_input_tokens=180,
+        bedrock_output_tokens=32,
+        retry_count=3,
+    )
+    assert measurement.stage_measurements[1].usage.github_http_request_count == 3
+    assert measurement.stage_measurements[2].usage.github_http_request_count == 1
+    assert measurement.stage_measurements[6].usage.bedrock_retrieve_count == 1
+    assert measurement.stage_measurements[7].usage.bedrock_model_call_count == 1
+    assert measurement.serialized_result_bytes == len(execution.result.serialize())
