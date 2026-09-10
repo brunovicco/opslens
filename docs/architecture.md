@@ -2,9 +2,9 @@
 
 _Last updated: 2026-09-10_
 
-This document is the accumulated architecture baseline through **Phase 18 — Evaluation, Cost & Portfolio Readiness: COMPLETE pending the Gate 18.5 protected closeout merge**.
+This document is the current accumulated architecture baseline through **Phase 19 — Bounded Public Runtime & Productization, Gate 19.1**.
 
-The next implementation phase is intentionally **not authorized** by Phase 18. It must be selected from observed product/evidence gaps after closeout.
+Phases 0–18 are complete. Phase 19 is the current evidence-gated productization phase.
 
 ## 1. Purpose
 
@@ -34,6 +34,22 @@ Permanent boundaries:
 
 > **Intent classification != execution authority.**
 
+Additional retained rules:
+
+```text
+retrieved content != instruction authority
+model proposal != authorization
+capability invocation != execution result
+execution result != admitted evidence
+tool/protocol success != business truth
+historical evidence != standing authority
+MEASURED != DERIVED
+UNMEASURED != zero
+NOT_APPLICABLE != zero
+configured limit != measured utilization
+AIP-C01 topic != product requirement
+```
+
 ## 2. Authority model
 
 Deterministic code remains authoritative for:
@@ -50,33 +66,23 @@ Deterministic code remains authoritative for:
 - single-agent and multi-agent handoff admission;
 - MCP admission and result projection;
 - A2A reference identity, resolution and admission;
-- retry/fallback policy;
+- retry/fallback policy where explicitly frozen;
 - runtime-evidence admission and correlation;
+- bounded resource/cost limits;
 - operational recovery control state expressed through Terraform.
 
-Models and agents may classify, propose, summarize, explain, or synthesize over already-admitted evidence. They do not become authority merely because output is syntactically valid, plausible, or produced by a managed AWS service.
+Models and agents may classify, propose, summarize, explain, or synthesize over already-admitted evidence. A managed AWS service or a syntactically valid model output does not become business authority by itself.
 
-```text
-proposal != authorization
-retrieval result != sufficient evidence
-citation id != semantic support
-capability invocation != execution result
-execution result != admitted evidence
-repository finding != runtime exposure
-AWS authentication != business authorization
-scheduler state != business/evidence authority
-```
+## 3. Retained platform shape
 
-## 3. Current system shape
-
-### 3.1 Threat-intelligence and deterministic risk path
+### 3.1 Threat intelligence and deterministic repository risk
 
 ```text
 NVD + CISA KEV + FIRST EPSS + GitHub Security Advisories
  -> source-preserving raw evidence
  -> deterministic normalization and applicability
- -> repository dependency evidence
- -> vulnerability correlation
+ -> immutable repository dependency evidence
+ -> deterministic vulnerability correlation
  -> RepositoryAnalysisResult
  -> deterministic Risk Policy v1
  -> RiskPrioritizationResult
@@ -90,14 +96,14 @@ Raw third-party evidence is preserved before enrichment. Exact source versions, 
 public GitHub repository request
  -> strict request admission
  -> source-confirmed repository metadata
- -> immutable commit/tree snapshot
+ -> immutable commit snapshot
  -> exact-commit inert uv.lock evidence
  -> deterministic TOML parsing
- -> canonical dependency identity
+ -> canonical PyPI dependency identity
  -> deterministic vulnerability applicability
 ```
 
-Third-party repository code is never executed as part of analysis.
+The initial retained repository intelligence path reads data only. It does not run package managers, builds, tests, setup hooks, workflows, Dockerfiles, scripts, or repository code.
 
 ### 3.3 Structured natural-language query path
 
@@ -111,7 +117,7 @@ natural-language factual question
  -> structured evidence
 ```
 
-The planner has no arbitrary SQL authority.
+The model has no arbitrary SQL authority. The Athena adapter fixes the database/workgroup, accepts only compiler-owned query shapes, bounds rows/pagination, records scan/timing evidence, and uses best-effort cancellation on its own polling timeout.
 
 ### 3.4 Semantic remediation path
 
@@ -130,7 +136,20 @@ explicit official source pins
  -> groundedness/support evaluation
 ```
 
-`RetrieveAndGenerate` is not the retained default because retrieval and synthesis are intentionally measured and admitted as separate stages.
+`RetrieveAndGenerate` is not the retained default because retrieval and synthesis are intentionally measured and admitted separately.
+
+Current knowledge baseline:
+
+```text
+embedding model:       amazon.titan-embed-text-v2:0
+embedding dimensions:  1024
+embedding data type:   FLOAT32
+vector store:          Amazon S3 Vectors
+distance:              cosine
+chunking:              NONE
+canonical chunks:      9
+synthesis profile:     us.anthropic.claude-haiku-4-5-20251001-v1:0
+```
 
 ### 3.5 Hybrid evidence path
 
@@ -148,33 +167,37 @@ EvidenceNeed[] proposal
 
 Hybrid means hybrid **evidence routing and composition**, not an automatic claim of keyword-plus-vector search.
 
-### 3.6 Public analysis boundary
+## 4. Agentic and interoperability boundaries
 
-The public-analysis contract remains an application boundary. No public HTTP compute or public endpoint is retained.
+Phase 11 retains direct Bedrock single-agent reasoning as the measured reference/default reasoning topology.
+
+Phase 12 retains deterministic specialization/handoff but rejects the measured two-model topology as the default because it added model calls, tokens, latency, and cost without measured quality lift.
+
+Phase 13 retains bounded offline MCP capability exposure/execution/projection. MCP does not add business authority.
+
+Phase 14 retains Amazon Bedrock AgentCore as an optional lab target only. Experiment-specific standing IAM/runtime authority was removed after measurement.
+
+Phase 15 retains bounded offline A2A reference interoperability and an official SDK conformance oracle in CI. No public A2A runtime is retained.
+
+## 5. Runtime exposure boundary
+
+Phase 16 retains a typed read-only Amazon Inspector evidence boundary.
+
+The measured discovery returned zero current records. That means only:
 
 ```text
-untrusted JSON
- -> <=2048-byte request admission
- -> validated GitHub coordinates
- -> immutable repository evidence
- -> bounded metadata-only semantic planning
- -> deterministic public-v1 scope admission
- -> Phase 8 hybrid authority
- -> PublicAnalysisAdmissionHandoff
- -> STOP
+bounded Inspector read succeeded and returned zero records
 ```
 
-The fixed public v1 operation is `analyze_public_repository` and requires exactly:
+It does not mean:
 
 ```text
-remediation_guidance
-risk_priority
-vulnerability_facts
+runtime exposure = zero
 ```
 
-No raw repository text, credentials, arbitrary SQL, provider/model selection, or executable repository content becomes planner authority.
+Repository risk and runtime exposure remain separate evidence classes.
 
-## 4. AWS foundation and retained standing services
+## 6. AWS foundation and standing resources
 
 ```text
 environment:             dev
@@ -182,16 +205,14 @@ primary Region:          us-east-1
 IaC:                     Terraform
 human administration:    AWS IAM Identity Center
 CI/CD identity:          GitHub Actions OIDC -> AWS STS
-observability:           CloudWatch + X-Ray
+observability:           CloudWatch + X-Ray patterns
 analytics:               AWS Glue + Amazon Athena
 knowledge retrieval:     Amazon Bedrock Knowledge Base + Amazon S3 Vectors
 compute:                  AWS Lambda for retained ingestion/transformation paths
 recurring triggers:      Amazon EventBridge Scheduler
 ```
 
-Primary retained storage includes the data bucket, deployment-artifact bucket, Terraform state bucket, and the S3 Vectors knowledge vector bucket.
-
-Standing architecture does **not** claim:
+Standing architecture does **not** currently claim:
 
 ```text
 public HTTP endpoint
@@ -201,118 +222,30 @@ public A2A peer runtime
 standing AgentCore experiment runtime
 standing Inspector experiment IAM
 production multi-tenant request surface
+public result store
 ```
 
-## 5. Knowledge retrieval baseline
+## 7. Security Hardening retained state
 
-The retained controlled knowledge-retrieval path uses:
+Phase 17 retains evidence-backed controls across CI/CD, dependency/code scanning, adversarial authority regression, telemetry, and recovery.
 
-```text
-embedding model:       amazon.titan-embed-text-v2:0
-embedding dimensions:  1024
-embedding data type:   FLOAT32
-vector store:          Amazon S3 Vectors
-distance:              cosine
-chunking:              NONE
-canonical chunks:      9
-synthesis profile:     us.anthropic.claude-haiku-4-5-20251001-v1:0
-```
-
-Permanent interpretation boundaries:
-
-```text
-non-empty retrieval != sufficient evidence != authority to answer
-retrieval success != citation attribution success != semantic groundedness
-```
-
-## 6. Reasoning and agentic architecture
-
-Phase 11 retained the measured direct Bedrock single-agent reference as the default reasoning baseline.
-
-Phase 12 retained deterministic specialization and handoff, but the measured two-model topology was rejected as the default because it added model calls, tokens, latency, and cost without measured quality lift.
-
-Phase 13 retained bounded offline MCP capability exposure/execution/projection contracts. MCP does not add business authority.
-
-Phase 14 retained Amazon Bedrock AgentCore as an optional lab target only. Standing experiment IAM and managed runtime resources were removed after the experiment, and the historical mutating workflow is retired/fail-closed.
-
-Phase 15 retained bounded offline A2A reference interoperability and an exact-source official SDK conformance oracle in CI. No public/network A2A runtime is retained.
-
-## 7. Runtime exposure boundary
-
-Phase 16 introduced a typed read-only Amazon Inspector evidence boundary.
-
-Measured discovery proved `ListCoverage` and `ListFindings` authorization with zero current records. The temporary dedicated Inspector role was removed afterward and independently verified absent.
-
-Therefore:
-
-```text
-Inspector API success != runtime evidence presence
-Inspector finding != repository finding
-runtime evidence correlation != capability authorization
-```
-
-Repository risk and runtime exposure remain separate evidence classes.
-
-## 8. Security Hardening — Phase 17 retained state
-
-### 8.1 Gate 17.1 — threat/control-gap inventory
-
-Gate 17.1 established an evidence-first threat inventory and prioritized only observed gaps.
-
-### 8.2 Gate 17.2 — CI/CD and workflow authority
-
-Retained repository controls include:
+Important retained controls include:
 
 ```text
 protected-main required context:     Repository security invariants
 external GitHub Actions:             full 40-hex SHA pins
 checkout persisted credentials:      disabled where not required
-pull_request_target/workflow_run:     rejected by default
-EPSS planning identity:              read-only evidence role
-EPSS execution identity:             coordinator role
-long STS session:                    full-backfill execute path only
-historical AgentCore mutation path:  retired / fail-closed
+Dependency Review:                   pull request, fail on high severity
+CodeQL Python:                       PR + main + weekly + manual
+public/adversarial authority tests:  offline and deterministic
+Lambda telemetry:                    implicit event/response/error capture suppressed
 ```
 
-A direct write attempt to protected `main` was independently rejected, proving that required CI is merge enforcement rather than documentation-only intent.
+All 12 retained Powertools Lambda handlers use content-minimized telemetry patterns. Shared failure logging avoids implicit active-exception traceback serialization.
 
-### 8.3 Gate 17.3 — dependency and code scanning
+### 7.1 Scheduled-ingestion recovery control
 
-Retained security signals:
-
-```text
-Dependency Review:  pull_request / fail-on-severity=high / contents:read
-CodeQL Python:      PR + main + weekly + manual / contents:read + security-events:write
-AWS/OIDC authority: none for both scanner workflows
-```
-
-Scanner output remains an engineering signal, not vulnerability-applicability or runtime-exploitability authority.
-
-### 8.4 Gate 17.4 — adversarial authority regression
-
-The retained offline suite contains eight deterministic cases across seven threat classes covering public-input abuse, direct/indirect prompt injection, capability widening, forged result evidence, MCP abuse, A2A reference smuggling, and bounded amplification attempts.
-
-```text
-adversarial test success != proof of universal safety
-```
-
-The suite has no AWS/OIDC authority and performs no real model or capability execution.
-
-### 8.5 Gate 17.5 — telemetry-content hardening
-
-All 12 retained Powertools Lambda handlers explicitly suppress automatic event, response, and error capture at the decorator boundary. Shared failure logging avoids implicit active-exception traceback serialization and retains bounded operational fields.
-
-```text
-log event suppression != trace response/error suppression
-exception text != safe telemetry by default
-trace metadata != business/evidence truth
-```
-
-Repository verification continuously checks the retained telemetry-safety contract.
-
-### 8.6 Gate 17.6 — operational recovery and abuse-cost boundary
-
-The concrete recurring automated ingestion surface is exactly three EventBridge Scheduler resources:
+The concrete recurring ingestion surface remains exactly three EventBridge Scheduler resources:
 
 ```text
 aws_scheduler_schedule.epss_daily
@@ -327,220 +260,323 @@ scheduled_ingestion_enabled=true   -> ENABLED
 scheduled_ingestion_enabled=false  -> DISABLED
 ```
 
-Scheduler delivery amplification remains bounded by:
+This is a **scheduled-ingestion pause**, not a global kill switch. It does not cancel in-flight Lambda invocations, accepted retries, emitted S3 events, manual invocations, model paths, or capability authorization.
+
+## 8. Phase 18 evidence, cost, and portfolio boundary
+
+Phase 18 is complete through protected PR #290 at:
 
 ```text
-maximum_event_age_in_seconds = 3600
-maximum_retry_attempts       = 2
+feca774535b7d83f57c26f4e9fe7da71ce268f0f
 ```
 
-The measured post-merge live proof succeeded through:
+Its historical closeout artifact intentionally preserves the pre-merge evidence state. Current-facing documentation carries the post-merge truth.
+
+Phase 18 preserves four evidence classifications:
 
 ```text
-default convergence
- -> exact 0/3/0 pause plan
- -> exact pause apply
- -> independent 3/3 DISABLED reads
- -> paused convergence
- -> exact 0/3/0 resume plan
- -> exact resume apply
- -> independent 3/3 ENABLED reads
- -> final default convergence
+MEASURED
+DERIVED
+UNMEASURED
+NOT_APPLICABLE
 ```
 
-No resource was created or destroyed and no new IAM principal, permission, service, public runtime, model invocation, or capability execution was introduced by the experiment.
+and a separate `CONFIGURED_LIMIT` interpretation for resource ceilings.
 
-This is deliberately a **scheduled-ingestion pause**, not a global kill switch.
-
-```text
-scheduler pause != global workload termination
-pause request != applied AWS state
-Terraform apply success != independent AWS state verification
-bounded retry != guaranteed delivery
-failure destination != successful recovery
-model token budget != tenant quota
-```
-
-Disabling the schedules does not claim to cancel in-flight Lambda invocations, already accepted retries, already emitted S3 events, manual invocations, separate model paths, or capability authorization.
-
-### 8.7 Gate 17.7 — architecture synchronization
-
-Gate 17.7 closed `SEC17-DOC-001` by synchronizing the accumulated EN/PT-BR architecture with the retained platform.
+Permanent Phase 18 semantics include:
 
 ```text
-PR:                       #276
-exact head:               ea0460e549dd1b904d139632bfc2988671e23880
-protected merge:          3938c6469a979f5b574755ce9fd56a56523626dc
-Security Hardening CI:    34474712369 / #34 / SUCCESS
-Dependency Review:        34474712371 / #19 / SUCCESS
-CodeQL / Python:          34474712380 / #27 / SUCCESS
-```
-
-Documentation synchronization changes no runtime or business authority.
-
-### 8.8 Phase 17 closeout
-
-Phase 17 closes at the smallest evidence-backed boundary. No later evidence in the phase justified another security/runtime control.
-
-Retained:
-
-```text
-protected-main security enforcement
-Dependency Review + CodeQL
-adversarial authority regression
-content-minimized Lambda telemetry
-telemetry-safety verification
-bounded scheduled-ingestion pause
-operational recovery runbook
-synchronized EN/PT-BR architecture
-```
-
-Explicitly deferred or not created:
-
-```text
-Dependabot version updates
-additional continuous pip-audit
-broad dependency upgrades
-mandatory independent review until governance requires it
-public WAF/rate/tenant quotas without a public runtime
-public HTTP runtime
-global platform kill switch
-broad S3/Lambda emergency stop controls
-automatic alarm remediation
-standing Inspector experiment IAM
-public MCP/A2A runtimes
-AgentCore as default runtime
-```
-
-## 9. IAM and trust principles
-
-- humans use temporary IAM Identity Center credentials;
-- GitHub Actions uses OIDC rather than persistent AWS access keys;
-- OIDC trust is scoped by audience and repository/ref conditions;
-- IAM is introduced for concrete runtime responsibility rather than speculative future surfaces;
-- plan/evidence authority is separated from mutation authority where the workload requires it;
-- temporary experiment authority is removed after the evidence-generating experiment when it is not part of the retained runtime.
-
-```text
-AWS authentication != authorization to perform unrelated work
-OIDC authentication != authorization to reuse a shared deployment role
-no concrete principal -> no speculative runtime role
-```
-
-## 10. Observability and privacy boundary
-
-Operational observability prefers bounded categories, counters, latency, hashes, and correlation identifiers over raw source/model/user content.
-
-Content-minimized telemetry is useful for diagnosis, but it does not become business truth or execution authority.
-
-OpsLens still does not claim production public-request volume, public-user p95/p99 latency, production multi-tenant quotas, or public-edge SLO compliance because no public runtime is retained.
-
-## 11. Cost and amplification boundary
-
-Cost drivers stay separate:
-
-```text
-Athena bytes scanned
-embedding/query work
-S3 Vectors operations
-model input/output tokens
-Lambda/runtime execution
-Scheduler retries
-future public transport/runtime cost if ever deployed
-```
-
-Call-level token limits, Athena scan limits, Scheduler retry limits, and trigger disable controls solve different problems. None should be relabeled as a generic universal quota or kill switch.
-
-## 12. Failure and recovery semantics
-
-The architecture fails closed on schema, provenance, identity, scope, completeness, request/source binding, evidence-binding, capability-binding, and content-addressed identity mismatches.
-
-A failed stage does not authorize a later stage merely because partial output exists.
-
-Operational recovery similarly distinguishes desired state, applied provider state, independently observed provider state, and already-admitted work.
-
-## 13. Standing versus historical surfaces
-
-Retained historical evidence does not imply standing authority.
-
-```text
-historical workflow != inert workflow
-historical experiment != standing runtime
-historical IAM proof != current IAM principal
-retained adapter != deployed network service
-retained protocol contract != public peer endpoint
-```
-
-AgentCore and Inspector experiments are preserved as evidence while their experiment-specific standing authority remains removed. MCP and A2A are retained as bounded interoperability/reference contracts without public network runtimes.
-
-## 14. Phase 18 — evaluation, cost, and portfolio closeout
-
-Phase 18 is complete through Gates 18.1–18.4 and is being closed by Gate 18.5.
-
-The retained evidence chain is:
-
-```text
-18.1 cross-phase evidence inventory + comparability
- -> 18.2 independent evaluation/reliability projection
- -> 18.3 cost/resource accounting + configured limits
- -> 18.4 evidence-bound portfolio + AIP-C01 map
- -> 18.5 closeout without new runtime or benchmark authority
-```
-
-Phase 18 preserves four evidence classifications (`MEASURED`, `DERIVED`, `UNMEASURED`, `NOT_APPLICABLE`) and explicit comparability rules. It does not collapse independent metrics into a synthetic readiness score.
-
-Gate 18.2 preserves four negative/rejected-default decision signals. Gate 18.3 separates observed/derived cost evidence from configured limits and forbids unsupported production TCO aggregation. Gate 18.4 exposes portfolio claims only when mechanically bound to admitted source evidence and maps all 20 AIP-C01 task IDs without turning certification breadth into product requirements.
-
-Permanent Phase 18 boundaries include:
-
-```text
-MEASURED != DERIVED
-UNMEASURED != zero
-NOT_APPLICABLE != zero
 configured limit != measured utilization
-portfolio claim != new evidence authority
-AIP-C01 topic != product requirement
-AIP-C01 coverage != certification guarantee
 lab metric != production SLO
 cost evidence != production TCO
+portfolio claim != new evidence authority
+AIP-C01 coverage != certification guarantee
 ```
 
-Gate 18.5 introduces no AWS/IAM/model/capability mutation, no benchmark replay, and no pricing refresh. Phase 18 therefore changes evidence interpretation and presentation surfaces around the retained architecture rather than standing runtime authority.
+The platform does not manufacture a production monthly run rate from bounded laboratory measurements.
 
-The next implementation phase is intentionally **not authorized**. It must be selected from observed product/evidence gaps after the Phase 18 closeout protected merge.
+## 9. Phase 19 — Bounded Public Runtime & Productization
 
-Deferred Governed LLM Gateway integration remains outside this authority chain unless separately re-evaluated and explicitly resumed.
+### 9.1 Starting public-analysis boundary
 
-## 15. Key architecture records
-
-Important retained ADRs include:
+Phase 9 deliberately stopped at an application handoff. That boundary is still real on `main`:
 
 ```text
-0020 no unrestricted text-to-SQL
-0021 bounded Bedrock Semantic Query planner
-0022 customer-managed Bedrock Knowledge Base with S3 Vectors
-0023 bounded Bedrock knowledge synthesis
-0025 deterministic hybrid routing authority
-0026 deterministic hybrid evidence envelope
-0027 frozen hybrid evaluation contract
-0028 bounded route-aware hybrid synthesis
-0029 public repository request admission
-0030 public semantic planning proposal authority
-0031 Phase 9 public analysis closeout boundary
-0059 Phase 15 A2A closeout
-0063 Phase 16 runtime-exposure closeout
-0064 evidence-first security-hardening priorities
-0065 CI/CD and workflow authority hardening
-0066 bounded dependency and code-scanning signals
-0067 bounded adversarial authority regression suite
-0068 content-minimized Lambda telemetry
-0069 bounded scheduled-ingestion pause
-0070 Phase 17 security-hardening closeout
-0071 cross-phase evidence classification and comparability
-0072 consolidated evaluation and reliability view
-0073 cost accounting and budget envelopes
-0074 portfolio evidence and AIP-C01 mapping
-0075 Phase 18 evaluation/cost/portfolio closeout
+untrusted JSON
+ -> <= 2,048-byte request admission
+ -> validated GitHub coordinates
+ -> immutable repository evidence
+ -> bounded metadata-only semantic planning
+ -> deterministic public-v1 route admission
+ -> PublicAnalysisAdmissionHandoff
+ -> STOP
 ```
 
-Exact historical measurements, experiments, rejected hypotheses, teardown proof, and CI run identities remain in `labs/`, `labs/evidence/`, ADRs, protected PRs, and Git history rather than being reinterpreted as new architecture authority here.
+The fixed public v1 operation is:
+
+```text
+analyze_public_repository
+```
+
+and requires exactly:
+
+```text
+remediation_guidance
+risk_priority
+vulnerability_facts
+```
+
+with `ALL_REQUIRED` evidence completeness.
+
+The public semantic planner receives only bounded metadata. Raw repository text, credentials, arbitrary SQL, provider/model selection, and executable repository content do not become planner authority.
+
+### 9.2 Actual composition gap
+
+The repository already contains real implementations for deterministic vulnerability/risk analysis, bounded Athena retrieval, Bedrock Knowledge Base retrieval, bounded synthesis, capability execution/result admission, and hybrid output admission.
+
+Those components are **not** currently composed downstream of `PublicAnalysisAdmissionHandoff` into one representative public product execution.
+
+Therefore:
+
+```text
+rich retained capabilities != executable public product workload
+```
+
+No public HTTP topology should be selected from partial-stage latency.
+
+### 9.3 Frozen public workload
+
+Gate 19.1 freezes:
+
+```text
+workload_id: public-analysis-workload:v1
+provider: GitHub
+visibility: public only
+repositories/request: 1
+supported dependency evidence: exact-commit inert uv.lock
+max dependency records: 5,000
+third-party code execution: FORBIDDEN
+```
+
+Existing evidence-backed component limits are reused. Missing whole-request measurements remain `UNMEASURED`.
+
+Examples:
+
+```text
+request body                        CONFIGURED_LIMIT  2,048 bytes
+repository URL                      CONFIGURED_LIMIT  256 chars
+GitHub success-path physical calls  DERIVED           4
+GitHub adapter retries              CONFIGURED_LIMIT  0
+GitHub per-call timeout             CONFIGURED_LIMIT  10 seconds
+Athena scan cutoff/query            CONFIGURED_LIMIT  10,485,760 bytes
+Knowledge Retrieve top_k            CONFIGURED_LIMIT  <= 10
+Knowledge context                   CONFIGURED_LIMIT  <= 16,384 UTF-8 bytes
+knowledge/hybrid synthesis output   CONFIGURED_LIMIT  <= 2,048 tokens
+public Athena query count           UNMEASURED
+public Bedrock call count           UNMEASURED
+public end-to-end p50/p95            UNMEASURED
+public final response bytes         UNMEASURED
+public request cost                 UNMEASURED
+```
+
+### 9.4 Runtime decision
+
+Gate 19.1 records:
+
+```text
+DEFERRED_PENDING_MEASUREMENT
+```
+
+with leading hypothesis:
+
+```text
+ASYNC_SUBMIT_STATUS_RESULT
+```
+
+The hypothesis is not standing architecture authority.
+
+A synchronous path remains viable only if the complete representative workload fits comfortably within the selected ingress timeout under upper-bound/p95 testing. Async becomes justified if latency variability, backpressure, failure isolation, retry safety, or timeout evidence makes synchronous coupling unsafe.
+
+### 9.5 Runtime candidate set
+
+Current candidates are deliberately treated as alternatives, not preselected services:
+
+```text
+HTTP API + Lambda synchronous             MEASUREMENT_GATED
+Regional REST API + Lambda synchronous    MEASUREMENT_GATED
+API + submit/queue/worker/result           LEADING_HYPOTHESIS
+Lambda Function URL                       NOT_FAVORED_FOR_PUBLIC_V1
+ECS/Fargate/ALB                            DEFERRED_NO_CURRENT_NEED
+AgentCore public runtime                   DEFERRED_NO_CURRENT_NEED
+```
+
+Current AWS documentation is evaluated in ADR 0076. Service limits are AWS facts, not OpsLens performance measurements.
+
+### 9.6 IAM responsibility model
+
+Gate 19.1 creates no IAM role. Future permissions are decomposed by concrete responsibility:
+
+```text
+public ingress
+repository acquisition
+Athena structured retrieval
+Bedrock Knowledge Base retrieval
+Bedrock model invocation
+result persistence, only if justified
+telemetry emission
+async queue/job coordination, only if justified
+```
+
+The design rule is:
+
+```text
+concrete runtime responsibility
+ -> required service action
+ -> exact resource
+ -> IAM statement
+```
+
+not:
+
+```text
+future feature aspiration
+ -> broad runtime role
+```
+
+### 9.7 Threat and abuse model
+
+The future public surface must address at minimum:
+
+```text
+oversized request
+malformed JSON
+repository URL abuse
+SSRF-style source redirection
+repository enumeration
+large repository amplification
+dependency explosion
+GitHub API abuse
+prompt injection from repository content
+retrieval poisoning
+model amplification
+Athena scan amplification
+Bedrock token amplification
+retry amplification
+concurrency exhaustion
+cost denial-of-wallet
+result tampering
+identity/replay
+telemetry data leakage
+```
+
+Existing request admission, fixed GitHub host/no redirects, inert-file-only repository access, dependency/candidate limits, deterministic authority boundaries, and content-minimized telemetry already mitigate part of this surface. Public identity/rate/global quota/concurrency/aggregate model-call controls remain unresolved until the runtime topology is selected.
+
+### 9.8 Cost and observability contract
+
+The first real runtime experiment must measure request-level resource dimensions independently:
+
+```text
+cost/request
+Bedrock input/output tokens
+Athena bytes scanned
+GitHub request count
+runtime duration
+queue operations, if applicable
+storage, if applicable
+retries
+throttles
+rejected requests
+concurrency
+```
+
+Required future telemetry is content-minimized:
+
+```text
+request_id
+trace_id
+workload_id
+repository_identity_hash
+stage
+duration_ms
+outcome
+failure_category
+provider/service call count
+Bedrock token counts when available
+Athena bytes scanned
+retry count
+throttle count
+admission rejection reason
+cost attribution identifiers when available
+```
+
+Forbidden by default:
+
+```text
+full prompt
+repository source code
+repository file contents
+full model response
+sensitive tokens
+credentials
+raw user payload
+```
+
+Telemetry does not become business/evidence authority.
+
+### 9.9 Disable/recovery contract
+
+Before public deployment, controls must be named by their actual scope:
+
+```text
+ingress disable
+new-job admission disable
+queue consumer pause
+model invocation disable
+Athena execution disable
+background ingestion pause
+```
+
+The existing Phase 17 scheduler pause proves only `background ingestion pause` for the three named schedules. It must not be relabeled as a global kill switch.
+
+### 9.10 Gate 19.2 experiment boundary
+
+The next authorized experiment is **non-public representative workload measurement**.
+
+It must compose or invoke the real product stages through deterministic final result admission and measure:
+
+```text
+end-to-end and per-stage duration
+GitHub HTTP calls
+Athena query count + bytes scanned when used
+Bedrock Retrieve count + latency when used
+Bedrock model calls + tokens + latency when used
+retry/throttle counts
+serialized result bytes
+```
+
+Only after that evidence exists may the project promote the runtime decision to `SYNC` or `ASYNC`.
+
+If live AWS/model calls are required for Gate 19.2, execution remains a human boundary.
+
+## 10. Gate 19.1 authority impact
+
+```text
+AWS mutations:          0
+IAM mutations:          0
+new AWS resources:      0
+model invocations:      0
+capability executions:  0
+public endpoints:       0
+PR #89 modifications:   0
+```
+
+Phase 19 does not add AWS services solely for product appearance or AIP-C01 breadth.
+
+## 11. Canonical Phase 19 Gate 19.1 evidence
+
+- `docs/adr/0076-bounded-public-runtime-hypothesis-and-launch-contract.md`
+- `labs/phase-19-gate-19-1-public-runtime-hypothesis.md`
+- `labs/evidence/phase-19-gate-19-1-public-runtime-contract-v1.json`
+- `scripts/verify_phase19_gate19_1_public_runtime_contract.py`
+
+PR #89 remains separate deferred Governed LLM Gateway work and is not a Phase 19 dependency unless explicitly re-evaluated later.
