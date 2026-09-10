@@ -20,7 +20,6 @@ def _parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     """Run the deterministic inventory verifier and return a process exit code."""
-
     args = _parser().parse_args()
     repo_root = args.repo_root.resolve()
     inventory_path = args.inventory
