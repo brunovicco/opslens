@@ -5,9 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from opslens.public_analysis.application.evidence_orchestration import (
-    PublicRepositoryEvidenceSource,
-)
+from opslens.public_analysis.application.evidence_orchestration import PublicRepositoryEvidenceSource
 from opslens.public_analysis.application.representative_hybrid_evidence import (
     build_representative_hybrid_evidence,
 )
