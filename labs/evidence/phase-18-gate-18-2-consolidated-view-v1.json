@@ -492,7 +492,7 @@
       "statement": "The bounded Inspector discovery returned zero coverage records and zero finding records in the measured account, Region and time window.",
       "interpretation": "A measured zero-record API result is retained evidence for that read only; it is not proof of zero runtime exposure or zero vulnerabilities.",
       "evidence_path": "labs/evidence/phase-16-closeout-v1.json",
-      "supporting_document": "labs/phase-16-gate-16-6-closeout.md"
+      "supporting_document": "labs/phase-16-closeout.md"
     }
   ],
   "non_comparable_pairs": [
