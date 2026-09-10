@@ -13,13 +13,28 @@ from opslens.correlation.adapters.ghsa import (
     GhsaPyPIVulnerabilityEvidence,
     GhsaSourceIdentifierEvidence,
 )
-from opslens.hybrid_retrieval.domain import EvidenceNeed, StructuredEvidenceAuthority
+from opslens.hybrid_retrieval.adapters.bedrock_synthesis import (
+    BedrockHybridSynthesisExecution,
+    BedrockHybridSynthesisInvocationEvidence,
+)
+from opslens.hybrid_retrieval.domain import (
+    EvidenceNeed,
+    HybridSynthesisClaim,
+    HybridSynthesisDecision,
+    HybridSynthesisRequest,
+    HybridSynthesisResult,
+    StructuredEvidenceAuthority,
+)
 from opslens.ingestion.epss.domain.models import EpssSnapshot
 from opslens.ingestion.epss.domain.parser import EpssSnapshotParser
 from opslens.ingestion.kev.domain.models import KevCatalogSnapshot
 from opslens.knowledge_retrieval.application.bedrock_retrieval import (
     BedrockRetrieveInvocationEvidence,
     BedrockRetrieveResult,
+)
+from opslens.knowledge_retrieval.application.bedrock_synthesis import (
+    BEDROCK_SYNTHESIS_MODEL_ID,
+    BEDROCK_SYNTHESIS_REGION,
 )
 from opslens.knowledge_retrieval.domain import (
     KnowledgeSourceType,
@@ -39,6 +54,7 @@ from opslens.public_analysis.application import (
     build_representative_hybrid_evidence,
     build_representative_repository_analysis,
     build_representative_structured_evidence,
+    execute_representative_model_reasoning,
     retrieve_representative_semantic_evidence,
 )
 from opslens.public_analysis.domain import (
@@ -46,6 +62,7 @@ from opslens.public_analysis.domain import (
     ProviderResourceUsage,
     PublicRepositoryTarget,
     PublicSemanticPlanProposal,
+    RepresentativePublicAnalysisResult,
     create_public_analysis_request,
 )
 from opslens.repository_intelligence.domain import compute_git_blob_sha1
@@ -260,6 +277,70 @@ def _bedrock_retriever(request: RetrievalRequest) -> BedrockRetrieveResult:
     return BedrockRetrieveResult(evidence=evidence, invocation=invocation)
 
 
+def _bedrock_synthesizer(request: HybridSynthesisRequest) -> BedrockHybridSynthesisExecution:
+    """Return admitted Bedrock-shaped synthesis evidence without provider execution."""
+    claim = HybridSynthesisClaim.create(
+        request=request,
+        claim_index=1,
+        text="Prioritize the affected dependency and upgrade to the fixed release.",
+        semantic_citation_ids=("S1",),
+    )
+    result = HybridSynthesisResult.create(
+        request=request,
+        decision=HybridSynthesisDecision.ANSWER,
+        claims=(claim,),
+    )
+    evidence = BedrockHybridSynthesisInvocationEvidence(
+        model_id=BEDROCK_SYNTHESIS_MODEL_ID,
+        region=BEDROCK_SYNTHESIS_REGION,
+        request_id="model-request-1",
+        stop_reason="end_turn",
+        input_tokens=180,
+        output_tokens=32,
+        total_tokens=212,
+        cache_read_input_tokens=0,
+        cache_write_input_tokens=0,
+        bedrock_latency_ms=25,
+        client_elapsed_ms=30,
+        retry_attempts=1,
+        request_sha256=request.request_sha256,
+        prompt_sha256="d" * 64,
+        envelope_sha256=request.envelope.identity_sha256,
+        structured_catalog_sha256=request.structured_catalog_sha256,
+        semantic_catalog_sha256=request.semantic_catalog_sha256,
+    )
+    return BedrockHybridSynthesisExecution(result=result, evidence=evidence)
+
+
+def _hybrid_inputs():  # type: ignore[no-untyped-def]
+    """Build representative handoff, analysis, prioritization, semantic evidence, and envelope."""
+    composed = _representative_analysis()
+    prioritization = _prioritization(composed)
+    execution = composed.source_execution
+    planning_request = build_public_semantic_planning_request(execution)
+    proposal = PublicSemanticPlanProposal(
+        planning_request_sha256=planning_request.request_sha256,
+        evidence_needs=PUBLIC_ANALYSIS_V1_REQUIRED_EVIDENCE_NEEDS,
+    )
+    handoff = admit_public_semantic_plan(
+        proposal,
+        planning_request=planning_request,
+        source_execution=execution,
+    )
+    semantic = retrieve_representative_semantic_evidence(
+        analysis=composed.analysis,
+        prioritization=prioritization,
+        retriever=_bedrock_retriever,
+    )
+    envelope = build_representative_hybrid_evidence(
+        handoff=handoff,
+        repository_analysis=composed,
+        prioritization=prioritization,
+        semantic_evidence=semantic,
+    )
+    return composed, prioritization, handoff, semantic, envelope
+
+
 def test_composes_retained_repository_truth_without_reinterpreting_risk() -> None:
     """Build Phase 4/5 truth and project it directly into bounded structured evidence."""
     composed = _representative_analysis()
@@ -304,25 +385,8 @@ def test_composes_retained_repository_truth_without_reinterpreting_risk() -> Non
 
 def test_composes_checked_semantic_evidence_under_exact_public_hybrid_route() -> None:
     """Use one Bedrock-shaped retrieve result to satisfy only remediation evidence."""
-    composed = _representative_analysis()
-    prioritization = _prioritization(composed)
-    execution = composed.source_execution
-    planning_request = build_public_semantic_planning_request(execution)
-    proposal = PublicSemanticPlanProposal(
-        planning_request_sha256=planning_request.request_sha256,
-        evidence_needs=PUBLIC_ANALYSIS_V1_REQUIRED_EVIDENCE_NEEDS,
-    )
-    handoff = admit_public_semantic_plan(
-        proposal,
-        planning_request=planning_request,
-        source_execution=execution,
-    )
+    composed, prioritization, handoff, semantic, envelope = _hybrid_inputs()
 
-    semantic = retrieve_representative_semantic_evidence(
-        analysis=composed.analysis,
-        prioritization=prioritization,
-        retriever=_bedrock_retriever,
-    )
     assert semantic.request.top_k == REPRESENTATIVE_REMEDIATION_TOP_K == 5
     assert _CVE_ID in semantic.request.query
     assert "pkg:pypi/requests@2.31.0" in semantic.request.query
@@ -331,14 +395,47 @@ def test_composes_checked_semantic_evidence_under_exact_public_hybrid_route() ->
         bedrock_retrieve_count=1,
         retry_count=2,
     )
-
-    envelope = build_representative_hybrid_evidence(
-        handoff=handoff,
-        repository_analysis=composed,
-        prioritization=prioritization,
-        semantic_evidence=semantic,
-    )
     assert envelope.authority_decision == handoff.route_decision
     assert envelope.satisfied_evidence_needs == handoff.route_decision.evidence_needs
     assert len(envelope.structured_evidence) == 2
     assert len(envelope.semantic_evidence) == 1
+    assert prioritization.source_analysis_id == composed.analysis.analysis_id
+
+
+def test_admits_bounded_model_reasoning_and_serializable_representative_result() -> None:
+    """Bind model explanation to exact evidence and serialize a bounded non-public result."""
+    composed, prioritization, handoff, semantic, envelope = _hybrid_inputs()
+    reasoning = execute_representative_model_reasoning(
+        envelope=envelope,
+        synthesizer=_bedrock_synthesizer,
+    )
+
+    assert reasoning.usage == ProviderResourceUsage(
+        bedrock_model_call_count=1,
+        bedrock_input_tokens=180,
+        bedrock_output_tokens=32,
+        retry_count=1,
+    )
+    assert semantic.retrieve_result.invocation.returned_result_count == 1
+
+    admitted = RepresentativePublicAnalysisResult(
+        handoff=handoff,
+        analysis=composed.analysis,
+        prioritization=prioritization,
+        envelope=envelope,
+        synthesis_request=reasoning.request,
+        synthesis_result=reasoning.execution.result,
+    )
+    serialized = admitted.serialize()
+    payload = json.loads(serialized)
+    assert payload["workload_id"] == "public-analysis-workload:v1"
+    assert payload["outcome"] == "completed"
+    assert payload["repository"]["commit_sha"] == _COMMIT_SHA
+    assert payload["accounting"] == {
+        "returned_findings": 1,
+        "total_affected_findings": 1,
+    }
+    assert payload["findings"][0]["priority_tier"] == "P0"
+    assert payload["evidence"]["semantic_citations"][0]["citation_id"] == "S1"
+    assert b"Upgrade to version 2.32.0 or later and follow the vendor advisory." not in serialized
+    assert len(admitted.result_sha256) == 64
