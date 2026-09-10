@@ -45,7 +45,7 @@ real gap
 | 14 | Amazon Bedrock AgentCore | ✅ Complete — optional lab target retained; standing experiment IAM removed |
 | 15 | A2A | ✅ Complete — bounded offline reference interoperability + official SDK conformance retained |
 | 16 | Runtime Exposure with Amazon Inspector | ✅ Complete — read contract proven; zero current records; temporary IAM removed |
-| 17 | Security Hardening | 🚧 In progress — Gates 17.1–17.4 complete; Gate 17.5 next |
+| 17 | Security Hardening | 🚧 In progress — Gates 17.1–17.5 complete; Gate 17.6 next |
 | 18 | Evaluation, Cost & Portfolio Readiness | ⏳ Planned |
 
 ## Permanent engineering boundaries
@@ -96,6 +96,13 @@ untrusted text != instruction authority
 retrieved content != system/developer authority
 failed/forged capability result != admissible business result
 adversarial test success != proof of universal safety
+log event suppression != trace response/error suppression
+exception text != safe telemetry by default
+trace metadata != business/evidence truth
+loggable identifier != authorization
+telemetry correlation != capability authorization
+content-minimized failure log != execution result
+redaction success != proof source content is non-sensitive
 ```
 
 ## Completed platform through Phase 16
@@ -277,27 +284,95 @@ live-model jailbreak as authority proof:     rejected
 
 `adversarial test success != proof of universal safety` remains a permanent interpretation boundary.
 
-### Gate 17.5 — sensitive-data / logging / telemetry hardening — NEXT
+### Gate 17.5 — sensitive-data / logging / telemetry hardening — COMPLETE
 
-Inspect existing observability and failure-path emissions before adding new telemetry functionality. Minimum evaluation targets:
+Gate 17.5 began from repository evidence and closed two concrete content-bearing telemetry gaps:
 
 ```text
-user/source text in logs, exceptions, metrics, and spans
-provider request/response payload exposure
-MCP/A2A protocol payload exposure
-secrets/tokens/credentials and authorization material
-high-cardinality or attacker-controlled labels/attributes
-content-free error guarantees
-trace/evidence identifiers that could become authority by accident
-retention and data-minimization assumptions in retained telemetry paths
+TRACE17-001  bare Powertools Lambda tracer response/error capture
+LOG17-001    implicit active exception/traceback serialization through logger.exception
 ```
 
-Gate 17.5 should begin with repository evidence and adversarial logging tests. New observability vendors, cloud permissions, public runtime surfaces, or model authority are not implied.
+Retained implementation:
+
+```text
+Powertools Lambda handlers:                   12
+logger input-event capture:                    disabled / log_event=False
+tracer response capture:                       disabled / capture_response=False
+tracer error capture:                          disabled / capture_error=False
+shared active exception/traceback logging:     disabled
+shared failure logger:                         bounded logger.error
+repository verifier:                           scripts/verify_telemetry_safety.py
+regression test:                               tests/unit/shared/observability/test_powertools_telemetry_safety.py
+```
+
+Final exact implementation PR-head validation:
+
+```text
+head:                           5ad6e7d9aae224d188f11b1f0bae27fc25ea59df
+Security Hardening CI:          34429102027 / #30 / SUCCESS
+Operational Observability CI:   34429102108 / #23 / SUCCESS
+Dependency Review:              34429102025 / #15 / SUCCESS
+CodeQL / Python:                34429102142 / #19 / SUCCESS
+```
+
+The repository-wide telemetry verifier emitted:
+
+```text
+telemetry_safety_invariants=PASS handlers=12
+```
+
+Implementation PR #268 was protected-squash merged as:
+
+```text
+9e967acdd1a5ae611a3a1db47aee164272d11380
+```
+
+Canonical records:
+
+```text
+docs/adr/0068-content-minimized-lambda-telemetry.md
+labs/phase-17-gate-17-5-telemetry-safety.md
+labs/evidence/phase-17-gate-17-5-telemetry-safety-v1.json
+labs/phase-17-gate-17-5-closeout.md
+labs/evidence/phase-17-gate-17-5-closeout-v1.json
+```
+
+Retained authority posture:
+
+```text
+AWS/IAM mutation:                  none
+new observability vendor/service:  none
+new public runtime:                none
+new model/tool authority:          none
+business/evidence authority move:  none
+PR #89 modification:               none
+```
+
+`log event suppression != trace response/error suppression` and `exception text != safe telemetry by default` are permanent interpretation boundaries.
+
+### Gate 17.6 — operational recovery / kill-switch / abuse-cost controls — NEXT
+
+Begin from concrete retained runtime and operational evidence. The first slice should inventory which workloads can incur repeated calls, writes, retries, or costs; which already have deterministic stop/retry bounds; and where an operator can safely halt or recover execution without creating broader authority.
+
+Minimum evaluation targets:
+
+```text
+existing retry/fallback/execution budgets
+scheduled/manual workflow execution authority
+Lambda asynchronous retry/failure destinations where retained
+Bedrock/model call budgets and cost-amplification paths
+bounded cancellation/disable mechanisms already present
+recovery from partial writes or failed deterministic evidence admission
+operator actions that could become over-broad kill-switch authority
+re-entry and rollback evidence after an operational stop
+```
+
+Gate 17.6 must not invent a global kill switch merely for portfolio completeness. Any new stop/recovery mechanism must correspond to a concrete retained runtime risk and must preserve least privilege, deterministic evidence, and reversibility.
 
 ### Candidate later gates — EVIDENCE-DRIVEN
 
 ```text
-17.6 operational recovery / kill-switch / abuse-cost controls
 17.7 architecture-document synchronization if still pending
 17.8 Security Hardening closeout
 ```
