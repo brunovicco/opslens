@@ -33,7 +33,9 @@ Phase 17   Security Hardening                                  COMPLETE
   Gate 17.6 Operational recovery / abuse-cost controls         COMPLETE / MEASURED PAUSE-RESUME PROOF
   Gate 17.7 Architecture documentation synchronization         COMPLETE / SEC17-DOC-001 CLOSED
   Gate 17.8 Security Hardening closeout                        COMPLETE BY CLOSEOUT PR
-Phase 18   Evaluation, Cost & Portfolio Readiness              NEXT
+Phase 18   Evaluation, Cost & Portfolio Readiness              IN PROGRESS
+  Gate 18.1 Cross-phase evidence inventory/comparability       COMPLETE / 27 RECORDS / 8 ARTIFACTS
+  Gate 18.2 Consolidated evaluation and reliability view       NEXT
 ```
 
 ## Permanent architecture boundaries
@@ -93,9 +95,14 @@ Terraform apply success != independent AWS state verification
 bounded retry != guaranteed delivery
 model token budget != tenant quota
 historical evidence != standing authority
+measured value != derived estimate
+unmeasured != zero
+not applicable != zero
+same unit != same measurement semantics
+portfolio summary != new technical authority
 ```
 
-Deterministic code remains authoritative for evidence identity, vulnerability applicability, Risk Policy v1, structured-query compilation, retrieval admission, capability authorization, executable input binding, result admission, handoff admission, MCP admission/projection, A2A reference identity/resolution/admission, retry/fallback policy, and runtime-evidence admission/correlation.
+Deterministic code remains authoritative for evidence identity, vulnerability applicability, Risk Policy v1, structured-query compilation, retrieval admission, capability authorization, executable input binding, result admission, handoff admission, MCP admission/projection, A2A reference identity/resolution/admission, retry/fallback policy, runtime-evidence admission/correlation, and Phase 18 evidence-classification/comparability admission.
 
 ## Retained measured reasoning reference — Phase 11
 
@@ -348,10 +355,59 @@ labs/phase-17-closeout.md
 labs/evidence/phase-17-closeout-v1.json
 ```
 
-## Next — Phase 18
+## Phase 18 — Evaluation, Cost & Portfolio Readiness — IN PROGRESS
 
-Proceed to **Phase 18 — Evaluation, Cost & Portfolio Readiness**.
+### Gate 18.1 — cross-phase evidence inventory and comparability matrix — COMPLETE
 
-Start with consolidation rather than a new runtime. Phase 18 must distinguish measured values, derived estimates, and unmeasured dimensions; preserve independent quality/security/latency/cost metrics; and avoid turning dev/lab evidence into production claims.
+Gate 18.1 classified the first retained cross-phase headline set before any consolidated dashboard or portfolio view was built.
+
+```text
+records:                  27
+canonical artifacts:       8
+comparability groups:     20
+non-comparability pairs:  11
+```
+
+The retained evidence classifications are:
+
+```text
+MEASURED
+DERIVED
+UNMEASURED
+NOT_APPLICABLE
+```
+
+The verifier requires canonical evidence paths, exact source-value equality for measured observations, explicit derivation for derived values, null semantics for unmeasured/not-applicable values, and explicit comparability admission.
+
+Protected implementation:
+
+```text
+issue:                     #280 / CLOSED / COMPLETED
+PR:                        #281
+exact head:                3737efacc72f54a8b31afeb4461532fe6d39657c
+protected squash merge:    2d059d6b406d2da2bf2151f7934f0279ca843de0
+Evaluation Readiness CI:   34481175326 / #7 / SUCCESS
+Security Hardening CI:     34481175251 / #42 / SUCCESS
+Dependency Review:         34481175395 / #27 / SUCCESS
+CodeQL / Python:           34481175336 / #37 / SUCCESS
+```
+
+Canonical records:
+
+```text
+docs/adr/0071-cross-phase-evidence-classification-and-comparability.md
+labs/phase-18-gate-18-1-evidence-inventory.md
+labs/phase-18-gate-18-1-closeout.md
+labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json
+labs/evidence/phase-18-gate-18-1-closeout-v1.json
+```
+
+### Next — Gate 18.2
+
+Proceed to **Gate 18.2 — Consolidated Evaluation & Reliability View**.
+
+Gate 18.2 must consume the Gate 18.1 comparison contract rather than scrape or reinterpret historical prose. It should expose independent quality, groundedness, latency, token/cost, execution-authority, runtime, security and recovery dimensions while preserving failed/rejected hypotheses and non-comparability boundaries.
+
+A new AWS/model experiment is not required unless the consolidated view exposes a material missing decision variable that cannot be answered from retained evidence.
 
 PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work and must stay untouched unless explicitly resumed in a separate scope.
