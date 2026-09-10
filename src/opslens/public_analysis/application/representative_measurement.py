@@ -8,6 +8,7 @@ from typing import Protocol
 from opslens.public_analysis.domain.representative_measurement import (
     REPRESENTATIVE_PUBLIC_ANALYSIS_WORKLOAD_ID,
     REPRESENTATIVE_WORKLOAD_STAGE_ORDER,
+    ProviderMeasurementCoverage,
     ProviderResourceUsage,
     RepresentativeStageMeasurement,
     RepresentativeWorkloadMeasurement,
@@ -33,7 +34,7 @@ class RepresentativeStageAction(Protocol):
         ...
 
     def execute(self) -> ProviderResourceUsage:
-        """Execute the stage and return only counters measured by that execution."""
+        """Execute the stage and return only numeric counters actually observed."""
         ...
 
 
@@ -64,8 +65,12 @@ def measure_representative_workload(
     plan: RepresentativeWorkloadPlan,
     serializer: AdmittedResultSerializer,
     clock: MeasurementClock,
+    provider_coverage: ProviderMeasurementCoverage,
 ) -> RepresentativeWorkloadMeasurement:
-    """Execute one non-public plan and return only concrete observed measurements."""
+    """Execute one non-public plan with explicit evidence semantics for every metric."""
+    if type(provider_coverage) is not ProviderMeasurementCoverage:
+        raise ValueError("provider_coverage must use ProviderMeasurementCoverage")
+
     run_started_ns = _clock_read(clock)
     stages: list[RepresentativeStageMeasurement] = []
 
@@ -94,6 +99,7 @@ def measure_representative_workload(
         end_to_end_duration_ms=_elapsed_ms(run_started_ns, run_ended_ns),
         serialized_result_bytes=len(serialized_result),
         provider_totals=sum_provider_usage(measurements),
+        provider_coverage=provider_coverage,
     )
 
 
