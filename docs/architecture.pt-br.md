@@ -1,10 +1,10 @@
 # Arquitetura do OpsLens
 
-_Última atualização: 2026-09-07_
+_Última atualização: 2026-09-10_
 
-Este documento é o baseline arquitetural acumulado até a **Phase 9 — Public Analyze Your Repository: COMPLETE após o merge da Gate 9.4**.
+Este documento é o baseline arquitetural acumulado até a **Phase 17 — Security Hardening, Gate 17.6 concluída**.
 
-A próxima fase é a **Phase 10 — Observability & Operational Excellence**.
+A Gate 17.7 é somente sincronização documental. O próximo passo delimitado após esta sincronização é o **closeout da Phase 17**, seguido da **Phase 18 — Evaluation, Cost & Portfolio Readiness**.
 
 ## 1. Propósito
 
@@ -18,11 +18,15 @@ Invariante central:
 
 > **Agents reason. Code verifies evidence.**
 
-Boundaries permanentes:
+Fronteiras permanentes:
+
+> **MCP is an interoperability boundary, not new business authority.**
 
 > **Not every question is a RAG problem.**
 
 > **Structured facts use structured retrieval.**
+
+> **No unrestricted text-to-SQL.**
 
 > **READ, NEVER EXECUTE third-party repository code.**
 
@@ -30,130 +34,137 @@ Boundaries permanentes:
 
 > **Intent classification != execution authority.**
 
-> **No unrestricted text-to-SQL.**
+## 2. Modelo de autoridade
 
-## 2. Princípios arquiteturais
+Código determinístico continua sendo autoridade para:
 
-Salvo mudança por ADR explícito:
+- identidade de fonte e evidência;
+- normalização de pacotes e aplicabilidade de versões/ranges;
+- reconciliação CVE/GHSA/NVD;
+- fatos de KEV, EPSS, CVSS e Risk Policy;
+- parsing de consultas estruturadas e compilação SQL;
+- admissão de retrieval e completude de evidências obrigatórias;
+- identidade de citações e admissão da saída;
+- autorização de capabilities e binding de inputs executáveis;
+- admissão de resultados de capabilities;
+- admissão de handoffs single-agent e multi-agent;
+- admissão MCP e projeção de resultados;
+- identidade, resolução e admissão de referências A2A;
+- política de retry/fallback;
+- admissão e correlação de evidência de runtime;
+- estado do controle operacional de recovery expresso via Terraform.
 
-- evidência bruta de terceiros é preservada antes de enrichment ou interpretação;
-- versões exatas de fontes, snapshots imutáveis e hashes participam da proveniência;
-- package normalization, version/range evaluation, aplicabilidade de vulnerabilidade, reconciliação CVE/GHSA/NVD, KEV, EPSS, CVSS e Risk Policy permanecem determinísticos;
-- planners em linguagem natural produzem propostas limitadas, nunca autoridade de query/execution;
-- validação de SemanticQuery e compilação SQL permanecem determinísticas;
-- construção do corpus canônico e identidade do checked manifest permanecem determinísticas;
-- autorização de route, admissão de evidência, completude obrigatória, context assembly, identidade canônica de citações, output admission e cálculo de métricas permanecem determinísticos;
-- admissão do request público, scope público do produto, binding de snapshot/file, admissão de semantic plan e admissão do handoff público permanecem determinísticos;
-- texto recuperado continua conteúdo de instrução não confiável após admissão de proveniência;
-- output do modelo é proposta sobre evidência já admitida, nunca nova fonte de verdade estruturada;
-- identidade de citação sintaticamente válida não prova suporte semântico;
-- evidência estruturada e semântica permanecem classes diferentes de autoridade;
-- runtime exposure não é inferido de repository risk;
-- divergências de schema, proveniência, autoridade, completude, request/source binding ou identidade content-addressed falham fechado;
-- IAM segue least privilege e responsabilidades reais do runtime;
-- serviços AWS entram por requisitos concretos, não por cobertura de certificação;
-- custo e observabilidade são requisitos arquiteturais;
-- evidência de first run é preservada antes de otimização;
-- experimento negativo é preservado em vez de ajustado até passar;
-- application contract validado não é apresentado como runtime de produção implantado.
+Modelos e agentes podem classificar, propor, resumir, explicar ou sintetizar sobre evidências já admitidas. Eles não viram autoridade apenas porque a saída é sintaticamente válida, plausível ou produzida por um serviço gerenciado da AWS.
+
+```text
+proposal != authorization
+retrieval result != sufficient evidence
+citation id != semantic support
+capability invocation != execution result
+execution result != admitted evidence
+repository finding != runtime exposure
+AWS authentication != business authorization
+scheduler state != business/evidence authority
+```
 
 ## 3. Forma atual do sistema
 
-### 3.1 Autoridade estruturada de vulnerabilidade e risco
+### 3.1 Threat intelligence e caminho determinístico de risco
 
 ```text
 NVD + CISA KEV + FIRST EPSS + GitHub Security Advisories
- -> evidência de threat intelligence preservada por fonte
- -> identidade PyPI / aplicabilidade PEP 440 determinísticas
- -> snapshot imutável do repositório + evidência inerte do uv.lock
- -> correlação determinística de vulnerabilidades
+ -> raw evidence preservada por fonte
+ -> normalização e aplicabilidade determinísticas
+ -> evidência de dependências do repositório
+ -> correlação de vulnerabilidades
  -> RepositoryAnalysisResult
  -> Risk Policy v1 determinística
  -> RiskPrioritizationResult
 ```
 
-Nenhum LLM decide aplicabilidade de vulnerabilidade, verdade KEV/EPSS/CVSS, score/tier de risco ou runtime exposure.
+Raw evidence de terceiros é preservada antes de enriquecimento. Versões exatas das fontes, snapshots imutáveis, hashes e identidades tipadas de evidência participam da proveniência.
 
-### 3.2 Caminho estruturado de pergunta em linguagem natural
+### 3.2 Repository intelligence
+
+```text
+requisição para repositório público GitHub
+ -> admissão estrita da requisição
+ -> metadados do repositório confirmados pela fonte
+ -> snapshot imutável commit/tree
+ -> evidência inerte de uv.lock no commit exato
+ -> parsing TOML determinístico
+ -> identidade canônica das dependências
+ -> aplicabilidade determinística das vulnerabilidades
+```
+
+Código de repositórios de terceiros nunca é executado durante a análise.
+
+### 3.3 Caminho estruturado a partir de linguagem natural
 
 ```text
 pergunta factual em linguagem natural
- -> planner Bedrock limitado
- -> proposta estruturada
+ -> proposta delimitada do planner Bedrock
  -> parser determinístico
  -> SemanticQuery tipada
  -> compilador SQL determinístico
- -> Athena read-only limitado
- -> evidência estruturada de resultado
+ -> Athena read-only e delimitado
+ -> evidência estruturada
 ```
 
-O planner não possui autoridade para SQL arbitrário. ADRs 0020 e 0021 congelam esse boundary.
+O planner não possui autoridade para SQL arbitrário.
 
-### 3.3 Caminho semântico explicativo / remediação
+### 3.4 Caminho semântico de remediation
 
 ```text
-source pins oficiais explicitamente autorizados
+pins explícitos de fontes oficiais
  -> corpus canônico determinístico
- -> publicação S3 determinística
- -> ingestão em Bedrock Knowledge Base customer-managed
- -> Titan Text Embeddings V2 / 1024 / FLOAT32
- -> Amazon S3 Vectors / cosine
- -> Retrieve direto e limitado
- -> admissão por proveniência/hash contra corpus verificado
- -> context assembly determinístico e limitado
- -> autoridade pré-modelo determinística
- -> síntese limitada e não-streaming via Bedrock Converse
- -> identidade determinística de citações
- -> avaliação explícita de suporte / groundedness
+ -> publicação S3
+ -> Bedrock Knowledge Base
+ -> Titan Text Embeddings V2
+ -> Amazon S3 Vectors
+ -> Retrieve delimitado
+ -> admissão por proveniência/hash
+ -> montagem determinística de contexto
+ -> síntese delimitada via Bedrock Converse
+ -> identidade determinística de citação
+ -> avaliação de groundedness/suporte
 ```
 
-`RetrieveAndGenerate` continua deliberadamente fora do caminho para manter retrieval e synthesis mensuráveis separadamente.
+`RetrieveAndGenerate` não é o default retido porque retrieval e synthesis são deliberadamente medidos e admitidos como estágios separados.
 
-### 3.4 Caminho de evidência híbrida
+### 3.5 Caminho de evidência híbrida
 
 ```text
 proposta EvidenceNeed[]
- -> autoridade determinística de hybrid route
+ -> autoridade determinística de rota
  -> STRUCTURED | SEMANTIC | HYBRID | UNSUPPORTED
- -> aquisição/admissão determinística por classe de evidência
- -> completude ALL_REQUIRED por need
+ -> aquisição e admissão por classe de evidência
+ -> completude ALL_REQUIRED
  -> HybridEvidenceEnvelope
- -> projeção determinística de fatos F*
- -> projeção determinística de citações semânticas S*
- -> síntese limitada e route-aware
- -> output admission determinístico
- -> métricas independentes de qualidade/runtime
+ -> fatos F* estruturados + citações S* semânticas
+ -> síntese delimitada conforme a rota
+ -> admissão determinística da saída
 ```
 
-Hybrid Retrieval significa **routing e composição de evidências híbridas**. Não implica keyword + vector search.
+Hybrid significa **roteamento e composição de classes de evidência**, não uma afirmação automática de keyword-plus-vector search.
 
-### 3.5 Boundary público de análise
+### 3.6 Fronteira de public analysis
+
+O contrato de public analysis continua sendo uma fronteira de aplicação. Nenhum compute HTTP público ou endpoint público é retido.
 
 ```text
-JSON público não confiável
- -> admissão estrita <=2048 bytes
- -> coordenadas GitHub owner/name/ref validadas
- -> metadata source-confirmed de repositório público
- -> snapshot imutável commit/tree
- -> evidência inerte uv.lock no commit exato
- -> parser determinístico do uv.lock
- -> normalização determinística PyPI da Phase 3
- -> PublicRepositoryEvidenceExecution
- -> semantic planning request metadata-only <=2048 bytes
- -> proposta não confiável <=1024 bytes
- -> admissão determinística do scope público v1
- -> autoridade híbrida existente da Phase 8
+JSON não confiável
+ -> admissão de requisição <=2048 bytes
+ -> coordenadas GitHub validadas
+ -> evidência imutável do repositório
+ -> planejamento semântico metadata-only e delimitado
+ -> admissão determinística do escopo public-v1
+ -> autoridade híbrida da Phase 8
  -> PublicAnalysisAdmissionHandoff
  -> STOP
 ```
 
-A operação pública v1 é fixa:
-
-```text
-analyze_public_repository
-```
-
-A policy pública determinística exige exatamente:
+A operação fixa public v1 é `analyze_public_repository` e exige exatamente:
 
 ```text
 remediation_guidance
@@ -161,42 +172,42 @@ risk_priority
 vulnerability_facts
 ```
 
-O planner não pode redefinir esse scope. Handoff público bem-sucedido exige adicionalmente que a autoridade de route da Phase 8 retorne:
+Texto bruto do repositório, credenciais, SQL arbitrário, escolha de provider/model ou conteúdo executável do repositório não se tornam autoridade do planner.
 
-```text
-HYBRID
-ALL_REQUIRED
-STRUCTURED + SEMANTIC
-```
-
-O planner não recebe raw repository URL, bytes do lockfile, nomes/versões de dependências, texto/instruções arbitrárias do repositório, SQL, credenciais, seleção de provider/model/tool ou conteúdo executável.
-
-## 4. Fundação AWS
+## 4. Fundação AWS e serviços standing retidos
 
 ```text
 environment:             dev
-primary workload Region: us-east-1
-AWS account:             487757851499
+primary Region:          us-east-1
 IaC:                     Terraform
-human access:            AWS IAM Identity Center
+human administration:    AWS IAM Identity Center
 CI/CD identity:          GitHub Actions OIDC -> AWS STS
 observability:           CloudWatch + X-Ray
 analytics:               AWS Glue + Amazon Athena
+knowledge retrieval:     Amazon Bedrock Knowledge Base + Amazon S3 Vectors
+compute:                  AWS Lambda nos caminhos retidos de ingestão/transformação
+recurring triggers:      Amazon EventBridge Scheduler
 ```
 
-Storage principal:
+O storage standing inclui o data bucket, deployment-artifact bucket, Terraform state bucket e o bucket vetorial de conhecimento no S3 Vectors.
+
+A arquitetura standing **não** afirma possuir:
 
 ```text
-Data:       opslens-dev-data-487757851499-us-east-1
-Artifacts:  opslens-dev-artifacts-487757851499-us-east-1
-TF state:   opslens-dev-tfstate-487757851499-us-east-1
+public HTTP endpoint
+public application compute
+public MCP runtime
+public A2A peer runtime
+standing AgentCore experiment runtime
+standing Inspector experiment IAM
+production multi-tenant request surface
 ```
 
-Baseline de Knowledge Retrieval:
+## 5. Baseline de knowledge retrieval
+
+O caminho retido de knowledge retrieval controlado usa:
 
 ```text
-knowledge base id:     BTVJ2PBR2A
-data source id:        IEL1LBE026
 embedding model:       amazon.titan-embed-text-v2:0
 embedding dimensions:  1024
 embedding data type:   FLOAT32
@@ -207,454 +218,231 @@ canonical chunks:      9
 synthesis profile:     us.anthropic.claude-haiku-4-5-20251001-v1:0
 ```
 
-Administração humana usa credenciais temporárias do IAM Identity Center. GitHub Actions usa OIDC; access keys persistentes não são armazenadas no GitHub.
-
-## 5. Autoridades estruturadas determinísticas — Phases 2–6
-
-### Threat Intelligence Data Lake
-
-NVD, KEV, EPSS e GHSA permanecem evidência source-local com proveniência e semântica temporal explícitas.
-
-### Vulnerability Correlation
-
-```text
-package/version/purl
- + evidência exata de vulnerable range
- -> avaliação PEP 440 determinística
- -> affected | not_affected | unsupported
- -> reconciliação CVE/GHSA/NVD
- -> evidência content-addressed
-```
-
-### Repository Intelligence
-
-```text
-repositório público
- -> identidade imutável repository/commit/tree
- -> aquisição GitHub read-only limitada
- -> bytes inertes do uv.lock
- -> parsing TOML determinístico
- -> dependências canônicas
- -> aplicabilidade determinística
- -> RepositoryAnalysisResult
-```
-
-Findings de repositório não provam presença ou explorabilidade em runtime.
-
-### Risk Prioritization
-
-```text
-RepositoryAnalysisResult
- -> Risk Policy v1 determinística
- -> contribuições por fator
- -> priority score + tier
- -> completeness / review_required
-```
-
-O valor de prioridade é score de policy do OpsLens, não probabilidade de exploit, CVSS, EPSS ou runtime exposure.
-
-### Semantic Query
-
-```text
-question
- -> planner Bedrock limitado
- -> parser determinístico
- -> SemanticQuery tipada
- -> compilador SQL determinístico
- -> execução Athena limitada
-```
-
-Text-to-SQL irrestrito não é permitido.
-
-## 6. Phase 7 — Knowledge Retrieval controlado
-
-Corpus congelado:
-
-```text
-manifest id: knowledge-corpus-manifest:v1
-documents:   6
-chunks:      9
-sha256:      98b289a9322849f703c106b573702ad221e81647f9a49eab05455bc95c5e9418
-```
-
-Baseline de retrieval:
-
-```text
-Recall@1:   0.375
-Recall@3:   0.750
-Recall@5:   0.875
-Recall@10:  1.000
-MRR:        0.5699404761904762
-provenance correctness: 1.0
-```
-
-Os casos negativos ainda retornaram vizinhos vetoriais, provando:
+A fronteira permanente de interpretação é:
 
 ```text
 non-empty retrieval != sufficient evidence != authority to answer
-```
-
-Perfil de synthesis:
-
-```text
-Region:              us-east-1
-API:                 bedrock-runtime / Converse
-model/profile:       us.anthropic.claude-haiku-4-5-20251001-v1:0
-streaming:           não
-temperature:         0.0
-provider maxTokens:  2048
-tools:               nenhum
-```
-
-Baseline congelado da Gate 7.7:
-
-```text
-decision accuracy:                 1.0
-citation target precision:         0.2857142857142857
-citation target recall:            0.5
-claim supportedness rate:          0.8461538461538461
-unsupported claim rate:            0.15384615384615385
-citation correctness rate:         0.8461538461538461
-abstention precision:              1.0
-abstention recall:                 1.0
-```
-
-Distinção preservada:
-
-```text
 retrieval success != citation attribution success != semantic groundedness
 ```
 
-## 7. Phase 8 — autoridade híbrida
+## 6. Arquitetura de reasoning e agentic
 
-ADR 0025 congela `hybrid-routing:v1`:
+A Phase 11 reteve a referência single-agent com Bedrock direto como baseline default de reasoning.
 
-```text
-vulnerability_facts and/or risk_priority -> STRUCTURED
-remediation_guidance                      -> SEMANTIC
-structured + remediation                 -> HYBRID
-runtime_exposure, alone or mixed         -> UNSUPPORTED
-```
+A Phase 12 reteve especialização e handoff determinísticos, mas a topologia medida com dois modelos foi rejeitada como default porque adicionou chamadas, tokens, latência e custo sem ganho medido de qualidade.
 
-Routes suportadas exigem `ALL_REQUIRED`. Classificação de intent/evidence need pode ser proposta; route authority é determinística.
+A Phase 13 reteve contratos offline delimitados de MCP para exposição/execução/projeção de capabilities. MCP não adiciona autoridade de negócio.
 
-ADR 0026 congela `hybrid-evidence:v1`. Evidência estruturada e semântica permanecem coleções separadas, e rank/score semântico continuam metadata, não verdade.
+A Phase 14 reteve Amazon Bedrock AgentCore somente como alvo opcional de laboratório. IAM standing do experimento e recursos do managed Runtime foram removidos após o experimento, e o workflow histórico mutante permanece retired/fail-closed.
 
-ADR 0027 congela:
+A Phase 15 reteve interoperabilidade A2A offline baseada em referência e um oracle de conformidade com o SDK oficial em CI. Nenhum runtime A2A público/de rede é retido.
 
-```text
-hybrid-evaluation-golden:v1
-68d146a41539d661e7345509913a26d3316daa1c48f9f2e1677cb8aea03ca2d1
-```
+## 7. Fronteira de runtime exposure
 
-Métricas independentes:
+A Phase 16 introduziu uma fronteira tipada de evidência read-only com Amazon Inspector.
+
+A descoberta medida provou autorização para `ListCoverage` e `ListFindings` com zero registros atuais. O role temporário e dedicado do Inspector foi removido depois e sua ausência foi verificada independentemente.
+
+Assim:
 
 ```text
-route_accuracy
-structured_fact_correctness
-semantic_groundedness
-citation_correctness
-abstention
-latency
-cost
+Inspector API success != runtime evidence presence
+Inspector finding != repository finding
+runtime evidence correlation != capability authorization
 ```
 
-Composite score não é permitido.
+Repository risk e runtime exposure continuam classes distintas de evidência.
 
-ADR 0028 congela `hybrid-synthesis:v1`:
+## 8. Security hardening — estado retido da Phase 17
+
+### 8.1 Gate 17.1 — threat/control-gap inventory
+
+A Gate 17.1 estabeleceu um inventário evidence-first e priorizou somente gaps observados. O drift da documentação arquitetural registrado como `SEC17-DOC-001` é o gap documental tratado pela Gate 17.7.
+
+### 8.2 Gate 17.2 — autoridade de CI/CD e workflows
+
+Controles retidos no repositório incluem:
 
 ```text
-STRUCTURED  -> fatos F* determinísticos / 0 model calls
-SEMANTIC    -> evidência S* admitida / <=1 model call
-HYBRID      -> F* + S* / <=1 model call
-UNSUPPORTED -> abstention explícito / 0 model calls
-incomplete  -> reject_before_synthesis / 0 model calls
+protected-main required context:     Repository security invariants
+external GitHub Actions:             full 40-hex SHA pins
+checkout persisted credentials:      desabilitados onde desnecessários
+pull_request_target/workflow_run:     rejeitados por default
+EPSS planning identity:              read-only evidence role
+EPSS execution identity:             coordinator role
+long STS session:                    somente full-backfill execute path
+historical AgentCore mutation path:  retired / fail-closed
 ```
 
-Cada claim explicativa do modelo deve referenciar evidência semântica admitida. IDs desconhecidos falham fechado.
+Uma tentativa de escrita direta em `main` protegida foi rejeitada independentemente, provando que o CI obrigatório é enforcement de merge e não apenas intenção documental.
 
-## 8. Phase 8 — baseline medido e governança de otimização
+### 8.3 Gate 17.3 — dependency e code scanning
 
-Baseline real da Gate 8.4:
+Sinais de segurança retidos:
 
 ```text
-route_accuracy:               1.0
-structured_fact_correctness:  1.0
-semantic_groundedness:        0.6666666666666666
-citation_correctness:         0.6666666666666666
-abstention:                   1.0
-latency_ms:                   2959.3333333333335
-cost:                         UNMEASURED / null
+Dependency Review:  pull_request / fail-on-severity=high / contents:read
+CodeQL Python:      PR + main + weekly + manual / contents:read + security-events:write
+AWS/OIDC authority: none em ambos os workflows de scanning
 ```
 
-O caso semantic-noise preservou a distinção:
+Saída de scanner continua sendo sinal de engenharia, não autoridade sobre aplicabilidade de vulnerabilidade ou exploitability em runtime.
+
+### 8.4 Gate 17.4 — regressão adversarial de fronteiras de autoridade
+
+A suite offline retida contém oito casos determinísticos em sete classes de ameaça cobrindo abuso de public input, prompt injection direta/indireta, ampliação de capability, evidência forjada de resultado, abuso MCP, smuggling de referência A2A e tentativas delimitadas de amplificação.
 
 ```text
-admission != semantic support
-retrieval rank != groundedness
-allowlisted citation != correct question-specific citation target
+adversarial test success != proof of universal safety
 ```
 
-H8.5-01 testou um único candidato prompt-only previamente declarado uma única vez. Não melhorou semantic groundedness nem citation correctness e aumentou total tokens em 280.
+A suite não possui autoridade AWS/OIDC e não realiza execução real de modelo ou capability.
 
-Decisão:
+### 8.5 Gate 17.5 — hardening do conteúdo de telemetry
+
+Todos os 12 handlers Lambda retidos com Powertools suprimem explicitamente captura automática de evento, response e error na fronteira do decorator. O logging compartilhado de falhas evita serialização implícita do traceback da exceção ativa e retém apenas campos operacionais delimitados.
 
 ```text
-H8.5-01 = REJECT
+log event suppression != trace response/error suppression
+exception text != safe telemetry by default
+trace metadata != business/evidence truth
 ```
 
-O default continua:
+A verificação do repositório checa continuamente o contrato retido de telemetry safety.
+
+### 8.6 Gate 17.6 — operational recovery e abuse-cost boundary
+
+A superfície concreta de ingestão automatizada recorrente é composta exatamente por três recursos EventBridge Scheduler:
 
 ```text
-HybridSynthesisPromptPolicy.GATE_8_4_V1
-hybrid-synthesis-prompt:v1
+aws_scheduler_schedule.epss_daily
+aws_scheduler_schedule.kev_daily
+aws_scheduler_schedule.nvd_incremental_hourly
 ```
 
-## 9. Phase 9 — admissão do request público
-
-ADR 0029 congela `public-analysis-request:v1`.
+Terraform possui um único controle reversível:
 
 ```text
-bytes não confiáveis
- -> UTF-8 / JSON / duplicate-key / known-field estritos
- -> gramática exata HTTPS github.com repository-root
- -> validators owner/name/ref
- -> PublicAnalysisRequest content-addressed
+scheduled_ingestion_enabled=true   -> ENABLED
+scheduled_ingestion_enabled=false  -> DISABLED
 ```
 
-A URL bruta do usuário nunca vira fetch authority.
-
-Distinção preservada:
+A amplificação de entrega do Scheduler continua delimitada por:
 
 ```text
-public request admitted
- != repository proven public
- != repository snapshot resolved
- != repository analyzed
+maximum_event_age_in_seconds = 3600
+maximum_retry_attempts       = 2
 ```
 
-## 10. Phase 9 — evidência imutável de repositório
-
-Gate 9.2 congela `public-repository-evidence:v1`:
+A prova live medida após o merge concluiu com sucesso:
 
 ```text
-PublicAnalysisRequest
- -> metadata source-confirmed de repositório público
- -> snapshot exato commit/tree
- -> uv.lock inerte do commit exato
- -> parser determinístico
- -> normalização PyPI determinística da Phase 3
- -> PublicRepositoryEvidenceExecution
+default convergence
+ -> exact 0/3/0 pause plan
+ -> exact pause apply
+ -> independent 3/3 DISABLED reads
+ -> paused convergence
+ -> exact 0/3/0 resume plan
+ -> exact resume apply
+ -> independent 3/3 ENABLED reads
+ -> final default convergence
 ```
 
-Coordenadas canônicas confirmadas pela fonte controlam reads após o lookup inicial. Null ref usa default branch declarado pela fonte; ref explícito é resolvido para identidade imutável antes da aquisição do arquivo.
+Nenhum recurso foi criado ou destruído e nenhum novo principal IAM, permissão, serviço, runtime público, model invocation ou capability execution foi introduzido pelo experimento.
 
-Drift de request/snapshot/file/parser/normalization falha fechado. Código de terceiros nunca é executado.
-
-## 11. Phase 9 — semantic planning e handoff
-
-ADR 0030 congela:
+Isso é deliberadamente um **scheduled-ingestion pause**, não um global kill switch.
 
 ```text
-public-semantic-planning:v1
-public-analysis-handoff:v1
+scheduler pause != global workload termination
+pause request != applied AWS state
+Terraform apply success != independent AWS state verification
+bounded retry != guaranteed delivery
+failure destination != successful recovery
+model token budget != tenant quota
 ```
 
-Semantic planning é proposal-only. Como a operação pública v1 é fixa, código determinístico controla o scope obrigatório.
+Desabilitar os schedules não afirma cancelar Lambdas já em execução, retries já aceitos, eventos S3 já emitidos, invocações manuais, caminhos separados de modelo ou autorização de capabilities.
 
-Bounds:
+## 9. Princípios de IAM e trust
+
+- humanos usam credenciais temporárias do IAM Identity Center;
+- GitHub Actions usa OIDC em vez de AWS access keys persistentes;
+- OIDC trust é delimitado por audience e condições de repositório/ref;
+- IAM é introduzido para uma responsabilidade concreta de runtime, não para superfícies futuras especulativas;
+- autoridade de plan/evidence é separada de autoridade de mutação quando o workload exige;
+- autoridade temporária de experimento é removida depois do experimento que gera evidência quando não integra o runtime retido.
 
 ```text
-planning request <= 2048 UTF-8 bytes
-planner response <= 1024 bytes
-planner invocations <= 1 por orchestration
-adaptive application retries = 0
+AWS authentication != authorization to perform unrelated work
+OIDC authentication != authorization to reuse a shared deployment role
+no concrete principal -> no speculative runtime role
 ```
 
-Admissão fail-closed rejeita output inválido, needs desconhecidos/duplicados, needs obrigatórios ausentes, `runtime_exposure`, replay pelo request hash, source-execution rebinding e divergência da autoridade de route/completude/classe da Phase 8.
+## 10. Fronteira de observability e privacidade
 
-Evidência exact-head da Gate 9.3:
+Observability operacional prefere categorias delimitadas, contadores, latência, hashes e correlation IDs em vez de conteúdo bruto de fonte/modelo/usuário.
+
+Telemetry minimizada em conteúdo ajuda no diagnóstico, mas não vira business truth nem execution authority.
+
+OpsLens ainda não afirma volume de requisições públicas em produção, p95/p99 de usuários públicos, quotas multi-tenant de produção ou cumprimento de SLOs de borda pública porque nenhum runtime público é retido.
+
+## 11. Fronteira de custo e amplificação
+
+Cost drivers permanecem separados:
 
 ```text
-PR #129 head:                    34cea42a0ce37cbfa06b33d57f081403edba2552
-Python CI #358 / run 34082791753: PASS
-Public Analysis Pyright strict:  0 errors / 0 warnings / 0 informations
-Public Analysis pytest:          57 passed
-merge SHA:                       6f53537c227cade688091187eac1074645e11bf0
+Athena bytes scanned
+embedding/query work
+S3 Vectors operations
+model input/output tokens
+Lambda/runtime execution
+Scheduler retries
+future public transport/runtime cost if ever deployed
 ```
 
-Gate 9.3 usou fake repository/planner ports e fez zero provider/model calls reais.
+Limites de tokens por chamada, limites de scan do Athena, limites de retry do Scheduler e controles de disable dos triggers resolvem problemas diferentes. Nenhum deve ser renomeado como quota universal ou kill switch genérico.
 
-## 12. Taxonomia de falhas da Phase 9
+## 12. Semântica de falha e recovery
+
+A arquitetura falha fechada diante de incompatibilidades de schema, proveniência, identidade, escopo, completude, request/source binding, evidence binding, capability binding e identidade content-addressed.
+
+Um estágio que falha não autoriza o próximo apenas porque existe saída parcial.
+
+Operational recovery também distingue desired state, provider state aplicado, provider state observado independentemente e trabalho já admitido.
+
+## 13. Superfícies standing versus históricas
+
+Evidência histórica retida não implica autoridade standing.
 
 ```text
-request byte/UTF-8/JSON admission failure
-request duplicate/unknown-field failure
-repository URL grammar failure
-repository metadata/visibility failure
-ref/default-branch resolution failure
-immutable commit/tree resolution failure
-exact-commit file evidence failure
-file/parser/normalization provenance mismatch
-semantic planning request binding failure
-planner invocation failure
-planner response size/UTF-8/JSON/schema failure
-unknown/duplicate/out-of-authority evidence need
-under-scoped public-v1 proposal
-runtime_exposure proposal
-proposal replay/request-hash mismatch
-source-execution rebinding
-Phase 8 route/completeness/class mismatch
-handoff identity mismatch
+historical workflow != inert workflow
+historical experiment != standing runtime
+historical IAM proof != current IAM principal
+retained adapter != deployed network service
+retained protocol contract != public peer endpoint
 ```
 
-Falha em qualquer estágio não cria autoridade posterior.
+Experimentos de AgentCore e Inspector são preservados como evidência enquanto a autoridade standing específica desses experimentos permanece removida. MCP e A2A são retidos como contratos delimitados de interoperabilidade/referência sem runtimes públicos de rede.
 
-## 13. Boundary de runtime / IAM da Phase 9
+## 14. Fronteira da fase atual
 
-ADR 0031 encerra a Phase 9 no boundary governado da aplicação.
+Após a Gate 17.6, nenhum novo controle de hardening em runtime está autorizado sem nova evidência.
 
-No closeout:
+A Gate 17.7 existe somente para fechar `SEC17-DOC-001` sincronizando os baselines arquiteturais EN/PT-BR com a plataforma realmente retida.
 
-```text
-public HTTP compute:      NOT DEPLOYED
-public endpoint:          NOT DEPLOYED
-public runtime principal: DOES NOT EXIST
-new Phase 9.4 IAM:        NONE
-new Phase 9.4 AWS:        NONE
-```
+O próximo passo delimitado é o closeout da Phase 17. A Phase 18 poderá então consolidar evidências de avaliação, latência, custo, failure paths, segurança e portfólio.
 
-Isto é least privilege intencional:
+Trabalho deferred continua deferred salvo reautorização explícita, incluindo a integração com Governed LLM Gateway acompanhada fora deste slice da Phase 17.
 
-```text
-no concrete compute principal
- -> no runtime role
- -> no speculative permissions
-```
+## 15. Principais architecture records
 
-Permissões de serviços já provadas permanecem responsabilidades separadas e não são agregadas automaticamente em uma role pública ampla.
-
-## 14. Boundary de cost accounting
-
-Drivers permanecem separados:
-
-```text
-Athena execution / bytes scanned
-query-time embeddings
-S3 Vectors request / processed / returned units
-model input tokens
-model output tokens
-future public runtime infrastructure
-```
-
-Gate 8.4/8.5 reportam corretamente `cost = UNMEASURED / null` para custo híbrido em USD. Gate 9.3 usou fake ports e zero model/provider calls reais, portanto o closeout não cria preço sintético por request público.
-
-Estimativa futura em USD exige pricing contract versionado ou reconciliação com billing e deve incluir infraestrutura, concurrency, abuse e retry assumptions.
-
-## 15. Boundary de observabilidade
-
-Evidência atual inclui:
-
-```text
-request/snapshot/file/parser/normalization IDs e hashes
-route/admission decisions
-planning request/proposal/handoff identities
-bounded failure categories
-provider request/token/latency quando provider real foi executado
-exact-head CI evidence
-```
-
-OpsLens ainda não afirma possuir:
-
-```text
-public-user distributed traces
-production request volume
-production p95/p99 latency
-production error/throttle rates
-production request-level AWS cost
-production SLO/alert compliance
-```
-
-Isto exige runtime implantado e workload medido.
-
-Logging automático de conteúdo de usuário/source/model continua inadequado por padrão; metadata content-free e hashes são preferidos.
-
-## 16. Pré-requisitos para lançamento público
-
-Antes de lançamento real ainda são necessários design concreto e validação medida para:
-
-```text
-public HTTP compute / endpoint
-runtime identity e least-privilege IAM
-request timeout budget
-concurrency limits
-rate limiting
-abuse controls
-quota enforcement
-cache policy se justificada
-kill switch / disable path
-cost guardrails e attribution
-request-level telemetry
-production error/latency distributions
-workload-derived SLOs e alerts
-rollback / incident procedures
-```
-
-Conclusão da Phase 9 não remove esses requisitos.
-
-## 17. Boundary de entrada da Phase 10
-
-Phase 10 pode iniciar somente com estes invariantes congelados:
-
-```text
-1. contracts da Phase 9 permanecem boundaries versionados
-2. input público nunca vira fetch, SQL, tool, provider/model ou execution authority arbitrários
-3. código de terceiros nunca é executado
-4. repository risk continua distinto de runtime exposure
-5. Phase 8 permanece autoridade de hybrid route/evidence
-6. semantic planning permanece proposal-only e content-minimized
-7. falha em qualquer admissão impede downstream execution
-8. IAM é introduzido apenas para runtime identity concreta
-9. production SLO/alert claims exigem workload implantado
-10. observability não pode enfraquecer privacy/provenance/content-minimization
-11. mudanças de runtime/provider/retrieval exigem hipóteses versionadas e exact-head validation
-12. Governed LLM Gateway PR #89 continua deferred até reavaliação separada
-```
-
-Se a Phase 10 precisar de um pequeno runtime implantado para produzir telemetry real, ele deve ser explícito sobre compute, IAM, request limits, abuse controls, rollback e custo.
-
-## 18. Decisões deferred
-
-Não adotadas apenas porque a Phase 9 foi concluída:
-
-```text
-public compute runtime
-runtime cache
-reranking
-keyword + vector hybrid search
-OpenSearch Serverless
-alternative embeddings/vector store
-new synthesis policy
-agents
-MCP
-AgentCore
-A2A
-runtime exposure / Inspector integration
-Governed LLM Gateway merge
-```
-
-Permanecem fases posteriores ou hipóteses separadamente medidas.
-
-## 19. Architecture records
-
-ADRs atuais relevantes:
+ADRs retidos importantes incluem:
 
 ```text
 0020 no unrestricted text-to-SQL
 0021 bounded Bedrock Semantic Query planner
 0022 customer-managed Bedrock Knowledge Base with S3 Vectors
 0023 bounded Bedrock knowledge synthesis
-0024 future semantic/runtime IAM boundary
 0025 deterministic hybrid routing authority
 0026 deterministic hybrid evidence envelope
 0027 frozen hybrid evaluation contract
@@ -662,6 +450,14 @@ ADRs atuais relevantes:
 0029 public repository request admission
 0030 public semantic planning proposal authority
 0031 Phase 9 public analysis closeout boundary
+0059 Phase 15 A2A closeout
+0063 Phase 16 runtime-exposure closeout
+0064 evidence-first security-hardening priorities
+0065 CI/CD and workflow authority hardening
+0066 bounded dependency and code-scanning signals
+0067 bounded adversarial authority regression suite
+0068 content-minimized Lambda telemetry
+0069 bounded scheduled-ingestion pause
 ```
 
-Detalhes históricos e evidência exata de runtime permanecem em `labs/` e `labs/evidence/`, em vez de serem reescritos dentro do baseline arquitetural atual.
+Medições históricas exatas, experimentos, hipóteses rejeitadas, provas de teardown e identidades de runs de CI permanecem em `labs/`, `labs/evidence/`, ADRs, PRs mergeados e histórico Git, em vez de serem reinterpretados como nova autoridade arquitetural neste documento.
