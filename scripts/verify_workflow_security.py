@@ -21,6 +21,8 @@ EXPECTED_OIDC_SUBJECT = (
 )
 
 REQUIRED_AGENTCORE_RETIRED_MARKER = "AGENTCORE_RUNTIME_EXPERIMENT_RETIRED"
+DEPENDENCY_REVIEW_ACTION_SHA = "a1d282b36b6f3519aa1f3fc636f609c47dddb294"
+CODEQL_ACTION_SHA = "b96794f015dfd88f77b49b1c93e0fa7110f94c63"
 
 
 class WorkflowSecurityError(RuntimeError):
@@ -165,6 +167,75 @@ def _verify_epss_history_authority() -> None:
         )
 
 
+def _verify_supply_chain_scanners() -> None:
+    """Freeze the bounded Gate 17.3 dependency-review and CodeQL workflow contracts."""
+    dependency_review = (WORKFLOW_DIR / "dependency-review.yml").read_text(encoding="utf-8")
+    codeql = (WORKFLOW_DIR / "codeql.yml").read_text(encoding="utf-8")
+
+    dependency_required = (
+        "pull_request:",
+        "contents: read",
+        f"actions/dependency-review-action@{DEPENDENCY_REVIEW_ACTION_SHA}",
+        "fail-on-severity: high",
+        "persist-credentials: false",
+    )
+    dependency_missing = [
+        fragment for fragment in dependency_required if fragment not in dependency_review
+    ]
+    if dependency_missing:
+        raise WorkflowSecurityError(
+            "dependency-review workflow lost the frozen Gate 17.3 contract: "
+            + ", ".join(dependency_missing)
+        )
+
+    dependency_forbidden = (
+        "id-token: write",
+        "security-events: write",
+        "pull-requests: write",
+        "configure-aws-credentials",
+        "role-to-assume:",
+    )
+    dependency_present = [
+        fragment for fragment in dependency_forbidden if fragment in dependency_review
+    ]
+    if dependency_present:
+        raise WorkflowSecurityError(
+            "dependency-review workflow gained unnecessary authority: "
+            + ", ".join(dependency_present)
+        )
+
+    codeql_required = (
+        "push:",
+        "pull_request:",
+        "schedule:",
+        "workflow_dispatch:",
+        "contents: read",
+        "security-events: write",
+        f"github/codeql-action/init@{CODEQL_ACTION_SHA}",
+        f"github/codeql-action/analyze@{CODEQL_ACTION_SHA}",
+        "languages: python",
+        "persist-credentials: false",
+    )
+    codeql_missing = [fragment for fragment in codeql_required if fragment not in codeql]
+    if codeql_missing:
+        raise WorkflowSecurityError(
+            "CodeQL workflow lost the frozen Gate 17.3 contract: " + ", ".join(codeql_missing)
+        )
+
+    codeql_forbidden = (
+        "id-token: write",
+        "contents: write",
+        "pull-requests: write",
+        "configure-aws-credentials",
+        "role-to-assume:",
+    )
+    codeql_present = [fragment for fragment in codeql_forbidden if fragment in codeql]
+    if codeql_present:
+        raise WorkflowSecurityError(
+            "CodeQL workflow gained unrelated mutation authority: " + ", ".join(codeql_present)
+        )
+
+
 def _verify_github_oidc_trust() -> None:
     """Require every GitHub OIDC trust policy to retain the frozen aud/sub boundary."""
     observed = 0
@@ -212,6 +283,7 @@ def verify() -> None:
         _capture(errors, lambda path=path, text=text: _verify_agentcore_retirement(path, text))
 
     _capture(errors, _verify_epss_history_authority)
+    _capture(errors, _verify_supply_chain_scanners)
     _capture(errors, _verify_github_oidc_trust)
 
     if errors:
