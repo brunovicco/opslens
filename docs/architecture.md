@@ -2,9 +2,9 @@
 
 _Last updated: 2026-09-10_
 
-This document is the accumulated architecture baseline through **Phase 17 — Security Hardening, Gate 17.6 complete**.
+This document is the accumulated architecture baseline through **Phase 17 — Security Hardening: COMPLETE by the Phase 17 closeout PR**.
 
-Gate 17.7 is documentation synchronization only. The next bounded step after this synchronization is **Phase 17 closeout**, followed by **Phase 18 — Evaluation, Cost & Portfolio Readiness**.
+The next phase is **Phase 18 — Evaluation, Cost & Portfolio Readiness**.
 
 ## 1. Purpose
 
@@ -218,7 +218,7 @@ canonical chunks:      9
 synthesis profile:     us.anthropic.claude-haiku-4-5-20251001-v1:0
 ```
 
-The permanent interpretation boundary is:
+Permanent interpretation boundaries:
 
 ```text
 non-empty retrieval != sufficient evidence != authority to answer
@@ -253,11 +253,11 @@ runtime evidence correlation != capability authorization
 
 Repository risk and runtime exposure remain separate evidence classes.
 
-## 8. Security hardening — Phase 17 retained state
+## 8. Security Hardening — Phase 17 retained state
 
 ### 8.1 Gate 17.1 — threat/control-gap inventory
 
-Gate 17.1 established an evidence-first threat inventory and prioritized only observed gaps. The architecture-document drift recorded as `SEC17-DOC-001` is the documentation gap addressed by Gate 17.7.
+Gate 17.1 established an evidence-first threat inventory and prioritized only observed gaps.
 
 ### 8.2 Gate 17.2 — CI/CD and workflow authority
 
@@ -283,7 +283,7 @@ Retained security signals:
 ```text
 Dependency Review:  pull_request / fail-on-severity=high / contents:read
 CodeQL Python:      PR + main + weekly + manual / contents:read + security-events:write
-AWS/OIDC authority: none for both scanning workflows
+AWS/OIDC authority: none for both scanner workflows
 ```
 
 Scanner output remains an engineering signal, not vulnerability-applicability or runtime-exploitability authority.
@@ -363,6 +363,55 @@ model token budget != tenant quota
 
 Disabling the schedules does not claim to cancel in-flight Lambda invocations, already accepted retries, already emitted S3 events, manual invocations, separate model paths, or capability authorization.
 
+### 8.7 Gate 17.7 — architecture synchronization
+
+Gate 17.7 closed `SEC17-DOC-001` by synchronizing the accumulated EN/PT-BR architecture with the retained platform.
+
+```text
+PR:                       #276
+exact head:               ea0460e549dd1b904d139632bfc2988671e23880
+protected merge:          3938c6469a979f5b574755ce9fd56a56523626dc
+Security Hardening CI:    34474712369 / #34 / SUCCESS
+Dependency Review:        34474712371 / #19 / SUCCESS
+CodeQL / Python:          34474712380 / #27 / SUCCESS
+```
+
+Documentation synchronization changes no runtime or business authority.
+
+### 8.8 Phase 17 closeout
+
+Phase 17 closes at the smallest evidence-backed boundary. No later evidence in the phase justified another security/runtime control.
+
+Retained:
+
+```text
+protected-main security enforcement
+Dependency Review + CodeQL
+adversarial authority regression
+content-minimized Lambda telemetry
+telemetry-safety verification
+bounded scheduled-ingestion pause
+operational recovery runbook
+synchronized EN/PT-BR architecture
+```
+
+Explicitly deferred or not created:
+
+```text
+Dependabot version updates
+additional continuous pip-audit
+broad dependency upgrades
+mandatory independent review until governance requires it
+public WAF/rate/tenant quotas without a public runtime
+public HTTP runtime
+global platform kill switch
+broad S3/Lambda emergency stop controls
+automatic alarm remediation
+standing Inspector experiment IAM
+public MCP/A2A runtimes
+AgentCore as default runtime
+```
+
 ## 9. IAM and trust principles
 
 - humans use temporary IAM Identity Center credentials;
@@ -424,15 +473,26 @@ retained protocol contract != public peer endpoint
 
 AgentCore and Inspector experiments are preserved as evidence while their experiment-specific standing authority remains removed. MCP and A2A are retained as bounded interoperability/reference contracts without public network runtimes.
 
-## 14. Current phase boundary
+## 14. Phase 18 entry boundary
 
-After Gate 17.6, no additional runtime hardening control is authorized without new evidence.
+Phase 17 is complete after Gates 17.1–17.7 and the Phase 17 closeout record.
 
-Gate 17.7 exists only to close `SEC17-DOC-001` by synchronizing the EN/PT-BR accumulated architecture baseline with the actually retained platform.
+Phase 18 — Evaluation, Cost & Portfolio Readiness is next. Its first step must consolidate existing evidence and determine comparability before creating new experiments.
 
-The next bounded step is Phase 17 closeout. Phase 18 may then consolidate evaluation, latency, cost, failure-path, security, and portfolio evidence.
+Required distinctions include:
 
-Deferred work remains deferred unless separately re-authorized, including the Governed LLM Gateway integration tracked outside this Phase 17 slice.
+```text
+measured value != derived estimate
+unmeasured != zero
+one experiment != production distribution
+quality metric != security metric
+latency metric != cost metric
+portfolio summary != new technical authority
+```
+
+Phase 18 must not add public runtime or broaden IAM merely to improve portfolio presentation.
+
+Deferred Governed LLM Gateway integration remains outside this phase unless separately re-authorized.
 
 ## 15. Key architecture records
 
@@ -458,6 +518,7 @@ Important retained ADRs include:
 0067 bounded adversarial authority regression suite
 0068 content-minimized Lambda telemetry
 0069 bounded scheduled-ingestion pause
+0070 Phase 17 security-hardening closeout
 ```
 
-Exact historical measurements, experiments, rejected hypotheses, teardown proof, and CI run identities remain in `labs/`, `labs/evidence/`, ADRs, merged PRs, and Git history rather than being reinterpreted as new architecture authority here.
+Exact historical measurements, experiments, rejected hypotheses, teardown proof, and CI run identities remain in `labs/`, `labs/evidence/`, ADRs, protected PRs, and Git history rather than being reinterpreted as new architecture authority here.
