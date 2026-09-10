@@ -74,3 +74,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0064](0064-evidence-first-security-hardening-priorities.md) | Prioritize Phase 17 hardening from a cross-cutting evidence inventory before changing authority | Accepted |
 | [0065](0065-ci-cd-and-workflow-authority-hardening.md) | Harden CI/CD and workflow authority before adding broader security automation | Accepted |
 | [0066](0066-bounded-dependency-and-code-scanning-signals.md) | Retain bounded dependency-review and CodeQL signals without moving business or AWS authority | Accepted |
+| [0067](0067-bounded-adversarial-authority-regression-suite.md) | Retain a bounded offline adversarial authority regression suite without adding cloud/model/tool authority | Accepted |
