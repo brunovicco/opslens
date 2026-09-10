@@ -9,6 +9,7 @@ Close the Gate 17.1 continuous dependency/code-security gap with the smallest re
 ```text
 source main SHA:    c39984fe2f9832710350ae5939e34898661bb337
 issue:              #256
+PR:                 #261
 language:           Python
 lock evidence:      uv.lock retained
 AWS mutation:       not authorized
@@ -35,7 +36,7 @@ workflow permission: contents: read
 OIDC/AWS authority:  none
 ```
 
-The action is intended to detect newly introduced vulnerable dependencies in the pull-request dependency diff. Its result is an engineering merge signal only.
+The action detects newly introduced vulnerable dependencies in the pull-request dependency diff. Its result is an engineering merge signal only.
 
 ### CodeQL
 
@@ -66,6 +67,64 @@ no role-to-assume
 no unrelated repository write permission
 ```
 
+## First measured execution
+
+Implementation head:
+
+```text
+9f180b4768bbd49d6702f46baef5d99d8ee5f4a0
+```
+
+Repository workflow authority remained valid:
+
+```text
+Security Hardening CI
+run:         34423137266 / #16
+job:         102702674953
+conclusion:  SUCCESS
+context:     Repository security invariants
+```
+
+CodeQL executed successfully without any AWS/OIDC authority:
+
+```text
+CodeQL / Python
+run:         34423137268 / #1
+job:         102702675060
+conclusion:  SUCCESS
+```
+
+Dependency Review exposed one GitHub platform dependency on its first attempt:
+
+```text
+Dependency Review
+run:         34423137362 / #1
+attempt:     1
+job:         102702675325
+conclusion:  FAILURE
+reason:      repository Dependency graph disabled
+```
+
+The log showed only GitHub repository read authority. No permission widening was attempted. The correct remediation was a human/platform administration change: enable the repository Dependency graph.
+
+After that change, the exact same workflow run was retried:
+
+```text
+Dependency Review
+run:         34423137362 / #1
+attempt:     2
+job:         102704585117
+conclusion:  SUCCESS
+```
+
+This establishes an additional operational separation:
+
+```text
+scanner platform prerequisite != scanner permission requirement
+```
+
+A disabled Dependency graph is not evidence that Dependency Review needs broader GitHub permissions, AWS authority, or another vulnerability source.
+
 ## Authority separations
 
 ```text
@@ -74,6 +133,7 @@ code-scanning alert != runtime exploitability truth
 security scan success != absence of vulnerabilities
 scanner output != model authority
 GitHub security permission != AWS authority
+scanner platform prerequisite != scanner permission requirement
 ```
 
 A scanner can produce a useful finding without changing OpsLens repository-risk truth, and a clean scanner run cannot prove the absence of every vulnerability.
@@ -90,18 +150,18 @@ The purpose of this gate is to establish two attributable signals before adding 
 
 ## Exit criteria
 
-Gate 17.3 closes only after an exact PR head proves:
+Gate 17.3 closes only after an exact final PR head proves:
 
 ```text
 Repository security invariants: PASS
-Dependency Review:              understood PASS/failure state
-CodeQL / Python:                understood PASS/failure state
+Dependency Review:              PASS
+CodeQL / Python:                PASS
 AWS/IAM mutations:              0
 PR #89 changes:                 0
 protected squash merge:         complete
 ```
 
-If a scanner is blocked by GitHub platform configuration, the result must be recorded as a platform boundary rather than worked around by widening permissions.
+The first measured scanner execution is retained as evidence, including the platform-blocked Dependency Review attempt and successful retry. Final exact-head CI after evidence synchronization is still required before merge.
 
 Canonical evidence:
 
