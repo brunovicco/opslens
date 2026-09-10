@@ -4,7 +4,7 @@ _Date: 2026-09-09_
 
 ## Status
 
-**IN PROGRESS — implementation complete; exact-head CI and protected merge pending.**
+**IN PROGRESS — measured implementation validation is green; final PR-head validation and protected merge pending.**
 
 ## Objective
 
@@ -17,6 +17,7 @@ This gate changes telemetry transport behavior only. It does not alter business 
 ```text
 main:  cf5afe1d5d352cf301295b72031cb67a8d510fbb
 issue: #266
+PR:    #268
 ADR:   0068-content-minimized-lambda-telemetry.md
 ```
 
@@ -89,6 +90,33 @@ The universal `Security Hardening CI` executes the verifier on every pull reques
 
 `tests/unit/shared/observability/test_powertools_telemetry_safety.py` raises an exception containing an attacker-controlled marker and proves that marker is absent from logger-adapter calls while the bounded failure message and request identifier remain available.
 
+## Measured implementation validation
+
+Implementation head:
+
+```text
+f40aae0650199a1931f21f8b9f4abbfd8dc0c31a
+```
+
+Measured pull-request runs:
+
+```text
+Security Hardening CI         34428925731 / #28 / SUCCESS
+  Repository security job     102720032719
+  telemetry verifier          PASS / handlers=12
+
+Operational Observability CI  34428925787 / #21 / SUCCESS
+  job                          102720032658
+  Ruff                         PASS
+  Pyright                      0 errors / 0 warnings
+  pytest                       28 passed
+
+Dependency Review             34428925717 / #13 / SUCCESS
+CodeQL / Python               34428925715 / #17 / SUCCESS
+```
+
+This evidence measures the implementation plus architecture/evidence files before the measured-evidence recording commits. A final exact-head CI pass is still required before merge so recording evidence cannot mask a subsequent regression.
+
 ## Permanent interpretation boundaries
 
 ```text
@@ -126,26 +154,20 @@ new public runtime:        0
 PR #89 changes:            0
 ```
 
-## Validation plan
+## Final validation requirement
 
-Before retention, the final exact PR head must prove:
+Before retention, the exact final PR head must prove:
 
 ```text
-scripts/verify_telemetry_safety.py                    PASS
-Ruff / strict Pyright                                 PASS
-shared observability regression tests                 PASS
+scripts/verify_telemetry_safety.py                    PASS / handlers=12
 Repository security invariants                        PASS
 Operational Observability CI                          PASS
 Dependency Review                                     PASS where triggered
 CodeQL / Python                                       PASS where triggered
 ```
 
-The verifier success marker must report the discovered handler count. At the source baseline, the expected retained Powertools Lambda count is 12.
-
 ## Decision
 
 Retain content-minimized Lambda telemetry rather than automatic response/error/traceback export.
 
 Automatic diagnostic convenience is subordinate to the requirement that uncontrolled input, provider errors, source content, and protocol data do not become telemetry merely because an exception occurred.
-
-Exact CI run IDs and final implementation head are intentionally deferred until the final branch state is measured.
