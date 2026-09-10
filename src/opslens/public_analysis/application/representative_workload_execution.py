@@ -42,6 +42,7 @@ from opslens.public_analysis.application.semantic_planning import (
 )
 from opslens.public_analysis.domain import (
     PUBLIC_ANALYSIS_V1_REQUIRED_EVIDENCE_NEEDS,
+    ProviderMeasurementCoverage,
     ProviderResourceUsage,
     PublicAnalysisAdmissionHandoff,
     PublicRepositoryEvidenceExecution,
@@ -92,6 +93,7 @@ class RepresentativeWorkloadDependencies:
     semantic_retriever: RepresentativeSemanticRetriever
     synthesizer: RepresentativeHybridSynthesizer
     clock: MeasurementClock
+    provider_coverage: ProviderMeasurementCoverage
 
 
 @dataclass(frozen=True, slots=True)
@@ -427,6 +429,7 @@ def execute_representative_workload(
         plan=plan,
         serializer=_DeferredResultSerializer(state),
         clock=dependencies.clock,
+        provider_coverage=dependencies.provider_coverage,
     )
     return RepresentativeWorkloadExecution(
         result=state.require_result(),
