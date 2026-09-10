@@ -29,9 +29,12 @@
     "athena_query_count",
     "athena_bytes_scanned",
     "bedrock_retrieve_count",
+    "bedrock_retrieve_client_elapsed_ms",
     "bedrock_model_call_count",
     "bedrock_input_tokens",
     "bedrock_output_tokens",
+    "bedrock_model_client_elapsed_ms",
+    "bedrock_model_latency_ms",
     "retry_count",
     "throttle_count",
     "serialized_result_bytes"
@@ -40,7 +43,42 @@
     "provider_neutral_measurement_contract": "src/opslens/public_analysis/domain/representative_measurement.py",
     "provider_neutral_measurement_harness": "src/opslens/public_analysis/application/representative_measurement.py",
     "deterministic_repository_analysis_composition": "src/opslens/public_analysis/application/representative_repository_analysis.py",
+    "structured_evidence_projection": "src/opslens/public_analysis/application/representative_structured_evidence.py",
+    "semantic_evidence_retrieval": "src/opslens/public_analysis/application/representative_semantic_evidence.py",
+    "hybrid_evidence_composition": "src/opslens/public_analysis/application/representative_hybrid_evidence.py",
+    "bounded_model_reasoning": "src/opslens/public_analysis/application/representative_model_reasoning.py",
+    "deterministic_result_admission": "src/opslens/public_analysis/domain/representative_result.py",
+    "complete_representative_workload_execution": "src/opslens/public_analysis/application/representative_workload_execution.py",
     "github_physical_transport_measurement": "src/opslens/public_analysis/adapters/github_measurement.py"
+  },
+  "representative_input": {
+    "status": "FROZEN_FOR_PRE_LIVE_MEASUREMENT",
+    "repository_full_name": "whotracksme/whotracks.me",
+    "requested_ref": "468f6e211a307f5f20d1d95c478ddd89efdb9b6b",
+    "dependency_evidence_path": "uv.lock",
+    "dependency_name": "requests",
+    "dependency_version": "2.31.0",
+    "vulnerability_anchor": {
+      "ghsa_id": "GHSA-9wx4-h78v-vm56",
+      "cve_id": "CVE-2024-35195",
+      "affected_version_range": "< 2.32.0",
+      "first_patched_version": "2.32.0"
+    },
+    "authority_note": "The immutable repository target and vulnerability identity are frozen only for measurement reproducibility. The live threat-evidence bundle must still be materialized from retained authoritative evidence before execution, and no third-party repository code may be executed."
+  },
+  "provider_measurement_classification": {
+    "github_http_request_count": "MEASURED",
+    "athena_query_count": "NOT_APPLICABLE",
+    "athena_bytes_scanned": "NOT_APPLICABLE",
+    "bedrock_retrieve_count": "MEASURED",
+    "bedrock_retrieve_client_elapsed_ms": "MEASURED",
+    "bedrock_model_call_count": "MEASURED",
+    "bedrock_input_tokens": "MEASURED",
+    "bedrock_output_tokens": "MEASURED",
+    "bedrock_model_client_elapsed_ms": "MEASURED",
+    "bedrock_model_latency_ms": "MEASURED",
+    "retry_count": "MEASURED",
+    "throttle_count": "UNMEASURED"
   },
   "retained_repository_analysis_chain": [
     "build_repository_pypi_vulnerability_scan",
@@ -58,7 +96,9 @@
     "empty_serialized_result_rejected",
     "clock_regression_rejected",
     "missing_instrumentation_must_not_be_reported_as_measured_zero",
-    "physical_github_requests_measured_at_transport_boundary"
+    "physical_github_requests_measured_at_transport_boundary",
+    "provider_latency_must_come_from_retained_invocation_evidence",
+    "not_applicable_is_not_measured_zero"
   ],
   "live_execution_boundary": {
     "aws_or_model_execution": "HUMAN_EXECUTION_REQUIRED",
@@ -83,14 +123,25 @@
     "UNMEASURED != zero",
     "configured limit != measured utilization"
   ],
-  "remaining_before_live_measurement": [
+  "pre_live_completed": [
+    "compose_complete_nine_stage_workload",
     "compose_structured_evidence_stage",
     "compose_semantic_evidence_stage",
     "compose_bounded_model_reasoning_stage",
     "compose_deterministic_result_admission_stage",
-    "freeze_representative_input",
-    "add_exact_provider_measurement_for_composed_stages",
-    "validate_success_and_failure_paths"
+    "measure_github_physical_requests",
+    "measure_bedrock_retrieve_client_latency",
+    "measure_bedrock_model_client_and_provider_latency",
+    "separate_numeric_counters_from_measurement_authority",
+    "freeze_representative_repository_input",
+    "validate_offline_success_and_contract_failure_paths"
+  ],
+  "remaining_before_gate_completion": [
+    "materialize_exact_threat_evidence_bundle_from_retained_authoritative_sources",
+    "human_execute_non_public_representative_workload_with_live_github_and_bedrock",
+    "capture_reproducible_live_measurement_artifact",
+    "classify_any_still_unmeasured_provider_dimensions_without_coercing_them_to_zero",
+    "select_sync_async_or_deferred_only_from_measured_evidence"
   ],
   "runtime_selection_allowed": false
 }
