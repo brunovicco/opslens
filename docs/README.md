@@ -31,7 +31,7 @@ Phase 13 MCP                                    COMPLETE
 Phase 14 Amazon Bedrock AgentCore               COMPLETE
 Phase 15 A2A                                    COMPLETE
 Phase 16 Runtime Exposure with Inspector        COMPLETE
-Phase 17 Security Hardening                     IN PROGRESS / Gates 17.1–17.4 complete
+Phase 17 Security Hardening                     IN PROGRESS / Gates 17.1–17.5 complete
 Phase 18 Evaluation, Cost & Portfolio           PLANNED
 ```
 
@@ -67,6 +67,10 @@ untrusted text != instruction authority
 retrieved content != system/developer authority
 failed/forged capability result != admissible business result
 adversarial test success != proof of universal safety
+log event suppression != trace response/error suppression
+exception text != safe telemetry by default
+trace metadata != business/evidence truth
+telemetry correlation != capability authorization
 ```
 
 ## Retained measured reasoning reference
@@ -235,8 +239,48 @@ References:
 
 No first-slice test justified business-logic redesign or new cloud/model/tool authority. `adversarial test success != proof of universal safety` remains a permanent interpretation boundary.
 
+### Gate 17.5 — sensitive-data, logging, and telemetry hardening — complete
+
+Gate 17.5 closed two concrete content-bearing telemetry gaps without adding observability infrastructure or authority:
+
+```text
+TRACE17-001  implicit Lambda trace response/error capture
+LOG17-001    implicit active exception/traceback serialization
+```
+
+Retained posture:
+
+```text
+Powertools Lambda handlers:        12
+log event auto-capture:            disabled
+trace response auto-capture:       disabled
+trace error auto-capture:          disabled
+shared exception traceback export: disabled
+shared failure logger:             bounded logger.error
+repository telemetry verifier:     retained
+```
+
+Final exact implementation PR-head validation:
+
+```text
+Security Hardening CI         34429102027 / #30 / SUCCESS
+Operational Observability CI  34429102108 / #23 / SUCCESS
+Dependency Review             34429102025 / #15 / SUCCESS
+CodeQL / Python               34429102142 / #19 / SUCCESS
+```
+
+PR #268 was protected-squash merged as `9e967acdd1a5ae611a3a1db47aee164272d11380`.
+
+References:
+
+- [`adr/0068-content-minimized-lambda-telemetry.md`](adr/0068-content-minimized-lambda-telemetry.md)
+- [`../labs/phase-17-gate-17-5-telemetry-safety.md`](../labs/phase-17-gate-17-5-telemetry-safety.md)
+- [`../labs/evidence/phase-17-gate-17-5-telemetry-safety-v1.json`](../labs/evidence/phase-17-gate-17-5-telemetry-safety-v1.json)
+- [`../labs/phase-17-gate-17-5-closeout.md`](../labs/phase-17-gate-17-5-closeout.md)
+- [`../labs/evidence/phase-17-gate-17-5-closeout-v1.json`](../labs/evidence/phase-17-gate-17-5-closeout-v1.json)
+
 ## Next
 
-Gate 17.5 will inspect sensitive-data, logging, telemetry, failure-path, protocol-payload, and high-cardinality exposure before new observability functionality is authorized.
+Gate 17.6 will evaluate operational recovery, kill-switch, and abuse-cost controls from concrete retained-runtime evidence before authorizing any new recovery or shutdown mechanism.
 
 OpsLens PR #89 / `feat/governed-gateway-semantic-planner` remains a separate deferred integration and must stay untouched unless explicitly resumed.
