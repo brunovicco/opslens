@@ -27,9 +27,103 @@ class RepresentativeWorkloadStage(StrEnum):
 REPRESENTATIVE_WORKLOAD_STAGE_ORDER = tuple(RepresentativeWorkloadStage)
 
 
+class MeasurementClassification(StrEnum):
+    """Evidence semantics for one whole-workload provider metric."""
+
+    MEASURED = "MEASURED"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
+    UNMEASURED = "UNMEASURED"
+
+
+class ProviderResourceMetric(StrEnum):
+    """Exact provider/resource dimensions retained by Gate 19.2."""
+
+    GITHUB_HTTP_REQUEST_COUNT = "github_http_request_count"
+    ATHENA_QUERY_COUNT = "athena_query_count"
+    ATHENA_BYTES_SCANNED = "athena_bytes_scanned"
+    BEDROCK_RETRIEVE_COUNT = "bedrock_retrieve_count"
+    BEDROCK_MODEL_CALL_COUNT = "bedrock_model_call_count"
+    BEDROCK_INPUT_TOKENS = "bedrock_input_tokens"
+    BEDROCK_OUTPUT_TOKENS = "bedrock_output_tokens"
+    RETRY_COUNT = "retry_count"
+    THROTTLE_COUNT = "throttle_count"
+
+
+PROVIDER_RESOURCE_METRICS = tuple(ProviderResourceMetric)
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderMeasurementCoverage:
+    """Classify every provider metric so an absent measurement never means zero."""
+
+    classifications: tuple[
+        tuple[ProviderResourceMetric, MeasurementClassification], ...
+    ]
+
+    def __post_init__(self) -> None:
+        """Require one classification for every provider metric in deterministic order."""
+        observed = tuple(metric for metric, _classification in self.classifications)
+        if observed != PROVIDER_RESOURCE_METRICS:
+            raise PublicAnalysisValidationError(
+                "provider measurement coverage must classify every metric exactly once"
+            )
+        if any(
+            type(classification) is not MeasurementClassification
+            for _metric, classification in self.classifications
+        ):
+            raise PublicAnalysisValidationError(
+                "provider measurement coverage must use MeasurementClassification"
+            )
+
+    def classification_for(
+        self,
+        metric: ProviderResourceMetric,
+    ) -> MeasurementClassification:
+        """Return the explicit evidence classification for one provider metric."""
+        if type(metric) is not ProviderResourceMetric:
+            raise PublicAnalysisValidationError("metric must use ProviderResourceMetric")
+        for candidate, classification in self.classifications:
+            if candidate is metric:
+                return classification
+        raise AssertionError("validated provider coverage omitted a metric")
+
+
+def provider_measurement_coverage(
+    *,
+    measured: tuple[ProviderResourceMetric, ...] = (),
+    not_applicable: tuple[ProviderResourceMetric, ...] = (),
+) -> ProviderMeasurementCoverage:
+    """Build explicit coverage; omitted metrics remain UNMEASURED, never implicit zero."""
+    if len(set(measured)) != len(measured) or len(set(not_applicable)) != len(not_applicable):
+        raise PublicAnalysisValidationError("provider metric classifications cannot repeat")
+    if set(measured) & set(not_applicable):
+        raise PublicAnalysisValidationError(
+            "provider metric cannot be both MEASURED and NOT_APPLICABLE"
+        )
+    if any(type(metric) is not ProviderResourceMetric for metric in (*measured, *not_applicable)):
+        raise PublicAnalysisValidationError("provider coverage contains an unknown metric")
+
+    measured_set = frozenset(measured)
+    not_applicable_set = frozenset(not_applicable)
+    classifications = tuple(
+        (
+            metric,
+            MeasurementClassification.MEASURED
+            if metric in measured_set
+            else (
+                MeasurementClassification.NOT_APPLICABLE
+                if metric in not_applicable_set
+                else MeasurementClassification.UNMEASURED
+            ),
+        )
+        for metric in PROVIDER_RESOURCE_METRICS
+    )
+    return ProviderMeasurementCoverage(classifications=classifications)
+
+
 @dataclass(frozen=True, slots=True)
 class ProviderResourceUsage:
-    """Measured provider/resource counters for one executed representative stage."""
+    """Numeric provider/resource counters paired with separate evidence classifications."""
 
     github_http_request_count: int = 0
     athena_query_count: int = 0
@@ -42,7 +136,7 @@ class ProviderResourceUsage:
     throttle_count: int = 0
 
     def __post_init__(self) -> None:
-        """Reject negative or non-integer measured counters."""
+        """Reject negative or non-integer observed counters."""
         for field_name, value in self.as_items():
             if type(value) is not int or value < 0:
                 raise PublicAnalysisValidationError(
@@ -63,8 +157,24 @@ class ProviderResourceUsage:
             ("throttle_count", self.throttle_count),
         )
 
+    def value_for(self, metric: ProviderResourceMetric) -> int:
+        """Return one counter through its typed metric identity."""
+        if type(metric) is not ProviderResourceMetric:
+            raise PublicAnalysisValidationError("metric must use ProviderResourceMetric")
+        return {
+            ProviderResourceMetric.GITHUB_HTTP_REQUEST_COUNT: self.github_http_request_count,
+            ProviderResourceMetric.ATHENA_QUERY_COUNT: self.athena_query_count,
+            ProviderResourceMetric.ATHENA_BYTES_SCANNED: self.athena_bytes_scanned,
+            ProviderResourceMetric.BEDROCK_RETRIEVE_COUNT: self.bedrock_retrieve_count,
+            ProviderResourceMetric.BEDROCK_MODEL_CALL_COUNT: self.bedrock_model_call_count,
+            ProviderResourceMetric.BEDROCK_INPUT_TOKENS: self.bedrock_input_tokens,
+            ProviderResourceMetric.BEDROCK_OUTPUT_TOKENS: self.bedrock_output_tokens,
+            ProviderResourceMetric.RETRY_COUNT: self.retry_count,
+            ProviderResourceMetric.THROTTLE_COUNT: self.throttle_count,
+        }[metric]
+
     def add(self, other: ProviderResourceUsage) -> ProviderResourceUsage:
-        """Add measured counters without introducing inferred utilization."""
+        """Add numeric counters without inventing their evidence classification."""
         if type(other) is not ProviderResourceUsage:
             raise PublicAnalysisValidationError("provider usage must use the frozen contract")
         return ProviderResourceUsage(
@@ -106,7 +216,7 @@ class RepresentativeStageMeasurement:
 
 @dataclass(frozen=True, slots=True)
 class RepresentativeWorkloadMeasurement:
-    """Complete measured observation for one representative workload execution."""
+    """Complete observation whose provider counters carry explicit evidence semantics."""
 
     run_id: str
     workload_id: str
@@ -114,9 +224,10 @@ class RepresentativeWorkloadMeasurement:
     end_to_end_duration_ms: int
     serialized_result_bytes: int
     provider_totals: ProviderResourceUsage
+    provider_coverage: ProviderMeasurementCoverage
 
     def __post_init__(self) -> None:
-        """Require complete ordered stages and exact measured aggregate counters."""
+        """Require complete ordered stages, exact totals, and honest metric classification."""
         if type(self.run_id) is not str or not self.run_id.strip():
             raise PublicAnalysisValidationError("run_id must be a non-empty string")
         if self.workload_id != REPRESENTATIVE_PUBLIC_ANALYSIS_WORKLOAD_ID:
@@ -148,12 +259,23 @@ class RepresentativeWorkloadMeasurement:
             raise PublicAnalysisValidationError(
                 "provider_totals must equal the exact sum of stage measurements"
             )
+        if type(self.provider_coverage) is not ProviderMeasurementCoverage:
+            raise PublicAnalysisValidationError(
+                "provider_coverage must use ProviderMeasurementCoverage"
+            )
+        for metric in PROVIDER_RESOURCE_METRICS:
+            classification = self.provider_coverage.classification_for(metric)
+            value = self.provider_totals.value_for(metric)
+            if classification is not MeasurementClassification.MEASURED and value != 0:
+                raise PublicAnalysisValidationError(
+                    f"{metric.value} cannot carry a non-zero value unless it is MEASURED"
+                )
 
 
 def sum_provider_usage(
     stages: tuple[RepresentativeStageMeasurement, ...],
 ) -> ProviderResourceUsage:
-    """Sum only observed stage counters into one whole-run measurement."""
+    """Sum numeric stage counters; classification remains an independent authority."""
     total = ProviderResourceUsage()
     for stage in stages:
         if type(stage) is not RepresentativeStageMeasurement:
