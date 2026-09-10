@@ -31,7 +31,7 @@ Phase 16   Runtime Exposure with Amazon Inspector              COMPLETE
   Gate 16.5 Temporary Inspector IAM teardown                   COMPLETE / ROLE ABSENT / CONVERGED
 Phase 17   Security Hardening                                  IN PROGRESS
   Gate 17.1 Cross-cutting threat/control-gap inventory         COMPLETE / GO TO 17.2
-  Gate 17.2 CI/CD and workflow authority hardening             NEXT
+  Gate 17.2 CI/CD and workflow authority hardening             IMPLEMENTED / RULESET ENFORCEMENT PENDING
 Phase 18   Evaluation, Cost & Portfolio Readiness              PLANNED
 ```
 
@@ -82,6 +82,8 @@ security control name != proven enforcement
 historical workflow != inert workflow
 plan-only intent != write-authority requirement
 CI evidence != enforced merge gate
+repository checkout != persisted Git credential requirement
+OIDC authentication != authorization to reuse a shared deployment role
 ```
 
 Deterministic code remains authoritative for evidence identity, vulnerability applicability, risk policy, structured-query compilation, retrieval admission, capability authorization, executable input binding, result admission, handoff admission, MCP admission/projection, A2A reference identity/resolution/admission, retry/fallback policy, and runtime evidence admission/correlation.
@@ -122,6 +124,7 @@ standing AgentCore Runtime resources:        NONE
 standing experiment-specific GitHub IAM:    REMOVED
 Gate 14.2 PUBLIC exception:                  NOT RETAINED
 Runtime Identity service-linked role:        RETAIN pending separate safety proof
+historical mutating workflow:                RETIRED / FAIL-CLOSED
 ```
 
 Measured successful six-case experiment cost:
@@ -343,30 +346,72 @@ SEC17-DOC-001   accumulated architecture headers still describe Phase 9 / Phase 
 
 Important proven controls remain retained and are explicitly recorded as non-gaps: immutable main-only GitHub OIDC trust, full-SHA action pinning in sampled workflows, no observed privileged `pull_request_target`/`workflow_run` triggers, bounded public request/repository acquisition, proposal-only semantic planning, untrusted retrieved-content handling, deterministic agent authorization/result admission, raw MCP/A2A admission, content-minimized telemetry, and bounded model token/call behavior.
 
-Gate 17.1 authorizes exactly one next repository slice:
+### Gate 17.2 — CI/CD and workflow authority hardening — IMPLEMENTED / ENFORCEMENT PENDING
+
+Gate 17.2 closes the repository-side workflow-authority gaps without changing AWS IAM or introducing new services.
+
+Retained implementation:
 
 ```text
-Gate 17.2 — CI/CD and workflow authority hardening
+universal workflow:                     Security Hardening CI
+universal check context:                Repository security invariants
+external action pins:                   full 40-hex SHA required
+checkout persisted credentials:         forbidden by default
+pull_request_target/workflow_run:        forbidden by default
+EPSS plan role:                         OpsLensEpssHistoryEvidenceRole
+EPSS execute role:                      OpsLensEpssHistoryCoordinatorRole
+21600-second session:                   full-backfill execute path only
+historical AgentCore mutation workflow: RETIRED / FAIL-CLOSED
+shared deploy role in AgentCore lab:     NOT REFERENCED
 ```
 
-Gate 17.2 may enforce repository/workflow authority invariants, but it does **not** authorize AWS IAM mutation, new AWS services, public runtime deployment, Inspector reactivation, dependency-platform rollout in the same slice, or PR #89 changes.
+Implementation-validation evidence:
 
-Changing GitHub `main` required status checks remains an explicit human/platform administration boundary after the exact contexts are defined and proven.
+```text
+head SHA:      dd2b5cea01009d8acbfe73f135fc5a7c8380aba7
+workflow run:  34420383193 / Security Hardening CI #12
+conclusion:    SUCCESS
+AWS mutations: 0
+new IAM:       0
+PR #89 changes: 0
+```
 
-Gate 17.1 cloud/runtime impact:
+Canonical records:
+
+```text
+docs/adr/0065-ci-cd-and-workflow-authority-hardening.md
+labs/phase-17-gate-17-2-workflow-authority-hardening.md
+labs/evidence/phase-17-gate-17-2-workflow-authority-hardening-v1.json
+```
+
+The remaining Gate 17.2 boundary is GitHub platform administration. After protected merge and exact final-head CI, active ruleset `Protect main` (`20873628`) must require:
+
+```text
+Repository security invariants
+```
+
+Until that independent ruleset proof exists:
+
+```text
+Security Hardening CI success != enforced merge gate
+```
+
+Gate 17.2 cloud/runtime impact:
 
 ```text
 AWS mutations:          0
-new IAM:                0
+new IAM permissions:    0
 new AWS services:       0
 model invocations:      0
 capability executions:  0
+public runtime changes: 0
+Inspector activation:   0
 PR #89 changes:         0
 ```
 
-## Next — Gate 17.2 CI/CD and workflow authority hardening
+## Next
 
-Prioritize enforcement gaps before introducing more security automation. Dependency update/review/scanning controls are intentionally deferred to a separate later gate so new automation is not added on top of unresolved workflow-authority gaps.
+Complete Gate 17.2 by enforcing and independently verifying the universal required status context in the active GitHub `main` ruleset. Only after that evidence should Phase 17 proceed to a separate dependency/code-scanning hardening decision.
 
 ## Deferred cross-project work
 

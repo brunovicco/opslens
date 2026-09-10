@@ -31,7 +31,7 @@ Phase 13 MCP                                    COMPLETE
 Phase 14 Amazon Bedrock AgentCore               COMPLETE
 Phase 15 A2A                                    COMPLETE
 Phase 16 Runtime Exposure with Inspector        COMPLETE
-Phase 17 Security Hardening                     IN PROGRESS / Gate 17.2 next
+Phase 17 Security Hardening                     IN PROGRESS / Gate 17.2 enforcement pending
 Phase 18 Evaluation, Cost & Portfolio           PLANNED
 ```
 
@@ -67,6 +67,8 @@ security control name != proven enforcement
 historical workflow != inert workflow
 plan-only intent != write-authority requirement
 CI evidence != enforced merge gate
+repository checkout != persisted Git credential requirement
+OIDC authentication != authorization to reuse a shared deployment role
 ```
 
 ## Retained measured reasoning reference
@@ -92,7 +94,7 @@ MCP remains a bounded offline interoperability layer over existing typed capabil
 
 ### Phase 14 — AgentCore
 
-AgentCore remains an optional lab target, not the default OpsLens reasoning runtime. Standing experiment-specific GitHub IAM was removed after the measured experiment.
+AgentCore remains an optional lab target, not the default OpsLens reasoning runtime. Standing experiment-specific GitHub IAM was removed after the measured experiment. Gate 17.2 also retires the historical mutating workflow into a fail-closed, non-OIDC guard so historical automation cannot silently reuse shared deployment authority.
 
 ### Phase 15 — A2A
 
@@ -194,10 +196,27 @@ References:
 - [`../labs/phase-17-gate-17-1-threat-model.md`](../labs/phase-17-gate-17-1-threat-model.md)
 - [`../labs/evidence/phase-17-gate-17-1-threat-model-v1.json`](../labs/evidence/phase-17-gate-17-1-threat-model-v1.json)
 
-### Next — Gate 17.2 CI/CD and workflow authority hardening
+### Gate 17.2 — CI/CD and workflow authority hardening — repository implementation complete
 
-The next slice is deliberately limited to evidenced workflow/control-plane authority gaps. It may enforce full-SHA external-action invariants, block privileged workflow triggers by default, disable persisted checkout credentials where unnecessary, separate EPSS plan-only authority from mutating execution authority, constrain long STS sessions to actual execution, and make the historical AgentCore mutating workflow inert by default.
+The bounded repository slice now enforces:
 
-Changing GitHub `main` required status checks remains a human/platform administration boundary after exact required contexts are defined and proven.
+```text
+always-running PR context:            Repository security invariants
+external action full-SHA pinning:     REQUIRED
+checkout persisted credentials:       DISABLED
+pull_request_target/workflow_run:      REJECTED BY POLICY
+EPSS plan identity:                   READ-ONLY EVIDENCE ROLE
+EPSS execute identity:                BOUNDED COORDINATOR ROLE
+21600-second session:                 FULL BACKFILL EXECUTION ONLY
+historical AgentCore mutating path:   RETIRED / FAIL-CLOSED
+```
+
+References:
+
+- [`adr/0065-ci-cd-and-workflow-authority-hardening.md`](adr/0065-ci-cd-and-workflow-authority-hardening.md)
+- [`../labs/phase-17-gate-17-2-workflow-authority-hardening.md`](../labs/phase-17-gate-17-2-workflow-authority-hardening.md)
+- [`../labs/evidence/phase-17-gate-17-2-workflow-authority-hardening-v1.json`](../labs/evidence/phase-17-gate-17-2-workflow-authority-hardening-v1.json)
+
+Changing GitHub `main` required status checks remains a human/platform administration boundary. After protected merge, active ruleset `Protect main` (`20873628`) must require the exact proven context `Repository security invariants`, and that ruleset state must be independently verified before Gate 17.2 closes.
 
 Gate 17.2 does not authorize AWS IAM mutation, a new AWS service, a public runtime, Inspector reactivation, dependency-platform rollout in the same slice, or PR #89 changes.
