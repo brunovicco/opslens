@@ -46,7 +46,7 @@ real gap or explicit hypothesis
 | 15 | A2A | ✅ Complete — bounded offline reference interoperability + official SDK conformance retained |
 | 16 | Runtime Exposure with Amazon Inspector | ✅ Complete — read contract proven; zero current records; temporary IAM removed |
 | 17 | Security Hardening | ✅ Complete — evidence-backed hardening + measured recovery retained |
-| 18 | Evaluation, Cost & Portfolio Readiness | ▶️ Next |
+| 18 | Evaluation, Cost & Portfolio Readiness | 🚧 In progress — Gate 18.1 complete; Gate 18.2 next |
 
 ## Permanent engineering boundaries
 
@@ -82,6 +82,8 @@ scheduler pause != global workload termination
 Terraform apply success != independent AWS state verification
 measured value != derived estimate
 unmeasured != zero
+not applicable != zero
+same unit != same measurement semantics
 portfolio summary != new technical authority
 ```
 
@@ -228,13 +230,22 @@ public MCP/A2A runtime                        NOT CREATED
 AgentCore as default runtime                  NOT RETAINED
 ```
 
-## Phase 18 — Evaluation, Cost & Portfolio Readiness — NEXT
+## Phase 18 — Evaluation, Cost & Portfolio Readiness — IN PROGRESS
 
-Purpose: consolidate the evidence generated across prior phases into a coherent evaluation, cost, reliability, security, and portfolio view without converting unlike measurements into false precision.
+Purpose: consolidate evidence generated across prior phases into a coherent evaluation, cost, reliability, security and portfolio view without converting unlike measurements into false precision.
 
-### Gate 18.1 — cross-phase evidence inventory and comparability matrix — NEXT
+### Gate 18.1 — cross-phase evidence inventory and comparability matrix — COMPLETE
 
-Before new experiments, inventory the existing immutable evidence set and classify each metric/value as:
+Gate 18.1 froze the evidence vocabulary and comparability admission contract before any consolidated view was built.
+
+```text
+records:                  27
+canonical artifacts:       8
+comparability groups:     20
+non-comparability pairs:  11
+```
+
+Allowed evidence classifications:
 
 ```text
 MEASURED
@@ -243,19 +254,47 @@ UNMEASURED
 NOT_APPLICABLE
 ```
 
-Build an explicit comparability matrix for quality, latency, cost, retries, capability executions, retrieval/groundedness, security regressions, and cloud/runtime measurements.
+Protected implementation evidence:
 
-Exit criteria:
+```text
+issue:                     #280 / CLOSED / COMPLETED
+PR:                        #281
+exact head:                3737efacc72f54a8b31afeb4461532fe6d39657c
+protected squash merge:    2d059d6b406d2da2bf2151f7934f0279ca843de0
+Evaluation Readiness CI:   34481175326 / #7 / SUCCESS
+Security Hardening CI:     34481175251 / #42 / SUCCESS
+Dependency Review:         34481175395 / #27 / SUCCESS
+CodeQL / Python:           34481175336 / #37 / SUCCESS
+```
 
-- every retained headline metric points to a canonical evidence artifact;
-- values from different workloads are not silently compared as equivalents;
-- measured vs derived vs unmeasured is explicit;
-- no composite score is introduced without an explicit later hypothesis;
-- zero AWS/IAM/runtime mutation is required for the first slice.
+Canonical records:
 
-### Candidate Gate 18.2 — consolidated evaluation and reliability view
+```text
+docs/adr/0071-cross-phase-evidence-classification-and-comparability.md
+labs/phase-18-gate-18-1-evidence-inventory.md
+labs/phase-18-gate-18-1-closeout.md
+labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json
+labs/evidence/phase-18-gate-18-1-closeout-v1.json
+```
 
-Use Gate 18.1 comparability decisions to build independent evaluation dimensions. Preserve failure-path evidence and rejected hypotheses rather than showing success-only metrics.
+The next gates must consume this contract rather than infer comparability from labels, units or presentation convenience.
+
+### Gate 18.2 — consolidated evaluation and reliability view — NEXT
+
+Build a repository-local consolidated view from the admitted Gate 18.1 records. Keep independent dimensions visible and preserve failure-path and rejected-hypothesis evidence rather than presenting a success-only dashboard.
+
+Required first-slice behavior:
+
+- consume the canonical Gate 18.1 inventory rather than scrape prose;
+- separate quality/groundedness, latency, token/cost, execution authority, runtime evidence, security and recovery dimensions;
+- expose comparison rule and workload scope alongside comparable values;
+- surface `UNMEASURED` and `NOT_APPLICABLE` explicitly;
+- preserve non-comparability assertions;
+- include known negative/rejected observations, including the Phase 7 isolation grounding failure and the Phase 12 two-model no-lift retention decision;
+- introduce no synthetic composite score;
+- remain AWS/IAM/model/capability read-free for the first slice.
+
+A new benchmark is justified only if this view reveals a decision-relevant gap that retained evidence cannot answer.
 
 ### Candidate Gate 18.3 — cost accounting and budget envelope
 
