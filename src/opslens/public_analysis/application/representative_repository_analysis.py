@@ -63,7 +63,7 @@ class RepresentativeRepositoryThreatEvidence:
             raise PublicAnalysisValidationError(
                 "representative KEV evidence must be one complete typed snapshot"
             )
-        if not isinstance(self.epss_snapshot, (EpssSnapshot, HistoricalEpssSnapshot)):
+        if type(self.epss_snapshot) not in {EpssSnapshot, HistoricalEpssSnapshot}:
             raise PublicAnalysisValidationError(
                 "representative EPSS evidence must be one exact typed snapshot"
             )
