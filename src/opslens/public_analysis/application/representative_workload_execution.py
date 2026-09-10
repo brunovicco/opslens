@@ -65,7 +65,6 @@ from opslens.repository_intelligence.parsers.uv_lock import parse_uv_lock_eviden
 from opslens.risk_policy.application import prioritize_repository_analysis
 from opslens.risk_policy.domain import RiskPrioritizationResult
 
-
 type ProviderUsageSnapshot = Callable[[], ProviderResourceUsage]
 type RepresentativeThreatEvidenceLoader = Callable[
     [PublicRepositoryEvidenceExecution], "RepresentativeThreatEvidenceLoad"
