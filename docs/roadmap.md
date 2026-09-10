@@ -45,7 +45,7 @@ real gap
 | 14 | Amazon Bedrock AgentCore | ✅ Complete — optional lab target retained; standing experiment IAM removed |
 | 15 | A2A | ✅ Complete — bounded offline reference interoperability + official SDK conformance retained |
 | 16 | Runtime Exposure with Amazon Inspector | ✅ Complete — read contract proven; zero current records; temporary IAM removed |
-| 17 | Security Hardening | 🚧 In progress — Gates 17.1–17.3 complete; Gate 17.4 next |
+| 17 | Security Hardening | 🚧 In progress — Gates 17.1–17.4 complete; Gate 17.5 next |
 | 18 | Evaluation, Cost & Portfolio Readiness | ⏳ Planned |
 
 ## Permanent engineering boundaries
@@ -92,6 +92,10 @@ security scan success != absence of vulnerabilities
 scanner output != model authority
 GitHub security permission != AWS authority
 scanner platform prerequisite != scanner permission requirement
+untrusted text != instruction authority
+retrieved content != system/developer authority
+failed/forged capability result != admissible business result
+adversarial test success != proof of universal safety
 ```
 
 ## Completed platform through Phase 16
@@ -209,27 +213,90 @@ additional continuous pip-audit:      DEFER
 broad dependency upgrades:            NOT AUTHORIZED
 ```
 
-### Gate 17.4 — application input / prompt-injection / tool-abuse adversarial tests — NEXT
+### Gate 17.4 — application input / prompt-injection / tool-abuse adversarial tests — COMPLETE
 
-The next gate should attack already-retained public and agentic boundaries before creating any new model/runtime authority. Minimum evaluation targets:
+Gate 17.4 retained a dedicated offline attacker-oriented regression suite over real OpsLens boundaries rather than introducing speculative guardrails.
+
+Evaluation coverage:
 
 ```text
-public repository/request admission
-semantic planner proposal-only boundary
-retrieved-content prompt-injection resistance
-single/multi-agent capability authorization
-MCP raw admission / result projection
-A2A raw admission / reference resolution
-malformed or contradictory tool/result evidence
-cost-amplification attempts within bounded model-call budgets
+ADV17-PUBLIC  public request admission abuse
+ADV17-PROMPT  direct + indirect prompt injection
+ADV17-TOOL    single/multi-agent capability widening attempts
+ADV17-RESULT  forged result binding
+ADV17-MCP     dynamic/cross-capability MCP tool abuse
+ADV17-A2A     A2A reference authority smuggling
+ADV17-COST    input/call/retry/fallback amplification
 ```
 
-Gate 17.4 should add adversarial fixtures and deterministic pass/fail evidence first. New AWS IAM, new public runtime surfaces, or new model/tool authority are not implied by this gate.
+Retained implementation:
+
+```text
+tests/security_hardening/test_adversarial_boundaries.py
+.github/workflows/adversarial-security-ci.yml
+```
+
+The first retained dataset contains eight deterministic cases across seven threat classes. Every case matched its expected reject or bounded disposition, so no business-logic redesign was justified by observed evidence.
+
+Final exact implementation PR-head CI:
+
+```text
+head:                           60010d4fcb5d6142c9748bbf764fb074dc3a4dc8
+Adversarial Security CI:        34426092786 / #5  / SUCCESS
+Repository security invariants: 34426092824 / #25 / SUCCESS
+Dependency Review:              34426092798 / #10 / SUCCESS
+CodeQL / Python:                34426092795 / #12 / SUCCESS
+```
+
+Implementation PR #264 was protected-squash merged as:
+
+```text
+cfad2680ca9e1977c754977ea58f9ab8865601dd
+```
+
+Canonical records:
+
+```text
+docs/adr/0067-bounded-adversarial-authority-regression-suite.md
+labs/phase-17-gate-17-4-adversarial-boundaries.md
+labs/evidence/phase-17-gate-17-4-adversarial-boundaries-v1.json
+labs/phase-17-gate-17-4-closeout.md
+labs/evidence/phase-17-gate-17-4-closeout-v1.json
+```
+
+Retained authority posture:
+
+```text
+Adversarial Security CI permission:          contents: read
+AWS/OIDC authority:                          none
+model invocations during Gate 17.4:          0
+capability executions during Gate 17.4:      0
+new model/tool authority:                    none
+live-model jailbreak as authority proof:     rejected
+```
+
+`adversarial test success != proof of universal safety` remains a permanent interpretation boundary.
+
+### Gate 17.5 — sensitive-data / logging / telemetry hardening — NEXT
+
+Inspect existing observability and failure-path emissions before adding new telemetry functionality. Minimum evaluation targets:
+
+```text
+user/source text in logs, exceptions, metrics, and spans
+provider request/response payload exposure
+MCP/A2A protocol payload exposure
+secrets/tokens/credentials and authorization material
+high-cardinality or attacker-controlled labels/attributes
+content-free error guarantees
+trace/evidence identifiers that could become authority by accident
+retention and data-minimization assumptions in retained telemetry paths
+```
+
+Gate 17.5 should begin with repository evidence and adversarial logging tests. New observability vendors, cloud permissions, public runtime surfaces, or model authority are not implied.
 
 ### Candidate later gates — EVIDENCE-DRIVEN
 
 ```text
-17.5 sensitive-data / logging / telemetry hardening
 17.6 operational recovery / kill-switch / abuse-cost controls
 17.7 architecture-document synchronization if still pending
 17.8 Security Hardening closeout
