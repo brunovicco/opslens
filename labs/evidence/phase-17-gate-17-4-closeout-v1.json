@@ -1,0 +1,73 @@
+{
+  "contract_version": "phase17-gate17-4-closeout:v1",
+  "date": "2026-09-10",
+  "phase": "17",
+  "gate": "17.4",
+  "issue": 263,
+  "implementation_pull_request": 264,
+  "implementation_head": "60010d4fcb5d6142c9748bbf764fb074dc3a4dc8",
+  "protected_squash_merge": "cfad2680ca9e1977c754977ea58f9ab8865601dd",
+  "merge_verified": true,
+  "implementation_ci": {
+    "adversarial_security_ci": {
+      "run_id": 34426092786,
+      "run_number": 5,
+      "conclusion": "SUCCESS"
+    },
+    "repository_security_invariants": {
+      "run_id": 34426092824,
+      "run_number": 25,
+      "conclusion": "SUCCESS"
+    },
+    "dependency_review": {
+      "run_id": 34426092798,
+      "run_number": 10,
+      "conclusion": "SUCCESS"
+    },
+    "codeql_python": {
+      "run_id": 34426092795,
+      "run_number": 12,
+      "conclusion": "SUCCESS"
+    }
+  },
+  "retained_state": {
+    "adversarial_boundary_suite": "RETAIN",
+    "adversarial_security_ci": "RETAIN",
+    "adversarial_workflow_least_privilege_invariant": "RETAIN",
+    "case_count": 8,
+    "threat_class_count": 7,
+    "business_logic_remediation_required": false,
+    "live_model_jailbreak_as_authority_proof": "DO_NOT_USE",
+    "new_aws_model_or_tool_authority": "NOT_AUTHORIZED"
+  },
+  "tested_authority_invariants": [
+    "untrusted text != instruction authority",
+    "retrieved content != system/developer authority",
+    "model proposal != capability authorization",
+    "malformed tool request != best-effort execution",
+    "failed/forged capability result != admissible business result",
+    "MCP transport success != capability admission",
+    "A2A transport success != business/evidence truth",
+    "contradictory metadata != tolerated ambiguity",
+    "adversarial test success != proof of universal safety"
+  ],
+  "cloud_runtime_impact": {
+    "aws_mutations": 0,
+    "new_iam_permissions": 0,
+    "new_aws_services": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "public_runtime_changes": 0,
+    "inspector_activation_changes": 0,
+    "pr_89_changes": 0
+  },
+  "canonical_records": [
+    "docs/adr/0067-bounded-adversarial-authority-regression-suite.md",
+    "labs/phase-17-gate-17-4-adversarial-boundaries.md",
+    "labs/evidence/phase-17-gate-17-4-adversarial-boundaries-v1.json",
+    "labs/phase-17-gate-17-4-closeout.md",
+    "labs/evidence/phase-17-gate-17-4-closeout-v1.json"
+  ],
+  "next_gate": "17.5 sensitive-data / logging / telemetry hardening",
+  "non_claim": "bounded adversarial regression success does not prove universal application, protocol, or model safety"
+}

@@ -28,6 +28,7 @@ Phase 17   Security Hardening                                  IN PROGRESS
   Gate 17.1 Cross-cutting threat/control-gap inventory         COMPLETE
   Gate 17.2 CI/CD and workflow authority hardening             COMPLETE / REQUIRED CONTEXT ENFORCED
   Gate 17.3 Dependency and code-scanning hardening             COMPLETE / DEPENDENCY REVIEW + CODEQL
+  Gate 17.4 Adversarial authority-boundary regression          COMPLETE / 8 CASES / 7 THREAT CLASSES
 Phase 18   Evaluation, Cost & Portfolio Readiness              PLANNED
 ```
 
@@ -78,6 +79,10 @@ security scan success != absence of vulnerabilities
 scanner output != model authority
 GitHub security permission != AWS authority
 scanner platform prerequisite != scanner permission requirement
+untrusted text != instruction authority
+retrieved content != system/developer authority
+failed/forged capability result != admissible business result
+adversarial test success != proof of universal safety
 ```
 
 Deterministic code remains authoritative for evidence identity, vulnerability applicability, Risk Policy v1, structured-query compilation, retrieval admission, capability authorization, executable input binding, result admission, handoff admission, MCP admission/projection, A2A reference identity/resolution/admission, retry/fallback policy, and runtime-evidence admission/correlation.
@@ -303,9 +308,62 @@ public runtime changes: 0
 PR #89 changes:         0
 ```
 
+### Gate 17.4 — adversarial input / prompt-injection / tool-abuse testing — COMPLETE
+
+Gate 17.4 retained one explicit attacker-oriented regression surface over real application and protocol boundaries.
+
+```text
+cases:                 8
+threat classes:        7
+workflow:              Adversarial Security CI
+workflow permission:   contents: read
+AWS/OIDC authority:    none
+model invocations:     0
+capability executions: 0
+```
+
+The suite covers public request admission, structural prompt-injection separation, single/multi-agent capability widening attempts, forged result evidence, MCP dynamic/cross-capability tool abuse, A2A reference smuggling, and bounded cost-amplification attempts.
+
+No first-slice case exposed a business-logic gap requiring remediation. This is bounded regression evidence, not a universal security claim.
+
+Final exact implementation PR-head validation on `60010d4fcb5d6142c9748bbf764fb074dc3a4dc8`:
+
+```text
+Adversarial Security CI          34426092786 / #5  / SUCCESS
+Repository security invariants   34426092824 / #25 / SUCCESS
+Dependency Review                34426092798 / #10 / SUCCESS
+CodeQL / Python                  34426092795 / #12 / SUCCESS
+```
+
+Implementation PR #264 was protected-squash merged as:
+
+```text
+cfad2680ca9e1977c754977ea58f9ab8865601dd
+```
+
+Canonical records:
+
+```text
+docs/adr/0067-bounded-adversarial-authority-regression-suite.md
+labs/phase-17-gate-17-4-adversarial-boundaries.md
+labs/evidence/phase-17-gate-17-4-adversarial-boundaries-v1.json
+labs/phase-17-gate-17-4-closeout.md
+labs/evidence/phase-17-gate-17-4-closeout-v1.json
+```
+
+Gate 17.4 retention:
+
+```text
+adversarial boundary suite:                 RETAIN
+Adversarial Security CI:                    RETAIN
+least-privilege workflow invariant:         RETAIN
+live model jailbreak as authority proof:    DO NOT USE
+new AWS/model/tool authority:               NOT AUTHORIZED
+```
+
 ## Next
 
-Proceed to **Gate 17.4 — application input / prompt-injection / tool-abuse adversarial tests**. The next slice should test already-retained public-input, retrieval, agent, MCP/A2A, and capability boundaries before authorizing any new runtime or model authority.
+Proceed to **Gate 17.5 — sensitive-data / logging / telemetry hardening**. Inspect retained observability and failure logging for secrets, user/source text, provider payloads, protocol data, and high-cardinality identifiers before authorizing new telemetry functionality.
 
 ## Deferred cross-project work
 
