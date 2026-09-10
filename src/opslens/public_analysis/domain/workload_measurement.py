@@ -128,7 +128,9 @@ class PublicAnalysisWorkloadMeasurement:
     def __post_init__(self) -> None:
         """Require exact stage coverage and preserve measured values without inference."""
         if self.workload_id != PUBLIC_ANALYSIS_WORKLOAD_ID:
-            raise PublicAnalysisValidationError("workload_id must match public-analysis-workload:v1")
+            raise PublicAnalysisValidationError(
+                "workload_id must match public-analysis-workload:v1"
+            )
         if type(self.result_id) is not str or not self.result_id.strip():
             raise PublicAnalysisValidationError("result_id must be one non-empty string")
         _sha256_digest(self.result_sha256, field="result_sha256")
