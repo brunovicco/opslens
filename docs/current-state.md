@@ -6,39 +6,38 @@ _Last updated: 2026-09-10_
 
 ```text
 protected main:
-feca774535b7d83f57c26f4e9fe7da71ce268f0f
+ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1
 
 Phase 18 — Evaluation, Cost & Portfolio Readiness
 status: COMPLETE
 protected closeout PR: #290
-closeout issue: #289 CLOSED / COMPLETED
 
 Phase 19 — Bounded Public Runtime & Productization
-Gate 19.1 — Public Runtime Hypothesis & Launch Contract
-status: IN PROGRESS
-issue: #291
-branch: docs/phase19-gate19-1-public-runtime-contract
+Gate 19.1 — Public Runtime Hypothesis & Launch Contract      COMPLETE
+protected merge PR: #292
+exact validated head: 484e2b85fc1996b2419b4057c2cf585ab1f675a1
 runtime decision: DEFERRED_PENDING_MEASUREMENT
 leading hypothesis: ASYNC_SUBMIT_STATUS_RESULT
+
+Gate 19.2 — Representative Workload Measurement              IN PROGRESS
+issue: #295
+draft PR: #297
+branch: feat/phase19-gate19-2-representative-workload-measurement
 ```
 
-Phases 0–18 are complete. PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work and is not a Phase 19 dependency.
-
-## Phase 18 closeout synchronization
-
-PR #290 was protected-squash-merged to `main` at:
-
-```text
-feca774535b7d83f57c26f4e9fe7da71ce268f0f
-```
-
-The historical closeout records under `labs/phase-18-closeout.md`, `labs/evidence/phase-18-closeout-v1.json`, and ADR 0075 intentionally preserve their pre-merge state. They are historical evidence and are not rewritten by Phase 19.
-
-Current-facing documentation is synchronized separately so it no longer treats Gate 18.5 as pending.
+Phases 0–18 remain complete. Gate 19.1 is complete and merged. Gate 19.2 is the active engineering boundary. PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work and is not a Phase 19 dependency.
 
 ## Retained Phase 17 security lineage
 
 **Gate 17.1** established the evidence-first threat/control-gap inventory. **Gate 17.2** hardened CI/CD and workflow authority and introduced the retained `Repository security invariants` protected-main context. Later Phase 17 controls remain authoritative for dependency/code scanning, adversarial regression, telemetry minimization, and bounded scheduled-ingestion recovery. Phase 19 adds no exception to those controls.
+
+## Phase 18 and Gate 19.1 protected history
+
+Phase 18 was protected-squash-merged through PR #290 at `feca774535b7d83f57c26f4e9fe7da71ce268f0f`.
+
+Gate 19.1 was then protected-squash-merged through PR #292 at `ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1`. Its exact final PR head `484e2b85fc1996b2419b4057c2cf585ab1f675a1` passed the retained exact-head validation chain before merge.
+
+Historical artifacts retain the state they recorded when created. Current-facing documentation is synchronized separately; historical Phase 18/Gate 19.1 evidence is not rewritten to look post-merge.
 
 ## Retained platform architecture
 
@@ -67,7 +66,7 @@ AIP-C01 topic != product requirement
 
 ## Retained public-analysis boundary
 
-The current public-analysis application path is real but deliberately stops before a public product runtime:
+The retained public-analysis application path is real but still stops before a public product runtime:
 
 ```text
 untrusted JSON
@@ -102,104 +101,96 @@ Therefore:
 rich retained capabilities != executable public product workload
 ```
 
-## Gate 19.1 frozen workload
+## Gate 19.1 retained launch contract
 
-The machine-readable authority is:
+Canonical machine-readable authority:
 
 `labs/evidence/phase-19-gate-19-1-public-runtime-contract-v1.json`
 
-with workload identity:
+Frozen workload identity:
 
 ```text
 public-analysis-workload:v1
 ```
 
-The workload preserves the existing public request contract and current repository-evidence scope:
+The workload keeps public GitHub only, one repository/request, a 2,048-byte request body limit, a 256-character repository URL limit, immutable resolved commit identity, inert `uv.lock` as the only current repository file read, a 5,000 dependency-record bound, and third-party code execution forbidden.
 
-```text
-provider:                 GitHub
-visibility:               public only
-repositories/request:     1
-request body:             <= 2,048 bytes
-repository URL:           <= 256 chars
-requested_ref:            optional
-immutable downstream ref: resolved commit SHA
-repository files read:    exactly the supported inert uv.lock path
-max dependency records:   5,000
-third-party code execute: FORBIDDEN
-operation:                analyze_public_repository
-evidence completeness:    ALL_REQUIRED
-```
-
-Required evidence needs remain exactly:
-
-```text
-remediation_guidance
-risk_priority
-vulnerability_facts
-```
-
-Existing component limits are preserved as `CONFIGURED_LIMIT`; missing whole-request measurements remain `UNMEASURED`.
-
-## Gate 19.1 runtime decision
-
-Current decision:
+The retained runtime decision is:
 
 ```text
 DEFERRED_PENDING_MEASUREMENT
 ```
 
-Leading design hypothesis:
+with leading design hypothesis:
 
 ```text
 ASYNC_SUBMIT_STATUS_RESULT
 ```
 
-The hypothesis is not a selected runtime. The repository does not yet contain one representative execution that composes repository acquisition, deterministic finding/risk production, structured/semantic evidence, bounded synthesis, and admitted final result while measuring end-to-end latency, provider calls, retries, throttles, token use, Athena scan bytes, and serialized result size.
+That hypothesis is not runtime authority. A concrete topology must follow representative whole-workload evidence.
 
-A synchronous topology remains viable only if the complete workload is measured to fit safely inside the selected ingress timeout with adequate margin. Async becomes justified if latency variability, backpressure, failure isolation, or timeout evidence makes synchronous coupling unsafe.
+## Gate 19.2 active implementation
 
-## Gate 19.1 authority boundary
+Gate 19.2 closes the whole-request measurements that Gate 19.1 correctly left `UNMEASURED`.
+
+The first implementation slice introduces a provider-neutral, non-public measurement contract and harness. The contract requires the exact ordered representative stages:
 
 ```text
-AWS mutations:          0
-IAM mutations:          0
-new AWS resources:      0
-model invocations:      0
-capability executions:  0
+public_request_admission
+repository_acquisition
+dependency_evidence
+vulnerability_correlation
+risk_prioritization
+structured_evidence
+semantic_evidence
+model_reasoning
+result_admission
+```
+
+The harness records only concrete execution observations:
+
+```text
+end-to-end duration
+per-stage duration
+GitHub HTTP request count
+Athena query count + bytes scanned
+Bedrock Retrieve count
+Bedrock model call count
+Bedrock input/output tokens
+retry count
+throttle count
+serialized admitted-result bytes
+```
+
+It rejects incomplete/reordered stage plans, negative resource observations, aggregate counter drift, empty final serialization, invalid clocks, and clock regression.
+
+Current implementation surface:
+
+```text
+issue: #295
+draft PR: #297
+branch: feat/phase19-gate19-2-representative-workload-measurement
+measurement contract: src/opslens/public_analysis/domain/representative_measurement.py
+measurement harness:  src/opslens/public_analysis/application/representative_measurement.py
+unit tests:            tests/unit/public_analysis/test_representative_measurement.py
+```
+
+The first Gate 19.2 code slice performs no live AWS/model calls. Live AWS/model execution, when needed for the representative measurement, remains a human execution boundary.
+
+## Gate 19.2 authority boundary
+
+```text
 public endpoints:       0
-PR #89 modifications:   0
+new AWS resources:      0
+new IAM roles/policies: 0
+third-party code exec:  0
+PR #89 modifications:  0
 ```
 
-No API Gateway, Function URL, Lambda public runtime, SQS queue, result store, WAF, ECS/Fargate, AgentCore runtime, or broad runtime role is authorized by Gate 19.1.
-
-IAM is represented only as a responsibility-to-permission matrix. Public ingress, repository acquisition, Athena retrieval, Bedrock retrieval, Bedrock model invocation, result persistence, telemetry, and async coordination remain distinct responsibilities.
-
-## Security, cost, and observability launch contracts
-
-The frozen threat/abuse model covers malformed/oversized requests, repository/SSRF abuse, enumeration and amplification, GitHub abuse, indirect prompt injection, retrieval poisoning, model/Athena/token/retry amplification, concurrency exhaustion, denial-of-wallet, result/replay tampering, and telemetry leakage.
-
-The future runtime must measure request-level cost/resource dimensions instead of extrapolating unrelated labs. Required telemetry is content-minimized and includes identities/hashes, stage durations and outcomes, provider-call counts, token counts when available, Athena bytes, retries, throttles, rejection reasons, and cost-attribution identifiers where available. Raw payloads, source code, full prompts/responses, credentials, and sensitive tokens remain forbidden by default.
-
-## Disable/recovery semantics
-
-The future public runtime must prove the exact scope of applicable controls rather than inventing one generic kill switch:
-
-```text
-ingress disable
-new-job admission disable
-queue consumer pause
-model invocation disable
-Athena execution disable
-background ingestion pause
-```
-
-Phase 17 currently proves only the last item for exactly three recurring EventBridge Scheduler resources through `scheduled_ingestion_enabled=false`. That remains a scheduled-ingestion pause, not a global platform stop.
+No API Gateway, Function URL, queue, result store, worker fleet, WAF, ECS/Fargate, AgentCore public runtime, or broad runtime role is authorized by the current gate.
 
 ## Next checkpoint
 
-Gate 19.1 still requires its deterministic verifier, read-only CI, documentation synchronization, and exact-head validation before it can be declared complete.
+Continue composing the provider-neutral harness with retained OpsLens stages without moving authority into the measurement layer. The next engineering slice must inspect and adapt the existing repository-intelligence, Risk Policy, structured-retrieval, semantic-retrieval, synthesis, and result-admission contracts rather than duplicating their business truth.
 
-The smallest authorized Gate 19.2 experiment is then a **non-public representative workload measurement**. It must compose or invoke the full public-analysis product stages and measure end-to-end/stage latency, provider calls, Bedrock tokens, Athena scans where applicable, retries/throttles, and serialized result bytes before the project selects `SYNC` or `ASYNC`.
-
-If Gate 19.2 requires live AWS or model execution, execution remains a human boundary. No AWS mutation is authorized as part of Gate 19.1.
+After deterministic local/CI validation is green, prepare the smallest reproducible non-public live measurement procedure. Any live AWS or model invocation remains explicitly human-executed. Only measured evidence may move the runtime decision from `DEFERRED_PENDING_MEASUREMENT` to `SYNC` or `ASYNC`.
