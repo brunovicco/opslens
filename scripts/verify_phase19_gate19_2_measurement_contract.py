@@ -120,9 +120,12 @@ def _object(value: object, *, label: str) -> dict[str, object]:
 
 def _strings(value: object, *, label: str) -> list[str]:
     """Return one JSON string array or fail the evidence contract."""
-    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+    if not isinstance(value, list):
         raise SystemExit(f"{label} must be a string array")
-    return cast(list[str], value)
+    values = cast(list[object], value)
+    if any(not isinstance(item, str) for item in values):
+        raise SystemExit(f"{label} must be a string array")
+    return cast(list[str], values)
 
 
 def _load(path: Path) -> dict[str, object]:
