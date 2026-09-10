@@ -23,6 +23,10 @@ Phases 0–17 remain complete. PR #89 / `feat/governed-gateway-semantic-planner`
 
 OpsLens currently retains AWS dev infrastructure in `us-east-1`, source-preserving threat intelligence, deterministic repository-vulnerability correlation and Risk Policy v1, bounded semantic planning with deterministic query/SQL admission, Amazon Bedrock Knowledge Bases with Amazon S3 Vectors, hybrid structured/semantic evidence, direct Bedrock single-agent reasoning as the retained reference/default, deterministic multi-agent specialization/handoff, bounded offline MCP/A2A contracts, optional-lab AgentCore evidence, bounded Inspector read contracts, content-minimized observability, and Phase 17 security/recovery controls.
 
+## Phase 17 retained security lineage
+
+The current security posture still depends on the Phase 17 evidence chain. **Gate 17.1** established the evidence-first threat/control-gap inventory, and **Gate 17.2** hardened CI/CD and workflow authority before broader dependency/code scanning, adversarial, telemetry, and recovery controls were added. The retained protected-main context remains `Repository security invariants`; Phase 18 portfolio documentation does not supersede that authority.
+
 ## Phase 18 evidence chain
 
 Gate 18.1 froze `MEASURED`, `DERIVED`, `UNMEASURED`, and `NOT_APPLICABLE`. Its canonical inventory contains 27 metrics from 8 artifacts, 20 comparability groups, and 11 explicit non-comparability assertions.
