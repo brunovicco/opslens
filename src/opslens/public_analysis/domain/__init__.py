@@ -14,6 +14,11 @@ from opslens.public_analysis.domain.representative_measurement import (
     RepresentativeWorkloadStage,
     sum_provider_usage,
 )
+from opslens.public_analysis.domain.representative_result import (
+    MAX_REPRESENTATIVE_RESULT_FINDINGS,
+    REPRESENTATIVE_PUBLIC_RESULT_CONTRACT_VERSION,
+    RepresentativePublicAnalysisResult,
+)
 from opslens.public_analysis.domain.request import (
     PUBLIC_ANALYSIS_REQUEST_CONTRACT_VERSION,
     PublicAnalysisRequest,
@@ -33,6 +38,7 @@ from opslens.public_analysis.domain.semantic_planning import (
 
 __all__ = [
     "MAX_PUBLIC_SEMANTIC_PLANNING_REQUEST_BYTES",
+    "MAX_REPRESENTATIVE_RESULT_FINDINGS",
     "PUBLIC_ANALYSIS_HANDOFF_CONTRACT_VERSION",
     "PUBLIC_ANALYSIS_OPERATION",
     "PUBLIC_ANALYSIS_REQUEST_CONTRACT_VERSION",
@@ -40,6 +46,7 @@ __all__ = [
     "PUBLIC_REPOSITORY_EVIDENCE_CONTRACT_VERSION",
     "PUBLIC_SEMANTIC_PLANNING_CONTRACT_VERSION",
     "REPRESENTATIVE_PUBLIC_ANALYSIS_WORKLOAD_ID",
+    "REPRESENTATIVE_PUBLIC_RESULT_CONTRACT_VERSION",
     "REPRESENTATIVE_WORKLOAD_STAGE_ORDER",
     "ProviderResourceUsage",
     "PublicAnalysisAdmissionHandoff",
@@ -49,6 +56,7 @@ __all__ = [
     "PublicRepositoryTarget",
     "PublicSemanticPlanProposal",
     "PublicSemanticPlanningRequest",
+    "RepresentativePublicAnalysisResult",
     "RepresentativeStageMeasurement",
     "RepresentativeWorkloadMeasurement",
     "RepresentativeWorkloadStage",
