@@ -27,6 +27,10 @@ Phase 16  Runtime Exposure with Amazon Inspector              COMPLETE
 Phase 17  Security Hardening                                  COMPLETE
 ```
 
+### Retained Phase 17 security lineage
+
+**Gate 17.1** established the cross-cutting evidence-first threat/control-gap inventory. **Gate 17.2** hardened CI/CD and workflow authority and introduced the retained `Repository security invariants` protected-main context. Later Phase 17 gates added bounded dependency/code scanning, adversarial regression, telemetry hardening, operational recovery, architecture synchronization, and closeout without weakening those earlier controls.
+
 ## Phase 18 — Evaluation, Cost & Portfolio Readiness
 
 **Status: IN PROGRESS**
