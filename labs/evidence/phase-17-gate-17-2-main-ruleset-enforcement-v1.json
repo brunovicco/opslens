@@ -1,0 +1,48 @@
+{
+  "artifact_version": "phase-17-gate-17-2-main-ruleset-enforcement:v1",
+  "source_main_sha": "ca73643254a3464c5e61f1b458fe301022e4dd7f",
+  "issue": 252,
+  "implementation_pr": 255,
+  "ruleset": {
+    "id": 20873628,
+    "name": "Protect main",
+    "target": "branch",
+    "source": "brunovicco/opslens",
+    "enforcement": "active",
+    "default_branch_only": true,
+    "updated_at": "2026-09-09T21:39:51.496-03:00",
+    "rules": {
+      "deletion_protection": true,
+      "non_fast_forward_protection": true,
+      "pull_request_required": true,
+      "allowed_merge_methods": [
+        "squash"
+      ],
+      "required_review_thread_resolution": true,
+      "required_linear_history": true,
+      "required_status_checks": [
+        {
+          "context": "Repository security invariants",
+          "integration_id": 15368
+        }
+      ],
+      "strict_required_status_checks_policy": false,
+      "do_not_enforce_on_create": false
+    },
+    "bypass_actor_count": 0,
+    "current_user_can_bypass": "never"
+  },
+  "decision": "GATE_17_2_REQUIRED_STATUS_ENFORCEMENT_PROVEN",
+  "authority_invariants": [
+    "CI evidence != enforced merge gate until the ruleset requires the context",
+    "required CI context != business or runtime authorization",
+    "GitHub platform administration != AWS IAM mutation"
+  ],
+  "aws_mutation_count": 0,
+  "new_iam_permission_count": 0,
+  "new_aws_service_count": 0,
+  "model_invocations": 0,
+  "capability_executions": 0,
+  "pr_89_touched": false,
+  "next_gate": "17.3 — dependency and code-scanning hardening"
+}
