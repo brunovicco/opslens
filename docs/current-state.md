@@ -29,6 +29,7 @@ Phase 17   Security Hardening                                  IN PROGRESS
   Gate 17.2 CI/CD and workflow authority hardening             COMPLETE / REQUIRED CONTEXT ENFORCED
   Gate 17.3 Dependency and code-scanning hardening             COMPLETE / DEPENDENCY REVIEW + CODEQL
   Gate 17.4 Adversarial authority-boundary regression          COMPLETE / 8 CASES / 7 THREAT CLASSES
+  Gate 17.5 Sensitive-data / logging / telemetry hardening     COMPLETE / 12 LAMBDA HANDLERS HARDENED
 Phase 18   Evaluation, Cost & Portfolio Readiness              PLANNED
 ```
 
@@ -83,6 +84,13 @@ untrusted text != instruction authority
 retrieved content != system/developer authority
 failed/forged capability result != admissible business result
 adversarial test success != proof of universal safety
+log event suppression != trace response/error suppression
+exception text != safe telemetry by default
+trace metadata != business/evidence truth
+loggable identifier != authorization
+telemetry correlation != capability authorization
+content-minimized failure log != execution result
+redaction success != proof source content is non-sensitive
 ```
 
 Deterministic code remains authoritative for evidence identity, vulnerability applicability, Risk Policy v1, structured-query compilation, retrieval admission, capability authorization, executable input binding, result admission, handoff admission, MCP admission/projection, A2A reference identity/resolution/admission, retry/fallback policy, and runtime-evidence admission/correlation.
@@ -361,9 +369,59 @@ live model jailbreak as authority proof:    DO NOT USE
 new AWS/model/tool authority:               NOT AUTHORIZED
 ```
 
+### Gate 17.5 — sensitive-data / logging / telemetry hardening — COMPLETE
+
+Gate 17.5 closed two real telemetry-content gaps:
+
+```text
+TRACE17-001  bare Powertools Lambda tracer response/error capture
+LOG17-001    shared logger.exception active exception/traceback serialization
+```
+
+Retained implementation:
+
+```text
+Powertools Lambda handlers:                   12
+logger event auto-capture:                     DISABLED / log_event=False
+tracer response auto-capture:                  DISABLED / capture_response=False
+tracer error auto-capture:                     DISABLED / capture_error=False
+shared active exception traceback logging:     DISABLED
+shared failure logging:                        bounded logger.error
+repository verifier:                           scripts/verify_telemetry_safety.py
+shared observability regression:               RETAIN
+```
+
+Final exact implementation PR-head validation on `5ad6e7d9aae224d188f11b1f0bae27fc25ea59df`:
+
+```text
+Security Hardening CI         34429102027 / #30 / SUCCESS
+  telemetry verifier          PASS / handlers=12
+Operational Observability CI  34429102108 / #23 / SUCCESS
+Dependency Review             34429102025 / #15 / SUCCESS
+CodeQL / Python               34429102142 / #19 / SUCCESS
+```
+
+Implementation PR #268 was protected-squash merged as:
+
+```text
+9e967acdd1a5ae611a3a1db47aee164272d11380
+```
+
+Canonical records:
+
+```text
+docs/adr/0068-content-minimized-lambda-telemetry.md
+labs/phase-17-gate-17-5-telemetry-safety.md
+labs/evidence/phase-17-gate-17-5-telemetry-safety-v1.json
+labs/phase-17-gate-17-5-closeout.md
+labs/evidence/phase-17-gate-17-5-closeout-v1.json
+```
+
+Gate 17.5 authority impact remained zero for AWS mutations, IAM permissions, new services, public runtimes, model invocations, capability executions, tool authority, and business-authority changes.
+
 ## Next
 
-Proceed to **Gate 17.5 — sensitive-data / logging / telemetry hardening**. Inspect retained observability and failure logging for secrets, user/source text, provider payloads, protocol data, and high-cardinality identifiers before authorizing new telemetry functionality.
+Proceed to **Gate 17.6 — operational recovery / kill-switch / abuse-cost controls**. Begin with concrete retained-runtime and recovery evidence. Do not invent kill switches, new cloud authority, or shutdown paths without an evidenced operational gap.
 
 ## Deferred cross-project work
 
