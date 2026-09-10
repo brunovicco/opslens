@@ -2,6 +2,7 @@
   "artifact_version": "phase-17-gate-17-5-telemetry-safety:v1",
   "source_main_sha": "cf5afe1d5d352cf301295b72031cb67a8d510fbb",
   "issue": 266,
+  "pr": 268,
   "adr": "0068-content-minimized-lambda-telemetry.md",
   "decision": "RETAIN_CONTENT_MINIMIZED_LAMBDA_TELEMETRY_AND_FAIL_CLOSED_VERIFICATION",
   "observed_gaps": {
@@ -45,13 +46,39 @@
     "new_public_runtime_count": 0,
     "pr_89_touched": false
   },
-  "final_validation": {
-    "implementation_head_sha": null,
-    "telemetry_verifier_handler_count": null,
-    "security_hardening_run_id": null,
-    "operational_observability_run_id": null,
-    "dependency_review_run_id": null,
-    "codeql_run_id": null,
-    "conclusion": "PENDING_EXACT_HEAD_CI"
+  "implementation_validation": {
+    "implementation_head_sha": "f40aae0650199a1931f21f8b9f4abbfd8dc0c31a",
+    "telemetry_verifier_handler_count": 12,
+    "security_hardening": {
+      "run_id": 34428925731,
+      "run_number": 28,
+      "job_id": 102720032719,
+      "conclusion": "SUCCESS",
+      "marker": "telemetry_safety_invariants=PASS handlers=12"
+    },
+    "operational_observability": {
+      "run_id": 34428925787,
+      "run_number": 21,
+      "job_id": 102720032658,
+      "conclusion": "SUCCESS",
+      "ruff": "PASS",
+      "pyright": "0 errors, 0 warnings, 0 informations",
+      "pytest": "28 passed"
+    },
+    "dependency_review": {
+      "run_id": 34428925717,
+      "run_number": 13,
+      "conclusion": "SUCCESS"
+    },
+    "codeql": {
+      "run_id": 34428925715,
+      "run_number": 17,
+      "conclusion": "SUCCESS"
+    },
+    "conclusion": "SUCCESS"
+  },
+  "final_pr_head_validation": {
+    "required": true,
+    "purpose": "Confirm the evidence-recording commit did not regress the measured implementation before protected merge."
   }
 }
