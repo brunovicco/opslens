@@ -72,12 +72,15 @@ def _actions() -> tuple[FakeAction, ...]:
             athena_bytes_scanned=4096,
         ),
         RepresentativeWorkloadStage.SEMANTIC_EVIDENCE: ProviderResourceUsage(
-            bedrock_retrieve_count=1
+            bedrock_retrieve_count=1,
+            bedrock_retrieve_client_elapsed_ms=37,
         ),
         RepresentativeWorkloadStage.MODEL_REASONING: ProviderResourceUsage(
             bedrock_model_call_count=1,
             bedrock_input_tokens=320,
             bedrock_output_tokens=96,
+            bedrock_model_client_elapsed_ms=88,
+            bedrock_model_latency_ms=73,
             retry_count=1,
             throttle_count=1,
         ),
@@ -115,9 +118,12 @@ def test_measures_complete_representative_workload() -> None:
         athena_query_count=2,
         athena_bytes_scanned=4096,
         bedrock_retrieve_count=1,
+        bedrock_retrieve_client_elapsed_ms=37,
         bedrock_model_call_count=1,
         bedrock_input_tokens=320,
         bedrock_output_tokens=96,
+        bedrock_model_client_elapsed_ms=88,
+        bedrock_model_latency_ms=73,
         retry_count=1,
         throttle_count=1,
     )
