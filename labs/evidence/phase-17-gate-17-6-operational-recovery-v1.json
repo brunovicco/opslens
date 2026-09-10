@@ -1,0 +1,103 @@
+{
+  "artifact_version": "phase-17-gate-17-6-operational-recovery:v1",
+  "evidence_date": "2026-09-10",
+  "source_main_sha": "d100bc67f83689e64901c723919803bc20e93f4f",
+  "issue": 270,
+  "adr": "0069-bounded-scheduled-ingestion-pause.md",
+  "decision": "IMPLEMENT_BOUNDED_SCHEDULED_INGESTION_PAUSE_THEN_REQUIRE_MEASURED_DISABLE_RESUME",
+  "observed_gap": {
+    "OPS17-001": "Recurring source-ingestion schedules had bounded retry delivery but no single Terraform-owned reversible control to pause future automatic starts without destroying runtime, IAM, data, or evidence."
+  },
+  "retained_scheduler_count": 3,
+  "schedulers": [
+    {
+      "resource": "aws_scheduler_schedule.epss_daily",
+      "group": "opslens-dev-epss",
+      "name": "opslens-dev-epss-daily",
+      "normal_state": "ENABLED"
+    },
+    {
+      "resource": "aws_scheduler_schedule.kev_daily",
+      "group": "opslens-dev-kev",
+      "name": "opslens-dev-kev-daily",
+      "normal_state": "ENABLED"
+    },
+    {
+      "resource": "aws_scheduler_schedule.nvd_incremental_hourly",
+      "group": "opslens-dev-nvd-incremental",
+      "name": "opslens-dev-nvd-incremental-hourly",
+      "normal_state": "ENABLED"
+    }
+  ],
+  "delivery_budget": {
+    "maximum_event_age_seconds": 3600,
+    "maximum_retry_attempts": 2
+  },
+  "existing_abuse_cost_controls": {
+    "public_http_runtime": false,
+    "edge_rate_limit_applicable_to_retained_runtime": false,
+    "semantic_planner_max_tokens": 256,
+    "single_agent_reasoning_max_tokens": 96,
+    "triage_reasoning_max_tokens": 64,
+    "knowledge_synthesis_max_tokens": 2048,
+    "athena_bytes_scanned_cutoff_per_query": 10485760,
+    "github_acquisition_adaptive_retry": false
+  },
+  "pause_semantics": {
+    "stops_future_recurring_schedule_starts": true,
+    "cancels_inflight_lambda": false,
+    "cancels_already_accepted_scheduler_retries": false,
+    "disables_s3_event_chain": false,
+    "disables_manual_invocation": false,
+    "changes_capability_authority": false
+  },
+  "repository_controls": {
+    "terraform_variable": "scheduled_ingestion_enabled",
+    "default_enabled": true,
+    "shared_scheduler_state": "local.scheduled_ingestion_state",
+    "shared_retry_budget": true,
+    "static_verifier": "scripts/verify_operational_recovery.py",
+    "read_only_ci_workflow": ".github/workflows/operational-recovery-ci.yml",
+    "operator_runbook": "docs/runbooks/scheduled-ingestion-pause.md"
+  },
+  "interpretation_boundaries": [
+    "scheduler pause != global workload termination",
+    "scheduler state != business/evidence authority",
+    "recovery control != authorization bypass",
+    "pause request != applied AWS state",
+    "bounded retry != guaranteed delivery",
+    "failure destination != successful recovery",
+    "model token budget != tenant quota",
+    "no public runtime != proof future edge controls are unnecessary"
+  ],
+  "authority_impact_before_live_experiment": {
+    "aws_mutation_count": 0,
+    "new_iam_permission_count": 0,
+    "new_iam_principal_count": 0,
+    "new_aws_service_count": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "new_public_runtime_count": 0,
+    "pr_89_touched": false
+  },
+  "live_experiment": {
+    "state": "PENDING_HUMAN_AWS_BOUNDARY_AFTER_PROTECTED_MERGE",
+    "pause_plan_expected": {
+      "add": 0,
+      "change": 3,
+      "destroy": 0
+    },
+    "pause_verified_states": null,
+    "resume_verified_states": null,
+    "final_terraform_convergence": null
+  },
+  "final_validation": {
+    "implementation_head_sha": null,
+    "operational_recovery_run_id": null,
+    "security_hardening_run_id": null,
+    "terraform_ci_run_id": null,
+    "dependency_review_run_id": null,
+    "codeql_run_id": null,
+    "conclusion": "PENDING_EXACT_HEAD_CI_AND_LIVE_EXPERIMENT"
+  }
+}
