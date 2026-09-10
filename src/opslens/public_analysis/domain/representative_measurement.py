@@ -42,9 +42,12 @@ class ProviderResourceMetric(StrEnum):
     ATHENA_QUERY_COUNT = "athena_query_count"
     ATHENA_BYTES_SCANNED = "athena_bytes_scanned"
     BEDROCK_RETRIEVE_COUNT = "bedrock_retrieve_count"
+    BEDROCK_RETRIEVE_CLIENT_ELAPSED_MS = "bedrock_retrieve_client_elapsed_ms"
     BEDROCK_MODEL_CALL_COUNT = "bedrock_model_call_count"
     BEDROCK_INPUT_TOKENS = "bedrock_input_tokens"
     BEDROCK_OUTPUT_TOKENS = "bedrock_output_tokens"
+    BEDROCK_MODEL_CLIENT_ELAPSED_MS = "bedrock_model_client_elapsed_ms"
+    BEDROCK_MODEL_LATENCY_MS = "bedrock_model_latency_ms"
     RETRY_COUNT = "retry_count"
     THROTTLE_COUNT = "throttle_count"
 
@@ -129,9 +132,12 @@ class ProviderResourceUsage:
     athena_query_count: int = 0
     athena_bytes_scanned: int = 0
     bedrock_retrieve_count: int = 0
+    bedrock_retrieve_client_elapsed_ms: int = 0
     bedrock_model_call_count: int = 0
     bedrock_input_tokens: int = 0
     bedrock_output_tokens: int = 0
+    bedrock_model_client_elapsed_ms: int = 0
+    bedrock_model_latency_ms: int = 0
     retry_count: int = 0
     throttle_count: int = 0
 
@@ -150,9 +156,18 @@ class ProviderResourceUsage:
             ("athena_query_count", self.athena_query_count),
             ("athena_bytes_scanned", self.athena_bytes_scanned),
             ("bedrock_retrieve_count", self.bedrock_retrieve_count),
+            (
+                "bedrock_retrieve_client_elapsed_ms",
+                self.bedrock_retrieve_client_elapsed_ms,
+            ),
             ("bedrock_model_call_count", self.bedrock_model_call_count),
             ("bedrock_input_tokens", self.bedrock_input_tokens),
             ("bedrock_output_tokens", self.bedrock_output_tokens),
+            (
+                "bedrock_model_client_elapsed_ms",
+                self.bedrock_model_client_elapsed_ms,
+            ),
+            ("bedrock_model_latency_ms", self.bedrock_model_latency_ms),
             ("retry_count", self.retry_count),
             ("throttle_count", self.throttle_count),
         )
@@ -166,9 +181,16 @@ class ProviderResourceUsage:
             ProviderResourceMetric.ATHENA_QUERY_COUNT: self.athena_query_count,
             ProviderResourceMetric.ATHENA_BYTES_SCANNED: self.athena_bytes_scanned,
             ProviderResourceMetric.BEDROCK_RETRIEVE_COUNT: self.bedrock_retrieve_count,
+            ProviderResourceMetric.BEDROCK_RETRIEVE_CLIENT_ELAPSED_MS: (
+                self.bedrock_retrieve_client_elapsed_ms
+            ),
             ProviderResourceMetric.BEDROCK_MODEL_CALL_COUNT: self.bedrock_model_call_count,
             ProviderResourceMetric.BEDROCK_INPUT_TOKENS: self.bedrock_input_tokens,
             ProviderResourceMetric.BEDROCK_OUTPUT_TOKENS: self.bedrock_output_tokens,
+            ProviderResourceMetric.BEDROCK_MODEL_CLIENT_ELAPSED_MS: (
+                self.bedrock_model_client_elapsed_ms
+            ),
+            ProviderResourceMetric.BEDROCK_MODEL_LATENCY_MS: self.bedrock_model_latency_ms,
             ProviderResourceMetric.RETRY_COUNT: self.retry_count,
             ProviderResourceMetric.THROTTLE_COUNT: self.throttle_count,
         }[metric]
@@ -186,11 +208,22 @@ class ProviderResourceUsage:
             bedrock_retrieve_count=(
                 self.bedrock_retrieve_count + other.bedrock_retrieve_count
             ),
+            bedrock_retrieve_client_elapsed_ms=(
+                self.bedrock_retrieve_client_elapsed_ms
+                + other.bedrock_retrieve_client_elapsed_ms
+            ),
             bedrock_model_call_count=(
                 self.bedrock_model_call_count + other.bedrock_model_call_count
             ),
             bedrock_input_tokens=self.bedrock_input_tokens + other.bedrock_input_tokens,
             bedrock_output_tokens=self.bedrock_output_tokens + other.bedrock_output_tokens,
+            bedrock_model_client_elapsed_ms=(
+                self.bedrock_model_client_elapsed_ms
+                + other.bedrock_model_client_elapsed_ms
+            ),
+            bedrock_model_latency_ms=(
+                self.bedrock_model_latency_ms + other.bedrock_model_latency_ms
+            ),
             retry_count=self.retry_count + other.retry_count,
             throttle_count=self.throttle_count + other.throttle_count,
         )
