@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from opslens.public_analysis.domain import ProviderResourceUsage
@@ -40,7 +41,7 @@ class MeasuredGitHubHttpsConnection:
         self._delegate = delegate
         self._measurement = measurement
 
-    def request(self, method: str, url: str, *, headers: dict[str, str]) -> None:
+    def request(self, method: str, url: str, *, headers: Mapping[str, str]) -> None:
         """Count one physical request attempt, then delegate unchanged."""
         self._measurement.request_count += 1
         self._delegate.request(method, url, headers=headers)
