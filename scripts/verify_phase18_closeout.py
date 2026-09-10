@@ -142,9 +142,14 @@ def _dict(value: object, *, label: str) -> dict[str, object]:
 
 
 def _string_set(value: object, *, label: str) -> set[str]:
-    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+    if not isinstance(value, list):
         raise SystemExit(f"{label} must be a string array")
-    return set(cast(list[str], value))
+    result: set[str] = set()
+    for item in cast(list[object], value):
+        if not isinstance(item, str):
+            raise SystemExit(f"{label} must be a string array")
+        result.add(item)
+    return result
 
 
 def _verify_closeout_artifact(repo_root: Path) -> None:
