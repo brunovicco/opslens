@@ -5,6 +5,7 @@
 - Phase: 17 — Security Hardening
 - Gate: 17.3 — Dependency and code-scanning hardening
 - Issue: #256
+- PR: #261
 
 ## Context
 
@@ -94,7 +95,21 @@ Repository vulnerability applicability, Risk Policy v1, runtime exposure, model/
 
 This preserves the Gate 17.2 rule that new security tooling must not weaken workflow authority merely because the tooling itself is security-related.
 
-### 5. Defer update automation and duplicate audit mechanisms
+### 5. Treat scanner platform prerequisites as separate from scanner permissions
+
+The first Dependency Review run failed because the repository Dependency graph was disabled. The job log showed only read authority; no GitHub write, OIDC, or AWS capability was missing.
+
+The correct remediation was a human GitHub-platform administration change: enable the repository Dependency graph. The same run was then retried successfully without changing workflow permissions.
+
+This establishes:
+
+```text
+scanner platform prerequisite != scanner permission requirement
+```
+
+A platform prerequisite failure must not be used as justification for blindly widening scanner authority.
+
+### 6. Defer update automation and duplicate audit mechanisms
 
 Do not add Dependabot version-update PR automation or another continuous `pip-audit` workflow in this slice.
 
@@ -121,6 +136,10 @@ Rejected. GitHub dependency/code-scanning findings have different evidence seman
 
 Rejected. Dependency Review needs read access only. CodeQL receives `security-events: write` solely to publish code-scanning results. Neither scanner needs OIDC or AWS credentials.
 
+### Widen permissions when Dependency Review reports a platform configuration error
+
+Rejected. The first run proved that the missing prerequisite was the repository Dependency graph, not scanner authority. Enabling the platform prerequisite and retrying the unchanged workflow succeeded.
+
 ### Add automatic dependency upgrades in the same gate
 
 Rejected. Detection/review and upgrade policy are separate concerns. Gate 17.3 first establishes measurable security signals.
@@ -134,14 +153,38 @@ Positive:
 - every new external action remains exact-SHA pinned;
 - scanner permissions are explicit and bounded;
 - the already-enforced `Repository security invariants` context protects the workflow policy itself;
+- platform prerequisites are handled without permission inflation;
 - no AWS or runtime authority is added.
 
 Trade-offs:
 
-- Dependency Review may depend on repository dependency-graph/platform availability;
-- CodeQL upload may depend on repository code-scanning platform state;
+- Dependency Review requires the repository Dependency graph to remain enabled;
+- CodeQL upload depends on repository code-scanning platform availability;
 - scanners can produce false positives/negatives and must not be treated as proof of absence or exploitability;
 - weekly CodeQL execution adds GitHub Actions compute, not AWS spend.
+
+## Measured evidence
+
+On implementation head `9f180b4768bbd49d6702f46baef5d99d8ee5f4a0`:
+
+```text
+Security Hardening CI
+run:         34423137266 / #16
+conclusion:  SUCCESS
+
+CodeQL / Python
+run:         34423137268 / #1
+job:         102702675060
+conclusion:  SUCCESS
+
+Dependency Review
+run:         34423137362 / #1
+attempt 1:   FAILURE / job 102702675325 / Dependency graph disabled
+human step:  enable repository Dependency graph
+attempt 2:   SUCCESS / job 102704585117
+```
+
+No scanner permission, AWS role, IAM policy, model authority, or runtime capability was added between Dependency Review attempts.
 
 ## Cloud/runtime impact
 
@@ -163,4 +206,4 @@ labs/phase-17-gate-17-3-dependency-code-scanning.md
 labs/evidence/phase-17-gate-17-3-dependency-code-scanning-v1.json
 ```
 
-The implementation must be validated on an exact PR head before Gate 17.3 is closed. Scanner success is interpreted as successful scanner execution, not as proof that the repository is vulnerability-free.
+Final exact PR-head CI after evidence synchronization is required before Gate 17.3 is closed. Scanner success is interpreted as successful scanner execution, not as proof that the repository is vulnerability-free.
