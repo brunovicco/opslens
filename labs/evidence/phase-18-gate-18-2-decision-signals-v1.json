@@ -12,22 +12,10 @@
       "evidence_path": "labs/evidence/phase-7-gate-7-7-first-run-review-v1.json",
       "supporting_document": "labs/phase-7-gate-7-7-citations-groundedness.md",
       "source_assertions": [
-        {
-          "path": "cases.2.case_id",
-          "expected": "grounding-isolation-01"
-        },
-        {
-          "path": "cases.2.runtime_claim_count",
-          "expected": 2
-        },
-        {
-          "path": "cases.2.support_judgments.0.supports_claim",
-          "expected": false
-        },
-        {
-          "path": "cases.2.support_judgments.1.supports_claim",
-          "expected": false
-        }
+        {"path": "cases.2.case_id", "expected": "grounding-isolation-01"},
+        {"path": "cases.2.runtime_claim_count", "expected": 2},
+        {"path": "cases.2.support_judgments.0.supports_claim", "expected": false},
+        {"path": "cases.2.support_judgments.1.supports_claim", "expected": false}
       ]
     },
     {
@@ -38,22 +26,10 @@
       "evidence_path": "labs/evidence/phase-12-closeout-v1.json",
       "supporting_document": "labs/phase-12-gate-12-5-multi-agent-closeout.md",
       "source_assertions": [
-        {
-          "path": "measured_comparison.phase11_quality",
-          "expected": "6/6"
-        },
-        {
-          "path": "measured_comparison.gate12_3_quality",
-          "expected": "6/6"
-        },
-        {
-          "path": "measured_comparison.quality_lift",
-          "expected": false
-        },
-        {
-          "path": "gates.2.retained",
-          "expected": false
-        }
+        {"path": "measured_comparison.phase11_quality", "expected": "6/6"},
+        {"path": "measured_comparison.gate12_3_quality", "expected": "6/6"},
+        {"path": "measured_comparison.quality_lift", "expected": false},
+        {"path": "gates.2.retained", "expected": false}
       ]
     },
     {
@@ -64,18 +40,9 @@
       "evidence_path": "labs/evidence/phase-14-gate-14-3-agentcore-retention-decision-v1.json",
       "supporting_document": "labs/phase-14-gate-14-3-agentcore-retention-decision.md",
       "source_assertions": [
-        {
-          "path": "decision_class",
-          "expected": "RETAIN_WITH_CHANGES"
-        },
-        {
-          "path": "default_runtime_decision",
-          "expected": "DO_NOT_RETAIN_AGENTCORE"
-        },
-        {
-          "path": "retention_matrix.agentcore_as_default_runtime",
-          "expected": "DO_NOT_RETAIN"
-        }
+        {"path": "decision_class", "expected": "RETAIN_WITH_CHANGES"},
+        {"path": "default_runtime_decision", "expected": "DO_NOT_RETAIN_AGENTCORE"},
+        {"path": "retention_matrix.agentcore_as_default_runtime", "expected": "DO_NOT_RETAIN"}
       ]
     },
     {
@@ -84,20 +51,11 @@
       "statement": "The bounded Inspector discovery returned zero coverage records and zero finding records in the measured account, Region and time window.",
       "interpretation": "A measured zero-record API result is retained evidence for that read only; it is not proof of zero runtime exposure or zero vulnerabilities.",
       "evidence_path": "labs/evidence/phase-16-closeout-v1.json",
-      "supporting_document": "labs/phase-16-gate-16-6-closeout.md",
+      "supporting_document": "labs/phase-16-closeout.md",
       "source_assertions": [
-        {
-          "path": "measured_discovery.coverage.record_count",
-          "expected": 0
-        },
-        {
-          "path": "measured_discovery.findings.record_count",
-          "expected": 0
-        },
-        {
-          "path": "retained_state.measured_zero_record_evidence",
-          "expected": "RETAIN"
-        }
+        {"path": "measured_discovery.coverage.record_count", "expected": 0},
+        {"path": "measured_discovery.findings.record_count", "expected": 0},
+        {"path": "retained_state.measured_zero_record_evidence", "expected": "RETAIN"}
       ]
     }
   ],
