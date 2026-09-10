@@ -43,6 +43,7 @@ from opslens.public_analysis.application.semantic_planning import (
 from opslens.public_analysis.domain import (
     PUBLIC_ANALYSIS_V1_REQUIRED_EVIDENCE_NEEDS,
     ProviderMeasurementCoverage,
+    ProviderResourceMetric,
     ProviderResourceUsage,
     PublicAnalysisAdmissionHandoff,
     PublicRepositoryEvidenceExecution,
@@ -50,6 +51,7 @@ from opslens.public_analysis.domain import (
     RepresentativePublicAnalysisResult,
     RepresentativeWorkloadMeasurement,
     RepresentativeWorkloadStage,
+    provider_measurement_coverage,
 )
 from opslens.repository_intelligence.application import (
     GitHubSnapshotResolutionEvidence,
@@ -66,6 +68,21 @@ type ProviderUsageSnapshot = Callable[[], ProviderResourceUsage]
 type RepresentativeThreatEvidenceLoader = Callable[
     [PublicRepositoryEvidenceExecution], "RepresentativeThreatEvidenceLoad"
 ]
+
+REPRESENTATIVE_DEFAULT_PROVIDER_COVERAGE = provider_measurement_coverage(
+    measured=(
+        ProviderResourceMetric.GITHUB_HTTP_REQUEST_COUNT,
+        ProviderResourceMetric.BEDROCK_RETRIEVE_COUNT,
+        ProviderResourceMetric.BEDROCK_MODEL_CALL_COUNT,
+        ProviderResourceMetric.BEDROCK_INPUT_TOKENS,
+        ProviderResourceMetric.BEDROCK_OUTPUT_TOKENS,
+        ProviderResourceMetric.RETRY_COUNT,
+    ),
+    not_applicable=(
+        ProviderResourceMetric.ATHENA_QUERY_COUNT,
+        ProviderResourceMetric.ATHENA_BYTES_SCANNED,
+    ),
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,7 +110,7 @@ class RepresentativeWorkloadDependencies:
     semantic_retriever: RepresentativeSemanticRetriever
     synthesizer: RepresentativeHybridSynthesizer
     clock: MeasurementClock
-    provider_coverage: ProviderMeasurementCoverage
+    provider_coverage: ProviderMeasurementCoverage = REPRESENTATIVE_DEFAULT_PROVIDER_COVERAGE
 
 
 @dataclass(frozen=True, slots=True)
@@ -438,6 +455,7 @@ def execute_representative_workload(
 
 
 __all__ = [
+    "REPRESENTATIVE_DEFAULT_PROVIDER_COVERAGE",
     "ProviderUsageSnapshot",
     "RepresentativeThreatEvidenceLoad",
     "RepresentativeThreatEvidenceLoader",
