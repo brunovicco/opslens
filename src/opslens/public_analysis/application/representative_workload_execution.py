@@ -74,9 +74,12 @@ REPRESENTATIVE_DEFAULT_PROVIDER_COVERAGE = provider_measurement_coverage(
     measured=(
         ProviderResourceMetric.GITHUB_HTTP_REQUEST_COUNT,
         ProviderResourceMetric.BEDROCK_RETRIEVE_COUNT,
+        ProviderResourceMetric.BEDROCK_RETRIEVE_CLIENT_ELAPSED_MS,
         ProviderResourceMetric.BEDROCK_MODEL_CALL_COUNT,
         ProviderResourceMetric.BEDROCK_INPUT_TOKENS,
         ProviderResourceMetric.BEDROCK_OUTPUT_TOKENS,
+        ProviderResourceMetric.BEDROCK_MODEL_CLIENT_ELAPSED_MS,
+        ProviderResourceMetric.BEDROCK_MODEL_LATENCY_MS,
         ProviderResourceMetric.RETRY_COUNT,
     ),
     not_applicable=(
@@ -383,9 +386,14 @@ def _usage_delta(
         current.athena_query_count - previous.athena_query_count,
         current.athena_bytes_scanned - previous.athena_bytes_scanned,
         current.bedrock_retrieve_count - previous.bedrock_retrieve_count,
+        current.bedrock_retrieve_client_elapsed_ms
+        - previous.bedrock_retrieve_client_elapsed_ms,
         current.bedrock_model_call_count - previous.bedrock_model_call_count,
         current.bedrock_input_tokens - previous.bedrock_input_tokens,
         current.bedrock_output_tokens - previous.bedrock_output_tokens,
+        current.bedrock_model_client_elapsed_ms
+        - previous.bedrock_model_client_elapsed_ms,
+        current.bedrock_model_latency_ms - previous.bedrock_model_latency_ms,
         current.retry_count - previous.retry_count,
         current.throttle_count - previous.throttle_count,
     )
@@ -396,11 +404,14 @@ def _usage_delta(
         athena_query_count=values[1],
         athena_bytes_scanned=values[2],
         bedrock_retrieve_count=values[3],
-        bedrock_model_call_count=values[4],
-        bedrock_input_tokens=values[5],
-        bedrock_output_tokens=values[6],
-        retry_count=values[7],
-        throttle_count=values[8],
+        bedrock_retrieve_client_elapsed_ms=values[4],
+        bedrock_model_call_count=values[5],
+        bedrock_input_tokens=values[6],
+        bedrock_output_tokens=values[7],
+        bedrock_model_client_elapsed_ms=values[8],
+        bedrock_model_latency_ms=values[9],
+        retry_count=values[10],
+        throttle_count=values[11],
     )
 
 
