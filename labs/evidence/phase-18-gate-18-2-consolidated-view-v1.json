@@ -1,0 +1,576 @@
+{
+  "artifact_version": "phase-18-gate-18-2-consolidated-view:v1",
+  "evidence_date": "2026-09-10",
+  "phase": "Phase 18 — Evaluation, Cost & Portfolio Readiness",
+  "gate": "18.2 — Consolidated Evaluation & Reliability View",
+  "issue": 283,
+  "source_main_sha": "ddc960f5ce0030b2822533a459d4754c7059187b",
+  "source_inventory": "labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json",
+  "decision_signal_manifest": "labs/evidence/phase-18-gate-18-2-decision-signals-v1.json",
+  "summary": {
+    "sections": 5,
+    "metrics": 27,
+    "decision_signals": 4,
+    "unmeasured": 3,
+    "not_applicable": 1,
+    "non_comparable_pairs": 11
+  },
+  "sections": [
+    {
+      "section_id": "groundedness_and_quality",
+      "description": "Groundedness and quality observations remain separate unless Gate 18.1 explicitly admits same-family comparison.",
+      "metrics": [
+        {
+          "metric_id": "p7.grounding.claim_supportedness_rate",
+          "phase": 7,
+          "dimension": "groundedness",
+          "workload_id": "knowledge-grounding-golden:v1",
+          "classification": "DERIVED",
+          "value": 0.8461538461538461,
+          "unit": "ratio",
+          "evidence_path": "labs/evidence/phase-7-gate-7-7-first-run-review-v1.json",
+          "source_metric_path": null,
+          "comparability_group": "p7_claim_supportedness",
+          "scope": "Human-reviewed claim/citation support over the first frozen real run.",
+          "derivation": "11 supported claims divided by 13 emitted reviewed claims.",
+          "comparison_rule": "DESCRIPTIVE_ONLY",
+          "comparison_semantics": "Phase 7 human-reviewed claim supportedness; distinct from Phase 8 hybrid groundedness."
+        },
+        {
+          "metric_id": "p8.hybrid.semantic_groundedness",
+          "phase": 8,
+          "dimension": "groundedness",
+          "workload_id": "hybrid-evaluation-golden:v1",
+          "classification": "MEASURED",
+          "value": 0.6666666666666666,
+          "unit": "ratio",
+          "evidence_path": "labs/evidence/phase-8-gate-8-4-first-complete-baseline-v1.json",
+          "source_metric_path": "measurements.semantic_groundedness.value",
+          "comparability_group": "p8_semantic_groundedness",
+          "scope": "Six-case Gate 8.4 hybrid baseline; metric semantics frozen by the Gate 8 evaluation contract.",
+          "comparison_rule": "DESCRIPTIVE_ONLY",
+          "comparison_semantics": "Gate 8 semantic-groundedness metric under its frozen hybrid evaluation contract."
+        },
+        {
+          "metric_id": "p11.reasoning.passed_cases",
+          "phase": 11,
+          "dimension": "quality",
+          "workload_id": "single-agent-reasoning-evaluation:v1",
+          "classification": "MEASURED",
+          "value": 6,
+          "unit": "cases",
+          "evidence_path": "labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json",
+          "source_metric_path": "metrics.passed_cases",
+          "comparability_group": "reasoning_passed_cases",
+          "scope": "Frozen six-case direct Bedrock single-agent reasoning baseline.",
+          "comparison_rule": "CONDITIONAL_SAME_WORKLOAD_FAMILY",
+          "comparison_semantics": "Passed-case counts for the frozen six-case reasoning family; topology/runtime context must remain visible."
+        },
+        {
+          "metric_id": "p12.reasoning.passed_cases",
+          "phase": 12,
+          "dimension": "quality",
+          "workload_id": "multi-agent-real-comparison:v1",
+          "classification": "MEASURED",
+          "value": 6,
+          "unit": "cases",
+          "evidence_path": "labs/evidence/phase-12-gate-12-3-first-real-two-model-comparison-v1.json",
+          "source_metric_path": "metrics.passed_cases",
+          "comparability_group": "reasoning_passed_cases",
+          "scope": "Frozen six-case two-model comparison used to evaluate added topology value.",
+          "comparison_rule": "CONDITIONAL_SAME_WORKLOAD_FAMILY",
+          "comparison_semantics": "Passed-case counts for the frozen six-case reasoning family; topology/runtime context must remain visible."
+        },
+        {
+          "metric_id": "p14.agentcore.passed_cases",
+          "phase": 14,
+          "dimension": "quality",
+          "workload_id": "agentcore-runtime-invocation:v1",
+          "classification": "MEASURED",
+          "value": 6,
+          "unit": "cases",
+          "evidence_path": "labs/evidence/phase-14-gate-14-2-final-runtime-experiment-v1.json",
+          "source_metric_path": "authenticated_replay.passed_cases",
+          "comparability_group": "reasoning_passed_cases",
+          "scope": "Authenticated AgentCore replay of the frozen Phase 11 six-case corpus.",
+          "comparison_rule": "CONDITIONAL_SAME_WORKLOAD_FAMILY",
+          "comparison_semantics": "Passed-case counts for the frozen six-case reasoning family; topology/runtime context must remain visible."
+        }
+      ]
+    },
+    {
+      "section_id": "latency_surfaces",
+      "description": "Latency observations retain their transport/provider/runtime surface and may not be normalized across unlike boundaries.",
+      "metrics": [
+        {
+          "metric_id": "p11.reasoning.provider_latency_median",
+          "phase": 11,
+          "dimension": "latency",
+          "workload_id": "single-agent-reasoning-evaluation:v1",
+          "classification": "MEASURED",
+          "value": 809.5,
+          "unit": "milliseconds",
+          "evidence_path": "labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json",
+          "source_metric_path": "aggregate_observations.provider_latency_ms_median",
+          "comparability_group": "reasoning_provider_latency",
+          "scope": "Median Bedrock provider latency over the six direct reasoning calls.",
+          "comparison_rule": "DIRECT_SAME_SEMANTICS",
+          "comparison_semantics": "Phase 11 and Phase 12 provider medians are the explicit same-semantics comparison preserved by Phase 12."
+        },
+        {
+          "metric_id": "p12.reasoning.provider_latency_median_by_case",
+          "phase": 12,
+          "dimension": "latency",
+          "workload_id": "multi-agent-real-comparison:v1",
+          "classification": "DERIVED",
+          "value": 1694.0,
+          "unit": "milliseconds",
+          "evidence_path": "labs/evidence/phase-12-gate-12-3-first-real-two-model-comparison-v1.json",
+          "source_metric_path": "derived_runtime_observations.provider_latency_ms_median_by_case",
+          "comparability_group": "reasoning_provider_latency",
+          "scope": "Per-case provider-latency median used by the artifact's explicit Phase 11 comparison.",
+          "derivation": "Median of per-case provider latency after combining the bounded triage/specialist stages for each case.",
+          "comparison_rule": "DIRECT_SAME_SEMANTICS",
+          "comparison_semantics": "Phase 11 and Phase 12 provider medians are the explicit same-semantics comparison preserved by Phase 12."
+        },
+        {
+          "metric_id": "p14.agentcore.transport_elapsed_sum",
+          "phase": 14,
+          "dimension": "latency",
+          "workload_id": "agentcore-runtime-invocation:v1",
+          "classification": "MEASURED",
+          "value": 19981,
+          "unit": "milliseconds",
+          "evidence_path": "labs/evidence/phase-14-gate-14-2-final-runtime-experiment-v1.json",
+          "source_metric_path": "authenticated_replay.transport_elapsed_ms_sum",
+          "comparability_group": "agentcore_transport_latency",
+          "scope": "Six-case authenticated HTTP/SigV4 transport elapsed sum; includes a different boundary from direct provider latency.",
+          "comparison_rule": "DESCRIPTIVE_ONLY",
+          "comparison_semantics": "Authenticated AgentCore HTTP/SigV4 transport elapsed sum; not direct Bedrock provider latency."
+        },
+        {
+          "metric_id": "p15.a2a.client_elapsed_sum",
+          "phase": 15,
+          "dimension": "latency",
+          "workload_id": "a2a-reference-interoperability:v1",
+          "classification": "MEASURED",
+          "value": 0.353039,
+          "unit": "milliseconds",
+          "evidence_path": "labs/evidence/phase-15-closeout-v1.json",
+          "source_metric_path": "gate_15_2.client_elapsed_ms_sum",
+          "comparability_group": "a2a_client_latency",
+          "scope": "In-process/offline client elapsed sum; not network latency.",
+          "comparison_rule": "DESCRIPTIVE_ONLY",
+          "comparison_semantics": "In-process A2A client elapsed sum; not network latency."
+        },
+        {
+          "metric_id": "p16.inspector.client_elapsed",
+          "phase": 16,
+          "dimension": "latency",
+          "workload_id": "inspector-readonly-discovery:v1",
+          "classification": "MEASURED",
+          "value": 465.877452,
+          "unit": "milliseconds",
+          "evidence_path": "labs/evidence/phase-16-closeout-v1.json",
+          "source_metric_path": "measured_discovery.client_elapsed_ms",
+          "comparability_group": "inspector_read_latency",
+          "scope": "Single bounded read-only Inspector discovery run in one dev account/Region.",
+          "comparison_rule": "DESCRIPTIVE_ONLY",
+          "comparison_semantics": "Single bounded Inspector read-only client elapsed time."
+        }
+      ]
+    },
+    {
+      "section_id": "token_and_cost",
+      "description": "Token and cost evidence preserves measured, derived, unmeasured and not-applicable classifications without hidden zero normalization.",
+      "metrics": [
+        {
+          "metric_id": "p11.reasoning.total_tokens",
+          "phase": 11,
+          "dimension": "token_volume",
+          "workload_id": "single-agent-reasoning-evaluation:v1",
+          "classification": "MEASURED",
+          "value": 3395,
+          "unit": "tokens",
+          "evidence_path": "labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json",
+          "source_metric_path": "aggregate_observations.total_tokens",
+          "comparability_group": "reasoning_token_volume",
+          "scope": "Aggregate model token usage for the six-case direct reasoning baseline.",
+          "comparison_rule": "CONDITIONAL_SAME_WORKLOAD_FAMILY",
+          "comparison_semantics": "Total model-token volume for the Phase 11/12 six-case reasoning comparison."
+        },
+        {
+          "metric_id": "p12.reasoning.total_tokens",
+          "phase": 12,
+          "dimension": "token_volume",
+          "workload_id": "multi-agent-real-comparison:v1",
+          "classification": "MEASURED",
+          "value": 5982,
+          "unit": "tokens",
+          "evidence_path": "labs/evidence/phase-12-gate-12-3-first-real-two-model-comparison-v1.json",
+          "source_metric_path": "metrics.total_tokens",
+          "comparability_group": "reasoning_token_volume",
+          "scope": "Aggregate triage plus specialist token usage.",
+          "comparison_rule": "CONDITIONAL_SAME_WORKLOAD_FAMILY",
+          "comparison_semantics": "Total model-token volume for the Phase 11/12 six-case reasoning comparison."
+        },
+        {
+          "metric_id": "p8.hybrid.cost",
+          "phase": 8,
+          "dimension": "cost",
+          "workload_id": "hybrid-evaluation-golden:v1",
+          "classification": "UNMEASURED",
+          "value": null,
+          "unit": "usd",
+          "evidence_path": "labs/evidence/phase-8-gate-8-4-first-complete-baseline-v1.json",
+          "source_metric_path": "measurements.cost.value",
+          "comparability_group": "p8_hybrid_cost",
+          "scope": "Gate 8.4 baseline did not produce a complete USD cost measurement.",
+          "reason": "The canonical Gate 8.4 artifact explicitly records cost.status=unmeasured and value=null.",
+          "comparison_rule": "DESCRIPTIVE_ONLY",
+          "comparison_semantics": "Gate 8 complete USD cost is explicitly unmeasured."
+        },
+        {
+          "metric_id": "p11.reasoning.derived_inference_cost",
+          "phase": 11,
+          "dimension": "cost",
+          "workload_id": "single-agent-reasoning-evaluation:v1",
+          "classification": "DERIVED",
+          "value": 0.0041921,
+          "unit": "usd",
+          "evidence_path": "labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json",
+          "source_metric_path": "pricing.derived_total_cost_usd",
+          "comparability_group": "reasoning_derived_cost",
+          "scope": "Six-case direct Bedrock inference estimate using run token evidence and contemporaneously verified rates.",
+          "derivation": "Measured input/output token counts multiplied by verified 2026-09-07 US geographic cross-Region per-million-token rates.",
+          "comparison_rule": "CONDITIONAL_SAME_WORKLOAD_FAMILY",
+          "comparison_semantics": "Derived Bedrock inference costs for the Phase 11/12 six-case reasoning comparison."
+        },
+        {
+          "metric_id": "p12.reasoning.derived_inference_cost",
+          "phase": 12,
+          "dimension": "cost",
+          "workload_id": "multi-agent-real-comparison:v1",
+          "classification": "DERIVED",
+          "value": 0.0074338,
+          "unit": "usd",
+          "evidence_path": "labs/evidence/phase-12-gate-12-3-first-real-two-model-comparison-v1.json",
+          "source_metric_path": "pricing.derived_total_cost_usd",
+          "comparability_group": "reasoning_derived_cost",
+          "scope": "Six-case two-model inference estimate using measured token counts and verified rates.",
+          "derivation": "Measured triage and specialist token counts multiplied by verified 2026-09-08 US geographic cross-Region rates and summed.",
+          "comparison_rule": "CONDITIONAL_SAME_WORKLOAD_FAMILY",
+          "comparison_semantics": "Derived Bedrock inference costs for the Phase 11/12 six-case reasoning comparison."
+        },
+        {
+          "metric_id": "p14.agentcore.total_experiment_cost",
+          "phase": 14,
+          "dimension": "cost",
+          "workload_id": "agentcore-runtime-invocation:v1",
+          "classification": "DERIVED",
+          "value": 0.006572445136128483,
+          "unit": "usd",
+          "evidence_path": "labs/evidence/phase-14-gate-14-2-final-runtime-experiment-v1.json",
+          "source_metric_path": "observed_cost.total_experiment_cost_usd",
+          "comparability_group": "agentcore_total_cost",
+          "scope": "Bounded experiment total; not a monthly or production estimate.",
+          "derivation": "AgentCore runtime component plus Bedrock inference component for the single bounded experiment.",
+          "comparison_rule": "DESCRIPTIVE_ONLY",
+          "comparison_semantics": "Derived total for the single AgentCore experiment; not monthly or production cost."
+        },
+        {
+          "metric_id": "p14.agentcore.monthly_extrapolation",
+          "phase": 14,
+          "dimension": "cost",
+          "workload_id": "agentcore-runtime-invocation:v1",
+          "classification": "UNMEASURED",
+          "value": null,
+          "unit": "usd_per_month",
+          "evidence_path": "labs/evidence/phase-14-gate-14-2-final-runtime-experiment-v1.json",
+          "source_metric_path": "observed_cost.monthly_extrapolation",
+          "comparability_group": "agentcore_monthly_cost",
+          "scope": "No monthly production extrapolation is supported by the single bounded experiment.",
+          "reason": "The canonical runtime artifact deliberately records monthly_extrapolation=null.",
+          "comparison_rule": "DESCRIPTIVE_ONLY",
+          "comparison_semantics": "Monthly AgentCore cost is deliberately unmeasured and remains null."
+        },
+        {
+          "metric_id": "p15.a2a.aws_runtime_cost",
+          "phase": 15,
+          "dimension": "cost",
+          "workload_id": "a2a-reference-interoperability:v1",
+          "classification": "NOT_APPLICABLE",
+          "value": null,
+          "unit": "usd",
+          "evidence_path": "labs/evidence/phase-15-closeout-v1.json",
+          "source_metric_path": null,
+          "comparability_group": "a2a_cloud_cost",
+          "scope": "The retained A2A experiment is deliberately local/offline and creates no AWS runtime.",
+          "reason": "A cloud-runtime cost metric is not applicable to an in-process experiment with zero new AWS resources; the source artifact's 0.0 incremental AWS field must not be reinterpreted as a measured cloud bill.",
+          "comparison_rule": "DESCRIPTIVE_ONLY",
+          "comparison_semantics": "Cloud-runtime cost is not applicable to the local/offline A2A experiment."
+        },
+        {
+          "metric_id": "p16.inspector.aws_cost",
+          "phase": 16,
+          "dimension": "cost",
+          "workload_id": "inspector-readonly-discovery:v1",
+          "classification": "UNMEASURED",
+          "value": null,
+          "unit": "usd",
+          "evidence_path": "labs/evidence/phase-16-closeout-v1.json",
+          "source_metric_path": null,
+          "comparability_group": "inspector_cost",
+          "scope": "The closeout artifact contains no complete cost measurement for the Inspector discovery experiment.",
+          "reason": "No canonical Phase 16 evidence field establishes a complete experiment USD cost; absence must remain UNMEASURED rather than zero.",
+          "comparison_rule": "DESCRIPTIVE_ONLY",
+          "comparison_semantics": "Complete Inspector experiment USD cost is unmeasured."
+        }
+      ]
+    },
+    {
+      "section_id": "execution_authority",
+      "description": "Observed no-execution outcomes are retained as contract evidence rather than converted into capability success rates.",
+      "metrics": [
+        {
+          "metric_id": "p11.reasoning.capability_executions",
+          "phase": 11,
+          "dimension": "execution_authority",
+          "workload_id": "single-agent-reasoning-evaluation:v1",
+          "classification": "MEASURED",
+          "value": 0,
+          "unit": "executions",
+          "evidence_path": "labs/evidence/phase-11-gate-11-4-first-real-baseline-v1.json",
+          "source_metric_path": "capability_executions",
+          "comparability_group": "reasoning_capability_execution",
+          "scope": "The frozen evaluation stops before capability execution; zero is an observed contract outcome, not a capability success rate.",
+          "comparison_rule": "CONDITIONAL_SAME_WORKLOAD_FAMILY",
+          "comparison_semantics": "Observed capability-execution counts under frozen no-execution evaluation contracts; not a success-rate metric."
+        },
+        {
+          "metric_id": "p12.reasoning.capability_executions",
+          "phase": 12,
+          "dimension": "execution_authority",
+          "workload_id": "multi-agent-real-comparison:v1",
+          "classification": "MEASURED",
+          "value": 0,
+          "unit": "executions",
+          "evidence_path": "labs/evidence/phase-12-gate-12-3-first-real-two-model-comparison-v1.json",
+          "source_metric_path": "metrics.capability_executions",
+          "comparability_group": "reasoning_capability_execution",
+          "scope": "The comparison intentionally stops before capability execution.",
+          "comparison_rule": "CONDITIONAL_SAME_WORKLOAD_FAMILY",
+          "comparison_semantics": "Observed capability-execution counts under frozen no-execution evaluation contracts; not a success-rate metric."
+        },
+        {
+          "metric_id": "p14.agentcore.capability_executions",
+          "phase": 14,
+          "dimension": "execution_authority",
+          "workload_id": "agentcore-runtime-invocation:v1",
+          "classification": "MEASURED",
+          "value": 0,
+          "unit": "executions",
+          "evidence_path": "labs/evidence/phase-14-gate-14-2-final-runtime-experiment-v1.json",
+          "source_metric_path": "authenticated_replay.capability_executions",
+          "comparability_group": "reasoning_capability_execution",
+          "scope": "Runtime experiment contract explicitly forbids capability execution.",
+          "comparison_rule": "CONDITIONAL_SAME_WORKLOAD_FAMILY",
+          "comparison_semantics": "Observed capability-execution counts under frozen no-execution evaluation contracts; not a success-rate metric."
+        }
+      ]
+    },
+    {
+      "section_id": "runtime_security_and_recovery",
+      "description": "Runtime evidence, security regression scope, telemetry controls and recovery controls are descriptive operational dimensions, not model-quality scores.",
+      "metrics": [
+        {
+          "metric_id": "p16.inspector.finding_records",
+          "phase": 16,
+          "dimension": "runtime_evidence",
+          "workload_id": "inspector-readonly-discovery:v1",
+          "classification": "MEASURED",
+          "value": 0,
+          "unit": "records",
+          "evidence_path": "labs/evidence/phase-16-closeout-v1.json",
+          "source_metric_path": "measured_discovery.findings.record_count",
+          "comparability_group": "inspector_finding_records",
+          "scope": "ListFindings returned zero records for the measured account/Region/time.",
+          "comparison_rule": "DESCRIPTIVE_ONLY",
+          "comparison_semantics": "ListFindings record count for the measured account/Region/time."
+        },
+        {
+          "metric_id": "p17.security.adversarial_cases",
+          "phase": 17,
+          "dimension": "security_regression",
+          "workload_id": "phase17-adversarial-authority-regression:v1",
+          "classification": "MEASURED",
+          "value": 8,
+          "unit": "cases",
+          "evidence_path": "labs/evidence/phase-17-closeout-v1.json",
+          "source_metric_path": "retained_controls.adversarial_regression.cases",
+          "comparability_group": "security_adversarial_cases",
+          "scope": "Deterministic offline attacker-oriented boundary suite.",
+          "comparison_rule": "DESCRIPTIVE_ONLY",
+          "comparison_semantics": "Deterministic attacker-oriented regression case count; not model quality."
+        },
+        {
+          "metric_id": "p17.telemetry.powertools_handlers",
+          "phase": 17,
+          "dimension": "telemetry_control",
+          "workload_id": "phase17-telemetry-safety:v1",
+          "classification": "MEASURED",
+          "value": 12,
+          "unit": "handlers",
+          "evidence_path": "labs/evidence/phase-17-closeout-v1.json",
+          "source_metric_path": "retained_controls.telemetry_safety.powertools_lambda_handlers",
+          "comparability_group": "telemetry_handler_scope",
+          "scope": "Retained Powertools Lambda handlers covered by explicit content-minimization controls.",
+          "comparison_rule": "DESCRIPTIVE_ONLY",
+          "comparison_semantics": "Powertools Lambda handlers covered by the content-minimization control."
+        },
+        {
+          "metric_id": "p17.recovery.maximum_retry_attempts",
+          "phase": 17,
+          "dimension": "recovery_control",
+          "workload_id": "phase17-scheduled-ingestion-recovery:v1",
+          "classification": "MEASURED",
+          "value": 2,
+          "unit": "retry_attempts",
+          "evidence_path": "labs/evidence/phase-17-closeout-v1.json",
+          "source_metric_path": "retained_controls.scheduled_ingestion_recovery.maximum_retry_attempts",
+          "comparability_group": "recovery_retry_budget",
+          "scope": "Retained Scheduler delivery retry budget.",
+          "comparison_rule": "DESCRIPTIVE_ONLY",
+          "comparison_semantics": "Configured Scheduler retry budget; not an observed SDK retry count."
+        },
+        {
+          "metric_id": "p17.recovery.pause_resume_result",
+          "phase": 17,
+          "dimension": "recovery_control",
+          "workload_id": "phase17-scheduled-ingestion-recovery:v1",
+          "classification": "MEASURED",
+          "value": "PASS",
+          "unit": "disposition",
+          "evidence_path": "labs/evidence/phase-17-closeout-v1.json",
+          "source_metric_path": "retained_controls.scheduled_ingestion_recovery.measured_pause_resume",
+          "comparability_group": "recovery_pause_resume",
+          "scope": "Human AWS pause/verify/resume/final-convergence experiment.",
+          "comparison_rule": "DESCRIPTIVE_ONLY",
+          "comparison_semantics": "Measured human AWS pause/verify/resume/convergence result."
+        }
+      ]
+    }
+  ],
+  "decision_signals": [
+    {
+      "signal_id": "phase7-isolation-grounding-failure",
+      "kind": "FAILURE_SIGNAL",
+      "statement": "The Phase 7 isolation case emitted two claims and both human-reviewed claim/citation support judgments were false.",
+      "interpretation": "This is retained as a citation-attribution/grounding failure signal; the supporting lab records that the required isolation evidence was retrieved while the model cited an adjacent chunk.",
+      "evidence_path": "labs/evidence/phase-7-gate-7-7-first-run-review-v1.json",
+      "supporting_document": "labs/phase-7-gate-7-7-citations-groundedness.md"
+    },
+    {
+      "signal_id": "phase12-two-model-no-lift",
+      "kind": "REJECTED_DEFAULT",
+      "statement": "The bounded two-model experiment matched the Phase 11 quality result but added model calls, tokens, latency and derived inference cost, so it was not retained as the default reasoning topology.",
+      "interpretation": "Successful execution does not justify retaining additional agent topology without a predeclared measurable benefit.",
+      "evidence_path": "labs/evidence/phase-12-closeout-v1.json",
+      "supporting_document": "labs/phase-12-gate-12-5-multi-agent-closeout.md"
+    },
+    {
+      "signal_id": "phase14-agentcore-not-default",
+      "kind": "REJECTED_DEFAULT",
+      "statement": "AgentCore Runtime was retained only as a disabled-by-default optional lab target and not as the default OpsLens reasoning runtime.",
+      "interpretation": "Managed hosting evidence is retained without converting a bounded successful experiment into default architecture authority.",
+      "evidence_path": "labs/evidence/phase-14-gate-14-3-agentcore-retention-decision-v1.json",
+      "supporting_document": "labs/phase-14-gate-14-3-agentcore-retention-decision.md"
+    },
+    {
+      "signal_id": "phase16-zero-records-not-zero-exposure",
+      "kind": "ZERO_OBSERVATION",
+      "statement": "The bounded Inspector discovery returned zero coverage records and zero finding records in the measured account, Region and time window.",
+      "interpretation": "A measured zero-record API result is retained evidence for that read only; it is not proof of zero runtime exposure or zero vulnerabilities.",
+      "evidence_path": "labs/evidence/phase-16-closeout-v1.json",
+      "supporting_document": "labs/phase-16-gate-16-6-closeout.md"
+    }
+  ],
+  "non_comparable_pairs": [
+    {
+      "left_group": "p7_claim_supportedness",
+      "right_group": "p8_semantic_groundedness",
+      "reason": "Different frozen datasets and support semantics; similar labels do not authorize numeric comparison."
+    },
+    {
+      "left_group": "agentcore_transport_latency",
+      "right_group": "reasoning_provider_latency",
+      "reason": "Managed runtime transport includes a hosting boundary and is not direct Bedrock provider latency."
+    },
+    {
+      "left_group": "agentcore_transport_latency",
+      "right_group": "a2a_client_latency",
+      "reason": "Managed runtime transport and in-process offline protocol timing are different surfaces."
+    },
+    {
+      "left_group": "a2a_client_latency",
+      "right_group": "inspector_read_latency",
+      "reason": "In-process protocol timing and AWS API client elapsed time are different workloads."
+    },
+    {
+      "left_group": "security_adversarial_cases",
+      "right_group": "reasoning_passed_cases",
+      "reason": "Security-regression coverage count is not reasoning quality."
+    },
+    {
+      "left_group": "telemetry_handler_scope",
+      "right_group": "reasoning_passed_cases",
+      "reason": "Control-coverage count is not reasoning quality."
+    },
+    {
+      "left_group": "a2a_cloud_cost",
+      "right_group": "agentcore_total_cost",
+      "reason": "Not-applicable cloud cost cannot be compared to a derived managed-runtime experiment cost."
+    },
+    {
+      "left_group": "inspector_cost",
+      "right_group": "agentcore_total_cost",
+      "reason": "An unmeasured cost cannot be compared to a derived experiment cost."
+    },
+    {
+      "left_group": "p8_hybrid_cost",
+      "right_group": "reasoning_derived_cost",
+      "reason": "An explicitly unmeasured hybrid cost cannot be compared to a derived inference cost."
+    },
+    {
+      "left_group": "recovery_retry_budget",
+      "right_group": "reasoning_capability_execution",
+      "reason": "A configured delivery retry budget is not an observed execution metric."
+    },
+    {
+      "left_group": "reasoning_derived_cost",
+      "right_group": "agentcore_total_cost",
+      "reason": "Inference-only cost and total hosted-experiment cost have different component boundaries."
+    }
+  ],
+  "interpretation_boundaries": [
+    "view != new evidence authority",
+    "presentation != comparison admission",
+    "same unit != same measurement semantics",
+    "missing != zero",
+    "UNMEASURED != NOT_APPLICABLE",
+    "lab observation != production SLO",
+    "failure signal != universal failure rate",
+    "zero runtime records != zero runtime exposure",
+    "historical experiment != retained default architecture",
+    "quality success != cost/latency justification"
+  ],
+  "authority_impact": {
+    "aws_mutations": 0,
+    "iam_mutations": 0,
+    "runtime_mutations": 0,
+    "model_invocations": 0,
+    "capability_executions": 0,
+    "new_benchmark_runs": 0,
+    "pr_89_touched": false
+  }
+}
