@@ -225,7 +225,8 @@ Canonical records:
 docs/adr/0065-ci-cd-and-workflow-authority-hardening.md
 labs/phase-17-gate-17-2-workflow-authority-hardening.md
 labs/evidence/phase-17-gate-17-2-workflow-authority-hardening-v1.json
-labs/evidence/phase-17-gate-17-2-ruleset-enforcement-v1.json
+labs/phase-17-gate-17-2-main-ruleset-enforcement.md
+labs/evidence/phase-17-gate-17-2-main-ruleset-enforcement-v1.json
 ```
 
 ### Gate 17.3 — dependency and code-scanning hardening — COMPLETE
