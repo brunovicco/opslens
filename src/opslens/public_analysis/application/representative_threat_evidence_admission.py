@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import cast
 
 from opslens.correlation.adapters.ghsa import GhsaPyPIVulnerabilityEvidence
@@ -98,6 +98,7 @@ def _number(value: object, *, field: str) -> float:
 
 
 def _iso_datetime(value: object, *, field: str) -> datetime:
+    """Parse one NVD timestamp using the retained NVD UTC semantics."""
     text = _string(value, field=field)
     normalized = text[:-1] + "+00:00" if text.endswith("Z") else text
     try:
@@ -106,11 +107,15 @@ def _iso_datetime(value: object, *, field: str) -> datetime:
         raise RepresentativeThreatEvidenceAdmissionError(
             f"{field} must contain an ISO-8601 timestamp"
         ) from exc
+
+    # NVD API 2.0 timestamps are UTC even when the serialized analytical
+    # representation omits an explicit offset. Keep this admission boundary
+    # aligned with NvdCveCoreTransformer._timestamp rather than rewriting
+    # analytical evidence upstream.
     if parsed.tzinfo is None:
-        raise RepresentativeThreatEvidenceAdmissionError(
-            f"{field} must contain a timezone-aware timestamp"
-        )
-    return parsed
+        parsed = parsed.replace(tzinfo=UTC)
+
+    return parsed.astimezone(UTC)
 
 
 def _optional_iso_datetime(value: object, *, field: str) -> datetime | None:
