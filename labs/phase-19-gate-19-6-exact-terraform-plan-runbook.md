@@ -64,21 +64,22 @@ Before planning:
 
 ## Local preflight
 
+Before backend initialization, require only repository identity, worktree cleanliness, and Terraform formatting:
+
 ```bash
 git rev-parse HEAD
 git status --short
 
 terraform -chdir=infra/environments/dev fmt -check
-terraform -chdir=infra/environments/dev validate
 ```
 
-A dirty worktree, unexpected SHA, formatting failure, or validation failure is a hard stop.
+A dirty worktree, unexpected SHA, or formatting failure is a hard stop.
 
 ## HUMAN-ONLY exact plan
 
 The project has historically used the existing `opslens-bootstrap` profile for lab administration. This runbook does not grant or broaden that authority.
 
-Initialize the existing dev backend:
+Initialize the existing dev backend and provider plugins:
 
 ```bash
 AWS_PROFILE=opslens-bootstrap \
@@ -86,6 +87,15 @@ terraform -chdir=infra/environments/dev init \
   -input=false \
   -reconfigure
 ```
+
+Only after initialization, validate the configuration:
+
+```bash
+AWS_PROFILE=opslens-bootstrap \
+terraform -chdir=infra/environments/dev validate
+```
+
+A backend initialization or validation failure is a hard stop. Do not broaden IAM or alter the frozen artifact inputs to make it pass.
 
 Generate exactly one plan without acquiring the remote state lock:
 
@@ -144,11 +154,11 @@ The summary records the plan JSON SHA-256, Terraform versions, exact managed cre
 
 ## Failure handling
 
-If init, plan, JSON rendering, or offline admission fails:
+If init, validate, plan, JSON rendering, or offline admission fails:
 
 - do not run `terraform apply`;
 - do not broaden IAM automatically;
-- do not change artifact VersionIds to make the plan pass;
+- do not change the content-addressed artifact coordinates to make the plan pass;
 - do not remove disabled runtime controls;
 - do not retry automatically after an authorization or drift failure;
 - preserve `/tmp/opslens-gate19-6-plan.json` when available and inspect the exact failure first.
