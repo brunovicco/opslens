@@ -164,6 +164,9 @@ def worker_lambda_handler(
         raise AsyncRuntimeConfigurationError(
             "async worker execution is enabled but provider executor composition is not admitted"
         )
+
+    # Fail-closed invariant: disabled worker must not access DynamoDB.
+    # Fail-closed invariant: disabled worker must not execute provider-heavy analysis.
     deliveries = admit_async_sqs_deliveries(
         event,
         expected_queue_arn=settings.queue_arn,
