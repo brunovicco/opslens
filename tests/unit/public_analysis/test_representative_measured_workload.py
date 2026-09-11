@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import cast
-
 import pytest
 
 from opslens.hybrid_retrieval.adapters.bedrock_synthesis import (
@@ -67,10 +65,7 @@ def _synthesizer(request: HybridSynthesisRequest) -> BedrockHybridSynthesisExecu
 
 def _typed_threat_evidence() -> RepresentativeRepositoryThreatEvidence:
     """Create an inert exact-type sentinel because composition does not read its fields."""
-    return cast(
-        RepresentativeRepositoryThreatEvidence,
-        object.__new__(RepresentativeRepositoryThreatEvidence),
-    )
+    return object.__new__(RepresentativeRepositoryThreatEvidence)
 
 
 def test_composes_measured_dependencies_without_provider_io() -> None:
