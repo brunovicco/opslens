@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from typing import cast
 
 from opslens.public_analysis.adapters.async_http_api import handle_async_http_event
 from opslens.public_analysis.application.async_job_service import (
@@ -153,9 +154,11 @@ def _response_json(response: dict[str, object]) -> dict[str, object]:
     """Decode one JSON proxy response body."""
     body = response["body"]
     assert isinstance(body, str)
-    decoded = json.loads(body)
+    decoded: object = json.loads(body)
     assert isinstance(decoded, dict)
-    return decoded
+    raw = cast(dict[object, object], decoded)
+    assert all(type(key) is str for key in raw)
+    return cast(dict[str, object], raw)
 
 
 def test_submit_returns_202_with_relative_status_and_result_urls() -> None:
@@ -264,10 +267,12 @@ def test_mismatched_route_context_fails_closed() -> None:
     store = _MemoryStore()
     publisher = _MemoryPublisher()
     event = _submit_event()
-    context = event["requestContext"]
-    assert isinstance(context, dict)
-    http = context["http"]
-    assert isinstance(http, dict)
+    raw_context = event["requestContext"]
+    assert isinstance(raw_context, dict)
+    context = cast(dict[str, object], raw_context)
+    raw_http = context["http"]
+    assert isinstance(raw_http, dict)
+    http = cast(dict[str, object], raw_http)
     http["path"] = "/unexpected"
 
     response = _handle(event, store=store, publisher=publisher)
