@@ -2,9 +2,9 @@
 
 _Last updated: 2026-09-11_
 
-This document is the current accumulated architecture baseline through **Phase 19 — Bounded Public Runtime & Productization, Gate 19.2**.
+This document is the current accumulated architecture baseline through **Phase 19 — Bounded Public Runtime & Productization, Gate 19.3**.
 
-Phases 0–18 are complete. Phase 19 is the current evidence-gated productization phase. Gate 19.2 has selected the async submit/status/result interaction pattern from admitted representative workload evidence, while concrete public AWS topology remains intentionally unselected.
+Phases 0–18 are complete. Phase 19 is the current evidence-gated productization phase. Gate 19.2 selected the async submit/status/result interaction pattern from admitted representative workload evidence. Gate 19.3 now selects the smallest concrete async topology as **design authority only**; no public runtime deployment is authorized.
 
 ## 1. Purpose
 
@@ -47,6 +47,7 @@ MEASURED != DERIVED
 UNMEASURED != zero
 NOT_APPLICABLE != zero
 configured limit != measured utilization
+responsibility -> required action -> exact resource -> IAM statement
 AIP-C01 topic != product requirement
 ```
 
@@ -55,6 +56,8 @@ AIP-C01 topic != product requirement
 Deterministic code remains authoritative for source/evidence identity, package and version applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS/Risk Policy facts, structured-query parsing and SQL compilation, retrieval admission and completeness, citation and output admission, capability authorization/result admission, agent/MCP/A2A handoff admission, runtime-evidence correlation, bounded resource/cost limits, and Terraform-owned recovery state.
 
 Models and agents may classify, propose, summarize, explain, or synthesize over already-admitted evidence. A managed AWS service or a syntactically valid model output does not become business authority by itself.
+
+Gate 19.3 extends deterministic authority to future public job identity, idempotency binding, state transitions, duplicate-delivery admission, retry ceilings, and result/status admission. Queue delivery is transport evidence, not job-state truth.
 
 ## 3. Retained platform shape
 
@@ -173,7 +176,7 @@ compute:                  AWS Lambda for retained ingestion/transformation paths
 recurring triggers:      Amazon EventBridge Scheduler
 ```
 
-Standing architecture does **not** currently claim a public HTTP endpoint, public application compute, public MCP/A2A runtime, standing AgentCore experiment runtime, standing Inspector experiment IAM, production multi-tenant request surface, or public result store.
+Standing architecture does **not** currently claim a public HTTP endpoint, public application compute, public queue, public result store, public MCP/A2A runtime, standing AgentCore experiment runtime, standing Inspector experiment IAM, or production multi-tenant request surface.
 
 ## 7. Security Hardening retained state
 
@@ -242,11 +245,11 @@ with leading hypothesis:
 ASYNC_SUBMIT_STATUS_RESULT
 ```
 
-Gate 19.1 created no public endpoint, worker, queue, result store, or runtime IAM. Its historical marker remains in current-facing documentation so later Gate 19.2 evidence does not rewrite Gate 19.1 authority.
+Gate 19.1 created no public endpoint, worker, queue, result store, or runtime IAM. Later gates do not rewrite this historical decision.
 
-### 9.3 Gate 19.2 representative product composition
+### 9.3 Gate 19.2 representative composition and evidence
 
-Gate 19.2 composes retained capabilities into one **non-public** representative workload without making that composition a deployed public runtime:
+Gate 19.2 composed retained capabilities into one **non-public** representative workload:
 
 ```text
 public_request_admission
@@ -260,9 +263,7 @@ public_request_admission
  -> result_admission
 ```
 
-The current representative anchor is `openedx/mockprock` at exact commit `18c954d8604df4740c829ba17fa2f3640b92b900`, using inert `uv.lock`, `webob==1.8.10`, GHSA `GHSA-6hx8-3wjj-gr8g`, and CVE `CVE-2026-54770`. The anchor establishes reproducibility, not runtime exposure.
-
-### 9.4 Gate 19.2 measured evidence
+The measurement anchor was `openedx/mockprock` at exact commit `18c954d8604df4740c829ba17fa2f3640b92b900`, using inert `uv.lock`, `webob==1.8.10`, GHSA `GHSA-6hx8-3wjj-gr8g`, and CVE `CVE-2026-54770`. The anchor establishes reproducibility, not runtime exposure.
 
 The human-operated run was executed once from protected main `e45ba419414e6dd77ecad68f4d2312e9123c2223`.
 
@@ -294,11 +295,11 @@ retry count                                0     MEASURED
 throttle count                             0     UNMEASURED
 ```
 
-The Bedrock-facing stages measured `13,098 ms`, or `73.80%` of end-to-end. The persisted-artifact reviewer admitted the artifact for topology evaluation. Numeric zero never overwrites evidence semantics.
+The Bedrock-facing stages measured `13,098 ms`, or `73.80%` of end-to-end. Numeric zero never overwrites evidence semantics.
 
-### 9.5 Interaction-pattern decision
+### 9.4 Gate 19.2 interaction-pattern decision — COMPLETE
 
-Gate 19.2 selects:
+Gate 19.2 selected:
 
 ```text
 ASYNC_SUBMIT_STATUS_RESULT
@@ -315,27 +316,138 @@ baseline measured E2E                                      17748 ms   MEASURED
 reference synchronous envelope                             30000 ms   RETAINED FACT
 ```
 
-Those derived values are not additional live measurements; they show that the observed success path leaves insufficient safety margin for synchronous coupling once provider retry/failure behavior is considered.
+Gate 19.2 was protected-merged through PR #347 at `71eda2650889d3047259d37be226862ed2a09092`. It authorized no public deployment.
 
-### 9.6 Concrete runtime remains unselected
+### 9.5 Gate 19.3 concrete topology decision — DESIGN ONLY
+
+Gate 19.3 selects the logical topology identifier:
 
 ```text
-ASYNC_SUBMIT_STATUS_RESULT     SELECTED_INTERACTION_PATTERN
-API Gateway                    UNSELECTED
-Lambda                         UNSELECTED
-SQS                            UNSELECTED
-DynamoDB                       UNSELECTED
-Step Functions                 UNSELECTED
-ECS/Fargate                    UNSELECTED
-WAF                            UNSELECTED
-AgentCore public runtime       UNSELECTED
+HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB
 ```
 
-Gate 19.2 authorizes no public endpoint, queue, worker, result store, AWS resource, or IAM role/policy.
+Selected shape:
 
-### 9.7 Next topology responsibility model
+```text
+public client
+  -> Amazon API Gateway HTTP API
+  -> API Lambda
+       -> DynamoDB jobs/idempotency table
+       -> SQS standard job queue
+            -> Lambda worker
+                 -> retained deterministic repository/risk authority
+                 -> Bedrock Knowledge Base Retrieve
+                 -> retained bounded model invocation
+                 -> deterministic final result admission
+                 -> DynamoDB status/result update
+       -> SQS dead-letter queue
 
-Before IAM materialization, the next Phase 19 gate must freeze responsibility boundaries for public ingress admission, repository acquisition, job submission/coordination, worker execution, Bedrock retrieval/model invocation, optional result/status persistence, and telemetry emission.
+status/result reads
+  -> Amazon API Gateway HTTP API
+  -> API Lambda
+  -> DynamoDB jobs table
+```
+
+The selection is architecture evidence only. Gate 19.3 creates none of those resources.
+
+### 9.6 Candidate comparison
+
+```text
+HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB            SELECTED
+HTTP_API_LAMBDA_DYNAMODB_STREAMS_LAMBDA        REJECTED
+HTTP_API_LAMBDA_STEP_FUNCTIONS_STANDARD_LAMBDA REJECTED
+FUNCTION_URL_LAMBDA_SQS_LAMBDA_DYNAMODB        REJECTED
+HTTP_API_LAMBDA_SQS_FARGATE_DYNAMODB           REJECTED
+```
+
+Rationale:
+
+- HTTP API gives an explicit managed public routing/rate boundary without selecting REST-only capabilities not yet justified;
+- API Lambda keeps deterministic request/idempotency/status logic away from provider-heavy worker latency;
+- SQS expresses durable at-least-once buffering, retry isolation, and backpressure directly;
+- a DLQ bounds poison/repeated delivery rather than allowing unbounded redelivery;
+- the measured `17,748 ms` worker workload does not justify Fargate/container scheduling;
+- the measured `5,285`-byte result and conditional state/idempotency requirements justify DynamoDB rather than blob-scale result storage;
+- Step Functions Standard adds orchestration semantics not required by one linear analysis operation;
+- DynamoDB Streams couple dispatch to persistence-stream semantics and provide weaker queue-specific failure/backpressure controls for this boundary.
+
+No numerical architecture score is manufactured.
+
+### 9.7 Public interaction and job-state contract
+
+Future routes, not deployed by Gate 19.3:
+
+```text
+POST /v1/analyses
+GET  /v1/analyses/{job_id}
+GET  /v1/analyses/{job_id}/result
+```
+
+State vocabulary:
+
+```text
+SUBMITTING
+ACCEPTED
+RUNNING
+SUCCEEDED
+FAILED
+EXPIRED
+```
+
+DynamoDB conditional writes are the planned job-state authority. SQS is at-least-once delivery transport and cannot itself mutate business truth.
+
+The public submit contract requires `Idempotency-Key` plus `SHA256_CANONICAL_PUBLIC_ANALYSIS_REQUEST_V1`:
+
+```text
+same key + same fingerprint       -> RETURN_EXISTING_JOB
+same key + different fingerprint  -> HTTP_409
+```
+
+`SUBMITTING` explicitly models the DynamoDB/SQS dual-write boundary. The design does not pretend those services provide one atomic transaction.
+
+### 9.8 Retry, duplicate delivery, and backpressure
+
+```text
+queue semantics:       AT_LEAST_ONCE
+worker batch size:     1
+duplicate authority:   DYNAMODB_CONDITIONAL_STATE_AND_ATTEMPT_ADMISSION
+retry owner:           SQS/Lambda event source + worker state machine
+provider retry owner:  bounded worker policy
+DLQ:                   REQUIRED
+unbounded retry:       FORBIDDEN
+backpressure:          SQS queue depth/age + Lambda reserved concurrency
+```
+
+Future numeric retry/concurrency/retention values are `CONFIGURED_LIMIT` until measured.
+
+### 9.9 IAM responsibility contract
+
+Planned API-handler role authority is limited to public-control-plane state and submission:
+
+```text
+sqs:SendMessage
+dynamodb:GetItem
+dynamodb:PutItem
+dynamodb:UpdateItem
+dynamodb:TransactWriteItems
+```
+
+It explicitly excludes `bedrock:Retrieve`, `bedrock:InvokeModel`, and `sqs:ReceiveMessage`.
+
+Planned worker role authority is limited to queue consumption, exact job-state updates, retained Knowledge Base retrieval, and retained model invocation:
+
+```text
+sqs:ReceiveMessage
+sqs:DeleteMessage
+sqs:ChangeMessageVisibility
+sqs:GetQueueAttributes
+dynamodb:GetItem
+dynamodb:UpdateItem
+bedrock:Retrieve
+bedrock:InvokeModel
+```
+
+Exact resource ARNs belong to the future Terraform implementation gate.
 
 The design rule remains:
 
@@ -348,39 +460,46 @@ concrete runtime responsibility
 
 not `future feature aspiration -> broad runtime role`.
 
-### 9.8 Async lifecycle, abuse, and backpressure requirements
+### 9.10 Observability, cost, and data minimization
 
-The next gate must define deterministic authority for job identity, idempotency keys, duplicate-delivery handling, retry ownership, status lifecycle, result retention/integrity, concurrency/backpressure, public identity/rate controls, cost amplification controls, and cancellation/disable boundaries.
-
-Existing controls remain applicable: fixed GitHub host/no redirects, inert-file-only repository access, dependency/candidate limits, deterministic evidence authority, and content-minimized telemetry.
-
-### 9.9 Cost and observability contract
-
-Gate 19.2 provides real whole-workload measurements for one representative run but does not manufacture production SLOs or TCO. Async-specific dimensions such as queue operations, delivery attempts, worker concurrency, result-store operations, status reads, retention/storage, and aggregate model-call budgets become measurement obligations only if corresponding components are selected.
+Gate 19.3 requires future operational evidence for request/job/trace identity, state transitions, attempt number, stage duration, queue age, provider call counts, Bedrock tokens when available, retries, throttles, outcome/failure category, and result bytes.
 
 Telemetry remains content-minimized. Full prompts, repository source, repository file contents, full model responses, credentials, sensitive tokens, and raw user payloads remain forbidden by default.
 
-### 9.10 Disable/recovery contract
+Gate 19.3 creates no production SLO or TCO claim. Async-specific queue operations, status reads, worker concurrency, storage/retention, and aggregate model-call budgets become measurement obligations only after implementation exists.
 
-Before public deployment, controls must be scoped explicitly: ingress disable, new-job admission disable, queue-consumer pause if selected, model-invocation disable, result-publication disable if selected, and the already-proven background-ingestion pause. The Phase 17 scheduler pause must not be relabeled as a global kill switch.
+### 9.11 Disable/recovery contract
 
-### 9.11 Next architecture boundary
-
-After protected Gate 19.2 closeout merge, the next Phase 19 gate should freeze the smallest concrete async ingress/job/result architecture and least-privilege responsibility model **before** deployment.
-
-No AWS service is selected merely because it is common for async systems or appears in AIP-C01.
-
-## 10. Gate 19.2 authority impact
+Future implementation must independently support:
 
 ```text
-public endpoints:                       0
-new AWS resources:                      0
-new IAM roles/policies:                 0
-third-party repository code executions: 0
-PR #89 modifications:                  0
+disable new submit route
+preserve status/result reads during submit pause
+disable queue -> worker event source
+set worker reserved concurrency to zero
+disable model invocation at worker authorization/runtime guard
 ```
 
-The live measurement artifact records these counters as exactly zero.
+The Phase 17 scheduler pause remains separate and is not a global kill switch.
+
+### 9.12 Next architecture boundary
+
+After protected Gate 19.3 merge, the next gate may implement the selected topology in Terraform and application adapters **behind disabled/non-public defaults**.
+
+Before any AWS apply or public enablement, it must produce exact Terraform resource inventory/plan, exact least-privilege IAM bound to concrete ARNs, lifecycle/idempotency tests, duplicate-delivery/retry/backpressure/failure-injection tests, content-minimized telemetry tests, and explicit configured cost/concurrency ceilings.
+
+No apply or public enablement is authorized by Gate 19.3.
+
+## 10. Gate 19.3 authority impact
+
+```text
+public endpoints created:               0
+new AWS resources created:              0
+new IAM roles/policies created:         0
+AWS/provider live executions:           0
+third-party repository code executions: 0
+PR #89 modifications:                   0
+```
 
 ## 11. Canonical Phase 19 evidence
 
@@ -399,5 +518,11 @@ Gate 19.2:
 - `labs/phase-19-gate-19-2-closeout.md`
 - `labs/evidence/phase-19-gate-19-2-closeout-v1.json`
 - `scripts/verify_phase19_gate19_2_closeout.py`
+
+Gate 19.3:
+
+- `labs/phase-19-gate-19-3-async-topology-contract.md`
+- `labs/evidence/phase-19-gate-19-3-async-topology-contract-v1.json`
+- `scripts/verify_phase19_gate19_3_async_topology_contract.py`
 
 PR #89 remains separate deferred Governed LLM Gateway work and is not a Phase 19 dependency unless explicitly re-evaluated later.
