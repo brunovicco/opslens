@@ -82,13 +82,13 @@ def _optional_string(value: object, *, field: str) -> str | None:
 def _boolean(value: object, *, field: str) -> bool:
     if type(value) is not bool:
         raise RepresentativeThreatEvidenceAdmissionError(f"{field} must be a boolean")
-    return cast(bool, value)
+    return value
 
 
 def _integer(value: object, *, field: str) -> int:
     if type(value) is not int:
         raise RepresentativeThreatEvidenceAdmissionError(f"{field} must be an integer")
-    return cast(int, value)
+    return value
 
 
 def _number(value: object, *, field: str) -> float:
@@ -455,30 +455,27 @@ def admit_representative_threat_evidence(
     authority: RepresentativeThreatEvidenceAuthority,
 ) -> RepresentativeRepositoryThreatEvidence:
     """Admit analytical proof only when exact typed source authority independently agrees."""
-    if not isinstance(bundle, Mapping):
-        raise RepresentativeThreatEvidenceAdmissionError("bundle must be an object")
     if type(authority) is not RepresentativeThreatEvidenceAuthority:
         raise TypeError("authority must be RepresentativeThreatEvidenceAuthority")
 
-    typed_bundle = cast(Mapping[str, object], bundle)
-    cve_id = _admit_bundle_root(typed_bundle)
+    cve_id = _admit_bundle_root(bundle)
     _validate_ghsa(
-        typed_bundle,
+        bundle,
         cve_id=cve_id,
         authority=authority.ghsa_vulnerabilities,
     )
     _validate_nvd(
-        typed_bundle,
+        bundle,
         cve_id=cve_id,
         authority=authority.nvd_records,
     )
     _validate_kev(
-        typed_bundle,
+        bundle,
         cve_id=cve_id,
         snapshot=authority.kev_snapshot,
     )
     _validate_epss(
-        typed_bundle,
+        bundle,
         cve_id=cve_id,
         snapshot=authority.epss_snapshot,
     )
