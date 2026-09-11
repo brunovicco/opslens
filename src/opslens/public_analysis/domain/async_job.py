@@ -134,7 +134,9 @@ class AsyncJobRecord:
                 type(self.failure_code) is not str
                 or _FAILURE_CODE_PATTERN.fullmatch(self.failure_code) is None
             ):
-                raise PublicAnalysisValidationError("failure_code violates the frozen code contract")
+                raise PublicAnalysisValidationError(
+                    "failure_code violates the frozen code contract"
+                )
             if self.state not in {AsyncJobState.FAILED, AsyncJobState.EXPIRED}:
                 raise PublicAnalysisValidationError(
                     "failure_code is allowed only for FAILED or expired-from-failure jobs"
