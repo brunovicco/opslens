@@ -20,12 +20,14 @@ class AsyncSubmissionDisposition(StrEnum):
 
     CREATE_NEW_JOB = "CREATE_NEW_JOB"
     RETURN_EXISTING_JOB = "RETURN_EXISTING_JOB"
+    RESUME_EXPIRED_SUBMISSION = "RESUME_EXPIRED_SUBMISSION"
 
 
 class AsyncWorkerDisposition(StrEnum):
     """Deterministic outcomes for one at-least-once queue delivery."""
 
     CLAIM_ATTEMPT = "CLAIM_ATTEMPT"
+    NOOP_ACTIVE_LEASE = "NOOP_ACTIVE_LEASE"
     NOOP_ALREADY_TERMINAL = "NOOP_ALREADY_TERMINAL"
     NOOP_EXPIRED = "NOOP_EXPIRED"
 
@@ -55,13 +57,20 @@ def decide_async_submission(
     *,
     idempotency_key: str,
     existing_job: AsyncJobRecord | None,
+    submission_lease_expires_at_epoch_seconds: int,
+    now_epoch_seconds: int,
 ) -> AsyncSubmissionDecision:
-    """Decide whether a submit creates a job, reuses it, or fails on key conflict."""
+    """Decide whether submit creates, replays, or resumes an expired submission lease."""
     identity = create_async_job_identity(request, idempotency_key=idempotency_key)
+    if type(now_epoch_seconds) is not int or now_epoch_seconds <= 0:
+        raise PublicAnalysisValidationError("now_epoch_seconds must be a positive integer")
     if existing_job is None:
         return AsyncSubmissionDecision(
             disposition=AsyncSubmissionDisposition.CREATE_NEW_JOB,
-            job=create_submitting_job(identity),
+            job=create_submitting_job(
+                identity,
+                lease_expires_at_epoch_seconds=submission_lease_expires_at_epoch_seconds,
+            ),
         )
     if type(existing_job) is not AsyncJobRecord:
         raise PublicAnalysisValidationError("existing_job must be AsyncJobRecord or None")
@@ -73,9 +82,18 @@ def decide_async_submission(
         raise AsyncIdempotencyConflictError(
             "Idempotency-Key is already bound to different request semantics"
         )
-    if existing_job.identity.job_id != identity.job_id:
+    if existing_job.identity != identity:
         raise PublicAnalysisValidationError(
             "existing job identity does not match deterministic request/key identity"
+        )
+    if (
+        existing_job.state is AsyncJobState.SUBMITTING
+        and existing_job.lease_expires_at_epoch_seconds is not None
+        and existing_job.lease_expires_at_epoch_seconds <= now_epoch_seconds
+    ):
+        return AsyncSubmissionDecision(
+            disposition=AsyncSubmissionDisposition.RESUME_EXPIRED_SUBMISSION,
+            job=existing_job,
         )
     return AsyncSubmissionDecision(
         disposition=AsyncSubmissionDisposition.RETURN_EXISTING_JOB,
@@ -83,10 +101,16 @@ def decide_async_submission(
     )
 
 
-def decide_worker_delivery(job: AsyncJobRecord) -> AsyncWorkerDecision:
-    """Admit or no-op one SQS delivery without treating delivery as execution authority."""
+def decide_worker_delivery(
+    job: AsyncJobRecord,
+    *,
+    now_epoch_seconds: int,
+) -> AsyncWorkerDecision:
+    """Admit or no-op one delivery using deterministic state plus explicit worker lease."""
     if type(job) is not AsyncJobRecord:
         raise PublicAnalysisValidationError("job must be AsyncJobRecord")
+    if type(now_epoch_seconds) is not int or now_epoch_seconds <= 0:
+        raise PublicAnalysisValidationError("now_epoch_seconds must be a positive integer")
     if job.state in {AsyncJobState.SUCCEEDED, AsyncJobState.FAILED}:
         return AsyncWorkerDecision(
             disposition=AsyncWorkerDisposition.NOOP_ALREADY_TERMINAL,
@@ -95,6 +119,15 @@ def decide_worker_delivery(job: AsyncJobRecord) -> AsyncWorkerDecision:
     if job.state is AsyncJobState.EXPIRED:
         return AsyncWorkerDecision(
             disposition=AsyncWorkerDisposition.NOOP_EXPIRED,
+            job=job,
+        )
+    if (
+        job.state is AsyncJobState.RUNNING
+        and job.lease_expires_at_epoch_seconds is not None
+        and job.lease_expires_at_epoch_seconds > now_epoch_seconds
+    ):
+        return AsyncWorkerDecision(
+            disposition=AsyncWorkerDisposition.NOOP_ACTIVE_LEASE,
             job=job,
         )
     return AsyncWorkerDecision(
