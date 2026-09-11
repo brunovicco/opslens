@@ -327,14 +327,29 @@ Do not turn that deliberate failure test into a second live success attempt auto
 
 ## After the successful run
 
-Inspect and preserve the artifact, then verify at minimum:
+First run the deterministic persisted-evidence reviewer from the same exact OpsLens commit recorded by the live command:
 
 ```bash
-python -m json.tool labs/evidence/phase-19-gate-19-2-live-measurement-v1.json >/dev/null
+PYTHONPATH=src uv run python scripts/verify_phase19_gate19_2_live_measurement.py \
+  --artifact labs/evidence/phase-19-gate-19-2-live-measurement-v1.json \
+  --expected-opslens-commit-sha "$(git rev-parse HEAD)"
+```
+
+The reviewer is offline and read-only. It performs no GitHub, S3, Athena, Bedrock Retrieve, or Bedrock model call. It fails closed unless the persisted bytes are canonical and preserve the exact artifact shape, frozen repository URL/commit, retained Knowledge Base/model/workload identities, six source-evidence identities, provider metric ordering/classifications, and zero-mutation safety counters.
+
+A successful reviewer result means only that the persisted live evidence is admitted for topology evaluation. It does **not** select `SYNC` or `ASYNC`.
+
+Then preserve an independent file digest:
+
+```bash
 sha256sum labs/evidence/phase-19-gate-19-2-live-measurement-v1.json
 ```
 
-On macOS, use `shasum -a 256` instead of `sha256sum` if necessary.
+On macOS, use:
+
+```bash
+shasum -a 256 labs/evidence/phase-19-gate-19-2-live-measurement-v1.json
+```
 
 Review:
 
@@ -378,6 +393,7 @@ Stop immediately if:
 - S3 threat-authority materialization cannot complete before the measured workload;
 - retrieval provenance/catalog admission fails;
 - measurement instrumentation cannot preserve `UNMEASURED` vs real zero;
+- the persisted live artifact fails deterministic review;
 - a fallback would change repository, model, KB, data source, or runtime;
 - the workload would require touching PR #89;
 - any deterministic admission/provenance contract fails.
