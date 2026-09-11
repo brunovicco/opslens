@@ -24,23 +24,24 @@ The platform deliberately separates probabilistic reasoning from deterministic a
 
 **Phases 0–18 are complete.** Phase 18 was protected-squash-merged through PR #290 at `feca774535b7d83f57c26f4e9fe7da71ce268f0f`.
 
-**Phase 19 — Bounded Public Runtime & Productization** is in progress. Gate 19.1 is complete and protected-squash-merged through PR #292 at `ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1`. Gate 19.2 has now reached the explicit human live-measurement boundary after the human-run CLI was merged through PR #339.
+**Phase 19 — Bounded Public Runtime & Productization** is in progress. Gate 19.1 is complete and protected-squash-merged through PR #292 at `ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1`. Gate 19.2 has completed its human-operated representative live measurement and now has an evidence-backed interaction-pattern decision pending protected closeout merge.
 
 ```text
 19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE
       workload: public-analysis-workload:v1
-      runtime decision: DEFERRED_PENDING_MEASUREMENT
+      original runtime decision: DEFERRED_PENDING_MEASUREMENT
       leading hypothesis: ASYNC_SUBMIT_STATUS_RESULT
       AWS/IAM/public endpoint mutations: 0
-19.2  Representative Workload Measurement              IN PROGRESS
-      latest completed issue: #338
-      merged PR: #339
-      boundary: HUMAN LIVE MEASUREMENT
+19.2  Representative Workload Measurement              CLOSEOUT IN REVIEW
+      measured end-to-end: 17,748 ms
+      measured Bedrock-facing stages: 13,098 ms / 73.80% of E2E
+      selected interaction pattern: ASYNC_SUBMIT_STATUS_RESULT
+      concrete AWS topology selected: NO
 ```
 
-The async shape is only a hypothesis. OpsLens will not select API Gateway + Lambda, Lambda Function URLs, SQS, ECS/Fargate, AgentCore, or another public runtime until the representative product workload has real admitted measurement evidence.
+Gate 19.2 does not claim that the successful run timed out. The measured baseline completed below 30 seconds. The async decision is instead based on provider-latency coupling, retry safety, backpressure, and failure isolation; explicitly derived retry scenarios are kept separate from measured evidence.
 
-See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), [Portfolio Evidence](docs/portfolio-evidence.md), [AIP-C01 Learning Map](docs/aip-c01-learning-map.md), the [Gate 19.2 human live-measurement runbook](labs/phase-19-gate-19-2-human-live-measurement-runbook.md), and the [ADR index](docs/adr/README.md).
+See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), [Portfolio Evidence](docs/portfolio-evidence.md), [AIP-C01 Learning Map](docs/aip-c01-learning-map.md), the [Gate 19.2 closeout](labs/phase-19-gate-19-2-closeout.md), the [Gate 19.2 human live-measurement runbook](labs/phase-19-gate-19-2-human-live-measurement-runbook.md), and the [ADR index](docs/adr/README.md).
 
 ## Architecture at a glance
 
@@ -101,9 +102,9 @@ untrusted JSON
  -> STOP
 ```
 
-Gate 19.2 now contains the complete non-public representative composition and a fail-closed human-run-only driver for one measured execution. The driver reuses deterministic repository/risk authority, preloaded admitted threat evidence, measured GitHub transport, bounded Bedrock Knowledge Base retrieval, bounded synthesis, exact result admission, and atomic evidence persistence. CI and ChatGPT do not execute the live provider path.
+Gate 19.2 now has one complete non-public representative execution with deterministic admission, provider accounting, persisted evidence, and offline review. The run reused deterministic repository/risk authority, preloaded admitted threat evidence, measured GitHub transport, bounded Bedrock Knowledge Base retrieval, bounded synthesis, exact result admission, and atomic evidence persistence. CI and ChatGPT did not execute the live provider path.
 
-The retained runtime decision therefore remains `DEFERRED_PENDING_MEASUREMENT` until the human operator produces and reviews the admitted live artifact. No public endpoint, new AWS resource, IAM mutation, or third-party repository code execution is authorized by this boundary.
+The selected interaction pattern is now `ASYNC_SUBMIT_STATUS_RESULT`. This is **not** yet a concrete AWS deployment decision: no public endpoint, queue, worker, result store, new AWS resource, or IAM authority is authorized by Gate 19.2. The next Phase 19 boundary is to freeze the smallest concrete async ingress/job/result topology and least-privilege runtime authority before any deployment.
 
 ## Retained measured evidence
 
@@ -117,8 +118,11 @@ The portfolio projection remains evidence-bound rather than promotional. Example
 | Phase 14 AgentCore experiment | 6/6 replay; derived total USD `0.006572445136128483`; retained only as optional lab target |
 | Phase 16 Inspector read experiment | successful bounded read with zero returned records; **not** interpreted as zero runtime exposure |
 | Phase 17 recovery | exact three-scheduler pause/resume cycle with final Terraform convergence |
+| Phase 19 Gate 19.2 representative workload | 17,748 ms end-to-end; 4 GitHub requests; 1 Bedrock Retrieve at 4,148 ms client elapsed; 1 model call at 8,901 ms client elapsed / 7,772 ms provider latency; 5,936 input + 408 output tokens; 5,285-byte admitted result |
 
 The Phase 18 machine-readable evidence chain begins at `labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json` and ends at `labs/evidence/phase-18-closeout-v1.json`. The historical closeout record intentionally preserves its pre-merge state; current-facing documentation reflects the completed protected merge.
+
+Gate 19.2 persisted the canonical live artifact at `labs/evidence/phase-19-gate-19-2-live-measurement-v1.json`, independently hashed as `04ab754a12e25c4aeda0075d41b92693fec464aec4431b3734981488ff470114`, plus the machine-readable closeout record at `labs/evidence/phase-19-gate-19-2-closeout-v1.json`.
 
 ## Cost and resource envelopes
 
@@ -134,7 +138,7 @@ Scheduler maximum event age         3600 seconds
 Scheduler maximum retry attempts        2
 ```
 
-These are **configured limits, not measured utilization**. Gate 19.2 exists specifically to measure whole-public-request latency, provider-call counts, token/scan utilization, retries/throttles, and result size before runtime selection.
+These are **configured limits, not measured utilization**. Gate 19.2 now contributes whole-workload measurement evidence, but it does not convert configured limits into observed usage or treat `UNMEASURED` values as zero. In particular, Gate 19.2 keeps Athena request-time metrics `NOT_APPLICABLE` for the retained direct structured-evidence path and keeps `throttle_count` `UNMEASURED` even though the numeric counter is zero.
 
 ## Retained experimentation boundaries
 
@@ -146,7 +150,7 @@ Security Hardening retains full-SHA GitHub Actions, protected-main security inva
 
 OpsLens does not currently claim a public HTTP production runtime, public MCP/A2A runtime, AgentCore as the default production runtime, production SLOs from bounded experiments, production TCO/monthly run rate, zero runtime exposure from a zero-record Inspector read, configured limits as utilization, a global platform kill switch, or a certification readiness score/pass probability.
 
-Phase 19 also does not claim that async is already selected. `ASYNC_SUBMIT_STATUS_RESULT` remains only the leading hypothesis pending the admitted representative live measurement.
+Phase 19 now has an evidence-backed async **interaction-pattern** decision. It still does not claim that API Gateway, Lambda, SQS, DynamoDB, Step Functions, ECS/Fargate, AgentCore, or another concrete AWS topology has been selected or deployed.
 
 ## AIP-C01 learning laboratory
 
@@ -173,7 +177,7 @@ public HTTP runtime:  NONE
 
 ## Documentation
 
-Start with [docs/README.md](docs/README.md). The strongest portfolio entry points are [Architecture](docs/architecture.md), [Portfolio Evidence](docs/portfolio-evidence.md), [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), the [Phase 18 closeout](labs/phase-18-closeout.md), the [Gate 19.1 launch contract](labs/phase-19-gate-19-1-public-runtime-hypothesis.md), the [Gate 19.2 human live-measurement runbook](labs/phase-19-gate-19-2-human-live-measurement-runbook.md), and the [ADR index](docs/adr/README.md).
+Start with [docs/README.md](docs/README.md). The strongest portfolio entry points are [Architecture](docs/architecture.md), [Portfolio Evidence](docs/portfolio-evidence.md), [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), the [Phase 18 closeout](labs/phase-18-closeout.md), the [Gate 19.1 launch contract](labs/phase-19-gate-19-1-public-runtime-hypothesis.md), the [Gate 19.2 closeout](labs/phase-19-gate-19-2-closeout.md), and the [ADR index](docs/adr/README.md).
 
 ---
 
