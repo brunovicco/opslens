@@ -85,13 +85,14 @@ def _execution(
             self,
             owner: str,
             name: str,
-            resolved_commit_sha: str,
+            commit_sha: str,
         ) -> dict[str, object]:
             """Return one inert uv.lock for the exact resolved commit."""
             assert (owner, name) == (request.target.owner, request.target.name)
-            assert resolved_commit_sha == commit_sha
+            assert commit_sha == _execution_commit_sha
             return _uv_lock_payload()
 
+    _execution_commit_sha = commit_sha
     return build_public_repository_evidence(request, Source())
 
 
