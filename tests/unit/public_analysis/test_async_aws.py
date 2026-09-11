@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from typing import cast
 
 from botocore.exceptions import ClientError
 
@@ -116,8 +117,9 @@ def test_put_if_absent_uses_two_conditional_items_without_query_or_scan() -> Non
     assert outcome.job == job
     assert len(client.transact_calls) == 1
     transaction = client.transact_calls[0]
-    transact_items = transaction["TransactItems"]
-    assert isinstance(transact_items, list)
+    raw_transact_items = transaction["TransactItems"]
+    assert isinstance(raw_transact_items, list)
+    transact_items = cast(list[object], raw_transact_items)
     assert len(transact_items) == 2
     rendered = json.dumps(transact_items, sort_keys=True)
     assert f"JOB#{job.identity.job_id}" in rendered
