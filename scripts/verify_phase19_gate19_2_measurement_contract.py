@@ -113,36 +113,31 @@ _REQUIRED_CURRENT_DOC_MARKERS = {
         "19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE",
         "historical decision: DEFERRED_PENDING_MEASUREMENT",
         "19.2  Representative Workload Measurement              COMPLETE",
-        "19.3  Concrete Async Topology Contract                  IN PROGRESS",
-        "selected design topology: HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB",
+        "ASYNC_SUBMIT_STATUS_RESULT",
     ),
     "README.pt-br.md": (
         "19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE",
         "decisão histórica: DEFERRED_PENDING_MEASUREMENT",
         "19.2  Representative Workload Measurement              COMPLETE",
-        "19.3  Concrete Async Topology Contract                  IN PROGRESS",
-        "topologia de design selecionada: HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB",
+        "ASYNC_SUBMIT_STATUS_RESULT",
     ),
     "docs/current-state.md": (
         "Gate 19.1",
         "DEFERRED_PENDING_MEASUREMENT",
         "Gate 19.2 — Representative Workload Measurement              COMPLETE",
-        "Gate 19.3 — Concrete Async Topology Contract                 IN PROGRESS",
-        "selected design topology: HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB",
+        "ASYNC_SUBMIT_STATUS_RESULT",
     ),
     "docs/roadmap.md": (
         "Gate 19.1",
         "DEFERRED_PENDING_MEASUREMENT",
         "Gate 19.2 — Representative Workload Measurement — COMPLETE",
-        "Gate 19.3 — Concrete Async Topology Contract — IN PROGRESS",
-        "HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB",
+        "ASYNC_SUBMIT_STATUS_RESULT",
     ),
     "docs/README.md": (
         "Gate 19.1 — complete",
         "runtime decision: DEFERRED_PENDING_MEASUREMENT",
         "Gate 19.2 — complete",
-        "Gate 19.3 — in progress",
-        "HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB",
+        "ASYNC_SUBMIT_STATUS_RESULT",
     ),
 }
 
@@ -306,7 +301,7 @@ def _verify_gate19_1_history(repo_root: Path) -> None:
 
 
 def _verify_docs(repo_root: Path) -> None:
-    """Preserve Gate 19.1/19.2 history while admitting current Gate 19.3 docs."""
+    """Preserve Gate 19.1/19.2 history without freezing later gate status labels."""
     for path_text, markers in _REQUIRED_CURRENT_DOC_MARKERS.items():
         text = (repo_root / path_text).read_text(encoding="utf-8")
         for marker in markers:
