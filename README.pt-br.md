@@ -24,7 +24,7 @@ A plataforma separa deliberadamente raciocínio probabilístico da autoridade de
 
 **Phases 0–18 estão completas.** A Phase 18 foi protegida por squash merge no PR #290 em `feca774535b7d83f57c26f4e9fe7da71ce268f0f`.
 
-A **Phase 19 — Bounded Public Runtime & Productization** está em andamento. A Gate 19.1 está completa e foi protegida por squash merge no PR #292 em `ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1`. A Gate 19.2 mede agora o workload representativo não público antes da escolha do runtime.
+A **Phase 19 — Bounded Public Runtime & Productization** está em andamento. A Gate 19.1 está completa e foi protegida por squash merge no PR #292 em `ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1`. A Gate 19.2 chegou agora à fronteira explícita de medição live executada por humano após o merge do CLI human-run no PR #339.
 
 ```text
 19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE
@@ -33,13 +33,14 @@ A **Phase 19 — Bounded Public Runtime & Productization** está em andamento. A
       leading hypothesis: ASYNC_SUBMIT_STATUS_RESULT
       AWS/IAM/public endpoint mutations: 0
 19.2  Representative Workload Measurement              IN PROGRESS
-      issue: #295
-      draft PR: #297
+      latest completed issue: #338
+      merged PR: #339
+      boundary: HUMAN LIVE MEASUREMENT
 ```
 
-A forma assíncrona é apenas uma hipótese. O OpsLens não selecionará API Gateway + Lambda, Lambda Function URLs, SQS, ECS/Fargate, AgentCore ou outro runtime público antes de compor e medir o workload representativo do produto.
+A forma assíncrona é apenas uma hipótese. O OpsLens não selecionará API Gateway + Lambda, Lambda Function URLs, SQS, ECS/Fargate, AgentCore ou outro runtime público até existir evidência admitida da medição real do workload representativo.
 
-Veja [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [AIP-C01 Learning Map](docs/aip-c01-learning-map.md) e o [índice de ADRs](docs/adr/README.md).
+Veja [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [AIP-C01 Learning Map](docs/aip-c01-learning-map.md), o [runbook da medição live da Gate 19.2](labs/phase-19-gate-19-2-human-live-measurement-runbook.md) e o [índice de ADRs](docs/adr/README.md).
 
 ## Arquitetura em resumo
 
@@ -100,11 +101,9 @@ JSON não confiável
  -> STOP
 ```
 
-A Gate 19.1 verificou que o repositório já possui componentes downstream de correlação/risco determinísticos, Athena, Knowledge Base retrieval, síntese, agentes/capabilities e result admission, mas eles ainda não estão compostos em uma execução representativa única do produto público.
+A Gate 19.2 contém agora a composição representativa não pública completa e um driver fail-closed, exclusivamente human-run, para uma execução medida. O driver reutiliza autoridade determinística de repositório/risco, evidência de ameaça previamente admitida, transporte GitHub medido, Bedrock Knowledge Base retrieval limitado, síntese limitada, admissão exata do resultado e persistência atômica da evidência. CI e ChatGPT não executam o caminho live dos providers.
 
-A Gate 19.2 adiciona agora um measurement harness provider-neutral e não público que exige a ordem exata dos estágios representativos e registra somente observações concretas de duração e recursos. Ela não move autoridade de negócio para a camada de medição e não cria infraestrutura pública.
-
-Esse gap é a razão para a decisão de runtime permanecer `DEFERRED_PENDING_MEASUREMENT`, em vez de escolher tecnologia primeiro.
+A decisão de runtime permanece `DEFERRED_PENDING_MEASUREMENT` até que o operador humano produza e revise o artefato live admitido. Nenhum endpoint público, novo recurso AWS, mutação IAM ou execução de código do repositório de terceiros é autorizada por essa fronteira.
 
 ## Evidência medida retida
 
@@ -147,7 +146,7 @@ Security Hardening retém Actions em SHA completo, invariantes de segurança no 
 
 OpsLens não afirma atualmente runtime HTTP público de produção, MCP/A2A públicos, AgentCore como runtime default de produção, SLOs de produção derivados de labs, TCO/run rate de produção, zero runtime exposure por causa do Inspector ter retornado zero registros, limites configurados como utilização medida, um global platform kill switch ou um score/probabilidade de aprovação na certificação.
 
-A Phase 19 também não afirma que async já foi selecionado. `ASYNC_SUBMIT_STATUS_RESULT` permanece apenas como hipótese principal, pendente da medição do workload representativo.
+A Phase 19 também não afirma que async já foi selecionado. `ASYNC_SUBMIT_STATUS_RESULT` permanece apenas como hipótese principal, pendente da medição live admitida do workload representativo.
 
 ## Laboratório AIP-C01
 
@@ -174,7 +173,7 @@ public HTTP runtime:  NONE
 
 ## Documentação
 
-Comece por [docs/README.md](docs/README.md). Para portfólio e arquitetura, os principais pontos de entrada são [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md), o [closeout da Phase 18](labs/phase-18-closeout.md), o [launch contract da Gate 19.1](labs/phase-19-gate-19-1-public-runtime-hypothesis.md) e o [índice de ADRs](docs/adr/README.md).
+Comece por [docs/README.md](docs/README.md). Para portfólio e arquitetura, os principais pontos de entrada são [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md), o [closeout da Phase 18](labs/phase-18-closeout.md), o [launch contract da Gate 19.1](labs/phase-19-gate-19-1-public-runtime-hypothesis.md), o [runbook da medição live da Gate 19.2](labs/phase-19-gate-19-2-human-live-measurement-runbook.md) e o [índice de ADRs](docs/adr/README.md).
 
 ---
 
