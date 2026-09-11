@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, cast
+from typing import cast
 
 from opslens.correlation.adapters.ghsa import GhsaPyPIVulnerabilityEvidence
 from opslens.ingestion.epss.domain.history import HistoricalEpssSnapshot
@@ -37,6 +37,7 @@ class RepresentativeThreatEvidenceAuthority:
     epss_snapshot: EpssSnapshot | HistoricalEpssSnapshot
 
     def __post_init__(self) -> None:
+        """Reject untyped or incomplete authority inputs before analytical admission."""
         if type(self.ghsa_vulnerabilities) is not tuple or any(
             type(item) is not GhsaPyPIVulnerabilityEvidence
             for item in self.ghsa_vulnerabilities
@@ -112,10 +113,19 @@ def _iso_datetime(value: object, *, field: str) -> datetime:
     return parsed
 
 
+def _optional_iso_datetime(value: object, *, field: str) -> datetime | None:
+    if value is None:
+        return None
+    return _iso_datetime(value, field=field)
+
+
 def _admit_bundle_root(bundle: Mapping[str, object]) -> str:
     if _integer(bundle.get("schema_version"), field="schema_version") != 1:
         raise RepresentativeThreatEvidenceAdmissionError("schema_version must equal 1")
-    if _string(bundle.get("bundle_type"), field="bundle_type") != "CrossSourceCveEvidenceV1":
+    if (
+        _string(bundle.get("bundle_type"), field="bundle_type")
+        != "CrossSourceCveEvidenceV1"
+    ):
         raise RepresentativeThreatEvidenceAdmissionError(
             "bundle_type must equal CrossSourceCveEvidenceV1"
         )
@@ -129,8 +139,15 @@ def _ghsa_bundle_occurrences(
 ) -> dict[tuple[str, int], Mapping[str, object]]:
     ghsa = _mapping(bundle.get("ghsa"), field="ghsa")
     versions = _sequence(ghsa.get("advisory_versions"), field="ghsa.advisory_versions")
-    occurrences: dict[tuple[str, int], Mapping[str, object]] = {}
+    declared_versions = _integer(
+        ghsa.get("advisory_version_count"), field="ghsa.advisory_version_count"
+    )
+    if declared_versions != len(versions):
+        raise RepresentativeThreatEvidenceAdmissionError(
+            "GHSA advisory version count does not match materialized versions"
+        )
 
+    occurrences: dict[tuple[str, int], Mapping[str, object]] = {}
     for version_index, raw_version in enumerate(versions):
         version = _mapping(raw_version, field=f"ghsa.advisory_versions[{version_index}]")
         if _string(version.get("cve_id"), field="ghsa.cve_id") != cve_id:
@@ -147,6 +164,13 @@ def _ghsa_bundle_occurrences(
                 raise RepresentativeThreatEvidenceAdmissionError(
                     "representative GHSA package evidence must use the pip ecosystem"
                 )
+            if _boolean(
+                package.get("range_evaluation_performed"),
+                field="ghsa.range_evaluation_performed",
+            ):
+                raise RepresentativeThreatEvidenceAdmissionError(
+                    "GHSA analytical bundle must not pre-evaluate vulnerable ranges"
+                )
             key = (observed_id, source_index)
             if key in occurrences:
                 raise RepresentativeThreatEvidenceAdmissionError(
@@ -154,10 +178,10 @@ def _ghsa_bundle_occurrences(
                 )
             occurrences[key] = package
 
-    declared = _integer(
+    declared_entries = _integer(
         ghsa.get("vulnerability_entry_count"), field="ghsa.vulnerability_entry_count"
     )
-    if declared != len(occurrences):
+    if declared_entries != len(occurrences):
         raise RepresentativeThreatEvidenceAdmissionError(
             "GHSA vulnerability entry count does not match materialized package evidence"
         )
@@ -176,7 +200,6 @@ def _validate_ghsa(
 ) -> None:
     occurrences = _ghsa_bundle_occurrences(bundle, cve_id=cve_id)
     observed_keys: set[tuple[str, int]] = set()
-
     versions = _sequence(
         _mapping(bundle.get("ghsa"), field="ghsa").get("advisory_versions"),
         field="ghsa.advisory_versions",
@@ -207,13 +230,28 @@ def _validate_ghsa(
 
         expected = (
             _string(version.get("ghsa_id"), field="ghsa.ghsa_id"),
-            _string(version.get("source_advisory_sha256"), field="ghsa.source_advisory_sha256"),
-            _string(package.get("vulnerability_entry_id"), field="ghsa.vulnerability_entry_id"),
-            _string(package.get("source_entry_sha256"), field="ghsa.source_entry_sha256"),
+            _string(
+                version.get("source_advisory_sha256"),
+                field="ghsa.source_advisory_sha256",
+            ),
+            _string(
+                package.get("vulnerability_entry_id"),
+                field="ghsa.vulnerability_entry_id",
+            ),
+            _string(
+                package.get("source_entry_sha256"),
+                field="ghsa.source_entry_sha256",
+            ),
             _string(package.get("ecosystem"), field="ghsa.ecosystem"),
             _string(package.get("package_name"), field="ghsa.package_name"),
-            _string(package.get("vulnerable_version_range"), field="ghsa.vulnerable_version_range"),
-            _optional_string(package.get("first_patched_version"), field="ghsa.first_patched_version"),
+            _string(
+                package.get("vulnerable_version_range"),
+                field="ghsa.vulnerable_version_range",
+            ),
+            _optional_string(
+                package.get("first_patched_version"),
+                field="ghsa.first_patched_version",
+            ),
         )
         actual = (
             item.ghsa_id,
@@ -279,15 +317,22 @@ def _validate_nvd(
             )
         typed_ids.add(observed_id)
         if observed.cve_id != cve_id:
-            raise RepresentativeThreatEvidenceAdmissionError("typed NVD CVE identity mismatch")
-        if record.published_at != _iso_datetime(source.get("published_at"), field="nvd.published_at"):
+            raise RepresentativeThreatEvidenceAdmissionError(
+                "typed NVD CVE identity mismatch"
+            )
+        published = _iso_datetime(source.get("published_at"), field="nvd.published_at")
+        if record.published_at != published:
             raise RepresentativeThreatEvidenceAdmissionError("NVD published_at mismatch")
-        if record.last_modified_at != _iso_datetime(
+        modified = _iso_datetime(
             source.get("last_modified_at"), field="nvd.last_modified_at"
-        ):
+        )
+        if record.last_modified_at != modified:
             raise RepresentativeThreatEvidenceAdmissionError("NVD last_modified_at mismatch")
-        if record.vuln_status.value != _string(source.get("vuln_status"), field="nvd.vuln_status"):
-            raise RepresentativeThreatEvidenceAdmissionError("NVD vulnerability status mismatch")
+        status = _string(source.get("vuln_status"), field="nvd.vuln_status")
+        if record.vuln_status.value != status:
+            raise RepresentativeThreatEvidenceAdmissionError(
+                "NVD vulnerability status mismatch"
+            )
 
     if typed_ids != set(by_id):
         raise RepresentativeThreatEvidenceAdmissionError(
@@ -301,7 +346,7 @@ def _validate_kev(
     kev = _mapping(bundle.get("kev"), field="kev")
     snapshot_date = _string(kev.get("snapshot_date"), field="kev.snapshot_date")
     evidence = RepositoryKevSnapshotEvidence(snapshot)
-    if str(snapshot.snapshot_date) != snapshot_date:
+    if snapshot.snapshot_date != snapshot_date:
         raise RepresentativeThreatEvidenceAdmissionError("KEV snapshot date mismatch")
 
     record = evidence.record_for_cve(cve_id)
@@ -316,9 +361,10 @@ def _validate_kev(
             raise RepresentativeThreatEvidenceAdmissionError(
                 "KEV absence cannot contain an analytical entry"
             )
-        absence = _optional_string(kev.get("absence_semantics"), field="kev.absence_semantics")
-        expected = "not present in the selected KEV snapshot"
-        if absence != expected:
+        absence = _optional_string(
+            kev.get("absence_semantics"), field="kev.absence_semantics"
+        )
+        if absence != "not present in the selected KEV snapshot":
             raise RepresentativeThreatEvidenceAdmissionError(
                 "KEV absence must preserve exact snapshot-local semantics"
             )
@@ -352,9 +398,8 @@ def _validate_epss(
 ) -> None:
     epss = _mapping(bundle.get("epss"), field="epss")
     evidence = RepositoryEpssSnapshotEvidence(snapshot)
-    if str(evidence.snapshot_date) != _string(
-        epss.get("snapshot_date"), field="epss.snapshot_date"
-    ):
+    snapshot_date = _string(epss.get("snapshot_date"), field="epss.snapshot_date")
+    if str(evidence.snapshot_date) != snapshot_date:
         raise RepresentativeThreatEvidenceAdmissionError("EPSS snapshot date mismatch")
 
     record = evidence.record_for_cve(cve_id)
@@ -384,11 +429,23 @@ def _validate_epss(
     elif _number(raw_percentile, field="epss.score.percentile") != record.percentile:
         raise RepresentativeThreatEvidenceAdmissionError("EPSS percentile mismatch")
 
-    if _optional_string(score_object.get("model_version"), field="epss.score.model_version") != record.model_version:
+    model_version = _optional_string(
+        score_object.get("model_version"), field="epss.score.model_version"
+    )
+    if model_version != record.model_version:
         raise RepresentativeThreatEvidenceAdmissionError("EPSS model version mismatch")
-    if _string(score_object.get("source"), field="epss.score.source") != record.source:
+    score_timestamp = _optional_iso_datetime(
+        score_object.get("score_timestamp"), field="epss.score.score_timestamp"
+    )
+    if score_timestamp != record.score_timestamp:
+        raise RepresentativeThreatEvidenceAdmissionError("EPSS score timestamp mismatch")
+    source = _string(score_object.get("source"), field="epss.score.source")
+    if source != record.source:
         raise RepresentativeThreatEvidenceAdmissionError("EPSS source mismatch")
-    if _string(score_object.get("source_sha256"), field="epss.score.source_sha256") != record.source_sha256:
+    source_sha256 = _string(
+        score_object.get("source_sha256"), field="epss.score.source_sha256"
+    )
+    if source_sha256 != record.source_sha256:
         raise RepresentativeThreatEvidenceAdmissionError("EPSS source digest mismatch")
 
 
