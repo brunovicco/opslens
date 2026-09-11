@@ -19,7 +19,7 @@ protected merge PR: #292
 historical runtime decision: DEFERRED_PENDING_MEASUREMENT
 historical leading hypothesis: ASYNC_SUBMIT_STATUS_RESULT
 
-Gate 19.2 — Representative Workload Measurement             COMPLETE
+Gate 19.2 — Representative Workload Measurement              COMPLETE
 protected merge PR: #347
 protected merge SHA: 71eda2650889d3047259d37be226862ed2a09092
 selected interaction pattern: ASYNC_SUBMIT_STATUS_RESULT
