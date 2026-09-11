@@ -81,9 +81,11 @@ Current protected lineage:
       runtime deployment authorized: NO
 ```
 
-### Gate 19.1 — historical launch contract
+### Gate 19.1 — complete — historical launch contract
 
 Gate 19.1 froze `public-analysis-workload:v1` and refused to select runtime topology before representative evidence existed. Its historical `DEFERRED_PENDING_MEASUREMENT` decision is preserved rather than rewritten.
+
+Retained runtime decision: DEFERRED_PENDING_MEASUREMENT.
 
 Canonical records:
 
@@ -91,7 +93,7 @@ Canonical records:
 - [`../labs/evidence/phase-19-gate-19-1-public-runtime-contract-v1.json`](../labs/evidence/phase-19-gate-19-1-public-runtime-contract-v1.json)
 - [`adr/0076-bounded-public-runtime-hypothesis-and-launch-contract.md`](adr/0076-bounded-public-runtime-hypothesis-and-launch-contract.md)
 
-### Gate 19.2 — representative measurement
+### Gate 19.2 — complete — representative measurement
 
 Gate 19.2 completed one human-operated representative live measurement, deterministic persisted-artifact review, and the evidence-backed interaction-pattern decision.
 
