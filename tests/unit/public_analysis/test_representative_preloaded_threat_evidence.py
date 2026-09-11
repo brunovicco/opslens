@@ -26,53 +26,26 @@ _COMMIT_SHA = "18c954d8604df4740c829ba17fa2f3640b92b900"
 _TREE_SHA = "1" * 40
 
 
-class FakeRepositorySource:
-    """Provide inert repository evidence without network or provider I/O."""
-
-    def get_repository(self, owner: str, name: str) -> dict[str, object]:
-        """Return public repository metadata for the frozen anchor."""
-        assert (owner, name) == ("openedx", "mockprock")
-        return {
-            "id": 123456,
-            "name": "mockprock",
-            "full_name": "openedx/mockprock",
-            "private": False,
-            "visibility": "public",
-            "default_branch": "main",
-            "owner": {"login": "openedx"},
-        }
-
-    def get_commit(self, owner: str, name: str, ref: str) -> dict[str, object]:
-        """Return the exact frozen commit/tree identity."""
-        assert (owner, name, ref) == ("openedx", "mockprock", _COMMIT_SHA)
-        return {"sha": _COMMIT_SHA, "commit": {"tree": {"sha": _TREE_SHA}}}
-
-    def get_uv_lock(
-        self,
-        owner: str,
-        name: str,
-        commit_sha: str,
-    ) -> dict[str, object]:
-        """Return inert lock bytes containing the frozen WebOb dependency."""
-        assert (owner, name, commit_sha) == ("openedx", "mockprock", _COMMIT_SHA)
-        raw = (
-            b"version = 1\n"
-            b"revision = 3\n"
-            b'requires-python = \">=3.11\"\n'
-            b"[[package]]\n"
-            b'name = "webob"\n'
-            b'version = "1.8.10"\n'
-            b'source = { registry = "https://pypi.org/simple" }\n'
-        )
-        return {
-            "type": "file",
-            "path": "uv.lock",
-            "name": "uv.lock",
-            "encoding": "base64",
-            "size": len(raw),
-            "sha": compute_git_blob_sha1(raw),
-            "content": base64.encodebytes(raw).decode("ascii"),
-        }
+def _uv_lock_payload() -> dict[str, object]:
+    """Return inert lock bytes containing the frozen WebOb dependency."""
+    raw = (
+        b"version = 1\n"
+        b"revision = 3\n"
+        b'requires-python = \">=3.11\"\n'
+        b"[[package]]\n"
+        b'name = "webob"\n'
+        b'version = "1.8.10"\n'
+        b'source = { registry = "https://pypi.org/simple" }\n'
+    )
+    return {
+        "type": "file",
+        "path": "uv.lock",
+        "name": "uv.lock",
+        "encoding": "base64",
+        "size": len(raw),
+        "sha": compute_git_blob_sha1(raw),
+        "content": base64.encodebytes(raw).decode("ascii"),
+    }
 
 
 def _execution(
@@ -87,13 +60,25 @@ def _execution(
     ).encode()
     request = admit_public_analysis_request(raw).request
 
-    class Source(FakeRepositorySource):
+    class Source:
+        """Provide deterministic source evidence without network I/O."""
+
+        def get_repository(self, owner: str, name: str) -> dict[str, object]:
+            """Return public metadata for the requested repository identity."""
+            return {
+                "id": 123456,
+                "name": name,
+                "full_name": f"{owner}/{name}",
+                "private": False,
+                "visibility": "public",
+                "default_branch": "main",
+                "owner": {"login": owner},
+            }
+
         def get_commit(self, owner: str, name: str, ref: str) -> dict[str, object]:
-            assert (owner, name, ref) == (
-                request.target.owner,
-                request.target.name,
-                commit_sha,
-            )
+            """Return the exact requested commit/tree identity."""
+            assert (owner, name) == (request.target.owner, request.target.name)
+            assert ref == commit_sha
             return {"sha": commit_sha, "commit": {"tree": {"sha": _TREE_SHA}}}
 
         def get_uv_lock(
@@ -102,8 +87,10 @@ def _execution(
             name: str,
             resolved_commit_sha: str,
         ) -> dict[str, object]:
+            """Return one inert uv.lock for the exact resolved commit."""
+            assert (owner, name) == (request.target.owner, request.target.name)
             assert resolved_commit_sha == commit_sha
-            return super().get_uv_lock(owner, name, _COMMIT_SHA)
+            return _uv_lock_payload()
 
     return build_public_repository_evidence(request, Source())
 
@@ -139,10 +126,9 @@ def test_preloaded_loader_rejects_repository_drift() -> None:
         expected_repository_url=_REPOSITORY_URL,
         expected_commit_sha=_COMMIT_SHA,
     )
-    execution = _execution(repository_url="https://github.com/openedx/other-repo")
 
     with pytest.raises(RepresentativePreloadedThreatEvidenceError, match="URL"):
-        loader(execution)
+        loader(_execution(repository_url="https://github.com/openedx/other-repo"))
 
 
 def test_preloaded_loader_rejects_commit_drift() -> None:
