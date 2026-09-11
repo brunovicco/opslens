@@ -298,7 +298,8 @@ def _publish_one(
             code = _error_code(exc)
             if code in {"409", "ConditionalRequestConflict", "412", "PreconditionFailed"}:
                 raise ArtifactPublicationError(
-                    f"conditional create-only publication conflicted for {role}; do not retry automatically"
+                    f"conditional create-only publication conflicted for {role}; "
+                    "do not retry automatically"
                 ) from exc
             raise
         raw_version = response.get("VersionId")
