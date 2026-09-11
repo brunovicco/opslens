@@ -82,6 +82,8 @@ AIP-C01 topic != product requirement
 
 Gate 19.1 was protected-squash-merged through PR #292 at `ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1`. Its historical machine-readable decision remains `DEFERRED_PENDING_MEASUREMENT`, with historical leading hypothesis `ASYNC_SUBMIT_STATUS_RESULT`.
 
+Gate 19.1 retained the pre-runtime `PublicAnalysisAdmissionHandoff -> STOP` boundary: request admission and handoff could be reasoned about, but provider-heavy public execution remained unauthorized until later gates supplied evidence and explicit authority.
+
 Gate 19.2 later supplied the missing representative evidence. Historical artifacts retain the state they recorded when created; later gates do not rewrite them.
 
 Gate 19.2 was protected-merged through PR #347 at `71eda2650889d3047259d37be226862ed2a09092`. The canonical human-operated representative run recorded:
