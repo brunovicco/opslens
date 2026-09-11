@@ -11,7 +11,9 @@ import pytest
 from opslens.correlation.adapters.ghsa import GhsaPyPIVulnerabilityEvidence
 from opslens.ingestion.epss.domain.models import EpssSnapshot
 from opslens.ingestion.kev.domain.models import KevCatalogSnapshot
-from opslens.public_analysis.application import representative_threat_evidence_materialization as module
+from opslens.public_analysis.application import (
+    representative_threat_evidence_materialization as module,
+)
 from opslens.public_analysis.application.representative_repository_analysis import (
     RepresentativeRepositoryThreatEvidence,
 )
