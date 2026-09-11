@@ -10,6 +10,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
+from opslens.correlation.adapters.ghsa import GhsaPyPIVulnerabilityEvidence
 from opslens.public_analysis.adapters.exact_s3_authority_object import (
     ExactS3AuthorityObject,
 )
@@ -29,6 +30,7 @@ _OBSERVED_ID = f"{_GHSA_ID}@sha256:{_SOURCE_SHA}"
 
 
 def _row(*, ecosystem: str = "pip", cve_id: str = _CVE_ID) -> dict[str, object]:
+    """Build one deterministic GHSA Silver v1 row fixture."""
     timestamp = datetime(2026, 9, 10, tzinfo=UTC)
     return {
         "schema_version": 1,
@@ -75,7 +77,11 @@ def _row(*, ecosystem: str = "pip", cve_id: str = _CVE_ID) -> dict[str, object]:
     }
 
 
-def _parquet(*rows: dict[str, object], schema: pa.Schema = GHSA_ADVISORY_VERSIONS_SCHEMA_V1) -> bytes:
+def _parquet(
+    *rows: dict[str, object],
+    schema: pa.Schema = GHSA_ADVISORY_VERSIONS_SCHEMA_V1,
+) -> bytes:
+    """Serialize deterministic row fixtures as Parquet bytes."""
     table = pa.Table.from_pylist(list(rows), schema=schema)
     sink = pa.BufferOutputStream()
     pq.write_table(table, sink)
@@ -88,6 +94,7 @@ class _FakeObjectReader:
     calls: int = 0
 
     def read(self, *, object_key: str, version_id: str) -> ExactS3AuthorityObject:
+        """Return the configured immutable object and record one read."""
         self.calls += 1
         return ExactS3AuthorityObject(
             object_key=object_key,
@@ -96,7 +103,10 @@ class _FakeObjectReader:
         )
 
 
-def _read(payload: bytes):
+def _read(
+    payload: bytes,
+) -> tuple[GhsaPyPIVulnerabilityEvidence, _FakeObjectReader]:
+    """Decode one fixture through the production exact GHSA reader."""
     object_reader = _FakeObjectReader(payload)
     reader = ExactGhsaSilverAuthorityReader(object_reader)
     result = reader.read(
@@ -110,6 +120,7 @@ def _read(payload: bytes):
 
 
 def test_exact_ghsa_reader_projects_one_pypi_occurrence() -> None:
+    """Exact Silver coordinates project one preserved PyPI occurrence."""
     result, object_reader = _read(_parquet(_row()))
 
     assert object_reader.calls == 1
@@ -130,21 +141,25 @@ def test_exact_ghsa_reader_projects_one_pypi_occurrence() -> None:
 
 
 def test_exact_ghsa_reader_rejects_duplicate_observed_rows() -> None:
+    """Duplicate rows for one observed authority identity fail closed."""
     with pytest.raises(GhsaAuthorityDecodeError, match="exactly one Silver row"):
         _read(_parquet(_row(), _row()))
 
 
 def test_exact_ghsa_reader_rejects_cve_drift() -> None:
+    """A Silver row bound to another CVE cannot satisfy the requested authority."""
     with pytest.raises(GhsaAuthorityDecodeError, match="CVE identity mismatch"):
         _read(_parquet(_row(cve_id="CVE-2026-55558")))
 
 
 def test_exact_ghsa_reader_rejects_non_pip_occurrence() -> None:
+    """The representative PyPI boundary rejects other ecosystems."""
     with pytest.raises(GhsaAuthorityDecodeError, match="requires pip ecosystem"):
         _read(_parquet(_row(ecosystem="npm")))
 
 
 def test_exact_ghsa_reader_rejects_missing_source_index() -> None:
+    """A requested source index must resolve to exactly one stored entry."""
     object_reader = _FakeObjectReader(_parquet(_row()))
     reader = ExactGhsaSilverAuthorityReader(object_reader)
 
@@ -159,6 +174,7 @@ def test_exact_ghsa_reader_rejects_missing_source_index() -> None:
 
 
 def test_exact_ghsa_reader_rejects_wrong_schema() -> None:
+    """Parquet bytes using any schema other than GHSA Silver v1 fail closed."""
     wrong_schema = pa.schema([pa.field("value", pa.string(), nullable=False)])
     payload = _parquet({"value": "not-ghsa"}, schema=wrong_schema)
 
