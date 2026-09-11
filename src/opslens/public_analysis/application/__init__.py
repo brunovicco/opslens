@@ -45,6 +45,11 @@ from opslens.public_analysis.application.representative_structured_evidence impo
     MAX_REPRESENTATIVE_STRUCTURED_FINDINGS,
     build_representative_structured_evidence,
 )
+from opslens.public_analysis.application.representative_threat_evidence_admission import (
+    RepresentativeThreatEvidenceAdmissionError,
+    RepresentativeThreatEvidenceAuthority,
+    admit_representative_threat_evidence,
+)
 from opslens.public_analysis.application.representative_workload import (
     PublicAnalysisWorkloadExecutionError,
     PublicAnalysisWorkloadFailureCategory,
@@ -128,6 +133,8 @@ __all__ = [
     "RepresentativeSemanticEvidence",
     "RepresentativeSemanticRetriever",
     "RepresentativeStageAction",
+    "RepresentativeThreatEvidenceAdmissionError",
+    "RepresentativeThreatEvidenceAuthority",
     "RepresentativeThreatEvidenceLoad",
     "RepresentativeThreatEvidenceLoader",
     "RepresentativeWorkloadClock",
@@ -136,6 +143,7 @@ __all__ = [
     "RepresentativeWorkloadPlan",
     "admit_public_analysis_request",
     "admit_public_semantic_plan",
+    "admit_representative_threat_evidence",
     "build_public_analysis_admission_handoff",
     "build_public_repository_evidence",
     "build_public_semantic_planning_request",
