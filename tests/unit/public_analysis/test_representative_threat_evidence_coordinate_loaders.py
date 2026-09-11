@@ -36,6 +36,7 @@ _SNAPSHOT_DATE = "2026-09-10"
 
 
 def _call_log() -> list[tuple[object, ...]]:
+    """Return one strictly typed fake-provider call log."""
     return []
 
 
@@ -73,6 +74,7 @@ def _bundle() -> Mapping[str, object]:
 
 
 def _ghsa() -> GhsaPyPIVulnerabilityEvidence:
+    """Build one typed GHSA authority fixture."""
     return GhsaPyPIVulnerabilityEvidence(
         observed_advisory_version_id=_GHSA_OBSERVED,
         source_advisory_sha256="5" * 64,
@@ -90,6 +92,7 @@ def _ghsa() -> GhsaPyPIVulnerabilityEvidence:
 
 
 def _nvd() -> NvdCveCoreRecord:
+    """Build one typed NVD authority fixture with canonical content identity."""
     canonical_json = b'{"id":"CVE-2026-54770"}'
     observed = ObservedCveVersion(
         cve_id=_CVE,
@@ -106,6 +109,7 @@ def _nvd() -> NvdCveCoreRecord:
 
 
 def _kev() -> KevCatalogSnapshot:
+    """Build one complete KEV snapshot fixture for coordinate checks."""
     return KevCatalogSnapshot(
         raw_bytes=b"{}",
         catalog_version="2026.09.10",
@@ -117,6 +121,7 @@ def _kev() -> KevCatalogSnapshot:
 
 
 def _epss() -> EpssSnapshot:
+    """Build one complete EPSS snapshot fixture for coordinate checks."""
     return EpssSnapshot(
         raw_bytes=b"x",
         model_version="v2026.06.15",
@@ -128,6 +133,8 @@ def _epss() -> EpssSnapshot:
 
 @dataclass(slots=True)
 class FakeGhsaSource:
+    """Return one GHSA authority object while recording exact coordinates."""
+
     value: GhsaPyPIVulnerabilityEvidence
     calls: list[tuple[object, ...]] = field(default_factory=_call_log)
 
@@ -138,12 +145,15 @@ class FakeGhsaSource:
         observed_advisory_version_id: str,
         source_index: int,
     ) -> GhsaPyPIVulnerabilityEvidence:
+        """Record and return one exact GHSA lookup."""
         self.calls.append((cve_id, observed_advisory_version_id, source_index))
         return self.value
 
 
 @dataclass(slots=True)
 class FakeNvdSource:
+    """Return one NVD authority object while recording exact coordinates."""
+
     value: NvdCveCoreRecord
     calls: list[tuple[object, ...]] = field(default_factory=_call_log)
 
@@ -153,31 +163,39 @@ class FakeNvdSource:
         cve_id: str,
         observed_cve_version_id: str,
     ) -> NvdCveCoreRecord:
+        """Record and return one exact NVD lookup."""
         self.calls.append((cve_id, observed_cve_version_id))
         return self.value
 
 
 @dataclass(slots=True)
 class FakeKevSource:
+    """Return one complete KEV snapshot while recording the selected date."""
+
     value: KevCatalogSnapshot
     calls: list[tuple[object, ...]] = field(default_factory=_call_log)
 
     def get_snapshot(self, *, snapshot_date: str) -> KevCatalogSnapshot:
+        """Record and return one exact KEV snapshot lookup."""
         self.calls.append((snapshot_date,))
         return self.value
 
 
 @dataclass(slots=True)
 class FakeEpssSource:
+    """Return one complete EPSS snapshot while recording the selected date."""
+
     value: EpssSnapshot
     calls: list[tuple[object, ...]] = field(default_factory=_call_log)
 
     def get_snapshot(self, *, snapshot_date: str) -> EpssSnapshot:
+        """Record and return one exact EPSS snapshot lookup."""
         self.calls.append((snapshot_date,))
         return self.value
 
 
 def test_parse_coordinates_preserves_exact_source_identity() -> None:
+    """Preserve exact GHSA, NVD, KEV, and EPSS lookup coordinates."""
     coordinates = parse_representative_threat_evidence_coordinates(_bundle())
 
     assert coordinates.cve_id == _CVE
@@ -190,6 +208,7 @@ def test_parse_coordinates_preserves_exact_source_identity() -> None:
 
 
 def test_parse_coordinates_rejects_duplicate_ghsa_occurrence() -> None:
+    """Reject ambiguous duplicate GHSA package coordinates before any source read."""
     bundle = dict(_bundle())
     bundle["ghsa"] = {
         "advisory_versions": [
@@ -212,6 +231,7 @@ def test_parse_coordinates_rejects_duplicate_ghsa_occurrence() -> None:
 
 
 def test_bundle_bound_loaders_request_exact_coordinates_once() -> None:
+    """Call every injected authority provider once with exact bundle coordinates."""
     bundle = _bundle()
     ghsa_source = FakeGhsaSource(_ghsa())
     nvd_source = FakeNvdSource(_nvd())
@@ -234,6 +254,7 @@ def test_bundle_bound_loaders_request_exact_coordinates_once() -> None:
 
 
 def test_ghsa_loader_rejects_provider_coordinate_mismatch() -> None:
+    """Reject typed GHSA evidence returned for a different CVE coordinate."""
     wrong = GhsaPyPIVulnerabilityEvidence(
         observed_advisory_version_id=_GHSA_OBSERVED,
         source_advisory_sha256="5" * 64,
@@ -257,6 +278,7 @@ def test_ghsa_loader_rejects_provider_coordinate_mismatch() -> None:
 
 
 def test_kev_loader_rejects_provider_snapshot_mismatch() -> None:
+    """Reject a complete KEV snapshot returned for a different exact date."""
     wrong = KevCatalogSnapshot(
         raw_bytes=b"{}",
         catalog_version="2026.09.09",
