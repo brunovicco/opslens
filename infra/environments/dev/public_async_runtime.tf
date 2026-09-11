@@ -190,10 +190,10 @@ resource "aws_lambda_function" "public_async_api" {
 
   environment {
     variables = {
-      OPSLENS_ASYNC_JOB_TABLE_NAME             = aws_dynamodb_table.public_async_jobs[0].name
-      OPSLENS_ASYNC_JOB_QUEUE_URL              = aws_sqs_queue.public_async_job_queue[0].url
-      OPSLENS_ASYNC_SUBMIT_ENABLED              = "false"
-      OPSLENS_ASYNC_SUBMISSION_LEASE_SECONDS   = tostring(local.public_async_submission_lease_seconds)
+      OPSLENS_ASYNC_JOB_TABLE_NAME           = aws_dynamodb_table.public_async_jobs[0].name
+      OPSLENS_ASYNC_JOB_QUEUE_URL            = aws_sqs_queue.public_async_job_queue[0].url
+      OPSLENS_ASYNC_SUBMIT_ENABLED            = "false"
+      OPSLENS_ASYNC_SUBMISSION_LEASE_SECONDS = tostring(local.public_async_submission_lease_seconds)
     }
   }
 
@@ -257,11 +257,11 @@ resource "aws_lambda_function" "public_async_worker" {
 
   environment {
     variables = {
-      OPSLENS_ASYNC_JOB_TABLE_NAME      = aws_dynamodb_table.public_async_jobs[0].name
-      OPSLENS_ASYNC_JOB_QUEUE_ARN       = aws_sqs_queue.public_async_job_queue[0].arn
-      OPSLENS_ASYNC_WORKER_ENABLED      = "false"
+      OPSLENS_ASYNC_JOB_TABLE_NAME        = aws_dynamodb_table.public_async_jobs[0].name
+      OPSLENS_ASYNC_JOB_QUEUE_ARN         = aws_sqs_queue.public_async_job_queue[0].arn
+      OPSLENS_ASYNC_WORKER_ENABLED        = "false"
       OPSLENS_ASYNC_WORKER_LEASE_SECONDS = tostring(local.public_async_worker_lease_seconds)
-      OPSLENS_ASYNC_MAX_ATTEMPTS         = tostring(local.public_async_max_attempts)
+      OPSLENS_ASYNC_MAX_ATTEMPTS          = tostring(local.public_async_max_attempts)
     }
   }
 
@@ -375,18 +375,18 @@ resource "aws_apigatewayv2_stage" "public_async_default" {
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.public_async_access[0].arn
     format = jsonencode({
-      requestId      = "$context.requestId"
-      routeKey       = "$context.routeKey"
-      status         = "$context.status"
-      responseLength = "$context.responseLength"
+      requestId        = "$context.requestId"
+      routeKey         = "$context.routeKey"
+      status           = "$context.status"
+      responseLength   = "$context.responseLength"
       integrationError = "$context.integrationErrorMessage"
     })
   }
 
   default_route_settings {
     detailed_metrics_enabled = true
-    throttling_burst_limit    = 10
-    throttling_rate_limit     = 5
+    throttling_burst_limit   = 10
+    throttling_rate_limit    = 5
   }
 
   tags = {
