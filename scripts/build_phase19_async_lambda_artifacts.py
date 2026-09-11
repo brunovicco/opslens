@@ -13,7 +13,7 @@ import subprocess
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Final
+from typing import Final, cast
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 PROJECT_ROOT: Final = Path(__file__).resolve().parents[1]
@@ -80,6 +80,13 @@ class _RoleSpec:
     sources: tuple[str, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class _LockedPackage:
+    name: str
+    version: str
+    wheel_hashes: tuple[str, ...]
+
+
 _ROLE_SPECS: Final = (
     _RoleSpec(
         name="api",
@@ -100,29 +107,58 @@ _ROLE_SPECS: Final = (
 )
 
 
+def _object(value: object, *, label: str) -> dict[str, object]:
+    if not isinstance(value, dict):
+        raise RuntimeError(f"{label} must be an object")
+    raw = cast(dict[object, object], value)
+    if any(type(key) is not str for key in raw):
+        raise RuntimeError(f"{label} keys must be strings")
+    return cast(dict[str, object], raw)
+
+
+def _objects(value: object, *, label: str) -> list[dict[str, object]]:
+    if not isinstance(value, list):
+        raise RuntimeError(f"{label} must be an array")
+    return [_object(item, label=f"{label}[]") for item in cast(list[object], value)]
+
+
 def _normalized_distribution(name: str) -> str:
     return name.lower().replace("_", "-").replace(".", "-")
 
 
-def _locked_versions() -> dict[str, str]:
+def _locked_packages() -> dict[str, _LockedPackage]:
     with UV_LOCK.open("rb") as handle:
-        root = tomllib.load(handle)
-    raw_packages = root.get("package")
-    if not isinstance(raw_packages, list):
-        raise RuntimeError("uv.lock does not contain a package inventory")
-    versions: dict[str, str] = {}
-    for raw in raw_packages:
-        if not isinstance(raw, dict):
-            raise RuntimeError("uv.lock package entry is not an object")
-        name = raw.get("name")
-        version = raw.get("version")
-        if not isinstance(name, str) or not isinstance(version, str):
+        raw_root: object = tomllib.load(handle)
+    root = _object(raw_root, label="uv.lock")
+    packages = _objects(root.get("package"), label="uv.lock.package")
+    locked: dict[str, _LockedPackage] = {}
+    for package in packages:
+        name = package.get("name")
+        version = package.get("version")
+        if type(name) is not str or type(version) is not str:
             raise RuntimeError("uv.lock package entry is missing name/version")
-        versions[_normalized_distribution(name)] = version
-    return versions
+        wheel_hashes: list[str] = []
+        for wheel in _objects(package.get("wheels"), label=f"uv.lock package {name} wheels"):
+            digest = wheel.get("hash")
+            if type(digest) is not str or not digest.startswith("sha256:"):
+                raise RuntimeError(f"uv.lock wheel for {name} is missing a SHA-256 hash")
+            wheel_hashes.append(digest)
+        if not wheel_hashes:
+            raise RuntimeError(f"uv.lock package {name} has no wheel hashes")
+        normalized = _normalized_distribution(name)
+        locked[normalized] = _LockedPackage(
+            name=normalized,
+            version=version,
+            wheel_hashes=tuple(sorted(set(wheel_hashes))),
+        )
+    return locked
 
 
-def _validate_pins(spec: _RoleSpec, locked: dict[str, str]) -> None:
+def _validated_pin_packages(
+    spec: _RoleSpec,
+    locked: dict[str, _LockedPackage],
+) -> tuple[_LockedPackage, ...]:
+    selected: list[_LockedPackage] = []
     seen: set[str] = set()
     for pin in spec.pins:
         if "==" not in pin:
@@ -132,10 +168,14 @@ def _validate_pins(spec: _RoleSpec, locked: dict[str, str]) -> None:
         if name in seen:
             raise RuntimeError(f"{spec.name} runtime dependency is duplicated: {name}")
         seen.add(name)
-        if locked.get(name) != raw_version:
+        package = locked.get(name)
+        if package is None or package.version != raw_version:
+            observed = None if package is None else package.version
             raise RuntimeError(
-                f"{spec.name} runtime pin {pin} does not match uv.lock version {locked.get(name)!r}"
+                f"{spec.name} runtime pin {pin} does not match uv.lock version {observed!r}"
             )
+        selected.append(package)
+    return tuple(selected)
 
 
 def _run(command: list[str]) -> None:
@@ -149,12 +189,28 @@ def _prepare(role_root: Path) -> Path:
     return package_dir
 
 
-def _install_dependencies(spec: _RoleSpec, package_dir: Path) -> None:
+def _write_hashed_requirements(
+    role_root: Path,
+    packages: tuple[_LockedPackage, ...],
+) -> Path:
+    path = role_root / "requirements.txt"
+    lines: list[str] = []
+    for package in sorted(packages, key=lambda item: item.name):
+        hashes = " ".join(f"--hash={digest}" for digest in package.wheel_hashes)
+        lines.append(f"{package.name}=={package.version} {hashes}")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
+
+
+def _install_dependencies(requirements: Path, package_dir: Path) -> None:
     _run(
         [
             "uv",
             "pip",
             "install",
+            "--requirements",
+            str(requirements),
+            "--require-hashes",
             "--target",
             str(package_dir),
             "--python",
@@ -164,7 +220,6 @@ def _install_dependencies(spec: _RoleSpec, package_dir: Path) -> None:
             "--only-binary",
             ":all:",
             "--no-deps",
-            *spec.pins,
         ]
     )
 
@@ -194,8 +249,7 @@ def _normalize_installed_dependencies(package_dir: Path) -> None:
 
 
 def _destination_for_source(source: Path) -> Path:
-    relative = source.relative_to(PROJECT_ROOT / "src")
-    return relative
+    return source.relative_to(PROJECT_ROOT / "src")
 
 
 def _copy_sources(spec: _RoleSpec, package_dir: Path) -> None:
@@ -237,7 +291,11 @@ def _installed_distributions(package_dir: Path) -> set[str]:
     return result
 
 
-def _validate_package(spec: _RoleSpec, package_dir: Path) -> None:
+def _validate_package(
+    spec: _RoleSpec,
+    package_dir: Path,
+    packages: tuple[_LockedPackage, ...],
+) -> None:
     required = {
         "opslens/public_analysis/async_lambda.py",
         "opslens/public_analysis/async_runtime_config.py",
@@ -249,9 +307,7 @@ def _validate_package(spec: _RoleSpec, package_dir: Path) -> None:
     if (package_dir / spec.forbidden_source).exists():
         raise RuntimeError(f"{spec.name} artifact contains opposite-role composition source")
 
-    expected_distributions = {
-        _normalized_distribution(pin.split("==", maxsplit=1)[0]) for pin in spec.pins
-    }
+    expected_distributions = {package.name for package in packages}
     installed = _installed_distributions(package_dir)
     if installed != expected_distributions:
         raise RuntimeError(
@@ -300,15 +356,20 @@ def _package_stats(package_dir: Path) -> tuple[int, int]:
     return len(files), sum(path.stat().st_size for path in files)
 
 
-def _build_role(spec: _RoleSpec, output_root: Path, locked: dict[str, str]) -> dict[str, object]:
-    _validate_pins(spec, locked)
+def _build_role(
+    spec: _RoleSpec,
+    output_root: Path,
+    locked: dict[str, _LockedPackage],
+) -> dict[str, object]:
+    packages = _validated_pin_packages(spec, locked)
     role_root = output_root / "build" / spec.name
     package_dir = _prepare(role_root)
-    _install_dependencies(spec, package_dir)
+    requirements = _write_hashed_requirements(role_root, packages)
+    _install_dependencies(requirements, package_dir)
     _normalize_installed_dependencies(package_dir)
     _copy_sources(spec, package_dir)
     _remove_generated_bytecode(package_dir)
-    _validate_package(spec, package_dir)
+    _validate_package(spec, package_dir, packages)
 
     file_count, uncompressed_bytes = _package_stats(package_dir)
     if uncompressed_bytes > LAMBDA_UNZIPPED_LIMIT_BYTES:
@@ -349,7 +410,7 @@ def build_all(output_root: Path) -> dict[str, object]:
     """Build both role artifacts and return their deterministic pre-publication manifest."""
     output_root = output_root.resolve()
     output_root.mkdir(parents=True, exist_ok=True)
-    locked = _locked_versions()
+    locked = _locked_packages()
     artifacts = [_build_role(spec, output_root, locked) for spec in _ROLE_SPECS]
     return {
         "schema_version": 1,
@@ -385,6 +446,10 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _manifest_artifacts(manifest: dict[str, object]) -> list[dict[str, object]]:
+    return _objects(manifest.get("artifacts"), label="manifest.artifacts")
+
+
 def main() -> None:
     """Build both artifacts and print stable machine-readable coordinates."""
     args = _parser().parse_args()
@@ -392,15 +457,27 @@ def main() -> None:
     manifest = build_all(output_root)
     manifest_path = _write_manifest(output_root, manifest)
     print(f"manifest={manifest_path}")
-    for artifact in manifest["artifacts"]:
-        if not isinstance(artifact, dict):
+    for artifact in _manifest_artifacts(manifest):
+        s3 = _object(artifact.get("s3"), label="artifact.s3")
+        role = artifact.get("role")
+        digest = artifact.get("artifact_sha256")
+        source_code_hash = artifact.get("lambda_source_code_hash")
+        compressed_bytes = artifact.get("compressed_bytes")
+        key = s3.get("key")
+        if (
+            type(role) is not str
+            or type(digest) is not str
+            or type(source_code_hash) is not str
+            or type(compressed_bytes) is not int
+            or type(key) is not str
+        ):
             raise RuntimeError("internal artifact manifest is invalid")
         print(
-            f"role={artifact['role']} "
-            f"sha256={artifact['artifact_sha256']} "
-            f"source_code_hash={artifact['lambda_source_code_hash']} "
-            f"compressed_bytes={artifact['compressed_bytes']} "
-            f"s3_key={artifact['s3']['key']}"
+            f"role={role} "
+            f"sha256={digest} "
+            f"source_code_hash={source_code_hash} "
+            f"compressed_bytes={compressed_bytes} "
+            f"s3_key={key}"
         )
 
 
