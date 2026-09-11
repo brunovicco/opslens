@@ -263,13 +263,20 @@ def main() -> int:
                     f"{role} artifact metadata differs across rebuilds"
                 )
             first_s3 = _object(first[role].get("s3"), label=f"{role}.s3")
+            source_code_hash = _required_string(
+                first[role],
+                "lambda_source_code_hash",
+            )
+            uncompressed_bytes = _required_int(first[role], "uncompressed_bytes")
+            file_count = _required_int(first[role], "file_count")
+            s3_key = _required_string(first_s3, "key")
             summaries.append(
                 f"{role}_sha256={first_digest} "
-                f"{role}_source_code_hash={_required_string(first[role], 'lambda_source_code_hash')} "
+                f"{role}_source_code_hash={source_code_hash} "
                 f"{role}_bytes={first_bytes} "
-                f"{role}_uncompressed_bytes={_required_int(first[role], 'uncompressed_bytes')} "
-                f"{role}_files={_required_int(first[role], 'file_count')} "
-                f"{role}_s3_key={_required_string(first_s3, 'key')}"
+                f"{role}_uncompressed_bytes={uncompressed_bytes} "
+                f"{role}_files={file_count} "
+                f"{role}_s3_key={s3_key}"
             )
 
     print(
