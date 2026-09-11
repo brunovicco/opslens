@@ -18,7 +18,7 @@ def write_new_representative_live_artifact(path: Path, payload: bytes) -> None:
     ``os.link`` provides create-without-replace semantics, so an existing or concurrently
     created evidence artifact is never overwritten.
     """
-    if type(path) is not Path:
+    if not isinstance(path, Path):
         raise TypeError("path must be pathlib.Path")
     if type(payload) is not bytes or not payload:
         raise RepresentativeLiveArtifactFileError(
