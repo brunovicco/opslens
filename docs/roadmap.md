@@ -227,76 +227,52 @@ HTTP API burst/rate            10 / 5
 
 Gate 19.4 closed with zero Terraform apply, zero runtime AWS mutation, zero public enablement, and zero provider-heavy public execution.
 
-### Gate 19.5 — Immutable Async Deployment Artifacts — IN PROGRESS
+### Gate 19.5 — Immutable Async Deployment Artifacts — CLOSEOUT IN REVIEW
 
 Issue: #352  
 PR: #353  
-Source protected main: `a5067e05fda74aad4d95d7f1a875110fb676304a`
+Source protected main: `a5067e05fda74aad4d95d7f1a875110fb676304a`  
+Reviewed publication source head: `94af45036ba33007f45ddb69e9e6c3fa7d31d715`
 
-Gate 19.5 separates deployment-artifact identity from runtime deployment authority. It builds independently reviewable API/worker Lambda packages, freezes their content-addressed identities, and prepares one narrowly scoped human-only create-only S3 publication boundary.
+Gate 19.5 has completed deterministic artifact production and the human-only create-only publication step. Protected merge/post-merge verification remains before formal closeout.
 
-Current deterministic pre-publication identities:
+Admitted immutable coordinates:
 
 ```text
 API Lambda
   SHA-256:            99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e
   source_code_hash:   mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=
   compressed bytes:   17271715
-  uncompressed bytes: 26156069
-  files:              2507
+  VersionId:          E.jfB7dlkGCD.wHAurP7QXo4fuS_PW63
+  publication status: CREATED
 
 Worker Lambda
   SHA-256:            0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9
   source_code_hash:   DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck=
   compressed bytes:   1036437
-  uncompressed bytes: 3739031
-  files:              352
+  VersionId:          sxiOdii4yFwR13t23xP5A8EU1JPV_7P1
+  publication status: CREATED
 ```
 
-Their future keys are content-addressed beneath the existing versioned bucket:
+Canonical publication evidence:
 
 ```text
-opslens-dev-artifacts-487757851499-us-east-1
-
-lambda/public-analysis/api/sha256=99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e/opslens-public-async-api.zip
-lambda/public-analysis/worker/sha256=0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9/opslens-public-async-worker.zip
+labs/evidence/phase-19-gate-19-5-artifact-publication-v1.json
+s3_put_object_mutation_count: 2
+automatic_retry_count: 0
+runtime_resource_mutation_count: 0
+iam_mutation_count: 0
+terraform_apply_count: 0
+public_endpoint_enablement_count: 0
+terraform_plan_input_ready: true
+terraform_apply_authorized: false
 ```
 
-Before human publication, each `VersionId` remains:
-
-```text
-UNMEASURED / PENDING_HUMAN_PUBLICATION
-```
-
-Canonical Gate 19.5 pre-publication authority:
-
-```text
-labs/evidence/phase-19-gate-19-5-prepublication-v1.json
-scripts/build_phase19_async_lambda_artifacts.py
-scripts/verify_phase19_gate19_5_async_artifact_build.py
-scripts/publish_phase19_gate19_5_async_artifacts.py
-scripts/verify_phase19_gate19_5_artifact_publication.py
-labs/phase-19-gate-19-5-immutable-artifact-publication-runbook.md
-```
-
-The only AWS mutation that Gate 19.5 may eventually admit is one human-operated create-only publication attempt for each of the two frozen content-addressed objects. CI and ChatGPT do not cross that boundary. No IAM broadening is permitted to make publication succeed, and no automatic retry is permitted.
-
-Gate 19.5 does **not** authorize:
-
-```text
-Terraform apply
-runtime Lambda/SQS/DynamoDB/API Gateway creation or update
-IAM role/policy mutation
-public endpoint enablement
-worker/event-source enablement
-Bedrock/GitHub public workload execution
-third-party repository code execution
-PR #89 modification
-```
+The exact-head CI verifier replays this admission offline; CI and ChatGPT do not make AWS calls. Gate 19.5 has changed deployment-artifact provenance only, not runtime deployment authority.
 
 ### Gate 19.6 — Exact Terraform Plan & Offline Admission — PLANNED
 
-Gate 19.6 begins only after Gate 19.5 has admitted real immutable S3 `VersionId` coordinates for both Lambda artifacts.
+Gate 19.6 begins only after Gate 19.5 protected merge/post-merge closeout. It may consume the exact immutable S3 `VersionId` coordinates above.
 
 Gate 19.6 will own:
 
@@ -321,14 +297,15 @@ Gate 19.6  exact Terraform plan + offline admission/review
 later gate human-authorized Terraform apply / controlled enablement, if admitted
 ```
 
-Current standing truth remains:
+Current standing truth now distinguishes artifact publication from runtime mutation:
 
 ```text
-public endpoints enabled:                0
-runtime AWS resources changed:           0
-IAM roles/policies changed:              0
-Terraform apply executions:              0
-provider-heavy public executions:        0
-third-party repository code executions:  0
-PR #89 modifications:                    0
+deployment artifact S3 PutObject mutations: 2
+public endpoints enabled:                    0
+runtime AWS resources changed:               0
+IAM roles/policies changed:                  0
+Terraform apply executions:                  0
+provider-heavy public executions:            0
+third-party repository code executions:      0
+PR #89 modifications:                        0
 ```

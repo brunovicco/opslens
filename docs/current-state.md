@@ -36,15 +36,21 @@ protected merge PR: #351
 protected merge SHA: a5067e05fda74aad4d95d7f1a875110fb676304a
 deployment authorized: NO
 
-Gate 19.5 — Immutable Async Deployment Artifacts             IN PROGRESS
+Gate 19.5 — Immutable Async Deployment Artifacts             CLOSEOUT IN REVIEW
 source issue: #352
 implementation PR: #353
 source main: a5067e05fda74aad4d95d7f1a875110fb676304a
+reviewed publication source head: 94af45036ba33007f45ddb69e9e6c3fa7d31d715
 publication authority: HUMAN_ONLY_CREATE_ONLY
+publication status: ADMITTED
+S3 PutObject mutation count: 2
+API VersionId: E.jfB7dlkGCD.wHAurP7QXo4fuS_PW63
+worker VersionId: sxiOdii4yFwR13t23xP5A8EU1JPV_7P1
+terraform plan input ready: YES
 runtime deployment authorized: NO
 ```
 
-Phases 0–18 remain complete. Gate 19.1 remains historical launch-contract authority. Gate 19.2 supplied the admitted whole-workload measurement and selected `ASYNC_SUBMIT_STATUS_RESULT`. Gate 19.3 converted that interaction decision into one concrete AWS design contract. Gate 19.4 implemented that design in code and Terraform behind disabled/non-public defaults. Gate 19.5 now freezes deterministic API/worker Lambda artifacts and prepares a narrowly scoped human-only immutable S3 publication boundary so Gate 19.6 can later review an exact Terraform plan using real object `VersionId` coordinates.
+Phases 0–18 remain complete. Gate 19.1 remains historical launch-contract authority. Gate 19.2 supplied the admitted whole-workload measurement and selected `ASYNC_SUBMIT_STATUS_RESULT`. Gate 19.3 converted that interaction decision into one concrete AWS design contract. Gate 19.4 implemented that design in code and Terraform behind disabled/non-public defaults. Gate 19.5 has now admitted exactly two human-published, create-only, content-addressed Lambda artifact versions and is awaiting protected merge/post-merge verification before formal closeout. Gate 19.6 can use those immutable coordinates only for exact Terraform planning; no apply is authorized.
 
 PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work and is not a Phase 19 dependency.
 
@@ -200,72 +206,57 @@ labs/evidence/phase-19-gate-19-4-disabled-async-runtime-v1.json
 scripts/verify_phase19_gate19_4_disabled_async_runtime.py
 ```
 
-## Gate 19.5 — current immutable-artifact checkpoint
+## Gate 19.5 — immutable-artifact publication admitted
 
-Gate 19.5 exists to bridge a deliberate provenance dependency: Terraform needs an exact S3 `VersionId`, but a `VersionId` cannot exist until the immutable deployment object has been created.
+Gate 19.5 bridged the deliberate provenance dependency between deterministic Lambda packages and exact Terraform planning. The publication occurred only after exact-head CI/security validation and a local byte-for-byte rebuild against the canonical pre-publication manifest.
 
-The retained sequence is therefore:
-
-```text
-Gate 19.5  deterministic artifact build + human create-only artifact publication
-Gate 19.6  exact Terraform plan + offline admission/review
-later gate human-authorized Terraform apply / enablement, if admitted
-```
-
-The first Gate 19.5 deterministic build/rebuild verifier is green in CI and freezes these pre-publication identities:
+Frozen identities and immutable publication coordinates are:
 
 ```text
 API Lambda
   SHA-256:            99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e
   source_code_hash:   mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=
   compressed bytes:   17271715
-  uncompressed bytes: 26156069
-  files:              2507
-  S3 key:             lambda/public-analysis/api/sha256=99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e/opslens-public-async-api.zip
+  VersionId:          E.jfB7dlkGCD.wHAurP7QXo4fuS_PW63
+  publication:        CREATED
 
 Worker Lambda
   SHA-256:            0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9
   source_code_hash:   DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck=
   compressed bytes:   1036437
-  uncompressed bytes: 3739031
-  files:              352
-  S3 key:             lambda/public-analysis/worker/sha256=0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9/opslens-public-async-worker.zip
+  VersionId:          sxiOdii4yFwR13t23xP5A8EU1JPV_7P1
+  publication:        CREATED
 ```
 
-Canonical pre-publication authority:
+Canonical Gate 19.5 evidence:
 
 ```text
 labs/evidence/phase-19-gate-19-5-prepublication-v1.json
+labs/evidence/phase-19-gate-19-5-artifact-publication-v1.json
+labs/phase-19-gate-19-5-immutable-artifact-publication-runbook.md
+labs/phase-19-gate-19-5-closeout.md
 scripts/build_phase19_async_lambda_artifacts.py
 scripts/verify_phase19_gate19_5_async_artifact_build.py
-labs/phase-19-gate-19-5-immutable-artifact-publication-runbook.md
+scripts/publish_phase19_gate19_5_async_artifacts.py
+scripts/verify_phase19_gate19_5_artifact_publication.py
 ```
 
-Before human publication, each S3 `VersionId` remains:
-
-```text
-classification: UNMEASURED
-reason: PENDING_HUMAN_PUBLICATION
-value: null
-```
-
-The future publication boundary is intentionally narrow: exactly two content-addressed ZIP objects, written create-only to the existing versioned deployment-artifacts bucket. CI and ChatGPT are not publication authorities. Publication success will establish immutable object coordinates only; it will not authorize runtime materialization, IAM mutation, Terraform apply, or public enablement.
+The human publication evidence records exactly two S3 `PutObject` mutations and zero automatic retries. Offline admission proved `terraform_plan_input_ready=true` while retaining `terraform_apply_authorized=false`.
 
 ## Current standing deployment truth
 
-Protected `main` still has **no deployed public HTTP runtime**. Gate 19.4 added a disabled repository implementation; Gate 19.5 has not changed runtime AWS state.
+Protected `main` still has **no deployed public HTTP runtime**. Gate 19.5 changed only deployment-artifact object provenance; it did not materialize runtime resources.
 
 ```text
-public endpoints enabled:                0
-runtime AWS resources changed:           0
-IAM roles/policies changed:              0
-Terraform apply executions:              0
-provider-heavy public executions:        0
-third-party repository code executions:  0
-PR #89 modifications:                    0
+deployment artifact S3 PutObject mutations: 2
+public endpoints enabled:                    0
+runtime AWS resources changed:               0
+IAM roles/policies changed:                  0
+Terraform apply executions:                  0
+provider-heavy public executions:            0
+third-party repository code executions:      0
+PR #89 modifications:                        0
 ```
-
-A future human Gate 19.5 publication may create only the two frozen deployment-artifact objects. That narrowly scoped artifact write is not a runtime-resource or deployment authorization.
 
 ## Configured limits
 
@@ -287,6 +278,6 @@ They are not measured utilization.
 
 ## Next checkpoint
 
-Gate 19.5 must first finish exact-head static/security/CI validation and protected review of PR #353. The human AWS publication boundary is crossed only after the reviewed artifact identities are frozen and reproduced from the protected code checkpoint. The human operator must then publish exactly the admitted API and worker content-addressed objects, with no automatic retry or IAM broadening, and run the offline post-publication verifier.
+Gate 19.5 is in closeout review. PR #353 must preserve the exact human publication evidence, pass exact-head CI including the offline publication verifier, and be protected-merged/post-merge verified before issue #352 closes.
 
-Only admitted publication evidence containing the two real S3 `VersionId` values can make Gate 19.6 Terraform-plan input ready. Gate 19.6, not Gate 19.5, owns exact Terraform plan generation. No gate currently authorizes `terraform apply` or public enablement.
+After that, Gate 19.6 may generate an exact Terraform plan using the admitted `Key + VersionId + source_code_hash` coordinates. Gate 19.6 owns plan generation and admission. No gate currently authorizes `terraform apply`, runtime/public enablement, or provider-heavy public execution.

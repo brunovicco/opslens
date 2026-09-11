@@ -13,7 +13,9 @@ _EXPECTED_REGION = "us-east-1"
 _EXPECTED_BUCKET = "opslens-dev-artifacts-487757851499-us-east-1"
 _EXPECTED_PREPUBLICATION_TYPE = "phase-19-gate-19-5-async-artifact-prepublication:v1"
 _EXPECTED_PUBLICATION_TYPE = "phase-19-gate-19-5-artifact-publication:v1"
+_EXPECTED_SOURCE_HEAD_SHA = "94af45036ba33007f45ddb69e9e6c3fa7d31d715"
 _EXPECTED_ROLES = {"api", "worker"}
+_EXPECTED_PUT_MUTATION_COUNT = 2
 
 
 class Gate19_5PublicationVerificationError(RuntimeError):
@@ -97,13 +99,13 @@ def _verify_publication_identity(root: dict[str, object]) -> None:
         raise Gate19_5PublicationVerificationError("publication Region drifted")
     if root.get("bucket") != _EXPECTED_BUCKET:
         raise Gate19_5PublicationVerificationError("publication bucket drifted")
-    _required_string(root, "source_head_sha")
+    if _required_string(root, "source_head_sha") != _EXPECTED_SOURCE_HEAD_SHA:
+        raise Gate19_5PublicationVerificationError("publication source reviewed head drifted")
     _required_string(root, "caller_arn")
     if _required_int(root, "automatic_retry_count") != 0:
         raise Gate19_5PublicationVerificationError("automatic publication retries are forbidden")
-    mutation_count = _required_int(root, "s3_put_object_mutation_count")
-    if mutation_count > 2:
-        raise Gate19_5PublicationVerificationError("publication mutation count exceeds two")
+    if _required_int(root, "s3_put_object_mutation_count") != _EXPECTED_PUT_MUTATION_COUNT:
+        raise Gate19_5PublicationVerificationError("canonical publication must preserve two writes")
     for field in (
         "runtime_resource_mutation_count",
         "iam_mutation_count",
@@ -162,6 +164,12 @@ def main() -> int:
     _verify_publication_identity(publication_root)
     published = _by_role(publication_root, label="publication")
 
+    statuses = [artifact.get("publication_status") for artifact in published.values()]
+    if statuses.count("CREATED") != _EXPECTED_PUT_MUTATION_COUNT:
+        raise Gate19_5PublicationVerificationError(
+            "canonical publication statuses contradict the two admitted writes"
+        )
+
     versions = {
         role: _verify_artifact_pair(role, pre[role], published[role])
         for role in sorted(_EXPECTED_ROLES)
@@ -170,6 +178,7 @@ def main() -> int:
         "phase19_gate19_5_publication=PASS "
         f"api_version_id={versions['api']} "
         f"worker_version_id={versions['worker']} "
+        "s3_put_object_mutation_count=2 "
         "terraform_plan_input_ready=true "
         "terraform_apply_authorized=false"
     )

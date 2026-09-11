@@ -1,0 +1,43 @@
+{
+  "account_id": "487757851499",
+  "artifact_type": "phase-19-gate-19-5-artifact-publication:v1",
+  "artifacts": [
+    {
+      "artifact_sha256": "99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e",
+      "bucket": "opslens-dev-artifacts-487757851499-us-east-1",
+      "bytes": 17271715,
+      "etag": "\"e0d8390788d2e03fbc3133bfc1b703ae\"",
+      "key": "lambda/public-analysis/api/sha256=99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e/opslens-public-async-api.zip",
+      "lambda_source_code_hash": "mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=",
+      "publication_status": "CREATED",
+      "role": "api",
+      "verified_bytes": 17271715,
+      "verified_sha256": "99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e",
+      "version_id": "E.jfB7dlkGCD.wHAurP7QXo4fuS_PW63"
+    },
+    {
+      "artifact_sha256": "0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9",
+      "bucket": "opslens-dev-artifacts-487757851499-us-east-1",
+      "bytes": 1036437,
+      "etag": "\"ffabdab21880da81e44a943406af5adc\"",
+      "key": "lambda/public-analysis/worker/sha256=0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9/opslens-public-async-worker.zip",
+      "lambda_source_code_hash": "DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck=",
+      "publication_status": "CREATED",
+      "role": "worker",
+      "verified_bytes": 1036437,
+      "verified_sha256": "0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9",
+      "version_id": "sxiOdii4yFwR13t23xP5A8EU1JPV_7P1"
+    }
+  ],
+  "automatic_retry_count": 0,
+  "bucket": "opslens-dev-artifacts-487757851499-us-east-1",
+  "caller_arn": "arn:aws:sts::487757851499:assumed-role/AWSReservedSSO_OpsLensBootstrapAdmin_3f7923e7ec0bf43c/brunovicco",
+  "iam_mutation_count": 0,
+  "public_endpoint_enablement_count": 0,
+  "region": "us-east-1",
+  "runtime_resource_mutation_count": 0,
+  "s3_put_object_mutation_count": 2,
+  "schema_version": 1,
+  "source_head_sha": "94af45036ba33007f45ddb69e9e6c3fa7d31d715",
+  "terraform_apply_count": 0
+}

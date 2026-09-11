@@ -75,9 +75,11 @@ Current protected lineage:
       runtime materialized by default: false
       deployment authorized: NO
 
-19.5  Immutable Async Deployment Artifacts              IN PROGRESS
+19.5  Immutable Async Deployment Artifacts              CLOSEOUT IN REVIEW
       issue #352 / PR #353
-      publication authority: HUMAN_ONLY_CREATE_ONLY
+      publication source head: 94af45036ba33007f45ddb69e9e6c3fa7d31d715
+      S3 PutObject mutations: 2
+      terraform plan input ready: YES
       runtime deployment authorized: NO
 ```
 
@@ -171,40 +173,44 @@ Canonical records:
 - [`../labs/evidence/phase-19-gate-19-4-disabled-async-runtime-v1.json`](../labs/evidence/phase-19-gate-19-4-disabled-async-runtime-v1.json)
 - [`../scripts/verify_phase19_gate19_4_disabled_async_runtime.py`](../scripts/verify_phase19_gate19_4_disabled_async_runtime.py)
 
-### Gate 19.5 — immutable deployment artifacts
+### Gate 19.5 — immutable deployment artifacts — closeout in review
 
-Gate 19.5 is currently preparing deterministic API and worker Lambda deployment packages and the human-only immutable S3 publication evidence required before an exact Terraform plan can exist.
+Gate 19.5 completed deterministic API/worker package production and one human-only create-only publication from exact reviewed head `94af45036ba33007f45ddb69e9e6c3fa7d31d715`.
 
-Frozen pre-publication identities:
+Admitted immutable coordinates:
 
 ```text
-API SHA-256:
-99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e
-API Lambda source_code_hash:
-mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=
+API
+  SHA-256: 99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e
+  source_code_hash: mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=
+  VersionId: E.jfB7dlkGCD.wHAurP7QXo4fuS_PW63
+  publication_status: CREATED
 
-Worker SHA-256:
-0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9
-Worker Lambda source_code_hash:
-DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck=
+Worker
+  SHA-256: 0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9
+  source_code_hash: DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck=
+  VersionId: sxiOdii4yFwR13t23xP5A8EU1JPV_7P1
+  publication_status: CREATED
 ```
 
-Before publication, S3 `VersionId` is explicitly `UNMEASURED / PENDING_HUMAN_PUBLICATION`. The verifier rebuilds each package twice and requires byte-identical artifacts plus byte-identical agreement with the canonical pre-publication manifest.
+The persisted publication evidence records two S3 `PutObject` mutations, zero automatic retries, and zero runtime resource/IAM/Terraform/public-endpoint mutations. The offline verifier admits these exact coordinates and reports `terraform_plan_input_ready=true` and `terraform_apply_authorized=false`.
 
-Canonical Gate 19.5 pre-publication records:
+Canonical Gate 19.5 records:
 
 - [`../labs/evidence/phase-19-gate-19-5-prepublication-v1.json`](../labs/evidence/phase-19-gate-19-5-prepublication-v1.json)
+- [`../labs/evidence/phase-19-gate-19-5-artifact-publication-v1.json`](../labs/evidence/phase-19-gate-19-5-artifact-publication-v1.json)
 - [`../labs/phase-19-gate-19-5-immutable-artifact-publication-runbook.md`](../labs/phase-19-gate-19-5-immutable-artifact-publication-runbook.md)
+- [`../labs/phase-19-gate-19-5-closeout.md`](../labs/phase-19-gate-19-5-closeout.md)
 - [`../scripts/build_phase19_async_lambda_artifacts.py`](../scripts/build_phase19_async_lambda_artifacts.py)
 - [`../scripts/verify_phase19_gate19_5_async_artifact_build.py`](../scripts/verify_phase19_gate19_5_async_artifact_build.py)
 - [`../scripts/publish_phase19_gate19_5_async_artifacts.py`](../scripts/publish_phase19_gate19_5_async_artifacts.py)
 - [`../scripts/verify_phase19_gate19_5_artifact_publication.py`](../scripts/verify_phase19_gate19_5_artifact_publication.py)
 
-The only AWS mutation that Gate 19.5 may later admit is a human-operated create-only publication of exactly two frozen content-addressed ZIP objects to the existing versioned deployment-artifacts bucket. CI and ChatGPT do not execute it. Publication success is object provenance, not deployment authority.
+Protected merge/post-merge verification of PR #353 remains the final Gate 19.5 closeout boundary. Publication success is object provenance, not runtime deployment authority.
 
 ### Next boundary — Gate 19.6 exact Terraform plan
 
-The retained sequence is:
+After Gate 19.5 protected closeout, Gate 19.6 may consume the exact S3 `Key + VersionId + source_code_hash` coordinates above to generate and admit an exact Terraform plan.
 
 ```text
 Gate 19.5  deterministic build + human create-only immutable artifact publication
@@ -212,7 +218,7 @@ Gate 19.6  exact Terraform plan + offline admission/review
 later gate human-authorized Terraform apply / controlled enablement, if admitted
 ```
 
-Gate 19.6 may begin only after admitted publication evidence contains the exact S3 `VersionId` for both artifacts. No current gate authorizes `terraform apply`, public endpoint enablement, runtime worker enablement, or provider-heavy public execution.
+No current gate authorizes `terraform apply`, public endpoint enablement, runtime worker enablement, or provider-heavy public execution.
 
 ## Evidence location rule
 
