@@ -1,6 +1,6 @@
 # Phase 19 Gate 19.2 — Threat Evidence Admission Boundary
 
-_Status: IN PROGRESS_
+_Status: COMPLETE via PR #299_
 
 ## Purpose
 
@@ -84,6 +84,16 @@ file:       uv.lock
 
 These coordinates are pre-live evidence, not proof of repository runtime exposure.
 
+## Completion checkpoint
+
+PR #299 merged the admission boundary after exact-head CI passed. The adapter is now part of the retained Gate 19.2 application surface and issue #298 is complete.
+
+This completion does **not** complete Gate 19.2 itself. The retained runtime decision remains:
+
+```text
+DEFERRED_PENDING_MEASUREMENT
+```
+
 ## Explicit non-goals
 
 This increment does not:
@@ -99,4 +109,4 @@ This increment does not:
 
 ## Next boundary
 
-After exact-head CI passes, the remaining human execution step is to materialize the complete typed GHSA/NVD/KEV/EPSS source objects through retained read-only source/transform contracts, admit them against the cross-source bundle, and then execute exactly one bounded non-public representative GitHub + Bedrock measurement.
+The remaining human execution step is to materialize the complete typed GHSA/NVD/KEV/EPSS source objects through retained read-only source/transform contracts, admit them against the cross-source bundle, and then execute exactly one bounded non-public representative GitHub + Bedrock measurement.

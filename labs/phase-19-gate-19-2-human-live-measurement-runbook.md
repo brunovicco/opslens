@@ -38,17 +38,37 @@ The operator MUST NOT run dependency installation, build, test, package, hook, w
 
 ## Frozen representative input
 
+The previous Requests anchor was rejected during read-only pre-live discovery because its GHSA advisory was not materialized in the current analytical GHSA state. Gate 19.2 therefore freezes the following reproducible input instead:
+
 ```text
-repository:      whotracksme/whotracks.me
-commit/ref:      468f6e211a307f5f20d1d95c478ddd89efdb9b6b
+repository:      openedx/mockprock
+commit/ref:      18c954d8604df4740c829ba17fa2f3640b92b900
 evidence file:  uv.lock
-dependency:     requests==2.31.0
-GHSA anchor:    GHSA-9wx4-h78v-vm56
-CVE anchor:     CVE-2024-35195
-patched from:   2.32.0
+dependency:     webob==1.8.10
+GHSA anchor:    GHSA-6hx8-3wjj-gr8g
+CVE anchor:     CVE-2026-54770
+affected range: < 1.8.11
+patched from:   1.8.11
 ```
 
-The frozen identifiers exist only to make the measurement reproducible. The operator must materialize the actual GHSA/NVD/KEV/EPSS evidence through retained OpsLens evidence contracts. Do not hand-author a positive vulnerability result for the live artifact.
+Read-only cross-source discovery established the following pre-live source facts for that exact CVE:
+
+```text
+GHSA advisory versions: 1
+GHSA package entries:    1
+NVD present:             yes
+NVD observations:        1
+KEV snapshot:            2026-09-10
+KEV membership:          absent in the selected complete snapshot
+EPSS snapshot:           2026-09-10
+EPSS score:              0.00339
+EPSS percentile:         0.26988
+source overlap:          GHSA + NVD + EPSS = 3
+```
+
+The cross-source builder validated `selection_expectations_match=true`. These facts are pre-live evidence coordinates, not proof of repository runtime exposure. In particular, KEV absence means only **not present in the selected KEV snapshot**; it is not a zero-risk assertion.
+
+The immutable `uv.lock` evidence is read only. Do not clone and execute the target repository, install its dependencies, run its tests, or interpret dependency presence as runtime reachability.
 
 ## Existing AWS boundary
 
@@ -65,10 +85,11 @@ Use the already-approved Bedrock synthesis model/inference profile configured by
 
 ## Pre-flight verification
 
-Start from the exact Gate 19.2 PR head that has passed all required CI checks.
+Start from protected `main` containing the merged Gate 19.2 measurement implementation and threat-evidence admission boundary.
 
 ```bash
-git switch feat/phase19-gate19-2-representative-workload-measurement
+git switch main
+git fetch origin
 git pull --ff-only
 
 git status --short
@@ -115,11 +136,17 @@ KevCatalogSnapshot
 EpssSnapshot | HistoricalEpssSnapshot
 ```
 
+Then pass the untrusted `CrossSourceCveEvidenceV1` projection plus those complete typed inputs through `admit_representative_threat_evidence`.
+
 Requirements:
 
 - evidence must come through retained source/transform contracts;
-- the GHSA occurrence must bind the affected `requests` dependency to the frozen advisory anchor;
-- NVD, KEV, and EPSS joins must use retained deterministic enrichment rules;
+- the GHSA occurrence must bind `webob` to `GHSA-6hx8-3wjj-gr8g` / `CVE-2026-54770`;
+- the analytical vulnerable range must remain `< 1.8.11` with `range_evaluation_performed=false`;
+- installed-version applicability remains owned by the retained correlation layer;
+- NVD authority must preserve the exact `ObservedCveVersion` identity rather than reconstructing it from a partial analytical row;
+- KEV absence must be revalidated against one complete immutable KEV snapshot;
+- EPSS score evidence must be revalidated against one complete current or historical EPSS snapshot;
 - unavailable evidence remains unavailable/unsupported according to the retained contracts;
 - do not convert a missing source into a fabricated zero or negative finding.
 
@@ -184,7 +211,7 @@ athena_query_count:   NOT_APPLICABLE
 athena_bytes_scanned: NOT_APPLICABLE
 ```
 
-Do not report those as `MEASURED=0`.
+Do not report those as `MEASURED=0`. The read-only Athena queries used earlier to discover and materialize the pre-admitted threat bundle are preparation evidence; they are not request-time structured-evidence queries in this representative workload.
 
 `throttle_count` remains `UNMEASURED` unless the concrete live adapter instrumentation used by the entire provider path can prove the observation. Do not infer throttling from elapsed time, retry count, or provider success.
 
