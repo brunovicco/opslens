@@ -107,13 +107,13 @@ def _string(value: object, *, field: str) -> str:
 def _integer(value: object, *, field: str) -> int:
     if type(value) is not int:
         raise RepresentativeThreatEvidenceCoordinateError(f"{field} must be an integer")
-    return cast(int, value)
+    return value
 
 
 def _boolean(value: object, *, field: str) -> bool:
     if type(value) is not bool:
         raise RepresentativeThreatEvidenceCoordinateError(f"{field} must be a boolean")
-    return cast(bool, value)
+    return value
 
 
 def _snapshot_date(value: object, *, field: str) -> str:
