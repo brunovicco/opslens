@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import suppress
 from pathlib import Path
 
 
@@ -45,10 +46,8 @@ def write_new_representative_live_artifact(path: Path, payload: bytes) -> None:
                 "artifact appeared concurrently; refusing to overwrite evidence"
             ) from exc
     finally:
-        try:
+        with suppress(FileNotFoundError):
             temporary.unlink()
-        except FileNotFoundError:
-            pass
 
 
 __all__ = [
