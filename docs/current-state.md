@@ -84,6 +84,8 @@ with historical leading hypothesis:
 ASYNC_SUBMIT_STATUS_RESULT
 ```
 
+Its retained application boundary ended at `PublicAnalysisAdmissionHandoff -> STOP`; later gates extend implementation beyond that historical handoff without rewriting Gate 19.1 evidence.
+
 Gate 19.2 later supplied the missing representative evidence. Historical artifacts retain the state they recorded when created; later gates do not rewrite them.
 
 Gate 19.2 was protected-merged through PR #347 at `71eda2650889d3047259d37be226862ed2a09092`. The canonical human-operated representative run recorded:
