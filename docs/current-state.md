@@ -1,12 +1,12 @@
 # OpsLens — Current State
 
-_Last updated: 2026-09-10_
+_Last updated: 2026-09-11_
 
 ## Authoritative checkpoint
 
 ```text
 protected main:
-ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1
+765ecf528f0b7e8dcabb31b40416061ba719dd58
 
 Phase 18 — Evaluation, Cost & Portfolio Readiness
 status: COMPLETE
@@ -20,12 +20,14 @@ runtime decision: DEFERRED_PENDING_MEASUREMENT
 leading hypothesis: ASYNC_SUBMIT_STATUS_RESULT
 
 Gate 19.2 — Representative Workload Measurement              IN PROGRESS
-issue: #295
-draft PR: #297
-branch: feat/phase19-gate19-2-representative-workload-measurement
+latest completed issue: #338
+latest merged PR: #339
+exact final PR head: a64995bed02aeadb0b8b1ed1cf4ae85975e552f5
+protected main merge: 765ecf528f0b7e8dcabb31b40416061ba719dd58
+active boundary: HUMAN LIVE MEASUREMENT
 ```
 
-Phases 0–18 remain complete. Gate 19.1 is complete and merged. Gate 19.2 is the active engineering boundary. PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work and is not a Phase 19 dependency.
+Phases 0–18 remain complete. Gate 19.1 is complete and merged. Gate 19.2 remains the active engineering boundary, but its pre-live implementation is now merged far enough for the next step to be one explicit human-executed representative live measurement. PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work and is not a Phase 19 dependency.
 
 ## Retained Phase 17 security lineage
 
@@ -37,7 +39,7 @@ Phase 18 was protected-squash-merged through PR #290 at `feca774535b7d83f57c26f4
 
 Gate 19.1 was then protected-squash-merged through PR #292 at `ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1`. Its exact final PR head `484e2b85fc1996b2419b4057c2cf585ab1f675a1` passed the retained exact-head validation chain before merge.
 
-Historical artifacts retain the state they recorded when created. Current-facing documentation is synchronized separately; historical Phase 18/Gate 19.1 evidence is not rewritten to look post-merge.
+Historical artifacts retain the state they recorded when created. Current-facing documentation is synchronized separately; historical Phase 18/Gate 19.1 evidence and earlier Gate 19.2 measurement-contract evidence are not rewritten to look post-merge.
 
 ## Retained platform architecture
 
@@ -83,7 +85,7 @@ untrusted JSON
 
 `execute_instrumented_public_analysis` emits bounded operational evidence for that retained protected-main path and still returns the handoff. There is no protected public HTTP endpoint, public application compute, or public result store.
 
-Gate 19.2 composes a **non-public representative execution** downstream of the retained handoff solely to measure the workload before runtime selection. That composition is not yet public runtime authority.
+Gate 19.2 composes a **non-public representative execution** downstream of the retained handoff solely to measure the workload before runtime selection. That composition is not public runtime authority.
 
 ## Gate 19.1 retained launch contract
 
@@ -97,9 +99,7 @@ Frozen workload identity:
 public-analysis-workload:v1
 ```
 
-The workload keeps public GitHub only, one repository/request, a 2,048-byte request body limit, a 256-character repository URL limit, immutable resolved commit identity, inert `uv.lock` as the only current repository file read, a 5,000 dependency-record bound, and third-party code execution forbidden.
-
-The retained runtime decision is:
+The retained runtime decision remains:
 
 ```text
 DEFERRED_PENDING_MEASUREMENT
@@ -113,9 +113,9 @@ ASYNC_SUBMIT_STATUS_RESULT
 
 That hypothesis is not runtime authority. A concrete topology must follow representative whole-workload evidence.
 
-## Gate 19.2 active implementation
+## Gate 19.2 merged pre-live surface
 
-Gate 19.2 now has the complete nine-stage non-public representative composition implemented under draft PR #297:
+Gate 19.2 has the complete nine-stage non-public representative composition:
 
 ```text
 public_request_admission
@@ -131,7 +131,72 @@ result_admission
 
 The composition reuses retained OpsLens authority rather than copying business truth. Repository applicability continues through the retained GHSA/NVD/KEV/EPSS chain; risk continues through Risk Policy v1; structured evidence is projected deterministically; semantic remediation evidence uses the retained bounded Knowledge Base Retrieve path; model reasoning uses the retained bounded hybrid synthesis path; and final result admission remains deterministic.
 
-The measurement contract records:
+PR #339 completed the human-run-only live composition root/CLI. It composes measured GitHub transport, preloaded admitted threat evidence, direct bounded Bedrock Retrieve, bounded hybrid Bedrock synthesis, a real monotonic clock, one exact representative workload invocation, byte-exact live-artifact admission, and atomic create-without-replace persistence. Construction remains inert with respect to provider I/O.
+
+The human entrypoint is:
+
+```text
+scripts/run_phase19_gate19_2_live_measurement.py
+```
+
+The checked implementation lives under:
+
+```text
+src/opslens/public_analysis/cli/run_live_measurement.py
+```
+
+The operator runbook is:
+
+```text
+labs/phase-19-gate-19-2-human-live-measurement-runbook.md
+```
+
+## Current representative anchor
+
+The earlier Requests candidate was superseded during read-only pre-live threat-evidence preparation because its advisory was not materialized in the current analytical GHSA state. The admitted current representative anchor is:
+
+```text
+repository:      openedx/mockprock
+repository URL:  https://github.com/openedx/mockprock
+commit/ref:      18c954d8604df4740c829ba17fa2f3640b92b900
+evidence file:  uv.lock
+dependency:     webob==1.8.10
+GHSA anchor:    GHSA-6hx8-3wjj-gr8g
+CVE anchor:     CVE-2026-54770
+affected range: < 1.8.11
+patched from:   1.8.11
+```
+
+Frozen threat coordinates:
+
+```text
+NVD observations: 1
+KEV snapshot:     2026-09-10
+KEV membership:   absent in that complete snapshot
+EPSS snapshot:    2026-09-10
+EPSS score:       0.00339
+EPSS percentile:  0.26988
+```
+
+These coordinates establish reproducibility, not repository runtime exposure.
+
+## Retained live provider coordinates
+
+The human driver reuses only existing resources:
+
+```text
+region:             us-east-1
+knowledge base id:  BTVJ2PBR2A
+data source id:     IEL1LBE026
+source/data bucket: opslens-dev-data-487757851499-us-east-1
+synthesis model:    us.anthropic.claude-haiku-4-5-20251001-v1:0
+```
+
+No new Knowledge Base, vector index, model deployment, IAM role/policy, endpoint, bucket, data source, queue, or result store is authorized by Gate 19.2.
+
+## Measurement contract
+
+The representative measurement records:
 
 ```text
 end-to-end duration
@@ -149,69 +214,11 @@ throttle count
 serialized admitted-result bytes
 ```
 
-Measurement authority is explicit per metric. Numeric zero does not prove observation. For the current direct structured-evidence path, Athena query count and bytes scanned are `NOT_APPLICABLE`; they are not represented as measured zero. `throttle_count` remains `UNMEASURED` unless the complete concrete live provider path can prove it.
+Measurement authority is explicit per metric. Numeric zero does not prove observation. For the current direct structured-evidence path, Athena query count and bytes scanned are `NOT_APPLICABLE`; they are not represented as measured zero. `throttle_count` remains `UNMEASURED` unless explicit provider throttle evidence is introduced.
 
-Provider latency is retained from provider invocation evidence rather than derived from stage duration:
+Provider latency remains sourced from retained invocation evidence rather than inferred from stage duration.
 
-```text
-Bedrock Retrieve:
-  BedrockRetrieveInvocationEvidence.client_elapsed_ms
-
-Bedrock model:
-  BedrockHybridSynthesisInvocationEvidence.client_elapsed_ms
-  BedrockHybridSynthesisInvocationEvidence.bedrock_latency_ms
-```
-
-Current implementation surface includes:
-
-```text
-measurement domain contract:
-  src/opslens/public_analysis/domain/representative_measurement.py
-
-measurement harness:
-  src/opslens/public_analysis/application/representative_measurement.py
-
-complete nine-stage runner:
-  src/opslens/public_analysis/application/representative_workload_execution.py
-
-repository analysis composition:
-  src/opslens/public_analysis/application/representative_repository_analysis.py
-
-structured evidence:
-  src/opslens/public_analysis/application/representative_structured_evidence.py
-
-semantic evidence:
-  src/opslens/public_analysis/application/representative_semantic_evidence.py
-
-hybrid evidence:
-  src/opslens/public_analysis/application/representative_hybrid_evidence.py
-
-model reasoning:
-  src/opslens/public_analysis/application/representative_model_reasoning.py
-
-result admission:
-  src/opslens/public_analysis/domain/representative_result.py
-
-GitHub physical transport measurement:
-  src/opslens/public_analysis/adapters/github_measurement.py
-
-human live-measurement runbook:
-  labs/phase-19-gate-19-2-human-live-measurement-runbook.md
-```
-
-The representative input is frozen for reproducibility at:
-
-```text
-repository:      whotracksme/whotracks.me
-commit/ref:      468f6e211a307f5f20d1d95c478ddd89efdb9b6b
-evidence file:  uv.lock
-dependency:     requests==2.31.0
-GHSA anchor:    GHSA-9wx4-h78v-vm56
-CVE anchor:     CVE-2024-35195
-patched from:   2.32.0
-```
-
-These identifiers do not grant vulnerability authority by themselves. Before the live representative run, the exact typed `RepresentativeRepositoryThreatEvidence` bundle must be materialized from retained authoritative evidence contracts. Missing source evidence must remain unavailable/unsupported rather than being fabricated.
+The historical design artifact `labs/evidence/phase-19-gate-19-2-measurement-contract-v1.json` intentionally preserves the earlier pre-live slice, including its then-frozen Requests anchor. It is historical evidence, not the current representative-coordinate authority. The current anchor and operator procedure are carried by the later threat-admission/preload records and the human live-measurement runbook.
 
 ## Gate 19.2 authority boundary
 
@@ -225,22 +232,25 @@ PR #89 modifications:  0
 
 No API Gateway, Function URL, queue, result store, worker fleet, WAF, ECS/Fargate, AgentCore public runtime, or broad runtime role is authorized by the current gate.
 
-## Current validation state
+## Validation state
 
-The composed workload has deterministic offline coverage for the complete stage order, repository/risk authority chain, semantic evidence, hybrid evidence, model reasoning, final result serialization, provider accounting, measurement classification, malformed measurement rejection, GitHub physical-call counting, and rate-limit observation.
+PR #339 merged from exact head `a64995bed02aeadb0b8b1ed1cf4ae85975e552f5` into protected `main` as `765ecf528f0b7e8dcabb31b40416061ba719dd58`. The merged increment includes offline coverage for inert live composition, one-shot execution/admission, failure propagation, atomic no-overwrite artifact persistence, lint/type checks, and the retained public-analysis verification chain.
 
-An exact-head CI checkpoint at `bbe678c2702e0e1f69dc56f461025e19cde5689f` passed all eight retained workflows before the human runbook/current-state synchronization commits. The current PR head must independently pass the same validation chain before it becomes the next exact validated checkpoint.
+No live GitHub/AWS/Bedrock representative workload was executed by CI or ChatGPT as part of that merge.
 
 ## Next checkpoint — human execution boundary
 
-Pre-live composition is complete enough to stop autonomous execution at the intended authority boundary.
+Autonomous repository implementation stops at the intended authority boundary. The next meaningful step is **not** public deployment and is not another synthetic benchmark.
 
-The next meaningful step is **not** public deployment. It is to:
+The operator should now:
 
-1. materialize the exact GHSA/NVD/KEV/EPSS threat-evidence bundle through retained authoritative source/transform contracts;
-2. human-execute exactly one non-public representative workload with the retained GitHub and Bedrock adapters;
-3. capture the live measurement as immutable evidence under `labs/evidence/`;
-4. validate measurement classifications without coercing `UNMEASURED` or `NOT_APPLICABLE` into zero;
-5. evaluate `SYNC`, `ASYNC`, or retain `DEFERRED_PENDING_MEASUREMENT` only from the measured evidence.
+1. check out and verify the exact reviewed protected-main commit intended for the evidence artifact;
+2. run the runbook pre-flight checks locally;
+3. confirm the intended existing AWS identity without changing IAM;
+4. materialize the exact typed GHSA/NVD/KEV/EPSS authority through the retained read-only path before measurement;
+5. human-execute exactly one non-public representative workload with the retained GitHub and Bedrock adapters;
+6. preserve the admitted artifact at `labs/evidence/phase-19-gate-19-2-live-measurement-v1.json`;
+7. review measurement classifications without coercing `UNMEASURED` or `NOT_APPLICABLE` into zero;
+8. only then evaluate `SYNC`, `ASYNC`, or retain `DEFERRED_PENDING_MEASUREMENT` from the measured evidence.
 
-Live AWS/model execution remains explicitly human-executed. No AWS/IAM/public runtime mutation is authorized by this step.
+Live AWS/model execution remains explicitly human-executed. Missing permission or provenance is a stop condition, not authority to expand IAM or fall back to another provider/input.

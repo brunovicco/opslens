@@ -1,6 +1,6 @@
 # OpsLens — Incremental Roadmap
 
-_Last updated: 2026-09-10_
+_Last updated: 2026-09-11_
 
 The roadmap is evidence-gated. A later phase does not invalidate earlier authority boundaries, and certification topics do not automatically become product requirements.
 
@@ -36,6 +36,8 @@ Phase 19  Bounded Public Runtime & Productization             IN PROGRESS
 Phase 18 was protected-squash-merged through PR #290 at `feca774535b7d83f57c26f4e9fe7da71ce268f0f`. Its historical pre-merge closeout artifacts remain immutable evidence.
 
 Gate 19.1 was protected-squash-merged through PR #292 at `ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1` after exact-head validation at `484e2b85fc1996b2419b4057c2cf585ab1f675a1`.
+
+The latest Gate 19.2 human-live CLI increment was merged through PR #339 from exact head `a64995bed02aeadb0b8b1ed1cf4ae85975e552f5`, producing protected-main commit `765ecf528f0b7e8dcabb31b40416061ba719dd58`.
 
 PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work. Phase 19 does not rebase, merge, modify, or depend on it.
 
@@ -73,7 +75,7 @@ configured limit != measured utilization
 
 ### Gate 19.1 — Public Runtime Hypothesis & Launch Contract — COMPLETE
 
-Gate 19.1 froze the first representative public workload, identified the actual composition gaps, and defined the experiment required before runtime topology selection.
+Gate 19.1 froze the first representative public workload, identified the composition gaps, and defined the experiment required before runtime topology selection.
 
 Retained workload identity:
 
@@ -99,13 +101,11 @@ Completed Gate 19.1 outputs include the `PublicAnalysisAdmissionHandoff` pipelin
 
 ### Gate 19.2 — Representative Workload Measurement — IN PROGRESS
 
-Issue: #295. Draft implementation PR: #297.
-
 Purpose: close the measurements that Gate 19.1 correctly classifies as `UNMEASURED` before selecting a public runtime.
 
-#### Pre-live implementation — COMPLETE
+#### Pre-live implementation — COMPLETE ENOUGH FOR HUMAN EXECUTION
 
-The non-public representative execution is now composed through the exact nine-stage workload:
+The non-public representative execution is composed through the exact nine-stage workload:
 
 ```text
 public request admission
@@ -136,7 +136,7 @@ repository evidence
  -> deterministic final result admission
 ```
 
-The measurement surface now includes:
+The measurement surface includes:
 
 ```text
 end-to-end duration
@@ -162,21 +162,63 @@ athena_query_count:   NOT_APPLICABLE
 athena_bytes_scanned: NOT_APPLICABLE
 ```
 
-`throttle_count` remains `UNMEASURED` until a concrete complete provider path proves it. Missing instrumentation must never become measured zero.
+`throttle_count` remains `UNMEASURED` unless explicit provider throttle evidence is introduced. Missing instrumentation must never become measured zero.
 
-The frozen pre-live representative input is:
+#### Representative input — CURRENT
+
+The earlier Requests candidate was superseded during read-only pre-live evidence preparation. The current admitted representative anchor is:
 
 ```text
-repository:      whotracksme/whotracks.me
-commit/ref:      468f6e211a307f5f20d1d95c478ddd89efdb9b6b
+repository:      openedx/mockprock
+repository URL:  https://github.com/openedx/mockprock
+commit/ref:      18c954d8604df4740c829ba17fa2f3640b92b900
 evidence file:  uv.lock
-dependency:     requests==2.31.0
-GHSA anchor:    GHSA-9wx4-h78v-vm56
-CVE anchor:     CVE-2024-35195
-patched from:   2.32.0
+dependency:     webob==1.8.10
+GHSA anchor:    GHSA-6hx8-3wjj-gr8g
+CVE anchor:     CVE-2026-54770
+affected range: < 1.8.11
+patched from:   1.8.11
 ```
 
-This identity freezes reproducibility only. The live threat-evidence bundle must still be materialized through retained authoritative source/transform contracts; the anchor itself is not sufficient authority to manufacture a positive finding.
+Frozen threat coordinates:
+
+```text
+NVD observations: 1
+KEV snapshot:     2026-09-10
+KEV membership:   absent in that complete snapshot
+EPSS snapshot:    2026-09-10
+EPSS score:       0.00339
+EPSS percentile:  0.26988
+```
+
+This identity freezes reproducibility only. It does not prove repository runtime exposure.
+
+The historical machine-readable Gate 19.2 measurement-contract artifact intentionally preserves the earlier pre-live slice and its then-frozen Requests anchor. Do not rewrite historical evidence to manufacture post-hoc authority; the current representative coordinates are carried by later threat-admission/preload records and the human live-measurement runbook.
+
+#### Human-run CLI — MERGED
+
+Issue #338 / PR #339 added the fail-closed human-run-only live composition root and artifact path. The driver:
+
+- validates frozen repository/model coordinates before provider execution;
+- materializes exact threat authority before measured request-time stages;
+- composes measured GitHub transport, direct bounded Bedrock Retrieve, bounded hybrid synthesis, and a monotonic measurement clock;
+- invokes the representative workload exactly once;
+- builds the live artifact only from admitted execution evidence and explicit run metadata;
+- performs byte-exact artifact admission;
+- publishes the artifact atomically without overwriting an existing file;
+- creates no public endpoint, AWS resource, or IAM authority.
+
+Human entrypoint:
+
+```text
+scripts/run_phase19_gate19_2_live_measurement.py
+```
+
+Operator runbook:
+
+```text
+labs/phase-19-gate-19-2-human-live-measurement-runbook.md
+```
 
 Current Gate 19.2 authority boundary:
 
@@ -190,29 +232,25 @@ PR #89 modifications:  0
 
 #### Gate 19.2 current boundary — HUMAN LIVE MEASUREMENT
 
-The next step is the first point at which live AWS/model execution is required. Autonomous repository implementation should stop at this boundary rather than silently invoke paid/runtime services.
-
-The human operator runbook is:
-
-```text
-labs/phase-19-gate-19-2-human-live-measurement-runbook.md
-```
+Autonomous repository implementation stops here. The next step is the first point at which live GitHub/AWS/Bedrock execution is intentionally required, and that execution belongs to the human operator.
 
 Required remaining sequence:
 
-1. Ensure the exact PR head is green across the retained validation chain.
-2. Materialize the exact typed GHSA/NVD/KEV/EPSS threat-evidence bundle from retained authoritative evidence contracts.
-3. Human-execute exactly one non-public representative workload using the retained GitHub + Bedrock adapters and existing operator authority.
-4. Capture an immutable live measurement artifact under `labs/evidence/`.
-5. Preserve explicit `MEASURED`, `NOT_APPLICABLE`, and `UNMEASURED` semantics for every provider dimension.
-6. Evaluate exactly one runtime decision: `SYNC`, `ASYNC`, or `DEFERRED_PENDING_MEASUREMENT`.
+1. Check out and verify the exact reviewed protected-main commit intended for the artifact.
+2. Run the runbook pre-flight checks locally.
+3. Confirm the intended existing AWS identity; missing permission is a stop condition, not authority to expand IAM.
+4. Materialize the exact typed GHSA/NVD/KEV/EPSS authority through the retained read-only path before measurement.
+5. Human-execute exactly one non-public representative workload using the retained GitHub + Bedrock adapters.
+6. Capture `labs/evidence/phase-19-gate-19-2-live-measurement-v1.json` without overwriting prior evidence.
+7. Preserve explicit `MEASURED`, `NOT_APPLICABLE`, and `UNMEASURED` semantics for every provider dimension.
+8. Evaluate exactly one runtime decision: `SYNC`, `ASYNC`, or `DEFERRED_PENDING_MEASUREMENT`.
 
 Decision rule:
 
 ```text
 SYNC
   only if the complete bounded workload comfortably fits the selected
-  synchronous ingress envelope under representative upper-bound/p95 tests
+  synchronous ingress envelope under representative measured evidence
 
 ASYNC
   if latency variability, backpressure, failure isolation, retry safety,
