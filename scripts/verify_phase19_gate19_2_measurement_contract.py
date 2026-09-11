@@ -111,37 +111,38 @@ _REQUIRED_INVARIANTS = {
 _REQUIRED_CURRENT_DOC_MARKERS = {
     "README.md": (
         "19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE",
-        "original runtime decision: DEFERRED_PENDING_MEASUREMENT",
-        "19.2  Representative Workload Measurement              CLOSEOUT IN REVIEW",
-        "selected interaction pattern: ASYNC_SUBMIT_STATUS_RESULT",
-        "concrete AWS topology selected: NO",
+        "historical decision: DEFERRED_PENDING_MEASUREMENT",
+        "19.2  Representative Workload Measurement              COMPLETE",
+        "19.3  Concrete Async Topology Contract                  IN PROGRESS",
+        "selected design topology: HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB",
     ),
     "README.pt-br.md": (
         "19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE",
-        "decisão original: DEFERRED_PENDING_MEASUREMENT",
-        "19.2  Representative Workload Measurement              CLOSEOUT IN REVIEW",
-        "padrão de interação selecionado: ASYNC_SUBMIT_STATUS_RESULT",
-        "topologia AWS concreta selecionada: NÃO",
+        "decisão histórica: DEFERRED_PENDING_MEASUREMENT",
+        "19.2  Representative Workload Measurement              COMPLETE",
+        "19.3  Concrete Async Topology Contract                  IN PROGRESS",
+        "topologia de design selecionada: HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB",
     ),
     "docs/current-state.md": (
         "Gate 19.1",
         "DEFERRED_PENDING_MEASUREMENT",
-        "Gate 19.2 — Representative Workload Measurement              CLOSEOUT IN REVIEW",
-        "selected interaction pattern: ASYNC_SUBMIT_STATUS_RESULT",
-        "concrete AWS topology selected: NO",
+        "Gate 19.2 — Representative Workload Measurement              COMPLETE",
+        "Gate 19.3 — Concrete Async Topology Contract                 IN PROGRESS",
+        "selected design topology: HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB",
     ),
     "docs/roadmap.md": (
         "Gate 19.1",
         "DEFERRED_PENDING_MEASUREMENT",
-        "Gate 19.2 — Representative Workload Measurement — CLOSEOUT IN REVIEW",
-        "Selected interaction pattern:",
-        "ASYNC_SUBMIT_STATUS_RESULT",
+        "Gate 19.2 — Representative Workload Measurement — COMPLETE",
+        "Gate 19.3 — Concrete Async Topology Contract — IN PROGRESS",
+        "HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB",
     ),
     "docs/README.md": (
         "Gate 19.1 — complete",
         "runtime decision: DEFERRED_PENDING_MEASUREMENT",
-        "Gate 19.2 — closeout in review",
-        "ASYNC_SUBMIT_STATUS_RESULT",
+        "Gate 19.2 — complete",
+        "Gate 19.3 — in progress",
+        "HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB",
     ),
 }
 
@@ -197,6 +198,18 @@ def _verify_identity(root: dict[str, object]) -> None:
     for key, expected_value in expected.items():
         if root.get(key) != expected_value:
             raise SystemExit(f"Gate 19.2 identity drifted at {key}")
+
+    classifications = set(
+        _strings(root.get("classification_vocabulary"), label="classification_vocabulary")
+    )
+    if classifications != {
+        "MEASURED",
+        "DERIVED",
+        "UNMEASURED",
+        "NOT_APPLICABLE",
+        "CONFIGURED_LIMIT",
+    }:
+        raise SystemExit("Gate 19.2 classification vocabulary drifted")
 
 
 def _verify_stage_and_measurement_contract(root: dict[str, object]) -> None:
@@ -305,12 +318,14 @@ def _verify_gate19_1_history(repo_root: Path) -> None:
 
 
 def _verify_docs(repo_root: Path) -> None:
-    """Require current docs to preserve Gate 19.1 history and expose Gate 19.2 closeout."""
+    """Preserve Gate 19.1/19.2 history while admitting current Gate 19.3 docs."""
     for path_text, markers in _REQUIRED_CURRENT_DOC_MARKERS.items():
         text = (repo_root / path_text).read_text(encoding="utf-8")
         for marker in markers:
             if marker not in text:
-                raise SystemExit(f"{path_text} is missing Gate 19.2 marker {marker!r}")
+                raise SystemExit(
+                    f"{path_text} is missing retained/current Phase 19 marker {marker!r}"
+                )
 
 
 def main() -> int:
