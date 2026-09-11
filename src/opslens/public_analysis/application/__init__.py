@@ -29,6 +29,10 @@ from opslens.public_analysis.application.representative_model_reasoning import (
     RepresentativeModelReasoning,
     execute_representative_model_reasoning,
 )
+from opslens.public_analysis.application.representative_preloaded_threat_evidence import (
+    PreloadedRepresentativeThreatEvidenceLoader,
+    RepresentativePreloadedThreatEvidenceError,
+)
 from opslens.public_analysis.application.representative_repository_analysis import (
     RepresentativeRepositoryAnalysis,
     RepresentativeRepositoryThreatEvidence,
@@ -53,6 +57,17 @@ from opslens.public_analysis.application.representative_threat_authority_locator
     RepresentativeThreatAuthorityLocatorManifestV1,
     S3ImmutableObjectLocator,
     admit_representative_threat_authority_locator_manifest,
+)
+from opslens.public_analysis.application.representative_threat_authority_sources import (
+    ExactEpssAuthorityReader,
+    ExactGhsaAuthorityReader,
+    ExactKevAuthorityReader,
+    ExactNvdAuthorityReader,
+    LocatorBoundRepresentativeEpssAuthoritySource,
+    LocatorBoundRepresentativeGhsaAuthoritySource,
+    LocatorBoundRepresentativeKevAuthoritySource,
+    LocatorBoundRepresentativeNvdAuthoritySource,
+    RepresentativeThreatAuthoritySourceError,
 )
 from opslens.public_analysis.application.representative_threat_evidence_admission import (
     RepresentativeThreatEvidenceAdmissionError,
@@ -136,9 +151,18 @@ __all__ = [
     "BundleBoundRepresentativeGhsaAuthorityLoader",
     "BundleBoundRepresentativeKevAuthorityLoader",
     "BundleBoundRepresentativeNvdAuthorityLoader",
+    "ExactEpssAuthorityReader",
+    "ExactGhsaAuthorityReader",
+    "ExactKevAuthorityReader",
+    "ExactNvdAuthorityReader",
+    "LocatorBoundRepresentativeEpssAuthoritySource",
+    "LocatorBoundRepresentativeGhsaAuthoritySource",
+    "LocatorBoundRepresentativeKevAuthoritySource",
+    "LocatorBoundRepresentativeNvdAuthoritySource",
     "MeasurementClock",
     "MonotonicClock",
     "OperationalEventSink",
+    "PreloadedRepresentativeThreatEvidenceLoader",
     "ProviderUsageSnapshot",
     "PublicAnalysisInstrumentationError",
     "PublicAnalysisInstrumentationFailure",
@@ -172,6 +196,7 @@ __all__ = [
     "RepresentativeNvdAuthorityLoader",
     "RepresentativeNvdAuthorityLocator",
     "RepresentativeNvdAuthoritySource",
+    "RepresentativePreloadedThreatEvidenceError",
     "RepresentativePublicWorkloadExecution",
     "RepresentativePublicWorkloadExecutors",
     "RepresentativeRepositoryAnalysis",
@@ -182,6 +207,7 @@ __all__ = [
     "RepresentativeStageAction",
     "RepresentativeThreatAuthorityLocatorError",
     "RepresentativeThreatAuthorityLocatorManifestV1",
+    "RepresentativeThreatAuthoritySourceError",
     "RepresentativeThreatEvidenceAdmissionError",
     "RepresentativeThreatEvidenceAuthority",
     "RepresentativeThreatEvidenceAuthorityLoaders",
