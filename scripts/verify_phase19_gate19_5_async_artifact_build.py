@@ -16,6 +16,9 @@ from zipfile import ZipFile
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _BUILDER = _REPO_ROOT / "scripts" / "build_phase19_async_lambda_artifacts.py"
 _MANIFEST_NAME = "phase-19-gate-19-5-prepublication-manifest.json"
+_CANONICAL_MANIFEST = (
+    _REPO_ROOT / "labs" / "evidence" / "phase-19-gate-19-5-prepublication-v1.json"
+)
 _EXPECTED_SOURCE_MAIN = "a5067e05fda74aad4d95d7f1a875110fb676304a"
 _EXPECTED_BUCKET = "opslens-dev-artifacts-487757851499-us-east-1"
 _EXPECTED_ROLES = {"api", "worker"}
@@ -41,12 +44,23 @@ def _objects(value: object, *, label: str) -> list[dict[str, object]]:
     return [_object(item, label=f"{label}[]") for item in cast(list[object], value)]
 
 
+def _manifest_path(root: Path) -> Path:
+    return root / "dist" / _MANIFEST_NAME
+
+
 def _load_manifest(root: Path) -> dict[str, object]:
-    path = root / "dist" / _MANIFEST_NAME
+    path = _manifest_path(root)
     if not path.is_file():
         raise Gate19_5ArtifactBuildError(f"builder did not create {path}")
     raw: object = json.loads(path.read_text(encoding="utf-8"))
     return _object(raw, label="prepublication manifest")
+
+
+def _load_canonical_manifest() -> dict[str, object]:
+    if not _CANONICAL_MANIFEST.is_file():
+        raise Gate19_5ArtifactBuildError("canonical prepublication manifest is missing")
+    raw: object = json.loads(_CANONICAL_MANIFEST.read_text(encoding="utf-8"))
+    return _object(raw, label="canonical prepublication manifest")
 
 
 def _run_build(root: Path) -> tuple[dict[str, object], str]:
@@ -98,6 +112,25 @@ def _verify_manifest_identity(manifest: dict[str, object]) -> None:
     for key, value in expected.items():
         if manifest.get(key) != value:
             raise Gate19_5ArtifactBuildError(f"prepublication manifest identity drifted: {key}")
+
+
+def _verify_canonical_manifest(
+    first_root: Path,
+    second_root: Path,
+    first_manifest: dict[str, object],
+) -> None:
+    canonical = _load_canonical_manifest()
+    _verify_manifest_identity(canonical)
+    if first_manifest != canonical:
+        raise Gate19_5ArtifactBuildError(
+            "deterministic rebuild does not match the frozen prepublication manifest"
+        )
+    canonical_bytes = _CANONICAL_MANIFEST.read_bytes()
+    for root in (first_root, second_root):
+        if _manifest_path(root).read_bytes() != canonical_bytes:
+            raise Gate19_5ArtifactBuildError(
+                "generated prepublication manifest is not byte-identical to canonical evidence"
+            )
 
 
 def _zip_names(path: Path) -> tuple[str, ...]:
@@ -247,6 +280,7 @@ def main() -> int:
         _verify_manifest_identity(second_manifest)
         if first_manifest != second_manifest:
             raise Gate19_5ArtifactBuildError("prepublication manifests differ across rebuilds")
+        _verify_canonical_manifest(first_root, second_root, first_manifest)
 
         first = _artifact_map(first_manifest)
         second = _artifact_map(second_manifest)
@@ -281,6 +315,7 @@ def main() -> int:
 
     print(
         "phase19_gate19_5_artifact_build=PASS "
+        "canonical_prepublication_manifest=PASS "
         "publication_authority=HUMAN_ONLY_CREATE_ONLY "
         "terraform_apply_authorized=false "
         + " ".join(summaries)
