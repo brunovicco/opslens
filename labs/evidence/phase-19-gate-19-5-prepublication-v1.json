@@ -1,0 +1,48 @@
+{
+  "artifact_type": "phase-19-gate-19-5-async-artifact-prepublication:v1",
+  "artifacts": [
+    {
+      "artifact_path": "dist/opslens-public-async-api.zip",
+      "artifact_sha256": "99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e",
+      "compressed_bytes": 17271715,
+      "file_count": 2507,
+      "lambda_source_code_hash": "mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=",
+      "role": "api",
+      "s3": {
+        "bucket": "opslens-dev-artifacts-487757851499-us-east-1",
+        "key": "lambda/public-analysis/api/sha256=99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e/opslens-public-async-api.zip",
+        "version_id": {
+          "classification": "UNMEASURED",
+          "reason": "PENDING_HUMAN_PUBLICATION",
+          "value": null
+        }
+      },
+      "uncompressed_bytes": 26156069
+    },
+    {
+      "artifact_path": "dist/opslens-public-async-worker.zip",
+      "artifact_sha256": "0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9",
+      "compressed_bytes": 1036437,
+      "file_count": 352,
+      "lambda_source_code_hash": "DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck=",
+      "role": "worker",
+      "s3": {
+        "bucket": "opslens-dev-artifacts-487757851499-us-east-1",
+        "key": "lambda/public-analysis/worker/sha256=0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9/opslens-public-async-worker.zip",
+        "version_id": {
+          "classification": "UNMEASURED",
+          "reason": "PENDING_HUMAN_PUBLICATION",
+          "value": null
+        }
+      },
+      "uncompressed_bytes": 3739031
+    }
+  ],
+  "deployment_bucket": "opslens-dev-artifacts-487757851499-us-east-1",
+  "public_enablement_authorized": false,
+  "publication_authority": "HUMAN_ONLY_CREATE_ONLY",
+  "runtime_resource_mutation_authorized": false,
+  "schema_version": 1,
+  "source_main_sha": "a5067e05fda74aad4d95d7f1a875110fb676304a",
+  "terraform_apply_authorized": false
+}

@@ -14,17 +14,23 @@ on:
       - "labs/evidence/phase-19-gate-19-2-*.json"
       - "labs/evidence/phase-19-gate-19-3-*.json"
       - "labs/evidence/phase-19-gate-19-4-*.json"
+      - "labs/evidence/phase-19-gate-19-5-*.json"
       - "labs/phase-19-gate-19-1-*.md"
       - "labs/phase-19-gate-19-2-*.md"
       - "labs/phase-19-gate-19-3-*.md"
       - "labs/phase-19-gate-19-4-*.md"
+      - "labs/phase-19-gate-19-5-*.md"
       - "docs/adr/0076-*.md"
+      - "scripts/build_phase19_async_lambda_artifacts.py"
+      - "scripts/publish_phase19_gate19_5_async_artifacts.py"
       - "scripts/verify_phase19_gate19_1_public_runtime_contract.py"
       - "scripts/verify_phase19_gate19_2_measurement_contract.py"
       - "scripts/verify_phase19_gate19_2_live_measurement.py"
       - "scripts/verify_phase19_gate19_2_closeout.py"
       - "scripts/verify_phase19_gate19_3_async_topology_contract.py"
       - "scripts/verify_phase19_gate19_4_disabled_async_runtime.py"
+      - "scripts/verify_phase19_gate19_5_async_artifact_build.py"
+      - "scripts/verify_phase19_gate19_5_artifact_publication.py"
       - "scripts/verify_phase18_closeout.py"
       - "README.md"
       - "README.pt-br.md"
@@ -68,26 +74,34 @@ jobs:
       - name: Sync locked dependencies
         run: uv sync --frozen
 
-      - name: Ruff Phase 19 verifiers
+      - name: Ruff Phase 19 verifiers and artifact tooling
         run: >-
           uv run ruff check
+          scripts/build_phase19_async_lambda_artifacts.py
+          scripts/publish_phase19_gate19_5_async_artifacts.py
           scripts/verify_phase19_gate19_1_public_runtime_contract.py
           scripts/verify_phase19_gate19_2_measurement_contract.py
           scripts/verify_phase19_gate19_2_live_measurement.py
           scripts/verify_phase19_gate19_2_closeout.py
           scripts/verify_phase19_gate19_3_async_topology_contract.py
           scripts/verify_phase19_gate19_4_disabled_async_runtime.py
+          scripts/verify_phase19_gate19_5_async_artifact_build.py
+          scripts/verify_phase19_gate19_5_artifact_publication.py
           scripts/verify_phase18_closeout.py
 
-      - name: Pyright strict Phase 19 verifiers
+      - name: Pyright strict Phase 19 verifiers and artifact tooling
         run: >-
           uv run pyright
+          scripts/build_phase19_async_lambda_artifacts.py
+          scripts/publish_phase19_gate19_5_async_artifacts.py
           scripts/verify_phase19_gate19_1_public_runtime_contract.py
           scripts/verify_phase19_gate19_2_measurement_contract.py
           scripts/verify_phase19_gate19_2_live_measurement.py
           scripts/verify_phase19_gate19_2_closeout.py
           scripts/verify_phase19_gate19_3_async_topology_contract.py
           scripts/verify_phase19_gate19_4_disabled_async_runtime.py
+          scripts/verify_phase19_gate19_5_async_artifact_build.py
+          scripts/verify_phase19_gate19_5_artifact_publication.py
           scripts/verify_phase18_closeout.py
 
       - name: Run retained public-analysis unit tests
@@ -122,3 +136,16 @@ jobs:
         env:
           PYTHONPATH: src
         run: uv run python scripts/verify_phase19_gate19_4_disabled_async_runtime.py
+
+      - name: Verify Gate 19.5 deterministic async artifact rebuild
+        env:
+          PYTHONPATH: src
+        run: uv run python scripts/verify_phase19_gate19_5_async_artifact_build.py
+
+      - name: Verify Gate 19.5 admitted human artifact publication
+        env:
+          PYTHONPATH: src
+        run: >-
+          uv run python scripts/verify_phase19_gate19_5_artifact_publication.py
+          --prepublication labs/evidence/phase-19-gate-19-5-prepublication-v1.json
+          --publication labs/evidence/phase-19-gate-19-5-artifact-publication-v1.json
