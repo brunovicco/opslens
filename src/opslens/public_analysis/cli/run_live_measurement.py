@@ -302,7 +302,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         s3_client = cast(
             ExactS3AuthorityObjectClient,
-            session.client(
+            session.client(  # pyright: ignore[reportUnknownMemberType]
                 "s3",
                 config=Config(
                     retries={"mode": "standard", "total_max_attempts": 1}
@@ -355,23 +355,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             nvd_sha256=nvd_sha256,
         )
 
-        dynamic_retrieval_client = session.client(
-            "bedrock-agent-runtime",
-            region_name=region,
-            config=_retrieval_client_config(),
-        )
-        dynamic_synthesis_client = session.client(
-            "bedrock-runtime",
-            region_name=region,
-            config=_synthesis_client_config(),
-        )
         retrieval_client = cast(
             BedrockAgentRuntimeClient,
-            dynamic_retrieval_client,
+            session.client(  # pyright: ignore[reportUnknownMemberType]
+                "bedrock-agent-runtime",
+                region_name=region,
+                config=_retrieval_client_config(),
+            ),
         )
         synthesis_client = cast(
             BedrockHybridConverseClient,
-            dynamic_synthesis_client,
+            session.client(  # pyright: ignore[reportUnknownMemberType]
+                "bedrock-runtime",
+                region_name=region,
+                config=_synthesis_client_config(),
+            ),
         )
 
         composition = build_representative_live_workload_composition(
