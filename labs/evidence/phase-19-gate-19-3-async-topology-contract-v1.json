@@ -1,0 +1,245 @@
+{
+  "artifact_type": "phase-19-gate-19-3-async-topology-contract:v1",
+  "schema_version": 1,
+  "phase": 19,
+  "gate": "19.3",
+  "issue": 348,
+  "source_main_sha": "71eda2650889d3047259d37be226862ed2a09092",
+  "source_gate_19_2_pr": 347,
+  "source_gate_19_2_live_artifact_sha256": "04ab754a12e25c4aeda0075d41b92693fec464aec4431b3734981488ff470114",
+  "source_gate_19_2_decision": "ASYNC_SUBMIT_STATUS_RESULT",
+  "status": "DESIGN_SELECTED_NO_DEPLOYMENT",
+  "decision": "HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB",
+  "deployment_authorized": false,
+  "authority_impact": {
+    "public_endpoints_created": 0,
+    "new_aws_resources_created": 0,
+    "new_iam_roles_or_policies_created": 0,
+    "aws_or_provider_live_executions": 0,
+    "third_party_repository_code_executions": 0,
+    "pr_89_modifications": 0
+  },
+  "measured_basis": {
+    "classification": "MEASURED",
+    "end_to_end_duration_ms": 17748,
+    "serialized_result_bytes": 5285,
+    "github_http_request_count": 4,
+    "bedrock_retrieve_client_elapsed_ms": 4148,
+    "bedrock_model_client_elapsed_ms": 8901,
+    "bedrock_model_latency_ms": 7772,
+    "bedrock_input_tokens": 5936,
+    "bedrock_output_tokens": 408,
+    "retry_count": 0,
+    "throttle_count_classification": "UNMEASURED"
+  },
+  "interaction_contract": {
+    "submit": {
+      "method": "POST",
+      "path": "/v1/analyses",
+      "success_status": 202,
+      "returns": [
+        "job_id",
+        "status_url",
+        "result_url"
+      ]
+    },
+    "status": {
+      "method": "GET",
+      "path": "/v1/analyses/{job_id}",
+      "states": [
+        "SUBMITTING",
+        "ACCEPTED",
+        "RUNNING",
+        "SUCCEEDED",
+        "FAILED",
+        "EXPIRED"
+      ]
+    },
+    "result": {
+      "method": "GET",
+      "path": "/v1/analyses/{job_id}/result",
+      "available_only_when": "SUCCEEDED",
+      "expired_status": 410
+    }
+  },
+  "job_lifecycle": {
+    "initial_state": "SUBMITTING",
+    "terminal_states": [
+      "SUCCEEDED",
+      "FAILED",
+      "EXPIRED"
+    ],
+    "allowed_transitions": [
+      "SUBMITTING->ACCEPTED",
+      "SUBMITTING->RUNNING",
+      "SUBMITTING->FAILED",
+      "ACCEPTED->RUNNING",
+      "ACCEPTED->FAILED",
+      "RUNNING->RUNNING",
+      "RUNNING->SUCCEEDED",
+      "RUNNING->FAILED",
+      "SUBMITTING->EXPIRED",
+      "ACCEPTED->EXPIRED",
+      "RUNNING->EXPIRED",
+      "SUCCEEDED->EXPIRED",
+      "FAILED->EXPIRED"
+    ],
+    "state_authority": "DYNAMODB_CONDITIONAL_WRITE",
+    "expiry_authority": "EXPIRES_AT_TIMESTAMP_PLUS_DYNAMODB_TTL_CLEANUP",
+    "result_authority": "ADMITTED_SERIALIZED_RESULT_ONLY"
+  },
+  "idempotency_contract": {
+    "required_header": "Idempotency-Key",
+    "request_fingerprint": "SHA256_CANONICAL_PUBLIC_ANALYSIS_REQUEST_V1",
+    "same_key_same_fingerprint": "RETURN_EXISTING_JOB",
+    "same_key_different_fingerprint": "HTTP_409",
+    "storage": "SAME_DYNAMODB_TABLE",
+    "write_authority": "CONDITIONAL_OR_TRANSACTIONAL_WRITE"
+  },
+  "delivery_contract": {
+    "queue_semantics": "AT_LEAST_ONCE",
+    "batch_size": 1,
+    "duplicate_handling": "DYNAMODB_CONDITIONAL_STATE_AND_ATTEMPT_ADMISSION",
+    "retry_owner": "SQS_LAMBDA_EVENT_SOURCE_PLUS_WORKER_STATE_MACHINE",
+    "provider_retry_owner": "WORKER_BOUNDED_POLICY",
+    "dead_letter_queue_required": true,
+    "automatic_unbounded_retry": false,
+    "backpressure_authority": "SQS_QUEUE_DEPTH_PLUS_LAMBDA_RESERVED_CONCURRENCY"
+  },
+  "selected_topology": {
+    "ingress": {
+      "service": "Amazon API Gateway HTTP API",
+      "responsibility": "bounded public routing, request-size/rate boundary, and transport metadata",
+      "why_selected": "async submit/status/result routes need a managed HTTP boundary; Lambda Function URL provides a weaker public abuse-control surface and REST API adds capabilities not yet justified"
+    },
+    "api_handler": {
+      "service": "AWS Lambda",
+      "responsibility": "deterministic request admission, idempotency, job/status/result API projection, and queue submission",
+      "why_selected": "the public control path is short and deterministic and does not contain the measured 17.748-second analysis workload"
+    },
+    "job_queue": {
+      "service": "Amazon SQS standard queue",
+      "responsibility": "durable at-least-once job buffering, retry isolation, and backpressure",
+      "why_selected": "Gate 19.2 selected async specifically for retry safety, provider-latency isolation, and backpressure"
+    },
+    "dead_letter_queue": {
+      "service": "Amazon SQS standard queue",
+      "responsibility": "bounded quarantine for poison or repeatedly failing deliveries",
+      "why_selected": "terminal handling must not depend on unbounded redelivery"
+    },
+    "worker": {
+      "service": "AWS Lambda",
+      "responsibility": "execute exactly one admitted public-analysis job attempt and persist deterministic terminal evidence",
+      "why_selected": "the measured representative workload completed in 17.748 seconds and does not justify container-orchestrated compute"
+    },
+    "job_store": {
+      "service": "Amazon DynamoDB",
+      "responsibility": "job identity, idempotency binding, conditional state transitions, admitted result persistence, and expiry metadata",
+      "why_selected": "the measured admitted result is 5,285 bytes and requires conditional state/idempotency semantics rather than blob-scale storage"
+    }
+  },
+  "candidate_topologies": [
+    {
+      "id": "HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB",
+      "status": "SELECTED",
+      "reason": "directly satisfies async buffering, backpressure, retry isolation, deterministic state transitions, bounded result persistence, and short-lived worker compute"
+    },
+    {
+      "id": "HTTP_API_LAMBDA_DYNAMODB_STREAMS_LAMBDA",
+      "status": "REJECTED",
+      "reason": "fewer resource types but weaker queue-specific retry/backpressure/dead-letter semantics and couples job dispatch to persistence stream behavior"
+    },
+    {
+      "id": "HTTP_API_LAMBDA_STEP_FUNCTIONS_STANDARD_LAMBDA",
+      "status": "REJECTED",
+      "reason": "durable orchestration is credible but adds workflow semantics and retention behavior not justified by the current single linear analysis job"
+    },
+    {
+      "id": "FUNCTION_URL_LAMBDA_SQS_LAMBDA_DYNAMODB",
+      "status": "REJECTED",
+      "reason": "reduces ingress components but weakens the explicit managed public routing and abuse-control boundary required for productization"
+    },
+    {
+      "id": "HTTP_API_LAMBDA_SQS_FARGATE_DYNAMODB",
+      "status": "REJECTED",
+      "reason": "container worker capacity is not justified by the measured 17.748-second workload and would increase operational surface"
+    }
+  ],
+  "iam_responsibility_contract": [
+    {
+      "principal": "api_handler_role",
+      "allowed_actions": [
+        "sqs:SendMessage",
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:TransactWriteItems"
+      ],
+      "resource_scope": "selected job queue and selected jobs table only",
+      "explicitly_forbidden": [
+        "bedrock:InvokeModel",
+        "bedrock:Retrieve",
+        "sqs:ReceiveMessage"
+      ]
+    },
+    {
+      "principal": "worker_role",
+      "allowed_actions": [
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:ChangeMessageVisibility",
+        "sqs:GetQueueAttributes",
+        "dynamodb:GetItem",
+        "dynamodb:UpdateItem",
+        "bedrock:Retrieve",
+        "bedrock:InvokeModel"
+      ],
+      "resource_scope": "selected job queue, selected jobs table, retained Knowledge Base BTVJ2PBR2A, and retained model/inference profile us.anthropic.claude-haiku-4-5-20251001-v1:0 only",
+      "explicitly_forbidden": [
+        "sqs:SendMessage from public request handling authority",
+        "dynamodb:Scan",
+        "dynamodb:DeleteTable",
+        "iam:*"
+      ]
+    }
+  ],
+  "observability_contract": {
+    "required_fields": [
+      "request_id",
+      "job_id",
+      "trace_id",
+      "state_transition",
+      "attempt_number",
+      "stage",
+      "duration_ms",
+      "outcome",
+      "failure_category",
+      "provider_service_call_count",
+      "bedrock_input_tokens_when_available",
+      "bedrock_output_tokens_when_available",
+      "retry_count",
+      "throttle_count",
+      "queue_age_ms",
+      "result_bytes"
+    ],
+    "forbidden_fields": [
+      "full_prompt",
+      "repository_source_code",
+      "repository_file_contents",
+      "full_model_response",
+      "credentials",
+      "raw_user_payload"
+    ]
+  },
+  "disable_recovery_contract": {
+    "controls": [
+      "disable_new_submit_route",
+      "disable_queue_event_source_mapping",
+      "set_worker_reserved_concurrency_to_zero",
+      "disable_model_invocation_in_worker_policy_or_runtime_guard",
+      "preserve_status_result_reads_during_submit_pause"
+    ],
+    "global_kill_switch_claimed": false
+  },
+  "next_boundary": "implement the selected topology in Terraform and application adapters behind disabled/non-public defaults, then require exact plan and least-privilege review before any public deployment"
+}
