@@ -24,12 +24,12 @@ class S3AuthorityObjectBody(Protocol):
 
 
 class ExactS3GetObjectResponse(TypedDict, total=False):
-    """Subset of S3 GetObject evidence required by this boundary."""
+    """Subset of untrusted S3 GetObject evidence required by this boundary."""
 
     Body: S3AuthorityObjectBody
     VersionId: str
     ContentLength: int
-    Metadata: Mapping[str, str]
+    Metadata: object
 
 
 class ExactS3AuthorityObjectClient(Protocol):
@@ -134,9 +134,7 @@ class ExactS3AuthorityObjectReader:
         )
 
     @staticmethod
-    def _freeze_metadata(
-        value: Mapping[str, str] | None,
-    ) -> tuple[tuple[str, str], ...]:
+    def _freeze_metadata(value: object) -> tuple[tuple[str, str], ...]:
         """Validate and freeze exact S3 user metadata in deterministic key order."""
         if value is None:
             return ()
