@@ -137,14 +137,16 @@ def _locked_packages() -> dict[str, _LockedPackage]:
         version = package.get("version")
         if type(name) is not str or type(version) is not str:
             raise RuntimeError("uv.lock package entry is missing name/version")
+        raw_wheels = package.get("wheels")
+        wheel_entries = (
+            [] if raw_wheels is None else _objects(raw_wheels, label=f"uv.lock package {name} wheels")
+        )
         wheel_hashes: list[str] = []
-        for wheel in _objects(package.get("wheels"), label=f"uv.lock package {name} wheels"):
+        for wheel in wheel_entries:
             digest = wheel.get("hash")
             if type(digest) is not str or not digest.startswith("sha256:"):
                 raise RuntimeError(f"uv.lock wheel for {name} is missing a SHA-256 hash")
             wheel_hashes.append(digest)
-        if not wheel_hashes:
-            raise RuntimeError(f"uv.lock package {name} has no wheel hashes")
         normalized = _normalized_distribution(name)
         locked[normalized] = _LockedPackage(
             name=normalized,
@@ -174,6 +176,8 @@ def _validated_pin_packages(
             raise RuntimeError(
                 f"{spec.name} runtime pin {pin} does not match uv.lock version {observed!r}"
             )
+        if not package.wheel_hashes:
+            raise RuntimeError(f"{spec.name} runtime dependency {name} has no locked wheel hash")
         selected.append(package)
     return tuple(selected)
 
