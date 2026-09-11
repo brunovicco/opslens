@@ -66,7 +66,7 @@ class ExactKevAuthorityReader:
         )
         metadata = self._metadata(source.metadata)
 
-        if set(metadata) != _REQUIRED_METADATA:
+        if frozenset(metadata) != _REQUIRED_METADATA:
             raise ExactKevAuthorityError(
                 "KEV authority metadata must contain exactly the required provenance fields"
             )
