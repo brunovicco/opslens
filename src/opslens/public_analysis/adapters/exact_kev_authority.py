@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping
-from datetime import datetime
+from datetime import date, datetime
 from typing import Protocol
 
 from opslens.ingestion.kev.domain.models import KevCatalogSnapshot
@@ -110,10 +110,10 @@ class ExactKevAuthorityReader:
     def _snapshot_date(value: str) -> str:
         """Require one canonical ISO calendar date without rewriting it."""
         try:
-            parsed = datetime.strptime(value, "%Y-%m-%d")
+            parsed = date.fromisoformat(value)
         except ValueError as exc:
             raise ExactKevAuthorityError("snapshot_date must use YYYY-MM-DD") from exc
-        if parsed.date().isoformat() != value:
+        if parsed.isoformat() != value:
             raise ExactKevAuthorityError("snapshot_date must use canonical YYYY-MM-DD")
         return value
 
