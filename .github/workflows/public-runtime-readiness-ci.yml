@@ -22,6 +22,7 @@ on:
       - "labs/phase-19-gate-19-5-*.md"
       - "docs/adr/0076-*.md"
       - "scripts/build_phase19_async_lambda_artifacts.py"
+      - "scripts/publish_phase19_gate19_5_async_artifacts.py"
       - "scripts/verify_phase19_gate19_1_public_runtime_contract.py"
       - "scripts/verify_phase19_gate19_2_measurement_contract.py"
       - "scripts/verify_phase19_gate19_2_live_measurement.py"
@@ -29,6 +30,7 @@ on:
       - "scripts/verify_phase19_gate19_3_async_topology_contract.py"
       - "scripts/verify_phase19_gate19_4_disabled_async_runtime.py"
       - "scripts/verify_phase19_gate19_5_async_artifact_build.py"
+      - "scripts/verify_phase19_gate19_5_artifact_publication.py"
       - "scripts/verify_phase18_closeout.py"
       - "README.md"
       - "README.pt-br.md"
@@ -72,10 +74,11 @@ jobs:
       - name: Sync locked dependencies
         run: uv sync --frozen
 
-      - name: Ruff Phase 19 verifiers and artifact builder
+      - name: Ruff Phase 19 verifiers and artifact tooling
         run: >-
           uv run ruff check
           scripts/build_phase19_async_lambda_artifacts.py
+          scripts/publish_phase19_gate19_5_async_artifacts.py
           scripts/verify_phase19_gate19_1_public_runtime_contract.py
           scripts/verify_phase19_gate19_2_measurement_contract.py
           scripts/verify_phase19_gate19_2_live_measurement.py
@@ -83,12 +86,14 @@ jobs:
           scripts/verify_phase19_gate19_3_async_topology_contract.py
           scripts/verify_phase19_gate19_4_disabled_async_runtime.py
           scripts/verify_phase19_gate19_5_async_artifact_build.py
+          scripts/verify_phase19_gate19_5_artifact_publication.py
           scripts/verify_phase18_closeout.py
 
-      - name: Pyright strict Phase 19 verifiers and artifact builder
+      - name: Pyright strict Phase 19 verifiers and artifact tooling
         run: >-
           uv run pyright
           scripts/build_phase19_async_lambda_artifacts.py
+          scripts/publish_phase19_gate19_5_async_artifacts.py
           scripts/verify_phase19_gate19_1_public_runtime_contract.py
           scripts/verify_phase19_gate19_2_measurement_contract.py
           scripts/verify_phase19_gate19_2_live_measurement.py
@@ -96,6 +101,7 @@ jobs:
           scripts/verify_phase19_gate19_3_async_topology_contract.py
           scripts/verify_phase19_gate19_4_disabled_async_runtime.py
           scripts/verify_phase19_gate19_5_async_artifact_build.py
+          scripts/verify_phase19_gate19_5_artifact_publication.py
           scripts/verify_phase18_closeout.py
 
       - name: Run retained public-analysis unit tests
