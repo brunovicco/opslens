@@ -91,19 +91,22 @@ class AsyncJobRecord:
     identity: AsyncJobIdentity
     state: AsyncJobState
     attempt_count: int = 0
+    version: int = 0
     result_sha256: str | None = None
     result_bytes: int | None = None
     result_json: str | None = None
     failure_code: str | None = None
 
     def __post_init__(self) -> None:
-        """Enforce state-specific result, failure, and attempt invariants."""
+        """Enforce state-specific result, failure, version, and attempt invariants."""
         if type(self.identity) is not AsyncJobIdentity:
             raise PublicAnalysisValidationError("identity must be AsyncJobIdentity")
         if type(self.state) is not AsyncJobState:
             raise PublicAnalysisValidationError("state must be AsyncJobState")
         if type(self.attempt_count) is not int or self.attempt_count < 0:
             raise PublicAnalysisValidationError("attempt_count must be a non-negative integer")
+        if type(self.version) is not int or self.version < 0:
+            raise PublicAnalysisValidationError("version must be a non-negative integer")
 
         has_any_result = any(
             value is not None
@@ -203,16 +206,22 @@ def transition_async_job(
             "FAILED requires complete_async_job_failure with an explicit failure code"
         )
     if target_state is AsyncJobState.RUNNING:
-        return replace(job, state=target_state, attempt_count=job.attempt_count + 1)
+        return replace(
+            job,
+            state=target_state,
+            attempt_count=job.attempt_count + 1,
+            version=job.version + 1,
+        )
     if target_state is AsyncJobState.EXPIRED:
         return replace(
             job,
             state=target_state,
+            version=job.version + 1,
             result_sha256=None,
             result_bytes=None,
             result_json=None,
         )
-    return replace(job, state=target_state)
+    return replace(job, state=target_state, version=job.version + 1)
 
 
 def complete_async_job_success(
@@ -233,6 +242,7 @@ def complete_async_job_success(
         identity=job.identity,
         state=AsyncJobState.SUCCEEDED,
         attempt_count=job.attempt_count,
+        version=job.version + 1,
         result_sha256=sha256(serialized_result).hexdigest(),
         result_bytes=len(serialized_result),
         result_json=result_json,
@@ -259,6 +269,7 @@ def complete_async_job_failure(
         identity=job.identity,
         state=AsyncJobState.FAILED,
         attempt_count=job.attempt_count,
+        version=job.version + 1,
         failure_code=failure_code,
     )
 
