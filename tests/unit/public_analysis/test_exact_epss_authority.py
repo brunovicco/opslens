@@ -44,10 +44,13 @@ def _metadata(payload: bytes) -> tuple[tuple[str, str], ...]:
 
 @dataclass
 class FakeExactObjectReader:
+    """Return one configured immutable object and record exact read coordinates."""
+
     result: ExactS3AuthorityObject
     calls: list[tuple[str, str]] = field(default_factory=list)
 
     def read(self, *, object_key: str, version_id: str) -> ExactS3AuthorityObject:
+        """Record and satisfy one exact object-version read."""
         self.calls.append((object_key, version_id))
         return self.result
 
@@ -76,6 +79,7 @@ def _reader(
 
 
 def test_decodes_complete_exact_epss_snapshot() -> None:
+    """Reconstruct complete EPSS authority from one exact immutable object."""
     reader, object_reader = _reader()
 
     snapshot = reader.read(
@@ -91,12 +95,13 @@ def test_decodes_complete_exact_epss_snapshot() -> None:
 
 
 def test_rejects_missing_or_extra_metadata() -> None:
+    """Reject incomplete or expanded metadata authority before admission."""
     payload = _payload()
     base = dict(_metadata(payload))
 
     for changed in (
         tuple((key, value) for key, value in base.items() if key != "sha256"),
-        tuple((*base.items(), ("unexpected", "value"))),
+        (*base.items(), ("unexpected", "value")),
     ):
         reader, _ = _reader(payload=payload, metadata=changed)
         with pytest.raises(ExactEpssAuthorityError, match="exactly the required"):
@@ -108,6 +113,7 @@ def test_rejects_missing_or_extra_metadata() -> None:
 
 
 def test_rejects_source_or_digest_drift() -> None:
+    """Reject source identity and payload digest contradictions."""
     payload = _payload()
     base = dict(_metadata(payload))
 
@@ -131,6 +137,7 @@ def test_rejects_source_or_digest_drift() -> None:
 
 
 def test_rejects_model_timestamp_or_snapshot_drift() -> None:
+    """Reject contradictions in model, score timestamp, or logical snapshot date."""
     payload = _payload()
     base = dict(_metadata(payload))
 
@@ -162,6 +169,7 @@ def test_rejects_model_timestamp_or_snapshot_drift() -> None:
 
 
 def test_rejects_naive_metadata_timestamp() -> None:
+    """Reject EPSS metadata timestamps that omit timezone information."""
     payload = _payload()
     metadata = dict(_metadata(payload))
     metadata["score_date"] = "2026-09-10T12:00:00"
