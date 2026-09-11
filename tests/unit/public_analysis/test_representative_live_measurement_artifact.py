@@ -98,21 +98,14 @@ def test_serialization_is_deterministic_and_round_trip_admitted() -> None:
         serialized,
         expected=artifact,
     ) is artifact
-    payload = artifact.to_json_dict()
-    classifications = payload["provider_classifications"]
-    assert isinstance(classifications, list)
-    assert {
-        item["classification"]
-        for item in classifications
-        if isinstance(item, dict)
-        and item.get("metric")
-        in {"athena_query_count", "athena_bytes_scanned"}
-    } == {MeasurementClassification.NOT_APPLICABLE.value}
-    assert {
-        item["classification"]
-        for item in classifications
-        if isinstance(item, dict) and item.get("metric") == "throttle_count"
-    } == {MeasurementClassification.UNMEASURED.value}
+    classifications = dict(artifact.provider_classifications)
+    assert classifications["athena_query_count"] == (
+        MeasurementClassification.NOT_APPLICABLE.value
+    )
+    assert classifications["athena_bytes_scanned"] == (
+        MeasurementClassification.NOT_APPLICABLE.value
+    )
+    assert classifications["throttle_count"] == MeasurementClassification.UNMEASURED.value
 
 
 def test_serialized_artifact_drift_fails_closed() -> None:
