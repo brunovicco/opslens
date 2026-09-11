@@ -13,8 +13,12 @@ from opslens.knowledge_retrieval.adapters.bedrock_retrieval import (
     BedrockAgentRuntimeClient,
     BedrockKnowledgeBaseRetrieveAdapter,
 )
-from opslens.knowledge_retrieval.application.bedrock_retrieval import run_bounded_retrieve
+from opslens.knowledge_retrieval.application.bedrock_retrieval import (
+    BedrockRetrieveResult,
+    run_bounded_retrieve,
+)
 from opslens.knowledge_retrieval.application.retrieval_catalog import CanonicalRetrievalCatalog
+from opslens.knowledge_retrieval.domain import RetrievalRequest
 from opslens.public_analysis.adapters.representative_measured_workload import (
     RepresentativeMeasuredWorkloadComposition,
     build_representative_measured_workload_composition,
@@ -113,7 +117,7 @@ def build_representative_live_workload_composition(
     retrieval_adapter = BedrockKnowledgeBaseRetrieveAdapter(retrieval_client)
     hybrid_synthesizer = BedrockHybridSynthesizer(synthesis_client)
 
-    def semantic_retriever(request):  # type: ignore[no-untyped-def]
+    def semantic_retriever(request: RetrievalRequest) -> BedrockRetrieveResult:
         """Execute one retained bounded direct Retrieve request when the workload reaches it."""
         return run_bounded_retrieve(
             retrieval_adapter,
