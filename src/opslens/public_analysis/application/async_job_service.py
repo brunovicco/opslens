@@ -15,9 +15,12 @@ from opslens.public_analysis.application.async_job_admission import (
 from opslens.public_analysis.domain.async_job import (
     AsyncJobRecord,
     AsyncJobState,
+    accept_async_job,
+    claim_async_job_attempt,
     complete_async_job_failure,
+    complete_async_job_success,
     create_async_job_identity,
-    transition_async_job,
+    refresh_submitting_lease,
 )
 from opslens.public_analysis.domain.errors import PublicAnalysisValidationError
 from opslens.public_analysis.domain.request import PublicAnalysisRequest
@@ -43,10 +46,15 @@ class AsyncResultExpiredError(RuntimeError):
     """Raised when result retrieval is attempted after explicit expiry."""
 
 
+class AsyncWorkerStateConflictError(RuntimeError):
+    """Raised when a stale worker attempt can no longer terminalize the admitted job."""
+
+
 class AsyncClaimDisposition(StrEnum):
     """Deterministic outcomes for one worker attempt claim."""
 
     CLAIMED = "CLAIMED"
+    NOOP_ACTIVE_LEASE = "NOOP_ACTIVE_LEASE"
     NOOP_ALREADY_TERMINAL = "NOOP_ALREADY_TERMINAL"
     NOOP_EXPIRED = "NOOP_EXPIRED"
     NOOP_CONCURRENT_CLAIM = "NOOP_CONCURRENT_CLAIM"
@@ -97,7 +105,7 @@ class AsyncJobStore(Protocol):
         current: AsyncJobRecord,
         replacement: AsyncJobRecord,
     ) -> bool:
-        """Atomically replace exactly the expected current job state."""
+        """Atomically replace exactly the expected current job state and version."""
         ...
 
 
@@ -107,6 +115,13 @@ class AsyncJobPublisher(Protocol):
     def publish(self, job_id: str) -> None:
         """Publish one admitted job id or raise AsyncQueuePublishError."""
         ...
+
+
+def _positive_int(value: int, *, field: str) -> int:
+    """Require one positive non-boolean integer configuration value."""
+    if type(value) is not int or value <= 0:
+        raise PublicAnalysisValidationError(f"{field} must be a positive integer")
+    return value
 
 
 def _load_required_job(store: AsyncJobStore, job_id: str) -> AsyncJobRecord:
@@ -121,53 +136,103 @@ def _load_required_job(store: AsyncJobStore, job_id: str) -> AsyncJobRecord:
     return job
 
 
+def _publish_and_accept(
+    *,
+    job: AsyncJobRecord,
+    disposition: AsyncSubmissionDisposition,
+    store: AsyncJobStore,
+    publisher: AsyncJobPublisher,
+) -> AsyncSubmitResult:
+    """Cross the explicit DynamoDB/SQS dual-write boundary without claiming atomicity."""
+    try:
+        publisher.publish(job.identity.job_id)
+    except AsyncQueuePublishError as exc:
+        failed = complete_async_job_failure(job, failure_code="QUEUE_PUBLISH_FAILED")
+        if not store.replace_if_current(current=job, replacement=failed):
+            latest = _load_required_job(store, job.identity.job_id)
+            return AsyncSubmitResult(
+                disposition=AsyncSubmissionDisposition.RETURN_EXISTING_JOB,
+                job=latest,
+            )
+        raise AsyncSubmissionUnavailableError("async job queue publication failed") from exc
+
+    accepted = accept_async_job(job)
+    if store.replace_if_current(current=job, replacement=accepted):
+        return AsyncSubmitResult(disposition=disposition, job=accepted)
+
+    latest = _load_required_job(store, job.identity.job_id)
+    return AsyncSubmitResult(disposition=disposition, job=latest)
+
+
 def submit_async_analysis(
     request: PublicAnalysisRequest,
     *,
     idempotency_key: str,
     store: AsyncJobStore,
     publisher: AsyncJobPublisher,
+    now_epoch_seconds: int,
+    submission_lease_seconds: int,
 ) -> AsyncSubmitResult:
-    """Create or replay one async job without coupling queue delivery to business truth."""
+    """Create, replay, or safely resume one expired SUBMITTING job."""
+    now = _positive_int(now_epoch_seconds, field="now_epoch_seconds")
+    lease_seconds = _positive_int(
+        submission_lease_seconds,
+        field="submission_lease_seconds",
+    )
+    lease_deadline = now + lease_seconds
     identity = create_async_job_identity(request, idempotency_key=idempotency_key)
     existing = store.get_by_idempotency_key_sha256(identity.idempotency_key_sha256)
     decision = decide_async_submission(
         request,
         idempotency_key=idempotency_key,
         existing_job=existing,
+        submission_lease_expires_at_epoch_seconds=lease_deadline,
+        now_epoch_seconds=now,
     )
+
     if decision.disposition is AsyncSubmissionDisposition.RETURN_EXISTING_JOB:
         return AsyncSubmitResult(disposition=decision.disposition, job=decision.job)
 
-    put = store.put_if_absent(decision.job)
-    if type(put) is not AsyncJobPutOutcome:
-        raise PublicAnalysisValidationError("job store returned an invalid put outcome")
-    if not put.created:
-        raced = decide_async_submission(
+    if decision.disposition is AsyncSubmissionDisposition.CREATE_NEW_JOB:
+        put = store.put_if_absent(decision.job)
+        if type(put) is not AsyncJobPutOutcome:
+            raise PublicAnalysisValidationError("job store returned an invalid put outcome")
+        if put.created:
+            return _publish_and_accept(
+                job=put.job,
+                disposition=decision.disposition,
+                store=store,
+                publisher=publisher,
+            )
+        decision = decide_async_submission(
             request,
             idempotency_key=idempotency_key,
             existing_job=put.job,
+            submission_lease_expires_at_epoch_seconds=lease_deadline,
+            now_epoch_seconds=now,
         )
-        return AsyncSubmitResult(disposition=raced.disposition, job=raced.job)
+        if decision.disposition is AsyncSubmissionDisposition.RETURN_EXISTING_JOB:
+            return AsyncSubmitResult(disposition=decision.disposition, job=decision.job)
 
-    try:
-        publisher.publish(put.job.identity.job_id)
-    except AsyncQueuePublishError as exc:
-        failed = complete_async_job_failure(put.job, failure_code="QUEUE_PUBLISH_FAILED")
-        store.replace_if_current(current=put.job, replacement=failed)
-        raise AsyncSubmissionUnavailableError("async job queue publication failed") from exc
+    if decision.disposition is not AsyncSubmissionDisposition.RESUME_EXPIRED_SUBMISSION:
+        raise PublicAnalysisValidationError("async submission decision is not supported")
 
-    accepted = transition_async_job(put.job, target_state=AsyncJobState.ACCEPTED)
-    if store.replace_if_current(current=put.job, replacement=accepted):
+    refreshed = refresh_submitting_lease(
+        decision.job,
+        now_epoch_seconds=now,
+        lease_seconds=lease_seconds,
+    )
+    if not store.replace_if_current(current=decision.job, replacement=refreshed):
+        latest = _load_required_job(store, decision.job.identity.job_id)
         return AsyncSubmitResult(
-            disposition=AsyncSubmissionDisposition.CREATE_NEW_JOB,
-            job=accepted,
+            disposition=AsyncSubmissionDisposition.RETURN_EXISTING_JOB,
+            job=latest,
         )
-
-    latest = _load_required_job(store, put.job.identity.job_id)
-    return AsyncSubmitResult(
-        disposition=AsyncSubmissionDisposition.CREATE_NEW_JOB,
-        job=latest,
+    return _publish_and_accept(
+        job=refreshed,
+        disposition=AsyncSubmissionDisposition.RESUME_EXPIRED_SUBMISSION,
+        store=store,
+        publisher=publisher,
     )
 
 
@@ -175,10 +240,14 @@ def claim_async_worker_attempt(
     *,
     job_id: str,
     store: AsyncJobStore,
+    now_epoch_seconds: int,
+    worker_lease_seconds: int,
 ) -> AsyncClaimResult:
-    """Conditionally claim one delivery attempt without retrying a lost claim in-process."""
+    """Conditionally claim one delivery without overlapping an active RUNNING lease."""
+    now = _positive_int(now_epoch_seconds, field="now_epoch_seconds")
+    lease_seconds = _positive_int(worker_lease_seconds, field="worker_lease_seconds")
     current = _load_required_job(store, job_id)
-    admission = decide_worker_delivery(current)
+    admission = decide_worker_delivery(current, now_epoch_seconds=now)
     if admission.disposition is AsyncWorkerDisposition.NOOP_ALREADY_TERMINAL:
         return AsyncClaimResult(
             disposition=AsyncClaimDisposition.NOOP_ALREADY_TERMINAL,
@@ -189,8 +258,17 @@ def claim_async_worker_attempt(
             disposition=AsyncClaimDisposition.NOOP_EXPIRED,
             job=current,
         )
+    if admission.disposition is AsyncWorkerDisposition.NOOP_ACTIVE_LEASE:
+        return AsyncClaimResult(
+            disposition=AsyncClaimDisposition.NOOP_ACTIVE_LEASE,
+            job=current,
+        )
 
-    running = transition_async_job(current, target_state=AsyncJobState.RUNNING)
+    running = claim_async_job_attempt(
+        current,
+        now_epoch_seconds=now,
+        lease_seconds=lease_seconds,
+    )
     if store.replace_if_current(current=current, replacement=running):
         return AsyncClaimResult(disposition=AsyncClaimDisposition.CLAIMED, job=running)
 
@@ -198,6 +276,50 @@ def claim_async_worker_attempt(
     return AsyncClaimResult(
         disposition=AsyncClaimDisposition.NOOP_CONCURRENT_CLAIM,
         job=latest,
+    )
+
+
+def complete_claimed_async_worker_success(
+    *,
+    claimed_job: AsyncJobRecord,
+    serialized_result: bytes,
+    store: AsyncJobStore,
+) -> AsyncJobRecord:
+    """Conditionally persist one result only for the exact worker claim version."""
+    succeeded = complete_async_job_success(
+        claimed_job,
+        serialized_result=serialized_result,
+    )
+    if store.replace_if_current(current=claimed_job, replacement=succeeded):
+        return succeeded
+    latest = _load_required_job(store, claimed_job.identity.job_id)
+    if (
+        latest.state is AsyncJobState.SUCCEEDED
+        and latest.result_sha256 == succeeded.result_sha256
+        and latest.result_bytes == succeeded.result_bytes
+        and latest.result_json == succeeded.result_json
+    ):
+        return latest
+    raise AsyncWorkerStateConflictError(
+        "stale worker attempt cannot overwrite the current async job state"
+    )
+
+
+def complete_claimed_async_worker_failure(
+    *,
+    claimed_job: AsyncJobRecord,
+    failure_code: str,
+    store: AsyncJobStore,
+) -> AsyncJobRecord:
+    """Conditionally terminalize one claimed attempt with an explicit bounded failure code."""
+    failed = complete_async_job_failure(claimed_job, failure_code=failure_code)
+    if store.replace_if_current(current=claimed_job, replacement=failed):
+        return failed
+    latest = _load_required_job(store, claimed_job.identity.job_id)
+    if latest.state in {AsyncJobState.FAILED, AsyncJobState.EXPIRED}:
+        return latest
+    raise AsyncWorkerStateConflictError(
+        "stale worker attempt cannot overwrite the current async job state"
     )
 
 
@@ -228,7 +350,10 @@ __all__ = [
     "AsyncResultNotReadyError",
     "AsyncSubmissionUnavailableError",
     "AsyncSubmitResult",
+    "AsyncWorkerStateConflictError",
     "claim_async_worker_attempt",
+    "complete_claimed_async_worker_failure",
+    "complete_claimed_async_worker_success",
     "get_async_job_result",
     "get_async_job_status",
     "submit_async_analysis",
