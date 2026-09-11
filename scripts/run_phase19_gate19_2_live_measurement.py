@@ -28,6 +28,9 @@ from opslens.knowledge_retrieval.application.retrieval_catalog import build_retr
 from opslens.public_analysis.adapters.exact_s3_authority_object import (
     ExactS3AuthorityObjectClient,
 )
+from opslens.public_analysis.adapters.representative_live_artifact_file import (
+    write_new_representative_live_artifact,
+)
 from opslens.public_analysis.adapters.representative_live_workload import (
     RepresentativeLiveRetrievalConfig,
     build_representative_live_workload_composition,
@@ -140,13 +143,17 @@ def _require_frozen_operator_inputs(args: argparse.Namespace) -> None:
             f"region must equal the retained synthesis region {BEDROCK_SYNTHESIS_REGION!r}"
         )
     if args.repository_url != FROZEN_REPRESENTATIVE_REPOSITORY_URL:
-        raise LiveMeasurementCliError("repository-url drifted from the frozen representative anchor")
+        raise LiveMeasurementCliError(
+            "repository-url drifted from the frozen representative anchor"
+        )
     if args.repository_ref != FROZEN_REPRESENTATIVE_REPOSITORY_COMMIT:
         raise LiveMeasurementCliError("repository-ref must equal the frozen exact commit")
     if args.repository_commit != FROZEN_REPRESENTATIVE_REPOSITORY_COMMIT:
         raise LiveMeasurementCliError("repository-commit must equal the frozen exact commit")
     if args.model_id != BEDROCK_SYNTHESIS_MODEL_ID:
-        raise LiveMeasurementCliError("model-id drifted from the retained hybrid synthesis model")
+        raise LiveMeasurementCliError(
+            "model-id drifted from the retained hybrid synthesis model"
+        )
     if not isinstance(args.run_id, str) or not args.run_id.strip():
         raise LiveMeasurementCliError("run-id must be one non-empty normalized string")
     if args.run_id != args.run_id.strip() or len(args.run_id) > 256:
@@ -155,7 +162,9 @@ def _require_frozen_operator_inputs(args: argparse.Namespace) -> None:
         raise LiveMeasurementCliError("opslens-commit-sha must be one lowercase full Git SHA")
     output = cast(Path, args.output)
     if output.exists():
-        raise LiveMeasurementCliError("output artifact already exists; refusing to overwrite evidence")
+        raise LiveMeasurementCliError(
+            "output artifact already exists; refusing to overwrite evidence"
+        )
     if not output.parent.is_dir():
         raise LiveMeasurementCliError("output artifact parent directory must already exist")
 
@@ -172,14 +181,18 @@ def _github_token(environment_name: str | None) -> str | None:
             "github-token-env names an environment variable that is not set"
         )
     if not token or token != token.strip():
-        raise LiveMeasurementCliError("GitHub token environment value must be non-empty and trimmed")
+        raise LiveMeasurementCliError(
+            "GitHub token environment value must be non-empty and trimmed"
+        )
     return token
 
 
 def _github_connection_factory(host: str, timeout_seconds: float) -> GitHubHttpsConnection:
     """Create only the retained fixed GitHub API HTTPS transport."""
     if host != "api.github.com":
-        raise LiveMeasurementCliError("GitHub transport host is outside the retained fixed host")
+        raise LiveMeasurementCliError(
+            "GitHub transport host is outside the retained fixed host"
+        )
     return cast(GitHubHttpsConnection, HTTPSConnection(host, timeout=timeout_seconds))
 
 
@@ -209,15 +222,25 @@ def _require_frozen_threat_anchor(
 ) -> None:
     """Require the prepared authority to remain the exact frozen representative threat case."""
     if summary.cve_id != _FROZEN_CVE_ID:
-        raise LiveMeasurementCliError("prepared threat evidence CVE drifted from the frozen anchor")
+        raise LiveMeasurementCliError(
+            "prepared threat evidence CVE drifted from the frozen anchor"
+        )
     if summary.kev_snapshot_date != _FROZEN_KEV_SNAPSHOT_DATE:
-        raise LiveMeasurementCliError("prepared KEV snapshot date drifted from the frozen anchor")
+        raise LiveMeasurementCliError(
+            "prepared KEV snapshot date drifted from the frozen anchor"
+        )
     if summary.epss_snapshot_date != _FROZEN_EPSS_SNAPSHOT_DATE:
-        raise LiveMeasurementCliError("prepared EPSS snapshot date drifted from the frozen anchor")
+        raise LiveMeasurementCliError(
+            "prepared EPSS snapshot date drifted from the frozen anchor"
+        )
     if ghsa_ids != (_FROZEN_GHSA_ID,):
-        raise LiveMeasurementCliError("prepared GHSA authority does not match the frozen anchor")
+        raise LiveMeasurementCliError(
+            "prepared GHSA authority does not match the frozen anchor"
+        )
     if nvd_cve_ids != (_FROZEN_CVE_ID,):
-        raise LiveMeasurementCliError("prepared NVD authority does not match the frozen anchor")
+        raise LiveMeasurementCliError(
+            "prepared NVD authority does not match the frozen anchor"
+        )
 
 
 def _source_evidence_hashes(
@@ -239,34 +262,6 @@ def _source_evidence_hashes(
     )
 
 
-def _atomic_write_new(path: Path, payload: bytes) -> None:
-    """Publish already-admitted bytes atomically without overwriting prior evidence."""
-    if type(payload) is not bytes or not payload:
-        raise LiveMeasurementCliError("artifact payload must be non-empty admitted bytes")
-    if not path.parent.is_dir():
-        raise LiveMeasurementCliError("artifact parent directory must already exist")
-    if path.exists():
-        raise LiveMeasurementCliError("artifact already exists; refusing to overwrite evidence")
-
-    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
-    try:
-        with temporary.open("xb") as handle:
-            handle.write(payload)
-            handle.flush()
-            os.fsync(handle.fileno())
-        try:
-            os.link(temporary, path)
-        except FileExistsError as exc:
-            raise LiveMeasurementCliError(
-                "artifact appeared concurrently; refusing to overwrite evidence"
-            ) from exc
-    finally:
-        try:
-            temporary.unlink()
-        except FileNotFoundError:
-            pass
-
-
 def _run_timestamp_utc() -> str:
     """Return canonical second-resolution UTC evidence for the live run start."""
     return datetime.now(UTC).replace(microsecond=0).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -285,18 +280,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         output_path = cast(Path, args.output)
         bundle_bytes, bundle = _load_json_object(bundle_path)
         locator_bytes, locator_manifest = _load_json_object(locator_manifest_path)
-        retrieval_catalog = build_retrieval_catalog(load_corpus_manifest(corpus_manifest_path))
+        retrieval_catalog = build_retrieval_catalog(
+            load_corpus_manifest(corpus_manifest_path)
+        )
 
         bundle_digest = sha256(bundle_bytes).hexdigest()
         locator_digest = sha256(locator_bytes).hexdigest()
         region = cast(str, args.region)
-        session = boto3.Session(profile_name=cast(str, args.profile), region_name=region)
+        session = boto3.Session(
+            profile_name=cast(str, args.profile),
+            region_name=region,
+        )
 
         s3_client = cast(
             ExactS3AuthorityObjectClient,
             session.client(
                 "s3",
-                config=Config(retries={"mode": "standard", "total_max_attempts": 1}),
+                config=Config(
+                    retries={"mode": "standard", "total_max_attempts": 1}
+                ),
             ),
         )
         readers = build_representative_threat_authority_readers(
@@ -322,15 +324,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             bundle_sha256=bundle_digest,
             locator_manifest_sha256=locator_digest,
         )
-        ghsa_ids = tuple(item.ghsa_id for item in threat_evidence.ghsa_vulnerabilities)
-        nvd_ids = tuple(item.observed_version.cve_id for item in threat_evidence.nvd_records)
+        ghsa_ids = tuple(
+            item.ghsa_id for item in threat_evidence.ghsa_vulnerabilities
+        )
+        nvd_ids = tuple(
+            item.observed_version.cve_id for item in threat_evidence.nvd_records
+        )
         _require_frozen_threat_anchor(
             preparation,
             ghsa_ids=ghsa_ids,
             nvd_cve_ids=nvd_ids,
         )
         ghsa_sha256 = threat_evidence.ghsa_vulnerabilities[0].source_advisory_sha256
-        nvd_sha256 = threat_evidence.nvd_records[0].observed_version.source_cve_sha256
+        nvd_sha256 = (
+            threat_evidence.nvd_records[0].observed_version.source_cve_sha256
+        )
         source_evidence = _source_evidence_hashes(
             bundle_sha256=bundle_digest,
             locator_manifest_sha256=locator_digest,
@@ -349,8 +357,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             region_name=region,
             config=_synthesis_client_config(),
         )
-        retrieval_client = cast(BedrockAgentRuntimeClient, dynamic_retrieval_client)
-        synthesis_client = cast(BedrockHybridConverseClient, dynamic_synthesis_client)
+        retrieval_client = cast(
+            BedrockAgentRuntimeClient,
+            dynamic_retrieval_client,
+        )
+        synthesis_client = cast(
+            BedrockHybridConverseClient,
+            dynamic_synthesis_client,
+        )
 
         composition = build_representative_live_workload_composition(
             github_connection_factory=_github_connection_factory,
@@ -384,7 +398,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             ),
             dependencies=composition.dependencies,
         )
-        _atomic_write_new(output_path, run.serialized_artifact)
+        write_new_representative_live_artifact(
+            output_path,
+            run.serialized_artifact,
+        )
     except Exception as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
