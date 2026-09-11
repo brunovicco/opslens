@@ -27,15 +27,9 @@ Phase 18 is complete. Its protected closeout was squash-merged through PR #290 a
 feca774535b7d83f57c26f4e9fe7da71ce268f0f
 ```
 
-The historical Phase 18 closeout artifacts intentionally preserve the state that existed before their protected merge:
+Historical Phase 18 artifacts intentionally preserve the state that existed when they were created. Current-facing documents carry later protected-main truth without rewriting historical evidence.
 
-- [`../labs/phase-18-closeout.md`](../labs/phase-18-closeout.md)
-- [`../labs/evidence/phase-18-closeout-v1.json`](../labs/evidence/phase-18-closeout-v1.json)
-- [`adr/0075-phase18-evaluation-cost-portfolio-closeout.md`](adr/0075-phase18-evaluation-cost-portfolio-closeout.md)
-
-Do not rewrite those historical artifacts to make them look post-merge. Current-facing documents carry the post-merge state instead.
-
-The retained Phase 18 evidence semantics remain:
+Retained evidence semantics:
 
 ```text
 MEASURED != DERIVED
@@ -54,9 +48,9 @@ historical experiment != standing authority
 
 ### Gate 19.1 — complete
 
-Gate 19.1 was protected-squash-merged through PR #292 at `ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1` after exact-head validation at `484e2b85fc1996b2419b4057c2cf585ab1f675a1`.
+Gate 19.1 was protected-squash-merged through PR #292 at `ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1`.
 
-Its retained launch contract is:
+Historical retained launch contract:
 
 ```text
 public-analysis-workload:v1
@@ -69,49 +63,22 @@ public endpoints: 0
 model/capability executions: 0
 ```
 
-The Gate 19.1 human-readable lab is [`../labs/phase-19-gate-19-1-public-runtime-hypothesis.md`](../labs/phase-19-gate-19-1-public-runtime-hypothesis.md). Its machine-readable contract is [`../labs/evidence/phase-19-gate-19-1-public-runtime-contract-v1.json`](../labs/evidence/phase-19-gate-19-1-public-runtime-contract-v1.json), with architecture decision rationale in [`adr/0076-bounded-public-runtime-hypothesis-and-launch-contract.md`](adr/0076-bounded-public-runtime-hypothesis-and-launch-contract.md).
+Key records:
 
-Gate 19.1 created no API Gateway, Lambda Function URL, public Lambda compute, SQS queue, result store, WAF, ECS/Fargate, AgentCore runtime, or runtime IAM.
+- [`../labs/phase-19-gate-19-1-public-runtime-hypothesis.md`](../labs/phase-19-gate-19-1-public-runtime-hypothesis.md)
+- [`../labs/evidence/phase-19-gate-19-1-public-runtime-contract-v1.json`](../labs/evidence/phase-19-gate-19-1-public-runtime-contract-v1.json)
+- [`adr/0076-bounded-public-runtime-hypothesis-and-launch-contract.md`](adr/0076-bounded-public-runtime-hypothesis-and-launch-contract.md)
 
-### Gate 19.2 — closeout in review
+### Gate 19.2 — complete
 
-Gate 19.2 completed the repository-side measurement harness, the human-only pre-flight/fail-closed checks, one successful representative live execution, deterministic persisted-artifact review, and the interaction-pattern decision.
+Gate 19.2 completed one human-operated representative live measurement, deterministic persisted-artifact review, and the evidence-backed interaction-pattern decision.
 
-Source protected main for the successful live run:
-
-```text
-e45ba419414e6dd77ecad68f4d2312e9123c2223
-```
-
-The exact measurement surface includes:
+Protected closeout merge:
 
 ```text
-end-to-end duration
-per-stage duration
-GitHub physical HTTP request count
-Athena query count + bytes scanned
-Bedrock Retrieve count
-Bedrock Retrieve client elapsed milliseconds
-Bedrock model call count + input/output tokens
-Bedrock model client elapsed milliseconds
-Bedrock provider latency milliseconds
-retry count
-throttle count
-serialized admitted-result bytes
+PR #347
+71eda2650889d3047259d37be226862ed2a09092
 ```
-
-The retained representative anchor is:
-
-```text
-repository:      openedx/mockprock
-commit/ref:      18c954d8604df4740c829ba17fa2f3640b92b900
-evidence file:  uv.lock
-dependency:     webob==1.8.10
-GHSA anchor:    GHSA-6hx8-3wjj-gr8g
-CVE anchor:     CVE-2026-54770
-```
-
-The earlier Requests anchor recorded by the historical Gate 19.2 measurement-contract artifact is intentionally not rewritten. Later threat-admission/preload evidence and the human runbook carry the current representative coordinates.
 
 Canonical live artifact:
 
@@ -120,7 +87,7 @@ Canonical live artifact:
 - run id `gate19.2-live-20260911T131121Z`
 - outcome `SUCCESS`
 
-Measured evidence includes:
+Measured evidence:
 
 ```text
 end-to-end duration                    17,748 ms
@@ -135,15 +102,13 @@ Athena query count / bytes                    0  NOT_APPLICABLE
 serialized admitted result              5,285 bytes
 ```
 
-The Bedrock-facing stages consumed `13,098 ms`, or `73.80%` of measured end-to-end duration.
-
-Gate 19.2 selects the interaction pattern:
+Selected interaction pattern:
 
 ```text
 ASYNC_SUBMIT_STATUS_RESULT
 ```
 
-This is not a claim that the successful baseline timed out; it completed below the retained 30-second HTTP API reference envelope. The async decision is based on provider-latency coupling, retry safety, backpressure, and failure isolation. Explicit retry-safety scenarios are classified `DERIVED`, never relabeled as measured evidence.
+Gate 19.2 did not claim a measured timeout. The measured baseline completed below 30 seconds; the async decision follows provider-latency coupling, retry safety, backpressure, and failure isolation. Derived retry-safety scenarios remain explicitly `DERIVED`.
 
 Canonical closeout records:
 
@@ -151,22 +116,78 @@ Canonical closeout records:
 - [`../labs/evidence/phase-19-gate-19-2-closeout-v1.json`](../labs/evidence/phase-19-gate-19-2-closeout-v1.json)
 - [`../scripts/verify_phase19_gate19_2_closeout.py`](../scripts/verify_phase19_gate19_2_closeout.py)
 
-Gate 19.2 authority remains:
+Gate 19.2 protected authority impact remained zero for public endpoints, new AWS resources, IAM roles/policies, third-party code execution, and PR #89 modifications.
+
+### Gate 19.3 — in progress
+
+Issue: #348  
+Draft PR: #349
+
+Gate 19.3 freezes the smallest concrete topology for the already-selected async interaction pattern, still with zero deployment authority.
+
+Selected design identifier:
 
 ```text
-public endpoints:       0
-new AWS resources:      0
-new IAM roles/policies: 0
-third-party code exec:  0
-PR #89 modifications:  0
+HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB
 ```
 
-The interaction pattern is selected, but the concrete AWS topology remains unselected. The next Phase 19 boundary is to freeze the smallest async ingress/job/result topology, lifecycle semantics, least-privilege IAM responsibilities, abuse/backpressure controls, and disable/recovery boundaries before any deployment.
+Logical shape:
+
+```text
+Amazon API Gateway HTTP API
+ -> API Lambda
+    -> DynamoDB jobs/idempotency
+    -> SQS standard queue
+       -> Lambda worker
+          -> retained OpsLens analysis authorities
+          -> DynamoDB status/result
+    -> SQS DLQ
+```
+
+Future public routes, not deployed by this gate:
+
+```text
+POST /v1/analyses
+GET  /v1/analyses/{job_id}
+GET  /v1/analyses/{job_id}/result
+```
+
+State vocabulary:
+
+```text
+SUBMITTING
+ACCEPTED
+RUNNING
+SUCCEEDED
+FAILED
+EXPIRED
+```
+
+The contract makes the DynamoDB/SQS dual-write boundary explicit, requires `Idempotency-Key`, treats SQS as at-least-once transport, uses DynamoDB conditional state/attempt admission for duplicate authority, requires bounded retry and a DLQ, and separates API-handler IAM from worker/Bedrock IAM.
+
+Canonical Gate 19.3 records:
+
+- [`../labs/phase-19-gate-19-3-async-topology-contract.md`](../labs/phase-19-gate-19-3-async-topology-contract.md)
+- [`../labs/evidence/phase-19-gate-19-3-async-topology-contract-v1.json`](../labs/evidence/phase-19-gate-19-3-async-topology-contract-v1.json)
+- [`../scripts/verify_phase19_gate19_3_async_topology_contract.py`](../scripts/verify_phase19_gate19_3_async_topology_contract.py)
+
+Gate 19.3 remains design-only:
+
+```text
+public endpoints created:               0
+new AWS resources created:              0
+new IAM roles/policies created:         0
+AWS/provider live executions:           0
+third-party repository code executions: 0
+PR #89 modifications:                   0
+```
+
+No deployment is authorized by this gate. The next implementation boundary may materialize the selected shape only behind disabled/non-public defaults and only after exact Terraform/IAM/lifecycle review.
 
 ## Evidence location rule
 
 Canonical machine-readable artifacts live under `../labs/evidence/`. Human-readable experiment and closeout records live under `../labs/`. ADRs explain why a decision was made; labs/evidence record what was measured, proven, rejected, or intentionally left `UNMEASURED`.
 
-Historical evidence is not rewritten merely to make it look current. Current-facing documents (`current-state.md`, `roadmap.md`, this index, and active runbooks) explain later superseding context while preserving the original evidence lineage.
+Historical evidence is not rewritten merely to make it look current. Current-facing documents (`current-state.md`, `roadmap.md`, this index, and active runbooks) explain later superseding context while preserving original evidence lineage.
 
 PR #89 remains separate deferred Governed LLM Gateway work and is not a Phase 19 dependency unless explicitly re-evaluated later.
