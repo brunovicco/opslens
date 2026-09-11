@@ -9,9 +9,9 @@ from hashlib import sha256
 from typing import cast
 from urllib.parse import urlsplit
 
-from opslens.public_analysis.domain import (
+from opslens.public_analysis.domain.errors import PublicAnalysisValidationError
+from opslens.public_analysis.domain.request import (
     PublicAnalysisRequest,
-    PublicAnalysisValidationError,
     PublicRepositoryTarget,
     create_public_analysis_request,
 )
