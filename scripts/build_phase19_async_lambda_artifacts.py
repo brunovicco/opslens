@@ -332,7 +332,10 @@ def _normalized_permissions(path: Path) -> int:
 def _write_zip(package_dir: Path, artifact_path: Path) -> None:
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
     artifact_path.unlink(missing_ok=True)
-    files = sorted(path for path in package_dir.rglob("*") if path.is_file())
+    files = sorted(
+        (path for path in package_dir.rglob("*") if path.is_file()),
+        key=lambda path: path.relative_to(package_dir).as_posix(),
+    )
     with ZipFile(
         artifact_path,
         mode="w",
