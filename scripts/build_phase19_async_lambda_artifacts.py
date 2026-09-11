@@ -57,13 +57,15 @@ _COMMON_SOURCES: Final = (
     "src/opslens/public_analysis/domain/errors.py",
     "src/opslens/public_analysis/domain/request.py",
 )
-_API_SOURCES: Final = _COMMON_SOURCES + (
+_API_SOURCES: Final = (
+    *_COMMON_SOURCES,
     "src/opslens/public_analysis/async_api_lambda.py",
     "src/opslens/public_analysis/adapters/async_aws.py",
     "src/opslens/public_analysis/adapters/async_http_api.py",
     "src/opslens/public_analysis/application/request_admission.py",
 )
-_WORKER_SOURCES: Final = _COMMON_SOURCES + (
+_WORKER_SOURCES: Final = (
+    *_COMMON_SOURCES,
     "src/opslens/public_analysis/async_worker_lambda.py",
     "src/opslens/public_analysis/adapters/async_sqs_event.py",
     "src/opslens/public_analysis/application/async_worker_service.py",
@@ -139,7 +141,9 @@ def _locked_packages() -> dict[str, _LockedPackage]:
             raise RuntimeError("uv.lock package entry is missing name/version")
         raw_wheels = package.get("wheels")
         wheel_entries = (
-            [] if raw_wheels is None else _objects(raw_wheels, label=f"uv.lock package {name} wheels")
+            []
+            if raw_wheels is None
+            else _objects(raw_wheels, label=f"uv.lock package {name} wheels")
         )
         wheel_hashes: list[str] = []
         for wheel in wheel_entries:
@@ -314,8 +318,9 @@ def _validate_package(
     expected_distributions = {package.name for package in packages}
     installed = _installed_distributions(package_dir)
     if installed != expected_distributions:
+        expected = sorted(expected_distributions)
         raise RuntimeError(
-            f"{spec.name} installed distributions drifted: expected={sorted(expected_distributions)} "
+            f"{spec.name} installed distributions drifted: expected={expected} "
             f"observed={sorted(installed)}"
         )
 
