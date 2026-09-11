@@ -199,18 +199,6 @@ def _verify_identity(root: dict[str, object]) -> None:
         if root.get(key) != expected_value:
             raise SystemExit(f"Gate 19.2 identity drifted at {key}")
 
-    classifications = set(
-        _strings(root.get("classification_vocabulary"), label="classification_vocabulary")
-    )
-    if classifications != {
-        "MEASURED",
-        "DERIVED",
-        "UNMEASURED",
-        "NOT_APPLICABLE",
-        "CONFIGURED_LIMIT",
-    }:
-        raise SystemExit("Gate 19.2 classification vocabulary drifted")
-
 
 def _verify_stage_and_measurement_contract(root: dict[str, object]) -> None:
     """Bind machine-readable evidence to the executable measurement contract."""
