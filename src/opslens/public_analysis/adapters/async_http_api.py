@@ -151,7 +151,10 @@ def _decode_submit_body(event: Mapping[str, object]) -> bytes:
         except (binascii.Error, ValueError) as exc:
             raise AsyncHttpAdmissionError("submit body contains invalid base64") from exc
     else:
-        decoded = body.encode("utf-8")
+        try:
+            decoded = body.encode("utf-8")
+        except UnicodeEncodeError as exc:
+            raise AsyncHttpAdmissionError("submit body must encode as UTF-8") from exc
     if len(decoded) > MAX_PUBLIC_ANALYSIS_REQUEST_BYTES:
         raise AsyncHttpAdmissionError("submit body exceeds the public request byte bound")
     return decoded
@@ -207,7 +210,8 @@ def admit_async_http_request(event: Mapping[str, object]) -> AsyncHttpRequest:
         raise AsyncHttpAdmissionError("routeKey is outside the frozen async public contract")
     if method != "GET":
         raise AsyncHttpAdmissionError("status/result route must use GET")
-    if event.get("body") not in {None, ""}:
+    raw_body = event.get("body")
+    if raw_body is not None and raw_body != "":
         raise AsyncHttpAdmissionError("status/result routes do not accept a request body")
     job_id = _job_path_parameter(event)
     expected_path = f"/v1/analyses/{job_id}"
@@ -313,11 +317,11 @@ def handle_async_http_event(
 
 
 __all__ = [
+    "MAX_HTTP_API_BODY_TEXT_CHARS",
     "AsyncHttpAdmissionError",
     "AsyncHttpRequest",
     "AsyncHttpResponse",
     "AsyncHttpRoute",
-    "MAX_HTTP_API_BODY_TEXT_CHARS",
     "admit_async_http_request",
     "handle_async_http_event",
 ]
