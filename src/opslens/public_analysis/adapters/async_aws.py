@@ -88,7 +88,7 @@ def _optional_string(item: _DynamoItem, name: str) -> str | None:
     value = item.get(name)
     if value is None:
         return None
-    if not isinstance(value, dict) or set(value) != {"S"}:
+    if set(value) != {"S"}:
         raise AsyncJobPersistenceError(f"DynamoDB optional string attribute {name!r} is invalid")
     decoded = value.get("S")
     if type(decoded) is not str or not decoded:
@@ -101,7 +101,7 @@ def _optional_int(item: _DynamoItem, name: str) -> int | None:
     value = item.get(name)
     if value is None:
         return None
-    if not isinstance(value, dict) or set(value) != {"N"}:
+    if set(value) != {"N"}:
         raise AsyncJobPersistenceError(f"DynamoDB optional number attribute {name!r} is invalid")
     raw = value.get("N")
     if type(raw) is not str or not raw.isdecimal():
