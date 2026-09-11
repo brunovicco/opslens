@@ -50,7 +50,7 @@ PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Gove
 
 ## Retained security and authority invariants
 
-Phase 17 security controls remain authoritative for CI/CD authority, dependency/code scanning, adversarial regression, telemetry minimization, and bounded operational recovery. Phase 19 adds no exception.
+Phase 17 security controls remain authoritative for CI/CD authority, dependency/code scanning, adversarial regression, telemetry minimization, and bounded operational recovery. **Gate 17.1** retains the evidence-first security threat/control-gap inventory; **Gate 17.2** retains CI/CD and workflow-authority hardening. Phase 19 adds no exception.
 
 Permanent boundaries remain:
 
