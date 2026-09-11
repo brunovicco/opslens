@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import asdict, dataclass
 
 from opslens.ingestion.epss.domain.history import HistoricalEpssSnapshot
@@ -12,6 +13,8 @@ from opslens.public_analysis.application.representative_repository_analysis impo
 from opslens.public_analysis.application.representative_threat_evidence_coordinate_loaders import (
     RepresentativeThreatEvidenceCoordinates,
 )
+
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,6 +41,13 @@ class RepresentativeThreatEvidencePreparationSummary:
         return dict(asdict(self))
 
 
+def _require_sha256(value: str, *, field: str) -> str:
+    """Require one canonical lowercase SHA-256 digest."""
+    if _SHA256_RE.fullmatch(value) is None:
+        raise ValueError(f"{field} must be a lowercase SHA-256 hex digest")
+    return value
+
+
 def summarize_representative_threat_evidence_preparation(
     *,
     coordinates: RepresentativeThreatEvidenceCoordinates,
@@ -46,8 +56,11 @@ def summarize_representative_threat_evidence_preparation(
     locator_manifest_sha256: str,
 ) -> RepresentativeThreatEvidencePreparationSummary:
     """Build a bounded summary without serializing KEV/EPSS raw source payloads."""
-    if len(bundle_sha256) != 64 or len(locator_manifest_sha256) != 64:
-        raise ValueError("input evidence hashes must be SHA-256 hex digests")
+    bundle_digest = _require_sha256(bundle_sha256, field="bundle_sha256")
+    manifest_digest = _require_sha256(
+        locator_manifest_sha256,
+        field="locator_manifest_sha256",
+    )
 
     epss = evidence.epss_snapshot
     if type(epss) is EpssSnapshot:
@@ -71,8 +84,8 @@ def summarize_representative_threat_evidence_preparation(
     return RepresentativeThreatEvidencePreparationSummary(
         schema_version=1,
         cve_id=coordinates.cve_id,
-        bundle_sha256=bundle_sha256,
-        locator_manifest_sha256=locator_manifest_sha256,
+        bundle_sha256=bundle_digest,
+        locator_manifest_sha256=manifest_digest,
         ghsa_occurrence_count=len(evidence.ghsa_vulnerabilities),
         nvd_record_count=len(evidence.nvd_records),
         kev_snapshot_date=evidence.kev_snapshot.snapshot_date,
