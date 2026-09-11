@@ -56,6 +56,12 @@ class _StsClient(Protocol):
         ...
 
 
+class _ClientSession(Protocol):
+    def client(self, service_name: str, **kwargs: object) -> object:
+        """Construct one AWS service client through the human session."""
+        ...
+
+
 def _object(value: object, *, label: str) -> dict[str, object]:
     if not isinstance(value, dict):
         raise ArtifactPublicationError(f"{label} must be an object")
@@ -365,8 +371,9 @@ def main() -> int:
 
     session = Session(profile_name=args.profile, region_name=args.region)
     retry_config = Config(retries={"mode": "standard", "total_max_attempts": 1})
-    sts = cast(_StsClient, session.client("sts", config=retry_config))
-    s3 = cast(_S3Client, session.client("s3", config=retry_config))
+    client_session = cast(_ClientSession, session)
+    sts = cast(_StsClient, client_session.client("sts", config=retry_config))
+    s3 = cast(_S3Client, client_session.client("s3", config=retry_config))
     identity = sts.get_caller_identity()
     if identity.get("Account") != _EXPECTED_ACCOUNT:
         raise ArtifactPublicationError("caller account differs from the frozen OpsLens account")
