@@ -24,11 +24,16 @@ from opslens.public_analysis.application.representative_threat_evidence_material
 from opslens.transformation.nvd.domain.models import NvdCveCoreRecord
 
 
+def _bundle_call_log() -> list[Mapping[str, object]]:
+    """Return one explicitly typed mutable call log for strict Pyright."""
+    return []
+
+
 @dataclass(slots=True)
 class FakeGhsaLoader:
     """Return one typed GHSA sentinel while recording exact bundle identity."""
 
-    calls: list[Mapping[str, object]] = field(default_factory=list)
+    calls: list[Mapping[str, object]] = field(default_factory=_bundle_call_log)
 
     def load(
         self,
@@ -43,7 +48,7 @@ class FakeGhsaLoader:
 class FakeNvdLoader:
     """Return one typed NVD sentinel while recording exact bundle identity."""
 
-    calls: list[Mapping[str, object]] = field(default_factory=list)
+    calls: list[Mapping[str, object]] = field(default_factory=_bundle_call_log)
 
     def load(self, bundle: Mapping[str, object]) -> tuple[NvdCveCoreRecord, ...]:
         """Record one load and return a typed sentinel."""
@@ -55,7 +60,7 @@ class FakeNvdLoader:
 class FakeKevLoader:
     """Return one typed KEV sentinel while recording exact bundle identity."""
 
-    calls: list[Mapping[str, object]] = field(default_factory=list)
+    calls: list[Mapping[str, object]] = field(default_factory=_bundle_call_log)
 
     def load(self, bundle: Mapping[str, object]) -> KevCatalogSnapshot:
         """Record one load and return a typed sentinel."""
@@ -67,7 +72,7 @@ class FakeKevLoader:
 class FakeEpssLoader:
     """Return one typed EPSS sentinel while recording exact bundle identity."""
 
-    calls: list[Mapping[str, object]] = field(default_factory=list)
+    calls: list[Mapping[str, object]] = field(default_factory=_bundle_call_log)
 
     def load(self, bundle: Mapping[str, object]) -> EpssSnapshot:
         """Record one load and return a typed sentinel."""
