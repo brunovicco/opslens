@@ -50,6 +50,14 @@ from opslens.public_analysis.application.representative_threat_evidence_admissio
     RepresentativeThreatEvidenceAuthority,
     admit_representative_threat_evidence,
 )
+from opslens.public_analysis.application.representative_threat_evidence_materialization import (
+    RepresentativeEpssAuthorityLoader,
+    RepresentativeGhsaAuthorityLoader,
+    RepresentativeKevAuthorityLoader,
+    RepresentativeNvdAuthorityLoader,
+    RepresentativeThreatEvidenceAuthorityLoaders,
+    materialize_representative_threat_evidence,
+)
 from opslens.public_analysis.application.representative_workload import (
     PublicAnalysisWorkloadExecutionError,
     PublicAnalysisWorkloadFailureCategory,
@@ -124,8 +132,12 @@ __all__ = [
     "PublicStructuredEvidenceExecutor",
     "PublicStructuredEvidenceStageExecution",
     "PublicSynthesisStageExecution",
+    "RepresentativeEpssAuthorityLoader",
+    "RepresentativeGhsaAuthorityLoader",
     "RepresentativeHybridSynthesizer",
+    "RepresentativeKevAuthorityLoader",
     "RepresentativeModelReasoning",
+    "RepresentativeNvdAuthorityLoader",
     "RepresentativePublicWorkloadExecution",
     "RepresentativePublicWorkloadExecutors",
     "RepresentativeRepositoryAnalysis",
@@ -135,6 +147,7 @@ __all__ = [
     "RepresentativeStageAction",
     "RepresentativeThreatEvidenceAdmissionError",
     "RepresentativeThreatEvidenceAuthority",
+    "RepresentativeThreatEvidenceAuthorityLoaders",
     "RepresentativeThreatEvidenceLoad",
     "RepresentativeThreatEvidenceLoader",
     "RepresentativeWorkloadClock",
@@ -155,6 +168,7 @@ __all__ = [
     "execute_representative_model_reasoning",
     "execute_representative_public_workload",
     "execute_representative_workload",
+    "materialize_representative_threat_evidence",
     "measure_representative_workload",
     "parse_public_semantic_plan_proposal",
     "plan_public_analysis_handoff",
