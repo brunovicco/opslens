@@ -12,18 +12,46 @@ from boto3.session import Session
 from opslens.public_analysis.adapters.async_aws import (
     DynamoDbAsyncJobStore,
     SqsAsyncJobPublisher,
-    _DynamoDbClient,
-    _SqsClient,
 )
 from opslens.public_analysis.adapters.async_http_api import handle_async_http_event
-from opslens.public_analysis.adapters.async_sqs_event import handle_async_sqs_event
-from opslens.public_analysis.application.async_job_service import AsyncJobStore
+from opslens.public_analysis.adapters.async_sqs_event import (
+    admit_async_sqs_deliveries,
+    handle_async_sqs_event,
+)
+from opslens.public_analysis.application.async_job_service import (
+    AsyncJobPublisher,
+    AsyncJobStore,
+)
 from opslens.public_analysis.application.async_worker_service import AsyncAnalysisExecutor
 from opslens.public_analysis.async_runtime_config import (
     AsyncApiRuntimeSettings,
     AsyncRuntimeConfigurationError,
     AsyncWorkerRuntimeSettings,
 )
+
+
+class _DynamoDbClient(Protocol):
+    """Structural subset of the DynamoDB client required by the job store."""
+
+    def get_item(self, **kwargs: object) -> dict[str, object]:
+        """Get one item."""
+        ...
+
+    def transact_write_items(self, **kwargs: object) -> dict[str, object]:
+        """Create job and idempotency alias atomically."""
+        ...
+
+    def update_item(self, **kwargs: object) -> dict[str, object]:
+        """Conditionally update one job."""
+        ...
+
+
+class _SqsClient(Protocol):
+    """Structural subset of the SQS client required by the job publisher."""
+
+    def send_message(self, **kwargs: object) -> dict[str, object]:
+        """Publish one queue message."""
+        ...
 
 
 class _DynamoDbClientFactory(Protocol):
@@ -73,7 +101,7 @@ def execute_api_lambda(
     *,
     settings: AsyncApiRuntimeSettings,
     store: AsyncJobStore,
-    publisher: SqsAsyncJobPublisher,
+    publisher: AsyncJobPublisher,
     now_epoch_seconds: int,
 ) -> dict[str, object]:
     """Execute one already-composed API Lambda invocation."""
@@ -129,43 +157,23 @@ def worker_lambda_handler(
     event: Mapping[str, object],
     context: LambdaContext,
 ) -> dict[str, object]:
-    """Fail closed until the retained provider-heavy executor is explicitly composed."""
+    """Retain all admitted messages while provider-heavy worker composition is disabled."""
     del context
     settings = AsyncWorkerRuntimeSettings.from_environment()
     if settings.worker_enabled:
         raise AsyncRuntimeConfigurationError(
             "async worker execution is enabled but provider executor composition is not admitted"
         )
-
-    class _NeverStore:
-        def get_by_idempotency_key_sha256(self, digest: str):
-            del digest
-            raise AssertionError("disabled worker must not access DynamoDB")
-
-        def put_if_absent(self, job):
-            del job
-            raise AssertionError("disabled worker must not access DynamoDB")
-
-        def get(self, job_id: str):
-            del job_id
-            raise AssertionError("disabled worker must not access DynamoDB")
-
-        def replace_if_current(self, *, current, replacement):
-            del current, replacement
-            raise AssertionError("disabled worker must not access DynamoDB")
-
-    class _NeverExecutor:
-        def execute(self, request):
-            del request
-            raise AssertionError("disabled worker must not execute provider-heavy analysis")
-
-    return execute_worker_lambda(
+    deliveries = admit_async_sqs_deliveries(
         event,
-        settings=settings,
-        store=cast(AsyncJobStore, _NeverStore()),
-        executor=cast(AsyncAnalysisExecutor, _NeverExecutor()),
-        now_epoch_seconds=_epoch_seconds(),
+        expected_queue_arn=settings.queue_arn,
+        expected_region=settings.region,
     )
+    return {
+        "batchItemFailures": [
+            {"itemIdentifier": delivery.message_id} for delivery in deliveries
+        ]
+    }
 
 
 __all__ = [
