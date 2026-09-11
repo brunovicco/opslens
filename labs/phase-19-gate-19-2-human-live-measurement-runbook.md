@@ -1,24 +1,20 @@
 # Phase 19 Gate 19.2 — Human Live Measurement Runbook
 
-_Date: 2026-09-10_
+_Date: 2026-09-11_
 
 ## Purpose
 
-Execute the smallest **non-public** representative workload measurement required by Gate 19.2 without creating or modifying public runtime infrastructure, AWS resources, IAM policy, or third-party repository state.
+Execute exactly one **non-public** representative Gate 19.2 workload under an existing operator identity, record measured GitHub/Bedrock resource evidence, and persist one bounded immutable artifact without creating or mutating public runtime infrastructure, AWS resources, IAM policy, or third-party repository state.
 
-This runbook is an execution boundary, not runtime-selection authority. The retained decision remains:
+This runbook crosses a human execution boundary. It does **not** authorize CI, ChatGPT, or an automated workflow to invoke live GitHub/AWS/Bedrock providers.
+
+The retained runtime decision remains:
 
 ```text
 DEFERRED_PENDING_MEASUREMENT
 ```
 
-The retained leading hypothesis remains:
-
-```text
-ASYNC_SUBMIT_STATUS_RESULT
-```
-
-until a successful representative measurement artifact exists and is reviewed.
+until a successful live artifact exists and is reviewed.
 
 ## Permanent safety rules
 
@@ -31,17 +27,17 @@ model proposal != authorization
 tool/protocol success != business truth
 MEASURED != DERIVED
 UNMEASURED != zero
+NOT_APPLICABLE != zero
 configured limit != measured utilization
 ```
 
-The operator MUST NOT run dependency installation, build, test, package, hook, workflow, or arbitrary repository code from the target repository. The only third-party repository content admitted by the workload is the inert `uv.lock` file obtained through the retained fixed-host GitHub adapter and bound to an exact commit.
+The operator MUST NOT clone-and-build, install dependencies, run tests, execute hooks, run workflows, execute Dockerfiles, or run arbitrary code from the target repository. The representative workload reads only retained inert repository evidence through the fixed-host GitHub adapter.
 
-## Frozen representative input
-
-The previous Requests anchor was rejected during read-only pre-live discovery because its GHSA advisory was not materialized in the current analytical GHSA state. Gate 19.2 therefore freezes the following reproducible input instead:
+## Frozen representative anchor
 
 ```text
 repository:      openedx/mockprock
+repository URL:  https://github.com/openedx/mockprock
 commit/ref:      18c954d8604df4740c829ba17fa2f3640b92b900
 evidence file:  uv.lock
 dependency:     webob==1.8.10
@@ -51,110 +47,56 @@ affected range: < 1.8.11
 patched from:   1.8.11
 ```
 
-Read-only cross-source discovery established the following pre-live source facts for that exact CVE:
+Frozen threat coordinates:
 
 ```text
-GHSA advisory versions: 1
-GHSA package entries:    1
-NVD present:             yes
-NVD observations:        1
-KEV snapshot:            2026-09-10
-KEV membership:          absent in the selected complete snapshot
-EPSS snapshot:           2026-09-10
-EPSS score:              0.00339
-EPSS percentile:         0.26988
-source overlap:          GHSA + NVD + EPSS = 3
+NVD observations: 1
+KEV snapshot:     2026-09-10
+KEV membership:   absent in that complete snapshot
+EPSS snapshot:    2026-09-10
+EPSS score:       0.00339
+EPSS percentile:  0.26988
 ```
 
-The cross-source builder validated `selection_expectations_match=true`. These facts are pre-live evidence coordinates, not proof of repository runtime exposure. In particular, KEV absence means only **not present in the selected KEV snapshot**; it is not a zero-risk assertion.
+KEV absence does not mean zero risk. Low EPSS does not mean zero risk. Repository dependency evidence does not establish runtime exposure.
 
-The immutable `uv.lock` evidence is read only. Do not clone and execute the target repository, install its dependencies, run its tests, or interpret dependency presence as runtime reachability.
+## Retained live provider coordinates
 
-## Existing AWS boundary
-
-The live workload may reuse only already-retained resources and authority. It must not create or mutate infrastructure.
-
-Known retained Bedrock Knowledge Base:
+The driver reuses only existing resources:
 
 ```text
-region:            us-east-1
-knowledge base id: BTVJ2PBR2A
+region:             us-east-1
+knowledge base id:  BTVJ2PBR2A
+data source id:     IEL1LBE026
+source/data bucket: opslens-dev-data-487757851499-us-east-1
+synthesis model:    us.anthropic.claude-haiku-4-5-20251001-v1:0
 ```
 
-Use the already-approved Bedrock synthesis model/inference profile configured by the retained synthesis path. Do not broaden model or resource permissions for this experiment.
+These coordinates were already established by the retained Phase 7/8 Bedrock path. Do not create a new Knowledge Base, vector index, model deployment, IAM role, policy, endpoint, bucket, or data source for this experiment.
 
-## Pre-flight verification
+## Driver boundary
 
-Start from protected `main` containing the merged Gate 19.2 measurement implementation and threat-evidence admission boundary.
-
-```bash
-git switch main
-git fetch origin
-git pull --ff-only
-
-git status --short
-git rev-parse HEAD
-
-uv lock --check
-uv sync --frozen
-
-uv run ruff check src/opslens/public_analysis tests/unit/public_analysis scripts/verify_phase19_gate19_2_measurement_contract.py
-uv run pyright src/opslens/public_analysis tests/unit/public_analysis scripts/verify_phase19_gate19_2_measurement_contract.py
-uv run pytest tests/unit/public_analysis
-PYTHONPATH=src uv run python scripts/verify_phase19_gate19_2_measurement_contract.py
-```
-
-Abort if any command fails or if the working tree contains unexpected changes.
-
-## Credential and authority check
-
-Use an existing operator profile/session that already has the minimum retained read/invoke permissions required by the current experiment. Do not modify IAM as part of this run.
-
-At minimum, the live path may require existing authority for:
+The human-run entrypoint is:
 
 ```text
-bedrock:Retrieve
-bedrock:InvokeModel
+scripts/run_phase19_gate19_2_live_measurement.py
 ```
 
-plus any already-retained read-only source access needed to materialize authoritative GHSA/NVD/KEV/EPSS evidence. If the existing identity cannot perform the run, **stop**. Lack of permission is evidence; it is not authorization to add permission.
+Its checked implementation lives under `opslens.public_analysis.cli.run_live_measurement`; the script is only a thin operator wrapper.
 
-Verify identity before execution:
+Before the measured workload starts, the driver:
 
-```bash
-aws sts get-caller-identity --profile <existing-profile>
-```
+1. validates the frozen repository/model coordinates and output path;
+2. loads the local cross-source evidence bundle and immutable locator manifest;
+3. loads the checked canonical retrieval manifest/catalog;
+4. performs the retained exact-version S3 threat-authority materialization with explicit byte limits;
+5. validates CVE/GHSA and KEV/EPSS snapshot identity;
+6. projects only bounded source hashes into final artifact metadata;
+7. constructs Bedrock and GitHub adapters without executing the measured workload yet.
 
-## Threat-evidence materialization boundary
+Those exact-version S3 `GetObject(VersionId=...)` reads are **pre-measurement preparation**. They are not inserted into any request-time workload stage because S3 request count/latency is outside the frozen Gate 19.2 measurement contract.
 
-Before the end-to-end run, materialize the exact typed inputs required by `RepresentativeRepositoryThreatEvidence`:
-
-```text
-GhsaPyPIVulnerabilityEvidence tuple
-NvdCveCoreRecord tuple
-KevCatalogSnapshot
-EpssSnapshot | HistoricalEpssSnapshot
-```
-
-Then pass the untrusted `CrossSourceCveEvidenceV1` projection plus those complete typed inputs through `admit_representative_threat_evidence`.
-
-Requirements:
-
-- evidence must come through retained source/transform contracts;
-- the GHSA occurrence must bind `webob` to `GHSA-6hx8-3wjj-gr8g` / `CVE-2026-54770`;
-- the analytical vulnerable range must remain `< 1.8.11` with `range_evaluation_performed=false`;
-- installed-version applicability remains owned by the retained correlation layer;
-- NVD authority must preserve the exact `ObservedCveVersion` identity rather than reconstructing it from a partial analytical row;
-- KEV absence must be revalidated against one complete immutable KEV snapshot;
-- EPSS score evidence must be revalidated against one complete current or historical EPSS snapshot;
-- unavailable evidence remains unavailable/unsupported according to the retained contracts;
-- do not convert a missing source into a fabricated zero or negative finding.
-
-The exact serialized/materialized evidence used for the run should be retained under `labs/evidence/` with hashes or source identifiers sufficient to reproduce the input without storing unnecessary source payloads.
-
-## Representative workload execution
-
-Execute exactly one success-path run of `public-analysis-workload:v1` through the composed Gate 19.2 path:
+The measured path then calls `execute_representative_workload(...)` exactly once using:
 
 ```text
 public_request_admission
@@ -168,21 +110,128 @@ model_reasoning
 result_admission
 ```
 
-The runtime wiring must use:
+The live composition reuses:
 
-- retained `GitHubRestSnapshotSource` with `MeasuredGitHubHttpsConnectionFactory`;
-- retained deterministic repository-analysis and Risk Policy v1 functions;
-- retained Bedrock Knowledge Base direct Retrieve adapter for semantic evidence;
-- retained bounded Bedrock hybrid synthesis adapter;
-- deterministic final result admission;
-- a real monotonic clock for stage/end-to-end duration;
-- explicit provider measurement coverage.
+- `MeasuredGitHubHttpsConnectionFactory` around the retained fixed-host GitHub source;
+- `PreloadedRepresentativeThreatEvidenceLoader` for already-admitted threat evidence;
+- direct bounded Bedrock Knowledge Base `Retrieve` plus canonical retrieval-catalog admission;
+- retained bounded hybrid Bedrock synthesis;
+- the real monotonic measurement clock;
+- the frozen provider measurement classifications.
 
-Do not expose an HTTP endpoint for this run. Execute locally/non-publicly under the operator identity.
+No public endpoint is involved.
 
-## Required observations
+## Pre-flight verification
 
-The live measurement artifact must record these dimensions exactly:
+Run from the exact reviewed commit that will be recorded in the evidence artifact:
+
+```bash
+git status --short
+git rev-parse HEAD
+
+uv lock --check
+uv sync --frozen
+
+uv run ruff check src/opslens/public_analysis tests/unit/public_analysis
+uv run pyright src/opslens/public_analysis tests/unit/public_analysis
+uv run pytest tests/unit/public_analysis
+PYTHONPATH=src uv run python scripts/verify_phase19_gate19_2_measurement_contract.py
+```
+
+Abort if any check fails or if the working tree has unexpected changes.
+
+Verify the existing AWS identity without changing IAM:
+
+```bash
+aws sts get-caller-identity --profile <existing-profile>
+```
+
+The existing identity must already have the retained read/invoke permissions required for exact S3 authority reads, Bedrock `Retrieve`, and model invocation. Missing permission is a stop condition, not authorization to expand IAM.
+
+## Required local inputs
+
+Prepare paths to the exact reviewed files used by the pre-measurement threat-evidence preparation:
+
+```bash
+export OPSLENS_BUNDLE=<path-to-cross-source-cve-evidence-v1.json>
+export OPSLENS_LOCATOR_MANIFEST=<path-to-immutable-threat-locator-manifest.json>
+export OPSLENS_PROFILE=<existing-profile>
+```
+
+Use reviewed positive byte limits for each immutable source. Do not guess smaller values until failure and then silently widen them. Record the chosen limits with the operator notes:
+
+```bash
+export OPSLENS_GHSA_SILVER_MAX_BYTES=<reviewed-positive-limit>
+export OPSLENS_NVD_SILVER_MAX_BYTES=<reviewed-positive-limit>
+export OPSLENS_NVD_BRONZE_MAX_BYTES=<reviewed-positive-limit>
+export OPSLENS_KEV_BRONZE_MAX_BYTES=<reviewed-positive-limit>
+export OPSLENS_EPSS_BRONZE_MAX_BYTES=<reviewed-positive-limit>
+```
+
+For authenticated public GitHub reads, an existing token may be supplied by environment name only:
+
+```bash
+export GITHUB_TOKEN=<existing-token>
+```
+
+The token value is never written to the measurement artifact. If no token is required, omit both the environment variable and the `--github-token-env` argument below.
+
+## Exact human-run command
+
+Confirm that the target artifact does not already exist. The driver deliberately refuses to overwrite evidence.
+
+```bash
+PYTHONPATH=src uv run python scripts/run_phase19_gate19_2_live_measurement.py \
+  --bundle "$OPSLENS_BUNDLE" \
+  --locator-manifest "$OPSLENS_LOCATOR_MANIFEST" \
+  --manifest knowledge/corpus/v1/manifest.json \
+  --profile "$OPSLENS_PROFILE" \
+  --region us-east-1 \
+  --authority-bucket opslens-dev-data-487757851499-us-east-1 \
+  --knowledge-base-id BTVJ2PBR2A \
+  --data-source-id IEL1LBE026 \
+  --source-bucket opslens-dev-data-487757851499-us-east-1 \
+  --model-id us.anthropic.claude-haiku-4-5-20251001-v1:0 \
+  --repository-url https://github.com/openedx/mockprock \
+  --repository-ref 18c954d8604df4740c829ba17fa2f3640b92b900 \
+  --repository-commit 18c954d8604df4740c829ba17fa2f3640b92b900 \
+  --run-id "gate19.2-live-$(date -u +%Y%m%dT%H%M%SZ)" \
+  --opslens-commit-sha "$(git rev-parse HEAD)" \
+  --github-token-env GITHUB_TOKEN \
+  --ghsa-silver-max-bytes "$OPSLENS_GHSA_SILVER_MAX_BYTES" \
+  --nvd-silver-max-bytes "$OPSLENS_NVD_SILVER_MAX_BYTES" \
+  --nvd-bronze-max-bytes "$OPSLENS_NVD_BRONZE_MAX_BYTES" \
+  --kev-bronze-max-bytes "$OPSLENS_KEV_BRONZE_MAX_BYTES" \
+  --epss-bronze-max-bytes "$OPSLENS_EPSS_BRONZE_MAX_BYTES" \
+  --output labs/evidence/phase-19-gate-19-2-live-measurement-v1.json
+```
+
+If running unauthenticated against public GitHub, remove this line entirely:
+
+```text
+--github-token-env GITHUB_TOKEN
+```
+
+Do not retry the entire command automatically. A failed run is separate evidence and must be understood before another human attempt receives a new run id/output decision.
+
+## Operator checklist before pressing Enter
+
+- [ ] current `HEAD` is the exact reviewed/green commit intended for the artifact;
+- [ ] working tree has no unexpected change;
+- [ ] `uv lock --check`, Ruff, Pyright, unit tests, and measurement-contract verifier pass;
+- [ ] `aws sts get-caller-identity` shows the intended existing identity;
+- [ ] no IAM/resource/public-endpoint change is planned;
+- [ ] bundle and locator manifest correspond to the frozen CVE/GHSA anchor;
+- [ ] source byte limits were reviewed explicitly;
+- [ ] repository URL, ref, and commit exactly match the frozen anchor;
+- [ ] KB/data-source/source-bucket/model coordinates exactly match retained resources;
+- [ ] output artifact path does not already exist;
+- [ ] no third-party repository code will be executed;
+- [ ] PR #89 is untouched.
+
+## Measurement contract
+
+The artifact records:
 
 ```text
 end_to_end_duration_ms
@@ -202,45 +251,40 @@ throttle_count
 serialized_result_bytes
 ```
 
-Evidence semantics are separate from numeric values. A numeric zero is not enough to establish that a metric was measured.
-
-For the retained direct structured-evidence projection in this workload:
+Evidence semantics are separate from numeric values. Frozen coverage remains:
 
 ```text
-athena_query_count:   NOT_APPLICABLE
-athena_bytes_scanned: NOT_APPLICABLE
+GitHub HTTP requests:              MEASURED
+Athena query count:                NOT_APPLICABLE
+Athena bytes scanned:              NOT_APPLICABLE
+Bedrock Retrieve count:            MEASURED
+Bedrock Retrieve client latency:   MEASURED
+Bedrock model call count:          MEASURED
+Bedrock input tokens:              MEASURED
+Bedrock output tokens:             MEASURED
+Bedrock model client latency:      MEASURED
+Bedrock model provider latency:    MEASURED
+retry count:                       MEASURED
+throttle count:                    UNMEASURED
 ```
 
-Do not report those as `MEASURED=0`. The read-only Athena queries used earlier to discover and materialize the pre-admitted threat bundle are preparation evidence; they are not request-time structured-evidence queries in this representative workload.
+Do not reinterpret a numeric zero for Athena or throttling as measurement authority. In particular, `throttle_count` remains `UNMEASURED` under the frozen experiment even if the numeric counter is zero.
 
-`throttle_count` remains `UNMEASURED` unless the concrete live adapter instrumentation used by the entire provider path can prove the observation. Do not infer throttling from elapsed time, retry count, or provider success.
+Bedrock latency values come from retained invocation evidence:
 
-Bedrock latency values must come from retained invocation evidence:
+- Retrieve client elapsed time: `BedrockRetrieveInvocationEvidence.client_elapsed_ms`;
+- model client elapsed time: `BedrockHybridSynthesisInvocationEvidence.client_elapsed_ms`;
+- provider model latency: `BedrockHybridSynthesisInvocationEvidence.bedrock_latency_ms`.
 
-- Retrieve client elapsed time from `BedrockRetrieveInvocationEvidence.client_elapsed_ms`;
-- model client elapsed time from `BedrockHybridSynthesisInvocationEvidence.client_elapsed_ms`;
-- model provider latency from `BedrockHybridSynthesisInvocationEvidence.bedrock_latency_ms`.
+## Successful evidence artifact
 
-## Failure-path validation
-
-After the success-path measurement, validate at least one deterministic fail-closed path without mutating infrastructure. Prefer an input/admission failure that occurs before paid provider execution, such as malformed public request JSON or an invalid repository/ref contract.
-
-The failure-path run must demonstrate that:
-
-- invalid input does not become a partial success;
-- no final admitted result is emitted;
-- missing measurements are not backfilled as zero;
-- the failure does not authorize fallback execution against another repository, model, KB, or runtime.
-
-## Evidence artifact
-
-Write the successful live observation to a new immutable evidence artifact, for example:
+A successful admitted run is written atomically to:
 
 ```text
 labs/evidence/phase-19-gate-19-2-live-measurement-v1.json
 ```
 
-The artifact should include at least:
+The file contains bounded metadata only, including:
 
 ```text
 artifact/version identity
@@ -255,18 +299,59 @@ provider numeric totals
 provider measurement classifications
 serialized_result_bytes
 final result SHA-256
-success/failure outcome
+outcome = SUCCESS
 public endpoint count = 0
 new AWS resource count = 0
 new IAM role/policy count = 0
 third-party repository code executions = 0
 ```
 
-Do not put secrets, credentials, authorization headers, full prompt contents, or unnecessary retrieved source text in the artifact.
+The artifact must not contain credentials, authorization headers, raw provider response bodies, full prompts, or retrieved source text.
+
+The writer fsyncs already-admitted bytes to a same-directory temporary file and publishes the final path using create-without-replace semantics. A prior or concurrently created artifact is never overwritten.
+
+## Failure-path validation
+
+The implementation has offline tests for frozen-coordinate rejection, provider/executor failure, artifact byte admission, and no-overwrite persistence. For the human lab, validate at least one deterministic fail-closed input path **before paid provider execution**, for example by changing the repository ref to `main` while leaving all other inputs unchanged.
+
+Expected behavior:
+
+```text
+exit != 0
+no final artifact created
+no fallback repository/model/KB selected
+no missing measurement backfilled as zero
+```
+
+Do not turn that deliberate failure test into a second live success attempt automatically.
+
+## After the successful run
+
+Inspect and preserve the artifact, then verify at minimum:
+
+```bash
+python -m json.tool labs/evidence/phase-19-gate-19-2-live-measurement-v1.json >/dev/null
+sha256sum labs/evidence/phase-19-gate-19-2-live-measurement-v1.json
+```
+
+On macOS, use `shasum -a 256` instead of `sha256sum` if necessary.
+
+Review:
+
+1. exact OpsLens commit and frozen repository commit;
+2. all nine stage durations in order;
+3. GitHub physical request count;
+4. Bedrock Retrieve count/latency;
+5. model count/tokens/client/provider latency;
+6. retries;
+7. Athena classifications remain `NOT_APPLICABLE`;
+8. throttle classification remains `UNMEASURED`;
+9. safety counters remain exactly zero;
+10. final result hash and serialized byte count are present.
 
 ## Runtime decision after measurement
 
-Only after the live artifact exists and passes deterministic verification may Gate 19.2 evaluate:
+Only after the live artifact exists and passes deterministic review may Gate 19.2 evaluate:
 
 ```text
 SYNC
@@ -276,7 +361,7 @@ DEFERRED_PENDING_MEASUREMENT
 
 The decision must be derived from the measured workload characteristics and retained service limits, not from the prior `ASYNC_SUBMIT_STATUS_RESULT` hypothesis.
 
-If the evidence is incomplete, inconsistent, or still materially `UNMEASURED`, retain:
+If the evidence is incomplete, inconsistent, or still materially insufficient for the topology decision, retain:
 
 ```text
 DEFERRED_PENDING_MEASUREMENT
@@ -284,14 +369,17 @@ DEFERRED_PENDING_MEASUREMENT
 
 ## Stop conditions
 
-Stop the run immediately if any of the following occurs:
+Stop immediately if:
 
 - a required permission is absent;
 - an operation would create or mutate AWS/IAM/public runtime resources;
-- a target repository path other than retained inert evidence would need to be executed;
+- the repository would need to be cloned, built, installed, tested, or otherwise executed;
 - provider identity, exact repository commit, or source evidence cannot be established;
-- measurement instrumentation cannot distinguish `UNMEASURED` from a real observed zero;
+- S3 threat-authority materialization cannot complete before the measured workload;
+- retrieval provenance/catalog admission fails;
+- measurement instrumentation cannot preserve `UNMEASURED` vs real zero;
+- a fallback would change repository, model, KB, data source, or runtime;
 - the workload would require touching PR #89;
-- any deterministic admission or provenance contract fails.
+- any deterministic admission/provenance contract fails.
 
 A stopped run is preferable to manufacturing measurement authority.
