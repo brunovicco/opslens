@@ -7,12 +7,12 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import cast
 
+from opslens.public_analysis.application.async_job_service import AsyncJobStore
 from opslens.public_analysis.application.async_worker_service import (
     AsyncAnalysisExecutor,
     AsyncWorkerExecutionDisposition,
     execute_async_worker_delivery,
 )
-from opslens.public_analysis.application.async_job_service import AsyncJobStore
 from opslens.public_analysis.domain.async_job import validate_async_job_id
 from opslens.public_analysis.domain.errors import PublicAnalysisValidationError
 
@@ -68,7 +68,11 @@ def _decode_job_id(body: object) -> str:
     """Decode the exact content-minimized SQS body."""
     if type(body) is not str or not body:
         raise AsyncSqsAdmissionError("SQS body must be a non-empty string")
-    if len(body.encode("utf-8")) > MAX_SQS_JOB_BODY_BYTES:
+    try:
+        body_bytes = body.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise AsyncSqsAdmissionError("SQS body must encode as UTF-8") from exc
+    if len(body_bytes) > MAX_SQS_JOB_BODY_BYTES:
         raise AsyncSqsAdmissionError("SQS body exceeds the worker message byte bound")
     try:
         decoded: object = json.loads(body, object_pairs_hook=_unique_json_object)
@@ -192,10 +196,10 @@ def handle_async_sqs_event(
 
 
 __all__ = [
-    "AsyncSqsAdmissionError",
-    "AsyncSqsJobDelivery",
     "MAX_SQS_BATCH_RECORDS",
     "MAX_SQS_JOB_BODY_BYTES",
+    "AsyncSqsAdmissionError",
+    "AsyncSqsJobDelivery",
     "admit_async_sqs_deliveries",
     "handle_async_sqs_event",
 ]
