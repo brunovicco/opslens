@@ -9,18 +9,20 @@ code presence the meaning of runtime authorization.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import TYPE_CHECKING
 
 from aws_lambda_powertools.utilities.typing import LambdaContext
 
-from opslens.public_analysis.application.async_job_service import (
-    AsyncJobPublisher,
-    AsyncJobStore,
-)
-from opslens.public_analysis.application.async_worker_service import AsyncAnalysisExecutor
-from opslens.public_analysis.async_runtime_config import (
-    AsyncApiRuntimeSettings,
-    AsyncWorkerRuntimeSettings,
-)
+if TYPE_CHECKING:
+    from opslens.public_analysis.application.async_job_service import (
+        AsyncJobPublisher,
+        AsyncJobStore,
+    )
+    from opslens.public_analysis.application.async_worker_service import AsyncAnalysisExecutor
+    from opslens.public_analysis.async_runtime_config import (
+        AsyncApiRuntimeSettings,
+        AsyncWorkerRuntimeSettings,
+    )
 
 
 def execute_api_lambda(
