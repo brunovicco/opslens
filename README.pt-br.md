@@ -24,7 +24,7 @@ A plataforma separa deliberadamente raciocínio probabilístico da autoridade de
 
 **Phases 0–18 estão completas.** A Phase 18 foi protegida por squash merge no PR #290 em `feca774535b7d83f57c26f4e9fe7da71ce268f0f`.
 
-A **Phase 19 — Bounded Public Runtime & Productization** está em andamento. A Gate 19.1 está completa pelo PR #292. A Gate 19.2 está completa pelo protected PR #347 em `71eda2650889d3047259d37be226862ed2a09092`. A Gate 19.3 agora congela a menor topologia async concreta como autoridade de design apenas, sem autorização de deployment.
+A **Phase 19 — Bounded Public Runtime & Productization** está em andamento. A Gate 19.1 está completa pelo PR #292. A Gate 19.2 está completa pelo protected PR #347 em `71eda2650889d3047259d37be226862ed2a09092`. A Gate 19.3 está completa pelo protected PR #349 em `18d31c03d27448c88a6ffcba16683f3875a5ba15`. A Gate 19.4 implementa essa topologia selecionada atrás de defaults disabled/non-public no PR #351 e não autoriza deployment.
 
 ```text
 19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE
@@ -36,18 +36,23 @@ A **Phase 19 — Bounded Public Runtime & Productization** está em andamento. A
       estágios Bedrock medidos: 13.098 ms / 73,80% do E2E
       padrão de interação selecionado: ASYNC_SUBMIT_STATUS_RESULT
       protected merge: PR #347 / 71eda2650889d3047259d37be226862ed2a09092
-19.3  Concrete Async Topology Contract                  IN PROGRESS
-      issue: #348
-      draft PR: #349
+19.3  Concrete Async Topology Contract                  COMPLETE
+      protected merge: PR #349 / 18d31c03d27448c88a6ffcba16683f3875a5ba15
       topologia de design selecionada: HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB
+      deployment autorizado: NÃO
+19.4  Disabled Async Runtime Implementation             IN PROGRESS
+      issue: #350 / PR: #351
+      runtime materializado por default: false
+      execute-api endpoint habilitado: NÃO
+      submit/worker habilitados: NÃO
       deployment autorizado: NÃO
 ```
 
 A Gate 19.2 não afirma que a execução bem-sucedida estourou timeout. O baseline medido terminou abaixo de 30 segundos. A decisão async decorre de acoplamento à latência de providers, retry safety, backpressure e isolamento de falhas; os cenários derivados permanecem explicitamente separados da evidência medida.
 
-A Gate 19.3 agora seleciona uma **topologia de design**, não um runtime implantado: API Gateway HTTP API + API Lambda + SQS + Lambda worker + DynamoDB, com DLQ e autoridade explícita para idempotência, estado e retries. Nenhum endpoint público, fila, tabela, função, role/policy IAM ou execução de provider é criado por esta gate.
+A Gate 19.3 selecionou a topologia de design: API Gateway HTTP API + API Lambda + SQS + Lambda worker + DynamoDB, com DLQ e autoridade explícita para idempotência, estado e retries. A Gate 19.4 agora materializa esse design **em código e Terraform no repositório apenas**, mantendo `public_async_runtime_materialized=false`, execute-api desabilitado, switches de submit/worker desabilitados, event-source mapping do SQS desabilitado, reserved concurrency do worker em zero e nenhum domínio público customizado. Nenhum `terraform apply`, mutação AWS/IAM, habilitação de endpoint público ou execução pública provider-heavy é autorizada.
 
-Veja [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [AIP-C01 Learning Map](docs/aip-c01-learning-map.md), o [closeout da Gate 19.2](labs/phase-19-gate-19-2-closeout.md), o [contrato de topologia da Gate 19.3](labs/phase-19-gate-19-3-async-topology-contract.md) e o [índice de ADRs](docs/adr/README.md).
+Veja [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [AIP-C01 Learning Map](docs/aip-c01-learning-map.md), o [closeout da Gate 19.2](labs/phase-19-gate-19-2-closeout.md), o [contrato de topologia da Gate 19.3](labs/phase-19-gate-19-3-async-topology-contract.md), a [implementação disabled da Gate 19.4](labs/phase-19-gate-19-4-disabled-async-runtime.md) e o [índice de ADRs](docs/adr/README.md).
 
 ## Arquitetura em resumo
 
@@ -95,29 +100,31 @@ O LLM não recebe autoridade irrestrita de text-to-SQL. Conteúdo recuperado é 
 
 ## Fronteira pública do produto
 
-O código atual de public analysis continua sendo uma **fronteira de aplicação**, não um serviço HTTP implantado:
+O `main` protegido continua sem **runtime HTTP público implantado**. A Gate 19.4 adiciona um caminho de implementação disabled no PR #351; materialização no repositório não equivale a autoridade de deployment na AWS.
+
+A autoridade de public analysis começa por:
 
 ```text
 JSON não confiável
  -> admissão estrita da requisição
  -> coordenadas GitHub validadas
  -> evidência imutável do repositório
- -> planejamento semântico limitado e metadata-only
- -> admissão determinística da rota híbrida
- -> PublicAnalysisAdmissionHandoff
- -> STOP
+ -> autoridade determinística de ameaça/risco
+ -> evidência semântica limitada
+ -> raciocínio de modelo limitado
+ -> admissão determinística do resultado
 ```
 
-A Gate 19.2 acrescentou uma execução representativa não pública completa, com admissão determinística, accounting de providers, evidência persistida e revisão offline. A execução reutilizou autoridade determinística de repositório/risco, evidência de ameaça previamente admitida, transporte GitHub medido, Bedrock Knowledge Base retrieval limitado, síntese limitada, admissão exata do resultado e persistência atômica da evidência. CI e ChatGPT não executaram o caminho live dos providers.
+A Gate 19.2 exercitou essa execução representativa não pública completa com admissão determinística, accounting de providers, evidência persistida e revisão offline. CI e ChatGPT não executaram o caminho live dos providers.
 
-A Gate 19.3 congela a seguinte forma futura de interação pública sem implantá-la:
+A Gate 19.3 congelou, e a Gate 19.4 implementa atrás de defaults disabled, a seguinte forma assíncrona:
 
 ```text
 POST /v1/analyses
   -> API Gateway HTTP API
   -> API Lambda determinística
-  -> estado de job/idempotência no DynamoDB
-  -> fila SQS
+  -> autoridade de job/idempotência no DynamoDB
+  -> fila SQS standard
   -> Lambda worker
   -> resultado admitido de volta ao DynamoDB
 
@@ -125,7 +132,7 @@ GET /v1/analyses/{job_id}
 GET /v1/analyses/{job_id}/result
 ```
 
-A topologia de design selecionada é `HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB`. Ela permanece **evidência de design sem autoridade de deployment** até uma gate futura produzir Terraform exato, IAM least-privilege, testes de lifecycle/idempotência e autorização explícita de deployment.
+O job record, e não a entrega da fila, é a autoridade de execução de negócio. A fila carrega apenas a identidade determinística `job_id`. Entregas duplicadas passam pela autoridade condicional de estado/attempt no DynamoDB. O worker permanece sem autoridade de provider até uma gate futura admitir e compor explicitamente o executor provider-heavy.
 
 ## Evidência medida retida
 
@@ -145,7 +152,7 @@ A cadeia machine-readable da Phase 18 começa em `labs/evidence/phase-18-gate-18
 
 A Gate 19.2 persistiu o artefato live canônico em `labs/evidence/phase-19-gate-19-2-live-measurement-v1.json`, com hash independente `04ab754a12e25c4aeda0075d41b92693fec464aec4431b3734981488ff470114`, além do closeout machine-readable em `labs/evidence/phase-19-gate-19-2-closeout-v1.json`.
 
-A Gate 19.3 adiciona o contrato design-only em `labs/evidence/phase-19-gate-19-3-async-topology-contract-v1.json`; ele não contém evidência medida de deployment e registra explicitamente zero mutações runtime/AWS/IAM.
+A Gate 19.3 adiciona o contrato design-only em `labs/evidence/phase-19-gate-19-3-async-topology-contract-v1.json`; ele registra zero mutações de deployment/AWS/IAM/provider. A Gate 19.4 adiciona evidência de implementação/readiness em `labs/evidence/phase-19-gate-19-4-disabled-async-runtime-v1.json` e um verifier offline. Esse artefato descreve autoridade de código/Terraform e limites configurados; não é evidência de deployment.
 
 ## Limites de custo e recursos
 
@@ -163,7 +170,7 @@ Scheduler maximum retry attempts        2
 
 São **limites configurados, não utilização medida**. A Gate 19.2 fornece evidência de medição do workload completo, mas não converte limites configurados em utilização observada nem trata valores `UNMEASURED` como zero. Em particular, as métricas request-time do Athena permanecem `NOT_APPLICABLE` no caminho direto retido de structured evidence e `throttle_count` permanece `UNMEASURED`, mesmo com contador numérico igual a zero.
 
-A Gate 19.3 não introduz afirmação de produção sobre concurrency, queue depth, retention, timeout ou custo mensal. Qualquer configuração runtime futura é `CONFIGURED_LIMIT` até ser medida separadamente.
+A Gate 19.4 acrescenta limites de design do runtime disabled: API reserved concurrency `2`, worker reserved concurrency `0`, timeout da API `15 s`, timeout do worker `60 s`, queue visibility `120 s`, redrive receive count `4`, worker max attempts `3` e limites HTTP API burst/rate `10/5`. Todos são `CONFIGURED_LIMIT`, nunca utilização medida.
 
 ## Fronteiras retidas
 
@@ -175,7 +182,7 @@ Security Hardening retém Actions em SHA completo, invariantes de segurança no 
 
 OpsLens não afirma atualmente um runtime HTTP público de produção implantado, MCP/A2A públicos, AgentCore como runtime default de produção, SLOs de produção derivados de labs, TCO/run rate de produção, zero runtime exposure por causa do Inspector ter retornado zero registros, limites configurados como utilização medida, um global platform kill switch ou um score/probabilidade de aprovação na certificação.
 
-A Phase 19 agora possui uma decisão baseada em evidência para o padrão de interação async e uma seleção de topologia concreta **apenas em nível de design**. Ela **não** afirma que API Gateway, Lambda, SQS, DynamoDB, DLQ, roles IAM ou qualquer outro recurso da Gate 19.3 tenha sido criado, configurado, habilitado ou exposto publicamente.
+A Phase 19 agora possui uma decisão baseada em evidência para o padrão de interação async, um contrato protegido de topologia concreta e uma implementação disabled em código/Terraform em andamento. As definições Terraform do PR #351 **não** significam que API Gateway, Lambda, SQS, DynamoDB, roles/policies IAM ou qualquer recurso AWS da Gate 19.4 tenha sido criado ou habilitado.
 
 ## Laboratório AIP-C01
 
@@ -197,12 +204,12 @@ chunking:             NONE
 canonical chunks:     9
 synthesis API:        Amazon Bedrock Converse
 reasoning profile:    us.anthropic.claude-haiku-4-5-20251001-v1:0
-public HTTP runtime:  NONE
+public HTTP runtime:  NONE DEPLOYED
 ```
 
 ## Documentação
 
-Comece por [docs/README.md](docs/README.md). Para portfólio e arquitetura, os principais pontos de entrada são [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md), o [closeout da Phase 18](labs/phase-18-closeout.md), o [launch contract da Gate 19.1](labs/phase-19-gate-19-1-public-runtime-hypothesis.md), o [closeout da Gate 19.2](labs/phase-19-gate-19-2-closeout.md), o [contrato de topologia da Gate 19.3](labs/phase-19-gate-19-3-async-topology-contract.md) e o [índice de ADRs](docs/adr/README.md).
+Comece por [docs/README.md](docs/README.md). Para portfólio e arquitetura, os principais pontos de entrada são [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md), o [closeout da Phase 18](labs/phase-18-closeout.md), o [launch contract da Gate 19.1](labs/phase-19-gate-19-1-public-runtime-hypothesis.md), o [closeout da Gate 19.2](labs/phase-19-gate-19-2-closeout.md), o [contrato de topologia da Gate 19.3](labs/phase-19-gate-19-3-async-topology-contract.md), a [implementação disabled da Gate 19.4](labs/phase-19-gate-19-4-disabled-async-runtime.md) e o [índice de ADRs](docs/adr/README.md).
 
 ---
 

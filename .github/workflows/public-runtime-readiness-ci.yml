@@ -9,18 +9,22 @@ on:
       - "src/opslens/knowledge_retrieval/**/*.py"
       - "src/opslens/hybrid_retrieval/**/*.py"
       - "tests/unit/public_analysis/**/*.py"
+      - "infra/environments/dev/public_async_runtime*.tf"
       - "labs/evidence/phase-19-gate-19-1-*.json"
       - "labs/evidence/phase-19-gate-19-2-*.json"
       - "labs/evidence/phase-19-gate-19-3-*.json"
+      - "labs/evidence/phase-19-gate-19-4-*.json"
       - "labs/phase-19-gate-19-1-*.md"
       - "labs/phase-19-gate-19-2-*.md"
       - "labs/phase-19-gate-19-3-*.md"
+      - "labs/phase-19-gate-19-4-*.md"
       - "docs/adr/0076-*.md"
       - "scripts/verify_phase19_gate19_1_public_runtime_contract.py"
       - "scripts/verify_phase19_gate19_2_measurement_contract.py"
       - "scripts/verify_phase19_gate19_2_live_measurement.py"
       - "scripts/verify_phase19_gate19_2_closeout.py"
       - "scripts/verify_phase19_gate19_3_async_topology_contract.py"
+      - "scripts/verify_phase19_gate19_4_disabled_async_runtime.py"
       - "scripts/verify_phase18_closeout.py"
       - "README.md"
       - "README.pt-br.md"
@@ -72,6 +76,7 @@ jobs:
           scripts/verify_phase19_gate19_2_live_measurement.py
           scripts/verify_phase19_gate19_2_closeout.py
           scripts/verify_phase19_gate19_3_async_topology_contract.py
+          scripts/verify_phase19_gate19_4_disabled_async_runtime.py
           scripts/verify_phase18_closeout.py
 
       - name: Pyright strict Phase 19 verifiers
@@ -82,6 +87,7 @@ jobs:
           scripts/verify_phase19_gate19_2_live_measurement.py
           scripts/verify_phase19_gate19_2_closeout.py
           scripts/verify_phase19_gate19_3_async_topology_contract.py
+          scripts/verify_phase19_gate19_4_disabled_async_runtime.py
           scripts/verify_phase18_closeout.py
 
       - name: Run retained public-analysis unit tests
@@ -111,3 +117,8 @@ jobs:
         env:
           PYTHONPATH: src
         run: uv run python scripts/verify_phase19_gate19_3_async_topology_contract.py
+
+      - name: Verify Gate 19.4 disabled async runtime implementation
+        env:
+          PYTHONPATH: src
+        run: uv run python scripts/verify_phase19_gate19_4_disabled_async_runtime.py

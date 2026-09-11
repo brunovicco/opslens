@@ -116,14 +116,15 @@ Canonical closeout records:
 - [`../labs/evidence/phase-19-gate-19-2-closeout-v1.json`](../labs/evidence/phase-19-gate-19-2-closeout-v1.json)
 - [`../scripts/verify_phase19_gate19_2_closeout.py`](../scripts/verify_phase19_gate19_2_closeout.py)
 
-Gate 19.2 protected authority impact remained zero for public endpoints, new AWS resources, IAM roles/policies, third-party code execution, and PR #89 modifications.
+### Gate 19.3 — complete
 
-### Gate 19.3 — in progress
+Gate 19.3 was protected-merged through PR #349 at:
 
-Issue: #348  
-Draft PR: #349
+```text
+18d31c03d27448c88a6ffcba16683f3875a5ba15
+```
 
-Gate 19.3 freezes the smallest concrete topology for the already-selected async interaction pattern, still with zero deployment authority.
+It selected the smallest concrete topology for the already-selected async interaction pattern while preserving zero deployment authority.
 
 Selected design identifier:
 
@@ -144,23 +145,12 @@ Amazon API Gateway HTTP API
     -> SQS DLQ
 ```
 
-Future public routes, not deployed by this gate:
+Frozen routes:
 
 ```text
 POST /v1/analyses
 GET  /v1/analyses/{job_id}
 GET  /v1/analyses/{job_id}/result
-```
-
-State vocabulary:
-
-```text
-SUBMITTING
-ACCEPTED
-RUNNING
-SUCCEEDED
-FAILED
-EXPIRED
 ```
 
 The contract makes the DynamoDB/SQS dual-write boundary explicit, requires `Idempotency-Key`, treats SQS as at-least-once transport, uses DynamoDB conditional state/attempt admission for duplicate authority, requires bounded retry and a DLQ, and separates API-handler IAM from worker/Bedrock IAM.
@@ -171,18 +161,82 @@ Canonical Gate 19.3 records:
 - [`../labs/evidence/phase-19-gate-19-3-async-topology-contract-v1.json`](../labs/evidence/phase-19-gate-19-3-async-topology-contract-v1.json)
 - [`../scripts/verify_phase19_gate19_3_async_topology_contract.py`](../scripts/verify_phase19_gate19_3_async_topology_contract.py)
 
-Gate 19.3 remains design-only:
+Gate 19.3 authorized no deployment.
+
+### Gate 19.4 — in progress
+
+Issue: #350  
+PR: #351  
+Source protected main: `18d31c03d27448c88a6ffcba16683f3875a5ba15`
+
+Gate 19.4 implements the selected Gate 19.3 design as typed/tested application code, narrow AWS adapters, Lambda composition boundaries, and Terraform **behind disabled/non-public defaults**.
+
+Current implementation authority includes:
 
 ```text
-public endpoints created:               0
-new AWS resources created:              0
-new IAM roles/policies created:         0
-AWS/provider live executions:           0
-third-party repository code executions: 0
-PR #89 modifications:                   0
+deterministic job + hashed idempotency identity
+canonical request fingerprint and exact request coordinates
+SUBMITTING | ACCEPTED | RUNNING | SUCCEEDED | FAILED | EXPIRED
+optimistic version/CAS authority
+submission and worker leases
+bounded attempts
+submit/status/result use cases
+worker claim/success/failure use cases
+semantic idempotency conflicts
+duplicate-delivery/concurrent-claim no-op semantics
+DynamoDB transactional/conditional store
+SQS content-minimized job publication
+strict HTTP API v2 and SQS event admission
+thin API/worker Lambda composition
 ```
 
-No deployment is authorized by this gate. The next implementation boundary may materialize the selected shape only behind disabled/non-public defaults and only after exact Terraform/IAM/lifecycle review.
+Terraform now represents the selected resources but creates none by default:
+
+```text
+public_async_runtime_materialized = false
+disable_execute_api_endpoint = true
+OPSLENS_ASYNC_SUBMIT_ENABLED = false
+OPSLENS_ASYNC_WORKER_ENABLED = false
+SQS -> worker event-source mapping enabled = false
+worker reserved concurrency = 0
+custom public domain = absent
+```
+
+The worker additionally refuses provider-heavy execution enablement until a provider executor is separately admitted and composed.
+
+Functional IAM is split by responsibility and exact Terraform resource binding. API business authority is limited to queue send plus jobs-table item/transaction operations. Worker business authority is limited to queue consumption, jobs-table state updates, retained Knowledge Base retrieval, and retained model invocation. Logging/X-Ray writes are tracked separately as runtime-support authority.
+
+Current numeric runtime values are `CONFIGURED_LIMIT`, never measured utilization:
+
+```text
+API reserved concurrency          2
+worker reserved concurrency       0
+API timeout                      15 s
+worker timeout                   60 s
+queue visibility                120 s
+redrive receive count             4
+worker max attempts               3
+HTTP API burst/rate            10 / 5
+```
+
+Canonical Gate 19.4 records in PR #351:
+
+- [`../labs/phase-19-gate-19-4-disabled-async-runtime.md`](../labs/phase-19-gate-19-4-disabled-async-runtime.md)
+- [`../labs/evidence/phase-19-gate-19-4-disabled-async-runtime-v1.json`](../labs/evidence/phase-19-gate-19-4-disabled-async-runtime-v1.json)
+- [`../scripts/verify_phase19_gate19_4_disabled_async_runtime.py`](../scripts/verify_phase19_gate19_4_disabled_async_runtime.py)
+
+Gate 19.4 retains this safety boundary:
+
+```text
+public endpoints enabled:                0
+AWS resources created/changed/deleted:   0
+IAM roles/policies created/changed:      0
+AWS/provider live executions:            0
+third-party repository code executions:  0
+PR #89 modifications:                    0
+```
+
+No `terraform apply` or public enablement is authorized. A later human-authorized gate must review an exact Terraform plan, artifact identities, IAM/resource bindings, enablement sequence, and rollback/disable path before any AWS mutation.
 
 ## Evidence location rule
 

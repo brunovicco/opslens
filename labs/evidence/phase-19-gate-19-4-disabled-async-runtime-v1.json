@@ -1,0 +1,203 @@
+{
+  "artifact_type": "phase-19-gate-19-4-disabled-async-runtime:v1",
+  "schema_version": 1,
+  "phase": 19,
+  "gate": "19.4",
+  "issue": 350,
+  "pr": 351,
+  "source_main_sha": "18d31c03d27448c88a6ffcba16683f3875a5ba15",
+  "source_gate_19_3_artifact": "labs/evidence/phase-19-gate-19-3-async-topology-contract-v1.json",
+  "selected_design": "HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB",
+  "interaction_pattern": "ASYNC_SUBMIT_STATUS_RESULT",
+  "status": "IMPLEMENTED_DISABLED_NO_DEPLOYMENT",
+  "deployment_authorized": false,
+  "authority_impact": {
+    "public_endpoints_enabled": 0,
+    "aws_resources_created_changed_deleted": 0,
+    "iam_roles_or_policies_created_changed": 0,
+    "aws_or_provider_live_executions": 0,
+    "third_party_repository_code_executions": 0,
+    "pr_89_modifications": 0
+  },
+  "fail_closed_defaults": {
+    "runtime_materialized": false,
+    "execute_api_endpoint_disabled": true,
+    "submit_enabled": false,
+    "worker_enabled": false,
+    "worker_event_source_mapping_enabled": false,
+    "worker_reserved_concurrency": 0,
+    "custom_domain_present": false,
+    "provider_executor_composed": false
+  },
+  "terraform_resource_inventory": [
+    "aws_dynamodb_table.public_async_jobs",
+    "aws_sqs_queue.public_async_job_dlq",
+    "aws_sqs_queue.public_async_job_queue",
+    "aws_sqs_queue_redrive_allow_policy.public_async_job_dlq",
+    "aws_lambda_function.public_async_api",
+    "aws_lambda_function.public_async_worker",
+    "aws_lambda_event_source_mapping.public_async_worker",
+    "aws_apigatewayv2_api.public_async",
+    "aws_apigatewayv2_integration.public_async_api_lambda",
+    "aws_apigatewayv2_route.public_async_submit",
+    "aws_apigatewayv2_route.public_async_status",
+    "aws_apigatewayv2_route.public_async_result",
+    "aws_apigatewayv2_stage.public_async_default",
+    "aws_lambda_permission.public_async_api_gateway",
+    "aws_cloudwatch_log_group.public_async_api",
+    "aws_cloudwatch_log_group.public_async_worker",
+    "aws_cloudwatch_log_group.public_async_access",
+    "aws_iam_role.public_async_api",
+    "aws_iam_role_policy.public_async_api",
+    "aws_iam_role.public_async_worker",
+    "aws_iam_role_policy.public_async_worker"
+  ],
+  "iam_responsibility_binding": {
+    "api_handler_role": {
+      "business_actions": [
+        "sqs:SendMessage",
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:TransactWriteItems"
+      ],
+      "runtime_support_actions": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "xray:PutTelemetryRecords",
+        "xray:PutTraceSegments"
+      ],
+      "exact_business_resources": [
+        "aws_sqs_queue.public_async_job_queue[0].arn",
+        "aws_dynamodb_table.public_async_jobs[0].arn"
+      ],
+      "forbidden_actions": [
+        "bedrock:InvokeModel",
+        "bedrock:Retrieve",
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:ChangeMessageVisibility",
+        "dynamodb:Scan",
+        "iam:*"
+      ]
+    },
+    "worker_role": {
+      "business_actions": [
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:ChangeMessageVisibility",
+        "sqs:GetQueueAttributes",
+        "dynamodb:GetItem",
+        "dynamodb:UpdateItem",
+        "bedrock:Retrieve",
+        "bedrock:InvokeModel"
+      ],
+      "runtime_support_actions": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "xray:PutTelemetryRecords",
+        "xray:PutTraceSegments"
+      ],
+      "exact_business_resources": [
+        "aws_sqs_queue.public_async_job_queue[0].arn",
+        "aws_dynamodb_table.public_async_jobs[0].arn",
+        "local.public_async_knowledge_base_arn",
+        "local.public_async_inference_profile_arn",
+        "local.public_async_foundation_model_arns"
+      ],
+      "forbidden_actions": [
+        "sqs:SendMessage",
+        "dynamodb:PutItem",
+        "dynamodb:TransactWriteItems",
+        "dynamodb:Scan",
+        "dynamodb:DeleteTable",
+        "iam:*"
+      ]
+    }
+  },
+  "configured_limits": [
+    {
+      "name": "api_reserved_concurrency",
+      "value": 2,
+      "classification": "CONFIGURED_LIMIT"
+    },
+    {
+      "name": "worker_reserved_concurrency",
+      "value": 0,
+      "classification": "CONFIGURED_LIMIT"
+    },
+    {
+      "name": "api_timeout_seconds",
+      "value": 15,
+      "classification": "CONFIGURED_LIMIT"
+    },
+    {
+      "name": "worker_timeout_seconds",
+      "value": 60,
+      "classification": "CONFIGURED_LIMIT"
+    },
+    {
+      "name": "queue_visibility_seconds",
+      "value": 120,
+      "classification": "CONFIGURED_LIMIT"
+    },
+    {
+      "name": "queue_redrive_receive_count",
+      "value": 4,
+      "classification": "CONFIGURED_LIMIT"
+    },
+    {
+      "name": "worker_max_attempts",
+      "value": 3,
+      "classification": "CONFIGURED_LIMIT"
+    },
+    {
+      "name": "http_api_throttling_burst_limit",
+      "value": 10,
+      "classification": "CONFIGURED_LIMIT"
+    },
+    {
+      "name": "http_api_throttling_rate_limit",
+      "value": 5,
+      "classification": "CONFIGURED_LIMIT"
+    }
+  ],
+  "implementation_files": [
+    "src/opslens/public_analysis/domain/async_job.py",
+    "src/opslens/public_analysis/application/async_job_admission.py",
+    "src/opslens/public_analysis/application/async_job_service.py",
+    "src/opslens/public_analysis/application/async_worker_service.py",
+    "src/opslens/public_analysis/adapters/async_aws.py",
+    "src/opslens/public_analysis/adapters/async_http_api.py",
+    "src/opslens/public_analysis/adapters/async_sqs_event.py",
+    "src/opslens/public_analysis/async_runtime_config.py",
+    "src/opslens/public_analysis/async_lambda.py",
+    "infra/environments/dev/public_async_runtime.tf",
+    "infra/environments/dev/public_async_runtime_iam.tf",
+    "infra/environments/dev/public_async_runtime_observability.tf"
+  ],
+  "verification": {
+    "offline_only": true,
+    "aws_credentials_required": false,
+    "terraform_apply_allowed": false,
+    "provider_live_execution_allowed": false,
+    "verifier": "scripts/verify_phase19_gate19_4_disabled_async_runtime.py"
+  },
+  "retained_invariants": [
+    "Agents reason. Code verifies evidence.",
+    "READ, NEVER EXECUTE third-party repository code.",
+    "Repository Risk != Runtime Exposure.",
+    "retrieved content != instruction authority",
+    "model proposal != authorization",
+    "tool/protocol success != business truth",
+    "MEASURED != DERIVED",
+    "UNMEASURED != zero",
+    "NOT_APPLICABLE != zero",
+    "configured limit != measured utilization",
+    "responsibility -> required action -> exact resource -> IAM statement",
+    "queue delivery != business execution authority",
+    "provider retry != business retry authority",
+    "AIP-C01 topic != product requirement"
+  ],
+  "next_boundary": "human-authorized exact Terraform plan review before any AWS mutation, IAM creation, endpoint enablement, worker enablement, or provider-heavy runtime composition"
+}
