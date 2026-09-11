@@ -207,7 +207,7 @@ def _verify_defaults(root: dict[str, object], runtime_tf: str) -> None:
         "default     = false",
         "public_async_runtime_count = var.public_async_runtime_materialized ? 1 : 0",
         "disable_execute_api_endpoint = true",
-        "OPSLENS_ASYNC_SUBMIT_ENABLED = \"false\"",
+        "OPSLENS_ASYNC_SUBMIT_ENABLED            = \"false\"",
         "OPSLENS_ASYNC_WORKER_ENABLED        = \"false\"",
         "enabled                            = false",
         "reserved_concurrent_executions = 0",
@@ -225,7 +225,9 @@ def _resource_addresses(text: str) -> set[str]:
     return {f"{match.group(1)}.{match.group(2)}" for match in _RESOURCE_RE.finditer(text)}
 
 
-def _verify_resource_inventory(root: dict[str, object], terraform_texts: tuple[str, ...]) -> None:
+def _verify_resource_inventory(
+    root: dict[str, object], terraform_texts: tuple[str, ...]
+) -> None:
     artifact_resources = set(
         _strings(root.get("terraform_resource_inventory"), label="terraform_resource_inventory")
     )
@@ -255,7 +257,9 @@ def _verify_resource_inventory(root: dict[str, object], terraform_texts: tuple[s
 
 
 def _verify_iam(root: dict[str, object], iam_tf: str) -> None:
-    binding = _object(root.get("iam_responsibility_binding"), label="iam_responsibility_binding")
+    binding = _object(
+        root.get("iam_responsibility_binding"), label="iam_responsibility_binding"
+    )
     api = _object(binding.get("api_handler_role"), label="api_handler_role")
     worker = _object(binding.get("worker_role"), label="worker_role")
 
@@ -354,7 +358,11 @@ def _verify_configured_limits(root: dict[str, object], runtime_tf: str) -> None:
         _require_contains(runtime_tf, needle, label="configured-limit Terraform")
 
 
-def _verify_runtime_fail_closed(root: dict[str, object], config_text: str, lambda_text: str) -> None:
+def _verify_runtime_fail_closed(
+    root: dict[str, object],
+    config_text: str,
+    lambda_text: str,
+) -> None:
     _require_contains(
         config_text,
         "environment.get(name, AsyncRuntimeSwitch.FALSE.value)",
