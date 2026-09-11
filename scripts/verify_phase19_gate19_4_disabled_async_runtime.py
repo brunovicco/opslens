@@ -202,18 +202,23 @@ def _verify_defaults(root: dict[str, object], runtime_tf: str) -> None:
     if defaults != expected_defaults:
         raise Gate19_4VerificationError("Gate 19.4 fail-closed defaults drifted")
 
+    normalized_runtime_tf = re.sub(r"[ \t]+", " ", runtime_tf)
     required_runtime_text = (
         'variable "public_async_runtime_materialized"',
-        "default     = false",
+        "default = false",
         "public_async_runtime_count = var.public_async_runtime_materialized ? 1 : 0",
         "disable_execute_api_endpoint = true",
-        "OPSLENS_ASYNC_SUBMIT_ENABLED            = \"false\"",
-        "OPSLENS_ASYNC_WORKER_ENABLED        = \"false\"",
-        "enabled                            = false",
+        "OPSLENS_ASYNC_SUBMIT_ENABLED = \"false\"",
+        "OPSLENS_ASYNC_WORKER_ENABLED = \"false\"",
+        "enabled = false",
         "reserved_concurrent_executions = 0",
     )
     for needle in required_runtime_text:
-        _require_contains(runtime_tf, needle, label="public async runtime Terraform")
+        _require_contains(
+            normalized_runtime_tf,
+            needle,
+            label="public async runtime Terraform",
+        )
     _require_absent(
         runtime_tf,
         'resource "aws_apigatewayv2_domain_name"',
