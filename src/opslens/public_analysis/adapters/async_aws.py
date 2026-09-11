@@ -19,8 +19,8 @@ from opslens.public_analysis.domain.async_job import (
 )
 from opslens.public_analysis.domain.errors import PublicAnalysisValidationError
 
- type _AttributeValue = dict[str, str]
- type _DynamoItem = dict[str, _AttributeValue]
+type _AttributeValue = dict[str, str]
+type _DynamoItem = dict[str, _AttributeValue]
 
 
 class AsyncJobPersistenceError(RuntimeError):
