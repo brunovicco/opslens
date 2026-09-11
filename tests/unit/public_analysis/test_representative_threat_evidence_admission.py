@@ -297,3 +297,55 @@ def test_admission_rejects_pre_evaluated_ghsa_range() -> None:
         match="must not pre-evaluate vulnerable ranges",
     ):
         admit_representative_threat_evidence(bundle, authority=_authority())
+
+def test_admission_accepts_offsetless_nvd_timestamps_as_utc() -> None:
+    """Treat offset-less analytical NVD timestamps as retained UTC authority."""
+    bundle = deepcopy(_bundle())
+    nvd = cast(dict[str, object], bundle["nvd"])
+    observations = cast(list[dict[str, object]], nvd["observations"])
+
+    observations[0]["published_at"] = "2026-09-01T12:00:00"
+    observations[0]["last_modified_at"] = "2026-09-03T12:00:00"
+
+    authority = _authority()
+    admitted = admit_representative_threat_evidence(
+        bundle,
+        authority=authority,
+    )
+
+    assert admitted.nvd_records == authority.nvd_records
+
+
+def test_admission_normalizes_offset_nvd_timestamps_to_utc() -> None:
+    """Compare aware analytical NVD timestamps by their normalized UTC instant."""
+    bundle = deepcopy(_bundle())
+    nvd = cast(dict[str, object], bundle["nvd"])
+    observations = cast(list[dict[str, object]], nvd["observations"])
+
+    observations[0]["published_at"] = "2026-09-01T09:00:00-03:00"
+    observations[0]["last_modified_at"] = "2026-09-03T09:00:00-03:00"
+
+    authority = _authority()
+    admitted = admit_representative_threat_evidence(
+        bundle,
+        authority=authority,
+    )
+
+    assert admitted.nvd_records == authority.nvd_records
+
+
+def test_admission_rejects_malformed_nvd_timestamp() -> None:
+    """Keep malformed analytical NVD timestamps fail-closed."""
+    bundle = deepcopy(_bundle())
+    nvd = cast(dict[str, object], bundle["nvd"])
+    observations = cast(list[dict[str, object]], nvd["observations"])
+    observations[0]["published_at"] = "not-an-iso-timestamp"
+
+    with pytest.raises(
+        RepresentativeThreatEvidenceAdmissionError,
+        match="must contain an ISO-8601 timestamp",
+    ):
+        admit_representative_threat_evidence(
+            bundle,
+            authority=_authority(),
+        )
