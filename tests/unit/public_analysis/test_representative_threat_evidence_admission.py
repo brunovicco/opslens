@@ -22,6 +22,9 @@ from opslens.public_analysis.application.representative_threat_evidence_admissio
     RepresentativeThreatEvidenceAuthority,
     admit_representative_threat_evidence,
 )
+from opslens.repository_intelligence.domain.epss_enrichment import (
+    RepositoryEpssSnapshotEvidence,
+)
 from opslens.transformation.nvd.domain.models import NvdCveCoreRecord
 from opslens.transformation.nvd.domain.transformer import NvdCveCoreTransformer
 
@@ -33,6 +36,7 @@ _ENTRY_ID = "GHSA-6hx8-3wjj-gr8g:vulnerability:0"
 
 
 def _ghsa() -> GhsaPyPIVulnerabilityEvidence:
+    """Build one exact typed PyPI GHSA occurrence."""
     return GhsaPyPIVulnerabilityEvidence(
         observed_advisory_version_id=_OBSERVED_GHSA,
         source_advisory_sha256=_GHSA_SHA,
@@ -52,6 +56,7 @@ def _ghsa() -> GhsaPyPIVulnerabilityEvidence:
 
 
 def _nvd() -> NvdCveCoreRecord:
+    """Build exact NVD identity through the retained transformer."""
     source: dict[str, object] = {
         "id": _CVE_ID,
         "sourceIdentifier": "security@example.com",
@@ -63,7 +68,8 @@ def _nvd() -> NvdCveCoreRecord:
 
 
 def _kev_snapshot() -> KevCatalogSnapshot:
-    other_cve = {
+    """Build one complete KEV snapshot proving selected-CVE absence."""
+    other_cve: dict[str, object] = {
         "cveID": "CVE-2026-99999",
         "vendorProject": "Example Vendor",
         "product": "Example Product",
@@ -95,6 +101,7 @@ def _kev_snapshot() -> KevCatalogSnapshot:
 
 
 def _epss_snapshot() -> EpssSnapshot:
+    """Build one complete EPSS snapshot containing the selected CVE."""
     text = (
         "#model_version:v2026.09.01,score_date:2026-09-10T12:00:00Z\n"
         "cve,epss,percentile\n"
@@ -104,6 +111,7 @@ def _epss_snapshot() -> EpssSnapshot:
 
 
 def _authority() -> RepresentativeThreatEvidenceAuthority:
+    """Build exact typed authority independently of the analytical bundle."""
     return RepresentativeThreatEvidenceAuthority(
         ghsa_vulnerabilities=(_ghsa(),),
         nvd_records=(_nvd(),),
@@ -113,12 +121,10 @@ def _authority() -> RepresentativeThreatEvidenceAuthority:
 
 
 def _bundle() -> dict[str, object]:
+    """Build one CrossSourceCveEvidenceV1-shaped analytical proof."""
     nvd = _nvd()
-    epss_evidence = _authority().epss_snapshot
-    epss_record = __import__(
-        "opslens.repository_intelligence.domain.epss_enrichment",
-        fromlist=["RepositoryEpssSnapshotEvidence"],
-    ).RepositoryEpssSnapshotEvidence(epss_evidence).record_for_cve(_CVE_ID)
+    epss_evidence = RepositoryEpssSnapshotEvidence(_epss_snapshot())
+    epss_record = epss_evidence.record_for_cve(_CVE_ID)
     assert epss_record is not None
 
     return {
@@ -132,7 +138,9 @@ def _bundle() -> dict[str, object]:
             "observations": [
                 {
                     "cve_id": _CVE_ID,
-                    "observed_cve_version_id": nvd.observed_version.observed_cve_version_id,
+                    "observed_cve_version_id": (
+                        nvd.observed_version.observed_cve_version_id
+                    ),
                     "published_at": nvd.published_at.isoformat(),
                     "last_modified_at": nvd.last_modified_at.isoformat(),
                     "vuln_status": nvd.vuln_status.value,
@@ -153,9 +161,11 @@ def _bundle() -> dict[str, object]:
                 "epss": epss_record.epss,
                 "percentile": epss_record.percentile,
                 "model_version": epss_record.model_version,
-                "score_timestamp": epss_record.score_timestamp.isoformat()
-                if epss_record.score_timestamp is not None
-                else None,
+                "score_timestamp": (
+                    epss_record.score_timestamp.isoformat()
+                    if epss_record.score_timestamp is not None
+                    else None
+                ),
                 "source": epss_record.source,
                 "source_sha256": epss_record.source_sha256,
             },
@@ -188,6 +198,7 @@ def _bundle() -> dict[str, object]:
 
 
 def test_admit_representative_threat_evidence_preserves_typed_authority() -> None:
+    """Return the exact supplied typed objects only after all checks agree."""
     authority = _authority()
     admitted = admit_representative_threat_evidence(_bundle(), authority=authority)
 
@@ -198,9 +209,13 @@ def test_admit_representative_threat_evidence_preserves_typed_authority() -> Non
 
 
 def test_admission_rejects_kev_absence_when_complete_snapshot_contains_cve() -> None:
+    """Do not turn one analytical KEV absence into empty-snapshot authority."""
     bundle = _bundle()
     document = json.loads(_kev_snapshot().raw_bytes)
-    record = document["vulnerabilities"][0]
+    vulnerabilities = document["vulnerabilities"]
+    assert isinstance(vulnerabilities, list)
+    record = vulnerabilities[0]
+    assert isinstance(record, dict)
     record["cveID"] = _CVE_ID
     payload = json.dumps(document, separators=(",", ":")).encode()
     authority = _authority()
@@ -225,7 +240,8 @@ def test_admission_rejects_kev_absence_when_complete_snapshot_contains_cve() -> 
         admit_representative_threat_evidence(bundle, authority=contradictory)
 
 
-def test_admission_rejects_ep_ss_score_drift() -> None:
+def test_admission_rejects_epss_score_drift() -> None:
+    """Reject analytical EPSS values that disagree with the complete snapshot."""
     bundle = deepcopy(_bundle())
     epss = bundle["epss"]
     assert isinstance(epss, dict)
@@ -233,11 +249,15 @@ def test_admission_rejects_ep_ss_score_drift() -> None:
     assert isinstance(score, dict)
     score["epss"] = 0.9
 
-    with pytest.raises(RepresentativeThreatEvidenceAdmissionError, match="EPSS score mismatch"):
+    with pytest.raises(
+        RepresentativeThreatEvidenceAdmissionError,
+        match="EPSS score mismatch",
+    ):
         admit_representative_threat_evidence(bundle, authority=_authority())
 
 
 def test_admission_rejects_nvd_observed_identity_drift() -> None:
+    """Reject NVD projections not bound to the supplied exact observed version."""
     bundle = deepcopy(_bundle())
     nvd = bundle["nvd"]
     assert isinstance(nvd, dict)
@@ -255,6 +275,7 @@ def test_admission_rejects_nvd_observed_identity_drift() -> None:
 
 
 def test_admission_rejects_non_pip_ghsa_package_evidence() -> None:
+    """Keep the representative repository bridge bounded to the PyPI ecosystem."""
     bundle = deepcopy(_bundle())
     ghsa = bundle["ghsa"]
     assert isinstance(ghsa, dict)
@@ -271,5 +292,27 @@ def test_admission_rejects_non_pip_ghsa_package_evidence() -> None:
     with pytest.raises(
         RepresentativeThreatEvidenceAdmissionError,
         match="must use the pip ecosystem",
+    ):
+        admit_representative_threat_evidence(bundle, authority=_authority())
+
+
+def test_admission_rejects_pre_evaluated_ghsa_range() -> None:
+    """Leave installed-version applicability exclusively to retained correlation."""
+    bundle = deepcopy(_bundle())
+    ghsa = bundle["ghsa"]
+    assert isinstance(ghsa, dict)
+    versions = ghsa["advisory_versions"]
+    assert isinstance(versions, list)
+    version = versions[0]
+    assert isinstance(version, dict)
+    packages = version["package_evidence"]
+    assert isinstance(packages, list)
+    package = packages[0]
+    assert isinstance(package, dict)
+    package["range_evaluation_performed"] = True
+
+    with pytest.raises(
+        RepresentativeThreatEvidenceAdmissionError,
+        match="must not pre-evaluate vulnerable ranges",
     ):
         admit_representative_threat_evidence(bundle, authority=_authority())
