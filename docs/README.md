@@ -73,9 +73,15 @@ The Gate 19.1 human-readable lab is [`../labs/phase-19-gate-19-1-public-runtime-
 
 Gate 19.1 created no API Gateway, Lambda Function URL, public Lambda compute, SQS queue, result store, WAF, ECS/Fargate, AgentCore runtime, or runtime IAM.
 
-### Gate 19.2 — in progress at the human execution boundary
+### Gate 19.2 — closeout in review
 
-Gate 19.2 has completed the repository-side pre-live implementation required for one bounded non-public representative measurement. The latest increment was merged through issue #338 / PR #339; protected `main` is `765ecf528f0b7e8dcabb31b40416061ba719dd58` at this checkpoint.
+Gate 19.2 completed the repository-side measurement harness, the human-only pre-flight/fail-closed checks, one successful representative live execution, deterministic persisted-artifact review, and the interaction-pattern decision.
+
+Source protected main for the successful live run:
+
+```text
+e45ba419414e6dd77ecad68f4d2312e9123c2223
+```
 
 The exact measurement surface includes:
 
@@ -94,7 +100,7 @@ throttle count
 serialized admitted-result bytes
 ```
 
-The current representative anchor is:
+The retained representative anchor is:
 
 ```text
 repository:      openedx/mockprock
@@ -105,27 +111,47 @@ GHSA anchor:    GHSA-6hx8-3wjj-gr8g
 CVE anchor:     CVE-2026-54770
 ```
 
-The earlier Requests anchor recorded by the historical Gate 19.2 measurement-contract artifact is intentionally not rewritten. Later threat-admission/preload evidence and the operator runbook carry the current representative coordinates.
+The earlier Requests anchor recorded by the historical Gate 19.2 measurement-contract artifact is intentionally not rewritten. Later threat-admission/preload evidence and the human runbook carry the current representative coordinates.
 
-The human-only operator entrypoint is:
+Canonical live artifact:
 
-```text
-scripts/run_phase19_gate19_2_live_measurement.py
-```
+- [`../labs/evidence/phase-19-gate-19-2-live-measurement-v1.json`](../labs/evidence/phase-19-gate-19-2-live-measurement-v1.json)
+- SHA-256 `04ab754a12e25c4aeda0075d41b92693fec464aec4431b3734981488ff470114`
+- run id `gate19.2-live-20260911T131121Z`
+- outcome `SUCCESS`
 
-with the reviewed procedure in [`../labs/phase-19-gate-19-2-human-live-measurement-runbook.md`](../labs/phase-19-gate-19-2-human-live-measurement-runbook.md).
-
-CI and ChatGPT must not execute that live command. The next checkpoint is one human-executed read-only/live-provider measurement using existing authority, followed by deterministic review of `labs/evidence/phase-19-gate-19-2-live-measurement-v1.json`.
-
-Runtime selection remains:
+Measured evidence includes:
 
 ```text
-DEFERRED_PENDING_MEASUREMENT
+end-to-end duration                    17,748 ms
+GitHub physical requests                     4  MEASURED
+Bedrock Retrieve client elapsed         4,148 ms  MEASURED
+Bedrock model client elapsed            8,901 ms  MEASURED
+Bedrock provider model latency          7,772 ms  MEASURED
+Bedrock input/output tokens        5,936 / 408  MEASURED
+retry count                                  0  MEASURED
+throttle count                               0  UNMEASURED
+Athena query count / bytes                    0  NOT_APPLICABLE
+serialized admitted result              5,285 bytes
 ```
 
-until that admitted live evidence exists. `ASYNC_SUBMIT_STATUS_RESULT` remains a leading hypothesis, not a selected topology.
+The Bedrock-facing stages consumed `13,098 ms`, or `73.80%` of measured end-to-end duration.
 
-Current Gate 19.2 authority remains:
+Gate 19.2 selects the interaction pattern:
+
+```text
+ASYNC_SUBMIT_STATUS_RESULT
+```
+
+This is not a claim that the successful baseline timed out; it completed below the retained 30-second HTTP API reference envelope. The async decision is based on provider-latency coupling, retry safety, backpressure, and failure isolation. Explicit retry-safety scenarios are classified `DERIVED`, never relabeled as measured evidence.
+
+Canonical closeout records:
+
+- [`../labs/phase-19-gate-19-2-closeout.md`](../labs/phase-19-gate-19-2-closeout.md)
+- [`../labs/evidence/phase-19-gate-19-2-closeout-v1.json`](../labs/evidence/phase-19-gate-19-2-closeout-v1.json)
+- [`../scripts/verify_phase19_gate19_2_closeout.py`](../scripts/verify_phase19_gate19_2_closeout.py)
+
+Gate 19.2 authority remains:
 
 ```text
 public endpoints:       0
@@ -134,6 +160,8 @@ new IAM roles/policies: 0
 third-party code exec:  0
 PR #89 modifications:  0
 ```
+
+The interaction pattern is selected, but the concrete AWS topology remains unselected. The next Phase 19 boundary is to freeze the smallest async ingress/job/result topology, lifecycle semantics, least-privilege IAM responsibilities, abuse/backpressure controls, and disable/recovery boundaries before any deployment.
 
 ## Evidence location rule
 

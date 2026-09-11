@@ -1,0 +1,49 @@
+{
+  "artifact_type": "phase-19-gate-19-2-closeout:v1",
+  "authorization": {
+    "concrete_aws_topology_selected": false,
+    "new_aws_resources_authorized": false,
+    "new_iam_authority_authorized": false,
+    "pr_89_modifications": 0,
+    "public_runtime_deployment_authorized": false,
+    "selected_interaction_pattern": "ASYNC_SUBMIT_STATUS_RESULT"
+  },
+  "closeout_issue": 346,
+  "decision": "ASYNC_SUBMIT_STATUS_RESULT",
+  "decision_basis": {
+    "derived_retry_safety": {
+      "classification": "DERIVED",
+      "one_additional_model_equivalent_ms": 26649,
+      "one_additional_retrieve_and_model_equivalent_ms": 30797,
+      "reference_sync_envelope_ms": 30000
+    },
+    "measured": {
+      "bedrock_model_client_elapsed_ms": 8901,
+      "bedrock_model_latency_ms": 7772,
+      "bedrock_retrieve_client_elapsed_ms": 4148,
+      "end_to_end_duration_ms": 17748,
+      "github_http_request_count": 4,
+      "retry_count": 0,
+      "serialized_result_bytes": 5285
+    }
+  },
+  "live_measurement_artifact_path": "labs/evidence/phase-19-gate-19-2-live-measurement-v1.json",
+  "live_measurement_artifact_sha256": "04ab754a12e25c4aeda0075d41b92693fec464aec4431b3734981488ff470114",
+  "live_measurement_run_id": "gate19.2-live-20260911T131121Z",
+  "next_boundary": "freeze the smallest concrete async ingress/job/result topology and least-privilege runtime authority without deploying it",
+  "provider_semantics": {
+    "athena_bytes_scanned": "NOT_APPLICABLE",
+    "athena_query_count": "NOT_APPLICABLE",
+    "retry_count": "MEASURED",
+    "throttle_count": "UNMEASURED"
+  },
+  "safety": {
+    "new_aws_resource_count": 0,
+    "new_iam_role_policy_count": 0,
+    "public_endpoint_count": 0,
+    "third_party_repository_code_execution_count": 0
+  },
+  "schema_version": 1,
+  "source_issue": 295,
+  "source_main_sha": "e45ba419414e6dd77ecad68f4d2312e9123c2223"
+}

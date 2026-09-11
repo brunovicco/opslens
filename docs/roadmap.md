@@ -37,7 +37,7 @@ Phase 18 was protected-squash-merged through PR #290 at `feca774535b7d83f57c26f4
 
 Gate 19.1 was protected-squash-merged through PR #292 at `ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1` after exact-head validation at `484e2b85fc1996b2419b4057c2cf585ab1f675a1`.
 
-The latest Gate 19.2 human-live CLI increment was merged through PR #339 from exact head `a64995bed02aeadb0b8b1ed1cf4ae85975e552f5`, producing protected-main commit `765ecf528f0b7e8dcabb31b40416061ba719dd58`.
+Gate 19.2 live-measurement support was incrementally merged through PRs including #339 and the NVD admission fix #345. The successful human-operated representative measurement was executed from protected main `e45ba419414e6dd77ecad68f4d2312e9123c2223`. Closeout is tracked by issue #346 and draft PR #347.
 
 PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work. Phase 19 does not rebase, merge, modify, or depend on it.
 
@@ -75,7 +75,7 @@ configured limit != measured utilization
 
 ### Gate 19.1 — Public Runtime Hypothesis & Launch Contract — COMPLETE
 
-Gate 19.1 froze the first representative public workload, identified the composition gaps, and defined the experiment required before runtime topology selection.
+Gate 19.1 froze the first representative public workload, identified the composition gaps, and defined the experiment required before runtime interaction-pattern selection.
 
 Retained workload identity:
 
@@ -83,29 +83,29 @@ Retained workload identity:
 public-analysis-workload:v1
 ```
 
-Retained runtime decision:
+Historical Gate 19.1 decision:
 
 ```text
 DEFERRED_PENDING_MEASUREMENT
 ```
 
-Leading hypothesis:
+Leading hypothesis at that time:
 
 ```text
 ASYNC_SUBMIT_STATUS_RESULT
 ```
 
-The hypothesis remains non-authoritative. Gate 19.1 did not create SQS, result storage, workers, an async API, public compute, or runtime IAM.
+Gate 19.1 deliberately did not create SQS, result storage, workers, an async API, public compute, or runtime IAM.
 
 Completed Gate 19.1 outputs include the `PublicAnalysisAdmissionHandoff` pipeline inventory, frozen request/repository/evidence/response workload contract, runtime candidate matrix, public threat/abuse model, responsibility-to-permission IAM matrix, cost/abuse and content-minimized observability contracts, bounded disable/recovery requirements, deterministic verifier/read-only CI, and the exact Gate 19.2 experiment boundary.
 
-### Gate 19.2 — Representative Workload Measurement — IN PROGRESS
+### Gate 19.2 — Representative Workload Measurement — CLOSEOUT IN REVIEW
 
-Purpose: close the measurements that Gate 19.1 correctly classifies as `UNMEASURED` before selecting a public runtime.
+Purpose: close the whole-workload measurements Gate 19.1 correctly classified as `UNMEASURED` and select exactly one interaction pattern without deploying a public runtime.
 
-#### Pre-live implementation — COMPLETE ENOUGH FOR HUMAN EXECUTION
+#### Representative execution
 
-The non-public representative execution is composed through the exact nine-stage workload:
+The non-public representative execution uses the exact nine-stage workload:
 
 ```text
 public request admission
@@ -153,20 +153,19 @@ throttle count
 serialized admitted-result bytes
 ```
 
-Provider measurement authority is explicit and separate from numeric values. A zero counter does not prove that a provider dimension was observed.
+Provider measurement authority remains explicit and separate from numeric values. A zero counter does not prove that a provider dimension was observed.
 
 For the retained direct structured-evidence path in `public-analysis-workload:v1`:
 
 ```text
 athena_query_count:   NOT_APPLICABLE
 athena_bytes_scanned: NOT_APPLICABLE
+throttle_count:       UNMEASURED
 ```
 
-`throttle_count` remains `UNMEASURED` unless explicit provider throttle evidence is introduced. Missing instrumentation must never become measured zero.
+#### Representative input
 
-#### Representative input — CURRENT
-
-The earlier Requests candidate was superseded during read-only pre-live evidence preparation. The current admitted representative anchor is:
+The admitted representative anchor is:
 
 ```text
 repository:      openedx/mockprock
@@ -193,34 +192,80 @@ EPSS percentile:  0.26988
 
 This identity freezes reproducibility only. It does not prove repository runtime exposure.
 
-The historical machine-readable Gate 19.2 measurement-contract artifact intentionally preserves the earlier pre-live slice and its then-frozen Requests anchor. Do not rewrite historical evidence to manufacture post-hoc authority; the current representative coordinates are carried by later threat-admission/preload records and the human live-measurement runbook.
+The historical machine-readable Gate 19.2 measurement-contract artifact intentionally preserves the earlier pre-live slice and its then-frozen Requests anchor. It is not rewritten post hoc.
 
-#### Human-run CLI — MERGED
+#### Human live measurement — COMPLETE
 
-Issue #338 / PR #339 added the fail-closed human-run-only live composition root and artifact path. The driver:
+The human-only run was executed exactly once from protected main `e45ba419414e6dd77ecad68f4d2312e9123c2223`.
 
-- validates frozen repository/model coordinates before provider execution;
-- materializes exact threat authority before measured request-time stages;
-- composes measured GitHub transport, direct bounded Bedrock Retrieve, bounded hybrid synthesis, and a monotonic measurement clock;
-- invokes the representative workload exactly once;
-- builds the live artifact only from admitted execution evidence and explicit run metadata;
-- performs byte-exact artifact admission;
-- publishes the artifact atomically without overwriting an existing file;
-- creates no public endpoint, AWS resource, or IAM authority.
-
-Human entrypoint:
+Canonical live evidence:
 
 ```text
-scripts/run_phase19_gate19_2_live_measurement.py
+artifact: labs/evidence/phase-19-gate-19-2-live-measurement-v1.json
+artifact SHA-256: 04ab754a12e25c4aeda0075d41b92693fec464aec4431b3734981488ff470114
+run id: gate19.2-live-20260911T131121Z
+outcome: SUCCESS
 ```
 
-Operator runbook:
+Measured values:
 
 ```text
-labs/phase-19-gate-19-2-human-live-measurement-runbook.md
+end_to_end_duration_ms                  17748
+serialized_result_bytes                 5285
+GitHub physical HTTP requests              4     MEASURED
+Athena query count                         0     NOT_APPLICABLE
+Athena bytes scanned                       0     NOT_APPLICABLE
+Bedrock Retrieve count                     1     MEASURED
+Bedrock Retrieve client elapsed ms      4148     MEASURED
+Bedrock model call count                   1     MEASURED
+Bedrock input tokens                    5936     MEASURED
+Bedrock output tokens                    408     MEASURED
+Bedrock model client elapsed ms         8901     MEASURED
+Bedrock provider latency ms             7772     MEASURED
+retry count                                0     MEASURED
+throttle count                             0     UNMEASURED
 ```
 
-Current Gate 19.2 authority boundary:
+Measured stage concentration:
+
+```text
+semantic evidence   4160 ms
+model reasoning     8938 ms
+combined           13098 ms / 73.80% of end-to-end
+```
+
+The persisted-artifact verifier passed and admitted the evidence for topology evaluation.
+
+#### Gate 19.2 decision
+
+Selected interaction pattern:
+
+```text
+ASYNC_SUBMIT_STATUS_RESULT
+```
+
+The measured success path itself completed below the retained 30-second HTTP API reference envelope. Gate 19.2 therefore does not claim a measured timeout.
+
+The async decision is based on provider-latency coupling, retry safety, backpressure, and failure isolation. Explicit `DERIVED` retry-safety scenarios are kept separate from measurement:
+
+```text
+baseline measured E2E                                      17748 ms   MEASURED
++ one additional model-equivalent client elapsed           26649 ms   DERIVED
++ one additional Retrieve-equivalent and model-equivalent  30797 ms   DERIVED
+reference synchronous envelope                             30000 ms   RETAINED FACT
+```
+
+The derived scenarios are not additional live measurements. They show why the observed success path does not provide enough synchronous safety margin once provider retry/failure behavior is considered.
+
+Canonical closeout evidence:
+
+```text
+labs/phase-19-gate-19-2-closeout.md
+labs/evidence/phase-19-gate-19-2-closeout-v1.json
+scripts/verify_phase19_gate19_2_closeout.py
+```
+
+Current Gate 19.2 authority boundary remains:
 
 ```text
 public endpoints:       0
@@ -230,43 +275,28 @@ third-party code exec:  0
 PR #89 modifications:  0
 ```
 
-#### Gate 19.2 current boundary — HUMAN LIVE MEASUREMENT
+Gate 19.2 selects an interaction pattern, not a concrete AWS topology.
 
-Autonomous repository implementation stops here. The next step is the first point at which live GitHub/AWS/Bedrock execution is intentionally required, and that execution belongs to the human operator.
+### Next Phase 19 gate — concrete async topology contract
 
-Required remaining sequence:
+After Gate 19.2 is protected-merged and post-merge verified, the next gate should freeze the smallest concrete async ingress/job/result architecture before any deployment.
 
-1. Check out and verify the exact reviewed protected-main commit intended for the artifact.
-2. Run the runbook pre-flight checks locally.
-3. Confirm the intended existing AWS identity; missing permission is a stop condition, not authority to expand IAM.
-4. Materialize the exact typed GHSA/NVD/KEV/EPSS authority through the retained read-only path before measurement.
-5. Human-execute exactly one non-public representative workload using the retained GitHub + Bedrock adapters.
-6. Capture `labs/evidence/phase-19-gate-19-2-live-measurement-v1.json` without overwriting prior evidence.
-7. Preserve explicit `MEASURED`, `NOT_APPLICABLE`, and `UNMEASURED` semantics for every provider dimension.
-8. Evaluate exactly one runtime decision: `SYNC`, `ASYNC`, or `DEFERRED_PENDING_MEASUREMENT`.
-
-Decision rule:
+Required design authority should include:
 
 ```text
-SYNC
-  only if the complete bounded workload comfortably fits the selected
-  synchronous ingress envelope under representative measured evidence
-
-ASYNC
-  if latency variability, backpressure, failure isolation, retry safety,
-  or timeout evidence makes synchronous coupling unsafe
-
-otherwise
-  DEFERRED_PENDING_MEASUREMENT
+ingress admission + public identity/rate boundary
+job identity + idempotency + duplicate-delivery semantics
+retry ownership + backpressure
+worker responsibility + failure isolation
+status/result lifecycle + retention
+least-privilege IAM by responsibility
+concurrency + model-call + cost-amplification controls
+content-minimized observability
+disable/recovery boundaries
+Terraform/resource plan only after topology review
 ```
 
-Gate 19.2 must not create a public endpoint merely to benchmark the application workload.
-
-### Later Phase 19 gates — not yet authorized
-
-The exact post-19.2 gates depend on the measured runtime decision. Only after `SYNC` or `ASYNC` is evidence-backed should Phase 19 freeze concrete ingress/compute, least-privilege runtime IAM, abuse controls, persistence/queue topology if applicable, deployment Terraform, operational recovery controls, and a bounded public launch experiment.
-
-Do not introduce API Gateway, Lambda Function URLs, SQS, DynamoDB, Step Functions, ECS/Fargate, WAF, AgentCore, or another service solely because it is a plausible public architecture or appears in AIP-C01.
+Candidate AWS services remain **unselected**. The next gate must compare only the minimum credible combinations needed to implement the selected async interaction pattern. It must not introduce API Gateway, Lambda, SQS, DynamoDB, Step Functions, ECS/Fargate, WAF, AgentCore, or another service simply because the service is plausible or appears in AIP-C01.
 
 ```text
 AIP-C01 topic != product requirement

@@ -24,23 +24,24 @@ A plataforma separa deliberadamente raciocínio probabilístico da autoridade de
 
 **Phases 0–18 estão completas.** A Phase 18 foi protegida por squash merge no PR #290 em `feca774535b7d83f57c26f4e9fe7da71ce268f0f`.
 
-A **Phase 19 — Bounded Public Runtime & Productization** está em andamento. A Gate 19.1 está completa e foi protegida por squash merge no PR #292 em `ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1`. A Gate 19.2 chegou agora à fronteira explícita de medição live executada por humano após o merge do CLI human-run no PR #339.
+A **Phase 19 — Bounded Public Runtime & Productization** está em andamento. A Gate 19.1 está completa e foi protegida por squash merge no PR #292 em `ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1`. A Gate 19.2 concluiu a medição live representativa operada por humano e agora possui uma decisão de padrão de interação baseada em evidência, pendente apenas do protected merge do closeout.
 
 ```text
 19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE
       workload: public-analysis-workload:v1
-      runtime decision: DEFERRED_PENDING_MEASUREMENT
-      leading hypothesis: ASYNC_SUBMIT_STATUS_RESULT
-      AWS/IAM/public endpoint mutations: 0
-19.2  Representative Workload Measurement              IN PROGRESS
-      latest completed issue: #338
-      merged PR: #339
-      boundary: HUMAN LIVE MEASUREMENT
+      decisão original: DEFERRED_PENDING_MEASUREMENT
+      hipótese principal: ASYNC_SUBMIT_STATUS_RESULT
+      mutações AWS/IAM/public endpoint: 0
+19.2  Representative Workload Measurement              CLOSEOUT IN REVIEW
+      end-to-end medido: 17.748 ms
+      estágios Bedrock medidos: 13.098 ms / 73,80% do E2E
+      padrão de interação selecionado: ASYNC_SUBMIT_STATUS_RESULT
+      topologia AWS concreta selecionada: NÃO
 ```
 
-A forma assíncrona é apenas uma hipótese. O OpsLens não selecionará API Gateway + Lambda, Lambda Function URLs, SQS, ECS/Fargate, AgentCore ou outro runtime público até existir evidência admitida da medição real do workload representativo.
+A Gate 19.2 não afirma que a execução bem-sucedida estourou timeout. O baseline medido terminou abaixo de 30 segundos. A decisão async decorre de acoplamento à latência de providers, retry safety, backpressure e isolamento de falhas; os cenários de retry derivados permanecem explicitamente separados da evidência medida.
 
-Veja [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [AIP-C01 Learning Map](docs/aip-c01-learning-map.md), o [runbook da medição live da Gate 19.2](labs/phase-19-gate-19-2-human-live-measurement-runbook.md) e o [índice de ADRs](docs/adr/README.md).
+Veja [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [AIP-C01 Learning Map](docs/aip-c01-learning-map.md), o [closeout da Gate 19.2](labs/phase-19-gate-19-2-closeout.md), o [runbook da medição live da Gate 19.2](labs/phase-19-gate-19-2-human-live-measurement-runbook.md) e o [índice de ADRs](docs/adr/README.md).
 
 ## Arquitetura em resumo
 
@@ -101,9 +102,9 @@ JSON não confiável
  -> STOP
 ```
 
-A Gate 19.2 contém agora a composição representativa não pública completa e um driver fail-closed, exclusivamente human-run, para uma execução medida. O driver reutiliza autoridade determinística de repositório/risco, evidência de ameaça previamente admitida, transporte GitHub medido, Bedrock Knowledge Base retrieval limitado, síntese limitada, admissão exata do resultado e persistência atômica da evidência. CI e ChatGPT não executam o caminho live dos providers.
+A Gate 19.2 agora possui uma execução representativa não pública completa, com admissão determinística, accounting de providers, evidência persistida e revisão offline. A execução reutilizou autoridade determinística de repositório/risco, evidência de ameaça previamente admitida, transporte GitHub medido, Bedrock Knowledge Base retrieval limitado, síntese limitada, admissão exata do resultado e persistência atômica da evidência. CI e ChatGPT não executaram o caminho live dos providers.
 
-A decisão de runtime permanece `DEFERRED_PENDING_MEASUREMENT` até que o operador humano produza e revise o artefato live admitido. Nenhum endpoint público, novo recurso AWS, mutação IAM ou execução de código do repositório de terceiros é autorizada por essa fronteira.
+O padrão de interação selecionado agora é `ASYNC_SUBMIT_STATUS_RESULT`. Isso **não** é ainda uma decisão de deployment AWS concreto: nenhum endpoint público, fila, worker, result store, novo recurso AWS ou autoridade IAM é autorizado pela Gate 19.2. A próxima fronteira da Phase 19 é congelar a menor topologia async concreta de ingress/job/result e a autoridade runtime least-privilege antes de qualquer deployment.
 
 ## Evidência medida retida
 
@@ -117,8 +118,11 @@ O portfólio continua deliberadamente baseado em evidência. Exemplos:
 | Phase 14 AgentCore | replay 6/6; total derivado USD `0.006572445136128483`; apenas lab opcional |
 | Phase 16 Inspector | leitura limitada bem-sucedida com zero registros; **não** interpretada como zero runtime exposure |
 | Phase 17 recovery | ciclo pause/resume dos três schedulers com convergência Terraform final |
+| Phase 19 Gate 19.2 workload representativo | 17.748 ms end-to-end; 4 requests GitHub; 1 Bedrock Retrieve com 4.148 ms client elapsed; 1 chamada de modelo com 8.901 ms client elapsed / 7.772 ms provider latency; 5.936 tokens de entrada + 408 de saída; resultado admitido de 5.285 bytes |
 
 A cadeia machine-readable da Phase 18 começa em `labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json` e termina em `labs/evidence/phase-18-closeout-v1.json`. O closeout histórico preserva intencionalmente o estado pré-merge; a documentação corrente reflete o protected merge concluído.
+
+A Gate 19.2 persistiu o artefato live canônico em `labs/evidence/phase-19-gate-19-2-live-measurement-v1.json`, com hash independente `04ab754a12e25c4aeda0075d41b92693fec464aec4431b3734981488ff470114`, além do closeout machine-readable em `labs/evidence/phase-19-gate-19-2-closeout-v1.json`.
 
 ## Limites de custo e recursos
 
@@ -134,7 +138,7 @@ Scheduler maximum event age         3600 seconds
 Scheduler maximum retry attempts        2
 ```
 
-São **limites configurados, não utilização medida**. A Gate 19.2 existe especificamente para medir latência do request público completo, chamadas aos providers, utilização de tokens/scan, retries/throttles e tamanho do resultado antes da escolha do runtime.
+São **limites configurados, não utilização medida**. A Gate 19.2 agora fornece evidência de medição do workload completo, mas não converte limites configurados em utilização observada nem trata valores `UNMEASURED` como zero. Em particular, a Gate 19.2 mantém as métricas request-time do Athena como `NOT_APPLICABLE` no caminho direto retido de structured evidence e mantém `throttle_count` como `UNMEASURED`, mesmo com contador numérico igual a zero.
 
 ## Fronteiras retidas
 
@@ -146,7 +150,7 @@ Security Hardening retém Actions em SHA completo, invariantes de segurança no 
 
 OpsLens não afirma atualmente runtime HTTP público de produção, MCP/A2A públicos, AgentCore como runtime default de produção, SLOs de produção derivados de labs, TCO/run rate de produção, zero runtime exposure por causa do Inspector ter retornado zero registros, limites configurados como utilização medida, um global platform kill switch ou um score/probabilidade de aprovação na certificação.
 
-A Phase 19 também não afirma que async já foi selecionado. `ASYNC_SUBMIT_STATUS_RESULT` permanece apenas como hipótese principal, pendente da medição live admitida do workload representativo.
+A Phase 19 agora possui uma decisão baseada em evidência para o **padrão de interação async**. Ela ainda não afirma que API Gateway, Lambda, SQS, DynamoDB, Step Functions, ECS/Fargate, AgentCore ou outra topologia AWS concreta tenha sido selecionada ou implantada.
 
 ## Laboratório AIP-C01
 
@@ -173,7 +177,7 @@ public HTTP runtime:  NONE
 
 ## Documentação
 
-Comece por [docs/README.md](docs/README.md). Para portfólio e arquitetura, os principais pontos de entrada são [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md), o [closeout da Phase 18](labs/phase-18-closeout.md), o [launch contract da Gate 19.1](labs/phase-19-gate-19-1-public-runtime-hypothesis.md), o [runbook da medição live da Gate 19.2](labs/phase-19-gate-19-2-human-live-measurement-runbook.md) e o [índice de ADRs](docs/adr/README.md).
+Comece por [docs/README.md](docs/README.md). Para portfólio e arquitetura, os principais pontos de entrada são [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md), o [closeout da Phase 18](labs/phase-18-closeout.md), o [launch contract da Gate 19.1](labs/phase-19-gate-19-1-public-runtime-hypothesis.md), o [closeout da Gate 19.2](labs/phase-19-gate-19-2-closeout.md) e o [índice de ADRs](docs/adr/README.md).
 
 ---
 

@@ -111,38 +111,37 @@ _REQUIRED_INVARIANTS = {
 _REQUIRED_CURRENT_DOC_MARKERS = {
     "README.md": (
         "19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE",
-        "19.2  Representative Workload Measurement              IN PROGRESS",
-        "merged PR: #339",
-        "boundary: HUMAN LIVE MEASUREMENT",
+        "original runtime decision: DEFERRED_PENDING_MEASUREMENT",
+        "19.2  Representative Workload Measurement              CLOSEOUT IN REVIEW",
+        "selected interaction pattern: ASYNC_SUBMIT_STATUS_RESULT",
+        "concrete AWS topology selected: NO",
     ),
     "README.pt-br.md": (
         "19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE",
-        "19.2  Representative Workload Measurement              IN PROGRESS",
-        "merged PR: #339",
-        "boundary: HUMAN LIVE MEASUREMENT",
+        "decisão original: DEFERRED_PENDING_MEASUREMENT",
+        "19.2  Representative Workload Measurement              CLOSEOUT IN REVIEW",
+        "padrão de interação selecionado: ASYNC_SUBMIT_STATUS_RESULT",
+        "topologia AWS concreta selecionada: NÃO",
     ),
     "docs/current-state.md": (
         "Gate 19.1",
-        "COMPLETE",
-        "Gate 19.2",
-        "IN PROGRESS",
-        "latest merged PR: #339",
-        "active boundary: HUMAN LIVE MEASUREMENT",
+        "DEFERRED_PENDING_MEASUREMENT",
+        "Gate 19.2 — Representative Workload Measurement              CLOSEOUT IN REVIEW",
+        "selected interaction pattern: ASYNC_SUBMIT_STATUS_RESULT",
+        "concrete AWS topology selected: NO",
     ),
     "docs/roadmap.md": (
         "Gate 19.1",
-        "COMPLETE",
-        "Gate 19.2",
-        "IN PROGRESS",
-        "PR #339",
-        "HUMAN LIVE MEASUREMENT",
+        "DEFERRED_PENDING_MEASUREMENT",
+        "Gate 19.2 — Representative Workload Measurement — CLOSEOUT IN REVIEW",
+        "Selected interaction pattern:",
+        "ASYNC_SUBMIT_STATUS_RESULT",
     ),
     "docs/README.md": (
-        "Gate 19.1",
-        "complete",
-        "Gate 19.2",
-        "in progress at the human execution boundary",
-        "PR #339",
+        "Gate 19.1 — complete",
+        "runtime decision: DEFERRED_PENDING_MEASUREMENT",
+        "Gate 19.2 — closeout in review",
+        "ASYNC_SUBMIT_STATUS_RESULT",
     ),
 }
 
@@ -266,7 +265,7 @@ def _verify_input_and_classifications(root: dict[str, object]) -> None:
 
 
 def _verify_boundaries(root: dict[str, object], repo_root: Path) -> None:
-    """Keep live execution and public runtime authority outside the current slice."""
+    """Keep the historical live-execution boundary and authority impact immutable."""
     live = _object(root.get("live_execution_boundary"), label="live_execution_boundary")
     if live != {
         "aws_or_model_execution": "HUMAN_EXECUTION_REQUIRED",
@@ -306,7 +305,7 @@ def _verify_gate19_1_history(repo_root: Path) -> None:
 
 
 def _verify_docs(repo_root: Path) -> None:
-    """Ensure current-facing docs point to the current Gate 19.2 boundary."""
+    """Require current docs to preserve Gate 19.1 history and expose Gate 19.2 closeout."""
     for path_text, markers in _REQUIRED_CURRENT_DOC_MARKERS.items():
         text = (repo_root / path_text).read_text(encoding="utf-8")
         for marker in markers:
