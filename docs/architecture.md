@@ -52,24 +52,7 @@ AIP-C01 topic != product requirement
 
 ## 2. Authority model
 
-Deterministic code remains authoritative for:
-
-- source and evidence identity;
-- package normalization and version/range applicability;
-- CVE/GHSA/NVD reconciliation;
-- KEV, EPSS, CVSS and Risk Policy facts;
-- structured-query parsing and SQL compilation;
-- retrieval admission and required-evidence completeness;
-- citation identity and output admission;
-- capability authorization and executable input binding;
-- capability result admission;
-- single-agent and multi-agent handoff admission;
-- MCP admission and result projection;
-- A2A reference identity, resolution and admission;
-- retry/fallback policy where explicitly frozen;
-- runtime-evidence admission and correlation;
-- bounded resource/cost limits;
-- operational recovery control state expressed through Terraform.
+Deterministic code remains authoritative for source/evidence identity, package and version applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS/Risk Policy facts, structured-query parsing and SQL compilation, retrieval admission and completeness, citation and output admission, capability authorization/result admission, agent/MCP/A2A handoff admission, runtime-evidence correlation, bounded resource/cost limits, and Terraform-owned recovery state.
 
 Models and agents may classify, propose, summarize, explain, or synthesize over already-admitted evidence. A managed AWS service or a syntactically valid model output does not become business authority by itself.
 
@@ -103,7 +86,7 @@ public GitHub repository request
  -> deterministic vulnerability applicability
 ```
 
-The initial retained repository intelligence path reads data only. It does not run package managers, builds, tests, setup hooks, workflows, Dockerfiles, scripts, or repository code.
+The retained repository intelligence path reads data only. It does not run package managers, builds, tests, setup hooks, workflows, Dockerfiles, scripts, or repository code.
 
 ### 3.3 Structured natural-language query path
 
@@ -117,7 +100,7 @@ natural-language factual question
  -> structured evidence
 ```
 
-The model has no arbitrary SQL authority. The Athena adapter fixes the database/workgroup, accepts only compiler-owned query shapes, bounds rows/pagination, records scan/timing evidence, and uses best-effort cancellation on its own polling timeout.
+The model has no arbitrary SQL authority. The Athena adapter fixes database/workgroup, accepts only compiler-owned query shapes, bounds rows/pagination, records scan/timing evidence, and uses best-effort cancellation on its own polling timeout.
 
 ### 3.4 Semantic remediation path
 
@@ -169,33 +152,11 @@ Hybrid means hybrid **evidence routing and composition**, not an automatic claim
 
 ## 4. Agentic and interoperability boundaries
 
-Phase 11 retains direct Bedrock single-agent reasoning as the measured reference/default reasoning topology.
-
-Phase 12 retains deterministic specialization/handoff but rejects the measured two-model topology as the default because it added model calls, tokens, latency, and cost without measured quality lift.
-
-Phase 13 retains bounded offline MCP capability exposure/execution/projection. MCP does not add business authority.
-
-Phase 14 retains Amazon Bedrock AgentCore as an optional lab target only. Experiment-specific standing IAM/runtime authority was removed after measurement.
-
-Phase 15 retains bounded offline A2A reference interoperability and an official SDK conformance oracle in CI. No public A2A runtime is retained.
+Phase 11 retains direct Bedrock single-agent reasoning as the measured reference/default reasoning topology. Phase 12 retains deterministic specialization/handoff but rejects the measured two-model topology as default because it added calls, tokens, latency, and cost without quality lift. Phase 13 retains bounded offline MCP. Phase 14 retains AgentCore as optional lab only. Phase 15 retains bounded offline A2A reference interoperability with no public A2A runtime.
 
 ## 5. Runtime exposure boundary
 
-Phase 16 retains a typed read-only Amazon Inspector evidence boundary.
-
-The measured discovery returned zero current records. That means only:
-
-```text
-bounded Inspector read succeeded and returned zero records
-```
-
-It does not mean:
-
-```text
-runtime exposure = zero
-```
-
-Repository risk and runtime exposure remain separate evidence classes.
+Phase 16 retains a typed read-only Amazon Inspector evidence boundary. Its measured discovery returned zero current records. That proves only that the bounded read succeeded and returned zero records; it does not prove `runtime exposure = zero`. Repository risk and runtime exposure remain separate evidence classes.
 
 ## 6. AWS foundation and standing resources
 
@@ -212,40 +173,11 @@ compute:                  AWS Lambda for retained ingestion/transformation paths
 recurring triggers:      Amazon EventBridge Scheduler
 ```
 
-Standing architecture does **not** currently claim:
-
-```text
-public HTTP endpoint
-public application compute
-public MCP runtime
-public A2A peer runtime
-standing AgentCore experiment runtime
-standing Inspector experiment IAM
-production multi-tenant request surface
-public result store
-```
+Standing architecture does **not** currently claim a public HTTP endpoint, public application compute, public MCP/A2A runtime, standing AgentCore experiment runtime, standing Inspector experiment IAM, production multi-tenant request surface, or public result store.
 
 ## 7. Security Hardening retained state
 
-Phase 17 retains evidence-backed controls across CI/CD, dependency/code scanning, adversarial authority regression, telemetry, and recovery.
-
-Important retained controls include:
-
-```text
-protected-main required context:     Repository security invariants
-external GitHub Actions:             full 40-hex SHA pins
-checkout persisted credentials:      disabled where not required
-Dependency Review:                   pull request, fail on high severity
-CodeQL Python:                       PR + main + weekly + manual
-public/adversarial authority tests:  offline and deterministic
-Lambda telemetry:                    implicit event/response/error capture suppressed
-```
-
-All 12 retained Powertools Lambda handlers use content-minimized telemetry patterns. Shared failure logging avoids implicit active-exception traceback serialization.
-
-### 7.1 Scheduled-ingestion recovery control
-
-The concrete recurring ingestion surface remains exactly three EventBridge Scheduler resources:
+Phase 17 retains protected-main security invariants, full-SHA external actions, Dependency Review, CodeQL, adversarial authority tests, content-minimized telemetry, and Terraform-owned recovery for exactly three recurring ingestion schedules.
 
 ```text
 aws_scheduler_schedule.epss_daily
@@ -253,53 +185,29 @@ aws_scheduler_schedule.kev_daily
 aws_scheduler_schedule.nvd_incremental_hourly
 ```
 
-Terraform owns one reversible control:
-
-```text
-scheduled_ingestion_enabled=true   -> ENABLED
-scheduled_ingestion_enabled=false  -> DISABLED
-```
-
-This is a **scheduled-ingestion pause**, not a global kill switch. It does not cancel in-flight Lambda invocations, accepted retries, emitted S3 events, manual invocations, model paths, or capability authorization.
+`scheduled_ingestion_enabled=false` is a scheduled-ingestion pause, not a global kill switch.
 
 ## 8. Phase 18 evidence, cost, and portfolio boundary
 
-Phase 18 is complete through protected PR #290 at:
+Phase 18 is complete through protected PR #290 at `feca774535b7d83f57c26f4e9fe7da71ce268f0f`. Its historical closeout artifact intentionally preserves pre-merge evidence state.
 
-```text
-feca774535b7d83f57c26f4e9fe7da71ce268f0f
-```
-
-Its historical closeout artifact intentionally preserves the pre-merge evidence state. Current-facing documentation carries the post-merge truth.
-
-Phase 18 preserves four evidence classifications:
+Phase 18 preserves:
 
 ```text
 MEASURED
 DERIVED
 UNMEASURED
 NOT_APPLICABLE
+CONFIGURED_LIMIT
 ```
 
-and a separate `CONFIGURED_LIMIT` interpretation for resource ceilings.
-
-Permanent Phase 18 semantics include:
-
-```text
-configured limit != measured utilization
-lab metric != production SLO
-cost evidence != production TCO
-portfolio claim != new evidence authority
-AIP-C01 coverage != certification guarantee
-```
-
-The platform does not manufacture a production monthly run rate from bounded laboratory measurements.
+and the permanent rules `configured limit != measured utilization`, `lab metric != production SLO`, `cost evidence != production TCO`, and `portfolio claim != new evidence authority`.
 
 ## 9. Phase 19 — Bounded Public Runtime & Productization
 
 ### 9.1 Starting public-analysis boundary
 
-Phase 9 deliberately stopped at an application handoff. That boundary is still real on protected `main`:
+Phase 9 deliberately stopped at an application handoff. That boundary remains real on protected `main`:
 
 ```text
 untrusted JSON
@@ -312,27 +220,33 @@ untrusted JSON
  -> STOP
 ```
 
-The fixed public v1 operation is:
+The fixed public v1 operation is `analyze_public_repository` and requires `remediation_guidance`, `risk_priority`, and `vulnerability_facts` with `ALL_REQUIRED` evidence completeness.
+
+### 9.2 Gate 19.1 historical launch contract
+
+Gate 19.1 froze the representative workload identity:
 
 ```text
-analyze_public_repository
+public-analysis-workload:v1
 ```
 
-and requires exactly:
+Its historical runtime decision remains explicitly preserved as:
 
 ```text
-remediation_guidance
-risk_priority
-vulnerability_facts
+DEFERRED_PENDING_MEASUREMENT
 ```
 
-with `ALL_REQUIRED` evidence completeness.
+with leading hypothesis:
 
-The public semantic planner receives only bounded metadata. Raw repository text, credentials, arbitrary SQL, provider/model selection, and executable repository content do not become planner authority.
+```text
+ASYNC_SUBMIT_STATUS_RESULT
+```
 
-### 9.2 Representative product composition
+Gate 19.1 created no public endpoint, worker, queue, result store, or runtime IAM. Its historical marker remains in current-facing documentation so later Gate 19.2 evidence does not rewrite Gate 19.1 authority.
 
-Gate 19.2 composes the real retained capabilities into one **non-public** representative workload without making that composition a deployed public runtime:
+### 9.3 Gate 19.2 representative product composition
+
+Gate 19.2 composes retained capabilities into one **non-public** representative workload without making that composition a deployed public runtime:
 
 ```text
 public_request_admission
@@ -346,43 +260,11 @@ public_request_admission
  -> result_admission
 ```
 
-The composition reuses retained deterministic authority rather than duplicating it. Repository evidence remains immutable and inert, threat evidence is admitted before request-time measurement, risk remains Risk Policy v1, Bedrock Retrieve and synthesis remain bounded, and final result admission remains deterministic.
-
-### 9.3 Frozen representative workload
-
-Gate 19.1 froze the workload identity:
-
-```text
-workload_id: public-analysis-workload:v1
-provider: GitHub
-visibility: public only
-repositories/request: 1
-supported dependency evidence: exact-commit inert uv.lock
-max dependency records: 5,000
-third-party code execution: FORBIDDEN
-```
-
-Gate 19.2 retained the current representative anchor:
-
-```text
-repository:      openedx/mockprock
-repository URL:  https://github.com/openedx/mockprock
-commit/ref:      18c954d8604df4740c829ba17fa2f3640b92b900
-evidence file:  uv.lock
-dependency:     webob==1.8.10
-GHSA anchor:    GHSA-6hx8-3wjj-gr8g
-CVE anchor:     CVE-2026-54770
-```
-
-The anchor establishes reproducibility only. It is not proof of runtime exposure.
+The current representative anchor is `openedx/mockprock` at exact commit `18c954d8604df4740c829ba17fa2f3640b92b900`, using inert `uv.lock`, `webob==1.8.10`, GHSA `GHSA-6hx8-3wjj-gr8g`, and CVE `CVE-2026-54770`. The anchor establishes reproducibility, not runtime exposure.
 
 ### 9.4 Gate 19.2 measured evidence
 
-The human-operated run was executed once from protected main:
-
-```text
-e45ba419414e6dd77ecad68f4d2312e9123c2223
-```
+The human-operated run was executed once from protected main `e45ba419414e6dd77ecad68f4d2312e9123c2223`.
 
 Canonical artifact:
 
@@ -412,15 +294,7 @@ retry count                                0     MEASURED
 throttle count                             0     UNMEASURED
 ```
 
-The two Bedrock-facing stages measured:
-
-```text
-semantic_evidence = 4160 ms
-model_reasoning   = 8938 ms
-combined          = 13098 ms / 73.80% of end-to-end
-```
-
-The offline persisted-artifact reviewer admitted the artifact for topology evaluation. Numeric zero is never used to overwrite evidence semantics: Athena remains `NOT_APPLICABLE`, and throttling remains `UNMEASURED`.
+The Bedrock-facing stages measured `13,098 ms`, or `73.80%` of end-to-end. The persisted-artifact reviewer admitted the artifact for topology evaluation. Numeric zero never overwrites evidence semantics.
 
 ### 9.5 Interaction-pattern decision
 
@@ -430,9 +304,9 @@ Gate 19.2 selects:
 ASYNC_SUBMIT_STATUS_RESULT
 ```
 
-The measured success path completed in `17,748 ms`; it did **not** itself exceed the retained 30-second HTTP API reference envelope. Therefore the decision is not based on a claim of measured timeout.
+The measured success path completed in `17,748 ms`; it did **not** itself exceed the retained 30-second HTTP API reference envelope. The decision is based on retry safety, provider-latency coupling, backpressure, and failure isolation.
 
-The architectural reason is retry safety plus provider-latency coupling, backpressure, and failure isolation. Explicit derived scenarios keep `MEASURED != DERIVED` intact:
+Explicit derived scenarios preserve `MEASURED != DERIVED`:
 
 ```text
 baseline measured E2E                                      17748 ms   MEASURED
@@ -441,11 +315,9 @@ baseline measured E2E                                      17748 ms   MEASURED
 reference synchronous envelope                             30000 ms   RETAINED FACT
 ```
 
-The derived values are not additional live measurements. They show that a successful 17.7-second request leaves insufficient safety margin for synchronous coupling when provider retry/failure behavior is considered.
+Those derived values are not additional live measurements; they show that the observed success path leaves insufficient safety margin for synchronous coupling once provider retry/failure behavior is considered.
 
 ### 9.6 Concrete runtime remains unselected
-
-The interaction pattern is selected; the concrete service topology is not.
 
 ```text
 ASYNC_SUBMIT_STATUS_RESULT     SELECTED_INTERACTION_PATTERN
@@ -461,20 +333,9 @@ AgentCore public runtime       UNSELECTED
 
 Gate 19.2 authorizes no public endpoint, queue, worker, result store, AWS resource, or IAM role/policy.
 
-### 9.7 IAM responsibility model
+### 9.7 Next topology responsibility model
 
-No public runtime role exists yet. The next topology gate must preserve responsibility decomposition before IAM materialization:
-
-```text
-public ingress admission
-repository acquisition
-job submission/coordination
-worker execution
-Bedrock Knowledge Base retrieval
-Bedrock model invocation
-result persistence/status, only if selected
-telemetry emission
-```
+Before IAM materialization, the next Phase 19 gate must freeze responsibility boundaries for public ingress admission, repository acquisition, job submission/coordination, worker execution, Bedrock retrieval/model invocation, optional result/status persistence, and telemetry emission.
 
 The design rule remains:
 
@@ -485,139 +346,27 @@ concrete runtime responsibility
  -> IAM statement
 ```
 
-not:
+not `future feature aspiration -> broad runtime role`.
 
-```text
-future feature aspiration
- -> broad runtime role
-```
+### 9.8 Async lifecycle, abuse, and backpressure requirements
 
-### 9.8 Threat, abuse, and async lifecycle requirements
+The next gate must define deterministic authority for job identity, idempotency keys, duplicate-delivery handling, retry ownership, status lifecycle, result retention/integrity, concurrency/backpressure, public identity/rate controls, cost amplification controls, and cancellation/disable boundaries.
 
-The future public surface must address at minimum:
-
-```text
-oversized request
-malformed JSON
-repository URL abuse
-SSRF-style source redirection
-repository enumeration
-large repository amplification
-dependency explosion
-GitHub API abuse
-prompt injection from repository content
-retrieval poisoning
-model amplification
-retry amplification
-concurrency exhaustion
-cost denial-of-wallet
-result tampering
-identity/replay
-telemetry data leakage
-```
-
-The selected async pattern additionally requires deterministic authority for:
-
-```text
-job identity
-idempotency key semantics
-duplicate-delivery handling
-retry ownership
-visibility/lease semantics if a queue is selected
-status lifecycle
-result retention
-result integrity
-cancellation/disable boundaries
-```
-
-Existing request admission, fixed GitHub host/no redirects, inert-file-only repository access, dependency/candidate limits, deterministic authority boundaries, and content-minimized telemetry remain applicable.
+Existing controls remain applicable: fixed GitHub host/no redirects, inert-file-only repository access, dependency/candidate limits, deterministic evidence authority, and content-minimized telemetry.
 
 ### 9.9 Cost and observability contract
 
-Gate 19.2 now provides real whole-workload measurements for the retained representative run, but it does not manufacture production SLOs or TCO.
+Gate 19.2 provides real whole-workload measurements for one representative run but does not manufacture production SLOs or TCO. Async-specific dimensions such as queue operations, delivery attempts, worker concurrency, result-store operations, status reads, retention/storage, and aggregate model-call budgets become measurement obligations only if corresponding components are selected.
 
-The next topology gate must additionally define and later measure async-specific dimensions only if those components are actually selected:
-
-```text
-job submissions
-queue operations
-delivery attempts
-worker concurrency
-result-store operations
-status reads
-retention/storage
-rejected requests
-aggregate model-call budget
-cost attribution per job/request
-```
-
-Required telemetry remains content-minimized:
-
-```text
-request_id
-job_id
-trace_id
-workload_id
-repository_identity_hash
-stage
-duration_ms
-outcome
-failure_category
-provider/service call count
-Bedrock token counts when available
-retry count
-throttle classification
-admission rejection reason
-cost attribution identifiers when available
-```
-
-Forbidden by default:
-
-```text
-full prompt
-repository source code
-repository file contents
-full model response
-sensitive tokens
-credentials
-raw user payload
-```
-
-Telemetry does not become business/evidence authority.
+Telemetry remains content-minimized. Full prompts, repository source, repository file contents, full model responses, credentials, sensitive tokens, and raw user payloads remain forbidden by default.
 
 ### 9.10 Disable/recovery contract
 
-Before public deployment, controls must be named by their actual scope:
-
-```text
-ingress disable
-new-job admission disable
-queue consumer pause, if a queue is selected
-model invocation disable
-result publication disable, if persistence is selected
-background ingestion pause
-```
-
-The existing Phase 17 scheduler pause proves only `background ingestion pause` for the three named schedules. It must not be relabeled as a global kill switch.
+Before public deployment, controls must be scoped explicitly: ingress disable, new-job admission disable, queue-consumer pause if selected, model-invocation disable, result-publication disable if selected, and the already-proven background-ingestion pause. The Phase 17 scheduler pause must not be relabeled as a global kill switch.
 
 ### 9.11 Next architecture boundary
 
 After protected Gate 19.2 closeout merge, the next Phase 19 gate should freeze the smallest concrete async ingress/job/result architecture and least-privilege responsibility model **before** deployment.
-
-It must compare only the minimum credible service combinations needed for the already-selected interaction pattern and preserve evidence-gated decisions for:
-
-```text
-ingress
-job coordination
-worker compute
-result/status persistence
-identity/rate/abuse controls
-least-privilege IAM
-concurrency/backpressure
-observability
-disable/recovery
-Terraform ownership
-```
 
 No AWS service is selected merely because it is common for async systems or appears in AIP-C01.
 
