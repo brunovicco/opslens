@@ -53,6 +53,15 @@ class FakeS3Client:
         return self.response
 
 
+def _reader(client: FakeS3Client, *, max_bytes: int = 1024) -> ExactS3AuthorityObjectReader:
+    """Build one bounded exact-version reader for test evidence."""
+    return ExactS3AuthorityObjectReader(
+        client=client,
+        bucket_name="opslens-dev-data",
+        max_bytes=max_bytes,
+    )
+
+
 def test_reader_performs_one_exact_version_get_and_closes_body() -> None:
     """One admitted coordinate becomes exactly one bounded GetObject request."""
     body = FakeBody(b"authority")
@@ -63,31 +72,83 @@ def test_reader_performs_one_exact_version_get_and_closes_body() -> None:
             "ContentLength": len(body.payload),
         }
     )
-    reader = ExactS3AuthorityObjectReader(
-        client=client,
-        bucket_name="opslens-dev-data",
-        max_bytes=1024,
-    )
 
-    result = reader.read(object_key="silver/example.parquet", version_id="version-7")
+    result = _reader(client).read(
+        object_key="silver/example.parquet",
+        version_id="version-7",
+    )
 
     assert result.object_key == "silver/example.parquet"
     assert result.version_id == "version-7"
     assert result.payload == b"authority"
+    assert result.metadata == ()
     assert client.calls == [
         ("opslens-dev-data", "silver/example.parquet", "version-7")
     ]
     assert body.closed is True
 
 
+def test_reader_preserves_metadata_as_frozen_deterministic_evidence() -> None:
+    """User metadata from the same exact GetObject remains immutable and ordered."""
+    body = FakeBody(b"authority")
+    client = FakeS3Client(
+        {
+            "Body": body,
+            "VersionId": "version-7",
+            "ContentLength": len(body.payload),
+            "Metadata": {
+                "retrieved_at": "2026-09-10T14:03:00+00:00",
+                "source": "cisa-kev",
+                "catalog_version": "2026.09.10",
+            },
+        }
+    )
+
+    result = _reader(client).read(
+        object_key="bronze/kev/catalog.json",
+        version_id="version-7",
+    )
+
+    assert result.metadata == (
+        ("catalog_version", "2026.09.10"),
+        ("retrieved_at", "2026-09-10T14:03:00+00:00"),
+        ("source", "cisa-kev"),
+    )
+    assert result.metadata_value("retrieved_at") == "2026-09-10T14:03:00+00:00"
+    assert result.metadata_value("missing") is None
+    assert client.calls == [
+        ("opslens-dev-data", "bronze/kev/catalog.json", "version-7")
+    ]
+
+
+def test_reader_rejects_malformed_metadata_before_body_read() -> None:
+    """Contradictory user metadata fails closed without consuming object bytes."""
+    body = FakeBody(b"authority")
+    client = FakeS3Client(
+        {
+            "Body": body,
+            "VersionId": "version-7",
+            "ContentLength": len(body.payload),
+            "Metadata": {"retrieved_at": ""},
+        }
+    )
+
+    with pytest.raises(ExactS3AuthorityObjectError, match="metadata values"):
+        _reader(client).read(
+            object_key="bronze/kev/catalog.json",
+            version_id="version-7",
+        )
+
+    assert body.closed is False
+    assert client.calls == [
+        ("opslens-dev-data", "bronze/kev/catalog.json", "version-7")
+    ]
+
+
 def test_reader_fails_before_provider_io_for_invalid_coordinates() -> None:
     """Empty physical coordinates never become mutable or ambiguous S3 reads."""
     client = FakeS3Client({})
-    reader = ExactS3AuthorityObjectReader(
-        client=client,
-        bucket_name="opslens-dev-data",
-        max_bytes=1024,
-    )
+    reader = _reader(client)
 
     with pytest.raises(ExactS3AuthorityObjectError, match="object_key"):
         reader.read(object_key=" ", version_id="version-7")
@@ -106,24 +167,18 @@ def test_reader_rejects_contradictory_version_and_missing_body() -> None:
             "ContentLength": 1,
         }
     )
-    reader = ExactS3AuthorityObjectReader(
-        client=mismatch,
-        bucket_name="opslens-dev-data",
-        max_bytes=1024,
-    )
     with pytest.raises(ExactS3AuthorityObjectError, match="VersionId"):
-        reader.read(object_key="silver/example.parquet", version_id="version-7")
+        _reader(mismatch).read(
+            object_key="silver/example.parquet",
+            version_id="version-7",
+        )
 
-    missing_body = FakeS3Client(
-        {"VersionId": "version-7", "ContentLength": 1}
-    )
-    reader = ExactS3AuthorityObjectReader(
-        client=missing_body,
-        bucket_name="opslens-dev-data",
-        max_bytes=1024,
-    )
+    missing_body = FakeS3Client({"VersionId": "version-7", "ContentLength": 1})
     with pytest.raises(ExactS3AuthorityObjectError, match="missing Body"):
-        reader.read(object_key="silver/example.parquet", version_id="version-7")
+        _reader(missing_body).read(
+            object_key="silver/example.parquet",
+            version_id="version-7",
+        )
 
 
 def test_reader_rejects_oversize_before_body_read() -> None:
@@ -132,14 +187,12 @@ def test_reader_rejects_oversize_before_body_read() -> None:
     client = FakeS3Client(
         {"Body": body, "VersionId": "version-7", "ContentLength": 10}
     )
-    reader = ExactS3AuthorityObjectReader(
-        client=client,
-        bucket_name="opslens-dev-data",
-        max_bytes=5,
-    )
 
     with pytest.raises(ExactS3AuthorityObjectError, match="byte limit"):
-        reader.read(object_key="silver/example.parquet", version_id="version-7")
+        _reader(client, max_bytes=5).read(
+            object_key="silver/example.parquet",
+            version_id="version-7",
+        )
 
     assert body.closed is False
 
@@ -150,14 +203,12 @@ def test_reader_closes_body_and_rejects_content_length_mismatch() -> None:
     client = FakeS3Client(
         {"Body": body, "VersionId": "version-7", "ContentLength": 4}
     )
-    reader = ExactS3AuthorityObjectReader(
-        client=client,
-        bucket_name="opslens-dev-data",
-        max_bytes=1024,
-    )
 
     with pytest.raises(ExactS3AuthorityObjectError, match="ContentLength"):
-        reader.read(object_key="silver/example.parquet", version_id="version-7")
+        _reader(client).read(
+            object_key="silver/example.parquet",
+            version_id="version-7",
+        )
 
     assert body.closed is True
 

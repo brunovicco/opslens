@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Protocol, TypedDict
+from typing import Protocol, TypedDict, cast
 
 
 class ExactS3AuthorityObjectError(RuntimeError):
@@ -23,11 +24,12 @@ class S3AuthorityObjectBody(Protocol):
 
 
 class ExactS3GetObjectResponse(TypedDict, total=False):
-    """Subset of S3 GetObject evidence required by this boundary."""
+    """Subset of untrusted S3 GetObject evidence required by this boundary."""
 
     Body: S3AuthorityObjectBody
     VersionId: str
     ContentLength: int
+    Metadata: object
 
 
 class ExactS3AuthorityObjectClient(Protocol):
@@ -46,11 +48,19 @@ class ExactS3AuthorityObjectClient(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class ExactS3AuthorityObject:
-    """Bytes proven to originate from one explicitly requested S3 object version."""
+    """Evidence returned by one explicitly requested immutable S3 object version."""
 
     object_key: str
     version_id: str
     payload: bytes
+    metadata: tuple[tuple[str, str], ...] = ()
+
+    def metadata_value(self, key: str) -> str | None:
+        """Return one exact user-metadata value without exposing mutable state."""
+        for metadata_key, value in self.metadata:
+            if metadata_key == key:
+                return value
+        return None
 
 
 class ExactS3AuthorityObjectReader:
@@ -99,6 +109,7 @@ class ExactS3AuthorityObjectReader:
                 "S3 authority object exceeds the configured byte limit"
             )
 
+        metadata = self._freeze_metadata(response.get("Metadata"))
         body = response.get("Body")
         if body is None:
             raise ExactS3AuthorityObjectError("S3 GetObject response is missing Body")
@@ -119,7 +130,38 @@ class ExactS3AuthorityObjectReader:
             object_key=key,
             version_id=version,
             payload=payload,
+            metadata=metadata,
         )
+
+    @staticmethod
+    def _freeze_metadata(value: object) -> tuple[tuple[str, str], ...]:
+        """Validate and freeze exact S3 user metadata in deterministic key order."""
+        if value is None:
+            return ()
+        if not isinstance(value, Mapping):
+            raise ExactS3AuthorityObjectError("S3 GetObject Metadata must be a mapping")
+
+        metadata = cast(Mapping[object, object], value)
+        frozen: list[tuple[str, str]] = []
+        seen: set[str] = set()
+        for raw_key, raw_value in metadata.items():
+            if type(raw_key) is not str or not raw_key:
+                raise ExactS3AuthorityObjectError(
+                    "S3 user metadata keys must be non-empty strings"
+                )
+            if type(raw_value) is not str or not raw_value:
+                raise ExactS3AuthorityObjectError(
+                    "S3 user metadata values must be non-empty strings"
+                )
+            normalized_key = raw_key.lower()
+            if normalized_key in seen:
+                raise ExactS3AuthorityObjectError(
+                    "S3 user metadata contains duplicate case-insensitive keys"
+                )
+            seen.add(normalized_key)
+            frozen.append((raw_key, raw_value))
+
+        return tuple(sorted(frozen, key=lambda item: item[0]))
 
     @staticmethod
     def _require_coordinate(value: str, *, name: str) -> str:
