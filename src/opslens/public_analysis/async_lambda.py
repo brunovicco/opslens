@@ -81,6 +81,7 @@ def worker_lambda_handler(
 ) -> dict[str, object]:
     """Load only the disabled worker role composition for the worker handler."""
     # Historical Gate 19.4 fail-closed markers remain explicit:
+    # async worker execution is enabled but provider executor composition is not admitted
     # disabled worker must not access DynamoDB
     # disabled worker must not execute provider-heavy analysis
     from opslens.public_analysis.async_worker_lambda import worker_lambda_handler as handler
