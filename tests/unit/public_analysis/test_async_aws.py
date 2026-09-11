@@ -15,6 +15,7 @@ from opslens.public_analysis.adapters.async_aws import (
 from opslens.public_analysis.domain.async_job import (
     AsyncJobRecord,
     AsyncJobState,
+    claim_async_job_attempt,
     create_async_job_identity,
     create_submitting_job,
     transition_async_job,
@@ -24,9 +25,11 @@ from opslens.public_analysis.domain.request import (
     create_public_analysis_request,
 )
 
+_NOW = 2_000_000_000
+
 
 def _job() -> AsyncJobRecord:
-    """Build one deterministic SUBMITTING job."""
+    """Build one deterministic leased SUBMITTING job."""
     request = create_public_analysis_request(
         PublicRepositoryTarget(
             owner="openedx",
@@ -35,7 +38,10 @@ def _job() -> AsyncJobRecord:
         )
     )
     identity = create_async_job_identity(request, idempotency_key="client-key-0001")
-    return create_submitting_job(identity)
+    return create_submitting_job(
+        identity,
+        lease_expires_at_epoch_seconds=_NOW + 30,
+    )
 
 
 def _new_response_list() -> list[dict[str, object]]:
@@ -92,17 +98,26 @@ class _FakeSqsClient:
 
 def _job_item(job: AsyncJobRecord) -> dict[str, object]:
     """Build one exact raw DynamoDB response item for adapter decoding."""
-    return {
+    item: dict[str, object] = {
         "pk": {"S": f"JOB#{job.identity.job_id}"},
         "entity_type": {"S": "JOB"},
         "job_id": {"S": job.identity.job_id},
         "idempotency_key_sha256": {"S": job.identity.idempotency_key_sha256},
         "request_id": {"S": job.identity.request_id},
         "request_sha256": {"S": job.identity.request_sha256},
+        "repository_owner": {"S": job.identity.repository_owner},
+        "repository_name": {"S": job.identity.repository_name},
         "state": {"S": job.state.value},
         "attempt_count": {"N": str(job.attempt_count)},
         "version": {"N": str(job.version)},
     }
+    if job.identity.requested_ref is not None:
+        item["requested_ref"] = {"S": job.identity.requested_ref}
+    if job.lease_expires_at_epoch_seconds is not None:
+        item["lease_expires_at_epoch_seconds"] = {
+            "N": str(job.lease_expires_at_epoch_seconds)
+        }
+    return item
 
 
 def test_put_if_absent_uses_two_conditional_items_without_query_or_scan() -> None:
@@ -124,11 +139,13 @@ def test_put_if_absent_uses_two_conditional_items_without_query_or_scan() -> Non
     rendered = json.dumps(transact_items, sort_keys=True)
     assert f"JOB#{job.identity.job_id}" in rendered
     assert f"IDEMPOTENCY#{job.identity.idempotency_key_sha256}" in rendered
+    assert job.identity.repository_owner in rendered
+    assert job.identity.repository_name in rendered
     assert rendered.count("attribute_not_exists(pk)") == 2
 
 
-def test_get_decodes_exact_job_record() -> None:
-    """Reject storage as authority until it reconstructs the strict domain record."""
+def test_get_decodes_exact_job_record_and_reconstructs_request() -> None:
+    """Reject storage as authority until it reconstructs the strict domain request and job."""
     job = transition_async_job(_job(), target_state=AsyncJobState.ACCEPTED)
     client = _FakeDynamoDbClient(get_responses=[{"Item": _job_item(job)}])
     store = DynamoDbAsyncJobStore(client=client, table_name="opslens-dev-public-jobs")
@@ -136,6 +153,9 @@ def test_get_decodes_exact_job_record() -> None:
     observed = store.get(job.identity.job_id)
 
     assert observed == job
+    assert observed is not None
+    assert observed.identity.request.target.owner == "openedx"
+    assert observed.identity.request.target.name == "mockprock"
     assert client.get_calls == [
         {
             "TableName": "opslens-dev-public-jobs",
@@ -145,8 +165,8 @@ def test_get_decodes_exact_job_record() -> None:
     ]
 
 
-def test_replace_if_current_binds_conditional_update_to_exact_version() -> None:
-    """Make DynamoDB optimistic version authority explicit rather than state-by-convention."""
+def test_replace_if_current_binds_conditional_update_to_exact_state_and_version() -> None:
+    """Make DynamoDB state/version compare-and-swap authority explicit."""
     current = _job()
     replacement = transition_async_job(current, target_state=AsyncJobState.ACCEPTED)
     client = _FakeDynamoDbClient()
@@ -156,17 +176,45 @@ def test_replace_if_current_binds_conditional_update_to_exact_version() -> None:
 
     assert len(client.update_calls) == 1
     call = client.update_calls[0]
-    assert call["ConditionExpression"] == "#version = :expected_version"
-    values = call["ExpressionAttributeValues"]
-    assert isinstance(values, dict)
+    assert call["ConditionExpression"] == (
+        "#version = :expected_version AND #state = :expected_state"
+    )
+    raw_values = call["ExpressionAttributeValues"]
+    assert isinstance(raw_values, dict)
+    values = cast(dict[str, object], raw_values)
     assert values[":expected_version"] == {"N": "0"}
+    assert values[":expected_state"] == {"S": "SUBMITTING"}
     assert values[":next_version"] == {"N": "1"}
+
+
+def test_replace_if_current_persists_worker_lease_and_attempt() -> None:
+    """Persist the explicit worker lease that blocks overlapping duplicate execution."""
+    current = transition_async_job(_job(), target_state=AsyncJobState.ACCEPTED)
+    replacement = claim_async_job_attempt(
+        current,
+        now_epoch_seconds=_NOW,
+        lease_seconds=60,
+    )
+    client = _FakeDynamoDbClient()
+    store = DynamoDbAsyncJobStore(client=client, table_name="opslens-dev-public-jobs")
+
+    assert store.replace_if_current(current=current, replacement=replacement) is True
+
+    call = client.update_calls[0]
+    rendered = json.dumps(call, sort_keys=True)
+    assert '"attempt_count": {"N": "1"}' not in rendered
+    assert ':lease_expires_at_epoch_seconds' in rendered
+    assert str(_NOW + 60) in rendered
 
 
 def test_replace_if_current_returns_false_on_conditional_race() -> None:
     """Expose a lost optimistic claim as a deterministic false result, not an implicit retry."""
-    current = _job()
-    replacement = transition_async_job(current, target_state=AsyncJobState.RUNNING)
+    current = transition_async_job(_job(), target_state=AsyncJobState.ACCEPTED)
+    replacement = claim_async_job_attempt(
+        current,
+        now_epoch_seconds=_NOW,
+        lease_seconds=60,
+    )
     error = ClientError(
         {
             "Error": {
