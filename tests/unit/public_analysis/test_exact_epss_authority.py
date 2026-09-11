@@ -42,12 +42,17 @@ def _metadata(payload: bytes) -> tuple[tuple[str, str], ...]:
     )
 
 
+def _empty_calls() -> list[tuple[str, str]]:
+    """Return a precisely typed empty exact-read call log."""
+    return []
+
+
 @dataclass
 class FakeExactObjectReader:
     """Return one configured immutable object and record exact read coordinates."""
 
     result: ExactS3AuthorityObject
-    calls: list[tuple[str, str]] = field(default_factory=list)
+    calls: list[tuple[str, str]] = field(default_factory=_empty_calls)
 
     def read(self, *, object_key: str, version_id: str) -> ExactS3AuthorityObject:
         """Record and satisfy one exact object-version read."""
