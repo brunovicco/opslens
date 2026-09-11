@@ -24,6 +24,12 @@ from opslens.public_analysis.application.representative_repository_analysis impo
 from opslens.public_analysis.application.representative_threat_authority_locators import (
     RepresentativeThreatAuthorityLocatorError,
 )
+from opslens.public_analysis.application.representative_threat_authority_sources import (
+    LocatorBoundRepresentativeEpssAuthoritySource,
+    LocatorBoundRepresentativeGhsaAuthoritySource,
+    LocatorBoundRepresentativeKevAuthoritySource,
+    LocatorBoundRepresentativeNvdAuthoritySource,
+)
 from opslens.public_analysis.application.representative_threat_evidence_coordinate_loaders import (
     BundleBoundRepresentativeEpssAuthorityLoader,
     BundleBoundRepresentativeGhsaAuthorityLoader,
@@ -194,10 +200,19 @@ def test_composes_admitted_manifest_into_existing_materialization(
         assert isinstance(typed.nvd, BundleBoundRepresentativeNvdAuthorityLoader)
         assert isinstance(typed.kev, BundleBoundRepresentativeKevAuthorityLoader)
         assert isinstance(typed.epss, BundleBoundRepresentativeEpssAuthorityLoader)
-        assert typed.ghsa.source.reader is readers.ghsa
-        assert typed.nvd.source.reader is readers.nvd
-        assert typed.kev.source.reader is readers.kev
-        assert typed.epss.source.reader is readers.epss
+
+        ghsa_source = typed.ghsa.source
+        nvd_source = typed.nvd.source
+        kev_source = typed.kev.source
+        epss_source = typed.epss.source
+        assert isinstance(ghsa_source, LocatorBoundRepresentativeGhsaAuthoritySource)
+        assert isinstance(nvd_source, LocatorBoundRepresentativeNvdAuthoritySource)
+        assert isinstance(kev_source, LocatorBoundRepresentativeKevAuthoritySource)
+        assert isinstance(epss_source, LocatorBoundRepresentativeEpssAuthoritySource)
+        assert ghsa_source.reader is readers.ghsa
+        assert nvd_source.reader is readers.nvd
+        assert kev_source.reader is readers.kev
+        assert epss_source.reader is readers.epss
         return result_sentinel
 
     monkeypatch.setattr(module, "materialize_representative_threat_evidence", fake_materialize)
