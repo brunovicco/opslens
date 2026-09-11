@@ -108,37 +108,41 @@ _REQUIRED_INVARIANTS = {
     "configured limit != measured utilization",
 }
 
-_REQUIRED_DOC_MARKERS = {
+_REQUIRED_CURRENT_DOC_MARKERS = {
     "README.md": (
         "19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE",
         "19.2  Representative Workload Measurement              IN PROGRESS",
-        "draft PR: #297",
+        "merged PR: #339",
+        "boundary: HUMAN LIVE MEASUREMENT",
     ),
     "README.pt-br.md": (
         "19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE",
         "19.2  Representative Workload Measurement              IN PROGRESS",
-        "draft PR: #297",
+        "merged PR: #339",
+        "boundary: HUMAN LIVE MEASUREMENT",
     ),
     "docs/current-state.md": (
         "Gate 19.1",
         "COMPLETE",
         "Gate 19.2",
         "IN PROGRESS",
-        "draft PR: #297",
+        "latest merged PR: #339",
+        "active boundary: HUMAN LIVE MEASUREMENT",
     ),
     "docs/roadmap.md": (
         "Gate 19.1",
         "COMPLETE",
         "Gate 19.2",
         "IN PROGRESS",
-        "Draft implementation PR: #297",
+        "PR #339",
+        "HUMAN LIVE MEASUREMENT",
     ),
     "docs/README.md": (
         "Gate 19.1",
         "complete",
         "Gate 19.2",
-        "in progress",
-        "draft PR #297",
+        "in progress at the human execution boundary",
+        "PR #339",
     ),
 }
 
@@ -224,7 +228,7 @@ def _verify_components(root: dict[str, object], repo_root: Path) -> None:
 
 
 def _verify_input_and_classifications(root: dict[str, object]) -> None:
-    """Freeze reproducible input coordinates and explicit provider evidence semantics."""
+    """Freeze historical input coordinates and explicit provider evidence semantics."""
     representative_input = _object(
         root.get("representative_input"),
         label="representative_input",
@@ -302,8 +306,8 @@ def _verify_gate19_1_history(repo_root: Path) -> None:
 
 
 def _verify_docs(repo_root: Path) -> None:
-    """Ensure current-facing documentation points to the active Gate 19.2 boundary."""
-    for path_text, markers in _REQUIRED_DOC_MARKERS.items():
+    """Ensure current-facing docs point to the current Gate 19.2 boundary."""
+    for path_text, markers in _REQUIRED_CURRENT_DOC_MARKERS.items():
         text = (repo_root / path_text).read_text(encoding="utf-8")
         for marker in markers:
             if marker not in text:
