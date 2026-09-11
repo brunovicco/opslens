@@ -11,6 +11,13 @@ class RepresentativeLiveArtifactFileError(RuntimeError):
     """Reject unsafe, partial, or overwriting artifact publication attempts."""
 
 
+def _require_path(value: object) -> Path:
+    """Admit concrete pathlib path implementations while rejecting other runtime values."""
+    if not isinstance(value, Path):
+        raise TypeError("path must be pathlib.Path")
+    return value
+
+
 def write_new_representative_live_artifact(path: Path, payload: bytes) -> None:
     """Publish complete bytes atomically through a same-directory hard-link commit.
 
@@ -18,8 +25,7 @@ def write_new_representative_live_artifact(path: Path, payload: bytes) -> None:
     ``os.link`` provides create-without-replace semantics, so an existing or concurrently
     created evidence artifact is never overwritten.
     """
-    if not isinstance(path, Path):
-        raise TypeError("path must be pathlib.Path")
+    path = _require_path(path)
     if type(payload) is not bytes or not payload:
         raise RepresentativeLiveArtifactFileError(
             "artifact payload must be non-empty admitted bytes"
