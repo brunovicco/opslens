@@ -16,6 +16,7 @@ on:
       - "docs/adr/0076-*.md"
       - "scripts/verify_phase19_gate19_1_public_runtime_contract.py"
       - "scripts/verify_phase19_gate19_2_measurement_contract.py"
+      - "scripts/verify_phase19_gate19_2_live_measurement.py"
       - "scripts/verify_phase18_closeout.py"
       - "README.md"
       - "README.pt-br.md"
@@ -64,6 +65,7 @@ jobs:
           uv run ruff check
           scripts/verify_phase19_gate19_1_public_runtime_contract.py
           scripts/verify_phase19_gate19_2_measurement_contract.py
+          scripts/verify_phase19_gate19_2_live_measurement.py
           scripts/verify_phase18_closeout.py
 
       - name: Pyright strict Phase 19 verifiers
@@ -71,6 +73,7 @@ jobs:
           uv run pyright
           scripts/verify_phase19_gate19_1_public_runtime_contract.py
           scripts/verify_phase19_gate19_2_measurement_contract.py
+          scripts/verify_phase19_gate19_2_live_measurement.py
           scripts/verify_phase18_closeout.py
 
       - name: Run retained public-analysis unit tests
