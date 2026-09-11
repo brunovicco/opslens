@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from hashlib import sha256
 from typing import Final, cast
 
@@ -77,7 +77,7 @@ def _utc_timestamp(value: object) -> str:
         raise RepresentativeLiveMeasurementArtifactError(
             "run_timestamp_utc must be valid RFC3339 UTC"
         ) from exc
-    if parsed.tzinfo != timezone.utc or parsed.microsecond != 0:
+    if parsed.tzinfo != UTC or parsed.microsecond != 0:
         raise RepresentativeLiveMeasurementArtifactError(
             "run_timestamp_utc must use UTC with second precision"
         )
