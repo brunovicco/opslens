@@ -29,6 +29,10 @@ from opslens.public_analysis.application.representative_model_reasoning import (
     RepresentativeModelReasoning,
     execute_representative_model_reasoning,
 )
+from opslens.public_analysis.application.representative_pre_measurement_authority import (
+    RepresentativeThreatAuthorityReaders,
+    materialize_pre_measurement_threat_evidence,
+)
 from opslens.public_analysis.application.representative_preloaded_threat_evidence import (
     PreloadedRepresentativeThreatEvidenceLoader,
     RepresentativePreloadedThreatEvidenceError,
@@ -207,6 +211,7 @@ __all__ = [
     "RepresentativeStageAction",
     "RepresentativeThreatAuthorityLocatorError",
     "RepresentativeThreatAuthorityLocatorManifestV1",
+    "RepresentativeThreatAuthorityReaders",
     "RepresentativeThreatAuthoritySourceError",
     "RepresentativeThreatEvidenceAdmissionError",
     "RepresentativeThreatEvidenceAuthority",
@@ -235,6 +240,7 @@ __all__ = [
     "execute_representative_model_reasoning",
     "execute_representative_public_workload",
     "execute_representative_workload",
+    "materialize_pre_measurement_threat_evidence",
     "materialize_representative_threat_evidence",
     "measure_representative_workload",
     "parse_public_semantic_plan_proposal",
