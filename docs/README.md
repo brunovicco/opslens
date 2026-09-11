@@ -17,7 +17,29 @@ This directory contains the retained architecture, operational state, decisions,
 
 ## Retained security lineage
 
-Phase 19 remains downstream of the Phase 17 security controls and the Phase 18 evidence closeout. **Gate 17.1** established the evidence-first threat/control-gap inventory, and **Gate 17.2** hardened CI/CD and workflow authority. The `Repository security invariants` protected-main context, full-SHA external actions, Dependency Review, CodeQL, adversarial authority regression, content-minimized Lambda telemetry, and the narrowly scoped scheduled-ingestion pause remain part of the retained platform authority chain.
+Phase 19 remains downstream of the Phase 17 security controls and the Phase 18 evidence closeout. Gate 17.1 established the evidence-first threat/control-gap inventory and Gate 17.2 hardened CI/CD and workflow authority. Protected-main security invariants, full-SHA external actions, Dependency Review, CodeQL, adversarial authority regression, content-minimized Lambda telemetry, and bounded operational recovery remain part of the retained platform authority chain.
+
+Retained evidence semantics:
+
+```text
+Agents reason. Code verifies evidence.
+READ, NEVER EXECUTE third-party repository code.
+Repository Risk != Runtime Exposure.
+retrieved content != instruction authority
+model proposal != authorization
+tool/protocol success != business truth
+MEASURED != DERIVED
+UNMEASURED != zero
+NOT_APPLICABLE != zero
+configured limit != measured utilization
+lab measurement != production SLO
+responsibility -> required action -> exact resource -> IAM statement
+queue delivery != business execution authority
+provider retry != business retry authority
+artifact hash != S3 VersionId
+publication success != deployment authorization
+AIP-C01 topic != product requirement
+```
 
 ## Phase 18 closeout
 
@@ -27,88 +49,68 @@ Phase 18 is complete. Its protected closeout was squash-merged through PR #290 a
 feca774535b7d83f57c26f4e9fe7da71ce268f0f
 ```
 
-Historical Phase 18 artifacts intentionally preserve the state that existed when they were created. Current-facing documents carry later protected-main truth without rewriting historical evidence.
-
-Retained evidence semantics:
-
-```text
-MEASURED != DERIVED
-UNMEASURED != zero
-NOT_APPLICABLE != zero
-configured limit != measured utilization
-lab measurement != production SLO
-cost evidence != production TCO
-portfolio claim != new evidence authority
-AIP-C01 topic != product requirement
-AIP-C01 coverage != certification guarantee
-historical experiment != standing authority
-```
+Historical artifacts intentionally preserve the state that existed when they were created. Current-facing documents carry later protected-main truth without rewriting historical evidence.
 
 ## Phase 19 — Bounded Public Runtime & Productization
 
-### Gate 19.1 — complete
-
-Gate 19.1 was protected-squash-merged through PR #292 at `ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1`.
-
-Historical retained launch contract:
+Current protected lineage:
 
 ```text
-public-analysis-workload:v1
-runtime decision: DEFERRED_PENDING_MEASUREMENT
-leading hypothesis: ASYNC_SUBMIT_STATUS_RESULT
-AWS mutations: 0
-IAM mutations: 0
-new AWS resources: 0
-public endpoints: 0
-model/capability executions: 0
+19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE
+      PR #292 / ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1
+      historical decision: DEFERRED_PENDING_MEASUREMENT
+
+19.2  Representative Workload Measurement              COMPLETE
+      PR #347 / 71eda2650889d3047259d37be226862ed2a09092
+      measured E2E: 17,748 ms
+      selected interaction: ASYNC_SUBMIT_STATUS_RESULT
+
+19.3  Concrete Async Topology Contract                  COMPLETE
+      PR #349 / 18d31c03d27448c88a6ffcba16683f3875a5ba15
+      topology: HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB
+      deployment authorized: NO
+
+19.4  Disabled Async Runtime Implementation             COMPLETE
+      PR #351 / a5067e05fda74aad4d95d7f1a875110fb676304a
+      runtime materialized by default: false
+      deployment authorized: NO
+
+19.5  Immutable Async Deployment Artifacts              IN PROGRESS
+      issue #352 / PR #353
+      publication authority: HUMAN_ONLY_CREATE_ONLY
+      runtime deployment authorized: NO
 ```
 
-Key records:
+### Gate 19.1 — historical launch contract
+
+Gate 19.1 froze `public-analysis-workload:v1` and refused to select runtime topology before representative evidence existed. Its historical `DEFERRED_PENDING_MEASUREMENT` decision is preserved rather than rewritten.
+
+Canonical records:
 
 - [`../labs/phase-19-gate-19-1-public-runtime-hypothesis.md`](../labs/phase-19-gate-19-1-public-runtime-hypothesis.md)
 - [`../labs/evidence/phase-19-gate-19-1-public-runtime-contract-v1.json`](../labs/evidence/phase-19-gate-19-1-public-runtime-contract-v1.json)
 - [`adr/0076-bounded-public-runtime-hypothesis-and-launch-contract.md`](adr/0076-bounded-public-runtime-hypothesis-and-launch-contract.md)
 
-### Gate 19.2 — complete
+### Gate 19.2 — representative measurement
 
 Gate 19.2 completed one human-operated representative live measurement, deterministic persisted-artifact review, and the evidence-backed interaction-pattern decision.
 
-Protected closeout merge:
-
-```text
-PR #347
-71eda2650889d3047259d37be226862ed2a09092
-```
-
 Canonical live artifact:
 
-- [`../labs/evidence/phase-19-gate-19-2-live-measurement-v1.json`](../labs/evidence/phase-19-gate-19-2-live-measurement-v1.json)
-- SHA-256 `04ab754a12e25c4aeda0075d41b92693fec464aec4431b3734981488ff470114`
-- run id `gate19.2-live-20260911T131121Z`
-- outcome `SUCCESS`
-
-Measured evidence:
-
 ```text
-end-to-end duration                    17,748 ms
-GitHub physical requests                     4  MEASURED
-Bedrock Retrieve client elapsed         4,148 ms  MEASURED
-Bedrock model client elapsed            8,901 ms  MEASURED
-Bedrock provider model latency          7,772 ms  MEASURED
-Bedrock input/output tokens        5,936 / 408  MEASURED
-retry count                                  0  MEASURED
-throttle count                               0  UNMEASURED
-Athena query count / bytes                    0  NOT_APPLICABLE
-serialized admitted result              5,285 bytes
+labs/evidence/phase-19-gate-19-2-live-measurement-v1.json
+SHA-256: 04ab754a12e25c4aeda0075d41b92693fec464aec4431b3734981488ff470114
+run id: gate19.2-live-20260911T131121Z
+outcome: SUCCESS
 ```
 
-Selected interaction pattern:
+Measured evidence included 17,748 ms end-to-end, four GitHub physical requests, one Bedrock Retrieve at 4,148 ms client elapsed, one model call at 8,901 ms client elapsed / 7,772 ms provider latency, 5,936 input + 408 output tokens, zero measured retries, `throttle_count` still `UNMEASURED`, and Athena request-time usage `NOT_APPLICABLE` for the retained path.
+
+Selected interaction:
 
 ```text
 ASYNC_SUBMIT_STATUS_RESULT
 ```
-
-Gate 19.2 did not claim a measured timeout. The measured baseline completed below 30 seconds; the async decision follows provider-latency coupling, retry safety, backpressure, and failure isolation. Derived retry-safety scenarios remain explicitly `DERIVED`.
 
 Canonical closeout records:
 
@@ -116,36 +118,15 @@ Canonical closeout records:
 - [`../labs/evidence/phase-19-gate-19-2-closeout-v1.json`](../labs/evidence/phase-19-gate-19-2-closeout-v1.json)
 - [`../scripts/verify_phase19_gate19_2_closeout.py`](../scripts/verify_phase19_gate19_2_closeout.py)
 
-### Gate 19.3 — complete
+### Gate 19.3 — concrete async topology
 
-Gate 19.3 was protected-merged through PR #349 at:
-
-```text
-18d31c03d27448c88a6ffcba16683f3875a5ba15
-```
-
-It selected the smallest concrete topology for the already-selected async interaction pattern while preserving zero deployment authority.
-
-Selected design identifier:
+Gate 19.3 selected:
 
 ```text
 HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB
 ```
 
-Logical shape:
-
-```text
-Amazon API Gateway HTTP API
- -> API Lambda
-    -> DynamoDB jobs/idempotency
-    -> SQS standard queue
-       -> Lambda worker
-          -> retained OpsLens analysis authorities
-          -> DynamoDB status/result
-    -> SQS DLQ
-```
-
-Frozen routes:
+The frozen routes are:
 
 ```text
 POST /v1/analyses
@@ -153,9 +134,9 @@ GET  /v1/analyses/{job_id}
 GET  /v1/analyses/{job_id}/result
 ```
 
-The contract makes the DynamoDB/SQS dual-write boundary explicit, requires `Idempotency-Key`, treats SQS as at-least-once transport, uses DynamoDB conditional state/attempt admission for duplicate authority, requires bounded retry and a DLQ, and separates API-handler IAM from worker/Bedrock IAM.
+The design makes the DynamoDB/SQS dual-write boundary explicit, requires `Idempotency-Key`, treats SQS as at-least-once transport, uses DynamoDB conditional state/attempt authority, requires bounded retry and a DLQ, and separates API-handler IAM from worker/Bedrock IAM.
 
-Canonical Gate 19.3 records:
+Canonical records:
 
 - [`../labs/phase-19-gate-19-3-async-topology-contract.md`](../labs/phase-19-gate-19-3-async-topology-contract.md)
 - [`../labs/evidence/phase-19-gate-19-3-async-topology-contract-v1.json`](../labs/evidence/phase-19-gate-19-3-async-topology-contract-v1.json)
@@ -163,34 +144,11 @@ Canonical Gate 19.3 records:
 
 Gate 19.3 authorized no deployment.
 
-### Gate 19.4 — in progress
+### Gate 19.4 — completed disabled runtime implementation
 
-Issue: #350  
-PR: #351  
-Source protected main: `18d31c03d27448c88a6ffcba16683f3875a5ba15`
+Gate 19.4 was protected-merged through PR #351 at `a5067e05fda74aad4d95d7f1a875110fb676304a`.
 
-Gate 19.4 implements the selected Gate 19.3 design as typed/tested application code, narrow AWS adapters, Lambda composition boundaries, and Terraform **behind disabled/non-public defaults**.
-
-Current implementation authority includes:
-
-```text
-deterministic job + hashed idempotency identity
-canonical request fingerprint and exact request coordinates
-SUBMITTING | ACCEPTED | RUNNING | SUCCEEDED | FAILED | EXPIRED
-optimistic version/CAS authority
-submission and worker leases
-bounded attempts
-submit/status/result use cases
-worker claim/success/failure use cases
-semantic idempotency conflicts
-duplicate-delivery/concurrent-claim no-op semantics
-DynamoDB transactional/conditional store
-SQS content-minimized job publication
-strict HTTP API v2 and SQS event admission
-thin API/worker Lambda composition
-```
-
-Terraform now represents the selected resources but creates none by default:
+It implemented the selected topology as typed/tested domain/application code, narrow AWS adapters, separate API/worker Lambda composition, and Terraform behind fail-closed defaults:
 
 ```text
 public_async_runtime_materialized = false
@@ -200,43 +158,59 @@ OPSLENS_ASYNC_WORKER_ENABLED = false
 SQS -> worker event-source mapping enabled = false
 worker reserved concurrency = 0
 custom public domain = absent
+provider-heavy worker executor = not composed
 ```
 
-The worker additionally refuses provider-heavy execution enablement until a provider executor is separately admitted and composed.
+Gate 19.4 closed with zero Terraform apply, zero runtime AWS/IAM mutation, zero public endpoint enablement, and zero provider-heavy public execution.
 
-Functional IAM is split by responsibility and exact Terraform resource binding. API business authority is limited to queue send plus jobs-table item/transaction operations. Worker business authority is limited to queue consumption, jobs-table state updates, retained Knowledge Base retrieval, and retained model invocation. Logging/X-Ray writes are tracked separately as runtime-support authority.
-
-Current numeric runtime values are `CONFIGURED_LIMIT`, never measured utilization:
-
-```text
-API reserved concurrency          2
-worker reserved concurrency       0
-API timeout                      15 s
-worker timeout                   60 s
-queue visibility                120 s
-redrive receive count             4
-worker max attempts               3
-HTTP API burst/rate            10 / 5
-```
-
-Canonical Gate 19.4 records in PR #351:
+Canonical records:
 
 - [`../labs/phase-19-gate-19-4-disabled-async-runtime.md`](../labs/phase-19-gate-19-4-disabled-async-runtime.md)
 - [`../labs/evidence/phase-19-gate-19-4-disabled-async-runtime-v1.json`](../labs/evidence/phase-19-gate-19-4-disabled-async-runtime-v1.json)
 - [`../scripts/verify_phase19_gate19_4_disabled_async_runtime.py`](../scripts/verify_phase19_gate19_4_disabled_async_runtime.py)
 
-Gate 19.4 retains this safety boundary:
+### Gate 19.5 — immutable deployment artifacts
+
+Gate 19.5 is currently preparing deterministic API and worker Lambda deployment packages and the human-only immutable S3 publication evidence required before an exact Terraform plan can exist.
+
+Frozen pre-publication identities:
 
 ```text
-public endpoints enabled:                0
-AWS resources created/changed/deleted:   0
-IAM roles/policies created/changed:      0
-AWS/provider live executions:            0
-third-party repository code executions:  0
-PR #89 modifications:                    0
+API SHA-256:
+99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e
+API Lambda source_code_hash:
+mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=
+
+Worker SHA-256:
+0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9
+Worker Lambda source_code_hash:
+DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck=
 ```
 
-No `terraform apply` or public enablement is authorized. A later human-authorized gate must review an exact Terraform plan, artifact identities, IAM/resource bindings, enablement sequence, and rollback/disable path before any AWS mutation.
+Before publication, S3 `VersionId` is explicitly `UNMEASURED / PENDING_HUMAN_PUBLICATION`. The verifier rebuilds each package twice and requires byte-identical artifacts plus byte-identical agreement with the canonical pre-publication manifest.
+
+Canonical Gate 19.5 pre-publication records:
+
+- [`../labs/evidence/phase-19-gate-19-5-prepublication-v1.json`](../labs/evidence/phase-19-gate-19-5-prepublication-v1.json)
+- [`../labs/phase-19-gate-19-5-immutable-artifact-publication-runbook.md`](../labs/phase-19-gate-19-5-immutable-artifact-publication-runbook.md)
+- [`../scripts/build_phase19_async_lambda_artifacts.py`](../scripts/build_phase19_async_lambda_artifacts.py)
+- [`../scripts/verify_phase19_gate19_5_async_artifact_build.py`](../scripts/verify_phase19_gate19_5_async_artifact_build.py)
+- [`../scripts/publish_phase19_gate19_5_async_artifacts.py`](../scripts/publish_phase19_gate19_5_async_artifacts.py)
+- [`../scripts/verify_phase19_gate19_5_artifact_publication.py`](../scripts/verify_phase19_gate19_5_artifact_publication.py)
+
+The only AWS mutation that Gate 19.5 may later admit is a human-operated create-only publication of exactly two frozen content-addressed ZIP objects to the existing versioned deployment-artifacts bucket. CI and ChatGPT do not execute it. Publication success is object provenance, not deployment authority.
+
+### Next boundary — Gate 19.6 exact Terraform plan
+
+The retained sequence is:
+
+```text
+Gate 19.5  deterministic build + human create-only immutable artifact publication
+Gate 19.6  exact Terraform plan + offline admission/review
+later gate human-authorized Terraform apply / controlled enablement, if admitted
+```
+
+Gate 19.6 may begin only after admitted publication evidence contains the exact S3 `VersionId` for both artifacts. No current gate authorizes `terraform apply`, public endpoint enablement, runtime worker enablement, or provider-heavy public execution.
 
 ## Evidence location rule
 
