@@ -199,7 +199,10 @@ def _after(entry: dict[str, object], *, label: str) -> dict[str, object]:
 def _environment_variables(after: dict[str, object], *, label: str) -> dict[str, object]:
     raw = after.get("environment")
     if isinstance(raw, list):
-        blocks = _objects(raw, label=f"{label}.environment")
+        blocks = [
+            _object(item, label=f"{label}.environment[]")
+            for item in cast(list[object], raw)
+        ]
         if len(blocks) != 1:
             raise Gate19_6PlanVerificationError(
                 f"{label}.environment must contain exactly one block"
