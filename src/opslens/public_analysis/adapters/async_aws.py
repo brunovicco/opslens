@@ -128,10 +128,16 @@ def _serialize_job(job: AsyncJobRecord) -> _DynamoItem:
         "idempotency_key_sha256": _s(job.identity.idempotency_key_sha256),
         "request_id": _s(job.identity.request_id),
         "request_sha256": _s(job.identity.request_sha256),
+        "repository_owner": _s(job.identity.repository_owner),
+        "repository_name": _s(job.identity.repository_name),
         "state": _s(job.state.value),
         "attempt_count": _n(job.attempt_count),
         "version": _n(job.version),
     }
+    if job.identity.requested_ref is not None:
+        item["requested_ref"] = _s(job.identity.requested_ref)
+    if job.lease_expires_at_epoch_seconds is not None:
+        item["lease_expires_at_epoch_seconds"] = _n(job.lease_expires_at_epoch_seconds)
     if job.result_sha256 is not None:
         item["result_sha256"] = _s(job.result_sha256)
     if job.result_bytes is not None:
@@ -165,12 +171,19 @@ def _deserialize_job(item: _DynamoItem) -> AsyncJobRecord:
             idempotency_key_sha256=_required_string(item, "idempotency_key_sha256"),
             request_id=_required_string(item, "request_id"),
             request_sha256=_required_string(item, "request_sha256"),
+            repository_owner=_required_string(item, "repository_owner"),
+            repository_name=_required_string(item, "repository_name"),
+            requested_ref=_optional_string(item, "requested_ref"),
         )
         return AsyncJobRecord(
             identity=identity,
             state=state,
             attempt_count=_required_int(item, "attempt_count"),
             version=_required_int(item, "version"),
+            lease_expires_at_epoch_seconds=_optional_int(
+                item,
+                "lease_expires_at_epoch_seconds",
+            ),
             result_sha256=_optional_string(item, "result_sha256"),
             result_bytes=_optional_int(item, "result_bytes"),
             result_json=_optional_string(item, "result_json"),
@@ -294,7 +307,7 @@ class DynamoDbAsyncJobStore:
         current: AsyncJobRecord,
         replacement: AsyncJobRecord,
     ) -> bool:
-        """Conditionally update mutable state using the exact optimistic version authority."""
+        """Conditionally update mutable state using exact state and optimistic version authority."""
         if current.identity != replacement.identity:
             raise PublicAnalysisValidationError("async job identity is immutable")
         if replacement.version != current.version + 1:
@@ -303,6 +316,7 @@ class DynamoDbAsyncJobStore:
         names = {"#state": "state", "#version": "version"}
         values: dict[str, _AttributeValue] = {
             ":state": _s(replacement.state.value),
+            ":expected_state": _s(current.state.value),
             ":attempt_count": _n(replacement.attempt_count),
             ":next_version": _n(replacement.version),
             ":expected_version": _n(current.version),
@@ -313,6 +327,17 @@ class DynamoDbAsyncJobStore:
             "#version = :next_version",
         ]
         remove_parts: list[str] = []
+
+        if replacement.lease_expires_at_epoch_seconds is None:
+            remove_parts.append("lease_expires_at_epoch_seconds")
+        else:
+            values[":lease_expires_at_epoch_seconds"] = _n(
+                replacement.lease_expires_at_epoch_seconds
+            )
+            set_parts.append(
+                "lease_expires_at_epoch_seconds = :lease_expires_at_epoch_seconds"
+            )
+
         optional_strings = {
             "result_sha256": replacement.result_sha256,
             "result_json": replacement.result_json,
@@ -339,7 +364,9 @@ class DynamoDbAsyncJobStore:
                 TableName=self.table_name,
                 Key=_job_key(current.identity.job_id),
                 UpdateExpression=update_expression,
-                ConditionExpression="#version = :expected_version",
+                ConditionExpression=(
+                    "#version = :expected_version AND #state = :expected_state"
+                ),
                 ExpressionAttributeNames=names,
                 ExpressionAttributeValues=values,
             )
