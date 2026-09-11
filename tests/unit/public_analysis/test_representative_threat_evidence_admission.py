@@ -7,6 +7,7 @@ import hashlib
 import json
 from copy import deepcopy
 from datetime import UTC, datetime
+from typing import cast
 
 import pytest
 
@@ -211,12 +212,12 @@ def test_admit_representative_threat_evidence_preserves_typed_authority() -> Non
 def test_admission_rejects_kev_absence_when_complete_snapshot_contains_cve() -> None:
     """Do not turn one analytical KEV absence into empty-snapshot authority."""
     bundle = _bundle()
-    document = json.loads(_kev_snapshot().raw_bytes)
-    vulnerabilities = document["vulnerabilities"]
-    assert isinstance(vulnerabilities, list)
-    record = vulnerabilities[0]
-    assert isinstance(record, dict)
-    record["cveID"] = _CVE_ID
+    document = cast(dict[str, object], json.loads(_kev_snapshot().raw_bytes))
+    vulnerabilities = cast(
+        list[dict[str, object]],
+        document["vulnerabilities"],
+    )
+    vulnerabilities[0]["cveID"] = _CVE_ID
     payload = json.dumps(document, separators=(",", ":")).encode()
     authority = _authority()
     contradictory = RepresentativeThreatEvidenceAuthority(
@@ -243,10 +244,8 @@ def test_admission_rejects_kev_absence_when_complete_snapshot_contains_cve() -> 
 def test_admission_rejects_epss_score_drift() -> None:
     """Reject analytical EPSS values that disagree with the complete snapshot."""
     bundle = deepcopy(_bundle())
-    epss = bundle["epss"]
-    assert isinstance(epss, dict)
-    score = epss["score"]
-    assert isinstance(score, dict)
+    epss = cast(dict[str, object], bundle["epss"])
+    score = cast(dict[str, object], epss["score"])
     score["epss"] = 0.9
 
     with pytest.raises(
@@ -259,13 +258,9 @@ def test_admission_rejects_epss_score_drift() -> None:
 def test_admission_rejects_nvd_observed_identity_drift() -> None:
     """Reject NVD projections not bound to the supplied exact observed version."""
     bundle = deepcopy(_bundle())
-    nvd = bundle["nvd"]
-    assert isinstance(nvd, dict)
-    observations = nvd["observations"]
-    assert isinstance(observations, list)
-    observation = observations[0]
-    assert isinstance(observation, dict)
-    observation["observed_cve_version_id"] = _CVE_ID + "@sha256:" + "f" * 64
+    nvd = cast(dict[str, object], bundle["nvd"])
+    observations = cast(list[dict[str, object]], nvd["observations"])
+    observations[0]["observed_cve_version_id"] = _CVE_ID + "@sha256:" + "f" * 64
 
     with pytest.raises(
         RepresentativeThreatEvidenceAdmissionError,
@@ -277,17 +272,10 @@ def test_admission_rejects_nvd_observed_identity_drift() -> None:
 def test_admission_rejects_non_pip_ghsa_package_evidence() -> None:
     """Keep the representative repository bridge bounded to the PyPI ecosystem."""
     bundle = deepcopy(_bundle())
-    ghsa = bundle["ghsa"]
-    assert isinstance(ghsa, dict)
-    versions = ghsa["advisory_versions"]
-    assert isinstance(versions, list)
-    version = versions[0]
-    assert isinstance(version, dict)
-    packages = version["package_evidence"]
-    assert isinstance(packages, list)
-    package = packages[0]
-    assert isinstance(package, dict)
-    package["ecosystem"] = "npm"
+    ghsa = cast(dict[str, object], bundle["ghsa"])
+    versions = cast(list[dict[str, object]], ghsa["advisory_versions"])
+    packages = cast(list[dict[str, object]], versions[0]["package_evidence"])
+    packages[0]["ecosystem"] = "npm"
 
     with pytest.raises(
         RepresentativeThreatEvidenceAdmissionError,
@@ -299,17 +287,10 @@ def test_admission_rejects_non_pip_ghsa_package_evidence() -> None:
 def test_admission_rejects_pre_evaluated_ghsa_range() -> None:
     """Leave installed-version applicability exclusively to retained correlation."""
     bundle = deepcopy(_bundle())
-    ghsa = bundle["ghsa"]
-    assert isinstance(ghsa, dict)
-    versions = ghsa["advisory_versions"]
-    assert isinstance(versions, list)
-    version = versions[0]
-    assert isinstance(version, dict)
-    packages = version["package_evidence"]
-    assert isinstance(packages, list)
-    package = packages[0]
-    assert isinstance(package, dict)
-    package["range_evaluation_performed"] = True
+    ghsa = cast(dict[str, object], bundle["ghsa"])
+    versions = cast(list[dict[str, object]], ghsa["advisory_versions"])
+    packages = cast(list[dict[str, object]], versions[0]["package_evidence"])
+    packages[0]["range_evaluation_performed"] = True
 
     with pytest.raises(
         RepresentativeThreatEvidenceAdmissionError,
