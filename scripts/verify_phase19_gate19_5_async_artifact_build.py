@@ -262,7 +262,15 @@ def main() -> int:
                 raise Gate19_5ArtifactBuildError(
                     f"{role} artifact metadata differs across rebuilds"
                 )
-            summaries.append(f"{role}_sha256={first_digest} {role}_bytes={first_bytes}")
+            first_s3 = _object(first[role].get("s3"), label=f"{role}.s3")
+            summaries.append(
+                f"{role}_sha256={first_digest} "
+                f"{role}_source_code_hash={_required_string(first[role], 'lambda_source_code_hash')} "
+                f"{role}_bytes={first_bytes} "
+                f"{role}_uncompressed_bytes={_required_int(first[role], 'uncompressed_bytes')} "
+                f"{role}_files={_required_int(first[role], 'file_count')} "
+                f"{role}_s3_key={_required_string(first_s3, 'key')}"
+            )
 
     print(
         "phase19_gate19_5_artifact_build=PASS "
