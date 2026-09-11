@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Protocol
 
 from opslens.knowledge_retrieval.application.bedrock_synthesis import BEDROCK_SYNTHESIS_MODEL_ID
@@ -20,6 +22,8 @@ from opslens.public_analysis.application.representative_workload_execution impor
 
 FROZEN_REPRESENTATIVE_REPOSITORY_URL = "https://github.com/openedx/mockprock"
 FROZEN_REPRESENTATIVE_REPOSITORY_COMMIT = "18c954d8604df4740c829ba17fa2f3640b92b900"
+_GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$", re.ASCII)
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$", re.ASCII)
 
 
 class RepresentativeLiveMeasurementRunError(ValueError):
@@ -40,6 +44,82 @@ class RepresentativeWorkloadExecutor(Protocol):
         ...
 
 
+def _normalized_text(value: object, *, field: str, maximum: int) -> str:
+    """Require one bounded normalized non-empty identifier before provider execution."""
+    if (
+        not isinstance(value, str)
+        or not value
+        or value != value.strip()
+        or len(value) > maximum
+    ):
+        raise RepresentativeLiveMeasurementRunError(
+            f"{field} must be one normalized non-empty string of at most {maximum} characters"
+        )
+    return value
+
+
+def _canonical_utc_timestamp(value: object) -> str:
+    """Require canonical second-resolution UTC metadata before provider execution."""
+    text = _normalized_text(value, field="run_timestamp_utc", maximum=32)
+    if not text.endswith("Z"):
+        raise RepresentativeLiveMeasurementRunError(
+            "run_timestamp_utc must use explicit UTC Z notation"
+        )
+    try:
+        parsed = datetime.fromisoformat(text[:-1] + "+00:00")
+    except ValueError as exc:
+        raise RepresentativeLiveMeasurementRunError(
+            "run_timestamp_utc must be valid RFC3339 UTC"
+        ) from exc
+    if parsed.tzinfo != UTC or parsed.microsecond != 0:
+        raise RepresentativeLiveMeasurementRunError(
+            "run_timestamp_utc must use UTC with second precision"
+        )
+    if parsed.strftime("%Y-%m-%dT%H:%M:%SZ") != text:
+        raise RepresentativeLiveMeasurementRunError(
+            "run_timestamp_utc must use canonical YYYY-MM-DDTHH:MM:SSZ form"
+        )
+    return text
+
+
+def _validated_source_evidence(
+    value: tuple[tuple[str, str], ...],
+) -> tuple[tuple[str, str], ...]:
+    """Require sorted unique named source hashes before the measured workload starts."""
+    if type(value) is not tuple or not value:
+        raise RepresentativeLiveMeasurementRunError(
+            "source_evidence must contain at least one named hash"
+        )
+    admitted: list[tuple[str, str]] = []
+    for item in value:
+        if type(item) is not tuple or len(item) != 2:
+            raise RepresentativeLiveMeasurementRunError(
+                "source_evidence entries must be (name, sha256) tuples"
+            )
+        name = _normalized_text(item[0], field="source_evidence.name", maximum=128)
+        digest = _normalized_text(
+            item[1],
+            field=f"source_evidence[{name}]",
+            maximum=64,
+        )
+        if _SHA256_RE.fullmatch(digest) is None:
+            raise RepresentativeLiveMeasurementRunError(
+                f"source_evidence[{name}] must be one lowercase SHA-256 digest"
+            )
+        admitted.append((name, digest))
+    names = tuple(name for name, _digest in admitted)
+    if len(set(names)) != len(names):
+        raise RepresentativeLiveMeasurementRunError(
+            "source_evidence names must be unique"
+        )
+    canonical = tuple(sorted(admitted))
+    if canonical != value:
+        raise RepresentativeLiveMeasurementRunError(
+            "source_evidence must be sorted by name"
+        )
+    return canonical
+
+
 @dataclass(frozen=True, slots=True)
 class RepresentativeLiveRunMetadata:
     """Explicit immutable coordinates required to bind one admitted live artifact."""
@@ -55,7 +135,27 @@ class RepresentativeLiveRunMetadata:
     model_id: str
 
     def __post_init__(self) -> None:
-        """Freeze repository and model identity before any provider workload can execute."""
+        """Freeze all artifact identity before any provider workload can execute."""
+        object.__setattr__(
+            self,
+            "run_id",
+            _normalized_text(self.run_id, field="run_id", maximum=256),
+        )
+        opslens_sha = _normalized_text(
+            self.opslens_commit_sha,
+            field="opslens_commit_sha",
+            maximum=40,
+        )
+        if _GIT_SHA_RE.fullmatch(opslens_sha) is None:
+            raise RepresentativeLiveMeasurementRunError(
+                "opslens_commit_sha must be one lowercase full Git commit SHA"
+            )
+        object.__setattr__(self, "opslens_commit_sha", opslens_sha)
+        object.__setattr__(
+            self,
+            "run_timestamp_utc",
+            _canonical_utc_timestamp(self.run_timestamp_utc),
+        )
         if self.repository_url != FROZEN_REPRESENTATIVE_REPOSITORY_URL:
             raise RepresentativeLiveMeasurementRunError(
                 "repository_url must equal the frozen Gate 19.2 representative repository"
@@ -72,6 +172,20 @@ class RepresentativeLiveRunMetadata:
             raise RepresentativeLiveMeasurementRunError(
                 "requested_ref and repository_commit_sha must identify the same exact commit"
             )
+        object.__setattr__(
+            self,
+            "source_evidence",
+            _validated_source_evidence(self.source_evidence),
+        )
+        object.__setattr__(
+            self,
+            "bedrock_knowledge_base_id",
+            _normalized_text(
+                self.bedrock_knowledge_base_id,
+                field="bedrock_knowledge_base_id",
+                maximum=128,
+            ),
+        )
         if self.model_id != BEDROCK_SYNTHESIS_MODEL_ID:
             raise RepresentativeLiveMeasurementRunError(
                 "model_id must equal the retained bounded hybrid synthesis model"
