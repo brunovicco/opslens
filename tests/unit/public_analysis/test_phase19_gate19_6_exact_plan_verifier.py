@@ -1,3 +1,5 @@
+"""Fail-closed tests for the Gate 19.6 offline Terraform-plan verifier."""
+
 from __future__ import annotations
 
 import json
@@ -33,6 +35,7 @@ def _write(tmp_path: Path, payload: dict[str, object]) -> Path:
 
 
 def test_gate19_6_exact_plan_fixture_is_admitted() -> None:
+    """Admit the synthetic exact 21-create plan with all disabled controls retained."""
     result = _run(_FIXTURE)
 
     assert result.returncode == 0, result.stderr
@@ -42,6 +45,7 @@ def test_gate19_6_exact_plan_fixture_is_admitted() -> None:
 
 
 def test_gate19_6_rejects_unrelated_managed_create(tmp_path: Path) -> None:
+    """Reject any managed non-no-op change outside the frozen Gate 19.4 inventory."""
     payload = _load_fixture()
     changes = cast(list[object], payload["resource_changes"])
     changes.append(
@@ -61,6 +65,7 @@ def test_gate19_6_rejects_unrelated_managed_create(tmp_path: Path) -> None:
 
 
 def test_gate19_6_rejects_worker_event_source_enablement(tmp_path: Path) -> None:
+    """Reject a plan that would enable SQS dispatch to the worker."""
     payload = _load_fixture()
     changes = cast(list[object], payload["resource_changes"])
     for raw_entry in changes:
@@ -81,6 +86,7 @@ def test_gate19_6_rejects_worker_event_source_enablement(tmp_path: Path) -> None
 
 
 def test_gate19_6_rejects_immutable_artifact_coordinate_drift(tmp_path: Path) -> None:
+    """Reject plan variables that drift from frozen immutable artifact coordinates."""
     payload = deepcopy(_load_fixture())
     variables = cast(dict[str, object], payload["variables"])
     version = cast(dict[str, object], variables["public_async_api_artifact_version_id"])
