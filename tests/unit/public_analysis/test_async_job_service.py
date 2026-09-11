@@ -42,12 +42,27 @@ def _request() -> PublicAnalysisRequest:
     )
 
 
+def _new_job_map() -> dict[str, AsyncJobRecord]:
+    """Return one explicitly typed in-memory job map."""
+    return {}
+
+
+def _new_key_map() -> dict[str, str]:
+    """Return one explicitly typed hashed-key lookup map."""
+    return {}
+
+
+def _new_job_id_list() -> list[str]:
+    """Return one explicitly typed publication record."""
+    return []
+
+
 @dataclass(slots=True)
 class _MemoryStore:
     """Deterministic in-memory implementation of the conditional job-store port."""
 
-    by_job_id: dict[str, AsyncJobRecord] = field(default_factory=dict)
-    by_key_hash: dict[str, str] = field(default_factory=dict)
+    by_job_id: dict[str, AsyncJobRecord] = field(default_factory=_new_job_map)
+    by_key_hash: dict[str, str] = field(default_factory=_new_key_map)
 
     def get_by_idempotency_key_sha256(self, digest: str) -> AsyncJobRecord | None:
         """Return a job by hashed idempotency key."""
@@ -87,7 +102,7 @@ class _MemoryPublisher:
     """Deterministic queue publisher test double."""
 
     fail: bool = False
-    published_job_ids: list[str] = field(default_factory=list)
+    published_job_ids: list[str] = field(default_factory=_new_job_id_list)
 
     def publish(self, job_id: str) -> None:
         """Record publication or fail before recording it."""
