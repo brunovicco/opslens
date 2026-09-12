@@ -6,7 +6,11 @@ import json
 from pathlib import Path
 from typing import cast
 
-from opslens.evaluation_readiness import validate_portfolio_pack
+from _bootstrap import ensure_repository_src_on_path
+
+ensure_repository_src_on_path()
+
+from opslens.evaluation_readiness import validate_portfolio_pack  # noqa: E402
 
 _CLOSEOUT = Path("labs/evidence/phase-18-closeout-v1.json")
 _PORTFOLIO = Path("labs/evidence/phase-18-gate-18-4-portfolio-evidence-pack-v1.json")

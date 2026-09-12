@@ -7,19 +7,22 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import cast
 
+from _bootstrap import ensure_repository_src_on_path
 from botocore.config import Config
 from botocore.session import Session
 
-from opslens.agent_baseline.adapters import (
+ensure_repository_src_on_path()
+
+from opslens.agent_baseline.adapters import (  # noqa: E402
     BEDROCK_AGENT_REASONING_REGION,
     BedrockAgentReasoningConverseClient,
     BedrockSingleAgentReasoningModel,
 )
-from opslens.agent_baseline.application import (
+from opslens.agent_baseline.application import (  # noqa: E402
     load_agent_reasoning_evaluation_dataset,
     reason_about_task,
 )
-from opslens.agent_baseline.domain import (
+from opslens.agent_baseline.domain import (  # noqa: E402
     AgentReasoningCaseScore,
     AgentReasoningEvaluationReport,
 )

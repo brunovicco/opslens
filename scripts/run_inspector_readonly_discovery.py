@@ -7,8 +7,11 @@ from dataclasses import asdict
 from typing import cast
 
 import boto3
+from _bootstrap import ensure_repository_src_on_path
 
-from opslens.runtime_exposure.adapters.inspector_readonly import (
+ensure_repository_src_on_path()
+
+from opslens.runtime_exposure.adapters.inspector_readonly import (  # noqa: E402
     InspectorReadClient,
     run_readonly_inspector_discovery,
 )

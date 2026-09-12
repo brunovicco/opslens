@@ -4,7 +4,11 @@
 import argparse
 from pathlib import Path
 
-from opslens.evaluation_readiness import (
+from _bootstrap import ensure_repository_src_on_path
+
+ensure_repository_src_on_path()
+
+from opslens.evaluation_readiness import (  # noqa: E402
     ConsolidatedViewValidationError,
     validate_consolidated_view,
 )

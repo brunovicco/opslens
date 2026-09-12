@@ -4,7 +4,14 @@
 import argparse
 from pathlib import Path
 
-from opslens.evaluation_readiness import EvidenceInventoryValidationError, validate_inventory
+from _bootstrap import ensure_repository_src_on_path
+
+ensure_repository_src_on_path()
+
+from opslens.evaluation_readiness import (  # noqa: E402
+    EvidenceInventoryValidationError,
+    validate_inventory,
+)
 
 _DEFAULT_INVENTORY = Path("labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json")
 

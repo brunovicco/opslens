@@ -7,24 +7,27 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import cast
 
+from _bootstrap import ensure_repository_src_on_path
 from botocore.config import Config
 from botocore.session import Session
 
-from opslens.agent_baseline.adapters import (
+ensure_repository_src_on_path()
+
+from opslens.agent_baseline.adapters import (  # noqa: E402
     BedrockAgentReasoningConverseClient,
     BedrockSingleAgentReasoningModel,
 )
-from opslens.agent_baseline.domain.reasoning import AgentReasoningResult
-from opslens.multi_agent.adapters import (
+from opslens.agent_baseline.domain.reasoning import AgentReasoningResult  # noqa: E402
+from opslens.multi_agent.adapters import (  # noqa: E402
     BEDROCK_TRIAGE_REASONING_REGION,
     BedrockMultiAgentTriageModel,
     BedrockTriageConverseClient,
 )
-from opslens.multi_agent.application import (
+from opslens.multi_agent.application import (  # noqa: E402
     load_multi_agent_real_comparison_dataset,
     run_two_model_reasoning,
 )
-from opslens.multi_agent.domain.real_comparison import (
+from opslens.multi_agent.domain.real_comparison import (  # noqa: E402
     MultiAgentRealComparisonCaseScore,
     MultiAgentRealComparisonReport,
 )

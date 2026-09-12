@@ -7,22 +7,27 @@ import os
 from typing import Any, cast
 
 import boto3
+from _bootstrap import ensure_repository_src_on_path
 from botocore.exceptions import ClientError
 from run_epss_history_canary import GitHubArchiveReader
 
-from opslens.bootstrap.epss_history_evidence import (
+ensure_repository_src_on_path()
+
+from opslens.bootstrap.epss_history_evidence import (  # noqa: E402
     HistoricalEpssEvidenceObjectV1,
     HistoricalEpssEvidenceVersionV1,
     VerifyHistoricalEpssBackfillEvidenceV1,
 )
-from opslens.ingestion.epss.domain.history import HistoricalEpssSnapshotParser
-from opslens.transformation.epss.adapters.outbound.parquet import PyArrowSilverEpssRecordWriter
-from opslens.transformation.epss.application.key_factory import EpssSilverKeyFactory
-from opslens.transformation.epss.history.preparation import (
+from opslens.ingestion.epss.domain.history import HistoricalEpssSnapshotParser  # noqa: E402
+from opslens.transformation.epss.adapters.outbound.parquet import (  # noqa: E402
+    PyArrowSilverEpssRecordWriter,
+)
+from opslens.transformation.epss.application.key_factory import EpssSilverKeyFactory  # noqa: E402
+from opslens.transformation.epss.history.preparation import (  # noqa: E402
     HistoricalEpssSilverRecordTransformer,
     PrepareHistoricalEpssSilver,
 )
-from opslens.transformation.epss.history.runtime import (
+from opslens.transformation.epss.history.runtime import (  # noqa: E402
     HistoricalEpssForwardListClient,
     S3HistoricalEpssForwardBoundaryReader,
 )

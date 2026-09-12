@@ -6,11 +6,17 @@ import json
 from datetime import date
 from typing import cast
 
+from _bootstrap import ensure_repository_src_on_path
 from boto3.session import Session
 
-from opslens.semantic_query.adapters.outbound import AthenaQueryClient, AthenaQueryExecutor
-from opslens.semantic_query.application import ExecuteSemanticQuery
-from opslens.semantic_query.domain import (
+ensure_repository_src_on_path()
+
+from opslens.semantic_query.adapters.outbound import (  # noqa: E402
+    AthenaQueryClient,
+    AthenaQueryExecutor,
+)
+from opslens.semantic_query.application import ExecuteSemanticQuery  # noqa: E402
+from opslens.semantic_query.domain import (  # noqa: E402
     EpssFilters,
     SemanticDimension,
     SemanticMetric,

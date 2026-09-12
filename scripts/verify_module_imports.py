@@ -12,7 +12,7 @@ import importlib
 import pkgutil
 import sys
 
-from _demo_bootstrap import ensure_repository_src_on_path
+from _bootstrap import ensure_repository_src_on_path
 
 ensure_repository_src_on_path()
 

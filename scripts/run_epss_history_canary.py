@@ -13,9 +13,12 @@ from datetime import date, timedelta
 from typing import Any, cast
 
 import boto3
+from _bootstrap import ensure_repository_src_on_path
 from botocore.exceptions import ClientError
 
-from opslens.bootstrap.epss_history import (
+ensure_repository_src_on_path()
+
+from opslens.bootstrap.epss_history import (  # noqa: E402
     APPROVED_ARCHIVE_COMMIT,
     APPROVED_ROOT_TREE_SHA,
     ARCHIVE_REPOSITORY,
@@ -27,8 +30,8 @@ from opslens.bootstrap.epss_history import (
     HistoricalEpssTransformerResultV1,
     HistoricalEpssWorkItemV1,
 )
-from opslens.ingestion.epss.domain.history import EpssModelEra, HistoricalEpssSnapshot
-from opslens.transformation.epss.history.runtime import (
+from opslens.ingestion.epss.domain.history import EpssModelEra, HistoricalEpssSnapshot  # noqa: E402
+from opslens.transformation.epss.history.runtime import (  # noqa: E402
     HistoricalEpssForwardListClient,
     S3HistoricalEpssForwardBoundaryReader,
 )

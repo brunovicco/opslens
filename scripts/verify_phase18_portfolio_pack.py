@@ -4,7 +4,11 @@
 import argparse
 from pathlib import Path
 
-from opslens.evaluation_readiness import validate_portfolio_pack
+from _bootstrap import ensure_repository_src_on_path
+
+ensure_repository_src_on_path()
+
+from opslens.evaluation_readiness import validate_portfolio_pack  # noqa: E402
 
 _DEFAULT_PORTFOLIO = Path(
     "labs/evidence/phase-18-gate-18-4-portfolio-evidence-pack-v1.json"
