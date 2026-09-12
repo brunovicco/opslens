@@ -32,6 +32,13 @@ Gate 19.9: IN PROGRESS
 
 Phases 0–18 are complete. Phase 19 is the final active V1 closeout phase.
 
+## Retained security lineage
+
+Gate 17.1 — evidence-first threat/control-gap inventory — COMPLETE.  
+Gate 17.2 — CI/CD and workflow authority hardening — COMPLETE.
+
+Their security and workflow-authority controls remain active invariants for all later V1 work.
+
 ## V1 intent
 
 OpsLens V1 is a **demonstration and architecture lab**, not a production SaaS.
