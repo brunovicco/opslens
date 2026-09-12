@@ -6,6 +6,15 @@ This document is the current accumulated architecture baseline through **Phase 1
 
 Phases 0–18 are complete. The retained historical phase selected after Phase 18 remains **Phase 19 — Bounded Public Runtime & Productization**; Gate 19.9 narrows V1 completion scope without rewriting that decision.
 
+Retained Gate 19.1 launch-contract markers:
+
+```text
+public-analysis-workload:v1
+DEFERRED_PENDING_MEASUREMENT
+```
+
+Those markers are historical evidence only; Gate 19.2 later supplied the representative measurement that selected `ASYNC_SUBMIT_STATUS_RESULT`.
+
 OpsLens V1 is a demonstration and architecture lab, not a production SaaS.
 
 ## 1. Purpose
