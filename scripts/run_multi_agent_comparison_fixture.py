@@ -5,11 +5,15 @@ import json
 from pathlib import Path
 from typing import cast
 
-from opslens.multi_agent.application.comparison import (
+from _bootstrap import ensure_repository_src_on_path
+
+ensure_repository_src_on_path()
+
+from opslens.multi_agent.application.comparison import (  # noqa: E402
     evaluate_multi_agent_comparison_dataset,
     load_multi_agent_comparison_dataset,
 )
-from opslens.multi_agent.domain.comparison import MultiAgentComparisonCaseScore
+from opslens.multi_agent.domain.comparison import MultiAgentComparisonCaseScore  # noqa: E402
 
 _DEFAULT_DATASET = Path("tests/fixtures/multi_agent/golden_multi_agent_comparison_v1.json")
 

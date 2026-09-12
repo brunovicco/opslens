@@ -8,22 +8,25 @@ from pathlib import Path
 from typing import cast
 
 import boto3
+from _bootstrap import ensure_repository_src_on_path
 from botocore.config import Config
 
-from opslens.public_analysis.adapters.exact_s3_authority_object import (
+ensure_repository_src_on_path()
+
+from opslens.public_analysis.adapters.exact_s3_authority_object import (  # noqa: E402
     ExactS3AuthorityObjectClient,
 )
-from opslens.public_analysis.adapters.representative_threat_authority_reader_factory import (
+from opslens.public_analysis.adapters.representative_threat_authority_reader_factory import (  # noqa: E402
     RepresentativeThreatAuthorityByteLimits,
     build_representative_threat_authority_readers,
 )
-from opslens.public_analysis.application.representative_pre_measurement_authority import (
+from opslens.public_analysis.application.representative_pre_measurement_authority import (  # noqa: E402
     materialize_pre_measurement_threat_evidence,
 )
-from opslens.public_analysis.application.representative_threat_evidence_coordinate_loaders import (
+from opslens.public_analysis.application.representative_threat_evidence_coordinate_loaders import (  # noqa: E402
     parse_representative_threat_evidence_coordinates,
 )
-from opslens.public_analysis.application.representative_threat_evidence_preparation import (
+from opslens.public_analysis.application.representative_threat_evidence_preparation import (  # noqa: E402
     summarize_representative_threat_evidence_preparation,
 )
 

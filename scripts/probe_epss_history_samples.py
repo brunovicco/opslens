@@ -15,12 +15,16 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
-from opslens.ingestion.epss.domain.errors import InvalidEpssSnapshotError
-from opslens.ingestion.epss.domain.parser import EpssSnapshotParser
-from opslens.transformation.epss.adapters.outbound.parquet import (
+from _bootstrap import ensure_repository_src_on_path
+
+ensure_repository_src_on_path()
+
+from opslens.ingestion.epss.domain.errors import InvalidEpssSnapshotError  # noqa: E402
+from opslens.ingestion.epss.domain.parser import EpssSnapshotParser  # noqa: E402
+from opslens.transformation.epss.adapters.outbound.parquet import (  # noqa: E402
     PyArrowSilverEpssRecordWriter,
 )
-from opslens.transformation.epss.domain.transformer import EpssSilverTransformer
+from opslens.transformation.epss.domain.transformer import EpssSilverTransformer  # noqa: E402
 
 REPOSITORY = "empiricalsec/epss_scores"
 GITHUB_API = "https://api.github.com"

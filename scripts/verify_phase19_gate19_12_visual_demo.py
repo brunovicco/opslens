@@ -5,7 +5,11 @@ import json
 from pathlib import Path
 from typing import cast
 
-from opslens.demo.web import (
+from _bootstrap import ensure_repository_src_on_path
+
+ensure_repository_src_on_path()
+
+from opslens.demo.web import (  # noqa: E402
     LOCAL_DEMO_HOST,
     LOCAL_DEMO_PORT,
     build_visual_catalog,

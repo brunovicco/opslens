@@ -5,7 +5,11 @@ import json
 from pathlib import Path
 from typing import cast
 
-from opslens.demo import (
+from _bootstrap import ensure_repository_src_on_path
+
+ensure_repository_src_on_path()
+
+from opslens.demo import (  # noqa: E402
     CONTROLLED_BENIGN_SCENARIO_ID,
     FAIL_CLOSED_SCENARIO_ID,
     MATERIAL_VULNERABILITY_SCENARIO_ID,

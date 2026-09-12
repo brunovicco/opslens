@@ -6,21 +6,24 @@ import json
 from dataclasses import asdict
 from typing import cast
 
+from _bootstrap import ensure_repository_src_on_path
 from boto3.session import Session
 from botocore.config import Config
 
-from opslens.semantic_query.adapters.outbound import (
+ensure_repository_src_on_path()
+
+from opslens.semantic_query.adapters.outbound import (  # noqa: E402
     AthenaQueryClient,
     AthenaQueryExecutor,
     BedrockConverseClient,
     BedrockSemanticPlanner,
 )
-from opslens.semantic_query.application import (
+from opslens.semantic_query.application import (  # noqa: E402
     ExecuteNaturalLanguageSemanticQuery,
     ExecuteSemanticQuery,
     UnsupportedNaturalLanguageSemanticQuery,
 )
-from opslens.semantic_query.planner import (
+from opslens.semantic_query.planner import (  # noqa: E402
     BEDROCK_PLANNER_REGION,
     SemanticPlannerRequest,
 )

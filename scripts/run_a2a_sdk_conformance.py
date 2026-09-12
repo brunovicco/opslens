@@ -6,7 +6,11 @@ from importlib.metadata import version
 from time import perf_counter_ns
 from typing import Any, cast
 
-from opslens.a2a_boundary.adapters import (
+from _bootstrap import ensure_repository_src_on_path
+
+ensure_repository_src_on_path()
+
+from opslens.a2a_boundary.adapters import (  # noqa: E402
     A2A_PROTOCOL_BINDING,
     A2A_PROTOCOL_VERSION,
     A2AResponseKind,
@@ -14,13 +18,13 @@ from opslens.a2a_boundary.adapters import (
     build_agent_card,
     build_send_message_request,
 )
-from opslens.a2a_boundary.application.registry import A2AReferenceRegistry
-from opslens.agent_baseline.domain.models import (
+from opslens.a2a_boundary.application.registry import A2AReferenceRegistry  # noqa: E402
+from opslens.agent_baseline.domain.models import (  # noqa: E402
     AgentCapability,
     create_single_agent_task,
 )
-from opslens.multi_agent.application.handoff import admit_multi_agent_handoff
-from opslens.multi_agent.domain.handoff import (
+from opslens.multi_agent.application.handoff import admit_multi_agent_handoff  # noqa: E402
+from opslens.multi_agent.domain.handoff import (  # noqa: E402
     AgentSpecialization,
     MultiAgentHandoffDecision,
     SpecialistAgentTask,
