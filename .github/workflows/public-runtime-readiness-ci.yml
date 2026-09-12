@@ -17,12 +17,14 @@ on:
       - "labs/evidence/phase-19-gate-19-4-*.json"
       - "labs/evidence/phase-19-gate-19-5-*.json"
       - "labs/evidence/phase-19-gate-19-6-*"
+      - "labs/evidence/phase-19-gate-19-7-*"
       - "labs/phase-19-gate-19-1-*.md"
       - "labs/phase-19-gate-19-2-*.md"
       - "labs/phase-19-gate-19-3-*.md"
       - "labs/phase-19-gate-19-4-*.md"
       - "labs/phase-19-gate-19-5-*.md"
       - "labs/phase-19-gate-19-6-*.md"
+      - "labs/phase-19-gate-19-7-*.md"
       - "docs/adr/0076-*.md"
       - "scripts/build_phase19_async_lambda_artifacts.py"
       - "scripts/publish_phase19_gate19_5_async_artifacts.py"
@@ -35,6 +37,8 @@ on:
       - "scripts/verify_phase19_gate19_5_async_artifact_build.py"
       - "scripts/verify_phase19_gate19_5_artifact_publication.py"
       - "scripts/verify_phase19_gate19_6_exact_plan.py"
+      - "scripts/verify_phase19_gate19_7_materialization_contract.py"
+      - "scripts/verify_phase19_gate19_7_fresh_plan.py"
       - "scripts/verify_phase18_closeout.py"
       - "README.md"
       - "README.pt-br.md"
@@ -92,6 +96,8 @@ jobs:
           scripts/verify_phase19_gate19_5_async_artifact_build.py
           scripts/verify_phase19_gate19_5_artifact_publication.py
           scripts/verify_phase19_gate19_6_exact_plan.py
+          scripts/verify_phase19_gate19_7_materialization_contract.py
+          scripts/verify_phase19_gate19_7_fresh_plan.py
           scripts/verify_phase18_closeout.py
 
       - name: Pyright strict Phase 19 verifiers and artifact tooling
@@ -108,6 +114,8 @@ jobs:
           scripts/verify_phase19_gate19_5_async_artifact_build.py
           scripts/verify_phase19_gate19_5_artifact_publication.py
           scripts/verify_phase19_gate19_6_exact_plan.py
+          scripts/verify_phase19_gate19_7_materialization_contract.py
+          scripts/verify_phase19_gate19_7_fresh_plan.py
           scripts/verify_phase18_closeout.py
 
       - name: Run retained public-analysis unit tests
@@ -162,3 +170,8 @@ jobs:
         run: >-
           uv run python scripts/verify_phase19_gate19_6_exact_plan.py
           --plan-json tests/fixtures/phase19/gate19-6-exact-plan-pass.json
+
+      - name: Verify Gate 19.7 disabled-materialization authority offline
+        env:
+          PYTHONPATH: src
+        run: uv run python scripts/verify_phase19_gate19_7_materialization_contract.py
