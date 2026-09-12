@@ -112,7 +112,9 @@ def _normalize(address: str) -> str:
 def _actions(entry: dict[str, object]) -> list[str]:
     change = _object(entry.get("change"), label="resource_change.change")
     raw = change.get("actions")
-    if not isinstance(raw, list) or any(type(item) is not str for item in cast(list[object], raw)):
+    if not isinstance(raw, list) or any(
+        type(item) is not str for item in cast(list[object], raw)
+    ):
         raise Gate19_7RecoveryPlanError("resource actions must be a string array")
     return cast(list[str], raw)
 
@@ -122,14 +124,19 @@ def _after(entry: dict[str, object], *, label: str) -> dict[str, object]:
     return _object(change.get("after"), label=f"{label}.change.after")
 
 
-def _environment_variables_if_known(after: dict[str, object], *, label: str) -> dict[str, object] | None:
+def _environment_variables_if_known(
+    after: dict[str, object], *, label: str
+) -> dict[str, object] | None:
     environment = after.get("environment")
     if environment is None:
         return None
     if isinstance(environment, list):
         if len(environment) != 1:
             raise Gate19_7RecoveryPlanError(f"{label} environment must contain one block")
-        block = _object(cast(list[object], environment)[0], label=f"{label}.environment[0]")
+        block = _object(
+            cast(list[object], environment)[0],
+            label=f"{label}.environment[0]",
+        )
     elif isinstance(environment, dict):
         block = _object(cast(object, environment), label=f"{label}.environment")
     else:
@@ -160,7 +167,9 @@ def _verify_output_changes(plan: dict[str, object]) -> None:
             )
 
 
-def _verify_resource_changes(plan: dict[str, object], plan_input: dict[str, object]) -> tuple[int, int]:
+def _verify_resource_changes(
+    plan: dict[str, object], plan_input: dict[str, object]
+) -> tuple[int, int]:
     entries = _objects(plan.get("resource_changes"), label="resource_changes")
     creates: set[str] = set()
     updates: set[str] = set()
@@ -203,7 +212,10 @@ def _verify_resource_changes(plan: dict[str, object], plan_input: dict[str, obje
                         f"API Lambda recovery {field} differs from admitted artifact"
                     )
             variables = _environment_variables_if_known(api, label="API Lambda recovery")
-            if variables is not None and variables.get("OPSLENS_ASYNC_SUBMIT_ENABLED") != "false":
+            if (
+                variables is not None
+                and variables.get("OPSLENS_ASYNC_SUBMIT_ENABLED") != "false"
+            ):
                 raise Gate19_7RecoveryPlanError(
                     "API Lambda submit switch must remain false during recovery"
                 )
