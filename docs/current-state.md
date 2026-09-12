@@ -50,6 +50,29 @@ Both remain authoritative. The Phase 19 V1 demonstration closeout adds no except
 19.14 V1 Closeout + Release Readiness                          PLANNED
 ```
 
+## Retained Gate 19.1/19.2 historical decision markers
+
+These strings are retained deliberately because later gates must not rewrite the evidence that selected and then measured the async hypothesis:
+
+```text
+Gate 19.1
+historical runtime decision: DEFERRED_PENDING_MEASUREMENT
+PublicAnalysisAdmissionHandoff -> STOP
+Gate 19.2 — Representative Workload Measurement              COMPLETE
+ASYNC_SUBMIT_STATUS_RESULT
+```
+
+## Retained Gate 19.7/19.8 source lineage
+
+Gate 19.8 was developed from the final Gate 19.7 protected checkpoint, so that historical source remains explicit even though protected `main` has advanced:
+
+```text
+Gate 19.8 source protected main: 8700478c7fca230e5984c3ce034194ea3bd337e4
+Gate 19.7 final post-merge CodeQL: 34711607099 / run #382 / success
+Gate 19.8 issue: #374
+physical access decision: DEFERRED_PENDING_BOUNDED_RUNTIME_ADAPTER_EVIDENCE
+```
+
 Gate 19.9 source issue: #376.  
 Gate 19.9 source protected main: `e538fa3e96c29cf76dd3aa83a9967e090587b6fb`.
 
