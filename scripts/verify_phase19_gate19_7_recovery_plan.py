@@ -131,10 +131,11 @@ def _environment_variables_if_known(
     if environment is None:
         return None
     if isinstance(environment, list):
-        if len(environment) != 1:
+        environment_list = cast(list[object], environment)
+        if len(environment_list) != 1:
             raise Gate19_7RecoveryPlanError(f"{label} environment must contain one block")
         block = _object(
-            cast(list[object], environment)[0],
+            environment_list[0],
             label=f"{label}.environment[0]",
         )
     elif isinstance(environment, dict):
