@@ -38,6 +38,7 @@ queue delivery != business execution authority
 provider retry != business retry authority
 artifact hash != S3 VersionId
 publication success != deployment authorization
+plan != apply
 AIP-C01 topic != product requirement
 ```
 
@@ -75,12 +76,17 @@ Current protected lineage:
       runtime materialized by default: false
       deployment authorized: NO
 
-19.5  Immutable Async Deployment Artifacts              CLOSEOUT IN REVIEW
+19.5  Immutable Async Deployment Artifacts              COMPLETE
       issue #352 / PR #353
+      protected merge: 61749bfac7b7bc9d032567e0b1870f8c1f7dedd4
       publication source head: 94af45036ba33007f45ddb69e9e6c3fa7d31d715
       S3 PutObject mutations: 2
       terraform plan input ready: YES
-      runtime deployment authorized: NO
+      terraform apply authorized: NO
+      post-merge CodeQL: completed / success
+
+19.6  Exact Terraform Plan & Offline Admission          NEXT
+      terraform apply authorized: NO
 ```
 
 ### Gate 19.1 — complete — historical launch contract
@@ -173,9 +179,9 @@ Canonical records:
 - [`../labs/evidence/phase-19-gate-19-4-disabled-async-runtime-v1.json`](../labs/evidence/phase-19-gate-19-4-disabled-async-runtime-v1.json)
 - [`../scripts/verify_phase19_gate19_4_disabled_async_runtime.py`](../scripts/verify_phase19_gate19_4_disabled_async_runtime.py)
 
-### Gate 19.5 — immutable deployment artifacts — closeout in review
+### Gate 19.5 — immutable deployment artifacts — complete
 
-Gate 19.5 completed deterministic API/worker package production and one human-only create-only publication from exact reviewed head `94af45036ba33007f45ddb69e9e6c3fa7d31d715`.
+Gate 19.5 completed deterministic API/worker package production and one human-only create-only publication from exact reviewed head `94af45036ba33007f45ddb69e9e6c3fa7d31d715`, then protected-merged the implementation and persisted evidence through PR #353 at `61749bfac7b7bc9d032567e0b1870f8c1f7dedd4`. Post-merge CodeQL for that exact protected-main SHA completed successfully.
 
 Admitted immutable coordinates:
 
@@ -206,16 +212,16 @@ Canonical Gate 19.5 records:
 - [`../scripts/publish_phase19_gate19_5_async_artifacts.py`](../scripts/publish_phase19_gate19_5_async_artifacts.py)
 - [`../scripts/verify_phase19_gate19_5_artifact_publication.py`](../scripts/verify_phase19_gate19_5_artifact_publication.py)
 
-Protected merge/post-merge verification of PR #353 remains the final Gate 19.5 closeout boundary. Publication success is object provenance, not runtime deployment authority.
+Publication success is object provenance, not runtime deployment authority.
 
 ### Next boundary — Gate 19.6 exact Terraform plan
 
-After Gate 19.5 protected closeout, Gate 19.6 may consume the exact S3 `Key + VersionId + source_code_hash` coordinates above to generate and admit an exact Terraform plan.
+Gate 19.6 is next. It may consume the exact S3 `Key + VersionId + source_code_hash` coordinates above to generate and admit an exact Terraform plan with `public_async_runtime_materialized=true`, while preserving runtime/public execution disabled.
 
 ```text
-Gate 19.5  deterministic build + human create-only immutable artifact publication
-Gate 19.6  exact Terraform plan + offline admission/review
-later gate human-authorized Terraform apply / controlled enablement, if admitted
+Gate 19.5  deterministic build + human create-only immutable artifact publication    COMPLETE
+Gate 19.6  exact Terraform plan + offline admission/review                            NEXT
+later gate human-authorized Terraform apply / controlled enablement, if admitted     NOT AUTHORIZED
 ```
 
 No current gate authorizes `terraform apply`, public endpoint enablement, runtime worker enablement, or provider-heavy public execution.
