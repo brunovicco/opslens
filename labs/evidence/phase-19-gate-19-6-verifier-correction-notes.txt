@@ -1,0 +1,1 @@
+No Terraform apply was executed during the first exact-plan attempt. The observed blocker was limited to offline verifier interpretation of Terraform provider-unknown Lambda environment map values.
