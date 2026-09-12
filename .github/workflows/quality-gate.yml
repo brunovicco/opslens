@@ -79,3 +79,37 @@ jobs:
 
       - name: Import every opslens module
         run: uv run python scripts/verify_module_imports.py
+
+  quickstart-smoke:
+    name: README quickstart on a clean clone
+    runs-on: ubuntu-latest
+
+    # Runs the documented reviewer path verbatim against current uv, with no
+    # cached environment. `required-version = "==0.12.10"` previously made this
+    # path fail on the first command for anyone whose uv came from a package
+    # manager; nothing in CI exercised the README, so it went unnoticed.
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+
+      - name: Report the uv version under test
+        run: uv --version
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen
+
+      - name: Run the canonical scenario
+        run: >-
+          uv run python scripts/demo_opslens.py
+          --scenario material-vulnerability --format text
+
+      - name: Assert the deterministic suite evaluation identity
+        run: >-
+          uv run python scripts/evaluate_opslens_demo.py --format text
+          | grep -qF
+          'opslens-demo-suite-evaluation:v1@sha256:ed99f385a108ee8de4521ff8c338bc8d66b188a1311c30ba014ca329cee146d3'

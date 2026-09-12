@@ -30,6 +30,8 @@ The project separates probabilistic reasoning from deterministic authority. Mode
 
 The canonical reviewer path is local, synthetic, inert, and deterministic. No AWS credentials, live provider calls, model calls, or third-party repository-code execution are required after dependency installation.
 
+**Prerequisites:** [uv](https://docs.astral.sh/uv/) 0.12.3 or newer. uv provisions Python 3.13 itself, so nothing else has to be installed first.
+
 ```bash
 uv sync --frozen
 uv run python scripts/demo_opslens.py --scenario material-vulnerability --format text
