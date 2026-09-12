@@ -32,6 +32,17 @@ Gate 19.9: IN PROGRESS
 
 Phases 0–18 are complete. Phase 19 is the final active V1 closeout phase.
 
+## Retained historical Phase 19 decision path
+
+```text
+Gate 19.1 — complete
+runtime decision: DEFERRED_PENDING_MEASUREMENT
+Gate 19.2 — complete
+ASYNC_SUBMIT_STATUS_RESULT
+```
+
+These markers preserve the historical launch-contract and measurement decisions without implying that the old pending-measurement state is still current.
+
 ## Retained security lineage
 
 Gate 17.1 — evidence-first threat/control-gap inventory — COMPLETE.  
