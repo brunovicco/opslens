@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "artifact_type": "phase-19-gate-19-7-recovery-contract:v1",
+  "source_issue": 361,
+  "source_main_sha": "1cf65a612919c14890e05eefa44cc2d2bb2f1e6f",
+  "failed_apply_evidence": "labs/evidence/phase-19-gate-19-7-failed-apply-reconciliation-v1.json",
+  "failed_plan": {
+    "source_head_sha": "71da658a27860aa538778ec64943c613f45b4636",
+    "plan_binary_sha256": "4f9c7a07e792da2dfbde7ba38ecfb8286386a2fc7eba8ef79ae346b4a53e757d",
+    "plan_json_sha256": "5918eb69040af7ae3e7aa3fc428e4488b9ae6de98ebf8a0251f9faed2892580a",
+    "retry_authorized": false,
+    "reusable": false
+  },
+  "partial_materialization": {
+    "expected_total_resources": 21,
+    "managed_expected_resources": 16,
+    "missing_expected_resources": [
+      "aws_apigatewayv2_integration.public_async_api_lambda",
+      "aws_apigatewayv2_route.public_async_result",
+      "aws_apigatewayv2_route.public_async_status",
+      "aws_apigatewayv2_route.public_async_submit",
+      "aws_lambda_permission.public_async_api_gateway"
+    ],
+    "unexpected_public_async_resources": []
+  },
+  "observed_live_controls": {
+    "execute_api_endpoint_disabled": true,
+    "submit_enabled": false,
+    "worker_enabled": false,
+    "worker_event_source_state": "Disabled",
+    "worker_reserved_concurrency": 0,
+    "api_reserved_concurrency": null,
+    "api_artifact_hash_matches": true,
+    "worker_artifact_hash_matches": true
+  },
+  "failure": {
+    "class": "LAMBDA_RESERVED_CONCURRENCY_ACCOUNT_CONSTRAINT",
+    "failed_resource": "aws_lambda_function.public_async_api",
+    "failed_operation": "PutFunctionConcurrency",
+    "requested_api_reserved_concurrency": 2,
+    "account_concurrent_executions_limit": 10,
+    "iam_failure": false,
+    "artifact_failure": false
+  },
+  "recovery_source": {
+    "override_file": "infra/environments/dev/public_async_runtime_recovery_override.tf",
+    "api_reserved_concurrency": 0,
+    "worker_reserved_concurrency": 0,
+    "historical_gate19_4_configured_api_reserved_concurrency": 2,
+    "historical_gate19_4_evidence_rewritten": false,
+    "rationale": "Gate 19.7 recovery strengthens the disabled boundary without rewriting historical Gate 19.4 evidence. Positive API reservation is not admissible under the observed account concurrency limit, while zero reserved concurrency fail-closes the API Lambda until a later enablement gate."
+  },
+  "expected_recovery_plan": {
+    "fresh_plan_required": true,
+    "remote_state_refresh_required": true,
+    "expected_create_inventory": [
+      "aws_apigatewayv2_integration.public_async_api_lambda",
+      "aws_apigatewayv2_route.public_async_result",
+      "aws_apigatewayv2_route.public_async_status",
+      "aws_apigatewayv2_route.public_async_submit",
+      "aws_lambda_permission.public_async_api_gateway"
+    ],
+    "allowed_update_inventory": [
+      "aws_lambda_function.public_async_api"
+    ],
+    "allowed_api_update": {
+      "reserved_concurrent_executions": 0
+    },
+    "deletes_allowed": 0,
+    "replacements_allowed": 0,
+    "unrelated_managed_changes_allowed": 0
+  },
+  "authority": {
+    "terraform_apply_authorized": false,
+    "explicit_human_apply_authorization_required": true,
+    "runtime_enablement_authorized": false,
+    "public_endpoint_enablement_authorized": false,
+    "worker_enablement_authorized": false,
+    "event_source_enablement_authorized": false,
+    "provider_heavy_execution_authorized": false,
+    "iam_broadening_authorized": false,
+    "custom_domain_creation_authorized": false,
+    "failed_plan_retry_authorized": false
+  },
+  "retained_invariants": [
+    "plan != apply",
+    "materialized != enabled",
+    "UNMEASURED != zero",
+    "configured limit != measured utilization",
+    "queue delivery != business execution authority",
+    "provider retry != business retry authority"
+  ]
+}
