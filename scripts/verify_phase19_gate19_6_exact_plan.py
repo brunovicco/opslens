@@ -288,7 +288,9 @@ def _environment_variables_are_unknown(
     raw_unknown = change.get("after_unknown")
     if not isinstance(raw_unknown, dict):
         return False
-    after_unknown = _object(raw_unknown, label=f"{label}.change.after_unknown")
+    after_unknown = _object(
+        cast(object, raw_unknown), label=f"{label}.change.after_unknown"
+    )
     environment = after_unknown.get("environment")
     if environment is True:
         return True
@@ -296,14 +298,16 @@ def _environment_variables_are_unknown(
         for item in cast(list[object], environment):
             if isinstance(item, dict):
                 block = _object(
-                    item, label=f"{label}.change.after_unknown.environment[]"
+                    cast(object, item),
+                    label=f"{label}.change.after_unknown.environment[]",
                 )
                 if _contains_unknown(block.get("variables")):
                     return True
         return False
     if isinstance(environment, dict):
         block = _object(
-            environment, label=f"{label}.change.after_unknown.environment"
+            cast(object, environment),
+            label=f"{label}.change.after_unknown.environment",
         )
         return _contains_unknown(block.get("variables"))
     return False
