@@ -2,6 +2,7 @@
 
 import json
 from dataclasses import dataclass
+from functools import cache
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
@@ -75,8 +76,14 @@ def _error_page(title: str, message: str) -> str:
     )
 
 
+@cache
 def build_visual_catalog() -> tuple[DemoVisualProjection, ...]:
-    """Build the visual catalog only from the three admitted deterministic scenarios."""
+    """Build the visual catalog only from the three admitted deterministic scenarios.
+
+    Cached because the three scenarios are deterministic and immutable: rebuilding
+    them on every request would recompute identical evidence, and memoizing states
+    that plainly.
+    """
     return tuple(
         build_visual_projection(run_demo(scenario)) for scenario in _SUPPORTED_SCENARIOS
     )
@@ -176,8 +183,8 @@ class VisualDemoRequestHandler(BaseHTTPRequestHandler):
         self.send_header("X-Frame-Options", "DENY")
         self.send_header(
             "Content-Security-Policy",
-            "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; "
-            "form-action 'none'; frame-ancestors 'none'",
+            "default-src 'none'; style-src 'unsafe-inline'; img-src data:; "
+            "base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
         )
         self.end_headers()
         if include_body:
