@@ -1,6 +1,5 @@
 """Deterministic binding from a public request to immutable repository evidence."""
 
-import json
 from dataclasses import dataclass
 from hashlib import sha256
 
@@ -14,19 +13,14 @@ from opslens.repository_intelligence.domain import (
     ParsedUvLockEvidence,
     RepositoryPyPINormalizationInventory,
 )
+from opslens.shared.evidence import canonical_json
 
 PUBLIC_REPOSITORY_EVIDENCE_CONTRACT_VERSION = "public-repository-evidence:v1"
 
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one deterministic public repository evidence identity payload."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 @dataclass(frozen=True, slots=True)

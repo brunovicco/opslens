@@ -1,6 +1,5 @@
 """Deterministic offline evaluation contracts for the Phase 11 single-agent baseline."""
 
-import json
 import re
 from dataclasses import dataclass
 from enum import StrEnum
@@ -17,6 +16,7 @@ from opslens.agent_baseline.domain.models import (
     AgentCapability,
     SingleAgentTask,
 )
+from opslens.shared.evidence import canonical_json
 
 SINGLE_AGENT_EVALUATION_CONTRACT_VERSION = "single-agent-evaluation:v1"
 MAX_AGENT_EVALUATION_CASES = 128
@@ -72,13 +72,7 @@ class AgentEvaluationFailureCategory(StrEnum):
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one deterministic evaluation identity payload."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _canonical_sha256(value: object) -> str:

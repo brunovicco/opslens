@@ -1,7 +1,6 @@
 """Fail-closed incomplete-evidence demonstration for OpsLens V1."""
 
 import base64
-import json
 from dataclasses import dataclass
 from hashlib import sha256
 
@@ -17,6 +16,7 @@ from opslens.public_analysis.domain import (
     create_public_analysis_request,
 )
 from opslens.repository_intelligence.domain import compute_git_blob_sha1
+from opslens.shared.evidence import canonical_json
 
 type JsonValue = str | int | float | bool | list[JsonValue] | dict[str, JsonValue] | None
 
@@ -37,13 +37,7 @@ _EXPECTED_REASON_CODE = "invalid_version"
 
 def _canonical_json(value: object) -> bytes:
     """Serialize deterministic JSON for fail-closed reviewer output."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _uv_lock_content() -> bytes:

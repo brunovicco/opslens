@@ -1,12 +1,12 @@
 """Content-addressed references for the bounded A2A interoperability experiment."""
 
-import json
 import re
 from dataclasses import dataclass
 from hashlib import sha256
 
 from opslens.a2a_boundary.domain.errors import A2ABoundaryValidationError
 from opslens.multi_agent.domain.handoff import SpecialistAgentTask
+from opslens.shared.evidence import canonical_json
 
 A2A_REFERENCE_INTEROPERABILITY_CONTRACT_VERSION = "a2a-reference-interoperability:v1"
 
@@ -27,13 +27,7 @@ _REFERENCE_ID_PATTERN = re.compile(
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one bounded reference identity payload deterministically."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _reference_payload(*, handoff_id: str, specialist_task_id: str) -> dict[str, str]:

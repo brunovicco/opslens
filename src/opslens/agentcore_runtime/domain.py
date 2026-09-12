@@ -1,6 +1,5 @@
 """Deterministic contracts for the bounded AgentCore Runtime invocation boundary."""
 
-import json
 import re
 from dataclasses import dataclass
 from hashlib import sha256
@@ -12,6 +11,7 @@ from opslens.agent_baseline.domain.reasoning import (
     AgentReasoningInvocationEvidence,
     AgentReasoningResult,
 )
+from opslens.shared.evidence import canonical_json
 
 AGENTCORE_RUNTIME_INVOCATION_CONTRACT_VERSION = "agentcore-runtime-invocation:v1"
 MAX_AGENTCORE_RUNTIME_REQUEST_UTF8_BYTES = 4_096
@@ -33,13 +33,7 @@ class AgentCoreRuntimeValidationError(ValueError):
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one deterministic AgentCore runtime identity payload."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _canonical_sha256(value: object) -> str:

@@ -1,6 +1,5 @@
 """Deterministic evaluation over the three canonical OpsLens V1 demo scenarios."""
 
-import json
 from dataclasses import dataclass
 from hashlib import sha256
 
@@ -20,6 +19,7 @@ from opslens.demo.material_vulnerability import (
     DemoRunResult,
     build_material_vulnerability_demo,
 )
+from opslens.shared.evidence import canonical_json
 
 type JsonValue = str | int | float | bool | list[JsonValue] | dict[str, JsonValue] | None
 
@@ -28,13 +28,7 @@ DEMO_SUITE_EVALUATION_CONTRACT_VERSION = "opslens-demo-suite-evaluation:v1"
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one deterministic suite evaluation."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 @dataclass(frozen=True, slots=True)

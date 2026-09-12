@@ -1,6 +1,5 @@
 """Provider-neutral evidence contracts for bounded multi-agent triage reasoning."""
 
-import json
 import re
 from dataclasses import dataclass
 from hashlib import sha256
@@ -11,6 +10,7 @@ from opslens.agent_baseline.domain.models import (
 )
 from opslens.multi_agent.domain.errors import MultiAgentTriageReasoningValidationError
 from opslens.multi_agent.domain.handoff import MultiAgentHandoffProposal
+from opslens.shared.evidence import canonical_json
 
 MULTI_AGENT_TRIAGE_REASONING_CONTRACT_VERSION = "multi-agent-triage-reasoning:v1"
 MAX_MULTI_AGENT_TRIAGE_INVOCATIONS_PER_TASK = 1
@@ -34,13 +34,7 @@ _RESULT_ID_PATTERN = re.compile(
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one triage evidence payload deterministically."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _canonical_sha256(value: object) -> str:

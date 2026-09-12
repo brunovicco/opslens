@@ -1,11 +1,12 @@
 """Versioned deterministic evidence models for OpsLens Risk Policy v1."""
 
 import hashlib
-import json
 import math
 import re
 from dataclasses import dataclass, field
 from enum import StrEnum
+
+from opslens.shared.evidence import canonical_json
 
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _RISK_POLICY_SCHEMA_VERSION = "1"
@@ -427,10 +428,4 @@ class RiskPrioritizationResult:
 
 def _canonical_json(payload: dict[str, object]) -> bytes:
     """Serialize one JSON object deterministically."""
-    return json.dumps(
-        payload,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-        allow_nan=False,
-    ).encode()
+    return canonical_json(payload)

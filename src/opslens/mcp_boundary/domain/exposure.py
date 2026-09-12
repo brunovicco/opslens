@@ -1,6 +1,5 @@
 """Provider-neutral MCP capability exposure and admission evidence."""
 
-import json
 import re
 from dataclasses import dataclass
 from enum import StrEnum
@@ -8,6 +7,7 @@ from hashlib import sha256
 
 from opslens.agent_baseline.domain.models import AgentCapability
 from opslens.mcp_boundary.domain.errors import McpBoundaryValidationError
+from opslens.shared.evidence import canonical_json
 
 MCP_CAPABILITY_EXPOSURE_CONTRACT_VERSION = "mcp-capability-exposure:v1"
 
@@ -49,13 +49,7 @@ _CAPABILITY_TO_TOOL: dict[AgentCapability, McpToolName] = {
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one deterministic MCP identity payload."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _canonical_sha256(value: object) -> str:

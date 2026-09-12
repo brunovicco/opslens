@@ -1,6 +1,5 @@
 """Deterministic evidence binding MCP admission to one typed capability execution."""
 
-import json
 import re
 from dataclasses import dataclass
 from hashlib import sha256
@@ -18,6 +17,7 @@ from opslens.mcp_boundary.domain.exposure import (
     McpToolName,
     capability_for_mcp_tool,
 )
+from opslens.shared.evidence import canonical_json
 
 MCP_CAPABILITY_EXECUTION_CONTRACT_VERSION = "mcp-capability-execution:v1"
 
@@ -43,13 +43,7 @@ _BRIDGE_ID_PATTERN = re.compile(
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one deterministic MCP execution-bridge identity payload."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _canonical_sha256(value: object) -> str:

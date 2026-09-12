@@ -1,6 +1,5 @@
 """Provider-neutral operational telemetry contract for bounded public analysis."""
 
-import json
 import math
 import re
 from collections.abc import Mapping
@@ -9,6 +8,8 @@ from enum import StrEnum
 from hashlib import sha256
 from types import MappingProxyType
 from typing import Final
+
+from opslens.shared.evidence import canonical_json
 
 OPERATIONAL_TELEMETRY_CONTRACT_VERSION = "operational-telemetry:v1"
 OPERATIONAL_TELEMETRY_OPERATION = "analyze_public_repository"
@@ -122,13 +123,7 @@ _ALLOWED_FAILURES_BY_STAGE: Final[
 
 def _canonical_json(value: object) -> bytes:
     """Serialize telemetry identity semantics deterministically."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _validate_optional_identity(

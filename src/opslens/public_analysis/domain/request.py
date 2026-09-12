@@ -1,6 +1,5 @@
 """Deterministic public repository-analysis request identity."""
 
-import json
 import re
 from dataclasses import dataclass
 from hashlib import sha256
@@ -10,6 +9,7 @@ from opslens.repository_intelligence.domain.models import (
     validate_github_repository_coordinates,
     validate_github_repository_ref,
 )
+from opslens.shared.evidence import canonical_json
 
 PUBLIC_ANALYSIS_REQUEST_CONTRACT_VERSION = "public-analysis-request:v1"
 
@@ -18,13 +18,7 @@ _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$", re.ASCII)
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one deterministic public-request identity payload."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _request_identity_payload(target: "PublicRepositoryTarget") -> dict[str, object]:

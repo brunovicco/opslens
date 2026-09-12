@@ -1,6 +1,5 @@
 """Provider-neutral contracts for bounded single-agent capability authority."""
 
-import json
 import re
 from dataclasses import dataclass
 from enum import StrEnum
@@ -8,6 +7,7 @@ from hashlib import sha256
 from typing import cast
 
 from opslens.agent_baseline.domain.errors import AgentAuthorityValidationError
+from opslens.shared.evidence import canonical_json
 
 SINGLE_AGENT_AUTHORITY_CONTRACT_VERSION = "single-agent-authority:v1"
 MAX_AGENT_TASK_UTF8_BYTES = 2_048
@@ -55,13 +55,7 @@ _ABSTENTION_ID_PATTERN = re.compile(
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one deterministic single-agent identity payload."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _canonical_sha256(value: object) -> str:

@@ -1,12 +1,12 @@
 """Deterministic measurement contracts for the representative public workload."""
 
-import json
 import re
 from dataclasses import dataclass
 from enum import StrEnum
 from hashlib import sha256
 
 from opslens.public_analysis.domain.errors import PublicAnalysisValidationError
+from opslens.shared.evidence import canonical_json
 
 PUBLIC_ANALYSIS_WORKLOAD_ID = "public-analysis-workload:v1"
 PUBLIC_ANALYSIS_WORKLOAD_MEASUREMENT_CONTRACT_VERSION = (
@@ -153,8 +153,7 @@ class PublicAnalysisWorkloadMeasurement:
     @property
     def canonical_json(self) -> bytes:
         """Serialize the exact content-free workload observation."""
-        return json.dumps(
-            {
+        return canonical_json({
                 "contract_version": PUBLIC_ANALYSIS_WORKLOAD_MEASUREMENT_CONTRACT_VERSION,
                 "end_to_end_duration_ms": self.end_to_end_duration_ms,
                 "result_id": self.result_id,
@@ -162,12 +161,7 @@ class PublicAnalysisWorkloadMeasurement:
                 "result_size_bytes": self.result_size_bytes,
                 "stages": [stage.to_payload() for stage in self.stages],
                 "workload_id": self.workload_id,
-            },
-            allow_nan=False,
-            ensure_ascii=True,
-            separators=(",", ":"),
-            sort_keys=True,
-        ).encode("utf-8")
+            })
 
     @property
     def measurement_sha256(self) -> str:
