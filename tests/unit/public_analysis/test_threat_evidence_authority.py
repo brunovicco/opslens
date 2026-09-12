@@ -240,7 +240,10 @@ def test_typed_evidence_preserves_exact_snapshot_and_source_local_provenance() -
 def test_ghsa_evidence_outside_admitted_dependency_scope_is_rejected() -> None:
     request = PublicThreatEvidenceRequest(scope=build_public_threat_evidence_scope(_execution()))
 
-    with pytest.raises(PublicAnalysisValidationError, match="outside the admitted dependency scope"):
+    with pytest.raises(
+        PublicAnalysisValidationError,
+        match="outside the admitted dependency scope",
+    ):
         PublicRepositoryThreatEvidence(
             request=request,
             ghsa_vulnerabilities=(_ghsa(package_name="flask"),),
@@ -253,7 +256,10 @@ def test_ghsa_evidence_outside_admitted_dependency_scope_is_rejected() -> None:
 def test_nvd_evidence_unrelated_to_scoped_ghsa_evidence_is_rejected() -> None:
     request = PublicThreatEvidenceRequest(scope=build_public_threat_evidence_scope(_execution()))
 
-    with pytest.raises(PublicAnalysisValidationError, match="unrelated to admitted scoped GHSA evidence"):
+    with pytest.raises(
+        PublicAnalysisValidationError,
+        match="unrelated to admitted scoped GHSA evidence",
+    ):
         PublicRepositoryThreatEvidence(
             request=request,
             ghsa_vulnerabilities=(_ghsa(cve_id="CVE-2026-12345"),),
