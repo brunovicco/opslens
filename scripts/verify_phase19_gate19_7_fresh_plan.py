@@ -352,9 +352,13 @@ def _verify_recovery_contract() -> dict[str, object]:
         label="worker Lambda Terraform",
     )
     if "reserved_concurrent_executions = 0" not in api_segment:
-        raise Gate19_7FreshPlanError("recovery API Lambda must be hard-disabled at concurrency zero")
+        raise Gate19_7FreshPlanError(
+            "recovery API Lambda must be hard-disabled at concurrency zero"
+        )
     if "reserved_concurrent_executions = 2" in api_segment:
-        raise Gate19_7FreshPlanError("historical API concurrency leaked into live recovery resource")
+        raise Gate19_7FreshPlanError(
+            "historical API concurrency leaked into live recovery resource"
+        )
     if 'OPSLENS_ASYNC_SUBMIT_ENABLED           = "false"' not in api_segment:
         raise Gate19_7FreshPlanError("recovery API submit switch must remain false")
     if "reserved_concurrent_executions = 0" not in worker_segment:
@@ -399,7 +403,10 @@ def _contains_unknown(value: object) -> bool:
     if value is True:
         return True
     if isinstance(value, dict):
-        return any(_contains_unknown(item) for item in cast(dict[object, object], value).values())
+        return any(
+            _contains_unknown(item)
+            for item in cast(dict[object, object], value).values()
+        )
     if isinstance(value, list):
         return any(_contains_unknown(item) for item in cast(list[object], value))
     return False
@@ -415,12 +422,16 @@ def _verify_switch_or_unknown(
     after = _object(change.get("after"), label=f"{label}.change.after")
     environment = after.get("environment")
     if isinstance(environment, list) and environment:
-        first = _object(cast(list[object], environment)[0], label=f"{label}.environment[0]")
+        first = _object(
+            cast(list[object], environment)[0], label=f"{label}.environment[0]"
+        )
         variables = first.get("variables")
         if isinstance(variables, dict):
             typed_variables = _object(variables, label=f"{label}.environment.variables")
             if typed_variables.get(switch_name) != "false":
-                raise Gate19_7FreshPlanError(f"{label} switch {switch_name} must remain false")
+                raise Gate19_7FreshPlanError(
+                    f"{label} switch {switch_name} must remain false"
+                )
             return True
     if not _contains_unknown(change.get("after_unknown")):
         raise Gate19_7FreshPlanError(
@@ -488,9 +499,11 @@ def _verify_recovery_plan(
         raise Gate19_7FreshPlanError(
             f"recovery create inventory mismatch; missing={missing}, unexpected={unexpected}"
         )
-    if updates - {_API_ADDRESS}:
+    unexpected_updates = sorted(updates - {_API_ADDRESS})
+    if unexpected_updates:
         raise Gate19_7FreshPlanError(
-            f"recovery plan updates unexpected existing resources: {sorted(updates - {_API_ADDRESS})}"
+            "recovery plan updates unexpected existing resources: "
+            f"{unexpected_updates}"
         )
     if len(updates) > 1:
         raise Gate19_7FreshPlanError("recovery plan may update at most the API Lambda")
