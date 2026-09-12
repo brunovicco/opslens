@@ -8,13 +8,15 @@ This directory contains the retained architecture, operational state, decisions,
 
 - [`current-state.md`](current-state.md) — authoritative current project state and active authority boundary.
 - [`roadmap.md`](roadmap.md) — evidence-gated phase/gate progression through V1 closeout.
+- [`architecture.md`](architecture.md) — final V1 architecture, authority table, security/failure model, and retained AWS runtime evidence.
+- [`architecture.pt-br.md`](architecture.pt-br.md) — Portuguese architecture view.
+- [`portfolio-evidence.md`](portfolio-evidence.md) — recruiter/architect-facing evidence projection and explicit non-claims.
 - [`v1-demonstration-scope.md`](v1-demonstration-scope.md) — explicit V1 demonstration/product boundary.
 - [`v1-completion-checklist.md`](v1-completion-checklist.md) — remaining work before the first V1 release candidate.
-- [`demo/README.md`](demo/README.md) — canonical demo area and upcoming runner contract.
+- [`demo/README.md`](demo/README.md) — canonical CLI and localhost demo entry point.
+- [`demo/WALKTHROUGH.md`](demo/WALKTHROUGH.md) — three-to-five-minute reviewer walkthrough.
+- [`demo/PORTFOLIO_CAPTURE.md`](demo/PORTFOLIO_CAPTURE.md) — reproducible screenshot/terminal capture guidance.
 - [`post-v1-backlog.md`](post-v1-backlog.md) — intentionally deferred production/runtime experiments.
-- [`architecture.md`](architecture.md) — accumulated architecture and authority boundaries.
-- [`architecture.pt-br.md`](architecture.pt-br.md) — Portuguese architecture view.
-- [`portfolio-evidence.md`](portfolio-evidence.md) — recruiter/architect-facing evidence projection.
 - [`aip-c01-learning-map.md`](aip-c01-learning-map.md) — AIP-C01 task-to-evidence learning map.
 - [`adr/README.md`](adr/README.md) — Architecture Decision Record index.
 - [`runbooks/`](runbooks/) — bounded operational procedures.
@@ -22,15 +24,27 @@ This directory contains the retained architecture, operational state, decisions,
 ## Current checkpoint
 
 ```text
-protected main: e538fa3e96c29cf76dd3aa83a9967e090587b6fb
-Gate 19.8: COMPLETE
-protected merge: PR #375
-post-merge CodeQL: 34713360403 / run #393 / success
-Gate 19.9 issue: #376
-Gate 19.9: IN PROGRESS
+protected main: 4d001ba33e157c48891ccff3d5189263877f22b1
+Gate 19.12: COMPLETE
+protected merge: PR #383
+post-merge CodeQL: 34719883927 / run #430 / success
+Gate 19.12 issue: #382 / closed completed
+Gate 19.13: IN PROGRESS / issue #384
 ```
 
-Phases 0–18 are complete. Phase 19 is the final active V1 closeout phase.
+Phases 0–18 are complete. Phase 19 remains the final active V1 closeout phase.
+
+## Canonical V1 reviewer path
+
+```bash
+uv sync --frozen
+uv run python scripts/demo_opslens.py --scenario material-vulnerability --format text
+uv run python scripts/demo_opslens_web.py
+```
+
+Open `http://127.0.0.1:8765/` for the local visual viewer.
+
+The demo is synthetic, inert, deterministic, provider/model free, and never executes third-party repository code.
 
 ## Retained historical Phase 19 decision path
 
@@ -54,16 +68,7 @@ Their security and workflow-authority controls remain active invariants for all 
 
 OpsLens V1 is a **demonstration and architecture lab**, not a production SaaS.
 
-The canonical reviewer target is:
-
-```text
-clone
- -> setup
- -> one deterministic offline demo command
- -> evidence-backed result
-```
-
-V1 is designed to demonstrate:
+The canonical authority chain is:
 
 ```text
 public repository evidence
@@ -79,47 +84,20 @@ The retained async AWS runtime is materialized but disabled. It remains valid ev
 
 ```text
 materialized != enabled
+visual projection != business authority
 demonstration readiness != production readiness
 ```
 
-## Remaining V1 sequence
+## Phase 19 V1 closeout sequence
 
 ```text
-Gate 19.9   V1 demonstration contract + current-state synchronization
-Gate 19.10  deterministic end-to-end demo runner
-Gate 19.11  curated demo scenarios + deterministic evaluation
-Gate 19.12  minimal local visual demo
-Gate 19.13  portfolio/readme/architecture polish
-Gate 19.14  V1 closeout + release readiness
+Gate 19.9   V1 demonstration contract + current-state synchronization  COMPLETE
+Gate 19.10  deterministic end-to-end demo runner                       COMPLETE
+Gate 19.11  curated demo scenarios + deterministic evaluation          COMPLETE
+Gate 19.12  minimal local visual demo                                  COMPLETE
+Gate 19.13  portfolio/readme/architecture polish                       IN PROGRESS
+Gate 19.14  V1 closeout + release readiness                            PLANNED
 ```
-
-## Gate 19.8 retained authority
-
-Gate 19.8 introduced the provider-neutral request-time threat authority contract:
-
-```text
-PublicRepositoryEvidenceExecution
- -> PublicThreatEvidenceScope
- -> PublicThreatEvidenceRequest
- -> PublicThreatEvidenceAuthority
- -> PublicRepositoryThreatEvidence
- -> retained deterministic correlation/enrichment
-```
-
-The physical provider adapter remains deliberately deferred. It is now a Post-V1 experiment rather than a V1 blocker because the canonical V1 path is offline-first and deterministic.
-
-Canonical Gate 19.8 records:
-
-- [`../labs/phase-19-gate-19-8-threat-evidence-authority.md`](../labs/phase-19-gate-19-8-threat-evidence-authority.md)
-- [`../labs/evidence/phase-19-gate-19-8-threat-evidence-authority-v1.json`](../labs/evidence/phase-19-gate-19-8-threat-evidence-authority-v1.json)
-- [`../scripts/verify_phase19_gate19_8_threat_evidence_authority.py`](../scripts/verify_phase19_gate19_8_threat_evidence_authority.py)
-
-## Gate 19.9 records
-
-- [`../labs/phase-19-gate-19-9-v1-demonstration-contract.md`](../labs/phase-19-gate-19-9-v1-demonstration-contract.md)
-- [`../labs/evidence/phase-19-gate-19-9-v1-demonstration-contract-v1.json`](../labs/evidence/phase-19-gate-19-9-v1-demonstration-contract-v1.json)
-- [`../scripts/verify_phase19_gate19_9_v1_demonstration_contract.py`](../scripts/verify_phase19_gate19_9_v1_demonstration_contract.py)
-- [`adr/0077-phase19-v1-demonstration-boundary.md`](adr/0077-phase19-v1-demonstration-boundary.md)
 
 ## Evidence semantics
 
@@ -142,6 +120,8 @@ artifact hash != S3 VersionId
 publication success != deployment authorization
 plan != apply
 materialized != enabled
+visual projection != business authority
+localhost demo != public service
 demonstration readiness != production readiness
 AIP-C01 topic != product requirement
 ```
@@ -163,4 +143,4 @@ production TCO
 public worker/event-source enablement
 ```
 
-Those concerns are tracked in [`post-v1-backlog.md`](post-v1-backlog.md) and do not inherit standing implementation authority.
+Those concerns remain in [`post-v1-backlog.md`](post-v1-backlog.md) and do not inherit standing implementation authority.

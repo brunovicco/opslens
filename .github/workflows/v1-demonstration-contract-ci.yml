@@ -3,6 +3,13 @@ name: V1 Demonstration Contract CI
 on:
   pull_request:
     paths:
+      - "README.md"
+      - "README.pt-br.md"
+      - "docs/README.md"
+      - "docs/architecture*.md"
+      - "docs/current-state.md"
+      - "docs/roadmap.md"
+      - "docs/portfolio-evidence.md"
       - "docs/v1-demonstration-scope.md"
       - "docs/v1-completion-checklist.md"
       - "docs/post-v1-backlog.md"
@@ -10,7 +17,10 @@ on:
       - "docs/adr/0077-*.md"
       - "labs/phase-19-gate-19-9-*.md"
       - "labs/evidence/phase-19-gate-19-9-*.json"
+      - "labs/phase-19-gate-19-13-*.md"
+      - "labs/evidence/phase-19-gate-19-13-*.json"
       - "scripts/verify_phase19_gate19_9_v1_demonstration_contract.py"
+      - "scripts/verify_phase19_gate19_13_portfolio_polish.py"
       - ".github/workflows/v1-demonstration-contract-ci.yml"
   workflow_dispatch:
 
@@ -52,3 +62,38 @@ jobs:
 
       - name: Verify Gate 19.9 contract
         run: uv run python scripts/verify_phase19_gate19_9_v1_demonstration_contract.py
+
+  verify-v1-portfolio-polish:
+    name: Verify Gate 19.13 V1 portfolio presentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository without persisted credentials
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+        with:
+          enable-cache: true
+
+      - name: Verify lockfile is current
+        run: uv lock --check
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen
+
+      - name: Ruff verifier
+        run: uv run ruff check scripts/verify_phase19_gate19_13_portfolio_polish.py
+
+      - name: Pyright strict verifier
+        run: uv run pyright scripts/verify_phase19_gate19_13_portfolio_polish.py
+
+      - name: Verify Gate 19.13 portfolio contract
+        run: uv run python scripts/verify_phase19_gate19_13_portfolio_polish.py

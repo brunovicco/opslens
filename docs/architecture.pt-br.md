@@ -2,32 +2,102 @@
 
 _Última atualização: 2026-09-12_
 
-Este documento é o baseline arquitetural atual até a **Phase 19 Gate 19.8**, com a Gate 19.9 congelando a fronteira de fechamento da V1 focada em demonstração.
+Este documento é o baseline arquitetural acumulado até a **Phase 19 Gate 19.12**. A Gate 19.13 altera somente a apresentação; não cria nova autoridade de negócio, provider, runtime ou modelo.
 
-As Phases 0–18 estão completas. A fase historicamente selecionada após a Phase 18 permanece **Phase 19 — Bounded Public Runtime & Productization**; a Gate 19.9 reduz o escopo necessário para concluir a V1 sem reescrever essa decisão.
-
-Marcadores históricos retidos da Gate 19.1:
-
-```text
-public-analysis-workload:v1
-DEFERRED_PENDING_MEASUREMENT
-```
-
-Esses marcadores são evidência histórica; a Gate 19.2 depois forneceu a medição representativa que selecionou `ASYNC_SUBMIT_STATUS_RESULT`.
-
-A V1 do OpsLens é um laboratório de demonstração e arquitetura, não um SaaS de produção.
-
-## 1. Propósito
-
-OpsLens é um projeto open source de supply chain de software e arquitetura GenAI na AWS.
-
-Pergunta do produto:
-
-> Dado o software realmente usado por um repositório, quais vulnerabilidades o afetam, qual evidência exata comprova isso, quais achados devem ser priorizados e qual orientação verificada pode ajudar na ação?
+**As Phases 0–18 estão completas.** A fase historicamente selecionada após a Phase 18 permanece **Phase 19 — Bounded Public Runtime & Productization**. A conclusão da V1 é deliberadamente reduzida a um laboratório de demonstração e arquitetura, não a um SaaS de produção.
 
 Invariante central:
 
 > **Agents reason. Code verifies evidence.**
+
+## 1. Pergunta do produto
+
+> Dado o software realmente usado por um repositório, quais vulnerabilidades o afetam, qual evidência exata comprova isso, quais achados devem ser priorizados e qual orientação verificada pode ajudar na ação?
+
+A arquitetura separa verdade/autorização determinística de raciocínio probabilístico para que uma camada GenAI útil não se transforme silenciosamente em fonte de identidade de pacote, aplicabilidade de vulnerabilidade, verdade de risco, SQL arbitrário, autorização de tools ou semântica de evidência ausente.
+
+## 2. Arquitetura final da V1
+
+```mermaid
+flowchart LR
+    subgraph Inputs[Evidência externa / não confiável]
+        G[Repositório público GitHub]
+        GHSA[GitHub Security Advisories]
+        NVD[NVD]
+        KEV[CISA KEV]
+        EPSS[FIRST EPSS]
+        DOC[Corpus oficial de conhecimento]
+    end
+
+    subgraph Deterministic[Autoridade determinística]
+        ADMIT[Admissão estrita]
+        SNAP[Snapshot imutável]
+        DEP[Evidência inerte de dependências]
+        SCOPE[Escopo de threat evidence]
+        CORR[Aplicabilidade + correlação pacote/versão]
+        RISK[Risk Policy]
+        SQ[Admissão SemanticQuery]
+        SQL[Compilador SQL tipado]
+        EA[Admissão de evidências / citações]
+        AUTH[Autorização de capabilities + limites]
+    end
+
+    subgraph Probabilistic[Raciocínio probabilístico limitado]
+        PLAN[Proposta de intenção / plano]
+        RET[Bedrock KB / S3 Vectors retrieval]
+        SYN[Explicação / síntese]
+    end
+
+    subgraph Outputs[Projeções para avaliação]
+        RES[Resultado baseado em evidências]
+        CLI[CLI determinística]
+        WEB[Viewer visual localhost]
+    end
+
+    G --> ADMIT --> SNAP --> DEP --> SCOPE
+    GHSA --> SCOPE
+    NVD --> SCOPE
+    KEV --> SCOPE
+    EPSS --> SCOPE
+    SCOPE --> CORR --> RISK --> RES
+
+    PLAN --> SQ --> SQL
+    DOC --> RET --> EA --> SYN
+    SQ --> AUTH
+    SYN --> RES
+    RES --> CLI
+    RES --> WEB
+```
+
+O caminho canônico da V1 é propositalmente local e offline-first:
+
+```text
+fixture sintético e inerte
+ -> contratos retidos de evidência de repositório/dependência
+ -> contratos retidos de threat evidence
+ -> aplicabilidade/correlação determinísticas
+ -> risk policy determinística ou rejeição fail-closed
+ -> resultado machine-readable estável
+ -> apresentação CLI / localhost
+```
+
+Depois da instalação das dependências, a demo canônica não exige credenciais AWS, chamadas live de GitHub/AWS/Bedrock nem execução de modelo.
+
+## 3. Modelo de autoridade
+
+| Tema | Autoridade determinística | Papel de modelo / agente |
+| --- | --- | --- |
+| Coordenadas e snapshot do repositório | Admissão estrita + identidade imutável | Nenhum |
+| Identidade e normalização de pacotes | Parsing tipado + normalização canônica | Nenhum |
+| Aplicabilidade de versões | PEP 440 / lógica de correlação retida | Pode explicar o resultado |
+| Relação GHSA/NVD | Correlação determinística escopada | Pode resumir evidência admitida |
+| KEV/EPSS/CVSS | Evidência/proveniência exata | Pode explicar significado |
+| Score/tier de risco | Risk Policy | Pode explicar; não pode sobrescrever |
+| Caminho factual em linguagem natural | Admissão SemanticQuery + compilação SQL tipada | Pode propor intenção limitada |
+| Caminho de conhecimento/remediação | Admissão de retrieval/citações | Pode sintetizar sobre evidência admitida |
+| Execução de capability/tool | Autorização determinística + limites | Pode solicitar/propor |
+| Evidência ausente/incompleta | Fail closed / semântica explícita de rejeição | Não pode reparar nem reinterpretar como benigno |
+| Apresentação visual | Resultado retido continua sendo verdade de negócio | Sem execução de modelo na V1 |
 
 Fronteiras permanentes:
 
@@ -37,86 +107,14 @@ Structured facts use structured retrieval.
 No unrestricted text-to-SQL.
 READ, NEVER EXECUTE third-party repository code.
 Repository Risk != Runtime Exposure.
-Intent classification != execution authority.
 retrieved content != instruction authority
 model proposal != authorization
 tool/protocol success != business truth
-historical evidence != standing authority
 missing evidence != benign evidence
-MEASURED != DERIVED
-UNMEASURED != zero
-NOT_APPLICABLE != zero
-configured limit != measured utilization
-artifact hash != S3 VersionId
-publication success != deployment authorization
-plan != apply
-materialized != enabled
-demonstration readiness != production readiness
-AIP-C01 topic != product requirement
+visual projection != business authority
 ```
 
-## 2. Objetivo arquitetural da V1
-
-A demonstração V1 deve tornar compreensível e reprodutível esta cadeia de autoridade:
-
-```text
-evidência de repositório público
- -> evidência inerte de dependências
- -> evidência estruturada de ameaças
- -> aplicabilidade/correlação determinística
- -> priorização de risco determinística
- -> retrieval/raciocínio limitados quando apropriado
- -> resultado baseado em evidências
-```
-
-Target canônico para quem avalia o projeto:
-
-```text
-clone
- -> setup
- -> um comando determinístico de demo offline
- -> resultado baseado em evidências
-```
-
-A conclusão da V1 não exige runtime de produção exposto na Internet.
-
-## 3. Modelo de autoridade
-
-### 3.1 Autoridade determinística
-
-Código determinístico é responsável por:
-
-- admissão de identidade do repositório/fonte;
-- identidade imutável do snapshot do repositório;
-- normalização de dependências/pacotes;
-- aplicabilidade pacote/versão;
-- reconciliação GHSA/NVD;
-- lookup de evidências KEV/EPSS/CVSS;
-- política de risco;
-- admissão de semantic queries;
-- compilação SQL;
-- admissão de evidências de retrieval;
-- admissão de citações/resultados;
-- autorização de capabilities/tools;
-- limites de execução/custo/recursos;
-- autoridade de job/state/idempotência/retry no runtime assíncrono;
-- identidade de artefatos de deployment;
-- fronteiras de evidência de Terraform plan/apply.
-
-### 3.2 Autoridade de modelos/agentes
-
-Modelos e agentes podem:
-
-- classificar;
-- planejar;
-- rotear;
-- resumir;
-- explicar;
-- sintetizar sobre evidências admitidas.
-
-Eles não podem inventar ou sobrescrever identidade de pacotes, aplicabilidade de vulnerabilidades, proveniência, verdade de risco, SQL arbitrário, autorização de tools ou semântica de evidência ausente.
-
-## 4. Arquitetura retida da plataforma
+## 4. Caminho de threat e repository evidence
 
 ### 4.1 Threat intelligence
 
@@ -133,16 +131,16 @@ evidência raw preservando a fonte
 normalização/versionamento determinísticos
         |
         v
-coordenadas exatas da fonte + hashes/snapshots
+coordenadas exatas + hashes/snapshots
 ```
 
-A proveniência source-local é preservada antes de qualquer enrichment.
+O sistema preserva proveniência source-local antes de enrichment. Política de seleção como `latest_complete` não substitui proveniência.
 
 ### 4.2 Repository intelligence
 
 ```text
-coordenadas de repositório público no GitHub
- -> admissão estrita da requisição
+coordenadas públicas GitHub
+ -> admissão estrita
  -> metadata confirmada pela fonte
  -> snapshot de commit imutável
  -> evidência inerte de uv.lock no commit exato
@@ -150,27 +148,58 @@ coordenadas de repositório público no GitHub
  -> identidade PyPI canônica
 ```
 
-Código de terceiros nunca é executado.
+Conteúdo do repositório é dado não confiável. O OpsLens não executa package managers, builds, testes, setup hooks, Dockerfiles, workflows ou scripts do repositório.
 
-### 4.3 Correlação de vulnerabilidades e risco
+### 4.3 Autoridade de threat evidence em request-time
+
+A Gate 19.8 introduziu a fronteira provider-neutral:
+
+```text
+PublicRepositoryEvidenceExecution
+ -> PublicThreatEvidenceScope
+ -> PublicThreatEvidenceRequest
+ -> PublicThreatEvidenceAuthority
+ -> PublicRepositoryThreatEvidence
+ -> correlação/enriquecimento determinísticos retidos
+```
+
+Semânticas importantes:
+
+```text
+scope deriva apenas da evidência admitida do repositório
+normalização PyPI incompleta -> fail closed
+GHSA fora do scope -> rejeitar
+NVD não relacionado -> rejeitar
+latest_complete = política de seleção, não proveniência
+autoridade do modelo sobre source truth/aplicabilidade = nenhuma
+```
+
+O adapter físico provider-backed para request-time permanece Post-V1.
+
+## 5. Caminho determinístico de risco
 
 ```text
 identidade canônica de dependência
  + evidência de aplicabilidade GHSA/NVD
- + snapshot KEV
- + snapshot EPSS
+ + snapshot CISA KEV
+ + snapshot FIRST EPSS
  + evidência CVSS
         |
         v
 RepositoryAnalysisResult
         |
         v
-Risk Policy determinística
+Risk Policy
+        |
+        v
+resultado ranqueado admitido
 ```
 
-O risco permanece determinístico. O modelo pode explicar o resultado admitido, mas não alterá-lo.
+O fixture material canônico produz deterministicamente um achado e `P0 / 90`. O fixture controlled-benign produz zero achados apenas porque a evidência escopada está completa. O fixture de evidência incompleta é rejeitado antes de análise/risco e não produz conclusão benigna.
 
-### 4.4 Caminho factual estruturado em linguagem natural
+## 6. Evidência estruturada e semântica
+
+### Caminho factual estruturado
 
 ```text
 pergunta factual em linguagem natural
@@ -182,12 +211,12 @@ pergunta factual em linguagem natural
  -> resultado estruturado
 ```
 
-Não existe autoridade de text-to-SQL irrestrita.
+O modelo não recebe autoridade de SQL irrestrito.
 
-### 4.5 Caminho de conhecimento/remediação
+### Caminho de conhecimento/remediação
 
 ```text
-corpus oficial de conhecimento
+corpus oficial
  -> documentos/chunks canônicos
  -> Bedrock Knowledge Base
  -> S3 Vectors
@@ -197,84 +226,73 @@ corpus oficial de conhecimento
  -> resposta + citações
 ```
 
-A verdade estruturada de vulnerabilidades permanece fora da autoridade do RAG.
+A verdade estruturada de vulnerabilidades continua fora da autoridade do RAG.
 
-### 4.6 Hybrid retrieval
+### Hybrid retrieval
 
 ```text
 pergunta
- -> roteamento/scope determinísticos
+ -> routing/scope determinísticos
  -> evidência estruturada e/ou semântica
  -> envelope preservando classes de autoridade
  -> síntese limitada
 ```
 
-Evidência semântica não substitui fatos estruturados.
+Evidência semântica complementa, mas não substitui, fatos estruturados.
 
-### 4.7 Raciocínio agentic
+## 7. Camadas agentic e de interoperabilidade
+
+### Raciocínio agentic
 
 ```text
 evidência admitida
  -> scope determinístico de capability
- -> proposta/raciocínio de modelo limitado
+ -> proposta/raciocínio limitado de modelo
  -> autorização determinística de capability
  -> execução tipada
- -> admissão de resultado
+ -> admissão do resultado
 ```
 
-O baseline single-agent mais simples permanece a arquitetura de referência. Especialização/handoff multi-agent é retida onde útil, mas topologias adicionais de modelo não viram default sem ganho de qualidade medido.
+O baseline single-agent mais simples continua como arquitetura de referência. Uma topologia medida com dois modelos não foi mantida como default porque adicionou chamadas, tokens, latência e custo derivado sem ganho de qualidade na comparação congelada.
 
-### 4.8 MCP e A2A
+### MCP e A2A
 
-MCP e A2A são camadas de interoperabilidade limitadas, não nova autoridade de negócio.
+MCP e A2A são camadas de interoperabilidade, não nova autoridade de negócio:
 
 ```text
 requisição de protocolo
  -> admissão estrita de identidade/schema
  -> capability tipada existente
- -> projeção de resultado admitido
+ -> projeção do resultado admitido
 ```
 
-Runtimes MCP/A2A públicos de produção não são requisitos da V1.
+### AgentCore
 
-### 4.9 AgentCore
+Amazon Bedrock AgentCore permanece target opcional de laboratório após experimentos de capability fit. Não é o runtime default e não herda IAM ou autoridade de execução permanente por fazer parte do histórico.
 
-Amazon Bedrock AgentCore é retido como target opcional de laboratório após experimentos de capability fit. Não é o runtime padrão de produção e não mantém IAM experimental permanente apenas por fazer parte do histórico do projeto.
+## 8. Modelo de segurança e falhas
 
-### 4.10 Evidência de runtime exposure
+O modelo de segurança assume que conteúdo de repositório, retrieved content, prompts, output de modelo, mensagens de tools/protocolos e respostas de providers podem ser malformados ou adversariais.
 
-Amazon Inspector é tratado como autoridade independente e read-only para runtime exposure.
+| Falha / ameaça | Controle |
+| --- | --- |
+| Prompt injection no repositório | Texto é dado; código do repositório nunca é executado |
+| Dependência malformada/não suportada | Rejeição determinística de normalização |
+| Threat evidence fora de escopo | Validação de escopo rejeita |
+| Evidência ausente | Fail closed; nunca convertida em benigno |
+| Semantic plan malformado/injetado | Admissão tipada determinística |
+| SQL arbitrário | Sem text-to-SQL irrestrito; somente compilador tipado |
+| Tool poisoning / capability insegura | Autorização tipada e allowlisted |
+| Denial-of-wallet / amplificação | Limites de tokens, scans, retries, tempo e capabilities |
+| Vazamento em telemetry | Telemetry operacional content-minimized |
+| Ambiguidade de runtime exposure | Evidência Inspector permanece separada da verdade de repository risk |
+| Drift de autoridade na UI | Viewer local apenas projeta resultados existentes |
 
-```text
-Inspector read evidence != repository risk truth
-zero Inspector records != zero runtime exposure
-```
+Hardening retido inclui GitHub Actions pinadas por SHA completo, Dependency Review, CodeQL, IAM least privilege, regressão adversarial de autoridade, evidência imutável e fronteiras HUMAN de protected merge.
 
-## 5. Observabilidade, segurança e custo
+## 9. Observabilidade e semântica de custo
 
-### 5.1 Observabilidade
-
-Telemetry operacional é content-minimized e não se torna autoridade de negócio.
-
-O projeto mantém evidências operacionais orientadas a CloudWatch/EMF, traces/metrics quando relevantes, contadores explícitos de retry/latência e artefatos persistidos de experimentos.
-
-### 5.2 Segurança
-
-Hardening retido inclui:
-
-- GitHub Actions pinadas por SHA completo;
-- Dependency Review;
-- CodeQL;
-- adversarial authority regression;
-- IAM least privilege;
-- telemetry Lambda com minimização de conteúdo;
-- pause/recovery limitados para ingestão agendada;
-- fronteiras de revisão em protected main;
-- admissão fail-closed de requests/evidências/resultados.
-
-### 5.3 Semântica de custo
-
-OpsLens distingue:
+Telemetry operacional nunca vira autoridade de negócio. O OpsLens distingue explicitamente:
 
 ```text
 MEASURED
@@ -284,71 +302,57 @@ UNMEASURED
 NOT_APPLICABLE
 ```
 
-Evidência de custo de experimento limitado nunca é promovida a claim de TCO de produção.
+preservando:
 
-## 6. Arquitetura do runtime assíncrono da Phase 19
+```text
+MEASURED != DERIVED
+UNMEASURED != zero
+NOT_APPLICABLE != zero
+configured limit != measured utilization
+lab metric != production SLO
+cost evidence != production TCO
+```
 
-A Gate 19.2 selecionou `ASYNC_SUBMIT_STATUS_RESULT` a partir de evidência de workload representativo.
+O workload representativo retido da Phase 19 mediu:
 
-A Gate 19.3 selecionou:
+| Métrica | Classificação / valor |
+| --- | ---: |
+| Duração end-to-end | 17.748 ms MEASURED |
+| Resultado serializado | 5.285 bytes MEASURED |
+| Requests físicos GitHub | 4 MEASURED |
+| Bedrock Retrieve | 1 chamada / 4.148 ms client elapsed MEASURED |
+| Modelo Bedrock | 1 chamada / 5.936 input / 408 output tokens MEASURED |
+| Model client elapsed | 8.901 ms MEASURED |
+| Provider latency | 7.772 ms MEASURED |
+| Retry count | 0 MEASURED |
+| Throttle count | UNMEASURED |
+
+Essas medições servem para discussão arquitetural; não são evidência de SLO/SLA/TCO de produção.
+
+## 10. Runtime assíncrono retido da Phase 19
+
+A Gate 19.2 selecionou `ASYNC_SUBMIT_STATUS_RESULT` a partir de evidência de workload. A Gate 19.3 selecionou:
 
 ```text
 HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB
 ```
 
-Forma retida:
+Topologia retida:
 
-```text
-POST /v1/analyses
- -> API Gateway HTTP API
- -> API Lambda
- -> autoridade de job/idempotência no DynamoDB
- -> fila SQS standard
- -> Lambda worker
- -> autoridades de análise retidas
- -> status/resultado no DynamoDB
- -> SQS DLQ
-
-GET /v1/analyses/{job_id}
-GET /v1/analyses/{job_id}/result
+```mermaid
+flowchart LR
+    C[Cliente] --> API[API Gateway HTTP API]
+    API --> AL[API Lambda]
+    AL --> DB[(DynamoDB job/idempotência)]
+    AL --> Q[SQS standard queue]
+    Q --> W[Lambda worker]
+    W --> DB
+    Q --> DLQ[SQS DLQ]
 ```
 
-Entrega na fila é evidência de transporte, não verdade de execução. Autoridade condicional de state/attempt no DynamoDB controla o estado de negócio.
+A Gate 19.5 produziu artefatos imutáveis de API/worker. A Gate 19.6 admitiu um Terraform plan exato. A Gate 19.7 materializou 21 recursos por operações autorizadas por HUMANO e provou convergência.
 
-## 7. Evidência de deployment da Phase 19
-
-### 7.1 Artefatos imutáveis
-
-A Gate 19.5 produziu ZIPs determinísticos separados para API/worker e preservou hash de conteúdo e VersionId exato do objeto S3.
-
-```text
-artifact hash != S3 VersionId
-publication success != deployment authorization
-```
-
-### 7.2 Planejamento Terraform exato
-
-A Gate 19.6 admitiu um plano exato antes de qualquer apply:
-
-```text
-21 create
-0 update
-0 delete
-0 replacement
-```
-
-### 7.3 Materialização controlada e desabilitada
-
-A Gate 19.7 materializou o runtime por operações Terraform limitadas e autorizadas por HUMANO, recuperou uma restrição de reserved concurrency da conta Lambda e provou convergência final:
-
-```text
-0 add
-0 change
-0 destroy
-0 replacement
-```
-
-Estado retido do runtime:
+Estado retido:
 
 ```text
 recursos do runtime assíncrono materializados: 21
@@ -358,100 +362,53 @@ worker habilitado: NÃO
 event-source mapping habilitado: NÃO
 domínio público customizado: ausente
 execuções públicas provider-heavy: 0
+execuções de código de terceiros: 0
 ```
 
 ```text
+plan != apply
+artifact hash != S3 VersionId
+publication success != deployment authorization
 materialized != enabled
 ```
 
-## 8. Gate 19.8 — autoridade de threat evidence em request-time
+## 11. Demo V1 e presentation adapters
 
-A Gate 19.8 foi mergeada pelo PR #375 em:
-
-```text
-e538fa3e96c29cf76dd3aa83a9967e090587b6fb
-```
-
-CodeQL pós-merge:
+As Gates 19.10–19.12 criaram uma experiência determinística para avaliação sem introduzir segunda fonte de verdade:
 
 ```text
-34713360403 / run #393 / success
+Gate 19.10  CLI determinística + JSON estável
+Gate 19.11  exatamente três cenários + avaliação byte-stable
+Gate 19.12  adapter visual localhost-only
 ```
 
-Cadeia provider-neutral:
+O servidor visual se conecta a `127.0.0.1`, não expõe argumento de host externo, usa HTTP da standard library + HTML/CSS inline, não requer JavaScript/assets externos, rejeita rotas/scenarios desconhecidos e query strings, e escapa valores dinâmicos em HTML.
+
+O painel de explicação de IA está intencionalmente desabilitado e não autoritativo na V1.
 
 ```text
-PublicRepositoryEvidenceExecution
- -> PublicThreatEvidenceScope
- -> PublicThreatEvidenceRequest
- -> PublicThreatEvidenceAuthority
- -> PublicRepositoryThreatEvidence
- -> correlação/enriquecimento determinísticos retidos
+localhost demo != public service
+visual projection != business authority
 ```
 
-Semânticas:
+## 12. Marcadores históricos de decisão
+
+O contrato de lançamento original da Gate 19.1 deliberadamente adiou a seleção do runtime:
 
 ```text
-scope deriva apenas de evidência admitida do repositório
-normalização PyPI incompleta -> fail closed
-GHSA fora do scope -> rejeitar
-NVD não relacionado -> rejeitar
-latest_complete = política de seleção, não proveniência
-KEV/EPSS selecionados carregam snapshot date + SHA-256 exatos
-autoridade do modelo sobre source truth/aplicabilidade = nenhuma
+public-analysis-workload:v1
+DEFERRED_PENDING_MEASUREMENT
 ```
 
-O adapter físico de provider permanece deliberadamente deferido. Como a V1 é offline-first, esse adapter passa a ser experimento Post-V1 em vez de blocker para a primeira versão.
-
-## 9. Gate 19.9 — fronteira de demonstração da V1
-
-A Gate 19.9 congela a fronteira do primeiro release:
+A Gate 19.2 depois forneceu medição representativa e selecionou:
 
 ```text
-modo V1: DEMONSTRATION_ARCHITECTURE_LAB
-claim de SaaS de produção: NÃO
-runtime exposto na Internet obrigatório: NÃO
-credenciais AWS necessárias para demo canônica: NÃO
-execução de código de terceiros: NÃO
+ASYNC_SUBMIT_STATUS_RESULT
 ```
 
-Slices restantes:
+Esses marcadores permanecem evidência do processo decisório; não representam trabalho ainda pendente.
 
-```text
-19.9   contrato V1 + sincronização de estado atual
-19.10  runner determinístico end-to-end
-19.11  cenários curados + avaliação determinística
-19.12  demo visual local mínima
-19.13  polish de portfólio/readme/arquitetura
-19.14  closeout V1 + readiness de release
-```
-
-## 10. Arquitetura da demo canônica V1
-
-O caminho canônico será local e offline-first:
-
-```text
-fixture inerte e curada
- -> contratos existentes de evidência de repositório/dependência
- -> contratos existentes de threat evidence
- -> correlação/enriquecimento determinísticos
- -> risk policy determinística
- -> resultado machine-readable estável
- -> projeção human-readable
- -> explicação opcional limitada sobre evidência admitida
-```
-
-A demo deve reutilizar autoridades existentes de domínio/aplicação do OpsLens e não criar uma segunda implementação da verdade de negócio.
-
-Classes obrigatórias de cenário:
-
-```text
-material vulnerability
-controlled benign
-fail-closed incomplete/ambiguous evidence
-```
-
-## 11. Não objetivos da V1
+## 13. Não objetivos da V1
 
 A primeira versão não exige:
 
@@ -470,31 +427,34 @@ habilitação pública de worker/event-source
 adapter genérico provider-backed de threat evidence em request-time
 ```
 
-Esses itens ficam em [`post-v1-backlog.md`](post-v1-backlog.md).
+## 14. Fronteira atual de autoridade
 
-## 12. Fronteira de autoridade atual
-
-A Gate 19.9 é repository-only e offline-only.
+A Gate 19.13 é somente documentação/portfólio.
 
 ```text
 operações Terraform/provider: NÃO AUTORIZADAS
-mutação AWS:                 NÃO AUTORIZADA
-mutação IAM:                 NÃO AUTORIZADA
-publicação de artefatos:     NÃO AUTORIZADA
-habilitação de runtime:      NÃO AUTORIZADA
-execução live provider-heavy:NÃO AUTORIZADA
-protected merge:             REVISÃO HUMANA OBRIGATÓRIA
+mutação AWS:                  NÃO AUTORIZADA
+mutação IAM:                  NÃO AUTORIZADA
+publicação de artefatos:      NÃO AUTORIZADA
+habilitação de runtime:       NÃO AUTORIZADA
+execução live provider-heavy: NÃO AUTORIZADA
+execução de modelo na demo:   NÃO AUTORIZADA
+protected merge:              REVISÃO HUMANA OBRIGATÓRIA
 ```
 
-## 13. Documentos principais
+PR #89 / `feat/governed-gateway-semantic-planner` permanece trabalho separado e deferido do Governed LLM Gateway.
+
+## 15. Documentos principais
 
 - [`current-state.md`](current-state.md)
 - [`roadmap.md`](roadmap.md)
+- [`portfolio-evidence.md`](portfolio-evidence.md)
 - [`v1-demonstration-scope.md`](v1-demonstration-scope.md)
 - [`v1-completion-checklist.md`](v1-completion-checklist.md)
 - [`demo/README.md`](demo/README.md)
+- [`demo/WALKTHROUGH.md`](demo/WALKTHROUGH.md)
+- [`demo/PORTFOLIO_CAPTURE.md`](demo/PORTFOLIO_CAPTURE.md)
 - [`post-v1-backlog.md`](post-v1-backlog.md)
 - [`adr/0077-phase19-v1-demonstration-boundary.md`](adr/0077-phase19-v1-demonstration-boundary.md)
-- [`../labs/phase-19-gate-19-9-v1-demonstration-contract.md`](../labs/phase-19-gate-19-9-v1-demonstration-contract.md)
 
-Labs históricos e evidências machine-readable permanecem registros imutáveis do estado existente em cada experimento.
+Labs históricos e evidências machine-readable permanecem registros imutáveis do estado existente quando cada experimento foi executado.

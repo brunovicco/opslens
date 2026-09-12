@@ -6,126 +6,108 @@
 
 ### Verifiable Software Supply Chain & GenAI Architecture on AWS
 
-**Threat Intelligence · Repository Intelligence · Deterministic Risk · Bedrock RAG · Hybrid Retrieval · Agentic AI · MCP · AgentCore · A2A · Security · Evaluation · Cost Engineering**
+**Deterministic vulnerability authority · Bedrock RAG · Hybrid Retrieval · Agentic AI · MCP · A2A · Security · Evaluation · Cost Engineering**
+
+[![CodeQL](https://github.com/brunovicco/opslens/actions/workflows/codeql.yml/badge.svg)](https://github.com/brunovicco/opslens/actions/workflows/codeql.yml)
+[![V1 Demo Runner](https://github.com/brunovicco/opslens/actions/workflows/v1-demo-runner-ci.yml/badge.svg)](https://github.com/brunovicco/opslens/actions/workflows/v1-demo-runner-ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 </div>
 
-OpsLens is an open-source AWS architecture lab and software-supply-chain intelligence project built around one principle:
+OpsLens is an open-source AWS architecture lab for software-supply-chain intelligence built around one rule:
 
 > **Agents reason. Code verifies evidence.**
 
 It answers a practical question:
 
-> Given the software actually used by a repository, which vulnerabilities affect it, what exact evidence proves that, what should be prioritized, and what verified guidance can help act on those findings?
+> Given the software actually used by a repository, which vulnerabilities materially affect it, what evidence proves that, and what should be prioritized?
 
-OpsLens deliberately separates probabilistic reasoning from deterministic authority for package identity, version applicability, vulnerability correlation, KEV/EPSS/CVSS evidence, risk policy, semantic-query admission, SQL compilation, evidence admission, tool authorization, and execution/resource limits.
+The project separates probabilistic reasoning from deterministic authority. Models may classify, plan, route, summarize, or explain. Deterministic code owns package identity, version applicability, GHSA/NVD correlation, KEV/EPSS/CVSS evidence, risk policy, semantic-query admission, SQL compilation, evidence admission, tool authorization, and failure behavior.
 
 > **Repository Risk != Runtime Exposure.**
 
-## Current status
+## Try the V1 demo
 
-**Phases 0–18 are complete. Phase 19 is the final V1 closeout phase.**
+The canonical reviewer path is local, synthetic, inert, and deterministic. No AWS credentials, live provider calls, model calls, or third-party repository-code execution are required after dependency installation.
 
-The historical phase selected after Phase 18 remains **Phase 19 — Bounded Public Runtime & Productization**. Gate 19.9 narrows V1 completion to a demonstration-focused closeout without rewriting that retained decision.
-
-Current protected checkpoint:
-
-```text
-main: e538fa3e96c29cf76dd3aa83a9967e090587b6fb
-Gate 19.8: COMPLETE
-protected merge: PR #375
-post-merge CodeQL: 34713360403 / run #393 / success
-Gate 19.9: IN PROGRESS / issue #376
+```bash
+uv sync --frozen
+uv run python scripts/demo_opslens.py --scenario material-vulnerability --format text
 ```
 
-Retained Gate 19.1/19.2 historical decision markers:
+Run the localhost visual evidence viewer:
 
-```text
-19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE
-historical decision: DEFERRED_PENDING_MEASUREMENT
-public-analysis-workload:v1
-19.2  Representative Workload Measurement              COMPLETE
-ASYNC_SUBMIT_STATUS_RESULT
+```bash
+uv run python scripts/demo_opslens_web.py
 ```
 
-Those markers describe the historical decision path; later Gates 19.2–19.8 superseded the pending measurement state without rewriting it.
+Then open `http://127.0.0.1:8765/`.
 
-The retained async AWS runtime has already been materialized and converged, but it remains intentionally disabled and non-public:
+The viewer binds structurally to loopback, exposes no `--host` option, loads no external browser assets, and consumes the same retained deterministic scenario results as the CLI.
 
-```text
-runtime materialized: YES
-public endpoint enabled: NO
-submit enabled: NO
-worker enabled: NO
-event-source mapping enabled: NO
-provider-heavy public execution: NO
+### Three canonical scenarios
+
+| Scenario | Deterministic outcome | What it proves |
+| --- | --- | --- |
+| `material-vulnerability` | `MATERIAL_FINDING`, Risk Policy v1 = **90 / P0** | Complete evidence can produce an actionable material finding. |
+| `controlled-benign` | `NO_MATERIAL_FINDING` | No-finding is valid only with complete scoped fixture evidence; it is not a live-repository safety claim. |
+| `fail-closed-incomplete-evidence` | `REJECTED_INCOMPLETE_EVIDENCE` | Incomplete identity stops before analysis/risk; missing evidence is never converted into benign evidence. |
+
+Cross-scenario deterministic evaluation:
+
+```bash
+uv run python scripts/evaluate_opslens_demo.py --format text
 ```
 
-```text
-materialized != enabled
-```
-
-## V1 scope
-
-OpsLens V1 is intentionally a **demonstration and architecture lab**, not a production SaaS.
-
-The V1 reviewer target is:
-
-```text
-clone
- -> setup
- -> one deterministic offline demo command
- -> evidence-backed result
-```
-
-V1 completion prioritizes reproducibility, provenance, architecture clarity, meaningful failure paths, and portfolio presentation. It does **not** require Internet-facing production operations.
-
-See [V1 Demonstration Scope](docs/v1-demonstration-scope.md) and [V1 Completion Checklist](docs/v1-completion-checklist.md).
+See [Demo](docs/demo/README.md), [Scenarios](docs/demo/SCENARIOS.md), and the [3–5 minute walkthrough](docs/demo/WALKTHROUGH.md).
 
 ## Architecture at a glance
 
-```text
-NVD / CISA KEV / FIRST EPSS / GitHub Security Advisories
-        |
-        v
-source-preserving threat evidence
-        |
-public repository -> immutable snapshot -> inert dependency evidence
-        |
-        v
-deterministic package/version applicability
-        |
-        v
-GHSA/NVD/CVSS + KEV + EPSS enrichment
-        |
-        v
-RepositoryAnalysisResult -> deterministic Risk Policy
+```mermaid
+flowchart LR
+    R[Public repository coordinates] --> A[Strict request admission]
+    A --> S[Immutable repository snapshot]
+    S --> D[Inert dependency evidence]
+    D --> T[Scoped GHSA / NVD / KEV / EPSS / CVSS evidence]
+    T --> C[Deterministic applicability & correlation]
+    C --> P[Deterministic Risk Policy]
+    P --> E[Evidence-backed result]
 
-structured fact question
-        |
-        v
-bounded Bedrock proposal -> deterministic SemanticQuery admission
-        |
-        v
-typed SQL compiler -> bounded read-only Athena
+    Q[Structured fact question] --> SP[Bounded model proposal]
+    SP --> SA[Deterministic SemanticQuery admission]
+    SA --> SQL[Typed SQL compiler]
+    SQL --> ATH[Bounded read-only Athena]
 
-knowledge/remediation question
-        |
-        v
-Bedrock Knowledge Base -> checked evidence -> bounded synthesis + citations
+    K[Knowledge / remediation question] --> KB[Bedrock Knowledge Base / S3 Vectors]
+    KB --> RE[Retrieved evidence admission]
+    RE --> SYN[Bounded synthesis + citations]
 
-admitted structured + semantic evidence
-        |
-        v
-deterministic authorization -> bounded agent reasoning
-        |
-        v
-admitted result
+    E --> UI[CLI / localhost visual projection]
+    SYN --> UI
 ```
 
-The model may explain, classify, plan, route, or synthesize over admitted evidence. It does not own package identity, vulnerability applicability, provenance, risk policy, arbitrary SQL, or execution authorization.
+The model can propose or explain. It cannot authorize source truth, vulnerability applicability, risk truth, arbitrary SQL, tool execution, or missing-evidence semantics.
 
-## Public repository safety boundary
+## Authority model
+
+| Concern | Deterministic code | Model / agent |
+| --- | --- | --- |
+| Repository and package identity | **Authoritative** | No authority |
+| Version applicability and GHSA/NVD correlation | **Authoritative** | May explain admitted result |
+| KEV / EPSS / CVSS provenance | **Authoritative** | May summarize |
+| Risk score / tier | **Authoritative** | May explain, never override |
+| Semantic query / SQL execution | Admission + typed compilation | May propose bounded intent |
+| Retrieval / citations | Evidence admission | May synthesize over admitted evidence |
+| Capability / tool use | Authorization and limits | May request/propose |
+| Visual demo | Existing result is authoritative | No model execution in V1 |
+
+```text
+model proposal != authorization
+visual projection != business authority
+missing evidence != benign evidence
+```
+
+## Security and failure model
 
 OpsLens treats repository content as untrusted data.
 
@@ -133,70 +115,11 @@ OpsLens treats repository content as untrusted data.
 READ, NEVER EXECUTE third-party repository code.
 ```
 
-The project does not run package managers, builds, tests, setup hooks, Dockerfiles, workflows, or repository scripts as part of repository analysis.
+Repository analysis never runs package managers, builds, tests, setup hooks, Dockerfiles, workflows, or repository scripts. Important fail-closed boundaries include invalid package/version identity, out-of-scope threat evidence, unrelated NVD evidence, malformed semantic plans, unauthorized capabilities, and incomplete evidence.
 
-## Phase 19 lineage
+The repository also retains full-SHA GitHub Actions pinning, Dependency Review, CodeQL, least-privilege IAM evidence, content-minimized telemetry, adversarial authority regression, and explicit execution/cost limits.
 
-```text
-19.1  Public Runtime Hypothesis & Launch Contract              COMPLETE
-19.2  Representative Workload Measurement                     COMPLETE
-19.3  Concrete Async Topology Contract                         COMPLETE
-19.4  Disabled Async Runtime Implementation                    COMPLETE
-19.5  Immutable Async Deployment Artifacts                     COMPLETE
-19.6  Exact Terraform Plan & Offline Admission                 COMPLETE
-19.7  Controlled Disabled Runtime Materialization              COMPLETE
-19.8  Request-time Threat Evidence Authority Contract          COMPLETE
-19.9  V1 Demonstration Closeout Contract                       IN PROGRESS
-19.10 Deterministic End-to-End Demo Runner                     PLANNED
-19.11 Curated Demo Scenarios + Deterministic Evaluation        PLANNED
-19.12 Minimal Local Visual Demo                                PLANNED
-19.13 Portfolio / README / Architecture Polish                 PLANNED
-19.14 V1 Closeout + Release Readiness                          PLANNED
-```
-
-### Retained Phase 19 AWS topology
-
-```text
-HTTP API
- -> API Lambda
- -> DynamoDB job/idempotency authority
- -> SQS standard queue
- -> Lambda worker
- -> DynamoDB status/result
- -> SQS DLQ
-```
-
-That runtime shape is retained as architecture/deployment evidence. V1 does not require enabling it publicly.
-
-## Request-time threat evidence authority
-
-Gate 19.8 introduced a provider-neutral application boundary:
-
-```text
-PublicRepositoryEvidenceExecution
- -> PublicThreatEvidenceScope
- -> PublicThreatEvidenceRequest
- -> PublicThreatEvidenceAuthority
- -> exact GHSA/NVD/KEV/EPSS evidence + provenance
- -> deterministic correlation/enrichment
-```
-
-Important semantics:
-
-```text
-scope derives only from admitted repository evidence
-incomplete package normalization -> fail closed
-out-of-scope threat evidence -> reject
-latest_complete = selection policy, not provenance
-missing evidence != benign evidence
-model authority for applicability/source truth = none
-```
-
-A provider-backed arbitrary request-time adapter remains a Post-V1 experiment because the canonical V1 demonstration is offline-first.
-
-## Measured evidence
-
-OpsLens separates measured, derived, configured, and unmeasured evidence.
+## Measured evidence, not production claims
 
 The retained Phase 19 representative workload measured:
 
@@ -204,94 +127,77 @@ The retained Phase 19 representative workload measured:
 | --- | ---: |
 | End-to-end duration | 17,748 ms |
 | Serialized result | 5,285 bytes |
-| GitHub physical HTTP requests | 4 measured |
-| Bedrock Retrieve calls | 1 measured |
-| Bedrock Retrieve client elapsed | 4,148 ms |
-| Bedrock model calls | 1 measured |
-| Bedrock input tokens | 5,936 |
-| Bedrock output tokens | 408 |
-| Bedrock model client elapsed | 8,901 ms |
-| Bedrock provider latency | 7,772 ms |
-| Retries | 0 measured |
+| GitHub physical HTTP requests | 4 MEASURED |
+| Bedrock Retrieve calls | 1 MEASURED |
+| Bedrock Retrieve client elapsed | 4,148 ms MEASURED |
+| Bedrock model calls | 1 MEASURED |
+| Bedrock input / output tokens | 5,936 / 408 MEASURED |
+| Bedrock model client elapsed | 8,901 ms MEASURED |
+| Bedrock provider latency | 7,772 ms MEASURED |
+| Retries | 0 MEASURED |
 | Throttle count | UNMEASURED |
 
-These are bounded experiment measurements, not production SLO or production TCO claims.
+These values support architecture and cost discussions; they are **not** production SLO, SLA, throughput, or TCO claims. See [Portfolio Evidence](docs/portfolio-evidence.md).
+
+## Retained AWS runtime evidence
+
+The selected async topology is retained as deployment evidence:
+
+```text
+HTTP API -> API Lambda -> DynamoDB job/idempotency authority
+                         -> SQS -> Lambda worker -> DynamoDB result
+                                  -> SQS DLQ
+```
+
+Gate 19.7 materialized 21 managed resources and proved Terraform convergence, while keeping the public endpoint, submit path, worker, and event-source mapping disabled.
+
+```text
+materialized != enabled
+demonstration readiness != production readiness
+```
+
+## V1 status and scope
+
+**Phases 0–18 are complete.** Phase 19 is the final V1 closeout phase. The canonical CLI, three deterministic scenarios, regression evaluator, and localhost visual demo are complete; final portfolio/release closeout remains.
+
+The retained historical phase name is **Phase 19 — Bounded Public Runtime & Productization**. V1 deliberately narrows completion to a demonstration and architecture lab rather than a production SaaS.
+
+V1 does not require an Internet-facing production runtime, OIDC/Cognito, multi-tenancy, WAF, custom domain, commercial quotas/billing, production SLO/SLA, HA/DR, production TCO, or public worker enablement.
+
+### Retained Phase 19 decision markers
+
+These lines are intentionally retained as historical evidence and verifier compatibility markers:
+
+```text
+19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE
+historical decision: DEFERRED_PENDING_MEASUREMENT
+19.2  Representative Workload Measurement              COMPLETE
+ASYNC_SUBMIT_STATUS_RESULT
+```
+
+The pending-measurement state is historical; later gates supplied the measurement, selected the async interaction pattern, materialized the disabled runtime, and then established the V1 offline demonstration path.
 
 ## What the project demonstrates
 
-OpsLens includes retained evidence for:
-
-- AWS foundations and least-privilege IAM;
-- NVD, GitHub Advisories, CISA KEV, and FIRST EPSS source handling;
-- immutable public-repository evidence;
-- deterministic PyPI/PEP 440 vulnerability correlation;
-- deterministic risk prioritization;
-- bounded semantic query planning with deterministic SQL compilation;
-- Bedrock Knowledge Bases and S3 Vectors;
-- hybrid retrieval and grounded synthesis;
-- single-agent and measured multi-agent experiments;
-- MCP and A2A bounded interoperability experiments;
-- AgentCore capability-fit experimentation;
-- runtime exposure evidence with Amazon Inspector;
-- observability and content-minimized telemetry;
-- adversarial/security authority regression;
-- evaluation and cost evidence;
-- immutable Lambda deployment artifacts;
-- exact Terraform plan admission;
-- controlled runtime materialization and convergence;
-- deterministic request-time threat-evidence authority contracts.
-
-## V1 remaining work
-
-The remaining work is intentionally small and demonstration-focused:
-
-```text
-Gate 19.9   freeze V1 contract and synchronize current state
-Gate 19.10  canonical deterministic demo runner
-Gate 19.11  three curated scenarios + regression evaluation
-Gate 19.12  minimal local visual demo
-Gate 19.13  final portfolio/architecture presentation polish
-Gate 19.14  close Phase 19 and prepare v1.0.0 release
-```
-
-The planned canonical demo target is approximately:
-
-```bash
-uv sync --frozen
-uv run python scripts/demo_opslens.py --scenario material-vulnerability --format text
-```
-
-The exact command is owned by Gate 19.10 and may change before implementation is merged.
-
-## V1 non-goals
-
-The first release does not require:
-
-```text
-Internet-facing production runtime
-authentication / OIDC / Cognito
-multi-tenancy
-commercial quotas or billing
-custom public domain
-WAF or production abuse controls
-24x7 operations
-production SLO/SLA
-HA/DR program
-production TCO claim
-public worker/event-source enablement
-```
-
-See [Post-V1 / Experiments Backlog](docs/post-v1-backlog.md).
+- immutable public-repository and dependency evidence;
+- source-preserving NVD, GitHub Advisory, CISA KEV, and FIRST EPSS handling;
+- deterministic PyPI/PEP 440 applicability and risk prioritization;
+- bounded semantic planning with deterministic SQL compilation;
+- Bedrock Knowledge Bases, S3 Vectors, hybrid retrieval, grounded synthesis and citations;
+- measured single-agent and multi-agent experiments with simpler-topology decisions when quality did not improve;
+- MCP, A2A, AgentCore, and Inspector experiments behind explicit authority boundaries;
+- observability, evaluation, cost semantics, adversarial regression, immutable artifacts, Terraform planning, and fail-closed controls.
 
 ## Documentation
 
 - [Current State](docs/current-state.md)
 - [Roadmap](docs/roadmap.md)
-- [V1 Demonstration Scope](docs/v1-demonstration-scope.md)
-- [V1 Completion Checklist](docs/v1-completion-checklist.md)
-- [Demo Area](docs/demo/README.md)
 - [Architecture](docs/architecture.md)
 - [Portfolio Evidence](docs/portfolio-evidence.md)
+- [V1 Demonstration Scope](docs/v1-demonstration-scope.md)
+- [V1 Completion Checklist](docs/v1-completion-checklist.md)
+- [Demo Walkthrough](docs/demo/WALKTHROUGH.md)
+- [Portfolio Capture Guide](docs/demo/PORTFOLIO_CAPTURE.md)
 - [AIP-C01 Learning Map](docs/aip-c01-learning-map.md)
 - [Architecture Decision Records](docs/adr/README.md)
 
@@ -317,6 +223,8 @@ artifact hash != S3 VersionId
 publication success != deployment authorization
 plan != apply
 materialized != enabled
+visual projection != business authority
+localhost demo != public service
 demonstration readiness != production readiness
 AIP-C01 topic != product requirement
 ```

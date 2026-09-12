@@ -5,10 +5,10 @@ _Last updated: 2026-09-12_
 ## Authoritative protected checkpoint
 
 ```text
-protected main SHA: 0c5bbe34792406ee5c66fcc5ac4b75923512703b
-protected merge: PR #381 — Gate 19.11 curated demo scenarios + deterministic evaluation
-post-merge CodeQL: 34718268902 / run #424 / success
-Gate 19.11 issue: #380 / closed completed
+protected main SHA: 4d001ba33e157c48891ccff3d5189263877f22b1
+protected merge: PR #383 — Gate 19.12 minimal local visual demo
+post-merge CodeQL: 34719883927 / run #430 / success
+Gate 19.12 issue: #382 / closed completed
 ```
 
 ## Retained Phase 18 closeout checkpoint
@@ -29,7 +29,7 @@ Phases 0–18 are complete. Phase 19 remains the only active phase.
 Gate 17.1 — evidence-first threat/control-gap inventory — COMPLETE.  
 Gate 17.2 — CI/CD and workflow authority hardening — COMPLETE.
 
-Both remain authoritative. The Phase 19 V1 demonstration closeout adds no exception to their workflow, IAM, least-privilege, telemetry, or protected-main controls.
+Both remain authoritative. The Phase 19 V1 closeout adds no exception to workflow, IAM, least-privilege, telemetry, or protected-main controls.
 
 ## Phase 19 status
 
@@ -45,8 +45,8 @@ Both remain authoritative. The Phase 19 V1 demonstration closeout adds no except
 19.9  V1 Demonstration Closeout Contract                       COMPLETE
 19.10 Deterministic End-to-End Demo Runner                     COMPLETE
 19.11 Curated Demo Scenarios + Deterministic Evaluation        COMPLETE
-19.12 Minimal Local Visual Demo                                IN PROGRESS
-19.13 Portfolio / README / Architecture Polish                 PLANNED
+19.12 Minimal Local Visual Demo                                COMPLETE
+19.13 Portfolio / README / Architecture Polish                 IN PROGRESS
 19.14 V1 Closeout + Release Readiness                          PLANNED
 ```
 
@@ -89,7 +89,12 @@ Gate 19.11 protected merge: PR #381 / `0c5bbe34792406ee5c66fcc5ac4b75923512703b`
 Gate 19.11 post-merge CodeQL: `34718268902` / run #424 / success.
 
 Gate 19.12 source issue: #382.  
-Gate 19.12 source protected main: `0c5bbe34792406ee5c66fcc5ac4b75923512703b`.
+Gate 19.12 source protected main: `0c5bbe34792406ee5c66fcc5ac4b75923512703b`.  
+Gate 19.12 protected merge: PR #383 / `4d001ba33e157c48891ccff3d5189263877f22b1`.  
+Gate 19.12 post-merge CodeQL: `34719883927` / run #430 / success.
+
+Gate 19.13 source issue: #384.  
+Gate 19.13 source protected main: `4d001ba33e157c48891ccff3d5189263877f22b1`.
 
 ## V1 product boundary
 
@@ -102,6 +107,7 @@ clone
  -> setup
  -> one deterministic offline demo command
  -> evidence-backed result
+ -> optional localhost visual inspection
 ```
 
 The canonical authority chain remains:
@@ -125,6 +131,8 @@ See:
 - [`post-v1-backlog.md`](post-v1-backlog.md)
 - [`demo/README.md`](demo/README.md)
 - [`demo/SCENARIOS.md`](demo/SCENARIOS.md)
+- [`demo/WALKTHROUGH.md`](demo/WALKTHROUGH.md)
+- [`demo/PORTFOLIO_CAPTURE.md`](demo/PORTFOLIO_CAPTURE.md)
 - [`../labs/phase-19-gate-19-10-demo-runner.md`](../labs/phase-19-gate-19-10-demo-runner.md)
 - [`../labs/phase-19-gate-19-11-demo-scenarios.md`](../labs/phase-19-gate-19-11-demo-scenarios.md)
 - [`../labs/phase-19-gate-19-12-local-visual-demo.md`](../labs/phase-19-gate-19-12-local-visual-demo.md)
@@ -149,45 +157,23 @@ scope derives only from admitted repository evidence
 incomplete PyPI normalization -> fail closed
 out-of-scope GHSA evidence -> reject
 unrelated NVD evidence -> reject
-latest_complete = deterministic selection policy, not provenance
+latest_complete = selection policy, not provenance
 selected KEV/EPSS evidence retains exact snapshot date + SHA-256
 model authority for source truth/applicability = none
 ```
 
-The physical provider adapter remains intentionally deferred. It is no longer a V1 blocker because V1 uses an offline-first deterministic demo path. A provider-backed arbitrary request-time adapter is now a Post-V1 experiment unless a future concrete requirement promotes it.
+The physical provider adapter remains intentionally deferred and is now a Post-V1 experiment.
 
-## Gate 19.10 retained demo runner
+## Gates 19.10–19.12 retained demo path
 
-Gate 19.10 turned the V1 reviewer contract into one executable, provider-free path while preserving the same deterministic business authority used elsewhere in OpsLens.
-
-Canonical command:
+Gate 19.10 created the executable provider-free path:
 
 ```bash
 uv sync --frozen
 uv run python scripts/demo_opslens.py --scenario material-vulnerability --format text
 ```
 
-Machine-readable projection:
-
-```bash
-uv run python scripts/demo_opslens.py --scenario material-vulnerability --format json
-```
-
-Retained material scenario:
-
-```text
-scenario: material-vulnerability
-fixture: synthetic / inert / offline
-repository code execution: NO
-live provider calls: NO
-model execution: NO
-expected finding count: 1
-expected deterministic Risk Policy v1 result: 90 / P0
-```
-
-## Gate 19.11 retained scenario suite
-
-Gate 19.11 extended the same offline runner to exactly three canonical scenario classes:
+Gate 19.11 admitted exactly three canonical scenario classes:
 
 ```text
 material-vulnerability
@@ -195,7 +181,7 @@ controlled-benign
 fail-closed-incomplete-evidence
 ```
 
-The controlled-benign path uses complete admitted fixture evidence and produces zero material findings without making a live-repository safety claim. The fail-closed path deliberately supplies unsupported dependency identity and stops at threat-scope admission before analysis or risk prioritization.
+Their semantics remain:
 
 ```text
 material finding -> deterministic Risk Policy v1 result: 90 / P0
@@ -204,13 +190,7 @@ incomplete identity -> fail closed -> no risk result -> no benign conclusion
 missing evidence != benign evidence
 ```
 
-The suite evaluator is deterministic regression/reporting evidence only. It does not create new applicability, risk, or model authority.
-
-## Gate 19.12 current implementation slice
-
-Gate 19.12 adds a minimal browser presentation adapter over those exact retained scenario results.
-
-Canonical local command:
+Gate 19.12 added the localhost-only presentation adapter:
 
 ```bash
 uv run python scripts/demo_opslens_web.py
@@ -222,29 +202,28 @@ Default bind:
 127.0.0.1:8765
 ```
 
-The implementation uses Python standard-library HTTP only, inline HTML/CSS, no external assets, and no JavaScript requirement. The launcher exposes a bounded local `--port` override but deliberately exposes no `--host` option.
-
-The browser surface shows all three admitted scenarios with repository/dependency evidence, finding/no-finding/fail-closed state, risk evidence where present, source provenance, content-addressed result identity, and the canonical machine evidence.
-
-The visual layer is presentation only:
+The browser surface shows all three admitted scenarios with repository/dependency evidence, finding/no-finding/fail-closed state, risk evidence where present, source provenance, content-addressed result identity, and canonical machine evidence.
 
 ```text
 visual projection != business authority
 localhost demo != public service
-```
-
-It does not recalculate applicability, evidence completeness, risk score/tier, controlled no-finding, or fail-closed truth. Unknown scenario IDs and routes fail closed; query-string authority is rejected; dynamic values are HTML-escaped.
-
-The AI explanation panel is explicitly present but disabled and non-authoritative:
-
-```text
 model execution: NO
 model business-truth authority: NO
 ```
 
+## Gate 19.13 current implementation slice
+
+Gate 19.13 is portfolio/documentation-only. It synchronizes public-facing README/architecture/portfolio material, adds a final GitHub-rendered architecture diagram and deterministic-authority table, preserves measured evidence without production extrapolation, and adds a three-to-five-minute walkthrough plus reproducible screenshot/terminal capture guidance.
+
+It does not change vulnerability/risk logic, scenario behavior, AWS runtime state, IAM, Terraform, provider access, or model authority.
+
+```text
+portfolio claim != new evidence authority
+```
+
 ## Retained AWS runtime truth
 
-Gate 19.7 materialized the selected async topology in AWS and then proved convergence without enabling public/provider-heavy execution.
+Gate 19.7 materialized the selected async topology in AWS and proved convergence without enabling public/provider-heavy execution.
 
 ```text
 selected topology: HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB
@@ -286,11 +265,11 @@ retry count: 0 MEASURED
 throttle count: 0 UNMEASURED
 ```
 
-That run supports an architectural latency/cost discussion. It is not a production SLO or production TCO claim.
+That run supports architectural latency/cost discussion. It is not a production SLO or production TCO claim.
 
 ## V1 explicit non-goals
 
-The following are not required for the first release:
+The first release does not require:
 
 ```text
 Internet-facing production runtime
@@ -310,7 +289,7 @@ provider-backed arbitrary request-time threat adapter
 
 ## Current authority boundary
 
-Gate 19.12 is repository-only and localhost-only.
+Gate 19.13 is repository-only and documentation/portfolio-only.
 
 ```text
 terraform plan/replan:                NOT AUTHORIZED
@@ -333,9 +312,9 @@ PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Gove
 
 ## Next implementation slice
 
-Gate 19.12 closes only after exact-head CI/security/CodeQL, HUMAN protected merge, and post-merge verification.
+Gate 19.13 closes only after exact-head CI/security/CodeQL, HUMAN protected merge, and post-merge verification.
 
-After Gate 19.12 closes, Gate 19.13 will polish the portfolio-facing README, architecture narrative/diagram, measured evidence presentation, screenshots/recording assets, and short reviewer walkthrough without changing business authority.
+After Gate 19.13 closes, Gate 19.14 performs clean-environment quickstart verification, final Phase 19 closeout evidence/status synchronization, Post-V1 backlog confirmation, and release readiness. The `v1.0.0` tag/release remains HUMAN-authorized artifact publication.
 
 ## Permanent invariants
 
@@ -361,6 +340,7 @@ plan != apply
 materialized != enabled
 visual projection != business authority
 localhost demo != public service
+portfolio claim != new evidence authority
 demonstration readiness != production readiness
 AIP-C01 topic != product requirement
 ```

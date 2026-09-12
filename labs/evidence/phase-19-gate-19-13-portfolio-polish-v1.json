@@ -1,0 +1,40 @@
+{
+  "schema_version": "opslens.phase19.gate19_13.portfolio_polish.v1",
+  "phase": 19,
+  "gate": "19.13",
+  "issue": 384,
+  "source_protected_main_sha": "4d001ba33e157c48891ccff3d5189263877f22b1",
+  "decision": "POLISH_PUBLIC_V1_PRESENTATION_WITHOUT_NEW_AUTHORITY",
+  "gate_19_12": {
+    "issue": 382,
+    "pull_request": 383,
+    "merge_sha": "4d001ba33e157c48891ccff3d5189263877f22b1",
+    "post_merge_codeql_run_id": 34719883927,
+    "post_merge_codeql_run_number": 430,
+    "post_merge_codeql_conclusion": "success"
+  },
+  "required_properties": {
+    "readme_english_current": true,
+    "readme_portuguese_current": true,
+    "github_rendered_architecture_diagram": true,
+    "deterministic_vs_model_authority_table": true,
+    "measured_evidence_without_production_extrapolation": true,
+    "security_failure_model": true,
+    "reviewer_walkthrough_3_to_5_minutes": true,
+    "portfolio_capture_guide": true,
+    "binary_media_required": false,
+    "business_authority_changed": false
+  },
+  "authority_impact": {
+    "terraform_operations": 0,
+    "aws_mutations": 0,
+    "iam_mutations": 0,
+    "artifact_publications": 0,
+    "runtime_enablements": 0,
+    "provider_live_executions": 0,
+    "model_invocations": 0,
+    "third_party_repository_code_executions": 0,
+    "pr_89_modifications": 0
+  },
+  "next_gate": "19.14_v1_closeout_release_readiness"
+}

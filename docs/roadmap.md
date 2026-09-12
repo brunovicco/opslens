@@ -38,14 +38,14 @@ Phase 19  Bounded Public Runtime & Productization             IN PROGRESS
 
 Historical Phase 19 title retained for Gate 19.1 verifier compatibility: **Phase 19 — Bounded Public Runtime & Productization**.
 
-The second line names the historical Phase 19 productization phase exactly as it was selected after Phase 18; the current V1 closeout narrows its completion scope without rewriting that historical decision.
+The historical productization phase remains evidence of the original decision path; the current V1 completion boundary is a demonstration/architecture lab and does not rewrite that history.
 
 ## Retained security lineage
 
 Gate 17.1 — evidence-first threat/control-gap inventory — COMPLETE.  
 Gate 17.2 — CI/CD and workflow authority hardening — COMPLETE.
 
-Their workflow, IAM, least-privilege, telemetry, and protected-main controls remain authoritative throughout the V1 closeout.
+Their workflow, IAM, least-privilege, telemetry, and protected-main controls remain authoritative throughout V1 closeout.
 
 ## Phase 19 protected lineage
 
@@ -66,7 +66,9 @@ Their workflow, IAM, least-privilege, telemetry, and protected-main controls rem
       post-merge CodeQL 34716596100 / run #421 / success
 19.11 PR #381  0c5bbe34792406ee5c66fcc5ac4b75923512703b  COMPLETE
       post-merge CodeQL 34718268902 / run #424 / success
-19.12 issue #382                                              IN PROGRESS
+19.12 PR #383  4d001ba33e157c48891ccff3d5189263877f22b1  COMPLETE
+      post-merge CodeQL 34719883927 / run #430 / success
+19.13 issue #384                                              IN PROGRESS
 ```
 
 PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work. Phase 19 does not rebase, merge, modify, or depend on it.
@@ -75,16 +77,17 @@ PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Gove
 
 OpsLens V1 is a **demonstration and architecture lab**, not a production SaaS.
 
-The project is considered V1-ready when a reviewer can understand and reproduce the core authority path quickly:
+The project is V1-ready when a reviewer can understand and reproduce the core authority path quickly:
 
 ```text
 clone
  -> setup
- -> one deterministic offline demo command
+ -> deterministic offline demo
  -> evidence-backed result
+ -> optional localhost visual inspection
 ```
 
-The core demonstration chain is:
+The core chain is:
 
 ```text
 public repository evidence
@@ -104,7 +107,7 @@ See [`v1-demonstration-scope.md`](v1-demonstration-scope.md).
 
 ### Gate 19.1 — Public Runtime Hypothesis & Launch Contract — COMPLETE
 
-Froze `public-analysis-workload:v1` and deferred topology selection until representative evidence existed.
+Froze `public-analysis-workload:v1` and deliberately deferred topology selection.
 
 ```text
 historical decision: DEFERRED_PENDING_MEASUREMENT
@@ -112,7 +115,7 @@ historical decision: DEFERRED_PENDING_MEASUREMENT
 
 ### Gate 19.2 — Representative Workload Measurement — COMPLETE
 
-One bounded live representative workload measured:
+One bounded representative workload measured:
 
 ```text
 end_to_end_duration_ms: 17748
@@ -129,11 +132,7 @@ Selected interaction pattern: `ASYNC_SUBMIT_STATUS_RESULT`.
 
 ### Gate 19.3 — Concrete Async Topology Contract — COMPLETE
 
-Selected:
-
-```text
-HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB
-```
+Selected `HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB`.
 
 ### Gate 19.4 — Disabled Async Runtime Implementation — COMPLETE
 
@@ -141,7 +140,7 @@ Implemented typed application/adapters/Terraform behind fail-closed disabled def
 
 ### Gate 19.5 — Immutable Async Deployment Artifacts — COMPLETE
 
-Produced and human-published two immutable content-addressed Lambda artifacts with exact S3 VersionIds.
+Produced deterministic API/worker deployment ZIPs with exact content hashes and S3 VersionIds.
 
 ### Gate 19.6 — Exact Terraform Plan & Offline Admission — COMPLETE
 
@@ -149,7 +148,7 @@ Admitted an exact plan before mutation and preserved `plan != apply`.
 
 ### Gate 19.7 — Controlled Disabled Runtime Materialization — COMPLETE
 
-Materialized 21 managed resources, recovered from one bounded Lambda concurrency constraint, and proved final Terraform convergence:
+Materialized 21 managed resources through HUMAN-authorized operations and proved final convergence:
 
 ```text
 0 add
@@ -162,12 +161,11 @@ Runtime remained disabled and non-public.
 
 ### Gate 19.8 — Request-time Threat Evidence Authority Contract — COMPLETE
 
-Protected merge: PR #375 at `e538fa3e96c29cf76dd3aa83a9967e090587b6fb`.  
-Source protected main for Gate 19.8: `8700478c7fca230e5984c3ce034194ea3bd337e4`.  
-Post-merge CodeQL: `34713360403` / run #393 / success.  
+Historical source protected main: `8700478c7fca230e5984c3ce034194ea3bd337e4`.  
+Historical Gate 19.7 post-merge CodeQL: `34711607099`.  
 Issue #374: closed completed.
 
-Gate 19.8 added the provider-neutral authority chain:
+Added the provider-neutral authority chain:
 
 ```text
 PublicRepositoryEvidenceExecution
@@ -178,21 +176,20 @@ PublicRepositoryEvidenceExecution
  -> retained deterministic correlation/enrichment
 ```
 
-It deliberately deferred the physical provider adapter:
+Physical adapter decision:
 
 ```text
 DEFERRED_PENDING_BOUNDED_RUNTIME_ADAPTER_EVIDENCE
 ```
 
-That provider-backed arbitrary request-time path is no longer a V1 blocker because the canonical V1 demonstration is offline-first. It remains available as a Post-V1 experiment.
+The provider-backed arbitrary request-time path remains Post-V1.
 
 ### Gate 19.9 — V1 Demonstration Contract + Current-State Synchronization — COMPLETE
 
 Protected merge: PR #377 at `68a135a0c80dacb8cf0b668022796b159878637e`.  
-Post-merge CodeQL: `34715722016` / run #414 / success.  
-Issue #376: closed completed.
+Post-merge CodeQL: `34715722016` / run #414 / success.
 
-Gate 19.9 froze the first release as a demonstration/architecture lab and established:
+Froze:
 
 ```text
 demonstration readiness != production readiness
@@ -202,10 +199,9 @@ clone -> setup -> deterministic offline demo -> evidence-backed result
 ### Gate 19.10 — Deterministic End-to-End Demo Runner — COMPLETE
 
 Protected merge: PR #379 at `50456d304e7847fadd0d29373079afa1669acc9d`.  
-Post-merge CodeQL: `34716596100` / run #421 / success.  
-Issue #378: closed completed.
+Post-merge CodeQL: `34716596100` / run #421 / success.
 
-Gate 19.10 admitted the first canonical synthetic/inert offline scenario:
+Canonical material scenario:
 
 ```text
 material-vulnerability
@@ -216,15 +212,12 @@ provider/model execution: 0
 third-party repository code execution: 0
 ```
 
-The runner exposes stable text and JSON projections over retained deterministic OpsLens authorities.
-
 ### Gate 19.11 — Curated Demo Scenarios + Deterministic Evaluation — COMPLETE
 
 Protected merge: PR #381 at `0c5bbe34792406ee5c66fcc5ac4b75923512703b`.  
-Post-merge CodeQL: `34718268902` / run #424 / success.  
-Issue #380: closed completed.
+Post-merge CodeQL: `34718268902` / run #424 / success.
 
-Gate 19.11 admitted exactly three canonical offline scenario classes:
+Admitted exactly:
 
 ```text
 material-vulnerability
@@ -232,25 +225,20 @@ controlled-benign
 fail-closed-incomplete-evidence
 ```
 
-Their deterministic semantics are:
-
 ```text
 material finding -> Risk Policy v1: 90 / P0
-complete scoped evidence + no applicable finding -> controlled fixture-only no-finding
+complete scoped evidence + no finding -> fixture-only no-finding
 incomplete dependency identity -> fail closed before risk -> no benign conclusion
 missing evidence != benign evidence
 ```
 
-The cross-scenario evaluator is byte-stable, provider/model free, and verifies retained outcomes without adding business authority.
+### Gate 19.12 — Minimal Local Visual Demo — COMPLETE
 
-## Remaining V1 completion gates
+Protected merge: PR #383 at `4d001ba33e157c48891ccff3d5189263877f22b1`.  
+Post-merge CodeQL: `34719883927` / run #430 / success.  
+Issue #382: closed completed.
 
-### Gate 19.12 — Minimal Local Visual Demo — IN PROGRESS
-
-Source issue: #382.  
-Source protected main: `0c5bbe34792406ee5c66fcc5ac4b75923512703b`.
-
-Selected V1 visual architecture:
+Selected visual architecture:
 
 ```text
 same deterministic scenario builders
@@ -266,48 +254,44 @@ Canonical command:
 uv run python scripts/demo_opslens_web.py
 ```
 
-Default local bind:
-
-```text
-127.0.0.1:8765
-```
-
-Required characteristics:
+Default bind: `127.0.0.1:8765`.
 
 ```text
 external host option: NO
 AWS credentials required: NO
-network required after setup: NO
 live provider execution: NO
 model execution: NO
 third-party repository code execution: NO
 new business authority: NO
 external browser assets: NO
 JavaScript required: NO
-```
-
-The page exposes exactly the three Gate 19.11 scenarios and displays repository/dependency evidence, deterministic findings or rejection state, risk evidence where present, provenance, content-addressed result identity, and canonical machine evidence.
-
-The AI explanation panel is visibly disabled and non-authoritative in V1. Unknown routes/scenarios fail closed, query-string input is rejected, and dynamic values are HTML-escaped.
-
-```text
 visual projection != business authority
 localhost demo != public service
 ```
 
-Gate 19.12 closes only after exact-head CI/security/CodeQL, HUMAN protected merge, and post-merge verification.
+## Remaining V1 completion gates
 
-### Gate 19.13 — Portfolio / README / Architecture Polish — PLANNED
+### Gate 19.13 — Portfolio / README / Architecture Polish — IN PROGRESS
 
-Synchronize final public-facing material:
+Source issue: #384.  
+Source protected main: `4d001ba33e157c48891ccff3d5189263877f22b1`.
 
-- README English and Portuguese;
-- architecture diagram and narrative;
+This gate is presentation-only and synchronizes:
+
+- English and Portuguese README entry points;
+- final GitHub-rendered architecture diagram and narrative;
 - deterministic authority vs AI reasoning table;
-- measured latency/cost summary without production extrapolation;
+- measured latency/cost evidence without production extrapolation;
 - security/failure model;
-- screenshots/terminal recording;
-- three-to-five-minute demo walkthrough.
+- recruiter/architect-facing portfolio evidence;
+- three-to-five-minute demo walkthrough;
+- reproducible screenshot/terminal capture guidance.
+
+```text
+portfolio claim != new evidence authority
+```
+
+No AWS/IAM/Terraform mutation, provider/model execution, runtime enablement, release publication, or PR #89 modification is authorized.
 
 ### Gate 19.14 — V1 Closeout + Release Readiness — PLANNED
 
@@ -318,13 +302,13 @@ clean-environment quickstart verified
 full CI/security/CodeQL green
 Phase 19 closeout evidence persisted
 Phase 19 status COMPLETE
-remaining ideas moved to Post-V1 backlog
+remaining ideas confirmed in Post-V1 backlog
 HUMAN-reviewed v1.0.0 tag/release
 ```
 
 ## Post-V1 / experiments
 
-The following may be explored later but are not blockers for V1:
+The following remain non-blocking experiments:
 
 - provider-backed request-time threat adapter;
 - S3 vs Glue/Athena request-time comparison;
@@ -380,6 +364,7 @@ plan != apply
 materialized != enabled
 visual projection != business authority
 localhost demo != public service
+portfolio claim != new evidence authority
 demonstration readiness != production readiness
 AIP-C01 topic != product requirement
 ```

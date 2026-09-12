@@ -33,7 +33,7 @@ uv run python scripts/evaluate_opslens_demo.py --format json
 
 Every scenario is a synthetic inert fixture. The demo does not describe or scan a live repository. The runner uses existing typed repository-evidence, vulnerability correlation/enrichment, threat-scope, and Risk Policy v1 code to demonstrate the authority chain end to end.
 
-## Gate 19.12 local visual demo
+## Local visual demo
 
 Launch the localhost-only browser surface:
 
@@ -108,16 +108,22 @@ complete evidence + no finding != incomplete evidence
 missing evidence != benign evidence
 ```
 
-Supporting authority and scenario documents:
+## Reviewer / portfolio flow
 
-- [`AUTHORITY.md`](AUTHORITY.md)
-- [`QUICKSTART_TARGET.md`](QUICKSTART_TARGET.md)
-- [`SCENARIOS.md`](SCENARIOS.md)
+For interviews or architecture reviews, use:
+
+- [`WALKTHROUGH.md`](WALKTHROUGH.md) — a three-to-five-minute reviewer flow;
+- [`PORTFOLIO_CAPTURE.md`](PORTFOLIO_CAPTURE.md) — reproducible screenshot/terminal-recording guidance;
+- [`SCENARIOS.md`](SCENARIOS.md) — exact scenario semantics;
+- [`AUTHORITY.md`](AUTHORITY.md) — deterministic vs probabilistic authority;
+- [`QUICKSTART_TARGET.md`](QUICKSTART_TARGET.md) — V1 setup and quickstart target.
+
+Supporting Gate 19.12 authority evidence:
+
 - [`../../labs/phase-19-gate-19-12-local-visual-demo.md`](../../labs/phase-19-gate-19-12-local-visual-demo.md)
 
-Remaining V1 slices after Gate 19.12:
+Remaining V1 slice after portfolio polish:
 
 ```text
-Gate 19.13  portfolio / README / architecture polish
 Gate 19.14  V1 closeout + release readiness
 ```
