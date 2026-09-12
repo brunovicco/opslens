@@ -36,6 +36,8 @@ Phase 18  Evaluation, Cost & Portfolio Readiness              COMPLETE
 Phase 19  Bounded Public Runtime & Productization             IN PROGRESS
 ```
 
+Historical Phase 19 title retained for Gate 19.1 verifier compatibility: **Phase 19 — Bounded Public Runtime & Productization**.
+
 The second line names the historical Phase 19 productization phase exactly as it was selected after Phase 18; the current V1 closeout narrows its completion scope without rewriting that historical decision.
 
 ## Retained security lineage
