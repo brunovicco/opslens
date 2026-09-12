@@ -31,6 +31,9 @@ Phase 19  Bounded Public Runtime & Productization             IN PROGRESS
 
 ## Retained lineage
 
+Gate 17.1 — evidence-first threat/control-gap inventory — COMPLETE.  
+Gate 17.2 — CI/CD and workflow authority hardening — COMPLETE.
+
 Phase 17 security controls remain authoritative. Phase 18 was protected-squash-merged through PR #290 at `feca774535b7d83f57c26f4e9fe7da71ce268f0f`.
 
 Phase 19 protected lineage now includes:
