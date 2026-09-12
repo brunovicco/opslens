@@ -79,7 +79,9 @@ def _error_page(title: str, message: str) -> str:
 
 def build_visual_catalog() -> tuple[DemoVisualProjection, ...]:
     """Build the visual catalog only from the three admitted deterministic scenarios."""
-    return tuple(build_visual_projection(run_demo(scenario)) for scenario in _SUPPORTED_SCENARIOS)
+    return tuple(
+        build_visual_projection(run_demo(scenario)) for scenario in _SUPPORTED_SCENARIOS
+    )
 
 
 def route_visual_request(raw_path: str) -> DemoHttpResponse:
@@ -87,14 +89,20 @@ def route_visual_request(raw_path: str) -> DemoHttpResponse:
     if not raw_path or len(raw_path) > MAX_LOCAL_DEMO_PATH_CHARS:
         return _html_response(
             HTTPStatus.REQUEST_URI_TOO_LONG,
-            _error_page("Request rejected", "The local demo path is outside the admitted bound."),
+            _error_page(
+                "Request rejected",
+                "The local demo path is outside the admitted bound.",
+            ),
         )
 
     parsed = urlsplit(raw_path)
     if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment:
         return _html_response(
             HTTPStatus.BAD_REQUEST,
-            _error_page("Request rejected", "The local demo accepts path-only navigation."),
+            _error_page(
+                "Request rejected",
+                "The local demo accepts path-only navigation.",
+            ),
         )
 
     path = parsed.path
@@ -128,7 +136,10 @@ def route_visual_request(raw_path: str) -> DemoHttpResponse:
         if scenario_id not in _SUPPORTED_SCENARIOS:
             return _html_response(
                 HTTPStatus.NOT_FOUND,
-                _error_page("Scenario not found", "Only the three canonical V1 scenarios are admitted."),
+                _error_page(
+                    "Scenario not found",
+                    "Only the three canonical V1 scenarios are admitted.",
+                ),
             )
         try:
             projection = build_visual_projection(run_demo(scenario_id))
@@ -144,7 +155,10 @@ def route_visual_request(raw_path: str) -> DemoHttpResponse:
 
     return _html_response(
         HTTPStatus.NOT_FOUND,
-        _error_page("Route not found", "This localhost demo exposes only bounded reviewer routes."),
+        _error_page(
+            "Route not found",
+            "This localhost demo exposes only bounded reviewer routes.",
+        ),
     )
 
 
