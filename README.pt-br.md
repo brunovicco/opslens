@@ -26,6 +26,8 @@ O OpsLens separa deliberadamente raciocínio probabilístico da autoridade deter
 
 **As Phases 0–18 estão completas. A Phase 19 é a fase final de fechamento da V1.**
 
+Phases 0–18 estão completas. A fase historicamente selecionada após a Phase 18 permanece **Phase 19 — Bounded Public Runtime & Productization**; a Gate 19.9 apenas reduz o escopo necessário para o fechamento demonstrativo da V1, sem reescrever essa decisão.
+
 Checkpoint protegido atual:
 
 ```text
