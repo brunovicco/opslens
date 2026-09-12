@@ -1,0 +1,76 @@
+{
+  "artifact_type": "phase-19-gate-19-8-threat-evidence-authority:v1",
+  "schema_version": 1,
+  "phase": 19,
+  "gate": "19.8",
+  "issue": 374,
+  "source_main_sha": "8700478c7fca230e5984c3ce034194ea3bd337e4",
+  "source_gate_19_7_issue": 361,
+  "source_gate_19_7_status": "COMPLETE",
+  "source_gate_19_7_post_merge_codeql_run": 34711607099,
+  "status": "OFFLINE_AUTHORITY_CONTRACT",
+  "contract": {
+    "scope_contract": "public-threat-evidence-scope:v1",
+    "request_contract": "public-threat-evidence-request:v1",
+    "snapshot_policy": "latest_complete",
+    "scope_authority": "admitted PublicRepositoryEvidenceExecution normalization inventory",
+    "structured_sources": [
+      "GHSA",
+      "NVD",
+      "CISA_KEV",
+      "FIRST_EPSS"
+    ],
+    "deterministic_authorities": [
+      "package identity normalization",
+      "dependency scope admission",
+      "GHSA package scope admission",
+      "NVD-to-GHSA CVE binding",
+      "exact KEV snapshot provenance",
+      "exact EPSS snapshot provenance",
+      "vulnerability applicability",
+      "risk policy"
+    ],
+    "model_authority": []
+  },
+  "provenance": {
+    "ghsa": "observed_advisory_version_id plus source SHA-256",
+    "nvd": "observed_cve_version_id plus source SHA-256",
+    "kev": "exact snapshot_date plus source SHA-256",
+    "epss": "exact snapshot_date plus source SHA-256",
+    "physical_object_coordinates": "DEFERRED_TO_PROVIDER_ADAPTER_GATE"
+  },
+  "physical_access_decision": {
+    "decision": "DEFERRED_PENDING_BOUNDED_RUNTIME_ADAPTER_EVIDENCE",
+    "candidate_existing_surfaces": [
+      "Glue/Athena structured tables",
+      "exact S3 source-authority objects"
+    ],
+    "reasons": [
+      "the retained Gate 19.2 provider-heavy path preloads frozen threat evidence and is not an arbitrary public-request loader",
+      "no request-time dependency-scoped structured-threat adapter exists on protected main",
+      "the current worker IAM does not grant Athena, Glue, or threat-data S3 read authority",
+      "request-time structured-source latency, bytes scanned, and cost for arbitrary dependency scopes are not yet measured",
+      "GHSA physical lookup is not yet bounded by a proven package index or admitted runtime query compiler"
+    ]
+  },
+  "runtime_state": {
+    "runtime_materialized": true,
+    "execute_api_endpoint_disabled": true,
+    "submit_enabled": false,
+    "worker_enabled": false,
+    "worker_event_source_mapping_enabled": false,
+    "provider_heavy_executor_composed": false,
+    "custom_public_domain_present": false
+  },
+  "authority_impact": {
+    "terraform_provider_or_backend_operations": 0,
+    "aws_mutations": 0,
+    "iam_mutations": 0,
+    "lambda_artifact_publications": 0,
+    "runtime_enablements": 0,
+    "provider_live_executions": 0,
+    "third_party_repository_code_executions": 0,
+    "pr_89_modifications": 0
+  },
+  "next_boundary": "implement and measure a bounded physical structured-threat adapter before any worker composition or runtime enablement"
+}

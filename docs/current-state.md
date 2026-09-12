@@ -5,10 +5,10 @@ _Last updated: 2026-09-12_
 ## Authoritative checkpoint
 
 ```text
-latest protected Gate 19.7 closeout checkpoint:
-PR: #372
-protected merge SHA: 21a5930fd770eddf26a5c7425ffcaddfdfa6d357
-post-merge CodeQL run: 34710882689 / success
+latest protected repository checkpoint:
+PR: #373
+protected main SHA: 8700478c7fca230e5984c3ce034194ea3bd337e4
+post-merge CodeQL run: 34711607099 / run #382 / success
 
 Phase 18 — Evaluation, Cost & Portfolio Readiness
 status: COMPLETE
@@ -55,17 +55,26 @@ plan JSON SHA-256: eb01396b92879243fd2e16e7791957e3289b459facc9db9524a4d890574aa
 managed plan: 21 create / 0 update / 0 delete / 0 replacement
 
 Gate 19.7 — Controlled Disabled Runtime Materialization      COMPLETE
-source issue: #361
+source issue: #361 / closed completed
 protected closeout PR: #372
 protected closeout SHA: 21a5930fd770eddf26a5c7425ffcaddfdfa6d357
-post-merge CodeQL run: 34710882689 / success
+final current-state sync PR: #373
+final protected main SHA: 8700478c7fca230e5984c3ce034194ea3bd337e4
+final post-merge CodeQL: 34711607099 / run #382 / success
 runtime materialized: YES
 runtime enabled: NO
 public endpoint enabled: NO
 provider-heavy public execution enabled: NO
+
+Gate 19.8 — Request-time Threat Evidence Authority Contract  IN PROGRESS
+source issue: #374
+implementation PR: #375 / draft
+source protected main: 8700478c7fca230e5984c3ce034194ea3bd337e4
+physical access decision: DEFERRED_PENDING_BOUNDED_RUNTIME_ADAPTER_EVIDENCE
+AWS/Terraform/IAM/provider mutation authority: NONE
 ```
 
-Gate 19.7 is complete at the protected closeout checkpoint above. The asynchronous runtime resources are materialized in AWS but remain intentionally disabled/non-public. No standing authority exists for Terraform apply/replan, runtime enablement, public endpoint enablement, worker/event-source enablement, IAM mutation, quota mutation, provider-heavy execution, or custom-domain publication.
+Gate 19.7 is formally complete. The asynchronous runtime resources are materialized in AWS but remain intentionally disabled/non-public. Gate 19.8 is an offline-only application-authority slice and does not grant standing authority for Terraform apply/replan, runtime enablement, public endpoint enablement, worker/event-source enablement, IAM mutation, quota mutation, provider-heavy execution, or custom-domain publication.
 
 PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work and is not a Phase 19 dependency.
 
@@ -301,7 +310,53 @@ labs/evidence/phase-19-gate-19-7-post-apply-convergence-v1.json
 labs/phase-19-gate-19-7-closeout.md
 ```
 
-Protected closeout PR #372 merged at `21a5930fd770eddf26a5c7425ffcaddfdfa6d357`; post-merge CodeQL run `34710882689` completed successfully on that exact protected `main` SHA.
+Protected closeout PR #372 merged at `21a5930fd770eddf26a5c7425ffcaddfdfa6d357`. Final current-state synchronization PR #373 merged at `8700478c7fca230e5984c3ce034194ea3bd337e4`; final post-merge CodeQL run `34711607099` (run #382) completed successfully on that exact protected `main` SHA. Issue #361 is closed as completed.
+
+## Gate 19.8 — request-time threat evidence authority
+
+Gate 19.8 issue #374 freezes the smallest missing authority before any provider-heavy async-worker composition can be considered.
+
+The live repository proves that:
+
+- `AsyncAnalysisExecutor` and deterministic worker claim/attempt/terminalization authority already exist;
+- the Lambda worker intentionally rejects `OPSLENS_ASYNC_WORKER_ENABLED=true` before provider composition;
+- the only complete provider-heavy path is the Gate 19.2 representative harness;
+- that harness uses one frozen repository plus preloaded threat evidence and is not an arbitrary public-request executor;
+- no general request-time loader currently maps an admitted arbitrary dependency inventory to exact GHSA/NVD/KEV/EPSS authority.
+
+Gate 19.8 therefore freezes this provider-neutral application boundary:
+
+```text
+PublicRepositoryEvidenceExecution
+ -> PublicThreatEvidenceScope
+ -> PublicThreatEvidenceRequest
+ -> PublicThreatEvidenceAuthority
+ -> PublicRepositoryThreatEvidence
+ -> retained deterministic Phase 3/4 correlation/enrichment
+```
+
+The exact dependency scope preserves canonical package/version/purl identities and source-record indexes while exposing deduplicated package names only as a bounded lookup projection. Incomplete Phase 3 PyPI normalization fails closed.
+
+Returned source authority must preserve exact source-local provenance:
+
+```text
+GHSA: observed_advisory_version_id
+NVD:  observed_cve_version_id
+KEV:  exact snapshot_date + source SHA-256
+EPSS: exact snapshot_date + source SHA-256
+```
+
+A `latest_complete` request is a deterministic selection policy only. It does not erase the exact selected coordinates returned by the authority.
+
+The physical provider adapter remains explicitly:
+
+```text
+DEFERRED_PENDING_BOUNDED_RUNTIME_ADAPTER_EVIDENCE
+```
+
+Glue/Athena and exact S3 source objects remain candidate surfaces. The repository does not yet contain a measured arbitrary request-time structured-threat path, and the current worker IAM does not grant Athena/Glue or threat-data S3 read authority. No provider adapter is selected by preference.
+
+Gate 19.8 authority impact remains zero for Terraform/provider operations, AWS/IAM mutation, artifact publication, runtime enablement, provider execution, third-party code execution, and PR #89 modification.
 
 ## Current standing deployment truth
 
@@ -344,9 +399,11 @@ HTTP API rate limit               5     CONFIGURED_LIMIT
 
 ## Next authority boundary
 
-No subsequent Phase 19 gate is currently frozen in this document. Gate 19.7 completion does **not** implicitly authorize the next mutation or enablement step.
+Gate 19.8 is offline-only. Its contract does **not** authorize a physical request-time structured-threat adapter, Terraform/provider operation, AWS/IAM mutation, artifact publication, worker composition, or runtime enablement.
 
-Any future work that proposes runtime composition or controlled enablement must begin with a separate reviewed gate/issue/contract and explicit authority. Until then:
+The next bounded decision after Gate 19.8 must compare the smallest provider-backed structured-threat alternatives and freeze exact read/query semantics, resource/IAM scope, limits, failure behavior, observability, and measurement criteria. Only after that offline contract exists can a separate HUMAN authorization be requested for any live provider read/measurement or mutation that the selected gate requires.
+
+Until then:
 
 ```text
 terraform plan/replan:                NOT AUTHORIZED

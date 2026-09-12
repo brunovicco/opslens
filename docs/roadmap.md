@@ -46,6 +46,8 @@ Gate 19.4  PR #351  a5067e05fda74aad4d95d7f1a875110fb676304a
 Gate 19.5  PR #353  61749bfac7b7bc9d032567e0b1870f8c1f7dedd4
 Gate 19.6  PR #360  c76432dfcd97110ca43d91d77084f4367b9a89fd
 Gate 19.7  PR #372  21a5930fd770eddf26a5c7425ffcaddfdfa6d357
+Gate 19.7 current-state sync  PR #373  8700478c7fca230e5984c3ce034194ea3bd337e4
+Gate 19.8  issue #374 / PR #375 draft  IN PROGRESS
 ```
 
 PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work. Phase 19 does not rebase, merge, modify, or depend on it.
@@ -242,7 +244,8 @@ Gate 19.6 proved `plan != apply` and authorized no mutation.
 
 Source issue: #361.  
 Protected closeout: PR #372 at `21a5930fd770eddf26a5c7425ffcaddfdfa6d357`.  
-Post-merge CodeQL: run `34710882689` / `success`.
+Final protected current-state sync: PR #373 at `8700478c7fca230e5984c3ce034194ea3bd337e4`.  
+Final post-merge CodeQL: run `34711607099` / run #382 / `success` on that exact SHA.
 
 Gate 19.7 exercised the human mutation boundary while preserving `materialized != enabled`.
 
@@ -338,13 +341,55 @@ labs/evidence/phase-19-gate-19-7-post-apply-convergence-v1.json
 labs/phase-19-gate-19-7-closeout.md
 ```
 
+### Gate 19.8 — Request-time Threat Evidence Authority Contract — IN PROGRESS
+
+Source issue: #374.  
+Draft implementation PR: #375.  
+Source protected main: `8700478c7fca230e5984c3ce034194ea3bd337e4`.
+
+Gate 19.8 was selected from the live repository gap rather than assuming endpoint enablement was next. The async worker already has deterministic queue/job authority but still has no admitted provider-heavy executor. The only complete provider-heavy analysis path is the Gate 19.2 representative harness, which uses one frozen repository and preloaded threat evidence and therefore cannot serve arbitrary public requests.
+
+The bounded Gate 19.8 flow is:
+
+```text
+PublicRepositoryEvidenceExecution
+ -> exact normalized dependency scope
+ -> PublicThreatEvidenceRequest
+ -> provider-neutral PublicThreatEvidenceAuthority
+ -> exact GHSA/NVD/KEV/EPSS evidence + source-local provenance
+ -> retained Phase 3/4 deterministic correlation/enrichment
+```
+
+Frozen rules:
+
+```text
+scope derives only from admitted repository evidence
+incomplete PyPI normalization -> fail closed
+GHSA evidence outside admitted package scope -> reject
+unrelated NVD evidence -> reject
+latest_complete = selection policy, not provenance
+selected KEV/EPSS evidence carries exact snapshot date + SHA-256
+model authority for source truth/applicability = none
+provider executor composed = false
+```
+
+Physical request-time data access remains deliberately unresolved:
+
+```text
+DEFERRED_PENDING_BOUNDED_RUNTIME_ADAPTER_EVIDENCE
+```
+
+Existing Glue/Athena tables and exact S3 authority objects are candidate surfaces, but the current worker IAM grants neither request-time Athena/Glue nor threat-data S3 read authority; the representative live measurement preloaded threat evidence, so it contains no applicable request-time structured-source latency/scan-cost evidence. Gate 19.8 therefore refuses to select a provider adapter by preference.
+
+Gate 19.8 permits only repository source/tests/docs/evidence changes and offline CI verification. It grants no Terraform, AWS, IAM, artifact-publication, runtime-enablement, or provider-execution authority.
+
 ### Retained deployment sequence
 
 ```text
 Gate 19.5  deterministic build + immutable publication               COMPLETE
 Gate 19.6  exact Terraform plan + offline admission                  COMPLETE
 Gate 19.7  human-authorized disabled materialization + convergence   COMPLETE
-next gate  NOT YET FROZEN                                            NO AUTHORITY
+Gate 19.8  request-time threat authority contract                    IN PROGRESS / OFFLINE ONLY
 ```
 
 Current standing truth:
@@ -366,13 +411,17 @@ third-party repository code executions: 0
 PR #89 modifications: 0
 ```
 
-## Next Phase 19 boundary — NOT YET FROZEN
+## Next Phase 19 authority boundary
 
-Gate 19.7 completion does not imply standing authority for the next operation. No Gate 19.8 contract is currently defined here.
+Gate 19.8 itself is offline-only. Its physical structured-threat adapter decision remains:
 
-Any future runtime composition or controlled enablement work must begin with a separate reviewed issue/gate/contract that explicitly defines the intended change, evidence, rollback path, IAM/resource scope, limits, observability, and human authority boundary.
+```text
+DEFERRED_PENDING_BOUNDED_RUNTIME_ADAPTER_EVIDENCE
+```
 
-Until then:
+No provider-backed adapter implementation, runtime composition, or controlled enablement is authorized by the Gate 19.8 contract. A later gate must first compare the smallest bounded structured-source alternatives, freeze exact read/query semantics, IAM/resource scope, limits and observability, then measure request-time latency/cost before seeking any runtime mutation or enablement authority.
+
+Until a separately reviewed gate changes the boundary:
 
 ```text
 terraform plan/replan:                NOT AUTHORIZED
@@ -389,7 +438,7 @@ provider-heavy execution:              NOT AUTHORIZED
 custom public domain publication:      NOT AUTHORIZED
 ```
 
-The next gate must preserve the Phase 19 controlling principle unless a separately reviewed decision explicitly changes it:
+The controlling Phase 19 principle remains:
 
 ```text
 materialized != enabled
