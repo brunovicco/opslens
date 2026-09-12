@@ -13,6 +13,13 @@ Gate 19.8 issue: #374 / closed completed
 
 Phases 0–18 are complete. Phase 19 remains the only active phase.
 
+## Retained Phase 17 security lineage
+
+Gate 17.1 — evidence-first threat/control-gap inventory — COMPLETE.  
+Gate 17.2 — CI/CD and workflow authority hardening — COMPLETE.
+
+Both remain authoritative. The Phase 19 V1 demonstration closeout adds no exception to their workflow, IAM, least-privilege, telemetry, or protected-main controls.
+
 ## Phase 19 status
 
 ```text
