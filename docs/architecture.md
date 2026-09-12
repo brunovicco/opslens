@@ -2,32 +2,102 @@
 
 _Last updated: 2026-09-12_
 
-This document is the current accumulated architecture baseline through **Phase 19 Gate 19.8**, with Gate 19.9 freezing the demonstration-focused V1 closeout boundary.
+This document is the current accumulated architecture baseline through **Phase 19 Gate 19.12**. Gate 19.13 changes presentation only; it does not create new business, provider, runtime, or model authority.
 
-Phases 0–18 are complete. The retained historical phase selected after Phase 18 remains **Phase 19 — Bounded Public Runtime & Productization**; Gate 19.9 narrows V1 completion scope without rewriting that decision.
-
-Retained Gate 19.1 launch-contract markers:
-
-```text
-public-analysis-workload:v1
-DEFERRED_PENDING_MEASUREMENT
-```
-
-Those markers are historical evidence only; Gate 19.2 later supplied the representative measurement that selected `ASYNC_SUBMIT_STATUS_RESULT`.
-
-OpsLens V1 is a demonstration and architecture lab, not a production SaaS.
-
-## 1. Purpose
-
-OpsLens is an open-source software-supply-chain and GenAI architecture project on AWS.
-
-Product question:
-
-> Given the software actually used by a repository, which vulnerabilities affect it, what exact evidence proves that, which findings should be prioritized, and what verified guidance can help act on them?
+**Phases 0–18 are complete.** The retained historical phase selected after Phase 18 remains **Phase 19 — Bounded Public Runtime & Productization**. V1 completion is intentionally narrowed to a demonstration and architecture lab rather than a production SaaS.
 
 Core invariant:
 
 > **Agents reason. Code verifies evidence.**
+
+## 1. Product question
+
+> Given the software actually used by a repository, which vulnerabilities affect it, what exact evidence proves that, which findings should be prioritized, and what verified guidance can help act on them?
+
+The architecture separates deterministic truth/authorization from probabilistic reasoning so a useful GenAI layer cannot silently become a source of package identity, vulnerability applicability, risk truth, arbitrary SQL, tool authorization, or missing-evidence semantics.
+
+## 2. Final V1 architecture
+
+```mermaid
+flowchart LR
+    subgraph Inputs[Untrusted / external evidence]
+        G[Public GitHub repository]
+        GHSA[GitHub Security Advisories]
+        NVD[NVD]
+        KEV[CISA KEV]
+        EPSS[FIRST EPSS]
+        DOC[Official knowledge corpus]
+    end
+
+    subgraph Deterministic[Deterministic authority]
+        ADMIT[Strict request admission]
+        SNAP[Immutable repository snapshot]
+        DEP[Inert dependency evidence]
+        SCOPE[Threat-evidence scope]
+        CORR[Package/version applicability + correlation]
+        RISK[Risk Policy]
+        SQ[SemanticQuery admission]
+        SQL[Typed SQL compiler]
+        EA[Evidence / citation admission]
+        AUTH[Capability authorization + limits]
+    end
+
+    subgraph Probabilistic[Bounded probabilistic reasoning]
+        PLAN[Intent / plan proposal]
+        RET[Bedrock KB / S3 Vectors retrieval]
+        SYN[Explanation / synthesis]
+    end
+
+    subgraph Outputs[Reviewer-facing projections]
+        RES[Evidence-backed result]
+        CLI[Deterministic CLI]
+        WEB[Localhost visual viewer]
+    end
+
+    G --> ADMIT --> SNAP --> DEP --> SCOPE
+    GHSA --> SCOPE
+    NVD --> SCOPE
+    KEV --> SCOPE
+    EPSS --> SCOPE
+    SCOPE --> CORR --> RISK --> RES
+
+    PLAN --> SQ --> SQL
+    DOC --> RET --> EA --> SYN
+    SQ --> AUTH
+    SYN --> RES
+    RES --> CLI
+    RES --> WEB
+```
+
+The V1 reviewer path is deliberately local and offline-first:
+
+```text
+synthetic inert fixture
+ -> retained repository/dependency evidence contracts
+ -> retained threat-evidence contracts
+ -> deterministic applicability/correlation
+ -> deterministic risk policy or fail-closed rejection
+ -> stable machine-readable result
+ -> CLI / localhost presentation
+```
+
+No AWS credentials, live GitHub/AWS/Bedrock calls, or model execution are required for the canonical demo after dependency installation.
+
+## 3. Authority model
+
+| Concern | Deterministic authority | Model / agent role |
+| --- | --- | --- |
+| Repository coordinates and snapshot | Strict admission + immutable identity | None |
+| Package identity and normalization | Typed parsing + canonical normalization | None |
+| Version applicability | PEP 440 / retained correlation logic | May explain result |
+| GHSA/NVD relationship | Scoped deterministic correlation | May summarize admitted evidence |
+| KEV/EPSS/CVSS | Exact retained evidence/provenance | May explain significance |
+| Risk score/tier | Risk Policy | May explain; cannot override |
+| Structured natural-language fact path | SemanticQuery admission + typed SQL compilation | May propose bounded intent |
+| Knowledge/remediation path | Retrieval/citation admission | May synthesize over admitted evidence |
+| Capability/tool execution | Deterministic authorization + limits | May request/propose |
+| Missing/incomplete evidence | Fail closed / explicit unknown-rejection semantics | Cannot repair or reinterpret as benign |
+| Visual presentation | Retained result remains business truth | No model execution in V1 |
 
 Permanent boundaries:
 
@@ -37,86 +107,14 @@ Structured facts use structured retrieval.
 No unrestricted text-to-SQL.
 READ, NEVER EXECUTE third-party repository code.
 Repository Risk != Runtime Exposure.
-Intent classification != execution authority.
 retrieved content != instruction authority
 model proposal != authorization
 tool/protocol success != business truth
-historical evidence != standing authority
 missing evidence != benign evidence
-MEASURED != DERIVED
-UNMEASURED != zero
-NOT_APPLICABLE != zero
-configured limit != measured utilization
-artifact hash != S3 VersionId
-publication success != deployment authorization
-plan != apply
-materialized != enabled
-demonstration readiness != production readiness
-AIP-C01 topic != product requirement
+visual projection != business authority
 ```
 
-## 2. V1 architecture objective
-
-The V1 demonstration must make the following authority chain understandable and reproducible:
-
-```text
-public repository evidence
- -> inert dependency evidence
- -> structured threat evidence
- -> deterministic applicability/correlation
- -> deterministic risk prioritization
- -> bounded retrieval/reasoning where appropriate
- -> evidence-backed result
-```
-
-Canonical reviewer target:
-
-```text
-clone
- -> setup
- -> one deterministic offline demo command
- -> evidence-backed result
-```
-
-No Internet-facing production runtime is required for V1 completion.
-
-## 3. Authority model
-
-### 3.1 Deterministic authority
-
-Deterministic code owns:
-
-- repository/source identity admission;
-- immutable repository snapshot identity;
-- dependency/package normalization;
-- package/version applicability;
-- GHSA/NVD reconciliation;
-- KEV/EPSS/CVSS evidence lookup;
-- risk policy evaluation;
-- semantic-query admission;
-- SQL compilation;
-- retrieval evidence admission;
-- citation/result admission;
-- capability/tool authorization;
-- bounded execution/cost/resource limits;
-- async job identity/state/idempotency/retry authority;
-- deployment artifact identity;
-- Terraform plan/apply evidence boundaries.
-
-### 3.2 Model/agent authority
-
-Models and agents may:
-
-- classify;
-- plan;
-- route;
-- summarize;
-- explain;
-- synthesize over admitted evidence.
-
-They may not invent or override package identity, vulnerability applicability, source provenance, risk truth, arbitrary SQL, tool authorization, or missing-evidence semantics.
-
-## 4. Retained platform architecture
+## 4. Threat and repository evidence path
 
 ### 4.1 Threat intelligence
 
@@ -136,7 +134,7 @@ deterministic normalization/versioning
 exact source coordinates + hashes/snapshots
 ```
 
-The project preserves source-local provenance before enrichment.
+The system preserves source-local provenance before enrichment. Selection policy such as `latest_complete` is not substituted for provenance.
 
 ### 4.2 Repository intelligence
 
@@ -150,30 +148,61 @@ public GitHub coordinates
  -> canonical PyPI identity
 ```
 
-Repository code is never executed.
+Repository content is untrusted data. OpsLens does not run package managers, builds, tests, setup hooks, Dockerfiles, workflows, or repository scripts.
 
-### 4.3 Vulnerability correlation and risk
+### 4.3 Request-time threat authority
+
+Gate 19.8 introduced the provider-neutral application boundary:
+
+```text
+PublicRepositoryEvidenceExecution
+ -> PublicThreatEvidenceScope
+ -> PublicThreatEvidenceRequest
+ -> PublicThreatEvidenceAuthority
+ -> PublicRepositoryThreatEvidence
+ -> retained deterministic correlation/enrichment
+```
+
+Important semantics:
+
+```text
+scope derives only from admitted repository evidence
+incomplete PyPI normalization -> fail closed
+out-of-scope GHSA evidence -> reject
+unrelated NVD evidence -> reject
+latest_complete = selection policy, not provenance
+model authority for source truth/applicability = none
+```
+
+The physical request-time provider adapter remains a Post-V1 experiment.
+
+## 5. Deterministic risk path
 
 ```text
 canonical dependency identity
  + GHSA/NVD applicability evidence
- + KEV snapshot
- + EPSS snapshot
+ + CISA KEV snapshot
+ + FIRST EPSS snapshot
  + CVSS evidence
         |
         v
 RepositoryAnalysisResult
         |
         v
-deterministic Risk Policy
+Risk Policy
+        |
+        v
+ranked admitted result
 ```
 
-Risk remains deterministic. A model may explain the admitted result but cannot change it.
+The canonical material demo fixture deterministically produces one finding and `P0 / 90`. The controlled-benign fixture produces zero findings only because the scoped evidence is complete. The incomplete-evidence fixture is rejected before analysis/risk and produces no benign conclusion.
 
-### 4.4 Structured natural-language fact path
+## 6. Structured and semantic evidence
+
+### Structured fact path
 
 ```text
-natural-language factual question
+natural-language fact question
  -> bounded Bedrock proposal
  -> deterministic parser/admission
  -> typed SemanticQuery
@@ -182,9 +211,9 @@ natural-language factual question
  -> structured result
 ```
 
-No unrestricted text-to-SQL authority is granted.
+The model never receives unrestricted SQL authority.
 
-### 4.5 Knowledge/remediation path
+### Knowledge/remediation path
 
 ```text
 official knowledge corpus
@@ -199,7 +228,7 @@ official knowledge corpus
 
 Structured vulnerability truth remains outside the RAG authority boundary.
 
-### 4.6 Hybrid retrieval
+### Hybrid retrieval
 
 ```text
 question
@@ -209,9 +238,11 @@ question
  -> bounded synthesis
 ```
 
-Semantic evidence does not replace structured facts.
+Semantic evidence complements, but does not replace, structured facts.
 
-### 4.7 Agentic reasoning
+## 7. Agentic and interoperability layers
+
+### Agentic reasoning
 
 ```text
 admitted evidence
@@ -222,11 +253,11 @@ admitted evidence
  -> result admission
 ```
 
-The simpler single-agent baseline remains the reference reasoning architecture. Multi-agent specialization/handoff is retained where useful, but measured additional model topology is not retained by default without quality lift.
+The simpler single-agent baseline remains the reference architecture. A measured two-model topology was not retained as default because it added calls, tokens, latency, and derived cost without quality lift in the frozen comparison.
 
-### 4.8 MCP and A2A
+### MCP and A2A
 
-MCP and A2A are bounded interoperability layers, not new business authority.
+MCP and A2A are interoperability layers, not new business authority:
 
 ```text
 protocol request
@@ -235,46 +266,33 @@ protocol request
  -> admitted result projection
 ```
 
-Public production MCP/A2A runtimes are not V1 requirements.
+### AgentCore
 
-### 4.9 AgentCore
+Amazon Bedrock AgentCore is retained as an optional lab target after capability-fit experiments. It is not the default runtime and does not inherit standing IAM or execution authority from experiment history.
 
-Amazon Bedrock AgentCore is retained as an optional lab target after capability-fit experiments. It is not the default production runtime and carries no standing experiment IAM merely because it exists in the project history.
+## 8. Security and failure model
 
-### 4.10 Runtime exposure evidence
+The security model assumes repository content, retrieved content, prompts, model output, tool/protocol messages, and provider responses can all be malformed or adversarial.
 
-Amazon Inspector is treated as an independent read-only runtime-evidence authority.
+| Failure / threat | Control |
+| --- | --- |
+| Repository prompt injection | Repository text is data only; repository code is never executed |
+| Malformed/unsupported dependency | Deterministic normalization rejection |
+| Out-of-scope threat evidence | Scope validation rejects it |
+| Missing evidence | Fail closed; never converted to benign |
+| Semantic-plan injection / malformed plan | Typed deterministic admission |
+| Arbitrary SQL | No unrestricted text-to-SQL; typed compiler only |
+| Tool poisoning / unsafe capability request | Allowlisted typed capability authorization |
+| Denial-of-wallet / amplification | Bounded tokens, scans, retries, time, and capability budgets |
+| Telemetry leakage | Content-minimized operational telemetry |
+| Runtime exposure ambiguity | Inspector evidence remains separate from repository-risk truth |
+| UI authority drift | Local viewer projects existing results only |
 
-```text
-Inspector read evidence != repository risk truth
-zero Inspector records != zero runtime exposure
-```
+Retained repository hardening includes full-SHA GitHub Actions pinning, Dependency Review, CodeQL, least-privilege IAM, adversarial authority regression, immutable evidence, and protected HUMAN merge boundaries.
 
-## 5. Observability, security, and cost
+## 9. Observability and cost semantics
 
-### 5.1 Observability
-
-Operational telemetry is content-minimized and does not become business authority.
-
-The project retains CloudWatch/EMF-oriented operational evidence, traces/metrics where relevant, explicit retry/latency counters, and persisted experiment artifacts.
-
-### 5.2 Security
-
-Retained hardening includes:
-
-- full-SHA GitHub Actions pinning;
-- Dependency Review;
-- CodeQL;
-- adversarial authority regression;
-- least-privilege IAM;
-- content-minimized Lambda telemetry;
-- bounded scheduled-ingestion pause/recovery;
-- protected-main review boundaries;
-- fail-closed request/evidence/result admission.
-
-### 5.3 Cost semantics
-
-OpsLens distinguishes:
+Operational telemetry never becomes business authority. OpsLens explicitly distinguishes:
 
 ```text
 MEASURED
@@ -284,13 +302,36 @@ UNMEASURED
 NOT_APPLICABLE
 ```
 
-Bounded experiment cost evidence is never promoted to a production TCO claim.
+and preserves:
 
-## 6. Phase 19 async runtime architecture
+```text
+MEASURED != DERIVED
+UNMEASURED != zero
+NOT_APPLICABLE != zero
+configured limit != measured utilization
+lab metric != production SLO
+cost evidence != production TCO
+```
 
-Gate 19.2 selected `ASYNC_SUBMIT_STATUS_RESULT` from representative measurement evidence.
+The retained Phase 19 representative workload measured:
 
-Gate 19.3 selected:
+| Metric | Classification / value |
+| --- | ---: |
+| End-to-end duration | 17,748 ms MEASURED |
+| Serialized result | 5,285 bytes MEASURED |
+| GitHub physical HTTP requests | 4 MEASURED |
+| Bedrock Retrieve | 1 call / 4,148 ms client elapsed MEASURED |
+| Bedrock model | 1 call / 5,936 input / 408 output tokens MEASURED |
+| Model client elapsed | 8,901 ms MEASURED |
+| Provider latency | 7,772 ms MEASURED |
+| Retry count | 0 MEASURED |
+| Throttle count | UNMEASURED |
+
+These measurements support architectural discussion only; they are not production SLO/SLA/TCO evidence.
+
+## 10. Retained Phase 19 async runtime
+
+Gate 19.2 selected `ASYNC_SUBMIT_STATUS_RESULT` from representative measurement evidence. Gate 19.3 selected:
 
 ```text
 HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB
@@ -298,55 +339,18 @@ HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB
 
 Retained shape:
 
-```text
-POST /v1/analyses
- -> API Gateway HTTP API
- -> API Lambda
- -> DynamoDB job/idempotency authority
- -> SQS standard queue
- -> Lambda worker
- -> retained analysis authorities
- -> DynamoDB status/result
- -> SQS DLQ
-
-GET /v1/analyses/{job_id}
-GET /v1/analyses/{job_id}/result
+```mermaid
+flowchart LR
+    C[Client] --> API[API Gateway HTTP API]
+    API --> AL[API Lambda]
+    AL --> DB[(DynamoDB job/idempotency)]
+    AL --> Q[SQS standard queue]
+    Q --> W[Lambda worker]
+    W --> DB
+    Q --> DLQ[SQS DLQ]
 ```
 
-Queue delivery is transport evidence, not execution truth. DynamoDB conditional state/attempt authority owns business execution state.
-
-## 7. Phase 19 deployment evidence
-
-### 7.1 Immutable artifacts
-
-Gate 19.5 produced separate deterministic API/worker deployment ZIPs and preserved both content hash and exact S3 object VersionId.
-
-```text
-artifact hash != S3 VersionId
-publication success != deployment authorization
-```
-
-### 7.2 Exact Terraform planning
-
-Gate 19.6 admitted an exact plan before any apply:
-
-```text
-21 create
-0 update
-0 delete
-0 replacement
-```
-
-### 7.3 Controlled disabled materialization
-
-Gate 19.7 materialized the runtime through bounded HUMAN-authorized Terraform operations, recovered from one account-level Lambda reserved-concurrency constraint, and proved final convergence:
-
-```text
-0 add
-0 change
-0 destroy
-0 replacement
-```
+Gate 19.5 produced immutable API/worker deployment artifacts. Gate 19.6 admitted an exact Terraform plan. Gate 19.7 materialized 21 managed resources through HUMAN-authorized operations and proved convergence.
 
 Current retained runtime truth:
 
@@ -358,100 +362,53 @@ worker enabled: NO
 event-source mapping enabled: NO
 custom public domain: absent
 provider-heavy public executions: 0
+third-party repository code executions: 0
 ```
 
 ```text
+plan != apply
+artifact hash != S3 VersionId
+publication success != deployment authorization
 materialized != enabled
 ```
 
-## 8. Gate 19.8 request-time threat evidence authority
+## 11. V1 demo and presentation adapters
 
-Gate 19.8 protected-merged through PR #375 at:
-
-```text
-e538fa3e96c29cf76dd3aa83a9967e090587b6fb
-```
-
-Post-merge CodeQL:
+Gates 19.10–19.12 created a deterministic reviewer experience without introducing a second source of business truth:
 
 ```text
-34713360403 / run #393 / success
+Gate 19.10  deterministic CLI + stable JSON
+Gate 19.11  exactly three scenarios + byte-stable suite evaluation
+Gate 19.12  localhost-only browser presentation adapter
 ```
 
-The provider-neutral authority chain is:
+The visual server binds to `127.0.0.1`, exposes no external host argument, uses standard-library HTTP + inline HTML/CSS, requires no JavaScript or external assets, rejects unknown/query-string routes, and HTML-escapes dynamic values.
+
+The AI explanation panel is intentionally disabled and non-authoritative in V1.
 
 ```text
-PublicRepositoryEvidenceExecution
- -> PublicThreatEvidenceScope
- -> PublicThreatEvidenceRequest
- -> PublicThreatEvidenceAuthority
- -> PublicRepositoryThreatEvidence
- -> retained deterministic correlation/enrichment
+localhost demo != public service
+visual projection != business authority
 ```
 
-Semantics:
+## 12. Historical decision markers
+
+The original Gate 19.1 launch contract deliberately deferred runtime selection:
 
 ```text
-scope derives only from admitted repository evidence
-incomplete PyPI normalization -> fail closed
-out-of-scope GHSA evidence -> reject
-unrelated NVD evidence -> reject
-latest_complete = selection policy, not provenance
-selected KEV/EPSS evidence carries exact snapshot date + SHA-256
-model authority for source truth/applicability = none
+public-analysis-workload:v1
+DEFERRED_PENDING_MEASUREMENT
 ```
 
-The physical provider adapter remains deliberately deferred. Because V1 is offline-first, that adapter is now a Post-V1 experiment instead of a V1 blocker.
-
-## 9. Gate 19.9 V1 demonstration boundary
-
-Gate 19.9 freezes the first-release product boundary:
+Gate 19.2 later supplied the representative measurement and selected:
 
 ```text
-V1 mode: DEMONSTRATION_ARCHITECTURE_LAB
-production SaaS claim: NO
-Internet-facing runtime required: NO
-AWS credentials required for canonical demo: NO
-third-party repository code execution: NO
+ASYNC_SUBMIT_STATUS_RESULT
 ```
 
-Remaining completion slices:
+These historical markers remain evidence of the decision path; they are not current pending work.
 
-```text
-19.9   V1 demonstration contract + current-state synchronization
-19.10  deterministic end-to-end demo runner
-19.11  curated scenarios + deterministic evaluation
-19.12  minimal local visual demo
-19.13  portfolio/readme/architecture polish
-19.14  V1 closeout + release readiness
-```
-
-## 10. Canonical V1 demo architecture
-
-The canonical V1 demo path will be local and offline-first:
-
-```text
-curated inert scenario fixture
- -> existing repository/dependency evidence contracts
- -> existing threat evidence contracts
- -> deterministic correlation/enrichment
- -> deterministic risk policy
- -> stable machine-readable result
- -> human-readable projection
- -> optional bounded explanation over admitted evidence
-```
-
-The demo must reuse retained OpsLens application/domain authorities rather than create a second implementation of business truth.
-
-Required scenario classes:
-
-```text
-material vulnerability
-controlled benign
-fail-closed incomplete/ambiguous evidence
-```
-
-## 11. V1 non-goals
+## 13. V1 non-goals
 
 The first release does not require:
 
@@ -470,31 +427,34 @@ public worker/event-source enablement
 provider-backed arbitrary request-time threat adapter
 ```
 
-These are tracked in [`post-v1-backlog.md`](post-v1-backlog.md).
+## 14. Current authority boundary
 
-## 12. Current authority boundary
-
-Gate 19.9 is repository-only and offline-only.
+Gate 19.13 is documentation/portfolio-only.
 
 ```text
 Terraform/provider operations: NOT AUTHORIZED
-AWS mutation:                 NOT AUTHORIZED
-IAM mutation:                 NOT AUTHORIZED
-artifact publication:         NOT AUTHORIZED
-runtime enablement:           NOT AUTHORIZED
-provider-heavy live execution:NOT AUTHORIZED
-protected merge:              HUMAN REVIEW REQUIRED
+AWS mutation:                  NOT AUTHORIZED
+IAM mutation:                  NOT AUTHORIZED
+artifact publication:          NOT AUTHORIZED
+runtime enablement:            NOT AUTHORIZED
+provider-heavy live execution: NOT AUTHORIZED
+model execution for demo:      NOT AUTHORIZED
+protected merge:               HUMAN REVIEW REQUIRED
 ```
 
-## 13. Key documents
+PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work.
+
+## 15. Key documents
 
 - [`current-state.md`](current-state.md)
 - [`roadmap.md`](roadmap.md)
+- [`portfolio-evidence.md`](portfolio-evidence.md)
 - [`v1-demonstration-scope.md`](v1-demonstration-scope.md)
 - [`v1-completion-checklist.md`](v1-completion-checklist.md)
 - [`demo/README.md`](demo/README.md)
+- [`demo/WALKTHROUGH.md`](demo/WALKTHROUGH.md)
+- [`demo/PORTFOLIO_CAPTURE.md`](demo/PORTFOLIO_CAPTURE.md)
 - [`post-v1-backlog.md`](post-v1-backlog.md)
 - [`adr/0077-phase19-v1-demonstration-boundary.md`](adr/0077-phase19-v1-demonstration-boundary.md)
-- [`../labs/phase-19-gate-19-9-v1-demonstration-contract.md`](../labs/phase-19-gate-19-9-v1-demonstration-contract.md)
 
 Historical labs and machine-readable evidence remain immutable records of the state that existed when each experiment was executed.

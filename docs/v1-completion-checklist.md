@@ -2,50 +2,58 @@
 
 This checklist defines the remaining demonstration-only work required before the first `v1.0.0` release candidate.
 
-## Gate 19.9 — V1 contract and synchronization
+## Gate 19.9 — V1 contract and synchronization — COMPLETE
 
 - [x] Freeze V1 as a demonstration/architecture lab.
 - [x] Preserve `materialized != enabled` for the retained async AWS runtime.
 - [x] Record the Gate 19.8 protected merge and post-merge CodeQL evidence.
-- [ ] Synchronize active README/current-state/roadmap/architecture views.
+- [x] Synchronize active README/current-state/roadmap/architecture views.
+- [x] Exact-head CI/security/CodeQL green.
+- [x] HUMAN protected merge.
+
+## Gate 19.10 — Deterministic demo runner — COMPLETE
+
+- [x] Add one canonical offline command.
+- [x] Reuse existing typed domain/application authorities rather than duplicating risk logic.
+- [x] Emit stable JSON evidence.
+- [x] Emit concise human-readable output.
+- [x] Execute no third-party repository code.
+- [x] Require no AWS credentials for the canonical offline path.
+
+## Gate 19.11 — Curated scenarios and evaluation — COMPLETE
+
+- [x] Material-vulnerability scenario.
+- [x] Controlled-benign scenario.
+- [x] Fail-closed incomplete-evidence scenario.
+- [x] Deterministic scenario identities and byte-stable outputs.
+- [x] Regression tests over admitted outputs.
+- [x] Cross-scenario deterministic evaluation.
+
+## Gate 19.12 — Local visual demo — COMPLETE
+
+- [x] Local-only demo surface over the same application authority.
+- [x] Exactly three allowlisted scenarios.
+- [x] Risk summary and vulnerability evidence.
+- [x] Provenance/content-addressed result projection.
+- [x] AI explanation explicitly disabled and separated from deterministic authority.
+- [x] Loopback-only bind with no external host option.
+- [x] Unknown/query-string routes fail closed.
+- [x] No public deployment required.
+
+## Gate 19.13 — Portfolio polish — IN PROGRESS
+
+- [x] README English/Portuguese current, concise, and reviewer-first.
+- [x] Final GitHub-rendered architecture diagram.
+- [x] Deterministic authority vs AI reasoning table.
+- [x] Measured latency/cost evidence summarized without production extrapolation.
+- [x] Security/failure model summarized.
+- [x] Three-to-five-minute demo walkthrough.
+- [x] Reproducible screenshot/terminal-recording capture guide.
+- [x] Portfolio evidence wording aligned to the V1 demonstration boundary.
 - [ ] Exact-head CI/security/CodeQL green.
 - [ ] HUMAN protected merge.
 
-## Gate 19.10 — Deterministic demo runner
-
-- [ ] Add one canonical offline command.
-- [ ] Reuse existing typed domain/application authorities rather than duplicating risk logic.
-- [ ] Emit stable JSON evidence.
-- [ ] Emit concise human-readable output.
-- [ ] Execute no third-party repository code.
-- [ ] Require no AWS credentials for the canonical offline path.
-
-## Gate 19.11 — Curated scenarios and evaluation
-
-- [ ] Material-vulnerability scenario.
-- [ ] Controlled-benign scenario.
-- [ ] Fail-closed incomplete/ambiguous-evidence scenario.
-- [ ] Deterministic scenario manifest/hashes.
-- [ ] Regression tests over admitted outputs.
-
-## Gate 19.12 — Local visual demo
-
-- [ ] Local-only demo surface over the same application authority.
-- [ ] Scenario selection or bounded input.
-- [ ] Risk summary and vulnerability evidence.
-- [ ] Provenance/citation projection.
-- [ ] AI explanation clearly separated from deterministic authority.
-- [ ] No public deployment required.
-
-## Gate 19.13 — Portfolio polish
-
-- [ ] README English/Portuguese current and concise.
-- [ ] Final architecture diagram.
-- [ ] Deterministic authority vs AI reasoning table.
-- [ ] Measured latency/cost evidence summarized without production extrapolation.
-- [ ] Security/failure model summarized.
-- [ ] Three-to-five-minute demo walkthrough.
-- [ ] Screenshots or terminal recording where useful.
+Binary screenshots/recordings are optional presentation artifacts. The source-of-truth remains the reproducible deterministic demo and the checked-in capture procedure.
 
 ## Gate 19.14 — V1 closeout
 
