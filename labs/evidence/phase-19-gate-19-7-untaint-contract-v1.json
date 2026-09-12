@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "artifact_type": "phase-19-gate-19-7-untaint-contract:v1",
+  "source_issue": 361,
+  "diagnosis_source_head_sha": "46fb069beffe2a49c1bde647d51ac8d7bcf4a687",
+  "diagnosis_artifact": "labs/evidence/phase-19-gate-19-7-replacement-diagnosis-v1.json",
+  "rejected_recovery_plan": {
+    "summary": "6 to add, 0 to change, 1 to destroy",
+    "api_lambda_actions": [
+      "delete",
+      "create"
+    ],
+    "api_lambda_action_reason": "replace_because_tainted",
+    "admitted": false,
+    "reusable": false,
+    "apply_authorized": false
+  },
+  "untaint_target": {
+    "resource_address": "aws_lambda_function.public_async_api[0]",
+    "normalized_resource_address": "aws_lambda_function.public_async_api",
+    "expected_pre_status": "tainted",
+    "expected_remote_function_name": "opslens-dev-public-analysis-api",
+    "expected_remote_code_sha256": "mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=",
+    "expected_submit_switch": "false",
+    "expected_remote_state": "Active",
+    "expected_last_update_status": "Successful",
+    "expected_reserved_concurrency_before": null,
+    "expected_reserved_concurrency_observation_before": "NOT_CONFIGURED_OR_NOT_OBSERVED"
+  },
+  "state_mutation_design": {
+    "operation": "terraform untaint",
+    "purpose": "Remove Terraform's replacement marker only after proving the remote API Lambda is healthy and matches the reviewed configuration.",
+    "aws_resource_mutation_expected": false,
+    "terraform_state_mutation_expected": true,
+    "state_lock_required": true,
+    "allow_lock_false": false,
+    "allow_import": false,
+    "allow_state_rm": false,
+    "allow_replace": false,
+    "allow_destroy": false,
+    "allow_apply": false,
+    "maximum_target_count": 1
+  },
+  "required_pre_authorization_evidence": {
+    "exact_protected_main_sha_required": true,
+    "clean_worktree_required": true,
+    "aws_account_id": "487757851499",
+    "aws_region": "us-east-1",
+    "terraform_state_lineage_required": true,
+    "terraform_state_serial_required": true,
+    "target_still_tainted_required": true,
+    "remote_configuration_still_matches_expected_required": true,
+    "rejected_recovery_plan_still_quarantined_required": true,
+    "explicit_human_untaint_authorization_required": true
+  },
+  "required_post_untaint_evidence": {
+    "target_no_longer_tainted_required": true,
+    "remote_configuration_unchanged_required": true,
+    "fresh_recovery_plan_required": true,
+    "fresh_recovery_plan_expected_creates": 5,
+    "fresh_recovery_plan_maximum_updates": 1,
+    "fresh_recovery_plan_allowed_update": "aws_lambda_function.public_async_api",
+    "fresh_recovery_plan_deletes": 0,
+    "fresh_recovery_plan_replacements": 0,
+    "terraform_apply_authorized": false
+  },
+  "authority": {
+    "terraform_untaint_authorized": false,
+    "terraform_state_mutation_authorized": false,
+    "terraform_apply_authorized": false,
+    "aws_runtime_mutation_authorized": false,
+    "iam_mutation_authorized": false,
+    "runtime_enablement_authorized": false,
+    "public_endpoint_enablement_authorized": false,
+    "worker_enablement_authorized": false,
+    "event_source_enablement_authorized": false,
+    "provider_heavy_execution_authorized": false,
+    "replacement_authorized": false,
+    "destroy_authorized": false
+  },
+  "retained_invariants": [
+    "plan != apply",
+    "materialized != enabled",
+    "failed plan != retry authority",
+    "state reconciliation != AWS mutation",
+    "UNMEASURED != zero",
+    "configured limit != measured utilization"
+  ]
+}
