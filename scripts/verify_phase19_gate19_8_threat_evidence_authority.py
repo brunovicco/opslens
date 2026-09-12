@@ -28,21 +28,27 @@ def _load_json(path: Path) -> dict[str, object]:
         decoded = cast(object, json.loads(path.read_text(encoding="utf-8")))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise Gate19_8VerificationError(f"could not load {path}") from exc
-    if not isinstance(decoded, dict):
-        raise Gate19_8VerificationError(f"{path} must contain one JSON object")
-    return cast(dict[str, object], decoded)
+    return _object(decoded, label=str(path))
 
 
 def _object(value: object, *, label: str) -> dict[str, object]:
     if not isinstance(value, dict):
         raise Gate19_8VerificationError(f"{label} must be an object")
-    return cast(dict[str, object], value)
+    raw = cast(dict[object, object], value)
+    if any(type(key) is not str for key in raw):
+        raise Gate19_8VerificationError(f"{label} keys must be strings")
+    return cast(dict[str, object], raw)
 
 
 def _strings(value: object, *, label: str) -> tuple[str, ...]:
-    if not isinstance(value, list) or any(type(item) is not str for item in value):
+    if not isinstance(value, list):
         raise Gate19_8VerificationError(f"{label} must be a string array")
-    return tuple(cast(list[str], value))
+    result: list[str] = []
+    for item in cast(list[object], value):
+        if type(item) is not str:
+            raise Gate19_8VerificationError(f"{label} values must be strings")
+        result.append(item)
+    return tuple(result)
 
 
 def _read(path: Path) -> str:
@@ -142,7 +148,7 @@ def _verify_physical_access_deferred(root: dict[str, object]) -> None:
 
 def _verify_no_authority_expansion(root: dict[str, object], worker: str) -> None:
     runtime = _object(root.get("runtime_state"), label="runtime_state")
-    expected_runtime = {
+    expected_runtime: dict[str, object] = {
         "runtime_materialized": True,
         "execute_api_endpoint_disabled": True,
         "submit_enabled": False,
