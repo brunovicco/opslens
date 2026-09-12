@@ -1,0 +1,1 @@
+Gate 19.6 verifier-correction evidence is intentionally bounded to repository-state facts from the first human exact-plan attempt. The raw binary plan and full provider-rendered plan JSON remain local and are not committed. Canonical successful admission evidence must come from a regenerated reviewed-head plan after this correction is independently green.
