@@ -18,6 +18,7 @@ RECONCILIATION = Path(
 )
 CONTRACT_VERIFIER = Path("scripts/verify_phase19_gate19_7_materialization_contract.py")
 FRESH_PLAN_VERIFIER = Path("scripts/verify_phase19_gate19_7_fresh_plan.py")
+RECOVERY_PLAN_VERIFIER = Path("scripts/verify_phase19_gate19_7_recovery_plan.py")
 PLAN_FIXTURE = Path("tests/fixtures/phase19/gate19-6-exact-plan-pass.json")
 RECOVERY_PLAN_FIXTURE = Path(
     "tests/fixtures/phase19/gate19-7-recovery-plan-pass.json"
@@ -240,8 +241,7 @@ def test_gate19_7_recovery_plan_binds_new_binary_and_partial_state(
     result = subprocess.run(
         [
             sys.executable,
-            str(FRESH_PLAN_VERIFIER),
-            "--recovery",
+            str(RECOVERY_PLAN_VERIFIER),
             "--plan-json",
             str(RECOVERY_PLAN_FIXTURE),
             "--plan-binary",
@@ -289,15 +289,14 @@ def test_gate19_7_recovery_plan_binds_new_binary_and_partial_state(
 
 
 def test_gate19_7_recovery_rejects_historical_full_create_plan(tmp_path: Path) -> None:
-    """Reject reuse of the historical 21-create plan through the recovery mode."""
+    """Reject reuse of the historical 21-create plan through recovery admission."""
     plan_binary = tmp_path / "old-plan.tfplan"
     plan_binary.write_bytes(b"historical-plan-must-not-be-reused\n")
 
     result = subprocess.run(
         [
             sys.executable,
-            str(FRESH_PLAN_VERIFIER),
-            "--recovery",
+            str(RECOVERY_PLAN_VERIFIER),
             "--plan-json",
             str(PLAN_FIXTURE),
             "--plan-binary",
@@ -311,8 +310,4 @@ def test_gate19_7_recovery_rejects_historical_full_create_plan(tmp_path: Path) -
     )
 
     assert result.returncode != 0
-    assert (
-        "recovery safety output public_async_api_reserved_concurrency"
-        in result.stderr
-        or "recovery create inventory mismatch" in result.stderr
-    )
+    assert "public_async_api_reserved_concurrency" in result.stderr
