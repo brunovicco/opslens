@@ -38,6 +38,18 @@ CodeQL pós-merge: 34713360403 / run #393 / success
 Gate 19.9: IN PROGRESS / issue #376
 ```
 
+Marcadores históricos retidos das Gates 19.1/19.2:
+
+```text
+19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE
+decisão histórica: DEFERRED_PENDING_MEASUREMENT
+public-analysis-workload:v1
+19.2  Representative Workload Measurement              COMPLETE
+ASYNC_SUBMIT_STATUS_RESULT
+```
+
+Esses marcadores preservam a decisão histórica; as Gates 19.2–19.8 posteriores encerraram a pendência de medição sem reescrever a evidência anterior.
+
 O runtime assíncrono AWS retido já foi materializado e convergiu, mas permanece intencionalmente desabilitado e não público:
 
 ```text
