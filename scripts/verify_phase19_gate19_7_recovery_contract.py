@@ -223,7 +223,9 @@ def _verify_contract(root: dict[str, object]) -> None:
         if authority.get(field) is not False:
             raise Gate19_7RecoveryContractError(f"recovery contract authorizes {field}")
     if authority.get("explicit_human_apply_authorization_required") is not True:
-        raise Gate19_7RecoveryContractError("explicit human recovery apply authorization is required")
+        raise Gate19_7RecoveryContractError(
+            "explicit human recovery apply authorization is required"
+        )
 
 
 def _verify_override(text: str) -> None:
