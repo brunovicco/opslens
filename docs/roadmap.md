@@ -29,6 +29,15 @@ Phase 18  Evaluation, Cost & Portfolio Readiness              COMPLETE
 Phase 19  Bounded Public Runtime & V1 Demonstration Closeout  IN PROGRESS
 ```
 
+Retained Phase 18 closeout compatibility markers:
+
+```text
+Phase 18  Evaluation, Cost & Portfolio Readiness              COMPLETE
+Phase 19  Bounded Public Runtime & Productization             IN PROGRESS
+```
+
+The second line names the historical Phase 19 productization phase exactly as it was selected after Phase 18; the current V1 closeout narrows its completion scope without rewriting that historical decision.
+
 ## Retained security lineage
 
 Gate 17.1 — evidence-first threat/control-gap inventory — COMPLETE.  
