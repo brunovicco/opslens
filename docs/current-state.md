@@ -5,10 +5,10 @@ _Last updated: 2026-09-12_
 ## Authoritative protected checkpoint
 
 ```text
-protected main SHA: e538fa3e96c29cf76dd3aa83a9967e090587b6fb
-protected merge: PR #375 — Gate 19.8 request-time threat evidence authority
-post-merge CodeQL: 34713360403 / run #393 / success
-Gate 19.8 issue: #374 / closed completed
+protected main SHA: 68a135a0c80dacb8cf0b668022796b159878637e
+protected merge: PR #377 — Gate 19.9 V1 demonstration closeout contract
+post-merge CodeQL: 34715722016 / run #414 / success
+Gate 19.9 issue: #376 / closed completed
 ```
 
 ## Retained Phase 18 closeout checkpoint
@@ -42,8 +42,8 @@ Both remain authoritative. The Phase 19 V1 demonstration closeout adds no except
 19.6  Exact Terraform Plan & Offline Admission                 COMPLETE
 19.7  Controlled Disabled Runtime Materialization              COMPLETE
 19.8  Request-time Threat Evidence Authority Contract          COMPLETE
-19.9  V1 Demonstration Closeout Contract                       IN PROGRESS
-19.10 Deterministic End-to-End Demo Runner                     PLANNED
+19.9  V1 Demonstration Closeout Contract                       COMPLETE
+19.10 Deterministic End-to-End Demo Runner                     IN PROGRESS
 19.11 Curated Demo Scenarios + Deterministic Evaluation        PLANNED
 19.12 Minimal Local Visual Demo                                PLANNED
 19.13 Portfolio / README / Architecture Polish                 PLANNED
@@ -74,7 +74,13 @@ physical access decision: DEFERRED_PENDING_BOUNDED_RUNTIME_ADAPTER_EVIDENCE
 ```
 
 Gate 19.9 source issue: #376.  
-Gate 19.9 source protected main: `e538fa3e96c29cf76dd3aa83a9967e090587b6fb`.
+Gate 19.9 source protected main: `e538fa3e96c29cf76dd3aa83a9967e090587b6fb`.  
+Gate 19.9 protected merge: PR #377 / `68a135a0c80dacb8cf0b668022796b159878637e`.  
+Gate 19.9 post-merge CodeQL: `34715722016` / run #414 / success.
+
+Gate 19.10 source issue: #378.  
+Gate 19.10 source protected main: `68a135a0c80dacb8cf0b668022796b159878637e`.  
+Gate 19.10 implementation PR: #379 / draft while exact-head evidence is verified.
 
 ## V1 product boundary
 
@@ -108,7 +114,9 @@ See:
 - [`v1-demonstration-scope.md`](v1-demonstration-scope.md)
 - [`v1-completion-checklist.md`](v1-completion-checklist.md)
 - [`post-v1-backlog.md`](post-v1-backlog.md)
+- [`demo/README.md`](demo/README.md)
 - [`../labs/phase-19-gate-19-9-v1-demonstration-contract.md`](../labs/phase-19-gate-19-9-v1-demonstration-contract.md)
+- [`../labs/phase-19-gate-19-10-demo-runner.md`](../labs/phase-19-gate-19-10-demo-runner.md)
 
 ## Gate 19.8 retained result
 
@@ -136,6 +144,37 @@ model authority for source truth/applicability = none
 ```
 
 The physical provider adapter remains intentionally deferred. It is no longer a V1 blocker because V1 uses an offline-first deterministic demo path. A provider-backed arbitrary request-time adapter is now a Post-V1 experiment unless a future concrete requirement promotes it.
+
+## Gate 19.10 current implementation slice
+
+Gate 19.10 turns the V1 reviewer contract into one executable, provider-free path while preserving the same deterministic business authority used elsewhere in OpsLens.
+
+Canonical command:
+
+```bash
+uv sync --frozen
+uv run python scripts/demo_opslens.py --scenario material-vulnerability --format text
+```
+
+Machine-readable projection:
+
+```bash
+uv run python scripts/demo_opslens.py --scenario material-vulnerability --format json
+```
+
+Current admitted scenario:
+
+```text
+scenario: material-vulnerability
+fixture: synthetic / inert / offline
+repository code execution: NO
+live provider calls: NO
+model execution: NO
+expected finding count: 1
+expected deterministic Risk Policy v1 result: 90 / P0
+```
+
+The synthetic fixture is demonstration evidence only and does not claim to describe or scan a live repository. Gate 19.11 owns the additional controlled-benign and fail-closed incomplete/ambiguous scenario classes.
 
 ## Retained AWS runtime truth
 
@@ -205,7 +244,7 @@ provider-backed arbitrary request-time threat adapter
 
 ## Current authority boundary
 
-Gate 19.9 is repository-only and offline-only.
+Gate 19.10 is repository-only and offline-only.
 
 ```text
 terraform plan/replan:                NOT AUTHORIZED
@@ -220,6 +259,7 @@ submit enablement:                     NOT AUTHORIZED
 worker enablement:                     NOT AUTHORIZED
 event-source enablement:               NOT AUTHORIZED
 provider-heavy live execution:         NOT AUTHORIZED
+model execution for demo:              NOT AUTHORIZED
 custom public domain publication:      NOT AUTHORIZED
 ```
 
@@ -227,16 +267,9 @@ PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Gove
 
 ## Next implementation slice
 
-After Gate 19.9 reaches protected merge, Gate 19.10 will implement the canonical deterministic end-to-end demo runner.
+Gate 19.10 is the active slice. It closes only after exact-head CI/security/CodeQL, HUMAN protected merge, and post-merge verification.
 
-Target reviewer flow:
-
-```bash
-uv sync --frozen
-uv run python scripts/demo_opslens.py --scenario material-vulnerability --format text
-```
-
-The exact CLI contract may change during Gate 19.10. The canonical path must require no AWS credentials, no third-party code execution, and no live provider access after dependencies are installed.
+After Gate 19.10 closes, Gate 19.11 will add the remaining two canonical scenario classes and deterministic evaluation over the same runner boundary.
 
 ## Permanent invariants
 
