@@ -4,6 +4,8 @@ _Last updated: 2026-09-12_
 
 This document is the current accumulated architecture baseline through **Phase 19 Gate 19.8**, with Gate 19.9 freezing the demonstration-focused V1 closeout boundary.
 
+Phases 0–18 are complete. The retained historical phase selected after Phase 18 remains **Phase 19 — Bounded Public Runtime & Productization**; Gate 19.9 narrows V1 completion scope without rewriting that decision.
+
 OpsLens V1 is a demonstration and architecture lab, not a production SaaS.
 
 ## 1. Purpose
