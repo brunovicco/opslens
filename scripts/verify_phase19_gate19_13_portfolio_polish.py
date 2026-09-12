@@ -260,7 +260,7 @@ def main() -> None:
     _verify_lab()
 
     source = Path(__file__).read_text(encoding="utf-8")
-    for marker in ("import " + "boto3", "from " + "boto3", "subprocess"):
+    for marker in ("import " + "boto3", "from " + "boto3", "sub" + "process"):
         assert marker not in source, marker
 
     print("Gate 19.13 portfolio/readme/architecture verification: PASS")
