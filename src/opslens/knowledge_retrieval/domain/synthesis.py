@@ -1,6 +1,5 @@
 """Provider-independent contracts for bounded knowledge synthesis."""
 
-import json
 import re
 from dataclasses import dataclass
 from enum import StrEnum
@@ -10,6 +9,7 @@ from typing import Self
 from opslens.knowledge_retrieval.domain.context import AssembledContext
 from opslens.knowledge_retrieval.domain.errors import KnowledgeRetrievalValidationError
 from opslens.knowledge_retrieval.domain.models import MAX_RETRIEVAL_QUERY_CHARS
+from opslens.shared.evidence import canonical_json
 
 SYNTHESIS_CONTRACT_ID = "knowledge-synthesis-contract:v1"
 DEFAULT_SYNTHESIS_MAX_OUTPUT_CHARS = 4_000
@@ -57,12 +57,7 @@ def _sha256_text(text: str) -> str:
 
 def _canonical_json_bytes(payload: object) -> bytes:
     """Serialize one deterministic fingerprint payload."""
-    return json.dumps(
-        payload,
-        ensure_ascii=False,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(payload)
 
 
 class SynthesisAuthorityDecision(StrEnum):

@@ -15,6 +15,7 @@ from opslens.public_analysis.domain import (
     MeasurementClassification,
     RepresentativeWorkloadStage,
 )
+from opslens.shared.evidence import canonical_json
 
 LIVE_MEASUREMENT_ARTIFACT_TYPE: Final = (
     "phase-19-gate-19-2-live-measurement:v1"
@@ -297,16 +298,8 @@ class RepresentativeLiveMeasurementArtifact:
         }
 
     def serialize(self) -> bytes:
-        """Serialize canonical UTF-8 JSON with a final newline."""
-        return (
-            json.dumps(
-                self.to_json_dict(),
-                ensure_ascii=False,
-                separators=(",", ":"),
-                sort_keys=True,
-            )
-            + "\n"
-        ).encode("utf-8")
+        """Serialize canonical identity bytes with a final newline."""
+        return canonical_json(self.to_json_dict()) + b"\n"
 
 
 def build_representative_live_measurement_artifact(

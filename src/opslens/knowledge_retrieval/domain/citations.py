@@ -1,6 +1,5 @@
 """Deterministic citation catalog contracts over already-admitted synthesis context."""
 
-import json
 import re
 from dataclasses import dataclass
 from hashlib import sha256
@@ -13,6 +12,7 @@ from opslens.knowledge_retrieval.domain.context import (
 )
 from opslens.knowledge_retrieval.domain.errors import KnowledgeRetrievalValidationError
 from opslens.knowledge_retrieval.domain.models import Citation
+from opslens.shared.evidence import canonical_json
 
 CITATION_CATALOG_ID = "knowledge-citation-catalog:v1"
 
@@ -46,12 +46,7 @@ def _validate_sha256(value: object, label: str) -> str:
 
 def _canonical_json_bytes(payload: object) -> bytes:
     """Serialize deterministic content-free citation identity evidence."""
-    return json.dumps(
-        payload,
-        ensure_ascii=False,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(payload)
 
 
 def _projected_citation_payload(

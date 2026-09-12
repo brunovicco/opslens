@@ -2,7 +2,6 @@
 
 import base64
 import binascii
-import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
@@ -33,6 +32,7 @@ from opslens.public_analysis.domain.async_job import (
     validate_idempotency_key,
 )
 from opslens.public_analysis.domain.errors import PublicAnalysisValidationError
+from opslens.shared.evidence import canonical_json_text
 
 MAX_HTTP_API_BODY_TEXT_CHARS = 8_192
 
@@ -86,13 +86,7 @@ class AsyncHttpResponse:
 
 def _canonical_json(value: object) -> str:
     """Serialize one small deterministic public HTTP response."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    )
+    return canonical_json_text(value)
 
 
 def _mapping(value: object, *, field: str) -> dict[str, object]:

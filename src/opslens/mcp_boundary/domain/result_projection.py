@@ -1,6 +1,5 @@
 """Deterministic business-result projection for the first bounded MCP transport slice."""
 
-import json
 import re
 from dataclasses import dataclass
 from hashlib import sha256
@@ -13,6 +12,7 @@ from opslens.agent_baseline.domain import (
 from opslens.mcp_boundary.domain.errors import McpBoundaryValidationError
 from opslens.mcp_boundary.domain.execution import McpCapabilityExecutionBridge
 from opslens.mcp_boundary.domain.exposure import McpToolName
+from opslens.shared.evidence import canonical_json
 
 MCP_RESULT_PROJECTION_CONTRACT_VERSION = "mcp-result-projection:v1"
 MAX_MCP_RESULT_ROWS = 100
@@ -31,13 +31,7 @@ _PROTOCOL_COLUMNS = ("cve", "epss_score")
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one deterministic MCP result-projection identity payload."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _canonical_sha256(value: object) -> str:

@@ -11,6 +11,7 @@ from opslens.knowledge_retrieval.domain import (
     MAX_RETRIEVAL_QUERY_CHARS,
     GroundedSynthesisRequest,
 )
+from opslens.shared.evidence import model_visible_json
 
 TRUSTED_GROUNDED_SYNTHESIS_INSTRUCTIONS_V1 = (
     "You are the OpsLens grounded knowledge synthesis component. Answer only from the "
@@ -37,12 +38,7 @@ class GroundedSynthesisPromptError(ValueError):
 
 def _canonical_json(value: object) -> str:
     """Serialize one deterministic JSON value for prompt identity."""
-    return json.dumps(
-        value,
-        ensure_ascii=False,
-        separators=(",", ":"),
-        sort_keys=True,
-    )
+    return model_visible_json(value)
 
 
 def _require_trimmed(value: object, *, field: str) -> str:

@@ -1,6 +1,5 @@
 """Provider-neutral evidence contracts for bounded single-agent model reasoning."""
 
-import json
 import re
 from dataclasses import dataclass
 from enum import StrEnum
@@ -14,6 +13,7 @@ from opslens.agent_baseline.domain.models import (
     AgentDecision,
     SingleAgentTask,
 )
+from opslens.shared.evidence import canonical_json
 
 SINGLE_AGENT_REASONING_CONTRACT_VERSION = "single-agent-reasoning:v1"
 MAX_AGENT_REASONING_INVOCATIONS_PER_TASK = 1
@@ -51,13 +51,7 @@ class AgentReasoningFailureCategory(StrEnum):
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one deterministic reasoning identity payload."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _canonical_sha256(value: object) -> str:

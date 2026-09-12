@@ -1,12 +1,12 @@
 """Deterministic CloudWatch EMF adapter for admitted operational evidence."""
 
-import json
 import re
 from dataclasses import dataclass
 from enum import StrEnum
 from hashlib import sha256
 from typing import Final, Protocol
 
+from opslens.shared.evidence import canonical_json
 from opslens.shared.observability.contracts import (
     OPERATIONAL_TELEMETRY_CONTRACT_VERSION,
     OPERATIONAL_TELEMETRY_OPERATION,
@@ -69,13 +69,7 @@ class EmfLineWriter(Protocol):
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one EMF document deterministically."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _validate_timestamp_ms(value: object) -> int:

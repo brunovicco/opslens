@@ -1,6 +1,5 @@
 """Provider-independent contracts for bounded Phase 8 hybrid synthesis."""
 
-import json
 import re
 from dataclasses import dataclass
 from enum import StrEnum
@@ -13,6 +12,7 @@ from opslens.hybrid_retrieval.domain.evidence import (
     StructuredScalar,
 )
 from opslens.hybrid_retrieval.domain.models import HybridRoute
+from opslens.shared.evidence import model_visible_json
 
 HYBRID_SYNTHESIS_CONTRACT_VERSION = "hybrid-synthesis:v1"
 MAX_HYBRID_SYNTHESIS_QUESTION_CHARS = 1_000
@@ -30,13 +30,7 @@ _CITATION_ID_PATTERN = re.compile(r"^S[1-9][0-9]*$")
 
 def _canonical_json(payload: object) -> str:
     """Serialize deterministic identity evidence."""
-    return json.dumps(
-        payload,
-        allow_nan=False,
-        ensure_ascii=False,
-        separators=(",", ":"),
-        sort_keys=True,
-    )
+    return model_visible_json(payload)
 
 
 def _canonical_sha256(payload: object) -> str:

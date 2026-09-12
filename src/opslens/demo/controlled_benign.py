@@ -35,6 +35,7 @@ from opslens.public_analysis.domain import (
 from opslens.repository_intelligence.domain import compute_git_blob_sha1
 from opslens.risk_policy.application import prioritize_repository_analysis
 from opslens.risk_policy.domain import RiskPrioritizationResult
+from opslens.shared.evidence import canonical_json
 from opslens.transformation.nvd.domain.models import NvdCveCoreRecord
 from opslens.transformation.nvd.domain.transformer import NvdCveCoreTransformer
 
@@ -54,13 +55,7 @@ _CVE_ID = "CVE-2026-12345"
 
 def _canonical_json(value: object) -> bytes:
     """Serialize deterministic JSON for benign demo identity and reviewer output."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _decode_object(payload: bytes, *, label: str) -> dict[str, JsonValue]:

@@ -1,6 +1,5 @@
 """Provider-neutral deterministic contracts for one bounded multi-agent handoff."""
 
-import json
 import re
 from dataclasses import dataclass
 from enum import StrEnum
@@ -13,6 +12,7 @@ from opslens.agent_baseline.domain.models import (
     SingleAgentTask,
 )
 from opslens.multi_agent.domain.errors import MultiAgentHandoffValidationError
+from opslens.shared.evidence import canonical_json
 
 MULTI_AGENT_HANDOFF_CONTRACT_VERSION = "multi-agent-handoff:v1"
 MAX_MULTI_AGENT_HANDOFFS_PER_TASK = 1
@@ -54,13 +54,7 @@ _ABSTENTION_ID_PATTERN = re.compile(
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one bounded handoff identity payload deterministically."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _canonical_sha256(value: object) -> str:

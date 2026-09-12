@@ -1,6 +1,5 @@
 """Typed deterministic execution evidence for Phase 11 single-agent capabilities."""
 
-import json
 import re
 from dataclasses import dataclass
 from hashlib import sha256
@@ -12,6 +11,7 @@ from opslens.knowledge_retrieval.domain.synthesis import SynthesisRequest
 from opslens.public_analysis.domain.request import PublicAnalysisRequest
 from opslens.semantic_query.application.models import AthenaQueryResult
 from opslens.semantic_query.domain.models import SemanticQuery
+from opslens.shared.evidence import canonical_json
 
 SINGLE_AGENT_EXECUTION_CONTRACT_VERSION = "single-agent-execution:v1"
 MAX_AGENT_EXECUTIONS_PER_CALL = 1
@@ -32,13 +32,7 @@ _EXECUTION_ID_PATTERN = re.compile(
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one deterministic execution identity payload."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _canonical_sha256(value: object) -> str:
