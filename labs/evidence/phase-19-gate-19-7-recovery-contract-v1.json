@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "artifact_type": "phase-19-gate-19-7-recovery-contract:v1",
+  "source_issue": 361,
+  "recovery_source_base_sha": "1cf65a612919c14890e05eefa44cc2d2bb2f1e6f",
+  "failed_apply": {
+    "failed_plan_binary_sha256": "4f9c7a07e792da2dfbde7ba38ecfb8286386a2fc7eba8ef79ae346b4a53e757d",
+    "failed_plan_json_sha256": "5918eb69040af7ae3e7aa3fc428e4488b9ae6de98ebf8a0251f9faed2892580a",
+    "failed_plan_reusable": false,
+    "retry_authorized": false,
+    "failure_class": "LAMBDA_RESERVED_CONCURRENCY_ACCOUNT_CONSTRAINT",
+    "failed_resource": "aws_lambda_function.public_async_api",
+    "failed_operation": "PutFunctionConcurrency",
+    "requested_reserved_concurrency": 2,
+    "account_concurrent_executions_limit": 10
+  },
+  "partial_state": {
+    "expected_managed_resource_count": 21,
+    "managed_expected_resource_count": 16,
+    "missing_managed_create_count": 5,
+    "missing_managed_create_inventory": [
+      "aws_apigatewayv2_integration.public_async_api_lambda",
+      "aws_apigatewayv2_route.public_async_result",
+      "aws_apigatewayv2_route.public_async_status",
+      "aws_apigatewayv2_route.public_async_submit",
+      "aws_lambda_permission.public_async_api_gateway"
+    ],
+    "unexpected_public_async_resource_count": 0
+  },
+  "recovery_design": {
+    "api_reserved_concurrency": 0,
+    "worker_reserved_concurrency": 0,
+    "api_submit_enabled": false,
+    "worker_enabled": false,
+    "worker_event_source_enabled": false,
+    "execute_api_endpoint_disabled": true,
+    "custom_public_domain_present": false,
+    "provider_heavy_worker_executor_composed": false,
+    "only_existing_resource_allowed_to_update": "aws_lambda_function.public_async_api",
+    "maximum_existing_resource_update_count": 1,
+    "managed_delete_count": 0,
+    "managed_replacement_count": 0,
+    "rationale": "The account concurrency limit is 10 and Lambda refused a positive reservation because the service retains at least 10 unreserved executions. Reserved concurrency zero is the fail-closed recovery state and blocks API Lambda invocation until a later explicit enablement gate."
+  },
+  "plan_authority": {
+    "fresh_human_plan_required": true,
+    "remote_state_lock_disabled_during_plan": true,
+    "failed_binary_plan_reuse_forbidden": true,
+    "terraform_apply_authorized": false,
+    "explicit_human_apply_authorization_required": true,
+    "runtime_enablement_authorized": false,
+    "public_endpoint_enablement_authorized": false,
+    "worker_enablement_authorized": false,
+    "event_source_enablement_authorized": false,
+    "provider_heavy_execution_authorized": false,
+    "iam_broadening_authorized": false
+  },
+  "retained_invariants": [
+    "plan != apply",
+    "materialized != enabled",
+    "UNMEASURED != zero",
+    "configured limit != measured utilization",
+    "queue delivery != business execution authority",
+    "provider retry != business retry authority"
+  ]
+}
