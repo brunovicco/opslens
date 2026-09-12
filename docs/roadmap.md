@@ -98,6 +98,10 @@ See [`v1-demonstration-scope.md`](v1-demonstration-scope.md).
 
 Froze `public-analysis-workload:v1` and deferred topology selection until representative evidence existed.
 
+```text
+historical decision: DEFERRED_PENDING_MEASUREMENT
+```
+
 ### Gate 19.2 — Representative Workload Measurement — COMPLETE
 
 One bounded live representative workload measured:
@@ -151,6 +155,7 @@ Runtime remained disabled and non-public.
 ### Gate 19.8 — Request-time Threat Evidence Authority Contract — COMPLETE
 
 Protected merge: PR #375 at `e538fa3e96c29cf76dd3aa83a9967e090587b6fb`.  
+Source protected main for Gate 19.8: `8700478c7fca230e5984c3ce034194ea3bd337e4`.  
 Post-merge CodeQL: `34713360403` / run #393 / success.  
 Issue #374: closed completed.
 
@@ -165,7 +170,13 @@ PublicRepositoryEvidenceExecution
  -> retained deterministic correlation/enrichment
 ```
 
-It deliberately deferred the physical provider adapter. That provider-backed arbitrary request-time path is no longer a V1 blocker because the canonical V1 demonstration is offline-first. It remains available as a Post-V1 experiment.
+It deliberately deferred the physical provider adapter:
+
+```text
+DEFERRED_PENDING_BOUNDED_RUNTIME_ADAPTER_EVIDENCE
+```
+
+That provider-backed arbitrary request-time path is no longer a V1 blocker because the canonical V1 demonstration is offline-first. It remains available as a Post-V1 experiment.
 
 ## Remaining V1 completion gates
 
