@@ -1,0 +1,68 @@
+{
+  "schema_version": "opslens.phase19.gate19_12.local_visual_demo.v1",
+  "phase": 19,
+  "gate": "19.12",
+  "issue": 382,
+  "source_protected_main_sha": "0c5bbe34792406ee5c66fcc5ac4b75923512703b",
+  "decision": "LOCALHOST_STANDARD_LIBRARY_PRESENTATION_ADAPTER",
+  "gate_19_11": {
+    "issue": 380,
+    "pull_request": 381,
+    "merge_sha": "0c5bbe34792406ee5c66fcc5ac4b75923512703b",
+    "post_merge_codeql_run_id": 34718268902,
+    "post_merge_codeql_run_number": 424,
+    "post_merge_codeql_conclusion": "success"
+  },
+  "canonical_command": "uv run python scripts/demo_opslens_web.py",
+  "local_bind": {
+    "host": "127.0.0.1",
+    "default_port": 8765,
+    "external_host_argument": false
+  },
+  "routes": [
+    "/",
+    "/health",
+    "/scenario/material-vulnerability",
+    "/scenario/controlled-benign",
+    "/scenario/fail-closed-incomplete-evidence"
+  ],
+  "canonical_scenario_ids": [
+    "material-vulnerability",
+    "controlled-benign",
+    "fail-closed-incomplete-evidence"
+  ],
+  "presentation_contract": {
+    "reuses_retained_demo_results": true,
+    "recalculates_business_truth": false,
+    "shows_repository_and_dependency_evidence": true,
+    "shows_finding_or_fail_closed_state": true,
+    "shows_risk_and_provenance": true,
+    "model_panel_status": "DISABLED_NOT_AUTHORITATIVE",
+    "html_dynamic_values_escaped": true,
+    "external_assets": false,
+    "javascript_required": false
+  },
+  "required_properties": {
+    "aws_credentials_required": false,
+    "network_after_dependency_installation": false,
+    "live_provider_execution": false,
+    "model_execution": false,
+    "third_party_repository_code_execution": false,
+    "localhost_only_default_bind": true,
+    "scenario_allowlist": true,
+    "read_only_http_surface": true,
+    "visual_projection_is_business_authority": false
+  },
+  "authority_impact": {
+    "terraform_operations": 0,
+    "aws_mutations": 0,
+    "iam_mutations": 0,
+    "artifact_publications": 0,
+    "runtime_enablements": 0,
+    "provider_live_executions": 0,
+    "model_invocations": 0,
+    "third_party_repository_code_executions": 0,
+    "pr_89_modifications": 0
+  },
+  "next_gate": "19.13_portfolio_readme_architecture_polish"
+}
