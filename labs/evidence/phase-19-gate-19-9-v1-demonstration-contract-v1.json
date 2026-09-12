@@ -1,0 +1,64 @@
+{
+  "schema_version": "opslens.phase19.gate19_9.v1_demonstration_contract.v1",
+  "phase": 19,
+  "gate": "19.9",
+  "status": "IN_PROGRESS",
+  "source_protected_main_sha": "e538fa3e96c29cf76dd3aa83a9967e090587b6fb",
+  "gate_19_8": {
+    "issue": 374,
+    "pull_request": 375,
+    "merge_sha": "e538fa3e96c29cf76dd3aa83a9967e090587b6fb",
+    "post_merge_codeql_run_id": 34713360403,
+    "post_merge_codeql_run_number": 393,
+    "post_merge_codeql_conclusion": "success"
+  },
+  "v1_product_mode": "DEMONSTRATION_ARCHITECTURE_LAB",
+  "canonical_demo_goal": "clone -> setup -> one deterministic demo command -> evidence-backed result in under ten minutes",
+  "required_completion_gates": [
+    "19.9_v1_contract_and_sync",
+    "19.10_deterministic_demo_runner",
+    "19.11_curated_scenarios_and_evaluation",
+    "19.12_local_visual_demo",
+    "19.13_portfolio_polish",
+    "19.14_v1_closeout_and_release_readiness"
+  ],
+  "required_demo_scenarios": [
+    "material_vulnerability",
+    "controlled_benign",
+    "fail_closed_incomplete_or_ambiguous_evidence"
+  ],
+  "production_non_goals": [
+    "internet_facing_production_runtime",
+    "authentication_or_oidc",
+    "multi_tenancy",
+    "commercial_quotas_or_billing",
+    "custom_public_domain",
+    "waf_or_production_abuse_controls",
+    "24x7_operations",
+    "production_slo_or_sla",
+    "ha_dr_program",
+    "production_tco_claim",
+    "provider_backed_arbitrary_request_time_threat_adapter",
+    "public_worker_enablement",
+    "event_source_enablement"
+  ],
+  "authority_impact": {
+    "terraform_provider_operations": 0,
+    "aws_mutations": 0,
+    "iam_mutations": 0,
+    "lambda_artifact_publications": 0,
+    "runtime_enablements": 0,
+    "provider_live_executions": 0,
+    "third_party_repository_code_executions": 0,
+    "pr_89_modifications": 0
+  },
+  "invariants": [
+    "Agents reason. Code verifies evidence.",
+    "READ, NEVER EXECUTE third-party repository code.",
+    "Structured facts use structured retrieval.",
+    "missing evidence != benign evidence",
+    "materialized != enabled",
+    "demonstration readiness != production readiness",
+    "AIP-C01 topic != product requirement"
+  ]
+}

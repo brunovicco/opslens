@@ -6,257 +6,321 @@
 
 ### Supply Chain Verificável e Arquitetura GenAI na AWS
 
-**Threat Intelligence · Repository Intelligence · Risco Determinístico · Bedrock RAG · Hybrid Retrieval · Agentic AI · MCP · AgentCore · A2A · Inspector · Evaluation · Security Hardening · Cost Engineering**
+**Threat Intelligence · Repository Intelligence · Risco Determinístico · Bedrock RAG · Hybrid Retrieval · Agentic AI · MCP · AgentCore · A2A · Security · Evaluation · Cost Engineering**
 
 </div>
 
-OpsLens é um laboratório open source de arquitetura AWS e uma plataforma de inteligência de supply chain de software construída em torno de um princípio:
+OpsLens é um laboratório open source de arquitetura AWS e inteligência de supply chain de software construído em torno de um princípio:
 
 > **Agents reason. Code verifies evidence.**
 
-O projeto responde a uma pergunta prática: dado o software realmente usado por um repositório, quais vulnerabilidades o afetam, qual evidência exata comprova isso, o que deve ser priorizado e qual orientação verificada pode ajudar na ação?
+O projeto responde a uma pergunta prática:
 
-A plataforma separa deliberadamente raciocínio probabilístico da autoridade determinística responsável por package/version matching, correlação de vulnerabilidades, política de risco, admissão de consultas semânticas, compilação SQL, admissão de evidências, autorização de ferramentas, admissão de resultados e limites de custo/recursos.
+> Dado o software realmente usado por um repositório, quais vulnerabilidades o afetam, qual evidência exata comprova isso, o que deve ser priorizado e qual orientação verificada pode ajudar na ação?
+
+O OpsLens separa deliberadamente raciocínio probabilístico da autoridade determinística de identidade de pacotes, aplicabilidade de versões, correlação de vulnerabilidades, evidências KEV/EPSS/CVSS, política de risco, admissão de consultas semânticas, compilação SQL, admissão de evidências, autorização de ferramentas e limites de execução/recursos.
 
 > **Repository Risk != Runtime Exposure.**
 
 ## Estado atual
 
-**Phases 0–18 estão completas.** A Phase 18 foi protegida por squash merge no PR #290 em `feca774535b7d83f57c26f4e9fe7da71ce268f0f`.
+**As Phases 0–18 estão completas. A Phase 19 é a fase final de fechamento da V1.**
 
-A **Phase 19 — Bounded Public Runtime & Productization** está em andamento. A Gate 19.1 está completa pelo PR #292. A Gate 19.2 está completa pelo protected PR #347 em `71eda2650889d3047259d37be226862ed2a09092`. A Gate 19.3 está completa pelo protected PR #349 em `18d31c03d27448c88a6ffcba16683f3875a5ba15`. A Gate 19.4 está completa pelo protected PR #351 em `a5067e05fda74aad4d95d7f1a875110fb676304a`. A Gate 19.5 está completa pelo protected PR #353 em `61749bfac7b7bc9d032567e0b1870f8c1f7dedd4`; a publicação imutável dos artefatos foi admitida e o CodeQL pós-merge está verde. A Gate 19.6 — Exact Terraform Plan & Offline Admission é a próxima. Nenhum deployment de runtime está autorizado.
+Phases 0–18 estão completas. A fase historicamente selecionada após a Phase 18 permanece **Phase 19 — Bounded Public Runtime & Productization**; a Gate 19.9 apenas reduz o escopo necessário para o fechamento demonstrativo da V1, sem reescrever essa decisão.
+
+Checkpoint protegido atual:
+
+```text
+main: e538fa3e96c29cf76dd3aa83a9967e090587b6fb
+Gate 19.8: COMPLETE
+protected merge: PR #375
+CodeQL pós-merge: 34713360403 / run #393 / success
+Gate 19.9: IN PROGRESS / issue #376
+```
+
+Marcadores históricos retidos das Gates 19.1/19.2:
 
 ```text
 19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE
-      workload: public-analysis-workload:v1
-      decisão histórica: DEFERRED_PENDING_MEASUREMENT
-      hipótese principal naquele momento: ASYNC_SUBMIT_STATUS_RESULT
+decisão histórica: DEFERRED_PENDING_MEASUREMENT
+public-analysis-workload:v1
 19.2  Representative Workload Measurement              COMPLETE
-      end-to-end medido: 17.748 ms
-      estágios Bedrock medidos: 13.098 ms / 73,80% do E2E
-      padrão de interação selecionado: ASYNC_SUBMIT_STATUS_RESULT
-      protected merge: PR #347 / 71eda2650889d3047259d37be226862ed2a09092
-19.3  Concrete Async Topology Contract                  COMPLETE
-      protected merge: PR #349 / 18d31c03d27448c88a6ffcba16683f3875a5ba15
-      topologia selecionada: HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB
-      deployment autorizado: NÃO
-19.4  Disabled Async Runtime Implementation             COMPLETE
-      protected merge: PR #351 / a5067e05fda74aad4d95d7f1a875110fb676304a
-      runtime materializado por default: false
-      execute-api endpoint habilitado: NÃO
-      submit/worker habilitados: NÃO
-      deployment autorizado: NÃO
-19.5  Immutable Async Deployment Artifacts              COMPLETE
-      issue: #352 / protected merge: PR #353 / 61749bfac7b7bc9d032567e0b1870f8c1f7dedd4
-      autoridade de publicação: HUMAN_ONLY_CREATE_ONLY
-      mutações S3 PutObject: 2
-      entrada para terraform plan pronta: SIM
-      terraform apply autorizado: NÃO
-19.6  Exact Terraform Plan & Offline Admission          NEXT
-      terraform apply autorizado: NÃO
+ASYNC_SUBMIT_STATUS_RESULT
 ```
 
-A Gate 19.2 não afirma que a execução bem-sucedida estourou timeout. O baseline medido terminou abaixo de 30 segundos. A decisão async decorre de acoplamento à latência de providers, retry safety, backpressure e isolamento de falhas; os cenários derivados permanecem explicitamente separados da evidência medida.
+Esses marcadores preservam a decisão histórica; as Gates 19.2–19.8 posteriores encerraram a pendência de medição sem reescrever a evidência anterior.
 
-A Gate 19.3 selecionou a topologia de design: API Gateway HTTP API + API Lambda + SQS + Lambda worker + DynamoDB, com DLQ e autoridade explícita para idempotência, estado e retries. A Gate 19.4 implementou esse design **em código e Terraform no repositório apenas**, mantendo `public_async_runtime_materialized=false`, execute-api desabilitado, switches de submit/worker desabilitados, event-source mapping do SQS desabilitado, reserved concurrency do worker em zero e nenhum domínio público customizado. A Gate 19.5 então produziu ZIPs separados e determinísticos para API/worker, publicou por operação humana exatamente duas versões content-addressed em modo create-only e persistiu as coordenadas exatas `Key + VersionId + source_code_hash` necessárias para a Gate 19.6. Nenhum `terraform apply`, mutação de runtime AWS/IAM, habilitação de endpoint público ou execução pública provider-heavy é autorizada.
+O runtime assíncrono AWS retido já foi materializado e convergiu, mas permanece intencionalmente desabilitado e não público:
 
-Veja [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md), [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [AIP-C01 Learning Map](docs/aip-c01-learning-map.md), o [closeout da Gate 19.2](labs/phase-19-gate-19-2-closeout.md), o [contrato da Gate 19.3](labs/phase-19-gate-19-3-async-topology-contract.md), a [implementação disabled da Gate 19.4](labs/phase-19-gate-19-4-disabled-async-runtime.md), o [runbook de publicação da Gate 19.5](labs/phase-19-gate-19-5-immutable-artifact-publication-runbook.md), o [closeout da Gate 19.5](labs/phase-19-gate-19-5-closeout.md) e o [índice de ADRs](docs/adr/README.md).
+```text
+runtime materializado: SIM
+endpoint público habilitado: NÃO
+submit habilitado: NÃO
+worker habilitado: NÃO
+event-source mapping habilitado: NÃO
+execução pública provider-heavy: NÃO
+```
+
+```text
+materialized != enabled
+```
+
+## Escopo da V1
+
+A V1 do OpsLens é intencionalmente um **laboratório de demonstração e arquitetura**, não um SaaS de produção.
+
+O objetivo para quem avalia o projeto é:
+
+```text
+clone
+ -> setup
+ -> um comando de demo offline determinístico
+ -> resultado baseado em evidências
+```
+
+O fechamento da V1 prioriza reprodutibilidade, proveniência, clareza arquitetural, failure paths relevantes e apresentação de portfólio. Ele **não** exige operação pública em produção.
+
+Veja [Escopo de Demonstração da V1](docs/v1-demonstration-scope.md) e [Checklist de Fechamento da V1](docs/v1-completion-checklist.md).
 
 ## Arquitetura em resumo
 
 ```text
-NVD / CISA KEV / FIRST EPSS / GitHub Advisories
+NVD / CISA KEV / FIRST EPSS / GitHub Security Advisories
         |
         v
 evidência de ameaça preservando a fonte
         |
-repositório público -> snapshot imutável -> uv.lock inerte
+repositório público -> snapshot imutável -> evidência inerte de dependências
         |
         v
-correlação determinística PyPI + PEP 440
+aplicabilidade determinística pacote/versão
         |
-NVD/CVSS + KEV + EPSS
+        v
+GHSA/NVD/CVSS + KEV + EPSS
         |
-RepositoryAnalysisResult -> Risk Policy v1 determinística
+        v
+RepositoryAnalysisResult -> Risk Policy determinística
 
-pergunta factual em linguagem natural
+pergunta factual estruturada
         |
         v
 proposta Bedrock limitada -> admissão SemanticQuery determinística
         |
         v
-compilador SQL tipado -> Athena read-only limitada
+compilador SQL tipado -> Athena read-only limitado
 
-fontes oficiais de conhecimento
+pergunta de conhecimento/remediação
         |
         v
-corpus canônico -> Bedrock Knowledge Base -> S3 Vectors
+Bedrock Knowledge Base -> evidência validada -> síntese limitada + citações
+
+evidência estruturada + semântica admitida
         |
         v
-Retrieve limitado -> evidência validada -> síntese + citações
-
-Evidência estruturada + semântica
+autorização determinística -> raciocínio de agente limitado
         |
         v
-roteamento/composição determinísticos -> raciocínio de agente limitado
-        |
-        v
-autorização tipada de capability -> execução/admissão de resultado
+resultado admitido
 ```
 
-O LLM não recebe autoridade irrestrita de text-to-SQL. Conteúdo recuperado é evidência, não autoridade de instrução. Sucesso de protocolo/ferramenta não equivale à verdade de negócio.
+O modelo pode explicar, classificar, planejar, rotear ou sintetizar sobre evidências admitidas. Ele não possui autoridade sobre identidade de pacote, aplicabilidade de vulnerabilidade, proveniência, política de risco, SQL arbitrário ou autorização de execução.
 
-## Fronteira pública do produto
+## Fronteira de segurança para repositórios públicos
 
-O `main` protegido continua sem **runtime HTTP público implantado**. A Gate 19.4 é implementação protegida em código/Terraform apenas; a Gate 19.5 concluiu a proveniência imutável dos artefatos de deployment sem materializar recursos de runtime. A Gate 19.6 é somente uma fronteira de planejamento/admissão exatos.
-
-A autoridade de public analysis começa por:
+O OpsLens trata o conteúdo do repositório como dados não confiáveis.
 
 ```text
-JSON não confiável
- -> admissão estrita da requisição
- -> coordenadas GitHub validadas
- -> evidência imutável do repositório
- -> autoridade determinística de ameaça/risco
- -> evidência semântica limitada
- -> raciocínio de modelo limitado
- -> admissão determinística do resultado
+READ, NEVER EXECUTE third-party repository code.
 ```
 
-A Gate 19.2 exercitou essa execução representativa não pública completa com admissão determinística, accounting de providers, evidência persistida e revisão offline. CI e ChatGPT não executaram o caminho live dos providers.
+O projeto não executa package managers, builds, testes, setup hooks, Dockerfiles, workflows ou scripts do repositório como parte da análise.
 
-A Gate 19.3 congelou, e a Gate 19.4 implementa atrás de defaults disabled, a seguinte forma assíncrona:
+## Linhagem da Phase 19
 
 ```text
-POST /v1/analyses
-  -> API Gateway HTTP API
-  -> API Lambda determinística
-  -> autoridade de job/idempotência no DynamoDB
-  -> fila SQS standard
-  -> Lambda worker
-  -> resultado admitido de volta ao DynamoDB
-
-GET /v1/analyses/{job_id}
-GET /v1/analyses/{job_id}/result
+19.1  Public Runtime Hypothesis & Launch Contract              COMPLETE
+19.2  Representative Workload Measurement                     COMPLETE
+19.3  Concrete Async Topology Contract                         COMPLETE
+19.4  Disabled Async Runtime Implementation                    COMPLETE
+19.5  Immutable Async Deployment Artifacts                     COMPLETE
+19.6  Exact Terraform Plan & Offline Admission                 COMPLETE
+19.7  Controlled Disabled Runtime Materialization              COMPLETE
+19.8  Request-time Threat Evidence Authority Contract          COMPLETE
+19.9  V1 Demonstration Closeout Contract                       IN PROGRESS
+19.10 Deterministic End-to-End Demo Runner                     PLANNED
+19.11 Curated Demo Scenarios + Deterministic Evaluation        PLANNED
+19.12 Minimal Local Visual Demo                                PLANNED
+19.13 Portfolio / README / Architecture Polish                 PLANNED
+19.14 V1 Closeout + Release Readiness                          PLANNED
 ```
 
-O job record, e não a entrega da fila, é a autoridade de execução de negócio. A fila carrega apenas a identidade determinística `job_id`. Entregas duplicadas passam pela autoridade condicional de estado/attempt no DynamoDB. O worker permanece sem autoridade de provider até uma gate futura admitir e compor explicitamente o executor provider-heavy.
-
-A Gate 19.5 adicionou uma segunda fronteira de proveniência antes de qualquer plano de deployment exato:
+### Topologia AWS assíncrona retida
 
 ```text
-fonte específica por role + hashes de dependências travadas
- -> bytes ZIP determinísticos
- -> SHA-256 + Lambda source_code_hash
- -> chave S3 content-addressed
- -> publicação create-only operada SOMENTE POR HUMANO
- -> S3 VersionId imutável exato
- -> entrada do plano Terraform exato da Gate 19.6
+HTTP API
+ -> API Lambda
+ -> autoridade de job/idempotência no DynamoDB
+ -> fila SQS standard
+ -> Lambda worker
+ -> status/resultado no DynamoDB
+ -> SQS DLQ
 ```
 
-`artifact hash != S3 VersionId`, sucesso de publicação não significa autorização de deployment e `terraform plan != terraform apply`.
+Essa topologia permanece como evidência de arquitetura e deployment. A V1 não exige sua habilitação pública.
 
-## Evidência medida retida
+## Autoridade de threat evidence em request-time
 
-O portfólio continua deliberadamente baseado em evidência. Exemplos:
-
-| Experimento | Evidência |
-| --- | --- |
-| Phase 7 grounding review | 11/13 claims suportados; razão derivada `0.8461538461538461` |
-| Phase 11 reasoning de referência | 6/6 casos; 3.395 tokens; mediana de provider latency 809,5 ms; custo derivado USD `0.0041921` |
-| Phase 12 comparação com dois modelos | 6/6 casos, porém 5.982 tokens, mediana derivada 1.694 ms e custo derivado USD `0.0074338`; não retida como default |
-| Phase 14 AgentCore | replay 6/6; total derivado USD `0.006572445136128483`; apenas lab opcional |
-| Phase 16 Inspector | leitura limitada bem-sucedida com zero registros; **não** interpretada como zero runtime exposure |
-| Phase 17 recovery | ciclo pause/resume dos três schedulers com convergência Terraform final |
-| Phase 19 Gate 19.2 workload representativo | 17.748 ms end-to-end; 4 requests GitHub; 1 Bedrock Retrieve com 4.148 ms client elapsed; 1 chamada de modelo com 8.901 ms client elapsed / 7.772 ms provider latency; 5.936 tokens de entrada + 408 de saída; resultado admitido de 5.285 bytes |
-
-A cadeia machine-readable da Phase 18 começa em `labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json` e termina em `labs/evidence/phase-18-closeout-v1.json`. Artefatos históricos permanecem evidência imutável mesmo quando a documentação corrente avança.
-
-A Gate 19.2 persistiu o artefato live canônico em `labs/evidence/phase-19-gate-19-2-live-measurement-v1.json`, com hash independente `04ab754a12e25c4aeda0075d41b92693fec464aec4431b3734981488ff470114`, além do closeout machine-readable em `labs/evidence/phase-19-gate-19-2-closeout-v1.json`.
-
-A Gate 19.3 adiciona o contrato design-only em `labs/evidence/phase-19-gate-19-3-async-topology-contract-v1.json`; ele registra zero mutações de deployment/AWS/IAM/provider. A Gate 19.4 adiciona evidência de implementação/readiness em `labs/evidence/phase-19-gate-19-4-disabled-async-runtime-v1.json`. A Gate 19.5 mantém o manifest canônico de pré-publicação em `labs/evidence/phase-19-gate-19-5-prepublication-v1.json`; os campos `UNMEASURED / PENDING_HUMAN_PUBLICATION` descrevem corretamente aquele estado histórico anterior à publicação e não são reescritos. A evidência canônica posterior em `labs/evidence/phase-19-gate-19-5-artifact-publication-v1.json` registra os VersionIds imutáveis reais e a admissão offline bem-sucedida.
-
-Coordenadas determinísticas atuais da Gate 19.5:
+A Gate 19.8 introduziu a fronteira provider-neutral:
 
 ```text
-API SHA-256:     99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e
-API source hash: mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=
-API ZIP bytes:   17271715
-API VersionId:   E.jfB7dlkGCD.wHAurP7QXo4fuS_PW63
-
-Worker SHA-256:     0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9
-Worker source hash: DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck=
-Worker ZIP bytes:   1036437
-Worker VersionId:   sxiOdii4yFwR13t23xP5A8EU1JPV_7P1
+PublicRepositoryEvidenceExecution
+ -> PublicThreatEvidenceScope
+ -> PublicThreatEvidenceRequest
+ -> PublicThreatEvidenceAuthority
+ -> evidência exata GHSA/NVD/KEV/EPSS + proveniência
+ -> correlação/enriquecimento determinísticos
 ```
 
-São identidades de artefato e coordenadas imutáveis de objeto, não utilização de runtime nem evidência de deployment.
-
-## Limites de custo e recursos
-
-O OpsLens separa custo observado/derivado de limites configurados e proíbe agregação insegura entre experimentos não comparáveis.
+Semânticas importantes:
 
 ```text
-semantic planner max output          256 tokens
-single-agent max output               96 tokens
-multi-agent triage max output         64 tokens
-knowledge synthesis max output      2048 tokens
-Athena scan cutoff/query         10485760 bytes
-Scheduler maximum event age         3600 seconds
-Scheduler maximum retry attempts        2
+scope deriva apenas de evidência admitida do repositório
+normalização incompleta de pacote -> fail closed
+evidência fora do scope -> rejeitar
+latest_complete = política de seleção, não proveniência
+missing evidence != benign evidence
+autoridade do modelo sobre aplicabilidade/source truth = nenhuma
 ```
 
-São **limites configurados, não utilização medida**. A Gate 19.2 fornece evidência de medição do workload completo, mas não converte limites configurados em utilização observada nem trata valores `UNMEASURED` como zero. As métricas request-time do Athena permanecem `NOT_APPLICABLE` no caminho direto retido de structured evidence e `throttle_count` permanece `UNMEASURED`, mesmo com contador numérico igual a zero.
+Um adapter provider-backed genérico para request-time permanece como experimento Post-V1, pois o caminho canônico da V1 será offline-first.
 
-A Gate 19.4 acrescenta limites de design do runtime disabled: API reserved concurrency `2`, worker reserved concurrency `0`, timeout da API `15 s`, timeout do worker `60 s`, queue visibility `120 s`, redrive receive count `4`, worker max attempts `3` e limites HTTP API burst/rate `10/5`. Todos são `CONFIGURED_LIMIT`, nunca utilização medida.
+## Evidência medida
 
-## Fronteiras retidas
+O OpsLens separa evidência medida, derivada, configurada e não medida.
 
-O reasoning direto via Bedrock da Phase 11 permanece como referência/default. A Phase 12 preserva specialization/handoff determinísticos, mas rejeita o default com dois modelos porque adicionou overhead sem ganho de qualidade. MCP e A2A permanecem camadas limitadas de interoperabilidade, não runtimes públicos. AgentCore fica como lab opcional, sem runtime/IAM de experimento permanente. Inspector permanece uma autoridade independente e read-only de runtime evidence; o resultado com zero registros não redefine repository risk.
+O workload representativo retido da Phase 19 mediu:
 
-Security Hardening retém Actions em SHA completo, invariantes de segurança no `main` protegido, separação de identidades privilegiadas, Dependency Review, CodeQL, oito casos adversariais em sete classes de ameaça, telemetry content-minimized em 12 handlers Lambda com Powertools e um pause Terraform-owned para exatamente três schedules recorrentes de ingestão.
+| Métrica | Evidência |
+| --- | ---: |
+| Duração end-to-end | 17.748 ms |
+| Resultado serializado | 5.285 bytes |
+| Requests físicos GitHub | 4 medidos |
+| Chamadas Bedrock Retrieve | 1 medida |
+| Bedrock Retrieve client elapsed | 4.148 ms |
+| Chamadas de modelo Bedrock | 1 medida |
+| Tokens de entrada | 5.936 |
+| Tokens de saída | 408 |
+| Bedrock model client elapsed | 8.901 ms |
+| Bedrock provider latency | 7.772 ms |
+| Retries | 0 medidos |
+| Throttle count | UNMEASURED |
 
-## O que não é afirmado
+Esses são números de um experimento limitado, não SLO nem TCO de produção.
 
-OpsLens não afirma atualmente um runtime HTTP público de produção implantado, MCP/A2A públicos, AgentCore como runtime default de produção, SLOs de produção derivados de labs, TCO/run rate de produção, zero runtime exposure por causa do Inspector ter retornado zero registros, limites configurados como utilização medida, um global platform kill switch ou um score/probabilidade de aprovação na certificação.
+## O que o projeto demonstra
 
-A Phase 19 agora possui uma decisão baseada em evidência para o padrão async, um contrato protegido de topologia concreta, uma implementação disabled protegida em código/Terraform e proveniência protegida de artefatos imutáveis de deployment. A Gate 19.6 é o próximo passo de planejamento/admissão. Nem as definições Terraform da Gate 19.4 nem os artefatos publicados da Gate 19.5 significam que API Gateway, Lambda, SQS, DynamoDB, roles/policies IAM ou qualquer recurso AWS do runtime público tenha sido criado ou habilitado.
+O OpsLens mantém evidências para:
 
-A sequência retida de deployment é:
+- fundação AWS e IAM least privilege;
+- NVD, GitHub Advisories, CISA KEV e FIRST EPSS;
+- evidência imutável de repositórios públicos;
+- correlação determinística PyPI/PEP 440;
+- priorização determinística de risco;
+- semantic query com proposta Bedrock limitada e compilação SQL determinística;
+- Bedrock Knowledge Bases e S3 Vectors;
+- hybrid retrieval e grounded synthesis;
+- experimentos single-agent e multi-agent medidos;
+- MCP e A2A com fronteiras limitadas;
+- experimentação de capability fit com AgentCore;
+- runtime exposure evidence com Amazon Inspector;
+- observabilidade e telemetry com minimização de conteúdo;
+- adversarial/security authority regression;
+- avaliação e evidência de custo;
+- artefatos imutáveis de deployment Lambda;
+- admissão de plano Terraform exato;
+- materialização controlada e convergência de runtime;
+- contrato determinístico de autoridade de threat evidence em request-time.
+
+## Trabalho restante da V1
+
+O restante é intencionalmente pequeno e focado em demonstração:
 
 ```text
-Gate 19.5  build determinístico + publicação humana create-only de artefatos imutáveis      COMPLETE
-Gate 19.6  plano Terraform exato + admissão/revisão offline                                  NEXT
-gate posterior  terraform apply / habilitação controlada autorizados por humano, se admitidos NOT AUTHORIZED
+Gate 19.9   congelar contrato V1 e sincronizar estado atual
+Gate 19.10  runner determinístico canônico de demonstração
+Gate 19.11  três cenários curados + avaliação de regressão
+Gate 19.12  demo visual local mínima
+Gate 19.13  polish final de portfólio/arquitetura
+Gate 19.14  fechar Phase 19 e preparar release v1.0.0
 ```
 
-## Laboratório AIP-C01
+O target aproximado do comando canônico será:
 
-OpsLens também é usado como preparação hands-on para **AWS Certified Generative AI Developer - Professional (AIP-C01)**. A Phase 19 acrescenta raciocínio arquitetural prático sobre integração enterprise, APIs síncronas versus assíncronas, responsabilidades IAM, proveniência de deployment, abuse controls, monitoring, performance, cost e troubleshooting sem transformar a amplitude do exame em requisito do produto.
+```bash
+uv sync --frozen
+uv run python scripts/demo_opslens.py --scenario material-vulnerability --format text
+```
+
+O contrato exato pertence à Gate 19.10 e pode mudar antes do merge.
+
+## Não objetivos da V1
+
+A primeira versão não exige:
 
 ```text
-AIP-C01 topic != product requirement
+runtime de produção exposto na Internet
+autenticação / OIDC / Cognito
+multi-tenancy
+quotas comerciais ou billing
+domínio público customizado
+WAF ou controles de abuso de produção
+operação 24x7
+SLO/SLA de produção
+programa HA/DR
+claim de TCO de produção
+habilitação pública de worker/event-source
 ```
 
-## Baseline AWS
-
-```text
-environment:          dev
-region:               us-east-1
-vector store:         Amazon S3 Vectors
-embedding model:      amazon.titan-embed-text-v2:0
-embedding dimensions: 1024
-chunking:             NONE
-canonical chunks:     9
-synthesis API:        Amazon Bedrock Converse
-reasoning profile:    us.anthropic.claude-haiku-4-5-20251001-v1:0
-public HTTP runtime:  NONE DEPLOYED
-```
+Veja [Backlog Post-V1 / Experimentos](docs/post-v1-backlog.md).
 
 ## Documentação
 
-Comece por [docs/README.md](docs/README.md). Para portfólio e arquitetura, os principais pontos de entrada são [Arquitetura](docs/architecture.pt-br.md), [Portfolio Evidence](docs/portfolio-evidence.md), [Estado Atual](docs/current-state.md), [Roadmap](docs/roadmap.md), o [closeout da Phase 18](labs/phase-18-closeout.md), o [launch contract da Gate 19.1](labs/phase-19-gate-19-1-public-runtime-hypothesis.md), o [closeout da Gate 19.2](labs/phase-19-gate-19-2-closeout.md), o [contrato da Gate 19.3](labs/phase-19-gate-19-3-async-topology-contract.md), a [implementação disabled da Gate 19.4](labs/phase-19-gate-19-4-disabled-async-runtime.md), o [runbook de publicação da Gate 19.5](labs/phase-19-gate-19-5-immutable-artifact-publication-runbook.md), o [closeout da Gate 19.5](labs/phase-19-gate-19-5-closeout.md) e o [índice de ADRs](docs/adr/README.md).
+- [Estado Atual](docs/current-state.md)
+- [Roadmap](docs/roadmap.md)
+- [Escopo de Demonstração V1](docs/v1-demonstration-scope.md)
+- [Checklist de Fechamento V1](docs/v1-completion-checklist.md)
+- [Área de Demo](docs/demo/README.md)
+- [Arquitetura](docs/architecture.pt-br.md)
+- [Portfolio Evidence](docs/portfolio-evidence.md)
+- [AIP-C01 Learning Map](docs/aip-c01-learning-map.md)
+- [Architecture Decision Records](docs/adr/README.md)
 
----
+## Regras permanentes de engenharia
 
-PR #89 / `feat/governed-gateway-semantic-planner` permanece como trabalho deferred separado do Governed LLM Gateway e não é dependência da Phase 19, salvo reavaliação explícita futura.
+```text
+Agents reason. Code verifies evidence.
+Not every question is a RAG problem.
+Structured facts use structured retrieval.
+No unrestricted text-to-SQL.
+READ, NEVER EXECUTE third-party repository code.
+Repository Risk != Runtime Exposure.
+retrieved content != instruction authority
+model proposal != authorization
+tool/protocol success != business truth
+historical evidence != standing authority
+missing evidence != benign evidence
+MEASURED != DERIVED
+UNMEASURED != zero
+NOT_APPLICABLE != zero
+configured limit != measured utilization
+artifact hash != S3 VersionId
+publication success != deployment authorization
+plan != apply
+materialized != enabled
+demonstration readiness != production readiness
+AIP-C01 topic != product requirement
+```
+
+## Licença
+
+Apache License 2.0.

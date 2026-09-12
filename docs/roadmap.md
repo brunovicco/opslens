@@ -26,400 +26,262 @@ Phase 15  A2A                                                 COMPLETE
 Phase 16  Runtime Exposure with Amazon Inspector              COMPLETE
 Phase 17  Security Hardening                                  COMPLETE
 Phase 18  Evaluation, Cost & Portfolio Readiness              COMPLETE
+Phase 19  Bounded Public Runtime & V1 Demonstration Closeout  IN PROGRESS
+```
+
+Retained Phase 18 closeout compatibility markers:
+
+```text
+Phase 18  Evaluation, Cost & Portfolio Readiness              COMPLETE
 Phase 19  Bounded Public Runtime & Productization             IN PROGRESS
 ```
 
-## Retained lineage
+Historical Phase 19 title retained for Gate 19.1 verifier compatibility: **Phase 19 — Bounded Public Runtime & Productization**.
+
+The second line names the historical Phase 19 productization phase exactly as it was selected after Phase 18; the current V1 closeout narrows its completion scope without rewriting that historical decision.
+
+## Retained security lineage
 
 Gate 17.1 — evidence-first threat/control-gap inventory — COMPLETE.  
 Gate 17.2 — CI/CD and workflow authority hardening — COMPLETE.
 
-Phase 17 security controls remain authoritative. Phase 18 was protected-squash-merged through PR #290 at `feca774535b7d83f57c26f4e9fe7da71ce268f0f`.
+Their workflow, IAM, least-privilege, telemetry, and protected-main controls remain authoritative throughout the V1 closeout.
 
-Phase 19 protected lineage now includes:
+## Phase 19 protected lineage
 
 ```text
-Gate 19.1  PR #292  ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1
-Gate 19.2  PR #347  71eda2650889d3047259d37be226862ed2a09092
-Gate 19.3  PR #349  18d31c03d27448c88a6ffcba16683f3875a5ba15
-Gate 19.4  PR #351  a5067e05fda74aad4d95d7f1a875110fb676304a
-Gate 19.5  PR #353  61749bfac7b7bc9d032567e0b1870f8c1f7dedd4
-Gate 19.6  PR #360  c76432dfcd97110ca43d91d77084f4367b9a89fd
-Gate 19.7  PR #372  21a5930fd770eddf26a5c7425ffcaddfdfa6d357
-Gate 19.7 current-state sync  PR #373  8700478c7fca230e5984c3ce034194ea3bd337e4
-Gate 19.8  issue #374 / PR #375 draft  IN PROGRESS
+19.1  PR #292  ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1  COMPLETE
+19.2  PR #347  71eda2650889d3047259d37be226862ed2a09092  COMPLETE
+19.3  PR #349  18d31c03d27448c88a6ffcba16683f3875a5ba15  COMPLETE
+19.4  PR #351  a5067e05fda74aad4d95d7f1a875110fb676304a  COMPLETE
+19.5  PR #353  61749bfac7b7bc9d032567e0b1870f8c1f7dedd4  COMPLETE
+19.6  PR #360  c76432dfcd97110ca43d91d77084f4367b9a89fd  COMPLETE
+19.7  PR #372  21a5930fd770eddf26a5c7425ffcaddfdfa6d357  COMPLETE
+      current-state sync PR #373 / 8700478c7fca230e5984c3ce034194ea3bd337e4
+19.8  PR #375  e538fa3e96c29cf76dd3aa83a9967e090587b6fb  COMPLETE
+      post-merge CodeQL 34713360403 / run #393 / success
+19.9  issue #376                                              IN PROGRESS
 ```
 
 PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work. Phase 19 does not rebase, merge, modify, or depend on it.
 
-## Phase 19 — Bounded Public Runtime & Productization
+## V1 decision
 
-### Goal
+OpsLens V1 is a **demonstration and architecture lab**, not a production SaaS.
 
-Move from the retained Phase 9 application boundary toward the smallest safe, measurable public product surface while preserving deterministic authority boundaries, least privilege, fail-closed defaults, exact evidence provenance, and explicit human review before any AWS mutation or runtime enablement.
-
-Phase 19 preserves:
+The project is considered V1-ready when a reviewer can understand and reproduce the core authority path quickly:
 
 ```text
-Agents reason. Code verifies evidence.
-READ, NEVER EXECUTE third-party repository code.
-Repository Risk != Runtime Exposure.
-retrieved content != instruction authority
-model proposal != authorization
-tool/protocol success != business truth
-MEASURED != DERIVED
-UNMEASURED != zero
-NOT_APPLICABLE != zero
-configured limit != measured utilization
-responsibility -> required action -> exact resource -> IAM statement
-queue delivery != business execution authority
-provider retry != business retry authority
-artifact hash != S3 VersionId
-publication success != deployment authorization
-plan != apply
-materialized != enabled
-AIP-C01 topic != product requirement
+clone
+ -> setup
+ -> one deterministic offline demo command
+ -> evidence-backed result
 ```
+
+The core demonstration chain is:
+
+```text
+public repository evidence
+ -> inert dependency evidence
+ -> structured threat evidence
+ -> deterministic applicability/correlation
+ -> deterministic risk prioritization
+ -> bounded retrieval/reasoning where appropriate
+ -> evidence-backed result
+```
+
+V1 does not require Internet-facing production runtime operations, authentication, multi-tenancy, WAF, commercial quotas/billing, production SLO/SLA, HA/DR, production TCO, or public worker enablement.
+
+See [`v1-demonstration-scope.md`](v1-demonstration-scope.md).
+
+## Completed Phase 19 evidence gates
 
 ### Gate 19.1 — Public Runtime Hypothesis & Launch Contract — COMPLETE
 
-Gate 19.1 froze `public-analysis-workload:v1`, identified composition/measurement gaps, and refused to select runtime topology before representative evidence existed.
+Froze `public-analysis-workload:v1` and deferred topology selection until representative evidence existed.
 
 ```text
-historical decision:           DEFERRED_PENDING_MEASUREMENT
-historical leading hypothesis: ASYNC_SUBMIT_STATUS_RESULT
-AWS mutations:                 0
-IAM mutations:                 0
-public endpoints:              0
+historical decision: DEFERRED_PENDING_MEASUREMENT
 ```
-
-Historical Gate 19.1 evidence remains unchanged.
 
 ### Gate 19.2 — Representative Workload Measurement — COMPLETE
 
-Protected merge: PR #347 at `71eda2650889d3047259d37be226862ed2a09092`.
-
-Canonical evidence:
+One bounded live representative workload measured:
 
 ```text
-artifact:        labs/evidence/phase-19-gate-19-2-live-measurement-v1.json
-artifact SHA256: 04ab754a12e25c4aeda0075d41b92693fec464aec4431b3734981488ff470114
-run id:          gate19.2-live-20260911T131121Z
-outcome:         SUCCESS
+end_to_end_duration_ms: 17748
+GitHub physical HTTP requests: 4 MEASURED
+Bedrock Retrieve count: 1 MEASURED
+Bedrock Retrieve client elapsed ms: 4148 MEASURED
+Bedrock model call count: 1 MEASURED
+Bedrock input/output tokens: 5936 / 408 MEASURED
+Bedrock model client elapsed ms: 8901 MEASURED
+Bedrock provider latency ms: 7772 MEASURED
 ```
 
-Measured baseline:
-
-```text
-end_to_end_duration_ms              17748
-serialized_result_bytes              5285
-GitHub physical HTTP requests           4     MEASURED
-Athena query count                      0     NOT_APPLICABLE
-Bedrock Retrieve count                  1     MEASURED
-Bedrock Retrieve client elapsed ms   4148     MEASURED
-Bedrock model call count                1     MEASURED
-Bedrock input tokens                 5936     MEASURED
-Bedrock output tokens                 408     MEASURED
-Bedrock model client elapsed ms      8901     MEASURED
-Bedrock provider latency ms          7772     MEASURED
-retry count                             0     MEASURED
-throttle count                          0     UNMEASURED
-```
-
-Selected interaction pattern:
-
-```text
-ASYNC_SUBMIT_STATUS_RESULT
-```
-
-The async choice is based on provider-latency coupling, retry safety, backpressure, and failure isolation, not on a claim that the successful baseline timed out.
+Selected interaction pattern: `ASYNC_SUBMIT_STATUS_RESULT`.
 
 ### Gate 19.3 — Concrete Async Topology Contract — COMPLETE
 
-Protected merge: PR #349 at `18d31c03d27448c88a6ffcba16683f3875a5ba15`.
-
-Selected topology:
+Selected:
 
 ```text
 HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB
 ```
 
-Frozen shape:
-
-```text
-Amazon API Gateway HTTP API
- -> API Lambda
-    -> DynamoDB jobs/idempotency
-    -> SQS standard queue
-       -> Lambda worker
-          -> retained OpsLens analysis authorities
-          -> DynamoDB status/result
-    -> SQS DLQ
-```
-
-Frozen routes:
-
-```text
-POST /v1/analyses
-GET  /v1/analyses/{job_id}
-GET  /v1/analyses/{job_id}/result
-```
-
-Frozen job states:
-
-```text
-SUBMITTING | ACCEPTED | RUNNING | SUCCEEDED | FAILED | EXPIRED
-```
-
-The job record owns business execution truth. SQS is at-least-once transport, not execution authority.
-
 ### Gate 19.4 — Disabled Async Runtime Implementation — COMPLETE
 
-Protected merge: PR #351 at `a5067e05fda74aad4d95d7f1a875110fb676304a`.
-
-Gate 19.4 implemented the selected design as typed/tested application code, narrow AWS adapters, separate API/worker Lambda composition, and Terraform with exact responsibility-separated IAM.
-
-Historical fail-closed defaults included:
-
-```text
-public_async_runtime_materialized = false
-disable_execute_api_endpoint = true
-OPSLENS_ASYNC_SUBMIT_ENABLED = false
-OPSLENS_ASYNC_WORKER_ENABLED = false
-SQS -> worker event-source mapping enabled = false
-worker reserved concurrency = 0
-custom public domain = absent
-provider-heavy worker executor = not composed
-```
-
-Gate 19.4 historical implementation evidence is not rewritten by later materialization.
+Implemented typed application/adapters/Terraform behind fail-closed disabled defaults.
 
 ### Gate 19.5 — Immutable Async Deployment Artifacts — COMPLETE
 
-Protected merge: PR #353 at `61749bfac7b7bc9d032567e0b1870f8c1f7dedd4`.
-
-Exactly two content-addressed deployment artifacts were human-published create-only and admitted offline.
-
-```text
-API Lambda
-  SHA-256:          99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e
-  source_code_hash: mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=
-  VersionId:        E.jfB7dlkGCD.wHAurP7QXo4fuS_PW63
-
-Worker Lambda
-  SHA-256:          0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9
-  source_code_hash: DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck=
-  VersionId:        sxiOdii4yFwR13t23xP5A8EU1JPV_7P1
-```
-
-Canonical publication evidence records exactly two S3 PutObject mutations, zero automatic retries, zero runtime/IAM/public mutations, and no Terraform apply.
+Produced and human-published two immutable content-addressed Lambda artifacts with exact S3 VersionIds.
 
 ### Gate 19.6 — Exact Terraform Plan & Offline Admission — COMPLETE
 
-Protected closeout: PR #360 at `c76432dfcd97110ca43d91d77084f4367b9a89fd`.
-
-The human-operated exact plan from source `d4d852c7ebc97f6fd9ee19d868fa12bc4ab031f2` admitted:
-
-```text
-21 create
-0 update
-0 delete
-0 replacement
-```
-
-Canonical plan evidence:
-
-```text
-plan JSON SHA-256: eb01396b92879243fd2e16e7791957e3289b459facc9db9524a4d890574aa83f
-execute-api endpoint disabled: true
-submit switch: false
-event-source mapping enabled: false
-worker reserved concurrency: 0
-terraform_apply_authorized: false
-```
-
-Gate 19.6 proved `plan != apply` and authorized no mutation.
+Admitted an exact plan before mutation and preserved `plan != apply`.
 
 ### Gate 19.7 — Controlled Disabled Runtime Materialization — COMPLETE
 
-Source issue: #361.  
-Protected closeout: PR #372 at `21a5930fd770eddf26a5c7425ffcaddfdfa6d357`.  
-Final protected current-state sync: PR #373 at `8700478c7fca230e5984c3ce034194ea3bd337e4`.  
-Final post-merge CodeQL: run `34711607099` / run #382 / `success` on that exact SHA.
-
-Gate 19.7 exercised the human mutation boundary while preserving `materialized != enabled`.
-
-#### Initial materialization attempt
-
-The first single-use authorized apply partially created the admitted resource set and failed on API Lambda reserved concurrency `2`:
+Materialized 21 managed resources, recovered from one bounded Lambda concurrency constraint, and proved final Terraform convergence:
 
 ```text
-failure class: LAMBDA_RESERVED_CONCURRENCY_ACCOUNT_CONSTRAINT
-operation: PutFunctionConcurrency
-requested API reserved concurrency: 2
-retry authorized: false
-```
-
-Read-only reconciliation proved exactly 16 expected resources were managed and exactly five were still missing. The failed plan was quarantined and never reused.
-
-#### Recovery-forward contract
-
-The recovery changed the disabled API concurrency target to `0`, kept worker concurrency at `0`, used one separately authorized Terraform `untaint` after exact state/AWS reconciliation, and generated a fresh bounded recovery plan.
-
-Admitted recovery plan:
-
-```text
-source head: d6546e9d48253694e3e276940ebd2388f301d8ad
-plan binary SHA-256: 48cb15a8466cc0ce77fdbe1d827b5a0aebb88460b8e8151d8c88d3c85eb9ea55
-plan JSON SHA-256: 8a1f95ab8cbcbf96c708c6ced0d0127d862391a6f8e72c250fe5e7499d2a0bf7
-5 create
-1 update
-0 delete
-0 replacement
-```
-
-The single authorized recovery apply completed:
-
-```text
-5 added
-1 changed
-0 destroyed
-Terraform lineage unchanged
-state serial: 116 -> 117
-```
-
-Post-apply controls were verified read-only:
-
-```text
-runtime materialized: true
-execute-api endpoint disabled: true
-OPSLENS_ASYNC_SUBMIT_ENABLED: false
-API reserved concurrency: 0
-OPSLENS_ASYNC_WORKER_ENABLED: false
-worker reserved concurrency: 0
-SQS -> worker event-source mapping: Disabled
-custom public domain mapping: absent
-provider-heavy public execution path: disabled
-```
-
-Canonical post-apply evidence:
-
-```text
-labs/evidence/phase-19-gate-19-7-post-apply-verification-v1.json
-```
-
-#### Convergence closeout
-
-A separate single-use HUMAN-only convergence plan returned:
-
-```text
-No changes. Your infrastructure matches the configuration.
 0 add
 0 change
 0 destroy
 0 replacement
-Terraform detailed exit code: 0
-state lineage unchanged
-state serial: 117 -> 117
-state mutation observed: false
 ```
 
-Convergence plan identities:
+Runtime remained disabled and non-public.
 
-```text
-binary SHA-256: 26380a6f09fc536f7738e1b855054e8a49183a24ae2e3711f6621a2c8c338157
-JSON SHA-256:   505151c1d56f4d92483ad602185a49a89f10f1b9f6003eef9532cefcedf12f1d
-resource_drift_entry_count: 5
-```
+### Gate 19.8 — Request-time Threat Evidence Authority Contract — COMPLETE
 
-The drift-entry count is retained as observed but is not interpreted as five actionable changes. The same plan contained zero managed actions and Terraform explicitly reported no changes.
+Protected merge: PR #375 at `e538fa3e96c29cf76dd3aa83a9967e090587b6fb`.  
+Source protected main for Gate 19.8: `8700478c7fca230e5984c3ce034194ea3bd337e4`.  
+Post-merge CodeQL: `34713360403` / run #393 / success.  
+Issue #374: closed completed.
 
-Canonical closeout evidence:
-
-```text
-labs/evidence/phase-19-gate-19-7-post-apply-convergence-v1.json
-labs/phase-19-gate-19-7-closeout.md
-```
-
-### Gate 19.8 — Request-time Threat Evidence Authority Contract — IN PROGRESS
-
-Source issue: #374.  
-Draft implementation PR: #375.  
-Source protected main: `8700478c7fca230e5984c3ce034194ea3bd337e4`.
-
-Gate 19.8 was selected from the live repository gap rather than assuming endpoint enablement was next. The async worker already has deterministic queue/job authority but still has no admitted provider-heavy executor. The only complete provider-heavy analysis path is the Gate 19.2 representative harness, which uses one frozen repository and preloaded threat evidence and therefore cannot serve arbitrary public requests.
-
-The bounded Gate 19.8 flow is:
+Gate 19.8 added the provider-neutral authority chain:
 
 ```text
 PublicRepositoryEvidenceExecution
- -> exact normalized dependency scope
+ -> PublicThreatEvidenceScope
  -> PublicThreatEvidenceRequest
- -> provider-neutral PublicThreatEvidenceAuthority
- -> exact GHSA/NVD/KEV/EPSS evidence + source-local provenance
- -> retained Phase 3/4 deterministic correlation/enrichment
+ -> PublicThreatEvidenceAuthority
+ -> exact GHSA/NVD/KEV/EPSS evidence + provenance
+ -> retained deterministic correlation/enrichment
 ```
 
-Frozen rules:
-
-```text
-scope derives only from admitted repository evidence
-incomplete PyPI normalization -> fail closed
-GHSA evidence outside admitted package scope -> reject
-unrelated NVD evidence -> reject
-latest_complete = selection policy, not provenance
-selected KEV/EPSS evidence carries exact snapshot date + SHA-256
-model authority for source truth/applicability = none
-provider executor composed = false
-```
-
-Physical request-time data access remains deliberately unresolved:
+It deliberately deferred the physical provider adapter:
 
 ```text
 DEFERRED_PENDING_BOUNDED_RUNTIME_ADAPTER_EVIDENCE
 ```
 
-Existing Glue/Athena tables and exact S3 authority objects are candidate surfaces, but the current worker IAM grants neither request-time Athena/Glue nor threat-data S3 read authority; the representative live measurement preloaded threat evidence, so it contains no applicable request-time structured-source latency/scan-cost evidence. Gate 19.8 therefore refuses to select a provider adapter by preference.
+That provider-backed arbitrary request-time path is no longer a V1 blocker because the canonical V1 demonstration is offline-first. It remains available as a Post-V1 experiment.
 
-Gate 19.8 permits only repository source/tests/docs/evidence changes and offline CI verification. It grants no Terraform, AWS, IAM, artifact-publication, runtime-enablement, or provider-execution authority.
+## Remaining V1 completion gates
 
-### Retained deployment sequence
+### Gate 19.9 — V1 Demonstration Contract + Current-State Synchronization — IN PROGRESS
 
-```text
-Gate 19.5  deterministic build + immutable publication               COMPLETE
-Gate 19.6  exact Terraform plan + offline admission                  COMPLETE
-Gate 19.7  human-authorized disabled materialization + convergence   COMPLETE
-Gate 19.8  request-time threat authority contract                    IN PROGRESS / OFFLINE ONLY
+Source issue: #376.
+
+Goals:
+
+- freeze V1 as demonstration/architecture lab;
+- synchronize current-facing state with Gate 19.8 completion;
+- add explicit `demonstration readiness != production readiness` semantics;
+- record the remaining V1 completion sequence;
+- keep AWS/Terraform/IAM/provider authority at zero.
+
+No AWS or Terraform mutation is authorized.
+
+### Gate 19.10 — Deterministic End-to-End Demo Runner — PLANNED
+
+Implement one canonical offline runner that reuses existing typed OpsLens authorities rather than duplicating business logic.
+
+Target command shape:
+
+```bash
+uv run python scripts/demo_opslens.py --scenario material-vulnerability --format text
 ```
 
-Current standing truth:
+Required characteristics:
 
 ```text
-deployment artifact S3 PutObject mutations: 2
-public async runtime resources materialized: 21 managed resources
-Terraform apply invocations in Gate 19.7: 2
-post-apply convergence: 0 add / 0 change / 0 destroy / 0 replacement
-Terraform lineage: 6c958ab2-4cc6-7f96-a528-89535504f65c
-Terraform serial: 117
-public endpoints enabled: 0
-submit path enabled: NO
-worker enabled: NO
-event-source mapping enabled: NO
-custom public domain: absent
-provider-heavy public executions: 0
-third-party repository code executions: 0
-PR #89 modifications: 0
+AWS credentials required: NO
+network required after setup: NO
+third-party repository code execution: NO
+stable JSON output: YES
+human-readable output: YES
 ```
 
-## Next Phase 19 authority boundary
+### Gate 19.11 — Curated Demo Scenarios + Deterministic Evaluation — PLANNED
 
-Gate 19.8 itself is offline-only. Its physical structured-threat adapter decision remains:
+Exactly three canonical scenario classes:
+
+1. material vulnerability;
+2. controlled benign;
+3. fail-closed incomplete/ambiguous evidence.
+
+Each scenario must be inert, content-addressed, reproducible, and regression-tested.
+
+### Gate 19.12 — Minimal Local Visual Demo — PLANNED
+
+Add a local-only presentation surface over the same admitted application contract.
+
+It should show:
+
+- scenario/repository identity;
+- dependency evidence;
+- vulnerability/risk findings;
+- source provenance;
+- AI explanation clearly separated from deterministic authority.
+
+No public deployment is required.
+
+### Gate 19.13 — Portfolio / README / Architecture Polish — PLANNED
+
+Synchronize final public-facing material:
+
+- README English and Portuguese;
+- architecture diagram and narrative;
+- deterministic authority vs AI reasoning table;
+- measured latency/cost summary without production extrapolation;
+- security/failure model;
+- screenshots/terminal recording;
+- three-to-five-minute demo walkthrough.
+
+### Gate 19.14 — V1 Closeout + Release Readiness — PLANNED
+
+Final requirements:
 
 ```text
-DEFERRED_PENDING_BOUNDED_RUNTIME_ADAPTER_EVIDENCE
+clean-environment quickstart verified
+full CI/security/CodeQL green
+Phase 19 closeout evidence persisted
+Phase 19 status COMPLETE
+remaining ideas moved to Post-V1 backlog
+HUMAN-reviewed v1.0.0 tag/release
 ```
 
-No provider-backed adapter implementation, runtime composition, or controlled enablement is authorized by the Gate 19.8 contract. A later gate must first compare the smallest bounded structured-source alternatives, freeze exact read/query semantics, IAM/resource scope, limits and observability, then measure request-time latency/cost before seeking any runtime mutation or enablement authority.
+## Post-V1 / experiments
+
+The following may be explored later but are not blockers for V1:
+
+- provider-backed request-time threat adapter;
+- S3 vs Glue/Athena request-time comparison;
+- public worker/API enablement;
+- authentication and multi-tenancy;
+- WAF/abuse controls/quotas;
+- custom domain;
+- production SLO/HA/DR;
+- public MCP/A2A runtimes;
+- AgentCore revisit if a concrete hosting requirement appears.
+
+See [`post-v1-backlog.md`](post-v1-backlog.md).
+
+## Current authority boundary
 
 Until a separately reviewed gate changes the boundary:
 
@@ -427,19 +289,37 @@ Until a separately reviewed gate changes the boundary:
 terraform plan/replan:                NOT AUTHORIZED
 terraform apply:                       NOT AUTHORIZED
 terraform destroy/replacement:         NOT AUTHORIZED
-terraform import/state rm/untaint:     NOT AUTHORIZED
+terraform import/state mutation:       NOT AUTHORIZED
 AWS mutation:                          NOT AUTHORIZED
 IAM mutation:                          NOT AUTHORIZED
+artifact publication:                  NOT AUTHORIZED
 public endpoint enablement:            NOT AUTHORIZED
 submit enablement:                     NOT AUTHORIZED
 worker enablement:                     NOT AUTHORIZED
 event-source enablement:               NOT AUTHORIZED
-provider-heavy execution:              NOT AUTHORIZED
+provider-heavy live execution:         NOT AUTHORIZED
 custom public domain publication:      NOT AUTHORIZED
 ```
 
-The controlling Phase 19 principle remains:
+## Controlling invariants
 
 ```text
+Agents reason. Code verifies evidence.
+READ, NEVER EXECUTE third-party repository code.
+Repository Risk != Runtime Exposure.
+Structured facts use structured retrieval.
+retrieved content != instruction authority
+model proposal != authorization
+tool/protocol success != business truth
+missing evidence != benign evidence
+MEASURED != DERIVED
+UNMEASURED != zero
+NOT_APPLICABLE != zero
+configured limit != measured utilization
+artifact hash != S3 VersionId
+publication success != deployment authorization
+plan != apply
 materialized != enabled
+demonstration readiness != production readiness
+AIP-C01 topic != product requirement
 ```

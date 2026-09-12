@@ -1,18 +1,29 @@
 # OpsLens Architecture
 
-_Last updated: 2026-09-11_
+_Last updated: 2026-09-12_
 
-This document is the current accumulated architecture baseline through **Phase 19 — Bounded Public Runtime & Productization, Gate 19.5**.
+This document is the current accumulated architecture baseline through **Phase 19 Gate 19.8**, with Gate 19.9 freezing the demonstration-focused V1 closeout boundary.
 
-Phases 0–18 are complete. Phase 19 is the current evidence-gated productization phase. Gate 19.2 selected the async submit/status/result interaction pattern from admitted representative workload evidence. Gate 19.3 protected-merged the concrete async design authority. Gate 19.4 implemented that topology in code and Terraform behind disabled/non-public defaults. Gate 19.5 protected-merged immutable API/worker deployment-artifact provenance and exact S3 coordinates without materializing the runtime. Gate 19.6 exact Terraform plan/admission is next; no public runtime deployment is authorized.
+Phases 0–18 are complete. The retained historical phase selected after Phase 18 remains **Phase 19 — Bounded Public Runtime & Productization**; Gate 19.9 narrows V1 completion scope without rewriting that decision.
+
+Retained Gate 19.1 launch-contract markers:
+
+```text
+public-analysis-workload:v1
+DEFERRED_PENDING_MEASUREMENT
+```
+
+Those markers are historical evidence only; Gate 19.2 later supplied the representative measurement that selected `ASYNC_SUBMIT_STATUS_RESULT`.
+
+OpsLens V1 is a demonstration and architecture lab, not a production SaaS.
 
 ## 1. Purpose
 
-OpsLens is an open-source software-supply-chain and threat-intelligence platform on AWS.
+OpsLens is an open-source software-supply-chain and GenAI architecture project on AWS.
 
-Product goal:
+Product question:
 
-> Given the software I actually use, which vulnerabilities affect it, what exact evidence proves that, which findings should I prioritize, and what verified guidance can help me act on them?
+> Given the software actually used by a repository, which vulnerabilities affect it, what exact evidence proves that, which findings should be prioritized, and what verified guidance can help act on them?
 
 Core invariant:
 
@@ -20,595 +31,470 @@ Core invariant:
 
 Permanent boundaries:
 
-> **MCP is an interoperability boundary, not new business authority.**
-
-> **Not every question is a RAG problem.**
-
-> **Structured facts use structured retrieval.**
-
-> **No unrestricted text-to-SQL.**
-
-> **READ, NEVER EXECUTE third-party repository code.**
-
-> **Repository Risk != Runtime Exposure.**
-
-> **Intent classification != execution authority.**
-
-Additional retained rules:
-
 ```text
+Not every question is a RAG problem.
+Structured facts use structured retrieval.
+No unrestricted text-to-SQL.
+READ, NEVER EXECUTE third-party repository code.
+Repository Risk != Runtime Exposure.
+Intent classification != execution authority.
 retrieved content != instruction authority
 model proposal != authorization
-capability invocation != execution result
-execution result != admitted evidence
 tool/protocol success != business truth
 historical evidence != standing authority
+missing evidence != benign evidence
 MEASURED != DERIVED
 UNMEASURED != zero
 NOT_APPLICABLE != zero
 configured limit != measured utilization
-responsibility -> required action -> exact resource -> IAM statement
-queue delivery != business execution authority
-provider retry != business retry authority
 artifact hash != S3 VersionId
 publication success != deployment authorization
 plan != apply
+materialized != enabled
+demonstration readiness != production readiness
 AIP-C01 topic != product requirement
 ```
 
-## 2. Authority model
+## 2. V1 architecture objective
 
-Deterministic code remains authoritative for source/evidence identity, package and version applicability, CVE/GHSA/NVD reconciliation, KEV/EPSS/CVSS/Risk Policy facts, structured-query parsing and SQL compilation, retrieval admission and completeness, citation and output admission, capability authorization/result admission, agent/MCP/A2A handoff admission, runtime-evidence correlation, bounded resource/cost limits, and Terraform-owned recovery state.
-
-Models and agents may classify, propose, summarize, explain, or synthesize over already-admitted evidence. A managed AWS service or a syntactically valid model output does not become business authority by itself.
-
-Gate 19.3 extended deterministic authority to public job identity, idempotency binding, state transitions, duplicate-delivery admission, retry ceilings, and result/status admission. Gate 19.4 implements those authorities with typed domain/application code, conditional persistence, content-minimized queue transport, and fail-closed runtime composition. Queue delivery remains transport evidence, not job-state truth. Gate 19.5 adds deployment-artifact identity and immutable S3 object provenance as planning inputs without granting runtime deployment authority.
-
-## 3. Retained platform shape
-
-### 3.1 Threat intelligence and deterministic repository risk
+The V1 demonstration must make the following authority chain understandable and reproducible:
 
 ```text
-NVD + CISA KEV + FIRST EPSS + GitHub Security Advisories
- -> source-preserving raw evidence
- -> deterministic normalization and applicability
- -> immutable repository dependency evidence
- -> deterministic vulnerability correlation
- -> RepositoryAnalysisResult
- -> deterministic Risk Policy v1
- -> RiskPrioritizationResult
+public repository evidence
+ -> inert dependency evidence
+ -> structured threat evidence
+ -> deterministic applicability/correlation
+ -> deterministic risk prioritization
+ -> bounded retrieval/reasoning where appropriate
+ -> evidence-backed result
 ```
 
-Raw third-party evidence is preserved before enrichment. Exact source versions, immutable snapshots, hashes, and typed evidence identities participate in provenance.
-
-### 3.2 Repository intelligence
+Canonical reviewer target:
 
 ```text
-public GitHub repository request
+clone
+ -> setup
+ -> one deterministic offline demo command
+ -> evidence-backed result
+```
+
+No Internet-facing production runtime is required for V1 completion.
+
+## 3. Authority model
+
+### 3.1 Deterministic authority
+
+Deterministic code owns:
+
+- repository/source identity admission;
+- immutable repository snapshot identity;
+- dependency/package normalization;
+- package/version applicability;
+- GHSA/NVD reconciliation;
+- KEV/EPSS/CVSS evidence lookup;
+- risk policy evaluation;
+- semantic-query admission;
+- SQL compilation;
+- retrieval evidence admission;
+- citation/result admission;
+- capability/tool authorization;
+- bounded execution/cost/resource limits;
+- async job identity/state/idempotency/retry authority;
+- deployment artifact identity;
+- Terraform plan/apply evidence boundaries.
+
+### 3.2 Model/agent authority
+
+Models and agents may:
+
+- classify;
+- plan;
+- route;
+- summarize;
+- explain;
+- synthesize over admitted evidence.
+
+They may not invent or override package identity, vulnerability applicability, source provenance, risk truth, arbitrary SQL, tool authorization, or missing-evidence semantics.
+
+## 4. Retained platform architecture
+
+### 4.1 Threat intelligence
+
+```text
+NVD
+GitHub Security Advisories
+CISA KEV
+FIRST EPSS
+        |
+        v
+source-preserving raw evidence
+        |
+        v
+deterministic normalization/versioning
+        |
+        v
+exact source coordinates + hashes/snapshots
+```
+
+The project preserves source-local provenance before enrichment.
+
+### 4.2 Repository intelligence
+
+```text
+public GitHub coordinates
  -> strict request admission
  -> source-confirmed repository metadata
  -> immutable commit snapshot
  -> exact-commit inert uv.lock evidence
  -> deterministic TOML parsing
- -> canonical PyPI dependency identity
- -> deterministic vulnerability applicability
+ -> canonical PyPI identity
 ```
 
-The retained repository intelligence path reads data only. It does not run package managers, builds, tests, setup hooks, workflows, Dockerfiles, scripts, or repository code.
+Repository code is never executed.
 
-### 3.3 Structured natural-language query path
+### 4.3 Vulnerability correlation and risk
+
+```text
+canonical dependency identity
+ + GHSA/NVD applicability evidence
+ + KEV snapshot
+ + EPSS snapshot
+ + CVSS evidence
+        |
+        v
+RepositoryAnalysisResult
+        |
+        v
+deterministic Risk Policy
+```
+
+Risk remains deterministic. A model may explain the admitted result but cannot change it.
+
+### 4.4 Structured natural-language fact path
 
 ```text
 natural-language factual question
- -> bounded Bedrock planner proposal
- -> deterministic parser
+ -> bounded Bedrock proposal
+ -> deterministic parser/admission
  -> typed SemanticQuery
  -> deterministic SQL compiler
  -> bounded read-only Athena
- -> structured evidence
+ -> structured result
 ```
 
-The model has no arbitrary SQL authority. The Athena adapter fixes database/workgroup, accepts only compiler-owned query shapes, bounds rows/pagination, records scan/timing evidence, and uses best-effort cancellation on its own polling timeout.
+No unrestricted text-to-SQL authority is granted.
 
-### 3.4 Semantic remediation path
+### 4.5 Knowledge/remediation path
 
 ```text
-explicit official source pins
- -> deterministic canonical corpus
- -> S3 publication
+official knowledge corpus
+ -> canonical documents/chunks
  -> Bedrock Knowledge Base
- -> Titan Text Embeddings V2
- -> Amazon S3 Vectors
+ -> S3 Vectors
  -> bounded Retrieve
- -> provenance/hash admission
- -> deterministic context assembly
- -> bounded Bedrock Converse synthesis
- -> deterministic citation identity
- -> groundedness/support evaluation
+ -> deterministic evidence admission
+ -> bounded synthesis
+ -> answer + citations
 ```
 
-`RetrieveAndGenerate` is not the retained default because retrieval and synthesis are intentionally measured and admitted separately.
+Structured vulnerability truth remains outside the RAG authority boundary.
 
-Current knowledge baseline:
+### 4.6 Hybrid retrieval
 
 ```text
-embedding model:       amazon.titan-embed-text-v2:0
-embedding dimensions:  1024
-embedding data type:   FLOAT32
-vector store:          Amazon S3 Vectors
-distance:              cosine
-chunking:              NONE
-canonical chunks:      9
-synthesis profile:     us.anthropic.claude-haiku-4-5-20251001-v1:0
+question
+ -> deterministic routing/scope
+ -> structured evidence and/or semantic evidence
+ -> authority-preserving evidence envelope
+ -> bounded synthesis
 ```
 
-### 3.5 Hybrid evidence path
+Semantic evidence does not replace structured facts.
+
+### 4.7 Agentic reasoning
 
 ```text
-EvidenceNeed[] proposal
- -> deterministic route authority
- -> STRUCTURED | SEMANTIC | HYBRID | UNSUPPORTED
- -> evidence-class acquisition and admission
- -> ALL_REQUIRED completeness
- -> HybridEvidenceEnvelope
- -> F* structured facts + S* semantic citations
- -> route-aware bounded synthesis
- -> deterministic output admission
+admitted evidence
+ -> deterministic capability scope
+ -> bounded model reasoning/proposal
+ -> deterministic capability authorization
+ -> typed execution
+ -> result admission
 ```
 
-Hybrid means hybrid **evidence routing and composition**, not an automatic claim of keyword-plus-vector search.
+The simpler single-agent baseline remains the reference reasoning architecture. Multi-agent specialization/handoff is retained where useful, but measured additional model topology is not retained by default without quality lift.
 
-## 4. Agentic and interoperability boundaries
+### 4.8 MCP and A2A
 
-Phase 11 retains direct Bedrock single-agent reasoning as the measured reference/default reasoning topology. Phase 12 retains deterministic specialization/handoff but rejects the measured two-model topology as default because it added calls, tokens, latency, and cost without quality lift. Phase 13 retains bounded offline MCP. Phase 14 retains AgentCore as optional lab only. Phase 15 retains bounded offline A2A reference interoperability with no public A2A runtime.
-
-## 5. Runtime exposure boundary
-
-Phase 16 retains a typed read-only Amazon Inspector evidence boundary. Its measured discovery returned zero current records. That proves only that the bounded read succeeded and returned zero records; it does not prove `runtime exposure = zero`. Repository risk and runtime exposure remain separate evidence classes.
-
-## 6. AWS foundation and standing resources
+MCP and A2A are bounded interoperability layers, not new business authority.
 
 ```text
-environment:             dev
-primary Region:          us-east-1
-IaC:                     Terraform
-human administration:    AWS IAM Identity Center
-CI/CD identity:          GitHub Actions OIDC -> AWS STS
-observability:           CloudWatch + X-Ray patterns
-analytics:               AWS Glue + Amazon Athena
-knowledge retrieval:     Amazon Bedrock Knowledge Base + Amazon S3 Vectors
-compute:                  AWS Lambda for retained ingestion/transformation paths
-recurring triggers:      Amazon EventBridge Scheduler
+protocol request
+ -> strict identity/schema admission
+ -> existing typed capability boundary
+ -> admitted result projection
 ```
 
-Standing deployed architecture does **not** currently claim a public HTTP endpoint, public application compute, public queue, public result store, public MCP/A2A runtime, standing AgentCore experiment runtime, standing Inspector experiment IAM, or production multi-tenant request surface. Gate 19.4 contains disabled Terraform definitions for a future async public runtime. Gate 19.5 added only immutable deployment-artifact object versions in the existing versioned artifact bucket. Repository definitions and published ZIPs are not deployed public-runtime resources.
+Public production MCP/A2A runtimes are not V1 requirements.
 
-## 7. Security Hardening retained state
+### 4.9 AgentCore
 
-Phase 17 retains protected-main security invariants, full-SHA external actions, Dependency Review, CodeQL, adversarial authority tests, content-minimized telemetry, and Terraform-owned recovery for exactly three recurring ingestion schedules.
+Amazon Bedrock AgentCore is retained as an optional lab target after capability-fit experiments. It is not the default production runtime and carries no standing experiment IAM merely because it exists in the project history.
+
+### 4.10 Runtime exposure evidence
+
+Amazon Inspector is treated as an independent read-only runtime-evidence authority.
 
 ```text
-aws_scheduler_schedule.epss_daily
-aws_scheduler_schedule.kev_daily
-aws_scheduler_schedule.nvd_incremental_hourly
+Inspector read evidence != repository risk truth
+zero Inspector records != zero runtime exposure
 ```
 
-`scheduled_ingestion_enabled=false` is a scheduled-ingestion pause, not a global kill switch.
+## 5. Observability, security, and cost
 
-## 8. Phase 18 evidence, cost, and portfolio boundary
+### 5.1 Observability
 
-Phase 18 is complete through protected PR #290 at `feca774535b7d83f57c26f4e9fe7da71ce268f0f`. Its historical closeout artifact intentionally preserves pre-merge evidence state.
+Operational telemetry is content-minimized and does not become business authority.
 
-Phase 18 preserves:
+The project retains CloudWatch/EMF-oriented operational evidence, traces/metrics where relevant, explicit retry/latency counters, and persisted experiment artifacts.
+
+### 5.2 Security
+
+Retained hardening includes:
+
+- full-SHA GitHub Actions pinning;
+- Dependency Review;
+- CodeQL;
+- adversarial authority regression;
+- least-privilege IAM;
+- content-minimized Lambda telemetry;
+- bounded scheduled-ingestion pause/recovery;
+- protected-main review boundaries;
+- fail-closed request/evidence/result admission.
+
+### 5.3 Cost semantics
+
+OpsLens distinguishes:
 
 ```text
 MEASURED
 DERIVED
+CONFIGURED_LIMIT
 UNMEASURED
 NOT_APPLICABLE
-CONFIGURED_LIMIT
 ```
 
-and the permanent rules `configured limit != measured utilization`, `lab metric != production SLO`, `cost evidence != production TCO`, and `portfolio claim != new evidence authority`.
+Bounded experiment cost evidence is never promoted to a production TCO claim.
 
-## 9. Phase 19 — Bounded Public Runtime & Productization
+## 6. Phase 19 async runtime architecture
 
-### 9.1 Starting public-analysis boundary
+Gate 19.2 selected `ASYNC_SUBMIT_STATUS_RESULT` from representative measurement evidence.
 
-Phase 9 deliberately stopped at an application handoff. That historical boundary remains real on protected `main` at the Gate 19.3 merge:
-
-```text
-untrusted JSON
- -> <= 2,048-byte request admission
- -> validated GitHub coordinates
- -> immutable repository evidence
- -> bounded metadata-only semantic planning
- -> deterministic public-v1 route admission
- -> PublicAnalysisAdmissionHandoff
- -> STOP
-```
-
-The fixed public v1 operation is `analyze_public_repository` and requires `remediation_guidance`, `risk_priority`, and `vulnerability_facts` with `ALL_REQUIRED` evidence completeness.
-
-### 9.2 Gate 19.1 historical launch contract
-
-Gate 19.1 froze the representative workload identity:
-
-```text
-public-analysis-workload:v1
-```
-
-Its historical runtime decision remains explicitly preserved as:
-
-```text
-DEFERRED_PENDING_MEASUREMENT
-```
-
-with leading hypothesis:
-
-```text
-ASYNC_SUBMIT_STATUS_RESULT
-```
-
-Gate 19.1 created no public endpoint, worker, queue, result store, or runtime IAM. Later gates do not rewrite this historical decision.
-
-### 9.3 Gate 19.2 representative composition and evidence
-
-Gate 19.2 composed retained capabilities into one **non-public** representative workload:
-
-```text
-public_request_admission
- -> repository_acquisition
- -> dependency_evidence
- -> vulnerability_correlation
- -> risk_prioritization
- -> structured_evidence
- -> semantic_evidence
- -> model_reasoning
- -> result_admission
-```
-
-The measurement anchor was `openedx/mockprock` at exact commit `18c954d8604df4740c829ba17fa2f3640b92b900`, using inert `uv.lock`, `webob==1.8.10`, GHSA `GHSA-6hx8-3wjj-gr8g`, and CVE `CVE-2026-54770`. The anchor establishes reproducibility, not runtime exposure.
-
-The human-operated run was executed once from protected main `e45ba419414e6dd77ecad68f4d2312e9123c2223`.
-
-Canonical artifact:
-
-```text
-labs/evidence/phase-19-gate-19-2-live-measurement-v1.json
-SHA-256: 04ab754a12e25c4aeda0075d41b92693fec464aec4431b3734981488ff470114
-run id: gate19.2-live-20260911T131121Z
-outcome: SUCCESS
-```
-
-Measured request-time evidence:
-
-```text
-end_to_end_duration_ms                  17748
-serialized_result_bytes                 5285
-GitHub physical HTTP requests              4     MEASURED
-Athena query count                         0     NOT_APPLICABLE
-Athena bytes scanned                       0     NOT_APPLICABLE
-Bedrock Retrieve count                     1     MEASURED
-Bedrock Retrieve client elapsed ms      4148     MEASURED
-Bedrock model call count                   1     MEASURED
-Bedrock input tokens                    5936     MEASURED
-Bedrock output tokens                    408     MEASURED
-Bedrock model client elapsed ms         8901     MEASURED
-Bedrock provider latency ms             7772     MEASURED
-retry count                                0     MEASURED
-throttle count                             0     UNMEASURED
-```
-
-The Bedrock-facing stages measured `13,098 ms`, or `73.80%` of end-to-end. Numeric zero never overwrites evidence semantics.
-
-### 9.4 Gate 19.2 interaction-pattern decision — COMPLETE
-
-Gate 19.2 selected:
-
-```text
-ASYNC_SUBMIT_STATUS_RESULT
-```
-
-The measured success path completed in `17,748 ms`; it did **not** itself exceed the retained 30-second HTTP API reference envelope. The decision is based on retry safety, provider-latency coupling, backpressure, and failure isolation.
-
-Explicit derived scenarios preserve `MEASURED != DERIVED`:
-
-```text
-baseline measured E2E                                      17748 ms   MEASURED
-+ one additional model-equivalent client elapsed           26649 ms   DERIVED
-+ one additional Retrieve-equivalent and model-equivalent  30797 ms   DERIVED
-reference synchronous envelope                             30000 ms   RETAINED FACT
-```
-
-Gate 19.2 was protected-merged through PR #347 at `71eda2650889d3047259d37be226862ed2a09092`. It authorized no public deployment.
-
-### 9.5 Gate 19.3 concrete topology decision — COMPLETE DESIGN AUTHORITY
-
-Gate 19.3 protected-merged through PR #349 at `18d31c03d27448c88a6ffcba16683f3875a5ba15` and selected the logical topology identifier:
+Gate 19.3 selected:
 
 ```text
 HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB
 ```
 
-Selected shape:
-
-```text
-public client
-  -> Amazon API Gateway HTTP API
-  -> API Lambda
-       -> DynamoDB jobs/idempotency table
-       -> SQS standard job queue
-            -> Lambda worker
-                 -> retained deterministic repository/risk authority
-                 -> Bedrock Knowledge Base Retrieve
-                 -> retained bounded model invocation
-                 -> deterministic final result admission
-                 -> DynamoDB status/result update
-       -> SQS dead-letter queue
-
-status/result reads
-  -> Amazon API Gateway HTTP API
-  -> API Lambda
-  -> DynamoDB jobs table
-```
-
-The selection is protected architecture evidence only. Gate 19.3 created none of those resources and authorized no deployment.
-
-### 9.6 Candidate comparison
-
-```text
-HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB            SELECTED
-HTTP_API_LAMBDA_DYNAMODB_STREAMS_LAMBDA        REJECTED
-HTTP_API_LAMBDA_STEP_FUNCTIONS_STANDARD_LAMBDA REJECTED
-FUNCTION_URL_LAMBDA_SQS_LAMBDA_DYNAMODB        REJECTED
-HTTP_API_LAMBDA_SQS_FARGATE_DYNAMODB           REJECTED
-```
-
-Rationale:
-
-- HTTP API gives an explicit managed public routing/rate boundary without selecting REST-only capabilities not yet justified;
-- API Lambda keeps deterministic request/idempotency/status logic away from provider-heavy worker latency;
-- SQS expresses durable at-least-once buffering, retry isolation, and backpressure directly;
-- a DLQ bounds poison/repeated delivery rather than allowing unbounded redelivery;
-- the measured `17,748 ms` worker workload does not justify Fargate/container scheduling;
-- the measured `5,285`-byte result and conditional state/idempotency requirements justify DynamoDB rather than blob-scale result storage;
-- Step Functions Standard adds orchestration semantics not required by one linear analysis operation;
-- DynamoDB Streams couple dispatch to persistence-stream semantics and provide weaker queue-specific failure/backpressure controls for this boundary.
-
-No numerical architecture score is manufactured.
-
-### 9.7 Public interaction and job-state contract
-
-Gate 19.4 implements the following routes in the disabled HTTP API adapter/Terraform shape, but none is deployed or publicly reachable:
+Retained shape:
 
 ```text
 POST /v1/analyses
-GET  /v1/analyses/{job_id}
-GET  /v1/analyses/{job_id}/result
+ -> API Gateway HTTP API
+ -> API Lambda
+ -> DynamoDB job/idempotency authority
+ -> SQS standard queue
+ -> Lambda worker
+ -> retained analysis authorities
+ -> DynamoDB status/result
+ -> SQS DLQ
+
+GET /v1/analyses/{job_id}
+GET /v1/analyses/{job_id}/result
 ```
 
-State vocabulary:
+Queue delivery is transport evidence, not execution truth. DynamoDB conditional state/attempt authority owns business execution state.
+
+## 7. Phase 19 deployment evidence
+
+### 7.1 Immutable artifacts
+
+Gate 19.5 produced separate deterministic API/worker deployment ZIPs and preserved both content hash and exact S3 object VersionId.
 
 ```text
-SUBMITTING
-ACCEPTED
-RUNNING
-SUCCEEDED
-FAILED
-EXPIRED
+artifact hash != S3 VersionId
+publication success != deployment authorization
 ```
 
-DynamoDB conditional writes are the implemented job-state authority. SQS is at-least-once delivery transport and cannot itself mutate business truth.
+### 7.2 Exact Terraform planning
 
-The public submit contract requires `Idempotency-Key` plus `SHA256_CANONICAL_PUBLIC_ANALYSIS_REQUEST_V1`:
+Gate 19.6 admitted an exact plan before any apply:
 
 ```text
-same key + same fingerprint       -> RETURN_EXISTING_JOB
-same key + different fingerprint  -> HTTP_409
+21 create
+0 update
+0 delete
+0 replacement
 ```
 
-`SUBMITTING` explicitly models the DynamoDB/SQS dual-write boundary. The implementation persists `SUBMITTING`, publishes the minimized job identity, and conditionally admits `ACCEPTED`; queue publication failure is terminalized instead of pretending DynamoDB and SQS form one transaction.
+### 7.3 Controlled disabled materialization
 
-### 9.8 Retry, duplicate delivery, and backpressure
+Gate 19.7 materialized the runtime through bounded HUMAN-authorized Terraform operations, recovered from one account-level Lambda reserved-concurrency constraint, and proved final convergence:
 
 ```text
-queue semantics:       AT_LEAST_ONCE
-worker batch size:     1
-duplicate authority:   DYNAMODB_CONDITIONAL_STATE_AND_ATTEMPT_ADMISSION
-retry owner:           SQS/Lambda event source + worker state machine
-provider retry owner:  bounded worker policy
-DLQ:                   REQUIRED
-unbounded retry:       FORBIDDEN
-backpressure:          SQS queue depth/age + Lambda reserved concurrency
+0 add
+0 change
+0 destroy
+0 replacement
 ```
 
-Gate 19.4 represents numeric values only as configuration:
+Current retained runtime truth:
 
 ```text
-API reserved concurrency          2     CONFIGURED_LIMIT
-worker reserved concurrency       0     CONFIGURED_LIMIT
-API Lambda timeout               15 s   CONFIGURED_LIMIT
-worker Lambda timeout            60 s   CONFIGURED_LIMIT
-queue visibility timeout        120 s   CONFIGURED_LIMIT
-redrive receive count             4     CONFIGURED_LIMIT
-worker max attempts               3     CONFIGURED_LIMIT
-HTTP API burst limit             10     CONFIGURED_LIMIT
-HTTP API rate limit               5     CONFIGURED_LIMIT
+public async runtime resources materialized: 21
+public endpoint enabled: NO
+submit enabled: NO
+worker enabled: NO
+event-source mapping enabled: NO
+custom public domain: absent
+provider-heavy public executions: 0
 ```
-
-None is measured utilization.
-
-### 9.9 IAM responsibility contract
-
-Gate 19.4 Terraform binds API-handler functional authority to the exact jobs table and job queue:
 
 ```text
-sqs:SendMessage
-dynamodb:GetItem
-dynamodb:PutItem
-dynamodb:UpdateItem
-dynamodb:TransactWriteItems
+materialized != enabled
 ```
 
-It explicitly excludes `bedrock:Retrieve`, `bedrock:InvokeModel`, and SQS consumer authority.
+## 8. Gate 19.8 request-time threat evidence authority
 
-Worker functional authority is bound to the exact job queue/table plus retained Knowledge Base and model resources:
+Gate 19.8 protected-merged through PR #375 at:
 
 ```text
-sqs:ReceiveMessage
-sqs:DeleteMessage
-sqs:ChangeMessageVisibility
-sqs:GetQueueAttributes
-dynamodb:GetItem
-dynamodb:UpdateItem
-bedrock:Retrieve
-bedrock:InvokeModel
+e538fa3e96c29cf76dd3aa83a9967e090587b6fb
 ```
 
-It receives no queue-send, DynamoDB create/transaction/scan, or IAM-management authority. CloudWatch Logs and X-Ray write actions are represented separately as runtime-support authority.
-
-The design rule remains:
+Post-merge CodeQL:
 
 ```text
-concrete runtime responsibility
- -> required service action
- -> exact resource
- -> IAM statement
+34713360403 / run #393 / success
 ```
 
-not `future feature aspiration -> broad runtime role`.
-
-### 9.10 Observability, cost, and data minimization
-
-Gate 19.3 requires operational evidence for request/job/trace identity, state transitions, attempt number, stage duration, queue age, provider call counts, Bedrock tokens when available, retries, throttles, outcome/failure category, and result bytes before a public launch can be accepted.
-
-Gate 19.4 defines bounded CloudWatch log groups and X-Ray runtime support authority, but does not claim a deployed telemetry stream or production SLO. Telemetry remains content-minimized. Full prompts, repository source, repository file contents, full model responses, credentials, sensitive tokens, and raw user payloads remain forbidden by default.
-
-Gate 19.4 creates no production TCO claim. Async queue operations, status reads, worker concurrency, storage/retention, and aggregate model-call budgets remain future measurement obligations after an authorized deployment exists.
-
-### 9.11 Disable/recovery contract
-
-The disabled Gate 19.4 implementation represents independent controls:
+The provider-neutral authority chain is:
 
 ```text
-new-job admission switch                  false
-execute-api endpoint                      disabled
-custom public domain                      absent
-queue -> worker event source              disabled
-worker reserved concurrency               zero
-worker provider-execution switch          false
-provider-heavy worker executor            not composed
+PublicRepositoryEvidenceExecution
+ -> PublicThreatEvidenceScope
+ -> PublicThreatEvidenceRequest
+ -> PublicThreatEvidenceAuthority
+ -> PublicRepositoryThreatEvidence
+ -> retained deterministic correlation/enrichment
 ```
 
-Status/result logic remains separate from new-job submission admission. The Phase 17 scheduler pause remains separate and is not a global kill switch.
-
-### 9.12 Gate 19.4 implementation boundary
-
-All Gate 19.4 Terraform resources are gated behind:
+Semantics:
 
 ```text
-public_async_runtime_materialized = false
+scope derives only from admitted repository evidence
+incomplete PyPI normalization -> fail closed
+out-of-scope GHSA evidence -> reject
+unrelated NVD evidence -> reject
+latest_complete = selection policy, not provenance
+selected KEV/EPSS evidence carries exact snapshot date + SHA-256
+model authority for source truth/applicability = none
 ```
 
-The repository contains definitions for DynamoDB job authority, SQS queue/DLQ, API/worker Lambda, HTTP API routes, CloudWatch log groups, event-source mapping, and separated IAM roles/policies. Those definitions create no AWS resources until an explicitly authorized Terraform apply occurs.
+The physical provider adapter remains deliberately deferred. Because V1 is offline-first, that adapter is now a Post-V1 experiment instead of a V1 blocker.
 
-Lambda materialization additionally requires an exact deployment-artifact S3 key, exact object `VersionId`, and source-code hash. The worker Lambda refuses provider-heavy enablement until a provider executor is separately admitted and composed.
+## 9. Gate 19.9 V1 demonstration boundary
 
-### 9.13 Gate 19.5 immutable artifact provenance — COMPLETE
-
-Gate 19.5 was protected-merged through PR #353 at `61749bfac7b7bc9d032567e0b1870f8c1f7dedd4`; post-merge CodeQL for that exact SHA completed successfully.
-
-It established exact immutable artifact coordinates without materializing the runtime:
+Gate 19.9 freezes the first-release product boundary:
 
 ```text
-API
-  key: lambda/public-analysis/api/sha256=99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e/opslens-public-async-api.zip
-  SHA-256: 99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e
-  source_code_hash: mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=
-  VersionId: E.jfB7dlkGCD.wHAurP7QXo4fuS_PW63
-
-Worker
-  key: lambda/public-analysis/worker/sha256=0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9/opslens-public-async-worker.zip
-  SHA-256: 0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9
-  source_code_hash: DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck=
-  VersionId: sxiOdii4yFwR13t23xP5A8EU1JPV_7P1
+V1 mode: DEMONSTRATION_ARCHITECTURE_LAB
+production SaaS claim: NO
+Internet-facing runtime required: NO
+AWS credentials required for canonical demo: NO
+third-party repository code execution: NO
 ```
 
-The publication evidence records exactly two create-only S3 `PutObject` mutations, zero automatic retries, zero runtime/IAM/Terraform/public-endpoint mutations, `terraform_plan_input_ready=true`, and `terraform_apply_authorized=false`.
-
-### 9.14 Next architecture boundary — Gate 19.6
-
-Gate 19.6 may set `public_async_runtime_materialized=true` **for an exact Terraform plan only** and consume the admitted Gate 19.5 `Key + VersionId + source_code_hash` coordinates. The plan is evidence to inspect, not deployment authority.
-
-Offline admission must verify exact resource-change inventory, exact IAM actions/resources, artifact coordinates, configured concurrency/timeouts, SQS visibility/redrive, DynamoDB configuration, the exact three HTTP routes, execute-api endpoint state, event-source mapping state, CloudWatch resources, tags, and absence of unexpected deletes/replacements/resources.
-
-Materialization and enablement remain separate. The intended Gate 19.6 planning state preserves:
+Remaining completion slices:
 
 ```text
-execute-api endpoint                      disabled
-new-job admission switch                  false
-queue -> worker event source              disabled
-worker reserved concurrency               zero
-worker provider-execution switch          false
-provider-heavy worker executor            not composed
-custom public domain                      absent
+19.9   V1 demonstration contract + current-state synchronization
+19.10  deterministic end-to-end demo runner
+19.11  curated scenarios + deterministic evaluation
+19.12  minimal local visual demo
+19.13  portfolio/readme/architecture polish
+19.14  V1 closeout + release readiness
 ```
 
-`terraform plan != terraform apply`. Plan success is not deployment authorization. No apply, public enablement, worker enablement, IAM broadening, or provider-heavy public execution is authorized by Gate 19.6.
+## 10. Canonical V1 demo architecture
 
-## 10. Current Phase 19 authority impact
+The canonical V1 demo path will be local and offline-first:
 
 ```text
-deployment artifact S3 PutObject mutations: 2
-public endpoints enabled:                    0
-runtime AWS resources created/changed:       0
-IAM roles/policies created/changed:          0
-Terraform apply executions:                  0
-provider-heavy public executions:            0
-third-party repository code executions:      0
-PR #89 modifications:                        0
+curated inert scenario fixture
+ -> existing repository/dependency evidence contracts
+ -> existing threat evidence contracts
+ -> deterministic correlation/enrichment
+ -> deterministic risk policy
+ -> stable machine-readable result
+ -> human-readable projection
+ -> optional bounded explanation over admitted evidence
 ```
 
-## 11. Canonical Phase 19 evidence
+The demo must reuse retained OpsLens application/domain authorities rather than create a second implementation of business truth.
 
-Gate 19.1:
+Required scenario classes:
 
-- `docs/adr/0076-bounded-public-runtime-hypothesis-and-launch-contract.md`
-- `labs/phase-19-gate-19-1-public-runtime-hypothesis.md`
-- `labs/evidence/phase-19-gate-19-1-public-runtime-contract-v1.json`
-- `scripts/verify_phase19_gate19_1_public_runtime_contract.py`
+```text
+material vulnerability
+controlled benign
+fail-closed incomplete/ambiguous evidence
+```
 
-Gate 19.2:
+## 11. V1 non-goals
 
-- `labs/phase-19-gate-19-2-human-live-measurement-runbook.md`
-- `labs/evidence/phase-19-gate-19-2-live-measurement-v1.json`
-- `scripts/verify_phase19_gate19_2_live_measurement.py`
-- `labs/phase-19-gate-19-2-closeout.md`
-- `labs/evidence/phase-19-gate-19-2-closeout-v1.json`
-- `scripts/verify_phase19_gate19_2_closeout.py`
+The first release does not require:
 
-Gate 19.3:
+```text
+Internet-facing production runtime
+authentication / OIDC / Cognito
+multi-tenancy
+commercial billing/quotas
+custom public domain
+WAF / production abuse controls
+24x7 operations
+production SLO/SLA
+HA/DR program
+production TCO claim
+public worker/event-source enablement
+provider-backed arbitrary request-time threat adapter
+```
 
-- `labs/phase-19-gate-19-3-async-topology-contract.md`
-- `labs/evidence/phase-19-gate-19-3-async-topology-contract-v1.json`
-- `scripts/verify_phase19_gate19_3_async_topology_contract.py`
+These are tracked in [`post-v1-backlog.md`](post-v1-backlog.md).
 
-Gate 19.4:
+## 12. Current authority boundary
 
-- `labs/phase-19-gate-19-4-disabled-async-runtime.md`
-- `labs/evidence/phase-19-gate-19-4-disabled-async-runtime-v1.json`
-- `scripts/verify_phase19_gate19_4_disabled_async_runtime.py`
+Gate 19.9 is repository-only and offline-only.
 
-Gate 19.5:
+```text
+Terraform/provider operations: NOT AUTHORIZED
+AWS mutation:                 NOT AUTHORIZED
+IAM mutation:                 NOT AUTHORIZED
+artifact publication:         NOT AUTHORIZED
+runtime enablement:           NOT AUTHORIZED
+provider-heavy live execution:NOT AUTHORIZED
+protected merge:              HUMAN REVIEW REQUIRED
+```
 
-- `labs/evidence/phase-19-gate-19-5-prepublication-v1.json`
-- `labs/evidence/phase-19-gate-19-5-artifact-publication-v1.json`
-- `labs/phase-19-gate-19-5-immutable-artifact-publication-runbook.md`
-- `labs/phase-19-gate-19-5-closeout.md`
-- `scripts/build_phase19_async_lambda_artifacts.py`
-- `scripts/verify_phase19_gate19_5_async_artifact_build.py`
-- `scripts/publish_phase19_gate19_5_async_artifacts.py`
-- `scripts/verify_phase19_gate19_5_artifact_publication.py`
+## 13. Key documents
 
-PR #89 remains separate deferred Governed LLM Gateway work and is not a Phase 19 dependency unless explicitly re-evaluated later.
+- [`current-state.md`](current-state.md)
+- [`roadmap.md`](roadmap.md)
+- [`v1-demonstration-scope.md`](v1-demonstration-scope.md)
+- [`v1-completion-checklist.md`](v1-completion-checklist.md)
+- [`demo/README.md`](demo/README.md)
+- [`post-v1-backlog.md`](post-v1-backlog.md)
+- [`adr/0077-phase19-v1-demonstration-boundary.md`](adr/0077-phase19-v1-demonstration-boundary.md)
+- [`../labs/phase-19-gate-19-9-v1-demonstration-contract.md`](../labs/phase-19-gate-19-9-v1-demonstration-contract.md)
+
+Historical labs and machine-readable evidence remain immutable records of the state that existed when each experiment was executed.
