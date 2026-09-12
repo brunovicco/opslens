@@ -1,0 +1,55 @@
+{
+  "schema_version": "opslens.phase19.gate19_10.demo_runner.v1",
+  "phase": 19,
+  "gate": "19.10",
+  "issue": 378,
+  "source_protected_main_sha": "68a135a0c80dacb8cf0b668022796b159878637e",
+  "gate_19_9": {
+    "issue": 376,
+    "pull_request": 377,
+    "merge_sha": "68a135a0c80dacb8cf0b668022796b159878637e",
+    "post_merge_codeql_run_id": 34715722016,
+    "post_merge_codeql_conclusion": "success"
+  },
+  "decision": "IMPLEMENT_CANONICAL_OFFLINE_DEMO_RUNNER",
+  "canonical_command": "uv run python scripts/demo_opslens.py --scenario material-vulnerability --format text",
+  "scenario": {
+    "id": "material-vulnerability",
+    "fixture_version": "material-vulnerability-fixture:v1",
+    "source_kind": "offline_synthetic_fixture",
+    "expected_finding_count": 1,
+    "expected_priority_score": 90,
+    "expected_priority_tier": "P0"
+  },
+  "formats": [
+    "text",
+    "json"
+  ],
+  "retained_authorities": [
+    "PublicAnalysisRequest",
+    "PublicRepositoryEvidenceExecution",
+    "RepositoryAnalysisResult",
+    "Risk Policy v1"
+  ],
+  "required_properties": {
+    "aws_credentials_required": false,
+    "network_after_dependency_installation": false,
+    "live_provider_execution": false,
+    "model_execution": false,
+    "third_party_repository_code_execution": false,
+    "stable_json_output": true,
+    "human_readable_output": true,
+    "invalid_inputs_fail_closed": true
+  },
+  "authority_impact": {
+    "terraform_operations": 0,
+    "aws_mutations": 0,
+    "iam_mutations": 0,
+    "artifact_publications": 0,
+    "runtime_enablements": 0,
+    "provider_live_executions": 0,
+    "model_invocations": 0,
+    "third_party_repository_code_executions": 0,
+    "pr_89_modifications": 0
+  }
+}
