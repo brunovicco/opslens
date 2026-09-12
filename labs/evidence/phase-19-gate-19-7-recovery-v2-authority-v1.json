@@ -1,0 +1,29 @@
+{
+  "artifact_type": "phase-19-gate-19-7-recovery-v2-authority:v1",
+  "source_issue": 361,
+  "protected_source_head_sha": "d6546e9d48253694e3e276940ebd2388f301d8ad",
+  "plan_binary_sha256": "48cb15a8466cc0ce77fdbe1d827b5a0aebb88460b8e8151d8c88d3c85eb9ea55",
+  "plan_json_sha256": "8a1f95ab8cbcbf96c708c6ced0d0127d862391a6f8e72c250fe5e7499d2a0bf7",
+  "admitted_shape": {
+    "managed_creates": 5,
+    "managed_updates": 1,
+    "managed_deletes": 0,
+    "managed_replacements": 0,
+    "allowed_existing_resource_update": "aws_lambda_function.public_async_api",
+    "api_reserved_concurrency_after": 0,
+    "worker_reserved_concurrency_after": 0
+  },
+  "authority": {
+    "terraform_apply_authorized": false,
+    "explicit_human_apply_authorization_required": true,
+    "authorization_must_bind_source_head_sha": true,
+    "authorization_must_bind_plan_binary_sha256": true,
+    "authorization_must_bind_plan_json_sha256": true
+  },
+  "retained_invariants": [
+    "plan != apply",
+    "materialized != enabled",
+    "failed plan != retry authority",
+    "state reconciliation != AWS mutation"
+  ]
+}
