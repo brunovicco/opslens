@@ -1,22 +1,29 @@
-# V1 Quickstart Target
+# V1 Quickstart
 
-Gate 19.10 must converge on a reviewer experience approximately equivalent to:
+Gate 19.10 implements the canonical reviewer path:
 
 ```bash
 uv sync --frozen
 uv run python scripts/demo_opslens.py --scenario material-vulnerability --format text
 ```
 
-The exact command may change during Gate 19.10, but the resulting contract must satisfy:
+Machine-readable deterministic form:
+
+```bash
+uv run python scripts/demo_opslens.py --scenario material-vulnerability --format json
+```
+
+The runner satisfies the V1 quickstart contract:
 
 - no AWS credentials required for the canonical offline path;
 - no network requirement after dependencies are installed;
 - no execution of third-party repository code;
 - deterministic scenario identity and output evidence;
-- stable JSON output option;
-- human-readable summary option;
-- non-zero process exit for invalid/incomplete demo inputs where fail-closed behavior is expected.
+- stable JSON output;
+- human-readable summary output;
+- non-zero process exit for invalid CLI inputs;
+- retained correlation/risk authorities are reused rather than copied into demo-only logic.
 
-Target reviewer time from completed setup to first result: less than ten minutes.
+Target reviewer time from completed setup to first result remains less than ten minutes.
 
-This is a target contract only; Gate 19.10 owns implementation and verification.
+Gate 19.11 will add the controlled-benign and fail-closed incomplete/ambiguous scenario classes without changing this canonical runner boundary.

@@ -60,7 +60,9 @@ Their workflow, IAM, least-privilege, telemetry, and protected-main controls rem
       current-state sync PR #373 / 8700478c7fca230e5984c3ce034194ea3bd337e4
 19.8  PR #375  e538fa3e96c29cf76dd3aa83a9967e090587b6fb  COMPLETE
       post-merge CodeQL 34713360403 / run #393 / success
-19.9  issue #376                                              IN PROGRESS
+19.9  PR #377  68a135a0c80dacb8cf0b668022796b159878637e  COMPLETE
+      post-merge CodeQL 34715722016 / run #414 / success
+19.10 issue #378 / PR #379                                  IN PROGRESS
 ```
 
 PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work. Phase 19 does not rebase, merge, modify, or depend on it.
@@ -180,30 +182,40 @@ DEFERRED_PENDING_BOUNDED_RUNTIME_ADAPTER_EVIDENCE
 
 That provider-backed arbitrary request-time path is no longer a V1 blocker because the canonical V1 demonstration is offline-first. It remains available as a Post-V1 experiment.
 
+### Gate 19.9 — V1 Demonstration Contract + Current-State Synchronization — COMPLETE
+
+Protected merge: PR #377 at `68a135a0c80dacb8cf0b668022796b159878637e`.  
+Post-merge CodeQL: `34715722016` / run #414 / success.  
+Issue #376: closed completed.
+
+Gate 19.9 froze the first release as a demonstration/architecture lab and established:
+
+```text
+demonstration readiness != production readiness
+clone -> setup -> deterministic offline demo -> evidence-backed result
+```
+
+Public SaaS concerns were moved out of the V1 critical path without rewriting the retained AWS/runtime evidence.
+
 ## Remaining V1 completion gates
 
-### Gate 19.9 — V1 Demonstration Contract + Current-State Synchronization — IN PROGRESS
+### Gate 19.10 — Deterministic End-to-End Demo Runner — IN PROGRESS
 
-Source issue: #376.
-
-Goals:
-
-- freeze V1 as demonstration/architecture lab;
-- synchronize current-facing state with Gate 19.8 completion;
-- add explicit `demonstration readiness != production readiness` semantics;
-- record the remaining V1 completion sequence;
-- keep AWS/Terraform/IAM/provider authority at zero.
-
-No AWS or Terraform mutation is authorized.
-
-### Gate 19.10 — Deterministic End-to-End Demo Runner — PLANNED
+Source issue: #378.  
+Implementation PR: #379.
 
 Implement one canonical offline runner that reuses existing typed OpsLens authorities rather than duplicating business logic.
 
-Target command shape:
+Canonical command:
 
 ```bash
 uv run python scripts/demo_opslens.py --scenario material-vulnerability --format text
+```
+
+Machine-readable projection:
+
+```bash
+uv run python scripts/demo_opslens.py --scenario material-vulnerability --format json
 ```
 
 Required characteristics:
@@ -212,9 +224,14 @@ Required characteristics:
 AWS credentials required: NO
 network required after setup: NO
 third-party repository code execution: NO
+live provider execution: NO
+model execution: NO
 stable JSON output: YES
 human-readable output: YES
+invalid inputs fail closed: YES
 ```
+
+Gate 19.10 admits only the synthetic inert `material-vulnerability` fixture and composes retained `PublicRepositoryEvidenceExecution`, Phase 3/4 correlation/enrichment, `RepositoryAnalysisResult`, and Risk Policy v1. Gate 19.11 owns admission of the other two canonical scenario classes.
 
 ### Gate 19.11 — Curated Demo Scenarios + Deterministic Evaluation — PLANNED
 
@@ -298,6 +315,7 @@ submit enablement:                     NOT AUTHORIZED
 worker enablement:                     NOT AUTHORIZED
 event-source enablement:               NOT AUTHORIZED
 provider-heavy live execution:         NOT AUTHORIZED
+model execution for demo:              NOT AUTHORIZED
 custom public domain publication:      NOT AUTHORIZED
 ```
 
