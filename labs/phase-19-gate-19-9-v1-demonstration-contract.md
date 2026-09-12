@@ -1,6 +1,6 @@
 # Phase 19 Gate 19.9 — V1 demonstration closeout contract
 
-Issue: pending  
+Issue: #376  
 Source protected main: `e538fa3e96c29cf76dd3aa83a9967e090587b6fb`  
 Gate 19.8 protected merge: PR #375  
 Gate 19.8 post-merge CodeQL: run `34713360403` / run #393 / `success`
