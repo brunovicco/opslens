@@ -8,7 +8,11 @@ import sys
 from collections.abc import Sequence
 from typing import cast
 
-from opslens.demo import build_demo_suite_evaluation
+from _demo_bootstrap import ensure_repository_src_on_path
+
+ensure_repository_src_on_path()
+
+from opslens.demo import build_demo_suite_evaluation  # noqa: E402
 
 _SUPPORTED_FORMATS = ("text", "json")
 
