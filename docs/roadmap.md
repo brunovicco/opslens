@@ -64,7 +64,9 @@ Their workflow, IAM, least-privilege, telemetry, and protected-main controls rem
       post-merge CodeQL 34715722016 / run #414 / success
 19.10 PR #379  50456d304e7847fadd0d29373079afa1669acc9d  COMPLETE
       post-merge CodeQL 34716596100 / run #421 / success
-19.11 issue #380                                              IN PROGRESS
+19.11 PR #381  0c5bbe34792406ee5c66fcc5ac4b75923512703b  COMPLETE
+      post-merge CodeQL 34718268902 / run #424 / success
+19.12 issue #382                                              IN PROGRESS
 ```
 
 PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work. Phase 19 does not rebase, merge, modify, or depend on it.
@@ -216,44 +218,84 @@ third-party repository code execution: 0
 
 The runner exposes stable text and JSON projections over retained deterministic OpsLens authorities.
 
-## Remaining V1 completion gates
+### Gate 19.11 — Curated Demo Scenarios + Deterministic Evaluation — COMPLETE
 
-### Gate 19.11 — Curated Demo Scenarios + Deterministic Evaluation — IN PROGRESS
+Protected merge: PR #381 at `0c5bbe34792406ee5c66fcc5ac4b75923512703b`.  
+Post-merge CodeQL: `34718268902` / run #424 / success.  
+Issue #380: closed completed.
 
-Source issue: #380.  
-Source protected main: `50456d304e7847fadd0d29373079afa1669acc9d`.
-
-Exactly three canonical scenario classes:
-
-1. `material-vulnerability`;
-2. `controlled-benign`;
-3. `fail-closed-incomplete-evidence`.
-
-Gate 19.11 must mechanically distinguish:
+Gate 19.11 admitted exactly three canonical offline scenario classes:
 
 ```text
-material finding -> deterministic risk result
+material-vulnerability
+controlled-benign
+fail-closed-incomplete-evidence
+```
+
+Their deterministic semantics are:
+
+```text
+material finding -> Risk Policy v1: 90 / P0
 complete scoped evidence + no applicable finding -> controlled fixture-only no-finding
 incomplete dependency identity -> fail closed before risk -> no benign conclusion
 missing evidence != benign evidence
 ```
 
-The suite evaluator must be deterministic, byte-stable, provider/model free, and non-authoritative beyond verifying retained scenario outcomes.
+The cross-scenario evaluator is byte-stable, provider/model free, and verifies retained outcomes without adding business authority.
 
-### Gate 19.12 — Minimal Local Visual Demo — PLANNED
+## Remaining V1 completion gates
 
-Add a local-only presentation surface over the same admitted application contract.
+### Gate 19.12 — Minimal Local Visual Demo — IN PROGRESS
 
-It should show:
+Source issue: #382.  
+Source protected main: `0c5bbe34792406ee5c66fcc5ac4b75923512703b`.
 
-- scenario/repository identity;
-- dependency evidence;
-- vulnerability/risk findings;
-- source provenance;
-- deterministic authority boundaries;
-- optional AI explanation only if clearly separated from authority.
+Selected V1 visual architecture:
 
-No public deployment is required.
+```text
+same deterministic scenario builders
+ -> typed presentation projection
+ -> inline HTML/CSS
+ -> Python standard-library localhost HTTP adapter
+ -> browser reviewer
+```
+
+Canonical command:
+
+```bash
+uv run python scripts/demo_opslens_web.py
+```
+
+Default local bind:
+
+```text
+127.0.0.1:8765
+```
+
+Required characteristics:
+
+```text
+external host option: NO
+AWS credentials required: NO
+network required after setup: NO
+live provider execution: NO
+model execution: NO
+third-party repository code execution: NO
+new business authority: NO
+external browser assets: NO
+JavaScript required: NO
+```
+
+The page exposes exactly the three Gate 19.11 scenarios and displays repository/dependency evidence, deterministic findings or rejection state, risk evidence where present, provenance, content-addressed result identity, and canonical machine evidence.
+
+The AI explanation panel is visibly disabled and non-authoritative in V1. Unknown routes/scenarios fail closed, query-string input is rejected, and dynamic values are HTML-escaped.
+
+```text
+visual projection != business authority
+localhost demo != public service
+```
+
+Gate 19.12 closes only after exact-head CI/security/CodeQL, HUMAN protected merge, and post-merge verification.
 
 ### Gate 19.13 — Portfolio / README / Architecture Polish — PLANNED
 
@@ -336,6 +378,8 @@ artifact hash != S3 VersionId
 publication success != deployment authorization
 plan != apply
 materialized != enabled
+visual projection != business authority
+localhost demo != public service
 demonstration readiness != production readiness
 AIP-C01 topic != product requirement
 ```
