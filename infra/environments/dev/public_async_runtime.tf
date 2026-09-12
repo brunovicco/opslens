@@ -88,6 +88,9 @@ locals {
   public_async_worker_timeout_seconds   = 60
   public_async_queue_visibility_seconds = 120
   public_async_redrive_receive_count    = 4
+
+  # Historical Gate 19.4 configured API limit, retained as evidence only:
+  # reserved_concurrent_executions = 2
 }
 
 resource "aws_dynamodb_table" "public_async_jobs" {
@@ -186,7 +189,7 @@ resource "aws_lambda_function" "public_async_api" {
 
   memory_size                    = 512
   timeout                        = 15
-  reserved_concurrent_executions = 2
+  reserved_concurrent_executions = 0
 
   environment {
     variables = {
@@ -418,6 +421,11 @@ output "public_async_execute_api_endpoint_disabled" {
 output "public_async_submit_enabled" {
   description = "New-job admission remains disabled in Gate 19.4."
   value       = false
+}
+
+output "public_async_api_reserved_concurrency" {
+  description = "Gate 19.7 recovery hard-disables API invocation with reserved concurrency zero; this is CONFIGURED_LIMIT, not measured utilization."
+  value       = 0
 }
 
 output "public_async_worker_event_source_enabled" {

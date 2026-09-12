@@ -1,0 +1,77 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.15.8",
+  "variables": {
+    "public_async_runtime_materialized": {"value": true},
+    "public_async_api_artifact_key": {"value": "lambda/public-analysis/api/sha256=99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e/opslens-public-async-api.zip"},
+    "public_async_api_artifact_version_id": {"value": "E.jfB7dlkGCD.wHAurP7QXo4fuS_PW63"},
+    "public_async_api_source_code_hash": {"value": "mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24="},
+    "public_async_worker_artifact_key": {"value": "lambda/public-analysis/worker/sha256=0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9/opslens-public-async-worker.zip"},
+    "public_async_worker_artifact_version_id": {"value": "sxiOdii4yFwR13t23xP5A8EU1JPV_7P1"},
+    "public_async_worker_source_code_hash": {"value": "DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck="}
+  },
+  "output_changes": {
+    "public_async_runtime_materialized": {"actions": ["no-op"], "before": true, "after": true, "after_unknown": false},
+    "public_async_execute_api_endpoint_disabled": {"actions": ["no-op"], "before": true, "after": true, "after_unknown": false},
+    "public_async_submit_enabled": {"actions": ["no-op"], "before": false, "after": false, "after_unknown": false},
+    "public_async_api_reserved_concurrency": {"actions": ["create"], "before": null, "after": 0, "after_unknown": false},
+    "public_async_worker_event_source_enabled": {"actions": ["no-op"], "before": false, "after": false, "after_unknown": false},
+    "public_async_worker_reserved_concurrency": {"actions": ["no-op"], "before": 0, "after": 0, "after_unknown": false}
+  },
+  "resource_changes": [
+    {
+      "address": "aws_lambda_function.public_async_api[0]",
+      "mode": "managed",
+      "type": "aws_lambda_function",
+      "name": "public_async_api",
+      "change": {
+        "actions": ["update"],
+        "before": {"reserved_concurrent_executions": -1},
+        "after": {
+          "s3_key": "lambda/public-analysis/api/sha256=99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e/opslens-public-async-api.zip",
+          "s3_object_version": "E.jfB7dlkGCD.wHAurP7QXo4fuS_PW63",
+          "source_code_hash": "mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=",
+          "reserved_concurrent_executions": 0,
+          "environment": [{"variables": {"OPSLENS_ASYNC_SUBMIT_ENABLED": "false"}}]
+        },
+        "after_unknown": false
+      }
+    },
+    {
+      "address": "aws_lambda_function.public_async_worker[0]",
+      "mode": "managed",
+      "type": "aws_lambda_function",
+      "name": "public_async_worker",
+      "change": {
+        "actions": ["no-op"],
+        "after": {
+          "s3_key": "lambda/public-analysis/worker/sha256=0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9/opslens-public-async-worker.zip",
+          "s3_object_version": "sxiOdii4yFwR13t23xP5A8EU1JPV_7P1",
+          "source_code_hash": "DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck=",
+          "reserved_concurrent_executions": 0,
+          "environment": [{"variables": {"OPSLENS_ASYNC_WORKER_ENABLED": "false"}}]
+        },
+        "after_unknown": false
+      }
+    },
+    {
+      "address": "aws_lambda_event_source_mapping.public_async_worker[0]",
+      "mode": "managed",
+      "type": "aws_lambda_event_source_mapping",
+      "name": "public_async_worker",
+      "change": {"actions": ["no-op"], "after": {"enabled": false}, "after_unknown": false}
+    },
+    {
+      "address": "aws_apigatewayv2_api.public_async[0]",
+      "mode": "managed",
+      "type": "aws_apigatewayv2_api",
+      "name": "public_async",
+      "change": {"actions": ["no-op"], "after": {"disable_execute_api_endpoint": true}, "after_unknown": false}
+    },
+    {"address": "aws_apigatewayv2_integration.public_async_api_lambda[0]", "mode": "managed", "type": "aws_apigatewayv2_integration", "name": "public_async_api_lambda", "change": {"actions": ["create"], "after": {}}},
+    {"address": "aws_apigatewayv2_route.public_async_result[0]", "mode": "managed", "type": "aws_apigatewayv2_route", "name": "public_async_result", "change": {"actions": ["create"], "after": {}}},
+    {"address": "aws_apigatewayv2_route.public_async_status[0]", "mode": "managed", "type": "aws_apigatewayv2_route", "name": "public_async_status", "change": {"actions": ["create"], "after": {}}},
+    {"address": "aws_apigatewayv2_route.public_async_submit[0]", "mode": "managed", "type": "aws_apigatewayv2_route", "name": "public_async_submit", "change": {"actions": ["create"], "after": {}}},
+    {"address": "aws_lambda_permission.public_async_api_gateway[0]", "mode": "managed", "type": "aws_lambda_permission", "name": "public_async_api_gateway", "change": {"actions": ["create"], "after": {}}}
+  ]
+}

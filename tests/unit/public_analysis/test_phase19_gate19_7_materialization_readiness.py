@@ -10,9 +10,20 @@ from pathlib import Path
 from typing import cast
 
 CONTRACT = Path("labs/evidence/phase-19-gate-19-7-materialization-contract-v1.json")
+RECOVERY_CONTRACT = Path(
+    "labs/evidence/phase-19-gate-19-7-recovery-contract-v1.json"
+)
+RECONCILIATION = Path(
+    "labs/evidence/phase-19-gate-19-7-failed-apply-reconciliation-v1.json"
+)
 CONTRACT_VERIFIER = Path("scripts/verify_phase19_gate19_7_materialization_contract.py")
 FRESH_PLAN_VERIFIER = Path("scripts/verify_phase19_gate19_7_fresh_plan.py")
+RECOVERY_PLAN_VERIFIER = Path("scripts/verify_phase19_gate19_7_recovery_plan.py")
 PLAN_FIXTURE = Path("tests/fixtures/phase19/gate19-6-exact-plan-pass.json")
+RECOVERY_PLAN_FIXTURE = Path(
+    "tests/fixtures/phase19/gate19-7-recovery-plan-pass.json"
+)
+RUNTIME_TF = Path("infra/environments/dev/public_async_runtime.tf")
 
 
 def _head() -> str:
@@ -162,3 +173,141 @@ def test_gate19_7_fresh_plan_rejects_unreviewed_source_head(tmp_path: Path) -> N
 
     assert result.returncode != 0
     assert "differs from reviewed source" in result.stderr
+
+
+def test_gate19_7_recovery_contract_freezes_partial_state_and_authority() -> None:
+    """Freeze the failed-plan quarantine and exact partial-state recovery boundary."""
+    contract = _load(RECOVERY_CONTRACT)
+    reconciliation = _load(RECONCILIATION)
+
+    assert contract["artifact_type"] == "phase-19-gate-19-7-recovery-contract:v1"
+    assert reconciliation["artifact_type"] == (
+        "phase-19-gate-19-7-failed-apply-reconciliation:v1"
+    )
+
+    failed_apply = contract["failed_apply"]
+    assert isinstance(failed_apply, dict)
+    typed_failed_apply = cast(dict[str, object], failed_apply)
+    assert typed_failed_apply["failed_plan_reusable"] is False
+    assert typed_failed_apply["retry_authorized"] is False
+    assert typed_failed_apply["requested_reserved_concurrency"] == 2
+    assert typed_failed_apply["account_concurrent_executions_limit"] == 10
+
+    partial_state = contract["partial_state"]
+    assert isinstance(partial_state, dict)
+    typed_partial_state = cast(dict[str, object], partial_state)
+    assert typed_partial_state["expected_managed_resource_count"] == 21
+    assert typed_partial_state["managed_expected_resource_count"] == 16
+    assert typed_partial_state["missing_managed_create_count"] == 5
+
+    recovery_design = contract["recovery_design"]
+    assert isinstance(recovery_design, dict)
+    typed_recovery_design = cast(dict[str, object], recovery_design)
+    assert typed_recovery_design["api_reserved_concurrency"] == 0
+    assert typed_recovery_design["worker_reserved_concurrency"] == 0
+    assert typed_recovery_design["maximum_existing_resource_update_count"] == 1
+
+    authority = contract["plan_authority"]
+    assert isinstance(authority, dict)
+    typed_authority = cast(dict[str, object], authority)
+    assert typed_authority["fresh_human_plan_required"] is True
+    assert typed_authority["failed_binary_plan_reuse_forbidden"] is True
+    assert typed_authority["terraform_apply_authorized"] is False
+    assert typed_authority["runtime_enablement_authorized"] is False
+
+
+def test_gate19_7_recovery_source_hard_disables_api_lambda() -> None:
+    """Require the live API Lambda resource to use zero reserved concurrency."""
+    runtime_tf = RUNTIME_TF.read_text(encoding="utf-8")
+    start = runtime_tf.index('resource "aws_lambda_function" "public_async_api"')
+    end = runtime_tf.index('resource "aws_lambda_function" "public_async_worker"')
+    api_segment = runtime_tf[start:end]
+
+    assert "reserved_concurrent_executions = 0" in api_segment
+    assert "reserved_concurrent_executions = 2" not in api_segment
+    assert 'OPSLENS_ASYNC_SUBMIT_ENABLED           = "false"' in api_segment
+    assert 'output "public_async_api_reserved_concurrency"' in runtime_tf
+
+
+def test_gate19_7_recovery_plan_binds_new_binary_and_partial_state(
+    tmp_path: Path,
+) -> None:
+    """Admit only the five missing creates plus the bounded API hard-disable update."""
+    plan_binary = tmp_path / "opslens-gate19-7-recovery.tfplan"
+    plan_binary.write_bytes(b"synthetic-gate19-7-recovery-plan-binary\n")
+    output = tmp_path / "recovery-admission.json"
+    source_head = _head()
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(RECOVERY_PLAN_VERIFIER),
+            "--plan-json",
+            str(RECOVERY_PLAN_FIXTURE),
+            "--plan-binary",
+            str(plan_binary),
+            "--expected-source-head",
+            source_head,
+            "--output",
+            str(output),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "phase19_gate19_7_recovery_plan=PASS" in result.stdout
+    assert "managed_creates=5" in result.stdout
+    assert "managed_updates=1" in result.stdout
+    assert "api_reserved_concurrency=0" in result.stdout
+    assert "terraform_apply_authorized=false" in result.stdout
+
+    evidence = _load(output)
+    assert evidence["artifact_type"] == (
+        "phase-19-gate-19-7-recovery-plan-admission:v1"
+    )
+    assert evidence["source_head_sha"] == source_head
+    assert evidence["managed_create_count"] == 5
+    assert evidence["managed_update_count"] == 1
+    assert evidence["plan_binary_sha256"] == hashlib.sha256(
+        plan_binary.read_bytes()
+    ).hexdigest()
+
+    recovery = evidence["recovery"]
+    assert isinstance(recovery, dict)
+    typed_recovery = cast(dict[str, object], recovery)
+    assert typed_recovery["previous_failed_plan_reusable"] is False
+    assert typed_recovery["previous_failed_plan_retry_authorized"] is False
+    assert typed_recovery["api_reserved_concurrency"] == 0
+
+    authority = evidence["authority"]
+    assert isinstance(authority, dict)
+    typed_authority = cast(dict[str, object], authority)
+    assert typed_authority["terraform_apply_authorized"] is False
+    assert typed_authority["materialized_not_enabled"] is True
+
+
+def test_gate19_7_recovery_rejects_historical_full_create_plan(tmp_path: Path) -> None:
+    """Reject reuse of the historical 21-create plan through recovery admission."""
+    plan_binary = tmp_path / "old-plan.tfplan"
+    plan_binary.write_bytes(b"historical-plan-must-not-be-reused\n")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(RECOVERY_PLAN_VERIFIER),
+            "--plan-json",
+            str(PLAN_FIXTURE),
+            "--plan-binary",
+            str(plan_binary),
+            "--expected-source-head",
+            _head(),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "public_async_api_reserved_concurrency" in result.stderr
