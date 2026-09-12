@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from typing import cast
 
-type JsonValue = str | int | float | bool | None | list[JsonValue] | dict[str, JsonValue]
+type JsonValue = str | int | float | bool | list[JsonValue] | dict[str, JsonValue] | None
 
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE_PATH = ROOT / "labs/evidence/phase-19-gate-19-9-v1-demonstration-contract-v1.json"
