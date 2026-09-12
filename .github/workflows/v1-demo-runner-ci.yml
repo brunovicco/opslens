@@ -5,6 +5,7 @@ on:
     paths:
       - "src/opslens/demo/**"
       - "tests/unit/demo/**"
+      - "scripts/_demo_bootstrap.py"
       - "scripts/demo_opslens.py"
       - "scripts/evaluate_opslens_demo.py"
       - "scripts/demo_opslens_web.py"
@@ -55,10 +56,17 @@ jobs:
       - name: Sync locked dependencies
         run: uv sync --frozen
 
+      - name: Prove reviewer commands work without PYTHONPATH
+        run: |
+          env -u PYTHONPATH uv run python scripts/demo_opslens.py --scenario material-vulnerability --format json > /tmp/opslens-reviewer-material.json
+          env -u PYTHONPATH uv run python scripts/evaluate_opslens_demo.py --format json > /tmp/opslens-reviewer-suite.json
+          env -u PYTHONPATH uv run python scripts/demo_opslens_web.py --help > /tmp/opslens-reviewer-web-help.txt
+
       - name: Ruff demo runner
         run: >-
           uv run ruff check
           src/opslens/demo
+          scripts/_demo_bootstrap.py
           scripts/demo_opslens.py
           scripts/evaluate_opslens_demo.py
           scripts/demo_opslens_web.py
@@ -71,6 +79,7 @@ jobs:
         run: >-
           uv run pyright
           src/opslens/demo
+          scripts/_demo_bootstrap.py
           scripts/demo_opslens.py
           scripts/evaluate_opslens_demo.py
           scripts/demo_opslens_web.py

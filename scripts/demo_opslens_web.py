@@ -7,7 +7,11 @@ import argparse
 from collections.abc import Sequence
 from typing import cast
 
-from opslens.demo.web import LOCAL_DEMO_PORT, serve_local_demo
+from _demo_bootstrap import ensure_repository_src_on_path
+
+ensure_repository_src_on_path()
+
+from opslens.demo.web import LOCAL_DEMO_PORT, serve_local_demo  # noqa: E402
 
 
 def _parse_port(value: str) -> int:
