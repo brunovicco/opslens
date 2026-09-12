@@ -61,6 +61,24 @@ Cross-scenario deterministic evaluation:
 uv run python scripts/evaluate_opslens_demo.py --format text
 ```
 
+The demo reports the run by default, so every admitted scenario exits `0`. Opt
+into outcome semantics to use it from a pipeline, and add `--pretty` to read the
+JSON projection without changing the identity it carries:
+
+```bash
+uv run python scripts/demo_opslens.py \
+  --scenario material-vulnerability --format json --pretty --exit-code outcome
+```
+
+| `--exit-code outcome` | Meaning |
+| ---: | --- |
+| `0` | `NO_MATERIAL_FINDING` |
+| `1` | `MATERIAL_FINDING` |
+| `2` | `REJECTED_INCOMPLETE_EVIDENCE`, or an admission rejection |
+
+`--pretty` reindents the canonical bytes. It never recomputes a digest, so
+`projection != identity` holds in the CLI exactly as it does in the viewer.
+
 See [Demo](docs/demo/README.md), [Scenarios](docs/demo/SCENARIOS.md), and the [3–5 minute walkthrough](docs/demo/WALKTHROUGH.md).
 
 ## Architecture at a glance

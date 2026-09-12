@@ -61,6 +61,24 @@ Avaliação determinística entre cenários:
 uv run python scripts/evaluate_opslens_demo.py --format text
 ```
 
+Por padrão a demo reporta a execução, então todo cenário admitido sai com `0`.
+Para usá-la em pipeline, opte pela semântica de resultado; `--pretty` deixa a
+projeção JSON legível sem mexer na identidade que ela carrega:
+
+```bash
+uv run python scripts/demo_opslens.py \
+  --scenario material-vulnerability --format json --pretty --exit-code outcome
+```
+
+| `--exit-code outcome` | Significado |
+| ---: | --- |
+| `0` | `NO_MATERIAL_FINDING` |
+| `1` | `MATERIAL_FINDING` |
+| `2` | `REJECTED_INCOMPLETE_EVIDENCE`, ou rejeição na admissão |
+
+`--pretty` apenas reindenta os bytes canônicos. Nunca recalcula digest, então
+`projeção != identidade` vale na CLI exatamente como vale no visualizador.
+
 Veja [Demo](docs/demo/README.md), [Cenários](docs/demo/SCENARIOS.md) e o [walkthrough de 3–5 minutos](docs/demo/WALKTHROUGH.md).
 
 ## Arquitetura em resumo
