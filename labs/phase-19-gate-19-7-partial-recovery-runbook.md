@@ -58,7 +58,7 @@ reusable:           false
 
 The failed operation attempted to configure API Lambda reserved concurrency to `2`. The AWS account concurrency limit is `10`, and Lambda rejected that reservation because it would reduce the account's unreserved concurrency below the service minimum of `10`.
 
-Gate 19.7 recovery does **not** broaden IAM or mutate the account quota to force the historical configured limit. Instead, the live recovery source hard-disables the API Lambda with:
+Gate 19.7 recovery does **not** broaden IAM or mutate the account quota to force the historical configured limit. The live recovery source hard-disables both Lambdas:
 
 ```text
 API reserved concurrency = 0
@@ -67,7 +67,7 @@ worker reserved concurrency = 0
 
 The original Gate 19.4 configured value of `2` remains historical evidence only. It is not current runtime authority.
 
-The retained disabled/non-public controls are:
+Retained disabled/non-public controls:
 
 ```text
 public_async_runtime_materialized = true
@@ -183,7 +183,7 @@ A typical Terraform summary is expected to be:
 Plan: 5 to add, 1 to change, 0 to destroy.
 ```
 
-Provider normalization may make the API concurrency transition a no-op; therefore the offline verifier admits zero or one update, but never an update to any other existing resource.
+Provider normalization may make the API concurrency transition a no-op. The offline recovery verifier therefore admits zero or one update, but never an update to any other existing resource.
 
 Any other managed action is a hard stop.
 
@@ -199,10 +199,11 @@ The full provider JSON remains local and must not be committed.
 
 ## Offline recovery-plan admission
 
+Use the dedicated Gate 19.7 recovery-plan verifier. The historical fresh-plan verifier is not the recovery authority.
+
 ```bash
 PYTHONPATH=src uv run python \
-  scripts/verify_phase19_gate19_7_fresh_plan.py \
-  --recovery \
+  scripts/verify_phase19_gate19_7_recovery_plan.py \
   --plan-json /tmp/opslens-gate19-7-recovery-plan.json \
   --plan-binary /tmp/opslens-gate19-7-recovery.tfplan \
   --expected-source-head "$EXPECTED_HEAD" \
@@ -221,7 +222,7 @@ Inspect only the bounded admission:
 cat /tmp/opslens-gate19-7-recovery-plan-admission-v1.json
 ```
 
-Return the Terraform high-level summary, PASS marker, and bounded admission JSON for review.
+Return only the Terraform high-level summary, PASS marker, and bounded admission JSON for review. Do not return the full provider plan JSON or the binary plan.
 
 ## Mandatory stop
 
