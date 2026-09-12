@@ -29,6 +29,13 @@ Phase 18  Evaluation, Cost & Portfolio Readiness              COMPLETE
 Phase 19  Bounded Public Runtime & V1 Demonstration Closeout  IN PROGRESS
 ```
 
+## Retained security lineage
+
+Gate 17.1 — evidence-first threat/control-gap inventory — COMPLETE.  
+Gate 17.2 — CI/CD and workflow authority hardening — COMPLETE.
+
+Their workflow, IAM, least-privilege, telemetry, and protected-main controls remain authoritative throughout the V1 closeout.
+
 ## Phase 19 protected lineage
 
 ```text
