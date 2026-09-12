@@ -26,6 +26,8 @@ OpsLens deliberately separates probabilistic reasoning from deterministic author
 
 **Phases 0–18 are complete. Phase 19 is the final V1 closeout phase.**
 
+The historical phase selected after Phase 18 remains **Phase 19 — Bounded Public Runtime & Productization**. Gate 19.9 narrows V1 completion to a demonstration-focused closeout without rewriting that retained decision.
+
 Current protected checkpoint:
 
 ```text
