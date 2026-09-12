@@ -4,7 +4,8 @@ This walkthrough is designed for an interview, recruiter screen, architecture re
 
 ## Before the walkthrough
 
-From a clean clone:
+From a clean clone, with [uv](https://docs.astral.sh/uv/) 0.12.3 or newer installed
+(uv provisions Python 3.13 itself):
 
 ```bash
 uv sync --frozen

@@ -30,6 +30,8 @@ O projeto separa raciocínio probabilístico de autoridade determinística. Mode
 
 O caminho canônico para avaliação é local, sintético, inerte e determinístico. Depois da instalação das dependências, não são necessárias credenciais AWS, chamadas live de provider, chamadas de modelo ou execução de código de repositórios de terceiros.
 
+**Pré-requisitos:** [uv](https://docs.astral.sh/uv/) 0.12.3 ou superior. O próprio uv provisiona o Python 3.13, então nada mais precisa ser instalado antes.
+
 ```bash
 uv sync --frozen
 uv run python scripts/demo_opslens.py --scenario material-vulnerability --format text
