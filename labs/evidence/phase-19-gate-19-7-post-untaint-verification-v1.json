@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "artifact_type": "phase-19-gate-19-7-post-untaint-verification:v1",
+  "source_issue": 361,
+  "human_authorization_issue_comment_id": 5647295763,
+  "completion_issue_comment_id": 5647357418,
+  "protected_source_head_sha": "c9bba86e231d471c8f56b415f49023dc26dedf46",
+  "authorized_operation": {
+    "operation": "terraform untaint",
+    "target": "aws_lambda_function.public_async_api[0]",
+    "execution_succeeded": true,
+    "maximum_target_count": 1
+  },
+  "terraform_state": {
+    "lineage_before": "6c958ab2-4cc6-7f96-a528-89535504f65c",
+    "lineage_after": "6c958ab2-4cc6-7f96-a528-89535504f65c",
+    "lineage_unchanged": true,
+    "serial_before": 115,
+    "serial_after": 116,
+    "serial_increment": 1,
+    "target_status_before": "tainted",
+    "target_status_after": "READY_OR_UNMARKED",
+    "target_tainted_before": true,
+    "target_tainted_after": false,
+    "resource_inventory_unchanged": true,
+    "managed_resource_address_count": 166
+  },
+  "aws_remote_api_lambda": {
+    "configuration_unchanged": true,
+    "state": "Active",
+    "last_update_status": "Successful",
+    "code_sha256": "mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=",
+    "submit_switch": "false",
+    "reserved_concurrency": null,
+    "reserved_concurrency_observation": "NOT_CONFIGURED_OR_NOT_OBSERVED"
+  },
+  "quarantine": {
+    "original_failed_plan_present": true,
+    "rejected_recovery_plan_present": true,
+    "failed_plan_reusable": false,
+    "rejected_plan_reusable": false
+  },
+  "authority": {
+    "terraform_apply_authorized": false,
+    "terraform_plan_authorized_by_this_artifact": false,
+    "additional_state_mutation_authorized": false,
+    "terraform_untaint_retry_authorized": false,
+    "terraform_import_authorized": false,
+    "terraform_state_rm_authorized": false,
+    "replacement_authorized": false,
+    "destroy_authorized": false,
+    "aws_runtime_mutation_authorized": false,
+    "iam_mutation_authorized": false,
+    "runtime_enablement_authorized": false,
+    "public_endpoint_enablement_authorized": false,
+    "worker_enablement_authorized": false,
+    "event_source_enablement_authorized": false,
+    "provider_heavy_execution_authorized": false
+  },
+  "next_boundary": {
+    "fresh_recovery_plan_required": true,
+    "human_review_required_before_plan": true,
+    "expected_missing_creates": 5,
+    "maximum_existing_resource_updates": 1,
+    "allowed_existing_resource_update": "aws_lambda_function.public_async_api",
+    "deletes_allowed": 0,
+    "replacements_allowed": 0,
+    "terraform_apply_authorized": false
+  },
+  "retained_invariants": [
+    "plan != apply",
+    "materialized != enabled",
+    "failed plan != retry authority",
+    "state reconciliation != AWS mutation",
+    "UNMEASURED != zero",
+    "configured limit != measured utilization"
+  ]
+}
