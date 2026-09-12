@@ -50,6 +50,8 @@ automatic retry count: 0
 API VersionId: E.jfB7dlkGCD.wHAurP7QXo4fuS_PW63
 worker VersionId: sxiOdii4yFwR13t23xP5A8EU1JPV_7P1
 terraform plan input ready: YES
+terraform apply authorized: NO
+post-merge CodeQL: completed / success
 runtime deployment authorized: NO
 
 Gate 19.6 — Exact Terraform Plan & Offline Admission         IN PROGRESS

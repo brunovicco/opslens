@@ -2,9 +2,9 @@
 
 _Last updated: 2026-09-11_
 
-This document is the current accumulated architecture baseline through **Phase 19 — Bounded Public Runtime & Productization, Gate 19.4**.
+This document is the current accumulated architecture baseline through **Phase 19 — Bounded Public Runtime & Productization, Gate 19.5**.
 
-Phases 0–18 are complete. Phase 19 is the current evidence-gated productization phase. Gate 19.2 selected the async submit/status/result interaction pattern from admitted representative workload evidence. Gate 19.3 protected-merged the concrete async design authority. Gate 19.4 now implements that topology in code and Terraform behind disabled/non-public defaults; no public runtime deployment is authorized.
+Phases 0–18 are complete. Phase 19 is the current evidence-gated productization phase. Gate 19.2 selected the async submit/status/result interaction pattern from admitted representative workload evidence. Gate 19.3 protected-merged the concrete async design authority. Gate 19.4 implemented that topology in code and Terraform behind disabled/non-public defaults. Gate 19.5 protected-merged immutable API/worker deployment-artifact provenance and exact S3 coordinates without materializing the runtime. Gate 19.6 exact Terraform plan/admission is next; no public runtime deployment is authorized.
 
 ## 1. Purpose
 
@@ -50,6 +50,9 @@ configured limit != measured utilization
 responsibility -> required action -> exact resource -> IAM statement
 queue delivery != business execution authority
 provider retry != business retry authority
+artifact hash != S3 VersionId
+publication success != deployment authorization
+plan != apply
 AIP-C01 topic != product requirement
 ```
 
@@ -59,7 +62,7 @@ Deterministic code remains authoritative for source/evidence identity, package a
 
 Models and agents may classify, propose, summarize, explain, or synthesize over already-admitted evidence. A managed AWS service or a syntactically valid model output does not become business authority by itself.
 
-Gate 19.3 extended deterministic authority to public job identity, idempotency binding, state transitions, duplicate-delivery admission, retry ceilings, and result/status admission. Gate 19.4 implements those authorities with typed domain/application code, conditional persistence, content-minimized queue transport, and fail-closed runtime composition. Queue delivery remains transport evidence, not job-state truth.
+Gate 19.3 extended deterministic authority to public job identity, idempotency binding, state transitions, duplicate-delivery admission, retry ceilings, and result/status admission. Gate 19.4 implements those authorities with typed domain/application code, conditional persistence, content-minimized queue transport, and fail-closed runtime composition. Queue delivery remains transport evidence, not job-state truth. Gate 19.5 adds deployment-artifact identity and immutable S3 object provenance as planning inputs without granting runtime deployment authority.
 
 ## 3. Retained platform shape
 
@@ -178,7 +181,7 @@ compute:                  AWS Lambda for retained ingestion/transformation paths
 recurring triggers:      Amazon EventBridge Scheduler
 ```
 
-Standing deployed architecture does **not** currently claim a public HTTP endpoint, public application compute, public queue, public result store, public MCP/A2A runtime, standing AgentCore experiment runtime, standing Inspector experiment IAM, or production multi-tenant request surface. Gate 19.4 contains disabled Terraform definitions for a future async public runtime, but repository definitions are not deployed AWS resources.
+Standing deployed architecture does **not** currently claim a public HTTP endpoint, public application compute, public queue, public result store, public MCP/A2A runtime, standing AgentCore experiment runtime, standing Inspector experiment IAM, or production multi-tenant request surface. Gate 19.4 contains disabled Terraform definitions for a future async public runtime. Gate 19.5 added only immutable deployment-artifact object versions in the existing versioned artifact bucket. Repository definitions and published ZIPs are not deployed public-runtime resources.
 
 ## 7. Security Hardening retained state
 
@@ -480,7 +483,7 @@ not `future feature aspiration -> broad runtime role`.
 
 Gate 19.3 requires operational evidence for request/job/trace identity, state transitions, attempt number, stage duration, queue age, provider call counts, Bedrock tokens when available, retries, throttles, outcome/failure category, and result bytes before a public launch can be accepted.
 
-Gate 19.4 materializes bounded CloudWatch log groups and X-Ray runtime support authority, but does not claim a deployed telemetry stream or production SLO. Telemetry remains content-minimized. Full prompts, repository source, repository file contents, full model responses, credentials, sensitive tokens, and raw user payloads remain forbidden by default.
+Gate 19.4 defines bounded CloudWatch log groups and X-Ray runtime support authority, but does not claim a deployed telemetry stream or production SLO. Telemetry remains content-minimized. Full prompts, repository source, repository file contents, full model responses, credentials, sensitive tokens, and raw user payloads remain forbidden by default.
 
 Gate 19.4 creates no production TCO claim. Async queue operations, status reads, worker concurrency, storage/retention, and aggregate model-call budgets remain future measurement obligations after an authorized deployment exists.
 
@@ -508,27 +511,63 @@ All Gate 19.4 Terraform resources are gated behind:
 public_async_runtime_materialized = false
 ```
 
-The repository now contains definitions for DynamoDB job authority, SQS queue/DLQ, API/worker Lambda, HTTP API routes, CloudWatch log groups, event-source mapping, and separated IAM roles/policies. Those definitions create no AWS resources until an explicitly authorized Terraform apply occurs.
+The repository contains definitions for DynamoDB job authority, SQS queue/DLQ, API/worker Lambda, HTTP API routes, CloudWatch log groups, event-source mapping, and separated IAM roles/policies. Those definitions create no AWS resources until an explicitly authorized Terraform apply occurs.
 
 Lambda materialization additionally requires an exact deployment-artifact S3 key, exact object `VersionId`, and source-code hash. The worker Lambda refuses provider-heavy enablement until a provider executor is separately admitted and composed.
 
-### 9.13 Next architecture boundary
+### 9.13 Gate 19.5 immutable artifact provenance — COMPLETE
 
-The next gate may consider AWS mutation only after Gate 19.4 is independently green and protected-merged.
+Gate 19.5 was protected-merged through PR #353 at `61749bfac7b7bc9d032567e0b1870f8c1f7dedd4`; post-merge CodeQL for that exact SHA completed successfully.
 
-Before any apply or public enablement, that later human-authorized gate must review an **exact Terraform plan**, exact artifact identities, exact IAM/resource changes, disable/rollback sequence, ingress/new-job/worker enablement sequence, provider-heavy executor composition, and configured cost/concurrency ceilings.
-
-No apply, IAM mutation, public endpoint enablement, worker enablement, or provider-heavy public execution is authorized by Gate 19.4.
-
-## 10. Gate 19.4 authority impact
+It established exact immutable artifact coordinates without materializing the runtime:
 
 ```text
-public endpoints enabled:                0
-AWS resources created/changed/deleted:   0
-IAM roles/policies created/changed:      0
-AWS/provider live executions:            0
-third-party repository code executions:  0
-PR #89 modifications:                    0
+API
+  key: lambda/public-analysis/api/sha256=99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e/opslens-public-async-api.zip
+  SHA-256: 99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e
+  source_code_hash: mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=
+  VersionId: E.jfB7dlkGCD.wHAurP7QXo4fuS_PW63
+
+Worker
+  key: lambda/public-analysis/worker/sha256=0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9/opslens-public-async-worker.zip
+  SHA-256: 0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9
+  source_code_hash: DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck=
+  VersionId: sxiOdii4yFwR13t23xP5A8EU1JPV_7P1
+```
+
+The publication evidence records exactly two create-only S3 `PutObject` mutations, zero automatic retries, zero runtime/IAM/Terraform/public-endpoint mutations, `terraform_plan_input_ready=true`, and `terraform_apply_authorized=false`.
+
+### 9.14 Next architecture boundary — Gate 19.6
+
+Gate 19.6 may set `public_async_runtime_materialized=true` **for an exact Terraform plan only** and consume the admitted Gate 19.5 `Key + VersionId + source_code_hash` coordinates. The plan is evidence to inspect, not deployment authority.
+
+Offline admission must verify exact resource-change inventory, exact IAM actions/resources, artifact coordinates, configured concurrency/timeouts, SQS visibility/redrive, DynamoDB configuration, the exact three HTTP routes, execute-api endpoint state, event-source mapping state, CloudWatch resources, tags, and absence of unexpected deletes/replacements/resources.
+
+Materialization and enablement remain separate. The intended Gate 19.6 planning state preserves:
+
+```text
+execute-api endpoint                      disabled
+new-job admission switch                  false
+queue -> worker event source              disabled
+worker reserved concurrency               zero
+worker provider-execution switch          false
+provider-heavy worker executor            not composed
+custom public domain                      absent
+```
+
+`terraform plan != terraform apply`. Plan success is not deployment authorization. No apply, public enablement, worker enablement, IAM broadening, or provider-heavy public execution is authorized by Gate 19.6.
+
+## 10. Current Phase 19 authority impact
+
+```text
+deployment artifact S3 PutObject mutations: 2
+public endpoints enabled:                    0
+runtime AWS resources created/changed:       0
+IAM roles/policies created/changed:          0
+Terraform apply executions:                  0
+provider-heavy public executions:            0
+third-party repository code executions:      0
+PR #89 modifications:                        0
 ```
 
 ## 11. Canonical Phase 19 evidence
@@ -560,5 +599,16 @@ Gate 19.4:
 - `labs/phase-19-gate-19-4-disabled-async-runtime.md`
 - `labs/evidence/phase-19-gate-19-4-disabled-async-runtime-v1.json`
 - `scripts/verify_phase19_gate19_4_disabled_async_runtime.py`
+
+Gate 19.5:
+
+- `labs/evidence/phase-19-gate-19-5-prepublication-v1.json`
+- `labs/evidence/phase-19-gate-19-5-artifact-publication-v1.json`
+- `labs/phase-19-gate-19-5-immutable-artifact-publication-runbook.md`
+- `labs/phase-19-gate-19-5-closeout.md`
+- `scripts/build_phase19_async_lambda_artifacts.py`
+- `scripts/verify_phase19_gate19_5_async_artifact_build.py`
+- `scripts/publish_phase19_gate19_5_async_artifacts.py`
+- `scripts/verify_phase19_gate19_5_artifact_publication.py`
 
 PR #89 remains separate deferred Governed LLM Gateway work and is not a Phase 19 dependency unless explicitly re-evaluated later.
