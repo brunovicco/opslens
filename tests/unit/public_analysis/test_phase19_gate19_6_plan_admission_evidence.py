@@ -6,7 +6,6 @@ import json
 from pathlib import Path
 from typing import cast
 
-
 EVIDENCE_PATH = Path("labs/evidence/phase-19-gate-19-6-plan-admission-v1.json")
 
 EXPECTED_INVENTORY = {
