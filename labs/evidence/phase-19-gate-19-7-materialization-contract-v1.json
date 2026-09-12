@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "artifact_type": "phase-19-gate-19-7-materialization-contract:v1",
+  "source_issue": 361,
+  "preparation_source_main_sha": "99954adbdaa071414d16cd1bf02a465187ec728d",
+  "gate19_6_closeout_pr": 360,
+  "gate19_6_closeout_sha": "c76432dfcd97110ca43d91d77084f4367b9a89fd",
+  "gate19_6_plan_admission": {
+    "source_head_sha": "d4d852c7ebc97f6fd9ee19d868fa12bc4ab031f2",
+    "plan_json_sha256": "eb01396b92879243fd2e16e7791957e3289b459facc9db9524a4d890574aa83f",
+    "managed_create_count": 21,
+    "terraform_apply_authorized": false
+  },
+  "fresh_plan": {
+    "required": true,
+    "plan_input": "labs/evidence/phase-19-gate-19-7-plan-input-v1.tfvars.json",
+    "reuse_gate19_6_binary_plan_for_apply": false,
+    "remote_state_lock_disabled_during_plan": true,
+    "expected_managed_create_count": 21,
+    "expected_managed_create_inventory": [
+      "aws_apigatewayv2_api.public_async",
+      "aws_apigatewayv2_integration.public_async_api_lambda",
+      "aws_apigatewayv2_route.public_async_result",
+      "aws_apigatewayv2_route.public_async_status",
+      "aws_apigatewayv2_route.public_async_submit",
+      "aws_apigatewayv2_stage.public_async_default",
+      "aws_cloudwatch_log_group.public_async_access",
+      "aws_cloudwatch_log_group.public_async_api",
+      "aws_cloudwatch_log_group.public_async_worker",
+      "aws_dynamodb_table.public_async_jobs",
+      "aws_iam_role.public_async_api",
+      "aws_iam_role.public_async_worker",
+      "aws_iam_role_policy.public_async_api",
+      "aws_iam_role_policy.public_async_worker",
+      "aws_lambda_event_source_mapping.public_async_worker",
+      "aws_lambda_function.public_async_api",
+      "aws_lambda_function.public_async_worker",
+      "aws_lambda_permission.public_async_api_gateway",
+      "aws_sqs_queue.public_async_job_dlq",
+      "aws_sqs_queue.public_async_job_queue",
+      "aws_sqs_queue_redrive_allow_policy.public_async_job_dlq"
+    ]
+  },
+  "materialization_invariants": {
+    "public_async_runtime_materialized_for_plan": true,
+    "execute_api_endpoint_disabled": true,
+    "submit_enabled": false,
+    "worker_enabled": false,
+    "worker_event_source_enabled": false,
+    "worker_reserved_concurrency": 0,
+    "custom_public_domain_present": false,
+    "provider_heavy_worker_executor_composed": false
+  },
+  "authority": {
+    "terraform_apply_authorized": false,
+    "explicit_human_apply_authorization_required": true,
+    "apply_authorization_must_bind_exact_plan_binary_sha256": true,
+    "apply_authorization_must_bind_exact_plan_json_sha256": true,
+    "apply_authorization_must_bind_exact_source_head_sha": true,
+    "apply_command_present_in_preparation_runbook": false,
+    "runtime_enablement_authorized": false,
+    "public_endpoint_enablement_authorized": false,
+    "worker_enablement_authorized": false,
+    "event_source_enablement_authorized": false,
+    "provider_heavy_execution_authorized": false,
+    "iam_broadening_authorized": false
+  },
+  "post_apply_if_later_authorized": {
+    "materialized_must_remain_disabled": true,
+    "fresh_convergence_plan_required": true,
+    "aws_read_verification_required": true,
+    "bounded_evidence_required": true
+  },
+  "retained_invariants": [
+    "plan != apply",
+    "materialized != enabled",
+    "queue delivery != business execution authority",
+    "provider retry != business retry authority",
+    "artifact hash != S3 VersionId"
+  ]
+}
