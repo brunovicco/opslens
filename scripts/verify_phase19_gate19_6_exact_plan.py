@@ -67,7 +67,7 @@ def _required_string(mapping: dict[str, object], field: str) -> str:
 
 def _load(path: Path) -> dict[str, object]:
     try:
-        raw: object = json.loads(path.read_text(encoding="utf-8"))
+        raw = cast(object, json.loads(path.read_text(encoding="utf-8")))
     except (OSError, json.JSONDecodeError) as exc:
         raise Gate19_6PlanVerificationError(f"cannot read {path}: {exc}") from exc
     return _object(raw, label=str(path))
@@ -100,14 +100,14 @@ def _verify_plan_input(
         )
     if publication.get("artifact_type") != "phase-19-gate-19-5-artifact-publication:v1":
         raise Gate19_6PlanVerificationError("Gate 19.5 publication type drifted")
-    if publication.get("runtime_resource_mutation_count") != 0:
-        raise Gate19_6PlanVerificationError("Gate 19.5 runtime mutation evidence drifted")
-    if publication.get("iam_mutation_count") != 0:
-        raise Gate19_6PlanVerificationError("Gate 19.5 IAM mutation evidence drifted")
-    if publication.get("terraform_apply_count") != 0:
-        raise Gate19_6PlanVerificationError("Gate 19.5 Terraform apply evidence drifted")
-    if publication.get("public_endpoint_enablement_count") != 0:
-        raise Gate19_6PlanVerificationError("Gate 19.5 public enablement evidence drifted")
+    for field in (
+        "runtime_resource_mutation_count",
+        "iam_mutation_count",
+        "terraform_apply_count",
+        "public_endpoint_enablement_count",
+    ):
+        if publication.get(field) != 0:
+            raise Gate19_6PlanVerificationError(f"Gate 19.5 {field} evidence drifted")
 
     artifacts = _publication_by_role(publication)
     fields = {
@@ -138,16 +138,7 @@ def _verify_plan_input(
 
 
 def _verify_retained_gate19_4_source_contract() -> None:
-    """Re-run the retained offline Gate 19.4 source/evidence verifier.
-
-    Terraform may mark the Lambda environment-variable map unknown when one member
-    depends on a resource value that is only known after apply. In that case the
-    Gate 19.6 verifier must not invent the missing map values. Instead it relies on
-    the retained Gate 19.4 source contract for the literal disabled switches and
-    separately verifies the Gate 19.6 plan outputs plus every plan-known critical
-    resource attribute.
-    """
-
+    """Re-run the retained offline Gate 19.4 source/evidence verifier."""
     try:
         result = subprocess.run(
             [sys.executable, str(_GATE19_4_VERIFIER)],
@@ -185,13 +176,9 @@ def _verify_plan_variables(plan: dict[str, object], plan_input: dict[str, object
 def _verify_safety_outputs(plan: dict[str, object]) -> None:
     output_changes = _object(plan.get("output_changes"), label="plan.output_changes")
     admitted_actions = (["create"], ["update"], ["no-op"])
-
     for name, expected in _EXPECTED_SAFETY_OUTPUTS.items():
         change = _object(output_changes.get(name), label=f"plan.output_changes.{name}")
-        actions = _strings(
-            change.get("actions"),
-            label=f"plan.output_changes.{name}.actions",
-        )
+        actions = _strings(change.get("actions"), label=f"plan.output_changes.{name}.actions")
         if actions not in admitted_actions:
             raise Gate19_6PlanVerificationError(
                 f"plan output {name} has forbidden actions {actions}"
@@ -212,7 +199,6 @@ def _managed_change_inventory(
     changes = _objects(plan.get("resource_changes"), label="plan.resource_changes")
     observed: dict[str, dict[str, object]] = {}
     unexpected: list[str] = []
-
     for entry in changes:
         if entry.get("mode") != "managed":
             continue
@@ -264,7 +250,6 @@ def _environment_variables_if_known(
     raw = after.get("environment")
     if raw is None:
         return None
-
     if isinstance(raw, list):
         blocks = [
             _object(item, label=f"{label}.environment[]")
@@ -277,7 +262,6 @@ def _environment_variables_if_known(
         env = blocks[0]
     else:
         env = _object(raw, label=f"{label}.environment")
-
     variables = env.get("variables")
     if variables is None:
         return None
@@ -290,8 +274,10 @@ def _contains_unknown(value: object) -> bool:
     if isinstance(value, list):
         return any(_contains_unknown(item) for item in cast(list[object], value))
     if isinstance(value, dict):
-        mapping = cast(dict[object, object], value)
-        return any(_contains_unknown(item) for item in mapping.values())
+        return any(
+            _contains_unknown(item)
+            for item in cast(dict[object, object], value).values()
+        )
     return False
 
 
@@ -304,24 +290,43 @@ def _environment_variables_are_unknown(
         return False
     after_unknown = _object(raw_unknown, label=f"{label}.change.after_unknown")
     environment = after_unknown.get("environment")
-
     if environment is True:
         return True
     if isinstance(environment, list):
-        blocks = cast(list[object], environment)
-        for item in blocks:
-            if not isinstance(item, dict):
-                continue
-            block = _object(item, label=f"{label}.change.after_unknown.environment[]")
-            if _contains_unknown(block.get("variables")):
-                return True
+        for item in cast(list[object], environment):
+            if isinstance(item, dict):
+                block = _object(
+                    item, label=f"{label}.change.after_unknown.environment[]"
+                )
+                if _contains_unknown(block.get("variables")):
+                    return True
         return False
     if isinstance(environment, dict):
         block = _object(
-            environment,
-            label=f"{label}.change.after_unknown.environment",
+            environment, label=f"{label}.change.after_unknown.environment"
         )
         return _contains_unknown(block.get("variables"))
+    return False
+
+
+def _verify_environment_switch(
+    entry: dict[str, object],
+    after: dict[str, object],
+    *,
+    label: str,
+    switch_name: str,
+) -> bool:
+    variables = _environment_variables_if_known(after, label=label)
+    if variables is not None:
+        if variables.get(switch_name) != "false":
+            raise Gate19_6PlanVerificationError(
+                f"planned {label} switch {switch_name} must remain false"
+            )
+        return True
+    if not _environment_variables_are_unknown(entry, label=label):
+        raise Gate19_6PlanVerificationError(
+            f"planned {label} environment variables are missing without an unknown marker"
+        )
     return False
 
 
@@ -331,7 +336,6 @@ def _verify_critical_after_values(
 ) -> dict[str, bool]:
     api_entry = observed["aws_lambda_function.public_async_api"]
     worker_entry = observed["aws_lambda_function.public_async_worker"]
-
     api = _after(api_entry, label="api Lambda")
     worker = _after(worker_entry, label="worker Lambda")
     event_mapping = _after(
@@ -348,45 +352,35 @@ def _verify_critical_after_values(
         "source_code_hash": plan_input["public_async_api_source_code_hash"],
         "reserved_concurrent_executions": 2,
     }
-    for field, expected in api_expected.items():
-        if api.get(field) != expected:
-            raise Gate19_6PlanVerificationError(
-                f"planned API Lambda {field} differs from Gate 19.6 contract"
-            )
-
     worker_expected = {
         "s3_key": plan_input["public_async_worker_artifact_key"],
         "s3_object_version": plan_input["public_async_worker_artifact_version_id"],
         "source_code_hash": plan_input["public_async_worker_source_code_hash"],
         "reserved_concurrent_executions": 0,
     }
+    for field, expected in api_expected.items():
+        if api.get(field) != expected:
+            raise Gate19_6PlanVerificationError(
+                f"planned API Lambda {field} differs from Gate 19.6 contract"
+            )
     for field, expected in worker_expected.items():
         if worker.get(field) != expected:
             raise Gate19_6PlanVerificationError(
                 f"planned worker Lambda {field} differs from Gate 19.6 contract"
             )
 
-    api_env = _environment_variables_if_known(api, label="api Lambda")
-    worker_env = _environment_variables_if_known(worker, label="worker Lambda")
-
-    if api_env is not None:
-        if api_env.get("OPSLENS_ASYNC_SUBMIT_ENABLED") != "false":
-            raise Gate19_6PlanVerificationError(
-                "planned API submit switch must remain false"
-            )
-    elif not _environment_variables_are_unknown(api_entry, label="api Lambda"):
-        raise Gate19_6PlanVerificationError(
-            "planned API environment variables are missing without an unknown marker"
-        )
-
-    if worker_env is not None:
-        if worker_env.get("OPSLENS_ASYNC_WORKER_ENABLED") != "false":
-            raise Gate19_6PlanVerificationError("planned worker switch must remain false")
-    elif not _environment_variables_are_unknown(worker_entry, label="worker Lambda"):
-        raise Gate19_6PlanVerificationError(
-            "planned worker environment variables are missing without an unknown marker"
-        )
-
+    api_env_known = _verify_environment_switch(
+        api_entry,
+        api,
+        label="API Lambda",
+        switch_name="OPSLENS_ASYNC_SUBMIT_ENABLED",
+    )
+    worker_env_known = _verify_environment_switch(
+        worker_entry,
+        worker,
+        label="worker Lambda",
+        switch_name="OPSLENS_ASYNC_WORKER_ENABLED",
+    )
     if event_mapping.get("enabled") is not False:
         raise Gate19_6PlanVerificationError(
             "planned SQS-to-worker event source mapping must remain disabled"
@@ -395,10 +389,9 @@ def _verify_critical_after_values(
         raise Gate19_6PlanVerificationError(
             "planned execute-api endpoint must remain disabled"
         )
-
     return {
-        "api_environment_variables_plan_known": api_env is not None,
-        "worker_environment_variables_plan_known": worker_env is not None,
+        "api_environment_variables_plan_known": api_env_known,
+        "worker_environment_variables_plan_known": worker_env_known,
     }
 
 
@@ -486,7 +479,7 @@ def main() -> int:
     args = _parser().parse_args()
     try:
         plan_bytes = args.plan_json.read_bytes()
-        raw_plan: object = json.loads(plan_bytes)
+        raw_plan = cast(object, json.loads(plan_bytes))
     except (OSError, json.JSONDecodeError) as exc:
         raise Gate19_6PlanVerificationError(
             f"cannot read Terraform plan JSON {args.plan_json}: {exc}"
@@ -496,11 +489,11 @@ def main() -> int:
     plan_input = _load(args.plan_input)
     gate19_4 = _load(args.gate19_4)
     publication = _load(args.publication)
-
     if gate19_4.get("selected_design") != _EXPECTED_DESIGN:
         raise Gate19_6PlanVerificationError("Gate 19.4 selected design drifted")
     if gate19_4.get("deployment_authorized") is not False:
         raise Gate19_6PlanVerificationError("Gate 19.4 deployment authority drifted")
+
     expected_inventory = set(
         _strings(
             gate19_4.get("terraform_resource_inventory"),
