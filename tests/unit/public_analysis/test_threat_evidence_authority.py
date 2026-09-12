@@ -275,10 +275,14 @@ def test_nvd_evidence_unrelated_to_scoped_ghsa_evidence_is_rejected() -> None:
         )
 
 
+def _empty_requests() -> list[PublicThreatEvidenceRequest]:
+    return []
+
+
 @dataclass(slots=True)
 class _Authority:
     evidence: PublicRepositoryThreatEvidence
-    requests: list[PublicThreatEvidenceRequest] = field(default_factory=list)
+    requests: list[PublicThreatEvidenceRequest] = field(default_factory=_empty_requests)
 
     def load(self, request: PublicThreatEvidenceRequest) -> PublicRepositoryThreatEvidence:
         self.requests.append(request)
