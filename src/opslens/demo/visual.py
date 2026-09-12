@@ -149,43 +149,40 @@ def build_visual_projection(result: VisualScenarioResult) -> DemoVisualProjectio
             canonical_json=result.canonical_json.decode("utf-8"),
         )
 
-    if isinstance(result, FailClosedDemoResult):
-        execution = result.source_execution
-        snapshot = execution.snapshot_resolution.snapshot
-        unsupported = execution.normalization_inventory.unsupported_normalization[0]
-        return DemoVisualProjection(
-            scenario_id="fail-closed-incomplete-evidence",
-            title="Fail-closed incomplete evidence",
-            state="REJECTED_INCOMPLETE_EVIDENCE",
-            tone="blocked",
-            repository=snapshot.repository.full_name,
-            commit_sha=snapshot.commit_sha,
-            dependency=(
-                f"{unsupported.source_record.name_original}=="
-                f"{unsupported.source_record.version_original}"
-            ),
-            finding_summary=(
-                "Rejected at PUBLIC_THREAT_SCOPE_ADMISSION before repository analysis."
-            ),
-            risk_summary="No risk result and no benign conclusion were produced.",
-            evidence_summary=(
-                f"Unsupported dependency normalization: {unsupported.reason_code}; "
-                f"{result.authority_message}"
-            ),
-            result_id=result.result_id,
-            provenance=(
-                VisualFact("Repository evidence", execution.execution_id),
-                VisualFact("Rejected stage", "PUBLIC_THREAT_SCOPE_ADMISSION"),
-                VisualFact("Normalization reason", unsupported.reason_code),
-            ),
-            notices=(
-                "Missing evidence != benign evidence.",
-                "The visual layer cannot override or repair the deterministic rejection.",
-            ),
-            canonical_json=result.canonical_json.decode("utf-8"),
-        )
-
-    raise DemoContractError("visual projection requires one admitted demo scenario result")
+    execution = result.source_execution
+    snapshot = execution.snapshot_resolution.snapshot
+    unsupported = execution.normalization_inventory.unsupported_normalization[0]
+    return DemoVisualProjection(
+        scenario_id="fail-closed-incomplete-evidence",
+        title="Fail-closed incomplete evidence",
+        state="REJECTED_INCOMPLETE_EVIDENCE",
+        tone="blocked",
+        repository=snapshot.repository.full_name,
+        commit_sha=snapshot.commit_sha,
+        dependency=(
+            f"{unsupported.source_record.name_original}=="
+            f"{unsupported.source_record.version_original}"
+        ),
+        finding_summary=(
+            "Rejected at PUBLIC_THREAT_SCOPE_ADMISSION before repository analysis."
+        ),
+        risk_summary="No risk result and no benign conclusion were produced.",
+        evidence_summary=(
+            f"Unsupported dependency normalization: {unsupported.reason_code}; "
+            f"{result.authority_message}"
+        ),
+        result_id=result.result_id,
+        provenance=(
+            VisualFact("Repository evidence", execution.execution_id),
+            VisualFact("Rejected stage", "PUBLIC_THREAT_SCOPE_ADMISSION"),
+            VisualFact("Normalization reason", unsupported.reason_code),
+        ),
+        notices=(
+            "Missing evidence != benign evidence.",
+            "The visual layer cannot override or repair the deterministic rejection.",
+        ),
+        canonical_json=result.canonical_json.decode("utf-8"),
+    )
 
 
 def _esc(value: object) -> str:
