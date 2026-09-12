@@ -1,12 +1,14 @@
 # OpsLens — Current State
 
-_Last updated: 2026-09-11_
+_Last updated: 2026-09-12_
 
 ## Authoritative checkpoint
 
 ```text
-protected main:
-61749bfac7b7bc9d032567e0b1870f8c1f7dedd4
+latest completed gate checkpoint:
+Gate 19.6 protected closeout PR: #360
+Gate 19.6 protected closeout SHA: c76432dfcd97110ca43d91d77084f4367b9a89fd
+Gate 19.6 post-merge CodeQL run: 34697694562 / success
 
 Phase 18 — Evaluation, Cost & Portfolio Readiness
 status: COMPLETE
@@ -54,15 +56,27 @@ terraform apply authorized: NO
 post-merge CodeQL: completed / success
 runtime deployment authorized: NO
 
-Gate 19.6 — Exact Terraform Plan & Offline Admission         IN PROGRESS
-source issue: #354
-implementation PR: #356
-source main: 61749bfac7b7bc9d032567e0b1870f8c1f7dedd4
-plan boundary: HUMAN_ONLY_READS_WITH_LOCK_FALSE
+Gate 19.6 — Exact Terraform Plan & Offline Admission         COMPLETE
+source issue: #354 (closed completed)
+implementation/tooling PR: #356
+verifier correction PR: #359
+protected closeout PR: #360
+protected closeout SHA: c76432dfcd97110ca43d91d77084f4367b9a89fd
+human plan source head: d4d852c7ebc97f6fd9ee19d868fa12bc4ab031f2
+plan JSON SHA-256: eb01396b92879243fd2e16e7791957e3289b459facc9db9524a4d890574aa83f
+managed plan: 21 create / 0 update / 0 delete / 0 replacement
+post-merge CodeQL run: 34697694562 / success
 terraform apply authorized: NO
+runtime deployment authorized: NO
+
+Gate 19.7 — Controlled Disabled Runtime Materialization      PREPARATION
+source issue: #361
+materialization authority: NOT YET GRANTED
+terraform apply authorized: NO
+public/runtime enablement authorized: NO
 ```
 
-Phases 0–18 remain complete. Gate 19.5 is formally complete after protected merge and post-merge CodeQL success on `61749bfac7b7bc9d032567e0b1870f8c1f7dedd4`. Gate 19.6 now owns the first exact Terraform plan and offline admission using the immutable Gate 19.5 artifact coordinates. No current gate authorizes `terraform apply`, public runtime enablement, or provider-heavy public execution.
+Phases 0–18 remain complete. Gate 19.6 is formally complete after protected merge of PR #360 and successful post-merge CodeQL on `c76432dfcd97110ca43d91d77084f4367b9a89fd`. The first exact Terraform plan was admitted as planning evidence only. Gate 19.7 now owns preparation for a separately authorized, disabled/non-public materialization boundary. No standing authority exists for `terraform apply`, public runtime enablement, worker/event-source enablement, IAM mutation, or provider-heavy public execution.
 
 PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work and is not a Phase 19 dependency.
 
@@ -92,6 +106,7 @@ provider retry != business retry authority
 artifact hash != S3 VersionId
 publication success != deployment authorization
 plan != apply
+materialized != enabled
 AIP-C01 topic != product requirement
 ```
 
@@ -105,7 +120,7 @@ The retained pre-runtime boundary remains explicitly documented as:
 PublicAnalysisAdmissionHandoff -> STOP
 ```
 
-Gate 19.2 later supplied the representative evidence and selected `ASYNC_SUBMIT_STATUS_RESULT`. Historical artifacts retain the state they recorded when created; later gates do not rewrite them.
+Gate 19.2 later supplied representative evidence and selected `ASYNC_SUBMIT_STATUS_RESULT`. Historical artifacts retain the state they recorded when created; later gates do not rewrite them.
 
 Canonical Gate 19.2 live evidence remains:
 
@@ -222,31 +237,42 @@ labs/phase-19-gate-19-5-closeout.md
 scripts/verify_phase19_gate19_5_artifact_publication.py
 ```
 
-## Gate 19.6 — current exact-plan boundary
+## Gate 19.6 — completed exact-plan admission
 
-Gate 19.6 freezes the exact artifact coordinates into:
+Gate 19.6 consumed the immutable Gate 19.5 artifact coordinates and admitted one human-operated exact Terraform plan from protected source head `d4d852c7ebc97f6fd9ee19d868fa12bc4ab031f2`.
 
-```text
-labs/evidence/phase-19-gate-19-6-plan-input-v1.tfvars.json
-```
-
-The exact-plan verifier must admit only a Terraform plan whose managed non-no-op changes are exactly the 21 resources frozen by Gate 19.4, each with action `create`, with no update/delete/replace or unrelated managed drift.
-
-The verifier additionally requires:
+Canonical admitted result:
 
 ```text
-API key + VersionId + source_code_hash: exact Gate 19.5 values
-worker key + VersionId + source_code_hash: exact Gate 19.5 values
+artifact: labs/evidence/phase-19-gate-19-6-plan-admission-v1.json
+plan_json_sha256: eb01396b92879243fd2e16e7791957e3289b459facc9db9524a4d890574aa83f
+managed creates: 21
+updates: 0
+deletes: 0
+replacements: 0
 execute-api endpoint disabled: true
 API submit switch: false
-worker switch: false
 SQS -> worker event source mapping: false
 worker reserved concurrency: 0
-custom public domain: absent
 terraform_apply_authorized: false
 ```
 
-The future human plan boundary may perform backend/provider reads only. The plan command must use `-lock=false` so the S3 backend lock object is not created/deleted by this gate. The binary plan and rendered JSON remain local under `/tmp`; only a bounded admitted summary may later be persisted.
+Both Lambda environment maps were provider-unknown in the plan. The corrected verifier required explicit `after_unknown` markers, re-ran the retained Gate 19.4 source/evidence contract, required plan-known safety outputs, and did not invent provider-unknown values.
+
+Canonical Gate 19.6 records:
+
+```text
+labs/evidence/phase-19-gate-19-6-plan-input-v1.tfvars.json
+labs/evidence/phase-19-gate-19-6-first-plan-attempt-v1.json
+labs/evidence/phase-19-gate-19-6-verifier-correction-v1.json
+labs/evidence/phase-19-gate-19-6-plan-admission-v1.json
+labs/phase-19-gate-19-6-exact-terraform-plan-runbook.md
+labs/phase-19-gate-19-6-plan-verifier-unknown-values.md
+labs/phase-19-gate-19-6-closeout.md
+scripts/verify_phase19_gate19_6_exact_plan.py
+```
+
+Protected closeout PR #360 merged at `c76432dfcd97110ca43d91d77084f4367b9a89fd`; post-merge CodeQL run `34697694562` succeeded on that exact SHA. Issue #354 is closed completed.
 
 ## Current standing deployment truth
 
@@ -260,6 +286,8 @@ provider-heavy public executions:            0
 third-party repository code executions:      0
 PR #89 modifications:                        0
 ```
+
+The admitted 21-resource Terraform plan does **not** change those standing runtime counters because a plan is evidence, not mutation.
 
 ## Configured limits
 
@@ -277,8 +305,23 @@ HTTP API burst limit             10     CONFIGURED_LIMIT
 HTTP API rate limit               5     CONFIGURED_LIMIT
 ```
 
-## Next checkpoint
+## Next checkpoint — Gate 19.7 preparation
 
-Gate 19.6 must first finish exact-head offline/static/security validation on PR #356. Only after that reviewed head is frozen may the human operator generate the exact Terraform plan with backend/provider reads and `-lock=false`, render plan JSON locally, and run the offline verifier.
+Issue #361 defines **Gate 19.7 — Controlled Disabled Runtime Materialization**.
 
-No gate currently authorizes `terraform apply`, runtime/public enablement, IAM mutation, or provider-heavy public execution.
+Gate 19.7 may prepare source, tests, runbooks, and a fresh HUMAN-ONLY exact Terraform plan. It must not reuse the Gate 19.6 binary plan as standing apply authority. A new plan must be generated from the reviewed Gate 19.7 checkpoint and current remote state, then admitted offline.
+
+Only after that work is reviewed may the project reach a separate explicit HUMAN authorization checkpoint for one exact `terraform apply`. Until such authorization is given:
+
+```text
+terraform apply:                    NOT AUTHORIZED
+runtime AWS mutation:               NOT AUTHORIZED
+IAM mutation:                       NOT AUTHORIZED
+public endpoint enablement:         NOT AUTHORIZED
+submit/worker enablement:           NOT AUTHORIZED
+event-source enablement:            NOT AUTHORIZED
+provider-heavy execution:           NOT AUTHORIZED
+custom public domain:               NOT AUTHORIZED
+```
+
+Even a future successful Gate 19.7 materialization must preserve the disabled/non-public state. `materialized != enabled` is now an explicit retained invariant.
