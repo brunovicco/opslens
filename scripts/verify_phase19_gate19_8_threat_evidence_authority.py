@@ -132,7 +132,9 @@ def _verify_contract(root: dict[str, object], source: str) -> None:
 def _verify_physical_access_deferred(root: dict[str, object]) -> None:
     decision = _object(root.get("physical_access_decision"), label="physical_access_decision")
     if decision.get("decision") != _EXPECTED_PHYSICAL_DECISION:
-        raise Gate19_8VerificationError("physical structured-threat adapter was prematurely selected")
+        raise Gate19_8VerificationError(
+            "physical structured-threat adapter was prematurely selected"
+        )
     reasons = _strings(decision.get("reasons"), label="physical_access_decision.reasons")
     if len(reasons) < 4:
         raise Gate19_8VerificationError("physical-access deferment is not evidence-backed")
