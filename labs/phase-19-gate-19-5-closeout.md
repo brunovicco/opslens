@@ -2,9 +2,22 @@
 
 ## Status
 
-**PUBLICATION ADMITTED — PROTECTED MERGE PENDING**
+**COMPLETE — PROTECTED MERGE AND POST-MERGE VERIFICATION SUCCEEDED**
 
-Gate 19.5 has completed the evidence-producing work required before Gate 19.6 can generate an exact Terraform plan. The remaining boundary is protected merge and post-merge verification of PR #353.
+Gate 19.5 is complete. PR #353 was protected-squash-merged to `main` at `61749bfac7b7bc9d032567e0b1870f8c1f7dedd4`, and the post-merge CodeQL run for that exact protected-main SHA completed successfully.
+
+This closeout update records later protected-main truth only. It does not rewrite the pre-publication or publication evidence produced earlier in Gate 19.5.
+
+## Protected closeout checkpoint
+
+```text
+source issue:                  #352
+protected merge PR:            #353
+protected merge SHA:           61749bfac7b7bc9d032567e0b1870f8c1f7dedd4
+post-merge CodeQL:             completed / success
+terraform_plan_input_ready:    true
+terraform_apply_authorized:    false
+```
 
 ## Reviewed source checkpoint
 
@@ -84,6 +97,6 @@ provider retry != business retry authority
 
 ## Next boundary
 
-After protected merge/post-merge verification of PR #353, Gate 19.5 may close. Gate 19.6 may then consume the exact `Key + VersionId + source_code_hash` coordinates to produce and admit an exact Terraform plan.
+Gate 19.6 — Exact Terraform Plan & Offline Admission is the next gate. It may consume the exact `Key + VersionId + source_code_hash` coordinates above to produce and admit an exact Terraform plan with `public_async_runtime_materialized=true`.
 
-Gate 19.5 does not authorize `terraform apply`, public endpoint enablement, worker/event-source enablement, IAM broadening, or provider-heavy public execution.
+That planning authority does not authorize `terraform apply`, public endpoint enablement, worker/event-source enablement, IAM broadening, or provider-heavy public execution. Resource materialization, runtime enablement, and public/provider-heavy enablement remain separate authority boundaries.
