@@ -6,12 +6,16 @@ on:
       - "src/opslens/demo/**"
       - "tests/unit/demo/**"
       - "scripts/demo_opslens.py"
+      - "scripts/evaluate_opslens_demo.py"
       - "scripts/verify_phase19_gate19_10_demo_runner.py"
+      - "scripts/verify_phase19_gate19_11_demo_scenarios.py"
       - "docs/demo/**"
       - "docs/current-state.md"
       - "docs/roadmap.md"
       - "labs/phase-19-gate-19-10-*.md"
+      - "labs/phase-19-gate-19-11-*.md"
       - "labs/evidence/phase-19-gate-19-10-*.json"
+      - "labs/evidence/phase-19-gate-19-11-*.json"
       - ".github/workflows/v1-demo-runner-ci.yml"
   workflow_dispatch:
 
@@ -20,7 +24,7 @@ permissions:
 
 jobs:
   verify-v1-demo-runner:
-    name: Verify Gate 19.10 deterministic demo runner
+    name: Verify deterministic V1 demo scenarios
     runs-on: ubuntu-latest
     env:
       PYTHONPATH: src
@@ -52,7 +56,9 @@ jobs:
           uv run ruff check
           src/opslens/demo
           scripts/demo_opslens.py
+          scripts/evaluate_opslens_demo.py
           scripts/verify_phase19_gate19_10_demo_runner.py
+          scripts/verify_phase19_gate19_11_demo_scenarios.py
           tests/unit/demo
 
       - name: Pyright strict demo runner
@@ -60,20 +66,37 @@ jobs:
           uv run pyright
           src/opslens/demo
           scripts/demo_opslens.py
+          scripts/evaluate_opslens_demo.py
           scripts/verify_phase19_gate19_10_demo_runner.py
+          scripts/verify_phase19_gate19_11_demo_scenarios.py
           tests/unit/demo
 
       - name: Run demo unit tests
         run: uv run pytest tests/unit/demo
 
-      - name: Verify Gate 19.10 contract
+      - name: Verify retained Gate 19.10 contract
         run: uv run python scripts/verify_phase19_gate19_10_demo_runner.py
 
-      - name: Prove canonical JSON byte stability
-        run: |
-          uv run python scripts/demo_opslens.py --scenario material-vulnerability --format json > /tmp/opslens-demo-a.json
-          uv run python scripts/demo_opslens.py --scenario material-vulnerability --format json > /tmp/opslens-demo-b.json
-          cmp /tmp/opslens-demo-a.json /tmp/opslens-demo-b.json
+      - name: Verify Gate 19.11 scenario contract
+        run: uv run python scripts/verify_phase19_gate19_11_demo_scenarios.py
 
-      - name: Run human-readable demo projection
-        run: uv run python scripts/demo_opslens.py --scenario material-vulnerability --format text
+      - name: Prove every scenario JSON is byte stable
+        run: |
+          for scenario in material-vulnerability controlled-benign fail-closed-incomplete-evidence; do
+            uv run python scripts/demo_opslens.py --scenario "$scenario" --format json > "/tmp/$scenario-a.json"
+            uv run python scripts/demo_opslens.py --scenario "$scenario" --format json > "/tmp/$scenario-b.json"
+            cmp "/tmp/$scenario-a.json" "/tmp/$scenario-b.json"
+          done
+
+      - name: Prove suite evaluation JSON is byte stable
+        run: |
+          uv run python scripts/evaluate_opslens_demo.py --format json > /tmp/opslens-suite-a.json
+          uv run python scripts/evaluate_opslens_demo.py --format json > /tmp/opslens-suite-b.json
+          cmp /tmp/opslens-suite-a.json /tmp/opslens-suite-b.json
+
+      - name: Run human-readable demo projections
+        run: |
+          uv run python scripts/demo_opslens.py --scenario material-vulnerability --format text
+          uv run python scripts/demo_opslens.py --scenario controlled-benign --format text
+          uv run python scripts/demo_opslens.py --scenario fail-closed-incomplete-evidence --format text
+          uv run python scripts/evaluate_opslens_demo.py --format text
