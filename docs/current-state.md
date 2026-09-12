@@ -69,9 +69,14 @@ Gate 19.7 is complete at the protected closeout checkpoint above. The asynchrono
 
 PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work and is not a Phase 19 dependency.
 
-## Retained security and authority invariants
+## Retained Phase 17 security lineage
 
-Phase 17 security controls remain authoritative. Later Phase 19 work adds no exception.
+Gate 17.1 — evidence-first threat/control-gap inventory — COMPLETE.  
+Gate 17.2 — CI/CD and workflow authority hardening — COMPLETE.
+
+Both remain authoritative. Later Phase 18/19 work adds no exception to their workflow, IAM, least-privilege, telemetry, or protected-main controls.
+
+## Retained security and authority invariants
 
 ```text
 Agents reason. Code verifies evidence.
