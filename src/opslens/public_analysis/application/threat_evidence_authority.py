@@ -139,7 +139,10 @@ class PublicThreatEvidenceScope:
 
     @property
     def query_package_names(self) -> tuple[str, ...]:
-        """Return unique package names for bounded source lookup without losing dependency detail."""
+        """Return unique package names for bounded source lookup.
+
+        The exact dependency scope remains separately preserved.
+        """
         return tuple(sorted({item.package_name for item in self.dependencies}))
 
     @property
@@ -421,10 +424,7 @@ def build_public_threat_evidence_scope(
             )
             continue
         package_name, version, indexes = existing
-        if (
-            package_name != item.package.canonical
-            or version != item.version.canonical
-        ):
+        if package_name != item.package.canonical or version != item.version.canonical:
             raise PublicAnalysisValidationError(
                 "canonical purl maps to contradictory repository dependency identity"
             )
@@ -463,10 +463,7 @@ def load_public_repository_threat_evidence(
         scope=scope,
         snapshot_policy=snapshot_policy,
     )
-    try:
-        evidence = authority.load(request)
-    except Exception:
-        raise
+    evidence = authority.load(request)
     if type(evidence) is not PublicRepositoryThreatEvidence:
         raise PublicAnalysisValidationError(
             "public threat authority must return typed PublicRepositoryThreatEvidence"
