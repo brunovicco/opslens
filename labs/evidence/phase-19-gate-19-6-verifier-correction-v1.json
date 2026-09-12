@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "artifact_type": "phase-19-gate-19-6-verifier-correction:v1",
+  "source_main_sha": "ffbf5897729cc5520d8d8006e60e0834bafdfe92",
+  "trigger": "FIRST_HUMAN_EXACT_PLAN_PROVIDER_UNKNOWN_LAMBDA_ENVIRONMENT_MAP",
+  "correction": {
+    "invent_unknown_values": false,
+    "require_after_unknown_marker": true,
+    "rerun_retained_gate19_4_source_contract": true,
+    "require_plan_known_safety_outputs": true,
+    "retain_direct_check_when_environment_map_is_known": true,
+    "retain_exact_21_create_inventory": true,
+    "retain_zero_update_delete_replace": true
+  },
+  "terraform_configuration_changed": false,
+  "runtime_behavior_changed": false,
+  "terraform_apply_authorized": false,
+  "plan_regeneration_required_after_review": true
+}
