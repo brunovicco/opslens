@@ -5,10 +5,10 @@ _Last updated: 2026-09-12_
 ## Authoritative protected checkpoint
 
 ```text
-protected main SHA: 68a135a0c80dacb8cf0b668022796b159878637e
-protected merge: PR #377 — Gate 19.9 V1 demonstration closeout contract
-post-merge CodeQL: 34715722016 / run #414 / success
-Gate 19.9 issue: #376 / closed completed
+protected main SHA: 50456d304e7847fadd0d29373079afa1669acc9d
+protected merge: PR #379 — Gate 19.10 deterministic end-to-end demo runner
+post-merge CodeQL: 34716596100 / run #421 / success
+Gate 19.10 issue: #378 / closed completed
 ```
 
 ## Retained Phase 18 closeout checkpoint
@@ -43,8 +43,8 @@ Both remain authoritative. The Phase 19 V1 demonstration closeout adds no except
 19.7  Controlled Disabled Runtime Materialization              COMPLETE
 19.8  Request-time Threat Evidence Authority Contract          COMPLETE
 19.9  V1 Demonstration Closeout Contract                       COMPLETE
-19.10 Deterministic End-to-End Demo Runner                     IN PROGRESS
-19.11 Curated Demo Scenarios + Deterministic Evaluation        PLANNED
+19.10 Deterministic End-to-End Demo Runner                     COMPLETE
+19.11 Curated Demo Scenarios + Deterministic Evaluation        IN PROGRESS
 19.12 Minimal Local Visual Demo                                PLANNED
 19.13 Portfolio / README / Architecture Polish                 PLANNED
 19.14 V1 Closeout + Release Readiness                          PLANNED
@@ -80,7 +80,11 @@ Gate 19.9 post-merge CodeQL: `34715722016` / run #414 / success.
 
 Gate 19.10 source issue: #378.  
 Gate 19.10 source protected main: `68a135a0c80dacb8cf0b668022796b159878637e`.  
-Gate 19.10 implementation PR: #379 / draft while exact-head evidence is verified.
+Gate 19.10 protected merge: PR #379 / `50456d304e7847fadd0d29373079afa1669acc9d`.  
+Gate 19.10 post-merge CodeQL: `34716596100` / run #421 / success.
+
+Gate 19.11 source issue: #380.  
+Gate 19.11 source protected main: `50456d304e7847fadd0d29373079afa1669acc9d`.
 
 ## V1 product boundary
 
@@ -115,8 +119,9 @@ See:
 - [`v1-completion-checklist.md`](v1-completion-checklist.md)
 - [`post-v1-backlog.md`](post-v1-backlog.md)
 - [`demo/README.md`](demo/README.md)
-- [`../labs/phase-19-gate-19-9-v1-demonstration-contract.md`](../labs/phase-19-gate-19-9-v1-demonstration-contract.md)
+- [`demo/SCENARIOS.md`](demo/SCENARIOS.md)
 - [`../labs/phase-19-gate-19-10-demo-runner.md`](../labs/phase-19-gate-19-10-demo-runner.md)
+- [`../labs/phase-19-gate-19-11-demo-scenarios.md`](../labs/phase-19-gate-19-11-demo-scenarios.md)
 
 ## Gate 19.8 retained result
 
@@ -145,9 +150,9 @@ model authority for source truth/applicability = none
 
 The physical provider adapter remains intentionally deferred. It is no longer a V1 blocker because V1 uses an offline-first deterministic demo path. A provider-backed arbitrary request-time adapter is now a Post-V1 experiment unless a future concrete requirement promotes it.
 
-## Gate 19.10 current implementation slice
+## Gate 19.10 retained demo runner
 
-Gate 19.10 turns the V1 reviewer contract into one executable, provider-free path while preserving the same deterministic business authority used elsewhere in OpsLens.
+Gate 19.10 turned the V1 reviewer contract into one executable, provider-free path while preserving the same deterministic business authority used elsewhere in OpsLens.
 
 Canonical command:
 
@@ -162,7 +167,7 @@ Machine-readable projection:
 uv run python scripts/demo_opslens.py --scenario material-vulnerability --format json
 ```
 
-Current admitted scenario:
+Retained material scenario:
 
 ```text
 scenario: material-vulnerability
@@ -174,7 +179,25 @@ expected finding count: 1
 expected deterministic Risk Policy v1 result: 90 / P0
 ```
 
-The synthetic fixture is demonstration evidence only and does not claim to describe or scan a live repository. Gate 19.11 owns the additional controlled-benign and fail-closed incomplete/ambiguous scenario classes.
+## Gate 19.11 current implementation slice
+
+Gate 19.11 extends the same offline runner to exactly three canonical scenario classes:
+
+```text
+material-vulnerability
+controlled-benign
+fail-closed-incomplete-evidence
+```
+
+The controlled-benign path uses complete admitted fixture evidence and must produce zero material findings without making a live-repository safety claim. The fail-closed path deliberately supplies unsupported dependency identity and must stop at threat-scope admission before analysis or risk prioritization.
+
+```text
+controlled no-finding -> complete scoped evidence -> fixture-only conclusion
+incomplete identity -> fail closed -> no risk result -> no benign conclusion
+missing evidence != benign evidence
+```
+
+The suite evaluator is deterministic regression/reporting evidence only. It does not create new applicability, risk, or model authority.
 
 ## Retained AWS runtime truth
 
@@ -244,7 +267,7 @@ provider-backed arbitrary request-time threat adapter
 
 ## Current authority boundary
 
-Gate 19.10 is repository-only and offline-only.
+Gate 19.11 is repository-only and offline-only.
 
 ```text
 terraform plan/replan:                NOT AUTHORIZED
@@ -267,9 +290,9 @@ PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Gove
 
 ## Next implementation slice
 
-Gate 19.10 is the active slice. It closes only after exact-head CI/security/CodeQL, HUMAN protected merge, and post-merge verification.
+Gate 19.11 closes only after exact-head CI/security/CodeQL, HUMAN protected merge, and post-merge verification.
 
-After Gate 19.10 closes, Gate 19.11 will add the remaining two canonical scenario classes and deterministic evaluation over the same runner boundary.
+After Gate 19.11 closes, Gate 19.12 will add the minimal local visual demonstration over the same admitted offline scenario boundary.
 
 ## Permanent invariants
 

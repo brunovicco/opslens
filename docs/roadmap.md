@@ -62,7 +62,9 @@ Their workflow, IAM, least-privilege, telemetry, and protected-main controls rem
       post-merge CodeQL 34713360403 / run #393 / success
 19.9  PR #377  68a135a0c80dacb8cf0b668022796b159878637e  COMPLETE
       post-merge CodeQL 34715722016 / run #414 / success
-19.10 issue #378 / PR #379                                  IN PROGRESS
+19.10 PR #379  50456d304e7847fadd0d29373079afa1669acc9d  COMPLETE
+      post-merge CodeQL 34716596100 / run #421 / success
+19.11 issue #380                                              IN PROGRESS
 ```
 
 PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work. Phase 19 does not rebase, merge, modify, or depend on it.
@@ -195,53 +197,48 @@ demonstration readiness != production readiness
 clone -> setup -> deterministic offline demo -> evidence-backed result
 ```
 
-Public SaaS concerns were moved out of the V1 critical path without rewriting the retained AWS/runtime evidence.
+### Gate 19.10 — Deterministic End-to-End Demo Runner — COMPLETE
+
+Protected merge: PR #379 at `50456d304e7847fadd0d29373079afa1669acc9d`.  
+Post-merge CodeQL: `34716596100` / run #421 / success.  
+Issue #378: closed completed.
+
+Gate 19.10 admitted the first canonical synthetic/inert offline scenario:
+
+```text
+material-vulnerability
+Requests 2.31.0
+finding count: 1
+Risk Policy v1: 90 / P0
+provider/model execution: 0
+third-party repository code execution: 0
+```
+
+The runner exposes stable text and JSON projections over retained deterministic OpsLens authorities.
 
 ## Remaining V1 completion gates
 
-### Gate 19.10 — Deterministic End-to-End Demo Runner — IN PROGRESS
+### Gate 19.11 — Curated Demo Scenarios + Deterministic Evaluation — IN PROGRESS
 
-Source issue: #378.  
-Implementation PR: #379.
-
-Implement one canonical offline runner that reuses existing typed OpsLens authorities rather than duplicating business logic.
-
-Canonical command:
-
-```bash
-uv run python scripts/demo_opslens.py --scenario material-vulnerability --format text
-```
-
-Machine-readable projection:
-
-```bash
-uv run python scripts/demo_opslens.py --scenario material-vulnerability --format json
-```
-
-Required characteristics:
-
-```text
-AWS credentials required: NO
-network required after setup: NO
-third-party repository code execution: NO
-live provider execution: NO
-model execution: NO
-stable JSON output: YES
-human-readable output: YES
-invalid inputs fail closed: YES
-```
-
-Gate 19.10 admits only the synthetic inert `material-vulnerability` fixture and composes retained `PublicRepositoryEvidenceExecution`, Phase 3/4 correlation/enrichment, `RepositoryAnalysisResult`, and Risk Policy v1. Gate 19.11 owns admission of the other two canonical scenario classes.
-
-### Gate 19.11 — Curated Demo Scenarios + Deterministic Evaluation — PLANNED
+Source issue: #380.  
+Source protected main: `50456d304e7847fadd0d29373079afa1669acc9d`.
 
 Exactly three canonical scenario classes:
 
-1. material vulnerability;
-2. controlled benign;
-3. fail-closed incomplete/ambiguous evidence.
+1. `material-vulnerability`;
+2. `controlled-benign`;
+3. `fail-closed-incomplete-evidence`.
 
-Each scenario must be inert, content-addressed, reproducible, and regression-tested.
+Gate 19.11 must mechanically distinguish:
+
+```text
+material finding -> deterministic risk result
+complete scoped evidence + no applicable finding -> controlled fixture-only no-finding
+incomplete dependency identity -> fail closed before risk -> no benign conclusion
+missing evidence != benign evidence
+```
+
+The suite evaluator must be deterministic, byte-stable, provider/model free, and non-authoritative beyond verifying retained scenario outcomes.
 
 ### Gate 19.12 — Minimal Local Visual Demo — PLANNED
 
@@ -253,7 +250,8 @@ It should show:
 - dependency evidence;
 - vulnerability/risk findings;
 - source provenance;
-- AI explanation clearly separated from deterministic authority.
+- deterministic authority boundaries;
+- optional AI explanation only if clearly separated from authority.
 
 No public deployment is required.
 
