@@ -38,6 +38,18 @@ post-merge CodeQL: 34713360403 / run #393 / success
 Gate 19.9: IN PROGRESS / issue #376
 ```
 
+Retained Gate 19.1/19.2 historical decision markers:
+
+```text
+19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE
+historical decision: DEFERRED_PENDING_MEASUREMENT
+public-analysis-workload:v1
+19.2  Representative Workload Measurement              COMPLETE
+ASYNC_SUBMIT_STATUS_RESULT
+```
+
+Those markers describe the historical decision path; later Gates 19.2–19.8 superseded the pending measurement state without rewriting it.
+
 The retained async AWS runtime has already been materialized and converged, but it remains intentionally disabled and non-public:
 
 ```text
