@@ -233,7 +233,7 @@ def _verify_override(text: str) -> None:
         'resource "aws_lambda_function" "public_async_api"',
         "reserved_concurrent_executions = 0",
         "historical Gate 19.4",
-        "later, separately authorized runtime-enablement gate",
+        "separately authorized runtime-enablement gate",
     )
     for needle in required:
         if needle not in text:
