@@ -2,7 +2,7 @@
 
 ## Status
 
-**ADMITTED — protected closeout merge and post-merge verification still required before the gate is marked COMPLETE.**
+**COMPLETE — exact plan admitted, protected closeout merged, and post-merge verification successful.**
 
 Gate 19.6 produced and admitted one HUMAN-ONLY exact Terraform plan from protected `main`:
 
@@ -10,7 +10,23 @@ Gate 19.6 produced and admitted one HUMAN-ONLY exact Terraform plan from protect
 d4d852c7ebc97f6fd9ee19d868fa12bc4ab031f2
 ```
 
-The plan used the immutable Gate 19.5 API/worker artifact coordinates, the existing dev backend/provider read path, and `-lock=false`. No Terraform apply occurred.
+The bounded closeout was protected-squash-merged through PR #360 at:
+
+```text
+c76432dfcd97110ca43d91d77084f4367b9a89fd
+```
+
+Post-merge CodeQL on that exact protected-main SHA completed successfully:
+
+```text
+workflow: CodeQL
+run: 34697694562
+run number: 345
+event: push
+conclusion: success
+```
+
+Issue #354 is closed as completed. The plan used the immutable Gate 19.5 API/worker artifact coordinates, the existing dev backend/provider read path, and `-lock=false`. No Terraform apply occurred.
 
 ## Human exact-plan result
 
@@ -40,12 +56,13 @@ Canonical bounded evidence:
 
 ```text
 labs/evidence/phase-19-gate-19-6-plan-admission-v1.json
+source_head_sha: d4d852c7ebc97f6fd9ee19d868fa12bc4ab031f2
 plan_json_sha256: eb01396b92879243fd2e16e7791957e3289b459facc9db9524a4d890574aa83f
 terraform_version: 1.15.8
 terraform_format_version: 1.2
 ```
 
-The binary Terraform plan and full rendered provider JSON remain local and are intentionally not committed.
+The binary Terraform plan and full rendered provider JSON remained local and are intentionally not committed.
 
 ## Immutable artifact admission
 
@@ -93,7 +110,7 @@ unknown_environment_values_admitted_only_with_retained_gate19_4_source_contract:
 
 ## Authority result
 
-Gate 19.6 admitted planning evidence only. It did not create deployment authority.
+Gate 19.6 admitted planning evidence only. It created no deployment authority.
 
 ```text
 terraform apply:                    NOT AUTHORIZED
@@ -112,14 +129,29 @@ The controlling invariant remains:
 plan != apply
 ```
 
-## Closeout boundary
+## Final closeout
 
-The evidence portion of Gate 19.6 is satisfied. Final gate closure requires:
+Gate 19.6 exit criteria are satisfied:
 
-1. exact-head CI/security on the closeout PR;
-2. protected human merge of the bounded evidence/closeout PR;
-3. post-merge verification on the resulting protected `main`;
-4. current-facing documentation synchronization;
-5. `terraform_apply_authorized=false` retained throughout.
+1. exact-head verifier/CI/security completed successfully before merge;
+2. one human-operated exact Terraform plan was regenerated from the reviewed protected checkpoint;
+3. offline admission accepted exactly 21 creates and zero update/delete/replace drift;
+4. bounded admission evidence was persisted without committing the binary plan or full provider JSON;
+5. PR #360 was protected-merged at `c76432dfcd97110ca43d91d77084f4367b9a89fd`;
+6. post-merge CodeQL run `34697694562` completed successfully on that exact SHA;
+7. `terraform_apply_authorized=false` remained authoritative throughout.
 
-No later deployment or controlled-enablement gate is authorized by this closeout document.
+## Next authority boundary
+
+Issue #361 defines **Gate 19.7 — Controlled Disabled Runtime Materialization**.
+
+Gate 19.7 does not inherit apply authority from this gate. Before any AWS mutation it must regenerate and re-admit a fresh exact plan from its own reviewed checkpoint and then reach a separate explicit HUMAN authorization boundary.
+
+The next permanent distinction is:
+
+```text
+plan != apply
+materialized != enabled
+```
+
+Until that separate human authorization exists, Terraform apply, runtime/IAM mutation, public enablement, worker/event-source enablement, provider-heavy execution, custom-domain creation, third-party repository execution, and PR #89 modification remain forbidden.
