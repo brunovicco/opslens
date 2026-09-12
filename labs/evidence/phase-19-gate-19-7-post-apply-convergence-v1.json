@@ -1,0 +1,76 @@
+{
+  "artifact_type": "phase-19-gate-19-7-post-apply-convergence:v1",
+  "authority_after_plan": {
+    "aws_mutation_authorized": false,
+    "convergence_plan_authorization_consumed": true,
+    "convergence_plan_retry_authorized": false,
+    "event_source_enablement_authorized": false,
+    "iam_mutation_authorized": false,
+    "provider_heavy_execution_authorized": false,
+    "public_endpoint_enablement_authorized": false,
+    "runtime_enablement_authorized": false,
+    "terraform_apply_authorized": false,
+    "terraform_destroy_authorized": false,
+    "terraform_import_authorized": false,
+    "terraform_replacement_authorized": false,
+    "terraform_replan_authorized": false,
+    "terraform_state_rm_authorized": false,
+    "terraform_untaint_authorized": false,
+    "worker_enablement_authorized": false
+  },
+  "convergence_plan": {
+    "authorization_consumed": true,
+    "deferred_change_count": 0,
+    "invocation_count": 1,
+    "lock_enabled": false,
+    "managed_adds": 0,
+    "managed_changes": 0,
+    "managed_destroys": 0,
+    "managed_replacements": 0,
+    "plan_binary_sha256": "26380a6f09fc536f7738e1b855054e8a49183a24ae2e3711f6621a2c8c338157",
+    "plan_json_sha256": "505151c1d56f4d92483ad602185a49a89f10f1b9f6003eef9532cefcedf12f1d",
+    "refresh_enabled": true,
+    "resource_drift_entry_count": 5,
+    "result": "NO_CHANGES_INFRASTRUCTURE_MATCHES_CONFIGURATION",
+    "retry_authorized": false,
+    "saved_plan_reusable_for_apply": false,
+    "terraform_detailed_exit_code": 0
+  },
+  "gate19_7": {
+    "formal_closeout_candidate": true,
+    "post_apply_convergence_proven": true,
+    "protected_closeout_evidence_required": true,
+    "runtime_remains_disabled": true
+  },
+  "materialized_controls": {
+    "api_reserved_concurrency": 0,
+    "custom_domain_mapping_present": false,
+    "execute_api_endpoint_disabled": true,
+    "provider_heavy_public_execution_path_enabled": false,
+    "runtime_materialized": true,
+    "submit_switch": "false",
+    "worker_event_source_mapping_state": "Disabled",
+    "worker_reserved_concurrency": 0,
+    "worker_switch": "false"
+  },
+  "protected_source": {
+    "aws_account": "487757851499",
+    "aws_region": "us-east-1",
+    "head_sha": "d748f0cde9b84552b2367da7a407feafdf4bf9ff"
+  },
+  "retained_invariants": [
+    "plan != apply",
+    "materialized != enabled",
+    "authorization is single-use",
+    "configured limit != measured utilization",
+    "provider success != business authority"
+  ],
+  "schema_version": 1,
+  "terraform_state": {
+    "lineage_after": "6c958ab2-4cc6-7f96-a528-89535504f65c",
+    "lineage_before": "6c958ab2-4cc6-7f96-a528-89535504f65c",
+    "serial_after": 117,
+    "serial_before": 117,
+    "state_mutation_observed": false
+  }
+}
