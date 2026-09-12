@@ -1,0 +1,61 @@
+{
+  "account_id": "487757851499",
+  "artifact_type": "phase-19-gate-19-7-recovery-plan-admission:v1",
+  "artifacts": {
+    "api": {
+      "key": "lambda/public-analysis/api/sha256=99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e/opslens-public-async-api.zip",
+      "lambda_source_code_hash": "mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=",
+      "version_id": "E.jfB7dlkGCD.wHAurP7QXo4fuS_PW63"
+    },
+    "worker": {
+      "key": "lambda/public-analysis/worker/sha256=0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9/opslens-public-async-worker.zip",
+      "lambda_source_code_hash": "DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck=",
+      "version_id": "sxiOdii4yFwR13t23xP5A8EU1JPV_7P1"
+    }
+  },
+  "authority": {
+    "apply_authorization_status": "PENDING_EXPLICIT_HUMAN_AUTHORIZATION",
+    "explicit_human_apply_authorization_required": true,
+    "fresh_plan": true,
+    "materialized_not_enabled": true,
+    "terraform_apply_authorized": false
+  },
+  "managed_create_count": 5,
+  "managed_create_inventory": [
+    "aws_apigatewayv2_integration.public_async_api_lambda",
+    "aws_apigatewayv2_route.public_async_result",
+    "aws_apigatewayv2_route.public_async_status",
+    "aws_apigatewayv2_route.public_async_submit",
+    "aws_lambda_permission.public_async_api_gateway"
+  ],
+  "managed_update_count": 1,
+  "managed_update_inventory": [
+    "aws_lambda_function.public_async_api"
+  ],
+  "plan_binary_sha256": "48cb15a8466cc0ce77fdbe1d827b5a0aebb88460b8e8151d8c88d3c85eb9ea55",
+  "plan_json_sha256": "8a1f95ab8cbcbf96c708c6ced0d0127d862391a6f8e72c250fe5e7499d2a0bf7",
+  "plan_observability": {
+    "api_environment_variables_plan_known": true,
+    "unknown_environment_values_require_explicit_unknown_markers": true,
+    "worker_environment_variables_plan_known": true
+  },
+  "recovery": {
+    "api_reserved_concurrency": 0,
+    "partial_state_recovery": true,
+    "previous_failed_plan_retry_authorized": false,
+    "previous_failed_plan_reusable": false,
+    "worker_reserved_concurrency": 0
+  },
+  "region": "us-east-1",
+  "safety": {
+    "managed_deletes": 0,
+    "managed_replacements": 0,
+    "provider_heavy_public_executions": 0,
+    "public_endpoint_enablements": 0,
+    "remote_state_lock_disabled_during_plan": true
+  },
+  "schema_version": 1,
+  "source_head_sha": "d6546e9d48253694e3e276940ebd2388f301d8ad",
+  "terraform_format_version": "1.2",
+  "terraform_version": "1.15.8"
+}
