@@ -1,0 +1,106 @@
+{
+  "artifact_observation": {
+    "api_code_sha256": "mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=",
+    "expected_api_code_sha256": "mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=",
+    "expected_worker_code_sha256": "DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck=",
+    "worker_code_sha256": "DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck="
+  },
+  "artifact_type": "phase-19-gate-19-7-failed-apply-reconciliation:v1",
+  "authority": {
+    "event_source_enablement_authorized": false,
+    "previous_apply_attempt_failed": true,
+    "provider_heavy_execution_authorized": false,
+    "public_endpoint_enablement_authorized": false,
+    "retry_authorized": false,
+    "runtime_enablement_authorized": false,
+    "terraform_apply_authorized": false,
+    "worker_enablement_authorized": false
+  },
+  "aws_presence": {
+    "api_iam_role": true,
+    "api_lambda": true,
+    "api_log_group_count": 1,
+    "dynamodb_table": true,
+    "http_api_count": 1,
+    "job_dlq": true,
+    "job_queue": true,
+    "lambda_log_group_count": 2,
+    "worker_iam_role": true,
+    "worker_lambda": true
+  },
+  "failed_plan": {
+    "plan_binary_sha256": "4f9c7a07e792da2dfbde7ba38ecfb8286386a2fc7eba8ef79ae346b4a53e757d",
+    "plan_json_sha256": "5918eb69040af7ae3e7aa3fc428e4488b9ae6de98ebf8a0251f9faed2892580a",
+    "quarantined": true,
+    "reusable": false,
+    "source_head_sha": "71da658a27860aa538778ec64943c613f45b4636"
+  },
+  "failure_classification": {
+    "artifact_failure": false,
+    "class": "LAMBDA_RESERVED_CONCURRENCY_ACCOUNT_CONSTRAINT",
+    "failed_operation": "PutFunctionConcurrency",
+    "failed_resource": "aws_lambda_function.public_async_api",
+    "iam_failure": false,
+    "partial_materialization_requires_recovery_plan": true,
+    "requested_reserved_concurrency": 2,
+    "safe_retry_without_new_review": false
+  },
+  "lambda_account": {
+    "concurrent_executions_limit": 10,
+    "unreserved_concurrent_executions": null
+  },
+  "reconciliation_parser": {
+    "empty_output_interpretation": "EMPTY_RESPONSE_NOT_ZERO_METRIC",
+    "empty_success_output_files": [
+      "/tmp/g197-api-concurrency.json"
+    ],
+    "missing_capture_files": []
+  },
+  "retained_invariants": [
+    "plan != apply",
+    "materialized != enabled",
+    "UNMEASURED != zero",
+    "configured limit != measured utilization"
+  ],
+  "runtime_controls_observed": {
+    "api_reserved_concurrency": null,
+    "api_submit_switch": "false",
+    "http_api_execute_endpoint_disabled": true,
+    "worker_event_source_states": [
+      "Disabled"
+    ],
+    "worker_reserved_concurrency": 0,
+    "worker_switch": "false"
+  },
+  "schema_version": 1,
+  "terraform_state": {
+    "currently_managed_expected_resources": 16,
+    "expected_gate19_7_resources": 21,
+    "managed_expected_resources": [
+      "aws_apigatewayv2_api.public_async",
+      "aws_apigatewayv2_stage.public_async_default",
+      "aws_cloudwatch_log_group.public_async_access",
+      "aws_cloudwatch_log_group.public_async_api",
+      "aws_cloudwatch_log_group.public_async_worker",
+      "aws_dynamodb_table.public_async_jobs",
+      "aws_iam_role.public_async_api",
+      "aws_iam_role.public_async_worker",
+      "aws_iam_role_policy.public_async_api",
+      "aws_iam_role_policy.public_async_worker",
+      "aws_lambda_event_source_mapping.public_async_worker",
+      "aws_lambda_function.public_async_api",
+      "aws_lambda_function.public_async_worker",
+      "aws_sqs_queue.public_async_job_dlq",
+      "aws_sqs_queue.public_async_job_queue",
+      "aws_sqs_queue_redrive_allow_policy.public_async_job_dlq"
+    ],
+    "missing_expected_resources": [
+      "aws_apigatewayv2_integration.public_async_api_lambda",
+      "aws_apigatewayv2_route.public_async_result",
+      "aws_apigatewayv2_route.public_async_status",
+      "aws_apigatewayv2_route.public_async_submit",
+      "aws_lambda_permission.public_async_api_gateway"
+    ],
+    "unexpected_public_async_resources": []
+  }
+}
