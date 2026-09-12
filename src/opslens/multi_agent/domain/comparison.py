@@ -1,7 +1,5 @@
 """Deterministic provider-neutral contracts for multi-agent comparison evidence."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass

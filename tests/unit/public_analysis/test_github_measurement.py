@@ -1,7 +1,5 @@
 """Tests for physical GitHub request accounting used by Gate 19.2."""
 
-from __future__ import annotations
-
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field

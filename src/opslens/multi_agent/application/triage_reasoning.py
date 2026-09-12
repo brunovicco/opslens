@@ -1,7 +1,5 @@
 """Bounded triage reasoning orchestration before deterministic handoff admission."""
 
-from __future__ import annotations
-
 import json
 from collections.abc import Mapping
 from typing import cast

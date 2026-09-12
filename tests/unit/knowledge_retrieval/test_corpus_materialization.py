@@ -1,7 +1,5 @@
 """Tests for pure Gate 7.2 canonical corpus materialization."""
 
-from __future__ import annotations
-
 import hashlib
 from dataclasses import replace
 

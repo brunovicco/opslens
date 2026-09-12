@@ -1,7 +1,5 @@
 """Offline tests for the Gate 19.8 request-time threat-evidence authority contract."""
 
-from __future__ import annotations
-
 import base64
 from dataclasses import dataclass, field
 from datetime import UTC, datetime

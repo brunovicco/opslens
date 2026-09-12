@@ -1,7 +1,5 @@
 """Pure Amazon Bedrock Converse request contract for the bounded semantic planner."""
 
-from __future__ import annotations
-
 from typing import Final
 
 from opslens.semantic_query.planner.models import SemanticPlannerRequest

@@ -1,7 +1,5 @@
 """Run the bounded ten-case Gate 7.5 retrieval evaluation against Bedrock."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import sys

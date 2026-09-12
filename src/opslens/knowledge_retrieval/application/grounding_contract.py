@@ -1,7 +1,5 @@
 """Offline claim-to-citation admission for grounded knowledge synthesis."""
 
-from __future__ import annotations
-
 import json
 from typing import cast
 

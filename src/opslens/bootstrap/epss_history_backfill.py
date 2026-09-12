@@ -1,7 +1,5 @@
 """Bounded Phase 2.5D-5 historical EPSS full-backfill coordination."""
 
-from __future__ import annotations
-
 import hashlib
 from dataclasses import dataclass
 from datetime import date

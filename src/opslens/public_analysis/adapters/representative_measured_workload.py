@@ -1,7 +1,5 @@
 """Compose the retained measured representative workload without provider I/O."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from opslens.public_analysis.adapters.github_measurement import (

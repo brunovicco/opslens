@@ -1,7 +1,5 @@
 """Bedrock structured-output schema for the frozen semantic planner contract."""
 
-from __future__ import annotations
-
 import json
 from typing import Final
 

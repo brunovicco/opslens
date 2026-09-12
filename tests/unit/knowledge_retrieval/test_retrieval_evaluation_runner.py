@@ -1,7 +1,5 @@
 """Tests for the bounded Gate 7.5 full-fixture evaluation runner."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 import pytest

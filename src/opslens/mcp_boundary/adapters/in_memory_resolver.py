@@ -1,7 +1,5 @@
 """In-memory resolver for offline MCP interoperability validation."""
 
-from __future__ import annotations
-
 from collections.abc import Iterable
 
 from opslens.agent_baseline.domain import AgentCapabilityInvocation, capability_for_invocation

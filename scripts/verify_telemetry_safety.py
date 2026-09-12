@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Verify retained Lambda telemetry content-minimization invariants."""
 
-from __future__ import annotations
-
 import ast
 from pathlib import Path
 

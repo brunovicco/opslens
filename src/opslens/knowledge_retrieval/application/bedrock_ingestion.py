@@ -1,7 +1,5 @@
 """Application-owned bounded orchestration for one Bedrock Knowledge Base ingestion job."""
 
-from __future__ import annotations
-
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass

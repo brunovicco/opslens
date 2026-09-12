@@ -1,7 +1,5 @@
 """Fail-closed tests for the Gate 19.6 offline Terraform-plan verifier."""
 
-from __future__ import annotations
-
 import json
 import subprocess
 import sys

@@ -1,7 +1,5 @@
 """Tests for content-addressed A2A reference registration and resolution."""
 
-from __future__ import annotations
-
 from dataclasses import replace
 
 import pytest

@@ -1,7 +1,5 @@
 """Repository dependency evidence normalized by the Phase 3 PyPI identity authority."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from opslens.correlation.domain.pypi import (

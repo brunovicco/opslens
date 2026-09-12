@@ -1,7 +1,5 @@
 """Tests for bounded provider-neutral multi-agent triage reasoning."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 
 import pytest

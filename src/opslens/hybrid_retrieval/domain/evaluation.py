@@ -1,7 +1,5 @@
 """Frozen evaluation contracts for Phase 8 hybrid retrieval."""
 
-from __future__ import annotations
-
 import json
 import math
 from dataclasses import dataclass

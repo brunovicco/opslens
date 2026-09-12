@@ -1,7 +1,5 @@
 """Fresh-interpreter regressions for bounded hybrid runtime CLIs."""
 
-from __future__ import annotations
-
 import os
 import subprocess
 import sys

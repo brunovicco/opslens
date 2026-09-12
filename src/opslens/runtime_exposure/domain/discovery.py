@@ -1,7 +1,5 @@
 """Content-minimized evidence produced by read-only Amazon Inspector discovery."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 

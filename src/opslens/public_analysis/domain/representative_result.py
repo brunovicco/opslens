@@ -1,7 +1,5 @@
 """Deterministic non-public result admission for the Gate 19.2 representative workload."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import dataclass
 from hashlib import sha256

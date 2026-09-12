@@ -1,8 +1,6 @@
 # pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnknownParameterType=false
 """Tests for exact NVD Silver-to-Bronze authority resolution."""
 
-from __future__ import annotations
-
 import gzip
 import json
 from dataclasses import dataclass, field

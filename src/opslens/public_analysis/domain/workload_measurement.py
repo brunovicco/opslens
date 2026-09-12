@@ -1,7 +1,5 @@
 """Deterministic measurement contracts for the representative public workload."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass

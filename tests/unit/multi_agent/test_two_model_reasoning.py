@@ -1,7 +1,5 @@
 """Tests for bounded triage-to-specialist reasoning without capability execution."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 
 from opslens.agent_baseline.domain.models import (

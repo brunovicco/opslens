@@ -1,7 +1,5 @@
 """Project deterministic repository and risk truth into hybrid structured evidence."""
 
-from __future__ import annotations
-
 from opslens.hybrid_retrieval.domain import (
     EvidenceNeed,
     StructuredEvidenceAuthority,

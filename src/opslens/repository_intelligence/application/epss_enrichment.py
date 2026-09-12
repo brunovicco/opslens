@@ -1,7 +1,5 @@
 """Attach exact-snapshot EPSS score evidence to repository findings."""
 
-from __future__ import annotations
-
 from opslens.ingestion.epss.domain.history import HistoricalEpssSnapshot
 from opslens.ingestion.epss.domain.models import EpssSnapshot
 from opslens.repository_intelligence.domain.epss_enrichment import (

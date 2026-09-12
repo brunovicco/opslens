@@ -1,7 +1,5 @@
 """Compose admitted public requests into immutable repository dependency evidence."""
 
-from __future__ import annotations
-
 from typing import Protocol
 
 from opslens.public_analysis.domain import (

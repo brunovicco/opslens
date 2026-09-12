@@ -1,7 +1,5 @@
 """Tests for the deterministic offline OpsLens V1 demonstration runner."""
 
-from __future__ import annotations
-
 import json
 from typing import cast
 

@@ -1,7 +1,5 @@
 """Tests for the Gate 7.7 real grounding evaluation CLI evidence serializer."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 

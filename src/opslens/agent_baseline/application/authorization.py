@@ -1,7 +1,5 @@
 """Deterministic authorization of untrusted single-agent action proposals."""
 
-from __future__ import annotations
-
 from opslens.agent_baseline.domain.errors import (
     AgentAuthorityValidationError,
     AgentCapabilityAuthorizationError,

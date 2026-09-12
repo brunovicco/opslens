@@ -1,7 +1,5 @@
 """Tests for Gate 19.2 pre-measurement threat-authority composition."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import cast

@@ -1,7 +1,5 @@
 """Tamper-resistance tests for Gate 11.1 authorization result identities."""
 
-from __future__ import annotations
-
 import pytest
 
 from opslens.agent_baseline.application import authorize_agent_action

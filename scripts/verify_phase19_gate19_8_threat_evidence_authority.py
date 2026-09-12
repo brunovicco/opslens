@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Verify the Gate 19.8 request-time threat-evidence contract without providers."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import cast

@@ -1,7 +1,5 @@
 """Unit tests for fail-closed Gate 19.4 async runtime configuration."""
 
-from __future__ import annotations
-
 import pytest
 
 from opslens.public_analysis.async_runtime_config import (

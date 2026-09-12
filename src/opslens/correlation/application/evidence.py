@@ -1,7 +1,5 @@
 """Canonical reproducible evidence assembly for Phase 3 vulnerability correlation."""
 
-from __future__ import annotations
-
 import hashlib
 import json
 import re

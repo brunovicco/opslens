@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Verify the frozen Gate 19.1 public-runtime launch contract without AWS access."""
 
-from __future__ import annotations
-
 import argparse
 import json
 from pathlib import Path

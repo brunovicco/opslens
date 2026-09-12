@@ -1,7 +1,5 @@
 """Typed, provider-independent contracts for OpsLens knowledge retrieval."""
 
-from __future__ import annotations
-
 import math
 import re
 from dataclasses import dataclass

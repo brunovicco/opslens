@@ -1,7 +1,5 @@
 """Strict loader for the content-addressed Gate 11.3 offline evaluation corpus."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import cast

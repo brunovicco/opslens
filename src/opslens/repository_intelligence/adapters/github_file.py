@@ -1,7 +1,5 @@
 """Project GitHub Contents API payloads into immutable inert file evidence."""
 
-from __future__ import annotations
-
 import base64
 import binascii
 import re

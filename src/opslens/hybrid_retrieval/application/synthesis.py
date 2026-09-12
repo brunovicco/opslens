@@ -1,7 +1,5 @@
 """Application services for bounded hybrid synthesis and output admission."""
 
-from __future__ import annotations
-
 import json
 from typing import cast
 

@@ -1,7 +1,5 @@
 """Deterministic authority for the Phase 19 asynchronous public-analysis job lifecycle."""
 
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass, replace
 from enum import StrEnum

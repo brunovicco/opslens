@@ -1,7 +1,5 @@
 """Adversarial regression tests for retained OpsLens authority boundaries."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import replace
 from datetime import date

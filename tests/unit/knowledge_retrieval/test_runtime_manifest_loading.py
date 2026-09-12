@@ -1,7 +1,5 @@
 """Tests for loading checked Gate 7.2 manifest evidence in the retrieval runtime."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import cast

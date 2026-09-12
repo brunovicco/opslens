@@ -1,7 +1,5 @@
 """Application services for deterministic hybrid evidence assembly."""
 
-from __future__ import annotations
-
 from opslens.hybrid_retrieval.domain.errors import HybridRetrievalValidationError
 from opslens.hybrid_retrieval.domain.evidence import (
     HybridEvidenceEnvelope,

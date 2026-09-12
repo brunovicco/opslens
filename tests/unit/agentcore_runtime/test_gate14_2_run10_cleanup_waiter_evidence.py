@@ -1,7 +1,5 @@
 """Regression coverage for the measured Gate 14.2 run 10 delete-waiter boundary."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import Any

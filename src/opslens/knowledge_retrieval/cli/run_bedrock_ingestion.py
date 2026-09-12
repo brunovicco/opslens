@@ -1,7 +1,5 @@
 """Run one bounded real Bedrock Knowledge Base ingestion job."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import sys

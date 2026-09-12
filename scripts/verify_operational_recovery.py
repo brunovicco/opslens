@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Verify bounded scheduled-ingestion recovery controls fail closed."""
 
-from __future__ import annotations
-
 import re
 from pathlib import Path
 

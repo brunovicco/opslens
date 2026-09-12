@@ -1,7 +1,5 @@
 """Tests for Gate 19.2 representative workload measurement contracts."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 
 import pytest

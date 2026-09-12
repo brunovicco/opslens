@@ -1,7 +1,5 @@
 """Tests for exact Gate 19.2 threat-authority coordinate loaders."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime

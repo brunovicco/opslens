@@ -1,7 +1,5 @@
 """Immutable inert repository file evidence bound to one exact snapshot."""
 
-from __future__ import annotations
-
 import hashlib
 import re
 from dataclasses import dataclass, field

@@ -1,7 +1,5 @@
 """Tests for projecting and resolving immutable GitHub repository snapshots."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 
 import pytest

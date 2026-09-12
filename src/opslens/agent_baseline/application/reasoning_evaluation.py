@@ -1,7 +1,5 @@
 """Strict loading and deterministic scoring for the Gate 11.4 reasoning corpus."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import cast

@@ -1,7 +1,5 @@
 """Deterministic projection and validation for the Phase 18 consolidated view."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import dataclass
 from enum import StrEnum

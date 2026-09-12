@@ -1,7 +1,5 @@
 """Application service binding deterministic MCP admission to one typed execution."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from opslens.agent_baseline.application import (
@@ -45,7 +43,7 @@ class McpExecutionProjection:
     bridge_sha256: str
 
     @classmethod
-    def from_bridge(cls, bridge: McpCapabilityExecutionBridge) -> McpExecutionProjection:
+    def from_bridge(cls, bridge: McpCapabilityExecutionBridge) -> "McpExecutionProjection":
         """Project only deterministic execution identity and digest evidence."""
         if type(bridge) is not McpCapabilityExecutionBridge:
             raise McpBoundaryValidationError(

@@ -1,7 +1,5 @@
 """Strict parser for historical EPSS Bronze manifest v1."""
 
-from __future__ import annotations
-
 import json
 import re
 from datetime import date

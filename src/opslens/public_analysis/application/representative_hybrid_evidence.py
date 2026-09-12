@@ -1,7 +1,5 @@
 """Assemble representative structured and semantic evidence under public route authority."""
 
-from __future__ import annotations
-
 from opslens.hybrid_retrieval.application import assemble_hybrid_evidence
 from opslens.hybrid_retrieval.domain import HybridEvidenceEnvelope
 from opslens.public_analysis.application.representative_repository_analysis import (

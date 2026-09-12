@@ -1,7 +1,5 @@
 """Run the bounded offline A2A 1.0 reference-only interoperability experiment."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import asdict
 

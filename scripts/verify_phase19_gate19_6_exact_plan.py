@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Offline verifier for the Gate 19.6 exact Terraform plan JSON."""
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json

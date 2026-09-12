@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Run the first bounded OpsLens semantic query against the real dev Athena workgroup."""
 
-from __future__ import annotations
-
 import argparse
 import json
 from datetime import date

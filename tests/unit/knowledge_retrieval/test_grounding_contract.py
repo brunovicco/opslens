@@ -1,7 +1,5 @@
 """Unit tests for the offline grounded claim-to-citation synthesis contract."""
 
-from __future__ import annotations
-
 import json
 
 import pytest

@@ -1,7 +1,5 @@
 """Compose typed threat-source authority before representative admission."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Protocol

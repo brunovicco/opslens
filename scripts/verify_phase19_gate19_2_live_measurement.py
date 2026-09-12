@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Verify one persisted Gate 19.2 live-measurement artifact without provider I/O."""
 
-from __future__ import annotations
-
 import argparse
 from pathlib import Path
 

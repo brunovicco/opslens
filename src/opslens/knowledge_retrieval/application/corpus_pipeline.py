@@ -1,7 +1,5 @@
 """Serial bounded replay pipeline for the reproducible knowledge corpus."""
 
-from __future__ import annotations
-
 from typing import Protocol
 
 from opslens.knowledge_retrieval.adapters.http_source import AcquiredKnowledgeSource

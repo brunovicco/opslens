@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Build the Phase 2.4F deterministic cross-source CVE evidence bundle."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import re

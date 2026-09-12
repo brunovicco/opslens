@@ -1,7 +1,5 @@
 """Content-addressed references for the bounded A2A interoperability experiment."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass

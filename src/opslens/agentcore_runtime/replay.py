@@ -1,7 +1,5 @@
 """Measured replay contract for the bounded AgentCore Runtime experiment."""
 
-from __future__ import annotations
-
 import json
 import re
 import time

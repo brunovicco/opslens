@@ -1,7 +1,5 @@
 """Compose concrete read-only threat-authority readers for human preparation."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from opslens.ingestion.epss.domain.parser import EpssSnapshotParser

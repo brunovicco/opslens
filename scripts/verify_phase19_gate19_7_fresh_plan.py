@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Admit a fresh Gate 19.7 Terraform plan while keeping apply authority false."""
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json

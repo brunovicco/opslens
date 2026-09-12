@@ -1,7 +1,5 @@
 """Instrument the governed public-analysis boundary with bounded operational evidence."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import NoReturn, Protocol

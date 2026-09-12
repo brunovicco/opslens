@@ -1,7 +1,5 @@
 """Deterministic business-result projection for the first bounded MCP transport slice."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass
@@ -157,7 +155,7 @@ class McpStructuredSecurityResultProjection:
         invocation: StructuredSecurityQueryInvocation,
         bridge: McpCapabilityExecutionBridge,
         result: StructuredSecurityQueryResultBinding,
-    ) -> McpStructuredSecurityResultProjection:
+    ) -> "McpStructuredSecurityResultProjection":
         """Project one already-admitted structured result through an explicit code-owned policy."""
         if type(invocation) is not StructuredSecurityQueryInvocation:
             raise McpBoundaryValidationError(

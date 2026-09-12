@@ -1,7 +1,5 @@
 """Tests for Gate 10.2 operational delivery-accounting integrity."""
 
-from __future__ import annotations
-
 import pytest
 
 from opslens.public_analysis.application import PublicAnalysisOperationalFailure

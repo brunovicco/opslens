@@ -1,7 +1,5 @@
 """Tests for the Gate 12.2 deterministic multi-agent comparison contract."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import cast

@@ -1,7 +1,5 @@
 """Tests for Gate 19.2 cross-source threat-evidence admission."""
 
-from __future__ import annotations
-
 import gzip
 import hashlib
 import json

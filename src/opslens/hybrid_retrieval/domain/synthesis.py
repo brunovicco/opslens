@@ -1,7 +1,5 @@
 """Provider-independent contracts for bounded Phase 8 hybrid synthesis."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass

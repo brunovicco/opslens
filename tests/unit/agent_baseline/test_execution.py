@@ -1,7 +1,5 @@
 """Tests for Gate 11.2 typed capability bindings and one-attempt offline execution."""
 
-from __future__ import annotations
-
 import base64
 import json
 from dataclasses import dataclass, field

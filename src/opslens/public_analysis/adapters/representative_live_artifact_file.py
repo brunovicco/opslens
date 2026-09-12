@@ -1,7 +1,5 @@
 """Persist one already-admitted Gate 19.2 artifact without overwriting evidence."""
 
-from __future__ import annotations
-
 import os
 from contextlib import suppress
 from pathlib import Path

@@ -1,7 +1,5 @@
 """Compose triage reasoning, deterministic handoff admission, and specialist reasoning."""
 
-from __future__ import annotations
-
 from opslens.agent_baseline.application.reasoning import reason_about_task
 from opslens.agent_baseline.domain.models import SingleAgentTask
 from opslens.agent_baseline.ports.reasoning import AgentReasoningModel

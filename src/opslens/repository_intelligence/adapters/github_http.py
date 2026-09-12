@@ -1,7 +1,5 @@
 """Bounded read-only GitHub REST source for immutable repository evidence."""
 
-from __future__ import annotations
-
 import json
 import math
 import re

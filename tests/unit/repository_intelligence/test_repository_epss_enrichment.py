@@ -1,7 +1,5 @@
 """Tests for exact current and historical EPSS enrichment of repository findings."""
 
-from __future__ import annotations
-
 import gzip
 import hashlib
 import json

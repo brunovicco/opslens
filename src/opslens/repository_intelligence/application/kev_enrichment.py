@@ -1,7 +1,5 @@
 """Attach complete-snapshot CISA KEV membership evidence to repository findings."""
 
-from __future__ import annotations
-
 from opslens.ingestion.kev.domain.models import KevCatalogSnapshot
 from opslens.repository_intelligence.domain.kev_enrichment import (
     RepositoryKevEnrichedFinding,

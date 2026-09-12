@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Select the Phase 2.4F proof CVE from explicit analytical coordinates."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import re

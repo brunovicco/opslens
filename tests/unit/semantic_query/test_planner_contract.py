@@ -1,7 +1,5 @@
 """Tests for the bounded Phase 6 semantic-query planner contract."""
 
-from __future__ import annotations
-
 import json
 from datetime import date
 from pathlib import Path

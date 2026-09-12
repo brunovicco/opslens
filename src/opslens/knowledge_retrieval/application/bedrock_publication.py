@@ -1,7 +1,5 @@
 """Deterministic pre-ingestion projection for the Gate 7.3 Bedrock S3 data source."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass
@@ -90,7 +88,7 @@ def _require_metadata_json(value: object) -> str:
 
 def _require_publication_objects(
     value: object,
-) -> tuple[BedrockPublicationObject, ...]:
+) -> "tuple[BedrockPublicationObject, ...]":
     """Require a non-empty tuple of typed publication objects at runtime."""
     if not isinstance(value, tuple):
         raise BedrockPublicationError("objects must be one non-empty tuple")

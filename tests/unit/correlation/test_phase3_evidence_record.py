@@ -1,7 +1,5 @@
 """Tests for canonical, content-addressed Phase 3 correlation evidence records."""
 
-from __future__ import annotations
-
 import hashlib
 import json
 from dataclasses import replace

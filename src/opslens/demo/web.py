@@ -1,7 +1,5 @@
 """Localhost-only HTTP adapter for the OpsLens V1 deterministic visual demo."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import dataclass
 from http import HTTPStatus

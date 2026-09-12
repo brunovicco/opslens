@@ -1,7 +1,5 @@
 """Project GitHub REST metadata and commit payloads into Phase 4 domain evidence."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import cast
 

@@ -1,7 +1,5 @@
 """Strict loading and deterministic scoring for the Gate 12.2 comparison corpus."""
 
-from __future__ import annotations
-
 import json
 from hashlib import sha256
 from pathlib import Path

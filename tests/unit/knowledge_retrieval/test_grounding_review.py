@@ -1,7 +1,5 @@
 """Regression tests for the preserved Gate 7.7 human-reviewed first run."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import cast

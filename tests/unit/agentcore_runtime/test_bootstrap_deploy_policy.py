@@ -1,7 +1,5 @@
 """Regression tests for the Gate 14.4 AgentCore bootstrap IAM retirement."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import Any

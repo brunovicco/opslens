@@ -1,7 +1,5 @@
 """Unit tests for the single Gate 8.5 measured optimization hypothesis."""
 
-from __future__ import annotations
-
 import json
 from collections.abc import Mapping
 from pathlib import Path

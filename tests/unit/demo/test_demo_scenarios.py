@@ -1,7 +1,5 @@
 """Tests for the three canonical deterministic OpsLens V1 demo scenarios."""
 
-from __future__ import annotations
-
 import json
 from typing import cast
 

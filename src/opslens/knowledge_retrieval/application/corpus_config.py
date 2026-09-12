@@ -1,7 +1,5 @@
 """Fail-closed loading for versioned Gate 7.2 corpus inputs."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import cast

@@ -1,7 +1,5 @@
 """Tests for the Gate 7.7d pure grounded Bedrock Converse request."""
 
-from __future__ import annotations
-
 import json
 from typing import cast
 

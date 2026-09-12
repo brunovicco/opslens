@@ -1,7 +1,5 @@
 """Tests for concrete Gate 19.2 threat-authority reader composition."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 import pytest

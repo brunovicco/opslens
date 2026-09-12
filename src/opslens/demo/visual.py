@@ -1,7 +1,5 @@
 """Local visual projection over the deterministic OpsLens V1 demo results."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from html import escape
 from typing import Literal

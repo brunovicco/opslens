@@ -1,7 +1,5 @@
 """Provider-neutral tests for Gate 19.4 async submit/status/result use cases."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field, replace
 
 import pytest

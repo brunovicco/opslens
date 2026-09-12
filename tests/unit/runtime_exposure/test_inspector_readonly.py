@@ -1,7 +1,5 @@
 """Tests for the bounded Amazon Inspector read-only discovery adapter."""
 
-from __future__ import annotations
-
 from datetime import UTC, datetime
 from typing import cast
 

@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Plan or execute the frozen full historical EPSS backfill."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import os

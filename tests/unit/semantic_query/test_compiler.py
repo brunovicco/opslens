@@ -1,7 +1,5 @@
 """Unit tests for the first deterministic semantic-query compiler slice."""
 
-from __future__ import annotations
-
 import math
 from datetime import UTC, date, datetime
 from typing import cast

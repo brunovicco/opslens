@@ -1,7 +1,5 @@
 """Content-addressed manifest contracts for the reproducible Phase 7 corpus."""
 
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass
 from typing import cast
@@ -88,7 +86,7 @@ def _require_string_tuple(value: object, *, field: str) -> tuple[str, ...]:
     return normalized
 
 
-def _require_chunk_entries(value: object) -> tuple[CorpusChunkManifestEntry, ...]:
+def _require_chunk_entries(value: object) -> "tuple[CorpusChunkManifestEntry, ...]":
     """Require a non-empty tuple of manifest chunk entries."""
     if not isinstance(value, tuple):
         raise KnowledgeRetrievalValidationError("chunks must be a tuple")
@@ -102,7 +100,7 @@ def _require_chunk_entries(value: object) -> tuple[CorpusChunkManifestEntry, ...
     return cast(tuple[CorpusChunkManifestEntry, ...], items)
 
 
-def _require_document_entries(value: object) -> tuple[CorpusDocumentManifestEntry, ...]:
+def _require_document_entries(value: object) -> "tuple[CorpusDocumentManifestEntry, ...]":
     """Require a non-empty tuple of manifest document entries."""
     if not isinstance(value, tuple):
         raise KnowledgeRetrievalValidationError("documents must be a tuple")

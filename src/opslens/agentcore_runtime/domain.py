@@ -1,7 +1,5 @@
 """Deterministic contracts for the bounded AgentCore Runtime invocation boundary."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass
@@ -177,7 +175,7 @@ class AgentCoreReasoningProjection:
         }
 
     @classmethod
-    def create(cls, result: AgentReasoningResult) -> AgentCoreReasoningProjection:
+    def create(cls, result: AgentReasoningResult) -> "AgentCoreReasoningProjection":
         """Project one admitted reasoning result into the runtime protocol contract."""
         if type(result) is not AgentReasoningResult:
             raise AgentCoreRuntimeValidationError(

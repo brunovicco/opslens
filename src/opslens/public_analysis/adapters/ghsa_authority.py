@@ -1,8 +1,6 @@
 # pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Decode one exact GHSA Silver v1 object into retained PyPI threat authority."""
 
-from __future__ import annotations
-
 import re
 from typing import Protocol, cast
 

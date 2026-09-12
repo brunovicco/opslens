@@ -1,7 +1,5 @@
 """Tests for Gate 11.3 deterministic offline single-agent evaluation."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import dataclass, field, replace
 from datetime import date

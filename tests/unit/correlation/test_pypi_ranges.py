@@ -1,7 +1,5 @@
 """Tests for strict PyPI vulnerable-range parsing and applicability evaluation."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import Any, cast
