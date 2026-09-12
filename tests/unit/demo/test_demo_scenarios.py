@@ -70,7 +70,7 @@ def test_cli_dispatches_exactly_three_canonical_scenarios() -> None:
     benign = run_demo(CONTROLLED_BENIGN_SCENARIO_ID)
     fail_closed = run_demo(FAIL_CLOSED_SCENARIO_ID)
 
-    assert material.scenario_id == MATERIAL_VULNERABILITY_SCENARIO_ID
+    assert "scenario: material-vulnerability" in render_demo(material, "text")
     assert "scenario: controlled-benign" in render_demo(benign, "text")
     assert "scenario: fail-closed-incomplete-evidence" in render_demo(fail_closed, "text")
 
