@@ -8,7 +8,7 @@ from typing import Literal
 
 from opslens.demo.controlled_benign import ControlledBenignDemoResult
 from opslens.demo.fail_closed import FailClosedDemoResult
-from opslens.demo.material_vulnerability import DemoContractError, DemoRunResult
+from opslens.demo.material_vulnerability import DemoRunResult
 
 type VisualScenarioResult = DemoRunResult | ControlledBenignDemoResult | FailClosedDemoResult
 type VisualTone = Literal["critical", "clear", "blocked"]
