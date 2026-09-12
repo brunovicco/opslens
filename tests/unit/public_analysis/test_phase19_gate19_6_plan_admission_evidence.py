@@ -1,3 +1,5 @@
+"""Unit tests for the admitted Gate 19.6 human exact-plan evidence."""
+
 from __future__ import annotations
 
 import json
@@ -31,14 +33,27 @@ EXPECTED_INVENTORY = {
     "aws_sqs_queue_redrive_allow_policy.public_async_job_dlq",
 }
 
+API_ARTIFACT_KEY = (
+    "lambda/public-analysis/api/"
+    "sha256=99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e/"
+    "opslens-public-async-api.zip"
+)
+WORKER_ARTIFACT_KEY = (
+    "lambda/public-analysis/worker/"
+    "sha256=0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9/"
+    "opslens-public-async-worker.zip"
+)
+
 
 def _load() -> dict[str, object]:
+    """Load the bounded committed admission evidence."""
     raw = cast(object, json.loads(EVIDENCE_PATH.read_text(encoding="utf-8")))
     assert isinstance(raw, dict)
     return cast(dict[str, object], raw)
 
 
 def test_gate19_6_human_plan_admission_evidence_is_frozen() -> None:
+    """Freeze the admitted source, inventory, artifacts, and safety decisions."""
     evidence = _load()
 
     assert evidence["schema_version"] == 1
@@ -62,25 +77,22 @@ def test_gate19_6_human_plan_admission_evidence_is_frozen() -> None:
     assert isinstance(artifacts, dict)
     typed_artifacts = cast(dict[str, dict[str, object]], artifacts)
     assert typed_artifacts["api"] == {
-        "key": "lambda/public-analysis/api/sha256=99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e/opslens-public-async-api.zip",
+        "key": API_ARTIFACT_KEY,
         "lambda_source_code_hash": "mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=",
         "version_id": "E.jfB7dlkGCD.wHAurP7QXo4fuS_PW63",
     }
     assert typed_artifacts["worker"] == {
-        "key": "lambda/public-analysis/worker/sha256=0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9/opslens-public-async-worker.zip",
+        "key": WORKER_ARTIFACT_KEY,
         "lambda_source_code_hash": "DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck=",
         "version_id": "sxiOdii4yFwR13t23xP5A8EU1JPV_7P1",
     }
 
-    plan_observability = evidence["plan_observability"]
-    assert plan_observability == {
+    assert evidence["plan_observability"] == {
         "api_environment_variables_plan_known": False,
         "unknown_environment_values_admitted_only_with_retained_gate19_4_source_contract": True,
         "worker_environment_variables_plan_known": False,
     }
-
-    safety = evidence["safety"]
-    assert safety == {
+    assert evidence["safety"] == {
         "iam_mutations": 0,
         "plan_only": True,
         "provider_heavy_public_executions": 0,
