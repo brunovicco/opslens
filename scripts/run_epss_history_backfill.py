@@ -7,6 +7,12 @@ import os
 from typing import Any, cast
 
 import boto3
+from run_epss_history_canary import (
+    GitHubArchiveReader,
+    GitHubArchiveSourceReader,
+    LambdaHistoricalTransformerInvoker,
+    S3HistoricalBronzePublisher,
+)
 
 from opslens.bootstrap.epss_history_backfill import (
     BACKFILL_CONFIRMATION,
@@ -17,12 +23,6 @@ from opslens.bootstrap.epss_history_backfill import (
 from opslens.transformation.epss.history.runtime import (
     HistoricalEpssForwardListClient,
     S3HistoricalEpssForwardBoundaryReader,
-)
-from run_epss_history_canary import (
-    GitHubArchiveReader,
-    GitHubArchiveSourceReader,
-    LambdaHistoricalTransformerInvoker,
-    S3HistoricalBronzePublisher,
 )
 
 
