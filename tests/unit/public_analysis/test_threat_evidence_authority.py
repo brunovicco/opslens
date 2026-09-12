@@ -158,6 +158,7 @@ def _epss() -> EpssSnapshot:
 
 
 def test_scope_is_bound_to_exact_repository_evidence_and_canonical_pypi_identity() -> None:
+    """Bind threat scope to exact admitted repository evidence and canonical PyPI identity."""
     execution = _execution()
 
     scope = build_public_threat_evidence_scope(execution)
@@ -175,6 +176,7 @@ def test_scope_is_bound_to_exact_repository_evidence_and_canonical_pypi_identity
 
 
 def test_query_package_names_collapse_package_lookup_without_losing_version_scope() -> None:
+    """Deduplicate package lookup names while retaining version-specific dependency scope."""
     scope = PublicThreatEvidenceScope(
         source_execution_id="public-repository-evidence:v1@sha256:" + ("e" * 64),
         source_evidence_sha256="e" * 64,
@@ -203,6 +205,7 @@ def test_query_package_names_collapse_package_lookup_without_losing_version_scop
 
 
 def test_scope_fails_closed_when_phase3_cannot_normalize_a_pypi_record() -> None:
+    """Fail closed when retained Phase 3 cannot normalize one PyPI dependency record."""
     execution = _execution(version="definitely-not-pep440")
 
     with pytest.raises(
@@ -213,6 +216,7 @@ def test_scope_fails_closed_when_phase3_cannot_normalize_a_pypi_record() -> None
 
 
 def test_typed_evidence_preserves_exact_snapshot_and_source_local_provenance() -> None:
+    """Preserve exact source-local identities and immutable KEV/EPSS snapshot provenance."""
     request = PublicThreatEvidenceRequest(scope=build_public_threat_evidence_scope(_execution()))
     ghsa = _ghsa(cve_id="CVE-2026-12345")
     nvd = _nvd("CVE-2026-12345")
@@ -238,6 +242,7 @@ def test_typed_evidence_preserves_exact_snapshot_and_source_local_provenance() -
 
 
 def test_ghsa_evidence_outside_admitted_dependency_scope_is_rejected() -> None:
+    """Reject GHSA evidence whose package identity falls outside the admitted scope."""
     request = PublicThreatEvidenceRequest(scope=build_public_threat_evidence_scope(_execution()))
 
     with pytest.raises(
@@ -254,6 +259,7 @@ def test_ghsa_evidence_outside_admitted_dependency_scope_is_rejected() -> None:
 
 
 def test_nvd_evidence_unrelated_to_scoped_ghsa_evidence_is_rejected() -> None:
+    """Reject NVD evidence that cannot be bound to one scoped GHSA CVE identity."""
     request = PublicThreatEvidenceRequest(scope=build_public_threat_evidence_scope(_execution()))
 
     with pytest.raises(
@@ -280,6 +286,7 @@ class _Authority:
 
 
 def test_authority_load_is_bound_to_the_exact_request() -> None:
+    """Reject authority substitution by binding loaded evidence to the exact request."""
     execution = _execution()
     request = PublicThreatEvidenceRequest(scope=build_public_threat_evidence_scope(execution))
     evidence = PublicRepositoryThreatEvidence(
