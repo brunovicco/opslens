@@ -1,0 +1,80 @@
+{
+  "artifact_type": "phase-19-gate-19-7-replacement-diagnosis:v1",
+  "authority": {
+    "replacement_authorized": false,
+    "runtime_enablement_authorized": false,
+    "terraform_apply_authorized": false,
+    "terraform_state_mutation_authorized": false,
+    "terraform_untaint_authorized": false
+  },
+  "aws_api_lambda": {
+    "configuration_matches_expected": true,
+    "field_matches": {
+      "application_log_level": true,
+      "architecture": true,
+      "code_sha256": true,
+      "function_name": true,
+      "handler": true,
+      "log_format": true,
+      "log_group": true,
+      "memory_size": true,
+      "role": true,
+      "runtime": true,
+      "submit_switch": true,
+      "system_log_level": true,
+      "timeout": true,
+      "tracing_mode": true
+    },
+    "last_update_status": "Successful",
+    "observed": {
+      "application_log_level": "INFO",
+      "architecture": [
+        "x86_64"
+      ],
+      "code_sha256": "mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=",
+      "function_name": "opslens-dev-public-analysis-api",
+      "handler": "opslens.public_analysis.async_lambda.api_lambda_handler",
+      "log_format": "JSON",
+      "log_group": "/aws/lambda/opslens-dev-public-analysis-api",
+      "memory_size": 512,
+      "role": "arn:aws:iam::487757851499:role/OpsLensPublicAnalysisApiRole",
+      "runtime": "python3.13",
+      "submit_switch": "false",
+      "system_log_level": "INFO",
+      "timeout": 15,
+      "tracing_mode": "Active"
+    },
+    "reserved_concurrency": null,
+    "reserved_concurrency_observation": "NOT_CONFIGURED_OR_NOT_OBSERVED",
+    "state": "Active"
+  },
+  "diagnosis": {
+    "candidate_next_step": "CONTROLLED_TERRAFORM_STATE_UNTAINT_REVIEW",
+    "replacement_due_to_taint": true,
+    "taint_evidence_confirmed": true
+  },
+  "rejected_recovery_plan": {
+    "action_reason": "replace_because_tainted",
+    "actions": [
+      "delete",
+      "create"
+    ],
+    "admitted": false,
+    "after_reserved_concurrency": 0,
+    "before_reserved_concurrency": -1,
+    "replace_paths": []
+  },
+  "retained_invariants": [
+    "plan != apply",
+    "materialized != enabled",
+    "failed plan != retry authority",
+    "UNMEASURED != zero",
+    "configured limit != measured utilization"
+  ],
+  "schema_version": 1,
+  "source_head_sha": "46fb069beffe2a49c1bde647d51ac8d7bcf4a687",
+  "terraform_state": {
+    "api_lambda_instance_status": "tainted",
+    "tainted": true
+  }
+}
