@@ -6,80 +6,88 @@
 
 ### Verifiable Software Supply Chain & GenAI Architecture on AWS
 
-**Threat Intelligence · Repository Intelligence · Deterministic Risk · Bedrock RAG · Hybrid Retrieval · Agentic AI · MCP · AgentCore · A2A · Inspector · Evaluation · Security Hardening · Cost Engineering**
+**Threat Intelligence · Repository Intelligence · Deterministic Risk · Bedrock RAG · Hybrid Retrieval · Agentic AI · MCP · AgentCore · A2A · Security · Evaluation · Cost Engineering**
 
 </div>
 
-OpsLens is an open-source AWS architecture lab and software-supply-chain intelligence platform built around one principle:
+OpsLens is an open-source AWS architecture lab and software-supply-chain intelligence project built around one principle:
 
 > **Agents reason. Code verifies evidence.**
 
-It answers a practical question: given the software actually used by a repository, which vulnerabilities affect it, what exact evidence proves that, what should be prioritized, and what verified guidance can help act on those findings?
+It answers a practical question:
 
-The platform deliberately separates probabilistic reasoning from deterministic authority for package/version matching, vulnerability correlation, risk policy, semantic-query admission, SQL compilation, evidence admission, tool authorization, result admission, and cost/resource limits.
+> Given the software actually used by a repository, which vulnerabilities affect it, what exact evidence proves that, what should be prioritized, and what verified guidance can help act on those findings?
+
+OpsLens deliberately separates probabilistic reasoning from deterministic authority for package identity, version applicability, vulnerability correlation, KEV/EPSS/CVSS evidence, risk policy, semantic-query admission, SQL compilation, evidence admission, tool authorization, and execution/resource limits.
 
 > **Repository Risk != Runtime Exposure.**
 
 ## Current status
 
-**Phases 0–18 are complete.** Phase 18 was protected-squash-merged through PR #290 at `feca774535b7d83f57c26f4e9fe7da71ce268f0f`.
+**Phases 0–18 are complete. Phase 19 is the final V1 closeout phase.**
 
-**Phase 19 — Bounded Public Runtime & Productization** is in progress. Gate 19.1 is complete through PR #292. Gate 19.2 is complete through protected PR #347 at `71eda2650889d3047259d37be226862ed2a09092`. Gate 19.3 is complete through protected PR #349 at `18d31c03d27448c88a6ffcba16683f3875a5ba15`. Gate 19.4 is complete through protected PR #351 at `a5067e05fda74aad4d95d7f1a875110fb676304a`. Gate 19.5 is complete through protected PR #353 at `61749bfac7b7bc9d032567e0b1870f8c1f7dedd4`; its immutable artifact publication is admitted and post-merge CodeQL is green. Gate 19.6 — Exact Terraform Plan & Offline Admission is next. No runtime deployment is authorized.
+Current protected checkpoint:
 
 ```text
-19.1  Public Runtime Hypothesis & Launch Contract       COMPLETE
-      workload: public-analysis-workload:v1
-      historical decision: DEFERRED_PENDING_MEASUREMENT
-      leading hypothesis at that time: ASYNC_SUBMIT_STATUS_RESULT
-19.2  Representative Workload Measurement              COMPLETE
-      measured end-to-end: 17,748 ms
-      measured Bedrock-facing stages: 13,098 ms / 73.80% of E2E
-      selected interaction pattern: ASYNC_SUBMIT_STATUS_RESULT
-      protected merge: PR #347 / 71eda2650889d3047259d37be226862ed2a09092
-19.3  Concrete Async Topology Contract                  COMPLETE
-      protected merge: PR #349 / 18d31c03d27448c88a6ffcba16683f3875a5ba15
-      selected design topology: HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB
-      deployment authorized: NO
-19.4  Disabled Async Runtime Implementation             COMPLETE
-      protected merge: PR #351 / a5067e05fda74aad4d95d7f1a875110fb676304a
-      runtime materialized by default: false
-      execute-api endpoint enabled: NO
-      submit/worker enabled: NO
-      deployment authorized: NO
-19.5  Immutable Async Deployment Artifacts              COMPLETE
-      issue: #352 / protected merge: PR #353 / 61749bfac7b7bc9d032567e0b1870f8c1f7dedd4
-      publication authority: HUMAN_ONLY_CREATE_ONLY
-      S3 PutObject mutations: 2
-      terraform plan input ready: YES
-      terraform apply authorized: NO
-19.6  Exact Terraform Plan & Offline Admission          NEXT
-      terraform apply authorized: NO
+main: e538fa3e96c29cf76dd3aa83a9967e090587b6fb
+Gate 19.8: COMPLETE
+protected merge: PR #375
+post-merge CodeQL: 34713360403 / run #393 / success
+Gate 19.9: IN PROGRESS / issue #376
 ```
 
-Gate 19.2 does not claim that the successful run timed out. The measured baseline completed below 30 seconds. The async decision is based on provider-latency coupling, retry safety, backpressure, and failure isolation; explicitly derived retry scenarios remain separate from measured evidence.
+The retained async AWS runtime has already been materialized and converged, but it remains intentionally disabled and non-public:
 
-Gate 19.3 selected the design topology: API Gateway HTTP API + API Lambda + SQS + Lambda worker + DynamoDB, with a DLQ and explicit idempotency/state/retry authority. Gate 19.4 implemented that design **in repository code and Terraform only**, retaining `public_async_runtime_materialized=false`, the execute-api endpoint disabled, submit/worker switches disabled, the SQS event-source mapping disabled, worker reserved concurrency at zero, and no custom public domain. Gate 19.5 then produced separate deterministic API/worker ZIPs, human-published exactly two content-addressed versions create-only, and persisted the exact `Key + VersionId + source_code_hash` coordinates required for Gate 19.6. No `terraform apply`, runtime AWS/IAM mutation, public endpoint enablement, or provider-heavy public execution is authorized.
+```text
+runtime materialized: YES
+public endpoint enabled: NO
+submit enabled: NO
+worker enabled: NO
+event-source mapping enabled: NO
+provider-heavy public execution: NO
+```
 
-See [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), [Architecture](docs/architecture.md), [Portfolio Evidence](docs/portfolio-evidence.md), [AIP-C01 Learning Map](docs/aip-c01-learning-map.md), the [Gate 19.2 closeout](labs/phase-19-gate-19-2-closeout.md), the [Gate 19.3 topology contract](labs/phase-19-gate-19-3-async-topology-contract.md), the [Gate 19.4 disabled runtime implementation](labs/phase-19-gate-19-4-disabled-async-runtime.md), the [Gate 19.5 publication runbook](labs/phase-19-gate-19-5-immutable-artifact-publication-runbook.md), the [Gate 19.5 closeout](labs/phase-19-gate-19-5-closeout.md), and the [ADR index](docs/adr/README.md).
+```text
+materialized != enabled
+```
+
+## V1 scope
+
+OpsLens V1 is intentionally a **demonstration and architecture lab**, not a production SaaS.
+
+The V1 reviewer target is:
+
+```text
+clone
+ -> setup
+ -> one deterministic offline demo command
+ -> evidence-backed result
+```
+
+V1 completion prioritizes reproducibility, provenance, architecture clarity, meaningful failure paths, and portfolio presentation. It does **not** require Internet-facing production operations.
+
+See [V1 Demonstration Scope](docs/v1-demonstration-scope.md) and [V1 Completion Checklist](docs/v1-completion-checklist.md).
 
 ## Architecture at a glance
 
 ```text
-NVD / CISA KEV / FIRST EPSS / GitHub Advisories
+NVD / CISA KEV / FIRST EPSS / GitHub Security Advisories
         |
         v
 source-preserving threat evidence
         |
-public repository -> immutable snapshot -> inert uv.lock
+public repository -> immutable snapshot -> inert dependency evidence
         |
         v
-deterministic PyPI + PEP 440 correlation
+deterministic package/version applicability
         |
-NVD/CVSS + KEV + EPSS enrichment
+        v
+GHSA/NVD/CVSS + KEV + EPSS enrichment
         |
-RepositoryAnalysisResult -> deterministic Risk Policy v1
+        v
+RepositoryAnalysisResult -> deterministic Risk Policy
 
-Natural-language fact question
+structured fact question
         |
         v
 bounded Bedrock proposal -> deterministic SemanticQuery admission
@@ -87,176 +95,218 @@ bounded Bedrock proposal -> deterministic SemanticQuery admission
         v
 typed SQL compiler -> bounded read-only Athena
 
-Official knowledge sources
+knowledge/remediation question
         |
         v
-canonical corpus -> Bedrock Knowledge Base -> S3 Vectors
+Bedrock Knowledge Base -> checked evidence -> bounded synthesis + citations
+
+admitted structured + semantic evidence
         |
         v
-bounded Retrieve -> checked evidence -> bounded synthesis + citations
-
-Structured + semantic evidence
+deterministic authorization -> bounded agent reasoning
         |
         v
-deterministic route/composition -> bounded agent reasoning
-        |
-        v
-typed capability authorization -> execution/result admission
+admitted result
 ```
 
-No unrestricted text-to-SQL authority is granted to an LLM. Retrieved content is evidence, not instruction authority. Tool/protocol success is not business truth.
+The model may explain, classify, plan, route, or synthesize over admitted evidence. It does not own package identity, vulnerability applicability, provenance, risk policy, arbitrary SQL, or execution authorization.
 
-## Public product boundary
+## Public repository safety boundary
 
-Protected `main` still has **no deployed public HTTP runtime**. Gate 19.4 is protected code/Terraform implementation only; Gate 19.5 completed immutable deployment-artifact provenance without materializing runtime resources. Gate 19.6 is an exact planning/admission boundary only.
-
-The retained public-analysis authority begins with:
+OpsLens treats repository content as untrusted data.
 
 ```text
-untrusted JSON
- -> strict request admission
- -> validated GitHub coordinates
- -> immutable repository evidence
- -> deterministic threat/risk authority
- -> bounded semantic evidence
- -> bounded model reasoning
- -> deterministic result admission
+READ, NEVER EXECUTE third-party repository code.
 ```
 
-Gate 19.2 exercised this complete non-public representative execution with deterministic admission, provider accounting, persisted evidence, and offline review. CI and ChatGPT did not execute the live provider path.
+The project does not run package managers, builds, tests, setup hooks, Dockerfiles, workflows, or repository scripts as part of repository analysis.
 
-Gate 19.3 froze, and Gate 19.4 implements behind disabled defaults, the following asynchronous control shape:
+## Phase 19 lineage
 
 ```text
-POST /v1/analyses
-  -> API Gateway HTTP API
-  -> deterministic API Lambda
-  -> DynamoDB job/idempotency authority
-  -> SQS standard job queue
-  -> Lambda worker
-  -> admitted result back to DynamoDB
-
-GET /v1/analyses/{job_id}
-GET /v1/analyses/{job_id}/result
+19.1  Public Runtime Hypothesis & Launch Contract              COMPLETE
+19.2  Representative Workload Measurement                     COMPLETE
+19.3  Concrete Async Topology Contract                         COMPLETE
+19.4  Disabled Async Runtime Implementation                    COMPLETE
+19.5  Immutable Async Deployment Artifacts                     COMPLETE
+19.6  Exact Terraform Plan & Offline Admission                 COMPLETE
+19.7  Controlled Disabled Runtime Materialization              COMPLETE
+19.8  Request-time Threat Evidence Authority Contract          COMPLETE
+19.9  V1 Demonstration Closeout Contract                       IN PROGRESS
+19.10 Deterministic End-to-End Demo Runner                     PLANNED
+19.11 Curated Demo Scenarios + Deterministic Evaluation        PLANNED
+19.12 Minimal Local Visual Demo                                PLANNED
+19.13 Portfolio / README / Architecture Polish                 PLANNED
+19.14 V1 Closeout + Release Readiness                          PLANNED
 ```
 
-The job record, not queue delivery, owns business execution truth. The queue carries only deterministic `job_id` transport identity. Duplicate delivery is admitted through conditional DynamoDB state/attempt authority. The worker remains provider-disabled until a later gate explicitly admits and composes the provider-heavy executor.
-
-Gate 19.5 added a second provenance boundary before any exact deployment plan:
+### Retained Phase 19 AWS topology
 
 ```text
-role-specific source + locked dependency hashes
- -> deterministic ZIP bytes
- -> SHA-256 + Lambda source_code_hash
- -> content-addressed S3 key
- -> HUMAN-ONLY create-only publication
- -> exact immutable S3 VersionId
- -> Gate 19.6 exact Terraform plan input
+HTTP API
+ -> API Lambda
+ -> DynamoDB job/idempotency authority
+ -> SQS standard queue
+ -> Lambda worker
+ -> DynamoDB status/result
+ -> SQS DLQ
 ```
 
-`artifact hash != S3 VersionId`, publication success does not mean deployment authorization, and `terraform plan != terraform apply`.
+That runtime shape is retained as architecture/deployment evidence. V1 does not require enabling it publicly.
 
-## Retained measured evidence
+## Request-time threat evidence authority
 
-The portfolio projection remains evidence-bound rather than promotional. Examples include:
-
-| Experiment | Evidence |
-| --- | --- |
-| Phase 7 grounding review | 11/13 claims supported; derived supportedness ratio `0.8461538461538461` |
-| Phase 11 retained reasoning reference | 6/6 cases; 3,395 tokens; 809.5 ms provider-latency median; derived USD `0.0041921` |
-| Phase 12 bounded two-model comparison | 6/6 cases but 5,982 tokens, 1,694 ms derived provider-latency median, derived USD `0.0074338`; not retained as default |
-| Phase 14 AgentCore experiment | 6/6 replay; derived total USD `0.006572445136128483`; retained only as optional lab target |
-| Phase 16 Inspector read experiment | successful bounded read with zero returned records; **not** interpreted as zero runtime exposure |
-| Phase 17 recovery | exact three-scheduler pause/resume cycle with final Terraform convergence |
-| Phase 19 Gate 19.2 representative workload | 17,748 ms end-to-end; 4 GitHub requests; 1 Bedrock Retrieve at 4,148 ms client elapsed; 1 model call at 8,901 ms client elapsed / 7,772 ms provider latency; 5,936 input + 408 output tokens; 5,285-byte admitted result |
-
-The Phase 18 machine-readable evidence chain begins at `labs/evidence/phase-18-gate-18-1-evidence-inventory-v1.json` and ends at `labs/evidence/phase-18-closeout-v1.json`. Historical artifacts remain immutable evidence even when current-facing documentation advances.
-
-Gate 19.2 persisted the canonical live artifact at `labs/evidence/phase-19-gate-19-2-live-measurement-v1.json`, independently hashed as `04ab754a12e25c4aeda0075d41b92693fec464aec4431b3734981488ff470114`, plus the machine-readable closeout record at `labs/evidence/phase-19-gate-19-2-closeout-v1.json`.
-
-Gate 19.3 adds the design-only contract at `labs/evidence/phase-19-gate-19-3-async-topology-contract-v1.json`; it records zero deployment/AWS/IAM/provider mutations. Gate 19.4 adds implementation/readiness evidence at `labs/evidence/phase-19-gate-19-4-disabled-async-runtime-v1.json` plus an offline verifier. Gate 19.5 retains the canonical pre-publication manifest at `labs/evidence/phase-19-gate-19-5-prepublication-v1.json`; its `UNMEASURED / PENDING_HUMAN_PUBLICATION` fields correctly describe that historical pre-publication state and are not rewritten. The later canonical publication evidence at `labs/evidence/phase-19-gate-19-5-artifact-publication-v1.json` records the actual immutable VersionIds and successful offline admission.
-
-Current deterministic Gate 19.5 artifact coordinates are:
+Gate 19.8 introduced a provider-neutral application boundary:
 
 ```text
-API SHA-256:     99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e
-API source hash: mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=
-API ZIP bytes:   17271715
-API VersionId:   E.jfB7dlkGCD.wHAurP7QXo4fuS_PW63
-
-Worker SHA-256:     0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9
-Worker source hash: DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck=
-Worker ZIP bytes:   1036437
-Worker VersionId:   sxiOdii4yFwR13t23xP5A8EU1JPV_7P1
+PublicRepositoryEvidenceExecution
+ -> PublicThreatEvidenceScope
+ -> PublicThreatEvidenceRequest
+ -> PublicThreatEvidenceAuthority
+ -> exact GHSA/NVD/KEV/EPSS evidence + provenance
+ -> deterministic correlation/enrichment
 ```
 
-These are artifact identities and immutable object coordinates, not runtime utilization or deployment evidence.
-
-## Cost and resource envelopes
-
-OpsLens separates measured/derived cost evidence from configured limits and forbids unsafe aggregation across unrelated experiments.
+Important semantics:
 
 ```text
-semantic planner max output          256 tokens
-single-agent max output               96 tokens
-multi-agent triage max output         64 tokens
-knowledge synthesis max output      2048 tokens
-Athena scan cutoff/query         10485760 bytes
-Scheduler maximum event age         3600 seconds
-Scheduler maximum retry attempts        2
+scope derives only from admitted repository evidence
+incomplete package normalization -> fail closed
+out-of-scope threat evidence -> reject
+latest_complete = selection policy, not provenance
+missing evidence != benign evidence
+model authority for applicability/source truth = none
 ```
 
-These are **configured limits, not measured utilization**. Gate 19.2 contributes whole-workload measurement evidence, but it does not convert configured limits into observed usage or treat `UNMEASURED` values as zero. In particular, request-time Athena metrics remain `NOT_APPLICABLE` for the retained direct structured-evidence path and `throttle_count` remains `UNMEASURED` even though its numeric counter is zero.
+A provider-backed arbitrary request-time adapter remains a Post-V1 experiment because the canonical V1 demonstration is offline-first.
 
-Gate 19.4 adds disabled-runtime design limits such as API reserved concurrency `2`, worker reserved concurrency `0`, API timeout `15 s`, worker timeout `60 s`, queue visibility `120 s`, redrive receive count `4`, worker max attempts `3`, and HTTP API burst/rate limits `10/5`. Every one of these values is `CONFIGURED_LIMIT`, not measured utilization.
+## Measured evidence
 
-## Retained experimentation boundaries
+OpsLens separates measured, derived, configured, and unmeasured evidence.
 
-Phase 11 direct Bedrock reasoning remains the default/reference reasoning architecture. Phase 12 keeps deterministic specialization/handoff but rejects the additional two-model default because the measured topology added overhead without quality lift. MCP and A2A remain bounded interoperability layers rather than public runtimes. AgentCore remains an optional lab target with no standing experiment IAM/runtime. Inspector remains an independent read-only runtime-evidence boundary; its zero-record experiment is not repository-risk authority.
+The retained Phase 19 representative workload measured:
 
-Security Hardening retains full-SHA GitHub Actions, protected-main security invariants, separated privileged identities, Dependency Review, CodeQL, eight adversarial cases across seven threat classes, content-minimized telemetry for 12 Powertools Lambda handlers, and a Terraform-owned pause for exactly three recurring ingestion schedules.
+| Metric | Evidence |
+| --- | ---: |
+| End-to-end duration | 17,748 ms |
+| Serialized result | 5,285 bytes |
+| GitHub physical HTTP requests | 4 measured |
+| Bedrock Retrieve calls | 1 measured |
+| Bedrock Retrieve client elapsed | 4,148 ms |
+| Bedrock model calls | 1 measured |
+| Bedrock input tokens | 5,936 |
+| Bedrock output tokens | 408 |
+| Bedrock model client elapsed | 8,901 ms |
+| Bedrock provider latency | 7,772 ms |
+| Retries | 0 measured |
+| Throttle count | UNMEASURED |
 
-## What is deliberately not claimed
+These are bounded experiment measurements, not production SLO or production TCO claims.
 
-OpsLens does not currently claim a deployed public HTTP production runtime, public MCP/A2A runtime, AgentCore as the default production runtime, production SLOs from bounded experiments, production TCO/monthly run rate, zero runtime exposure from a zero-record Inspector read, configured limits as utilization, a global platform kill switch, or a certification readiness score/pass probability.
+## What the project demonstrates
 
-Phase 19 now has an evidence-backed async interaction-pattern decision, a protected concrete topology contract, a protected disabled code/Terraform implementation, and protected immutable deployment-artifact provenance. Gate 19.6 is the next planning/admission step. Neither the Terraform definitions from Gate 19.4 nor the published Gate 19.5 artifacts mean that API Gateway, Lambda, SQS, DynamoDB, IAM roles/policies, or any other public-runtime AWS resource has been created or enabled.
+OpsLens includes retained evidence for:
 
-The retained deployment sequence is:
+- AWS foundations and least-privilege IAM;
+- NVD, GitHub Advisories, CISA KEV, and FIRST EPSS source handling;
+- immutable public-repository evidence;
+- deterministic PyPI/PEP 440 vulnerability correlation;
+- deterministic risk prioritization;
+- bounded semantic query planning with deterministic SQL compilation;
+- Bedrock Knowledge Bases and S3 Vectors;
+- hybrid retrieval and grounded synthesis;
+- single-agent and measured multi-agent experiments;
+- MCP and A2A bounded interoperability experiments;
+- AgentCore capability-fit experimentation;
+- runtime exposure evidence with Amazon Inspector;
+- observability and content-minimized telemetry;
+- adversarial/security authority regression;
+- evaluation and cost evidence;
+- immutable Lambda deployment artifacts;
+- exact Terraform plan admission;
+- controlled runtime materialization and convergence;
+- deterministic request-time threat-evidence authority contracts.
+
+## V1 remaining work
+
+The remaining work is intentionally small and demonstration-focused:
 
 ```text
-Gate 19.5  deterministic build + human create-only immutable artifact publication      COMPLETE
-Gate 19.6  exact Terraform plan + offline admission/review                              NEXT
-later gate human-authorized Terraform apply / controlled enablement, if admitted       NOT AUTHORIZED
+Gate 19.9   freeze V1 contract and synchronize current state
+Gate 19.10  canonical deterministic demo runner
+Gate 19.11  three curated scenarios + regression evaluation
+Gate 19.12  minimal local visual demo
+Gate 19.13  final portfolio/architecture presentation polish
+Gate 19.14  close Phase 19 and prepare v1.0.0 release
 ```
 
-## AIP-C01 learning laboratory
+The planned canonical demo target is approximately:
 
-OpsLens is also used as hands-on preparation for **AWS Certified Generative AI Developer - Professional (AIP-C01)**. Phase 19 adds practical architecture reasoning around enterprise integration, synchronous versus asynchronous APIs, IAM responsibility boundaries, deployment provenance, abuse controls, monitoring, performance, cost, and troubleshooting without converting exam breadth into product requirements.
+```bash
+uv sync --frozen
+uv run python scripts/demo_opslens.py --scenario material-vulnerability --format text
+```
+
+The exact command is owned by Gate 19.10 and may change before implementation is merged.
+
+## V1 non-goals
+
+The first release does not require:
 
 ```text
-AIP-C01 topic != product requirement
+Internet-facing production runtime
+authentication / OIDC / Cognito
+multi-tenancy
+commercial quotas or billing
+custom public domain
+WAF or production abuse controls
+24x7 operations
+production SLO/SLA
+HA/DR program
+production TCO claim
+public worker/event-source enablement
 ```
 
-## AWS baseline
-
-```text
-environment:          dev
-region:               us-east-1
-vector store:         Amazon S3 Vectors
-embedding model:      amazon.titan-embed-text-v2:0
-embedding dimensions: 1024
-chunking:             NONE
-canonical chunks:     9
-synthesis API:        Amazon Bedrock Converse
-reasoning profile:    us.anthropic.claude-haiku-4-5-20251001-v1:0
-public HTTP runtime:  NONE DEPLOYED
-```
+See [Post-V1 / Experiments Backlog](docs/post-v1-backlog.md).
 
 ## Documentation
 
-Start with [docs/README.md](docs/README.md). The strongest portfolio entry points are [Architecture](docs/architecture.md), [Portfolio Evidence](docs/portfolio-evidence.md), [Current State](docs/current-state.md), [Roadmap](docs/roadmap.md), the [Phase 18 closeout](labs/phase-18-closeout.md), the [Gate 19.1 launch contract](labs/phase-19-gate-19-1-public-runtime-hypothesis.md), the [Gate 19.2 closeout](labs/phase-19-gate-19-2-closeout.md), the [Gate 19.3 topology contract](labs/phase-19-gate-19-3-async-topology-contract.md), the [Gate 19.4 disabled runtime implementation](labs/phase-19-gate-19-4-disabled-async-runtime.md), the [Gate 19.5 publication runbook](labs/phase-19-gate-19-5-immutable-artifact-publication-runbook.md), the [Gate 19.5 closeout](labs/phase-19-gate-19-5-closeout.md), and the [ADR index](docs/adr/README.md).
+- [Current State](docs/current-state.md)
+- [Roadmap](docs/roadmap.md)
+- [V1 Demonstration Scope](docs/v1-demonstration-scope.md)
+- [V1 Completion Checklist](docs/v1-completion-checklist.md)
+- [Demo Area](docs/demo/README.md)
+- [Architecture](docs/architecture.md)
+- [Portfolio Evidence](docs/portfolio-evidence.md)
+- [AIP-C01 Learning Map](docs/aip-c01-learning-map.md)
+- [Architecture Decision Records](docs/adr/README.md)
 
----
+## Permanent engineering rules
 
-PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work and is not a Phase 19 dependency unless explicitly re-evaluated later.
+```text
+Agents reason. Code verifies evidence.
+Not every question is a RAG problem.
+Structured facts use structured retrieval.
+No unrestricted text-to-SQL.
+READ, NEVER EXECUTE third-party repository code.
+Repository Risk != Runtime Exposure.
+retrieved content != instruction authority
+model proposal != authorization
+tool/protocol success != business truth
+historical evidence != standing authority
+missing evidence != benign evidence
+MEASURED != DERIVED
+UNMEASURED != zero
+NOT_APPLICABLE != zero
+configured limit != measured utilization
+artifact hash != S3 VersionId
+publication success != deployment authorization
+plan != apply
+materialized != enabled
+demonstration readiness != production readiness
+AIP-C01 topic != product requirement
+```
+
+## License
+
+Apache License 2.0.
