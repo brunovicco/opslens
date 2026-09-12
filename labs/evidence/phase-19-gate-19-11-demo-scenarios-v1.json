@@ -1,0 +1,67 @@
+{
+  "schema_version": "opslens.phase19.gate19_11.demo_scenarios.v1",
+  "phase": 19,
+  "gate": "19.11",
+  "issue": 380,
+  "source_protected_main_sha": "50456d304e7847fadd0d29373079afa1669acc9d",
+  "decision": "ADMIT_THREE_CANONICAL_OFFLINE_SCENARIOS",
+  "gate_19_10": {
+    "issue": 378,
+    "pull_request": 379,
+    "merge_sha": "50456d304e7847fadd0d29373079afa1669acc9d",
+    "post_merge_codeql_run_id": 34716596100,
+    "post_merge_codeql_run_number": 421,
+    "post_merge_codeql_conclusion": "success"
+  },
+  "canonical_scenario_ids": [
+    "material-vulnerability",
+    "controlled-benign",
+    "fail-closed-incomplete-evidence"
+  ],
+  "required_properties": {
+    "scenario_count": 3,
+    "aws_credentials_required": false,
+    "network_after_dependency_installation": false,
+    "live_provider_execution": false,
+    "model_execution": false,
+    "third_party_repository_code_execution": false,
+    "stable_json_output": true,
+    "human_readable_output": true,
+    "missing_evidence_not_benign": true,
+    "controlled_benign_uses_complete_scoped_evidence": true,
+    "fail_closed_precedes_risk_prioritization": true
+  },
+  "scenario_semantics": {
+    "material-vulnerability": {
+      "expected_state": "MATERIAL_FINDING",
+      "expected_finding_count": 1,
+      "expected_priority_score": 90,
+      "expected_priority_tier": "P0"
+    },
+    "controlled-benign": {
+      "expected_state": "NO_MATERIAL_FINDING",
+      "expected_finding_count": 0,
+      "scoped_evidence_complete": true,
+      "live_repository_safety_claim": false
+    },
+    "fail-closed-incomplete-evidence": {
+      "expected_state": "REJECTED_INCOMPLETE_EVIDENCE",
+      "expected_normalization_reason": "invalid_version",
+      "analysis_performed": false,
+      "risk_prioritization_performed": false,
+      "benign_conclusion": false
+    }
+  },
+  "authority_impact": {
+    "terraform_operations": 0,
+    "aws_mutations": 0,
+    "iam_mutations": 0,
+    "artifact_publications": 0,
+    "runtime_enablements": 0,
+    "provider_live_executions": 0,
+    "model_invocations": 0,
+    "third_party_repository_code_executions": 0,
+    "pr_89_modifications": 0
+  },
+  "next_gate": "19.12_minimal_local_visual_demo"
+}

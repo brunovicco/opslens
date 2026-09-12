@@ -7,6 +7,16 @@ import sys
 from collections.abc import Sequence
 from typing import cast
 
+from opslens.demo.controlled_benign import (
+    CONTROLLED_BENIGN_SCENARIO_ID,
+    ControlledBenignDemoResult,
+    build_controlled_benign_demo,
+)
+from opslens.demo.fail_closed import (
+    FAIL_CLOSED_SCENARIO_ID,
+    FailClosedDemoResult,
+    build_fail_closed_incomplete_evidence_demo,
+)
 from opslens.demo.material_vulnerability import (
     MATERIAL_VULNERABILITY_SCENARIO_ID,
     DemoContractError,
@@ -14,7 +24,13 @@ from opslens.demo.material_vulnerability import (
     build_material_vulnerability_demo,
 )
 
-_SUPPORTED_SCENARIOS = (MATERIAL_VULNERABILITY_SCENARIO_ID,)
+type DemoScenarioResult = DemoRunResult | ControlledBenignDemoResult | FailClosedDemoResult
+
+_SUPPORTED_SCENARIOS = (
+    MATERIAL_VULNERABILITY_SCENARIO_ID,
+    CONTROLLED_BENIGN_SCENARIO_ID,
+    FAIL_CLOSED_SCENARIO_ID,
+)
 _SUPPORTED_FORMATS = ("text", "json")
 
 
@@ -39,17 +55,21 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def run_demo(scenario: str) -> DemoRunResult:
+def run_demo(scenario: str) -> DemoScenarioResult:
     """Dispatch only explicitly admitted offline scenarios."""
-    if scenario != MATERIAL_VULNERABILITY_SCENARIO_ID:
-        raise DemoContractError(f"unsupported demo scenario: {scenario}")
-    return build_material_vulnerability_demo()
+    if scenario == MATERIAL_VULNERABILITY_SCENARIO_ID:
+        return build_material_vulnerability_demo()
+    if scenario == CONTROLLED_BENIGN_SCENARIO_ID:
+        return build_controlled_benign_demo()
+    if scenario == FAIL_CLOSED_SCENARIO_ID:
+        return build_fail_closed_incomplete_evidence_demo()
+    raise DemoContractError(f"unsupported demo scenario: {scenario}")
 
 
-def render_demo(result: DemoRunResult, output_format: str) -> str:
+def render_demo(result: DemoScenarioResult, output_format: str) -> str:
     """Render one admitted result as text or stable canonical JSON."""
-    if type(result) is not DemoRunResult:
-        raise DemoContractError("render_demo requires one DemoRunResult")
+    if type(result) not in {DemoRunResult, ControlledBenignDemoResult, FailClosedDemoResult}:
+        raise DemoContractError("render_demo requires one admitted demo scenario result")
     if output_format == "text":
         return result.to_text()
     if output_format == "json":
@@ -72,4 +92,4 @@ def main(argv: Sequence[str] | None = None) -> int:
     return 0
 
 
-__all__ = ["main", "render_demo", "run_demo"]
+__all__ = ["DemoScenarioResult", "main", "render_demo", "run_demo"]
