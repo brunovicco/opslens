@@ -22,6 +22,8 @@ jobs:
   verify-v1-demo-runner:
     name: Verify Gate 19.10 deterministic demo runner
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src
 
     steps:
       - name: Checkout repository without persisted credentials
