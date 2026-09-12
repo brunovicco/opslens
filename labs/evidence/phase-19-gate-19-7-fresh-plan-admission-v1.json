@@ -1,0 +1,69 @@
+{
+  "account_id": "487757851499",
+  "artifact_type": "phase-19-gate-19-7-fresh-plan-admission:v1",
+  "artifacts": {
+    "api": {
+      "key": "lambda/public-analysis/api/sha256=99477676dcc41345c63ed28c81bb41c7f9f47bcf5b072254bc1ef0e2cfcd876e/opslens-public-async-api.zip",
+      "lambda_source_code_hash": "mUd2dtzEE0XGPtKMgbtBx/n0e89bByJUvB7w4s/Nh24=",
+      "version_id": "E.jfB7dlkGCD.wHAurP7QXo4fuS_PW63"
+    },
+    "worker": {
+      "key": "lambda/public-analysis/worker/sha256=0d04b472476ad7825b5190352da1642db9a7d42d1ce349d21a39fac8f6ecbdc9/opslens-public-async-worker.zip",
+      "lambda_source_code_hash": "DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck=",
+      "version_id": "sxiOdii4yFwR13t23xP5A8EU1JPV_7P1"
+    }
+  },
+  "authority": {
+    "apply_authorization_status": "PENDING_EXPLICIT_HUMAN_AUTHORIZATION",
+    "explicit_human_apply_authorization_required": true,
+    "fresh_plan": true,
+    "gate19_6_binary_plan_reuse_forbidden": true,
+    "materialized_not_enabled": true,
+    "retained_gate19_6_exact_plan_engine_pass": true,
+    "terraform_apply_authorized": false
+  },
+  "managed_create_count": 21,
+  "managed_create_inventory": [
+    "aws_apigatewayv2_api.public_async",
+    "aws_apigatewayv2_integration.public_async_api_lambda",
+    "aws_apigatewayv2_route.public_async_result",
+    "aws_apigatewayv2_route.public_async_status",
+    "aws_apigatewayv2_route.public_async_submit",
+    "aws_apigatewayv2_stage.public_async_default",
+    "aws_cloudwatch_log_group.public_async_access",
+    "aws_cloudwatch_log_group.public_async_api",
+    "aws_cloudwatch_log_group.public_async_worker",
+    "aws_dynamodb_table.public_async_jobs",
+    "aws_iam_role.public_async_api",
+    "aws_iam_role.public_async_worker",
+    "aws_iam_role_policy.public_async_api",
+    "aws_iam_role_policy.public_async_worker",
+    "aws_lambda_event_source_mapping.public_async_worker",
+    "aws_lambda_function.public_async_api",
+    "aws_lambda_function.public_async_worker",
+    "aws_lambda_permission.public_async_api_gateway",
+    "aws_sqs_queue.public_async_job_dlq",
+    "aws_sqs_queue.public_async_job_queue",
+    "aws_sqs_queue_redrive_allow_policy.public_async_job_dlq"
+  ],
+  "plan_binary_sha256": "4f9c7a07e792da2dfbde7ba38ecfb8286386a2fc7eba8ef79ae346b4a53e757d",
+  "plan_json_sha256": "5918eb69040af7ae3e7aa3fc428e4488b9ae6de98ebf8a0251f9faed2892580a",
+  "plan_observability": {
+    "api_environment_variables_plan_known": false,
+    "unknown_environment_values_admitted_only_with_retained_gate19_4_source_contract": true,
+    "worker_environment_variables_plan_known": false
+  },
+  "region": "us-east-1",
+  "safety": {
+    "iam_mutations": 0,
+    "provider_heavy_public_executions": 0,
+    "public_endpoint_enablements": 0,
+    "remote_state_lock_disabled_during_plan": true,
+    "runtime_resources_mutated": 0
+  },
+  "schema_version": 1,
+  "selected_design": "HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB",
+  "source_head_sha": "71da658a27860aa538778ec64943c613f45b4636",
+  "terraform_format_version": "1.2",
+  "terraform_version": "1.15.8"
+}
