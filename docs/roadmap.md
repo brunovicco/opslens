@@ -42,6 +42,7 @@ Gate 19.1  PR #292  ed1d7a5bc72c2a4d6926a820ce22dd347060b3c1
 Gate 19.2  PR #347  71eda2650889d3047259d37be226862ed2a09092
 Gate 19.3  PR #349  18d31c03d27448c88a6ffcba16683f3875a5ba15
 Gate 19.4  PR #351  a5067e05fda74aad4d95d7f1a875110fb676304a
+Gate 19.5  PR #353  61749bfac7b7bc9d032567e0b1870f8c1f7dedd4
 ```
 
 PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work. Phase 19 does not rebase, merge, modify, or depend on it.
@@ -70,6 +71,7 @@ queue delivery != business execution authority
 provider retry != business retry authority
 artifact hash != S3 VersionId
 publication success != deployment authorization
+plan != apply
 AIP-C01 topic != product requirement
 ```
 
@@ -227,14 +229,15 @@ HTTP API burst/rate            10 / 5
 
 Gate 19.4 closed with zero Terraform apply, zero runtime AWS mutation, zero public enablement, and zero provider-heavy public execution.
 
-### Gate 19.5 — Immutable Async Deployment Artifacts — CLOSEOUT IN REVIEW
+### Gate 19.5 — Immutable Async Deployment Artifacts — COMPLETE
 
 Issue: #352  
-PR: #353  
-Source protected main: `a5067e05fda74aad4d95d7f1a875110fb676304a`  
-Reviewed publication source head: `94af45036ba33007f45ddb69e9e6c3fa7d31d715`
+Protected merge: PR #353 at `61749bfac7b7bc9d032567e0b1870f8c1f7dedd4`  
+Source protected main before Gate 19.5: `a5067e05fda74aad4d95d7f1a875110fb676304a`  
+Reviewed publication source head: `94af45036ba33007f45ddb69e9e6c3fa7d31d715`  
+Post-merge CodeQL: `completed / success`
 
-Gate 19.5 has completed deterministic artifact production and the human-only create-only publication step. Protected merge/post-merge verification remains before formal closeout.
+Gate 19.5 completed deterministic artifact production, one human-only create-only publication of exactly two content-addressed objects, offline publication admission, protected merge, and post-merge verification.
 
 Admitted immutable coordinates:
 
@@ -268,13 +271,13 @@ terraform_plan_input_ready: true
 terraform_apply_authorized: false
 ```
 
-The exact-head CI verifier replays this admission offline; CI and ChatGPT do not make AWS calls. Gate 19.5 has changed deployment-artifact provenance only, not runtime deployment authority.
+The exact-head CI verifier replays this admission offline; CI and ChatGPT do not make AWS calls. Gate 19.5 changed deployment-artifact provenance only, not runtime deployment authority.
 
-### Gate 19.6 — Exact Terraform Plan & Offline Admission — PLANNED
+### Gate 19.6 — Exact Terraform Plan & Offline Admission — NEXT
 
-Gate 19.6 begins only after Gate 19.5 protected merge/post-merge closeout. It may consume the exact immutable S3 `VersionId` coordinates above.
+Gate 19.6 may consume the exact immutable S3 `Key + VersionId + source_code_hash` coordinates above.
 
-Gate 19.6 will own:
+Gate 19.6 owns:
 
 ```text
 exact artifact Key + VersionId + source_code_hash inputs
@@ -287,17 +290,19 @@ configured concurrency/cost ceiling review
 explicit proof that plan != apply
 ```
 
+The preferred plan must preserve separation between resource materialization and enablement: execute-api remains disabled, new-job submission remains disabled, worker execution remains disabled, SQS event-source mapping remains disabled, worker reserved concurrency remains zero, no custom public domain is admitted, and provider-heavy execution remains uncomposed unless a later gate explicitly changes those boundaries.
+
 Gate 19.6 does not itself imply public enablement or Terraform apply. Any apply/enablement requires a later explicit human-authorized gate.
 
 ### Retained deployment sequence
 
 ```text
-Gate 19.5  deterministic build + human create-only immutable artifact publication
-Gate 19.6  exact Terraform plan + offline admission/review
-later gate human-authorized Terraform apply / controlled enablement, if admitted
+Gate 19.5  deterministic build + human create-only immutable artifact publication      COMPLETE
+Gate 19.6  exact Terraform plan + offline admission/review                              NEXT
+later gate human-authorized Terraform apply / controlled enablement, if admitted       NOT AUTHORIZED
 ```
 
-Current standing truth now distinguishes artifact publication from runtime mutation:
+Current standing truth distinguishes artifact publication, planning, and runtime mutation:
 
 ```text
 deployment artifact S3 PutObject mutations: 2
