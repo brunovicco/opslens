@@ -11,6 +11,17 @@ post-merge CodeQL: 34713360403 / run #393 / success
 Gate 19.8 issue: #374 / closed completed
 ```
 
+## Retained Phase 18 closeout checkpoint
+
+The historical Phase 18 closeout remains immutable and current-facing documentation retains its protected checkpoint explicitly:
+
+```text
+Phase 18 — Evaluation, Cost & Portfolio Readiness
+status: COMPLETE
+protected closeout SHA: feca774535b7d83f57c26f4e9fe7da71ce268f0f
+Phase 19 — Bounded Public Runtime & Productization
+```
+
 Phases 0–18 are complete. Phase 19 remains the only active phase.
 
 ## Retained Phase 17 security lineage
