@@ -88,6 +88,9 @@ locals {
   public_async_worker_timeout_seconds   = 60
   public_async_queue_visibility_seconds = 120
   public_async_redrive_receive_count    = 4
+
+  # Historical Gate 19.4 configured API limit, retained as evidence only:
+  # reserved_concurrent_executions = 2
 }
 
 resource "aws_dynamodb_table" "public_async_jobs" {
