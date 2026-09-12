@@ -10,6 +10,13 @@
     "public_async_worker_artifact_version_id": {"value": "sxiOdii4yFwR13t23xP5A8EU1JPV_7P1"},
     "public_async_worker_source_code_hash": {"value": "DQS0ckdq14JbUZA1LaFkLbmn1C0c40nSGjn6yPbsvck="}
   },
+  "output_changes": {
+    "public_async_runtime_materialized": {"actions": ["update"], "before": false, "after": true, "after_unknown": false},
+    "public_async_execute_api_endpoint_disabled": {"actions": ["no-op"], "before": true, "after": true, "after_unknown": false},
+    "public_async_submit_enabled": {"actions": ["no-op"], "before": false, "after": false, "after_unknown": false},
+    "public_async_worker_event_source_enabled": {"actions": ["no-op"], "before": false, "after": false, "after_unknown": false},
+    "public_async_worker_reserved_concurrency": {"actions": ["no-op"], "before": 0, "after": 0, "after_unknown": false}
+  },
   "resource_changes": [
     {"address":"aws_dynamodb_table.public_async_jobs[0]","mode":"managed","type":"aws_dynamodb_table","name":"public_async_jobs","change":{"actions":["create"],"after":{}}},
     {"address":"aws_sqs_queue.public_async_job_dlq[0]","mode":"managed","type":"aws_sqs_queue","name":"public_async_job_dlq","change":{"actions":["create"],"after":{}}},

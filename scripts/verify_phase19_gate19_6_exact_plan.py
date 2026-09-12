@@ -8,14 +8,23 @@ import hashlib
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 from typing import cast
 
 _PLAN_INPUT = Path("labs/evidence/phase-19-gate-19-6-plan-input-v1.tfvars.json")
 _GATE19_4 = Path("labs/evidence/phase-19-gate-19-4-disabled-async-runtime-v1.json")
+_GATE19_4_VERIFIER = Path("scripts/verify_phase19_gate19_4_disabled_async_runtime.py")
 _PUBLICATION = Path("labs/evidence/phase-19-gate-19-5-artifact-publication-v1.json")
 _EXPECTED_DESIGN = "HTTP_API_LAMBDA_SQS_LAMBDA_DYNAMODB"
 _EXPECTED_ROLES = {"api", "worker"}
+_EXPECTED_SAFETY_OUTPUTS: dict[str, object] = {
+    "public_async_runtime_materialized": True,
+    "public_async_execute_api_endpoint_disabled": True,
+    "public_async_submit_enabled": False,
+    "public_async_worker_event_source_enabled": False,
+    "public_async_worker_reserved_concurrency": 0,
+}
 _INDEX_SUFFIX = re.compile(r"\[\d+\]$")
 
 
@@ -58,7 +67,7 @@ def _required_string(mapping: dict[str, object], field: str) -> str:
 
 def _load(path: Path) -> dict[str, object]:
     try:
-        raw: object = json.loads(path.read_text(encoding="utf-8"))
+        raw = cast(object, json.loads(path.read_text(encoding="utf-8")))
     except (OSError, json.JSONDecodeError) as exc:
         raise Gate19_6PlanVerificationError(f"cannot read {path}: {exc}") from exc
     return _object(raw, label=str(path))
@@ -91,14 +100,14 @@ def _verify_plan_input(
         )
     if publication.get("artifact_type") != "phase-19-gate-19-5-artifact-publication:v1":
         raise Gate19_6PlanVerificationError("Gate 19.5 publication type drifted")
-    if publication.get("runtime_resource_mutation_count") != 0:
-        raise Gate19_6PlanVerificationError("Gate 19.5 runtime mutation evidence drifted")
-    if publication.get("iam_mutation_count") != 0:
-        raise Gate19_6PlanVerificationError("Gate 19.5 IAM mutation evidence drifted")
-    if publication.get("terraform_apply_count") != 0:
-        raise Gate19_6PlanVerificationError("Gate 19.5 Terraform apply evidence drifted")
-    if publication.get("public_endpoint_enablement_count") != 0:
-        raise Gate19_6PlanVerificationError("Gate 19.5 public enablement evidence drifted")
+    for field in (
+        "runtime_resource_mutation_count",
+        "iam_mutation_count",
+        "terraform_apply_count",
+        "public_endpoint_enablement_count",
+    ):
+        if publication.get(field) != 0:
+            raise Gate19_6PlanVerificationError(f"Gate 19.5 {field} evidence drifted")
 
     artifacts = _publication_by_role(publication)
     fields = {
@@ -128,6 +137,26 @@ def _verify_plan_input(
     return artifacts
 
 
+def _verify_retained_gate19_4_source_contract() -> None:
+    """Re-run the retained offline Gate 19.4 source/evidence verifier."""
+    try:
+        result = subprocess.run(
+            [sys.executable, str(_GATE19_4_VERIFIER)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError as exc:
+        raise Gate19_6PlanVerificationError(
+            "cannot execute retained Gate 19.4 offline verifier"
+        ) from exc
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip() or "unknown failure"
+        raise Gate19_6PlanVerificationError(
+            f"retained Gate 19.4 source contract failed: {detail}"
+        )
+
+
 def _plan_variable_value(plan: dict[str, object], name: str) -> object:
     variables = _object(plan.get("variables"), label="plan.variables")
     entry = _object(variables.get(name), label=f"plan.variables.{name}")
@@ -144,13 +173,32 @@ def _verify_plan_variables(plan: dict[str, object], plan_input: dict[str, object
             )
 
 
+def _verify_safety_outputs(plan: dict[str, object]) -> None:
+    output_changes = _object(plan.get("output_changes"), label="plan.output_changes")
+    admitted_actions = (["create"], ["update"], ["no-op"])
+    for name, expected in _EXPECTED_SAFETY_OUTPUTS.items():
+        change = _object(output_changes.get(name), label=f"plan.output_changes.{name}")
+        actions = _strings(change.get("actions"), label=f"plan.output_changes.{name}.actions")
+        if actions not in admitted_actions:
+            raise Gate19_6PlanVerificationError(
+                f"plan output {name} has forbidden actions {actions}"
+            )
+        if change.get("after") != expected:
+            raise Gate19_6PlanVerificationError(
+                f"plan output {name} differs from the disabled Gate 19.6 contract"
+            )
+        if change.get("after_unknown") is True:
+            raise Gate19_6PlanVerificationError(
+                f"plan output {name} must be known during planning"
+            )
+
+
 def _managed_change_inventory(
     plan: dict[str, object], expected: set[str]
 ) -> dict[str, dict[str, object]]:
     changes = _objects(plan.get("resource_changes"), label="plan.resource_changes")
     observed: dict[str, dict[str, object]] = {}
     unexpected: list[str] = []
-
     for entry in changes:
         if entry.get("mode") != "managed":
             continue
@@ -196,8 +244,12 @@ def _after(entry: dict[str, object], *, label: str) -> dict[str, object]:
     return _object(change.get("after"), label=f"{label}.change.after")
 
 
-def _environment_variables(after: dict[str, object], *, label: str) -> dict[str, object]:
+def _environment_variables_if_known(
+    after: dict[str, object], *, label: str
+) -> dict[str, object] | None:
     raw = after.get("environment")
+    if raw is None:
+        return None
     if isinstance(raw, list):
         blocks = [
             _object(item, label=f"{label}.environment[]")
@@ -210,17 +262,86 @@ def _environment_variables(after: dict[str, object], *, label: str) -> dict[str,
         env = blocks[0]
     else:
         env = _object(raw, label=f"{label}.environment")
-    return _object(env.get("variables"), label=f"{label}.environment.variables")
+    variables = env.get("variables")
+    if variables is None:
+        return None
+    return _object(variables, label=f"{label}.environment.variables")
+
+
+def _contains_unknown(value: object) -> bool:
+    if value is True:
+        return True
+    if isinstance(value, list):
+        return any(_contains_unknown(item) for item in cast(list[object], value))
+    if isinstance(value, dict):
+        return any(
+            _contains_unknown(item)
+            for item in cast(dict[object, object], value).values()
+        )
+    return False
+
+
+def _environment_variables_are_unknown(
+    entry: dict[str, object], *, label: str
+) -> bool:
+    change = _object(entry.get("change"), label=f"{label}.change")
+    raw_unknown = change.get("after_unknown")
+    if not isinstance(raw_unknown, dict):
+        return False
+    after_unknown = _object(
+        cast(object, raw_unknown), label=f"{label}.change.after_unknown"
+    )
+    environment = after_unknown.get("environment")
+    if environment is True:
+        return True
+    if isinstance(environment, list):
+        for item in cast(list[object], environment):
+            if isinstance(item, dict):
+                block = _object(
+                    cast(object, item),
+                    label=f"{label}.change.after_unknown.environment[]",
+                )
+                if _contains_unknown(block.get("variables")):
+                    return True
+        return False
+    if isinstance(environment, dict):
+        block = _object(
+            cast(object, environment),
+            label=f"{label}.change.after_unknown.environment",
+        )
+        return _contains_unknown(block.get("variables"))
+    return False
+
+
+def _verify_environment_switch(
+    entry: dict[str, object],
+    after: dict[str, object],
+    *,
+    label: str,
+    switch_name: str,
+) -> bool:
+    variables = _environment_variables_if_known(after, label=label)
+    if variables is not None:
+        if variables.get(switch_name) != "false":
+            raise Gate19_6PlanVerificationError(
+                f"planned {label} switch {switch_name} must remain false"
+            )
+        return True
+    if not _environment_variables_are_unknown(entry, label=label):
+        raise Gate19_6PlanVerificationError(
+            f"planned {label} environment variables are missing without an unknown marker"
+        )
+    return False
 
 
 def _verify_critical_after_values(
     observed: dict[str, dict[str, object]],
     plan_input: dict[str, object],
-) -> None:
-    api = _after(observed["aws_lambda_function.public_async_api"], label="api Lambda")
-    worker = _after(
-        observed["aws_lambda_function.public_async_worker"], label="worker Lambda"
-    )
+) -> dict[str, bool]:
+    api_entry = observed["aws_lambda_function.public_async_api"]
+    worker_entry = observed["aws_lambda_function.public_async_worker"]
+    api = _after(api_entry, label="api Lambda")
+    worker = _after(worker_entry, label="worker Lambda")
     event_mapping = _after(
         observed["aws_lambda_event_source_mapping.public_async_worker"],
         label="worker event source mapping",
@@ -235,30 +356,35 @@ def _verify_critical_after_values(
         "source_code_hash": plan_input["public_async_api_source_code_hash"],
         "reserved_concurrent_executions": 2,
     }
-    for field, expected in api_expected.items():
-        if api.get(field) != expected:
-            raise Gate19_6PlanVerificationError(
-                f"planned API Lambda {field} differs from Gate 19.6 contract"
-            )
-
     worker_expected = {
         "s3_key": plan_input["public_async_worker_artifact_key"],
         "s3_object_version": plan_input["public_async_worker_artifact_version_id"],
         "source_code_hash": plan_input["public_async_worker_source_code_hash"],
         "reserved_concurrent_executions": 0,
     }
+    for field, expected in api_expected.items():
+        if api.get(field) != expected:
+            raise Gate19_6PlanVerificationError(
+                f"planned API Lambda {field} differs from Gate 19.6 contract"
+            )
     for field, expected in worker_expected.items():
         if worker.get(field) != expected:
             raise Gate19_6PlanVerificationError(
                 f"planned worker Lambda {field} differs from Gate 19.6 contract"
             )
 
-    api_env = _environment_variables(api, label="api Lambda")
-    worker_env = _environment_variables(worker, label="worker Lambda")
-    if api_env.get("OPSLENS_ASYNC_SUBMIT_ENABLED") != "false":
-        raise Gate19_6PlanVerificationError("planned API submit switch must remain false")
-    if worker_env.get("OPSLENS_ASYNC_WORKER_ENABLED") != "false":
-        raise Gate19_6PlanVerificationError("planned worker switch must remain false")
+    api_env_known = _verify_environment_switch(
+        api_entry,
+        api,
+        label="API Lambda",
+        switch_name="OPSLENS_ASYNC_SUBMIT_ENABLED",
+    )
+    worker_env_known = _verify_environment_switch(
+        worker_entry,
+        worker,
+        label="worker Lambda",
+        switch_name="OPSLENS_ASYNC_WORKER_ENABLED",
+    )
     if event_mapping.get("enabled") is not False:
         raise Gate19_6PlanVerificationError(
             "planned SQS-to-worker event source mapping must remain disabled"
@@ -267,6 +393,10 @@ def _verify_critical_after_values(
         raise Gate19_6PlanVerificationError(
             "planned execute-api endpoint must remain disabled"
         )
+    return {
+        "api_environment_variables_plan_known": api_env_known,
+        "worker_environment_variables_plan_known": worker_env_known,
+    }
 
 
 def _git_head() -> str:
@@ -293,6 +423,7 @@ def _write_summary(
     expected_inventory: set[str],
     artifacts: dict[str, dict[str, object]],
     publication: dict[str, object],
+    plan_observability: dict[str, bool],
 ) -> None:
     summary = {
         "schema_version": 1,
@@ -315,6 +446,10 @@ def _write_summary(
                 ),
             }
             for role in sorted(_EXPECTED_ROLES)
+        },
+        "plan_observability": {
+            **plan_observability,
+            "unknown_environment_values_admitted_only_with_retained_gate19_4_source_contract": True,
         },
         "safety": {
             "plan_only": True,
@@ -346,16 +481,23 @@ def _parser() -> argparse.ArgumentParser:
 def main() -> int:
     """Verify a Terraform plan without contacting AWS or mutating Terraform state."""
     args = _parser().parse_args()
-    plan_bytes = args.plan_json.read_bytes()
-    plan = _object(json.loads(plan_bytes), label="plan")
+    try:
+        plan_bytes = args.plan_json.read_bytes()
+        raw_plan = cast(object, json.loads(plan_bytes))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise Gate19_6PlanVerificationError(
+            f"cannot read Terraform plan JSON {args.plan_json}: {exc}"
+        ) from exc
+
+    plan = _object(raw_plan, label="plan")
     plan_input = _load(args.plan_input)
     gate19_4 = _load(args.gate19_4)
     publication = _load(args.publication)
-
     if gate19_4.get("selected_design") != _EXPECTED_DESIGN:
         raise Gate19_6PlanVerificationError("Gate 19.4 selected design drifted")
     if gate19_4.get("deployment_authorized") is not False:
         raise Gate19_6PlanVerificationError("Gate 19.4 deployment authority drifted")
+
     expected_inventory = set(
         _strings(
             gate19_4.get("terraform_resource_inventory"),
@@ -365,10 +507,12 @@ def main() -> int:
     if len(expected_inventory) != 21:
         raise Gate19_6PlanVerificationError("Gate 19.4 resource inventory must remain 21")
 
+    _verify_retained_gate19_4_source_contract()
     artifacts = _verify_plan_input(plan_input, publication)
     _verify_plan_variables(plan, plan_input)
+    _verify_safety_outputs(plan)
     observed = _managed_change_inventory(plan, expected_inventory)
-    _verify_critical_after_values(observed, plan_input)
+    plan_observability = _verify_critical_after_values(observed, plan_input)
 
     source_head_sha = _git_head()
     if args.output is not None:
@@ -380,6 +524,7 @@ def main() -> int:
             expected_inventory=expected_inventory,
             artifacts=artifacts,
             publication=publication,
+            plan_observability=plan_observability,
         )
 
     print(
