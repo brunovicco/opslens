@@ -22,6 +22,7 @@ Gate 19.1 — Public Runtime Hypothesis & Launch Contract      COMPLETE
 protected merge PR: #292
 historical runtime decision: DEFERRED_PENDING_MEASUREMENT
 historical leading hypothesis: ASYNC_SUBMIT_STATUS_RESULT
+retained historical boundary: PublicAnalysisAdmissionHandoff -> STOP
 
 Gate 19.2 — Representative Workload Measurement              COMPLETE
 protected merge PR: #347
@@ -97,6 +98,16 @@ plan != apply
 materialized != enabled
 AIP-C01 topic != product requirement
 ```
+
+## Historical Gate 19.1 authority
+
+Gate 19.1 remains immutable historical evidence. Its protected decision was `DEFERRED_PENDING_MEASUREMENT`, its leading hypothesis was `ASYNC_SUBMIT_STATUS_RESULT`, and its retained pre-runtime boundary was:
+
+```text
+PublicAnalysisAdmissionHandoff -> STOP
+```
+
+Later gates do not rewrite that historical state.
 
 ## Gate 19.2 retained measurement evidence
 
