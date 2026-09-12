@@ -6,7 +6,7 @@ _Last updated: 2026-09-11_
 
 ```text
 protected main:
-a5067e05fda74aad4d95d7f1a875110fb676304a
+61749bfac7b7bc9d032567e0b1870f8c1f7dedd4
 
 Phase 18 — Evaluation, Cost & Portfolio Readiness
 status: COMPLETE
@@ -36,10 +36,10 @@ protected merge PR: #351
 protected merge SHA: a5067e05fda74aad4d95d7f1a875110fb676304a
 deployment authorized: NO
 
-Gate 19.5 — Immutable Async Deployment Artifacts             CLOSEOUT IN REVIEW
+Gate 19.5 — Immutable Async Deployment Artifacts             COMPLETE
 source issue: #352
-implementation PR: #353
-source main: a5067e05fda74aad4d95d7f1a875110fb676304a
+protected merge PR: #353
+protected merge SHA: 61749bfac7b7bc9d032567e0b1870f8c1f7dedd4
 reviewed publication source head: 94af45036ba33007f45ddb69e9e6c3fa7d31d715
 publication authority: HUMAN_ONLY_CREATE_ONLY
 publication status: ADMITTED
@@ -47,10 +47,15 @@ S3 PutObject mutation count: 2
 API VersionId: E.jfB7dlkGCD.wHAurP7QXo4fuS_PW63
 worker VersionId: sxiOdii4yFwR13t23xP5A8EU1JPV_7P1
 terraform plan input ready: YES
+terraform apply authorized: NO
+post-merge CodeQL: completed / success
 runtime deployment authorized: NO
+
+Gate 19.6 — Exact Terraform Plan & Offline Admission         NEXT
+terraform apply authorized: NO
 ```
 
-Phases 0–18 remain complete. Gate 19.1 remains historical launch-contract authority. Gate 19.2 supplied the admitted whole-workload measurement and selected `ASYNC_SUBMIT_STATUS_RESULT`. Gate 19.3 converted that interaction decision into one concrete AWS design contract. Gate 19.4 implemented that design in code and Terraform behind disabled/non-public defaults. Gate 19.5 has now admitted exactly two human-published, create-only, content-addressed Lambda artifact versions and is awaiting protected merge/post-merge verification before formal closeout. Gate 19.6 can use those immutable coordinates only for exact Terraform planning; no apply is authorized.
+Phases 0–18 remain complete. Gate 19.1 remains historical launch-contract authority. Gate 19.2 supplied the admitted whole-workload measurement and selected `ASYNC_SUBMIT_STATUS_RESULT`. Gate 19.3 converted that interaction decision into one concrete AWS design contract. Gate 19.4 implemented that design in code and Terraform behind disabled/non-public defaults. Gate 19.5 admitted exactly two human-published, create-only, content-addressed Lambda artifact versions, protected-merged them through PR #353, and passed post-merge CodeQL on the exact protected-main SHA. Gate 19.6 is now the next gate and may use those immutable coordinates only for exact Terraform planning and offline admission; no apply is authorized.
 
 PR #89 / `feat/governed-gateway-semantic-planner` remains separate deferred Governed LLM Gateway work and is not a Phase 19 dependency.
 
@@ -81,6 +86,7 @@ queue delivery != business execution authority
 provider retry != business retry authority
 artifact hash != S3 VersionId
 publication success != deployment authorization
+plan != apply
 AIP-C01 topic != product requirement
 ```
 
@@ -206,7 +212,7 @@ labs/evidence/phase-19-gate-19-4-disabled-async-runtime-v1.json
 scripts/verify_phase19_gate19_4_disabled_async_runtime.py
 ```
 
-## Gate 19.5 — immutable-artifact publication admitted
+## Gate 19.5 — immutable-artifact publication complete
 
 Gate 19.5 bridged the deliberate provenance dependency between deterministic Lambda packages and exact Terraform planning. The publication occurred only after exact-head CI/security validation and a local byte-for-byte rebuild against the canonical pre-publication manifest.
 
@@ -241,7 +247,7 @@ scripts/publish_phase19_gate19_5_async_artifacts.py
 scripts/verify_phase19_gate19_5_artifact_publication.py
 ```
 
-The human publication evidence records exactly two S3 `PutObject` mutations and zero automatic retries. Offline admission proved `terraform_plan_input_ready=true` while retaining `terraform_apply_authorized=false`.
+The human publication evidence records exactly two S3 `PutObject` mutations and zero automatic retries. Offline admission proved `terraform_plan_input_ready=true` while retaining `terraform_apply_authorized=false`. PR #353 protected-merged this evidence and implementation to `61749bfac7b7bc9d032567e0b1870f8c1f7dedd4`; post-merge CodeQL for that exact SHA completed successfully.
 
 ## Current standing deployment truth
 
@@ -278,6 +284,6 @@ They are not measured utilization.
 
 ## Next checkpoint
 
-Gate 19.5 is in closeout review. PR #353 must preserve the exact human publication evidence, pass exact-head CI including the offline publication verifier, and be protected-merged/post-merge verified before issue #352 closes.
+Gate 19.6 — Exact Terraform Plan & Offline Admission is next. It may generate an exact Terraform plan with `public_async_runtime_materialized=true` using the admitted Gate 19.5 `Key + VersionId + source_code_hash` coordinates, then parse and admit that plan offline against the frozen topology, IAM, disablement, concurrency, cost, and rollback policy.
 
-After that, Gate 19.6 may generate an exact Terraform plan using the admitted `Key + VersionId + source_code_hash` coordinates. Gate 19.6 owns plan generation and admission. No gate currently authorizes `terraform apply`, runtime/public enablement, or provider-heavy public execution.
+Gate 19.6 is planning evidence only. `terraform plan != terraform apply`; plan success is not deployment authorization. No current gate authorizes `terraform apply`, runtime/public enablement, or provider-heavy public execution.
