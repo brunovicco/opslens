@@ -88,12 +88,6 @@ locals {
   public_async_worker_timeout_seconds   = 60
   public_async_queue_visibility_seconds = 120
   public_async_redrive_receive_count    = 4
-
-  # Frozen historical Gate 19.4 evidence only. This local is not runtime authority.
-  # Gate 19.7 recovery hardens the actual API Lambda reservation to zero below.
-  public_async_gate19_4_historical_api_limit = {
-    reserved_concurrent_executions = 2
-  }
 }
 
 resource "aws_dynamodb_table" "public_async_jobs" {
