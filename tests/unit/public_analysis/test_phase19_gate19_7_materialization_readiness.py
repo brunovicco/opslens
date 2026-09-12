@@ -16,6 +16,7 @@ PLAN_FIXTURE = Path("tests/fixtures/phase19/gate19-6-exact-plan-pass.json")
 
 
 def _head() -> str:
+    """Resolve the exact repository HEAD used by the test process."""
     return subprocess.run(
         ["git", "rev-parse", "HEAD"],
         check=True,
@@ -25,12 +26,14 @@ def _head() -> str:
 
 
 def _load(path: Path) -> dict[str, object]:
+    """Load a JSON object from the repository or temporary evidence path."""
     raw = cast(object, json.loads(path.read_text(encoding="utf-8")))
     assert isinstance(raw, dict)
     return cast(dict[str, object], raw)
 
 
 def test_gate19_7_materialization_contract_verifier_passes_offline() -> None:
+    """Require the frozen Gate 19.7 authority contract to verify offline."""
     result = subprocess.run(
         [sys.executable, str(CONTRACT_VERIFIER)],
         check=False,
@@ -45,6 +48,7 @@ def test_gate19_7_materialization_contract_verifier_passes_offline() -> None:
 
 
 def test_gate19_7_materialization_contract_freezes_authority() -> None:
+    """Freeze source lineage, disabled controls, and absent apply authority."""
     contract = _load(CONTRACT)
 
     assert contract["artifact_type"] == "phase-19-gate-19-7-materialization-contract:v1"
@@ -85,6 +89,7 @@ def test_gate19_7_materialization_contract_freezes_authority() -> None:
 
 
 def test_gate19_7_fresh_plan_binds_binary_hash_and_source_head(tmp_path: Path) -> None:
+    """Bind fresh-plan admission to both the saved plan bytes and source HEAD."""
     plan_binary = tmp_path / "opslens-gate19-7.tfplan"
     plan_binary.write_bytes(b"synthetic-gate19-7-plan-binary\n")
     output = tmp_path / "admission.json"
@@ -135,6 +140,7 @@ def test_gate19_7_fresh_plan_binds_binary_hash_and_source_head(tmp_path: Path) -
 
 
 def test_gate19_7_fresh_plan_rejects_unreviewed_source_head(tmp_path: Path) -> None:
+    """Reject a plan when the caller supplies a source SHA other than HEAD."""
     plan_binary = tmp_path / "opslens-gate19-7.tfplan"
     plan_binary.write_bytes(b"synthetic-gate19-7-plan-binary\n")
 
