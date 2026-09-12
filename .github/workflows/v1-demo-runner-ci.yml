@@ -7,15 +7,19 @@ on:
       - "tests/unit/demo/**"
       - "scripts/demo_opslens.py"
       - "scripts/evaluate_opslens_demo.py"
+      - "scripts/demo_opslens_web.py"
       - "scripts/verify_phase19_gate19_10_demo_runner.py"
       - "scripts/verify_phase19_gate19_11_demo_scenarios.py"
+      - "scripts/verify_phase19_gate19_12_visual_demo.py"
       - "docs/demo/**"
       - "docs/current-state.md"
       - "docs/roadmap.md"
       - "labs/phase-19-gate-19-10-*.md"
       - "labs/phase-19-gate-19-11-*.md"
+      - "labs/phase-19-gate-19-12-*.md"
       - "labs/evidence/phase-19-gate-19-10-*.json"
       - "labs/evidence/phase-19-gate-19-11-*.json"
+      - "labs/evidence/phase-19-gate-19-12-*.json"
       - ".github/workflows/v1-demo-runner-ci.yml"
   workflow_dispatch:
 
@@ -57,8 +61,10 @@ jobs:
           src/opslens/demo
           scripts/demo_opslens.py
           scripts/evaluate_opslens_demo.py
+          scripts/demo_opslens_web.py
           scripts/verify_phase19_gate19_10_demo_runner.py
           scripts/verify_phase19_gate19_11_demo_scenarios.py
+          scripts/verify_phase19_gate19_12_visual_demo.py
           tests/unit/demo
 
       - name: Pyright strict demo runner
@@ -67,8 +73,10 @@ jobs:
           src/opslens/demo
           scripts/demo_opslens.py
           scripts/evaluate_opslens_demo.py
+          scripts/demo_opslens_web.py
           scripts/verify_phase19_gate19_10_demo_runner.py
           scripts/verify_phase19_gate19_11_demo_scenarios.py
+          scripts/verify_phase19_gate19_12_visual_demo.py
           tests/unit/demo
 
       - name: Run demo unit tests
@@ -79,6 +87,9 @@ jobs:
 
       - name: Verify Gate 19.11 scenario contract
         run: uv run python scripts/verify_phase19_gate19_11_demo_scenarios.py
+
+      - name: Verify Gate 19.12 local visual-demo contract
+        run: uv run python scripts/verify_phase19_gate19_12_visual_demo.py
 
       - name: Prove every scenario JSON is byte stable
         run: |
