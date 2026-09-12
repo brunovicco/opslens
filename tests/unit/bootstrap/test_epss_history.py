@@ -41,7 +41,9 @@ def _source_for(snapshot_date: date) -> bytes:
         date(2023, 3, 7): "v2023.03.01",
         date(2025, 3, 17): "v2025.03.14",
         date(2026, 6, 15): "v2026.06.15",
-        date(2026, 8, 14): "v2026.06.15",
+        # Bind the forward boundary edge to the production constant so a canary
+        # refresh can never silently desynchronize this fixture again.
+        CANARY_DATES[-1]: "v2026.06.15",
     }[snapshot_date]
     return _gzip(
         f"#model_version:{model_version},score_date:{snapshot_date.isoformat()}T00:00:00+00:00\n"
@@ -182,6 +184,19 @@ class FakeTransformerInvoker:
             completion_sha256="b" * 64,
             completion_replay_status="created",
         )
+
+
+def test_fixture_sources_cover_exactly_the_production_canary_dates() -> None:
+    """Fail loudly if the fixture drifts from the production canary coordinates."""
+    _, sources = _inventory()
+
+    assert tuple(sources) == CANARY_DATES
+    assert all(payload for payload in sources.values())
+
+
+def test_last_canary_date_stays_behind_the_forward_boundary() -> None:
+    """Keep the frozen canary edge strictly inside the discovered forward boundary."""
+    assert CANARY_DATES[-1] < FORWARD_BOUNDARY
 
 
 def test_plan_id_is_deterministic_for_same_pinned_scope() -> None:
