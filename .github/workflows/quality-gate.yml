@@ -80,6 +80,64 @@ jobs:
       - name: Import every opslens module
         run: uv run python scripts/verify_module_imports.py
 
+  package-build:
+    name: The package builds and the wheel is the same code
+    runs-on: ubuntu-latest
+
+    # Declaring a build backend commits the repository to staying installable.
+    # The decisive assertion is the last one: the evaluation identity produced by
+    # the installed wheel, run from a directory with no checkout on the path, must
+    # equal the one the repository produces. If the wheel ever ships different
+    # code, that digest moves and this job fails.
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+        with:
+          enable-cache: true
+
+      - name: Build the sdist and the wheel
+        run: uv build --out-dir dist
+
+      - name: Assert the wheel ships the package and nothing else
+        run: |
+          python - <<'PY'
+          import pathlib
+          import zipfile
+
+          wheel = next(pathlib.Path("dist").glob("opslens-*.whl"))
+          names = zipfile.ZipFile(wheel).namelist()
+          version = wheel.name.split("-")[1]
+          top = sorted({name.split("/")[0] for name in names})
+          assert top == ["opslens", f"opslens-{version}.dist-info"], top
+          assert "opslens/py.typed" in names, "py.typed is not shipped"
+          assert any("licenses/LICENSE" in name for name in names), "LICENSE is not shipped"
+          print(f"{wheel.name}: {len(names)} entries, top level {top}")
+          PY
+
+      - name: Install the wheel into an environment with no checkout on the path
+        run: |
+          uv venv /tmp/pkgcheck
+          uv pip install --python /tmp/pkgcheck/bin/python dist/opslens-*.whl
+
+      - name: Assert every console script is installed
+        run: |
+          for command in opslens-demo opslens-demo-evaluate opslens-demo-web; do
+            test -x "/tmp/pkgcheck/bin/$command" || { echo "missing $command" >&2; exit 1; }
+            printf 'installed: %s\n' "$command"
+          done
+
+      - name: Assert the installed wheel is byte-identical in behaviour
+        working-directory: /tmp
+        run: >-
+          /tmp/pkgcheck/bin/opslens-demo-evaluate --format text
+          | grep -qF
+          'opslens-demo-suite-evaluation:v1@sha256:ed99f385a108ee8de4521ff8c338bc8d66b188a1311c30ba014ca329cee146d3'
+
   quickstart-smoke:
     name: README quickstart on a clean clone
     runs-on: ubuntu-latest

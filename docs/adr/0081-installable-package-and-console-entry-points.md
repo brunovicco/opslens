@@ -99,13 +99,19 @@ Negative:
   `scripts/` shims keep working through `_bootstrap` regardless, which is why
   they were kept rather than deleted.
 - Declaring a build backend commits the repository to keeping the package
-  buildable. That is the point, and `uv build` in CI would make it enforced
-  rather than assumed — not done here, and worth doing next.
+  buildable, which is one more thing CI has to hold up. That is the point, and
+  the `package-build` job in the quality gate makes it enforced rather than
+  assumed: it builds both artifacts, asserts the wheel ships `opslens/` and its
+  `dist-info` and nothing else, installs the wheel into an environment with no
+  checkout on the path, and requires the evaluation identity it produces to equal
+  the repository's. If the wheel ever ships different code, that digest moves and
+  the job fails.
 
 ## Verification
 
 ```text
 uv build                                            sdist + wheel, wheel built from the sdist
+quality-gate package-build job                      every step run locally, all green
 wheel top-level entries                             opslens/, opslens-0.1.0.dist-info/  (nothing else)
 py.typed shipped                                    opslens/py.typed
 LICENSE shipped                                     dist-info/licenses/LICENSE
