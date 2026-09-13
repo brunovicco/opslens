@@ -1,11 +1,32 @@
 """Provider-neutral request-time threat-evidence authority for public analysis.
 
-Gate 19.8 freezes the deterministic contract between admitted repository dependency
+Gate 19.8 froze the deterministic contract between admitted repository dependency
 evidence and the structured threat sources required by Phase 3/4 correlation. This
 module intentionally performs no provider I/O and grants no runtime enablement.
+
+Gate 20.0 admits a **partial scope**. The v1 contract refused any lock carrying an
+unsupported normalization, which is correct fail-closed behaviour for one curated
+repository and the dominant outcome for arbitrary public ones: this repository's own
+lock has one non-PyPI package out of 55, so v1 would reject the repository it ships
+from. Any project with a git dependency, a local path or a private index hits the
+same wall, and an endpoint that answers "rejected" to most real inputs demonstrates
+refusal rather than analysis.
+
+So an unidentified record is now carried rather than fatal — as a first-class part
+of the scope, inside the scope's own identity, never as a dropped row:
+
+```text
+partial scope != complete scope
+scoped verdict != repository verdict
+```
+
+Two invariants keep that from becoming a lie. A scope must carry at least one
+identified dependency, so an entirely unidentifiable lock still fails closed rather
+than correlating nothing and reporting nothing. And every source record is
+accounted for exactly once across the two halves, so coverage cannot be overstated
+by an index appearing in both.
 """
 
-import json
 import re
 from dataclasses import dataclass
 from enum import StrEnum
@@ -30,7 +51,9 @@ from opslens.public_analysis.domain import (
 from opslens.shared.evidence import canonical_json
 from opslens.transformation.nvd.domain.models import NvdCveCoreRecord
 
-PUBLIC_THREAT_EVIDENCE_SCOPE_CONTRACT_VERSION = "public-threat-evidence-scope:v1"
+# v2 carries unidentified records inside the scope identity. A v1 digest must never
+# silently match a v2 scope derived from the same lock, so the version moves.
+PUBLIC_THREAT_EVIDENCE_SCOPE_CONTRACT_VERSION = "public-threat-evidence-scope:v2"
 PUBLIC_THREAT_EVIDENCE_REQUEST_CONTRACT_VERSION = "public-threat-evidence-request:v1"
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$", re.ASCII)
 
@@ -95,12 +118,63 @@ class PublicThreatDependencyScope:
 
 
 @dataclass(frozen=True, slots=True)
+class PublicThreatUnidentifiedDependency:
+    """One lock record the Phase 3 identity authority could not turn into PyPI identity.
+
+    Carried inside the scope so a verdict can never be read without its coverage. The
+    original strings are preserved exactly as the lock spelled them; no canonical
+    identity is invented for a record that has none.
+
+    Attributes:
+        name_original: Package name exactly as the lock recorded it.
+        version_original: Version exactly as the lock recorded it.
+        reason_code: Stable reason the identity authority rejected the record.
+        source_record_indexes: Every `uv.lock` record index this entry accounts for.
+    """
+
+    name_original: str
+    version_original: str
+    reason_code: str
+    source_record_indexes: tuple[int, ...]
+
+    def __post_init__(self) -> None:
+        """Require clean originals, a stable reason, and exact source accounting.
+
+        Raises:
+            PublicAnalysisValidationError: If any field is blank, padded, or the
+                source record indexes are not sorted, unique and non-negative.
+        """
+        for label, value in (
+            ("name_original", self.name_original),
+            ("version_original", self.version_original),
+            ("reason_code", self.reason_code),
+        ):
+            if not value or value != value.strip():
+                raise PublicAnalysisValidationError(
+                    f"unidentified dependency {label} must be a clean non-empty string"
+                )
+        if type(self.source_record_indexes) is not tuple or not self.source_record_indexes:
+            raise PublicAnalysisValidationError(
+                "unidentified dependency must preserve at least one source record index"
+            )
+        if any(type(index) is not int or index < 0 for index in self.source_record_indexes):
+            raise PublicAnalysisValidationError(
+                "unidentified dependency source indexes must be non-negative integers"
+            )
+        if self.source_record_indexes != tuple(sorted(set(self.source_record_indexes))):
+            raise PublicAnalysisValidationError(
+                "unidentified dependency source indexes must be sorted and unique"
+            )
+
+
+@dataclass(frozen=True, slots=True)
 class PublicThreatEvidenceScope:
     """Content-bound structured-threat scope derived from admitted repository evidence."""
 
     source_execution_id: str
     source_evidence_sha256: str
     dependencies: tuple[PublicThreatDependencyScope, ...]
+    unidentified: tuple[PublicThreatUnidentifiedDependency, ...] = ()
 
     def __post_init__(self) -> None:
         """Reject malformed identity or non-canonical dependency ordering."""
@@ -135,6 +209,76 @@ class PublicThreatEvidenceScope:
             raise PublicAnalysisValidationError(
                 "public threat scope cannot contain duplicate canonical purls"
             )
+        self._validate_partial_coverage()
+
+    def _validate_partial_coverage(self) -> None:
+        """Keep a partially identified scope from becoming an overstated one.
+
+        Raises:
+            PublicAnalysisValidationError: If the unidentified half is malformed or
+                unordered, if no dependency was identified at all, or if one source
+                record is claimed by both halves.
+        """
+        if type(self.unidentified) is not tuple or any(
+            type(item) is not PublicThreatUnidentifiedDependency for item in self.unidentified
+        ):
+            raise PublicAnalysisValidationError(
+                "public threat scope unidentified records must be a typed tuple"
+            )
+        ordered = tuple(
+            sorted(
+                self.unidentified,
+                key=lambda item: (item.name_original, item.version_original, item.reason_code),
+            )
+        )
+        if self.unidentified != ordered:
+            raise PublicAnalysisValidationError(
+                "public threat scope unidentified records must use canonical ordering"
+            )
+        keys = {
+            (item.name_original, item.version_original, item.reason_code)
+            for item in self.unidentified
+        }
+        if len(keys) != len(self.unidentified):
+            raise PublicAnalysisValidationError(
+                "public threat scope cannot contain duplicate unidentified records"
+            )
+
+        # A scope that identified nothing must not correlate nothing and report
+        # nothing. Partial coverage is admissible; zero coverage is not.
+        if not self.dependencies:
+            raise PublicAnalysisValidationError(
+                "public threat scope requires at least one identified dependency; "
+                "a lock whose records cannot be identified at all fails closed"
+            )
+
+        identified_indexes = {
+            index for item in self.dependencies for index in item.source_record_indexes
+        }
+        unidentified_indexes = {
+            index for item in self.unidentified for index in item.source_record_indexes
+        }
+        overlap = identified_indexes & unidentified_indexes
+        if overlap:
+            raise PublicAnalysisValidationError(
+                "a source record cannot be both identified and unidentified: "
+                f"{sorted(overlap)}"
+            )
+
+    @property
+    def identified_dependency_count(self) -> int:
+        """Return how many canonical package-version scopes were identified."""
+        return len(self.dependencies)
+
+    @property
+    def unidentified_record_count(self) -> int:
+        """Return how many source records carry no canonical PyPI identity."""
+        return sum(len(item.source_record_indexes) for item in self.unidentified)
+
+    @property
+    def coverage_complete(self) -> bool:
+        """Report whether every PyPI-source record in the lock was identified."""
+        return not self.unidentified
 
     @property
     def query_package_names(self) -> tuple[str, ...]:
@@ -146,28 +290,40 @@ class PublicThreatEvidenceScope:
 
     @property
     def canonical_json(self) -> bytes:
-        """Serialize only the bounded identity required for structured threat retrieval."""
-        value = {
-            "contract_version": PUBLIC_THREAT_EVIDENCE_SCOPE_CONTRACT_VERSION,
-            "source_execution_id": self.source_execution_id,
-            "source_evidence_sha256": self.source_evidence_sha256,
-            "dependencies": [
-                {
-                    "package_name": item.package_name,
-                    "version": item.version,
-                    "purl": item.purl,
-                    "source_record_indexes": list(item.source_record_indexes),
-                }
-                for item in self.dependencies
-            ],
-        }
-        return json.dumps(
-            value,
-            allow_nan=False,
-            ensure_ascii=True,
-            separators=(",", ":"),
-            sort_keys=True,
-        ).encode("utf-8")
+        """Serialize the bounded identity, including what could not be identified.
+
+        Coverage lives inside the scope identity rather than beside it. Two locks that
+        differ only in which records were identifiable are different scopes, and a
+        retained v1 digest cannot match a v2 scope derived from the same lock.
+        """
+        return canonical_json({
+                "contract_version": PUBLIC_THREAT_EVIDENCE_SCOPE_CONTRACT_VERSION,
+                "source_execution_id": self.source_execution_id,
+                "source_evidence_sha256": self.source_evidence_sha256,
+                "coverage": {
+                    "complete": self.coverage_complete,
+                    "identified_dependency_count": self.identified_dependency_count,
+                    "unidentified_record_count": self.unidentified_record_count,
+                },
+                "dependencies": [
+                    {
+                        "package_name": item.package_name,
+                        "version": item.version,
+                        "purl": item.purl,
+                        "source_record_indexes": list(item.source_record_indexes),
+                    }
+                    for item in self.dependencies
+                ],
+                "unidentified": [
+                    {
+                        "name_original": item.name_original,
+                        "version_original": item.version_original,
+                        "reason_code": item.reason_code,
+                        "source_record_indexes": list(item.source_record_indexes),
+                    }
+                    for item in self.unidentified
+                ],
+            })
 
     @property
     def scope_sha256(self) -> str:
@@ -395,16 +551,24 @@ class PublicThreatEvidenceAuthority(Protocol):
 def build_public_threat_evidence_scope(
     execution: PublicRepositoryEvidenceExecution,
 ) -> PublicThreatEvidenceScope:
-    """Derive the only admissible package scope from deterministic repository evidence."""
+    """Derive the admissible package scope, carrying whatever could not be identified.
+
+    Args:
+        execution: Admitted deterministic repository evidence.
+
+    Returns:
+        One scope whose identity includes its own coverage.
+
+    Raises:
+        PublicAnalysisValidationError: If the execution is not admitted evidence, if a
+            canonical purl maps to contradictory identity, or if no record in the lock
+            could be identified at all.
+    """
     if type(execution) is not PublicRepositoryEvidenceExecution:
         raise PublicAnalysisValidationError(
             "public threat scope requires admitted public repository evidence"
         )
     inventory = execution.normalization_inventory
-    if inventory.unsupported_normalization:
-        raise PublicAnalysisValidationError(
-            "public threat scope refuses incomplete PyPI normalization evidence"
-        )
 
     grouped: dict[str, tuple[str, str, list[int]]] = {}
     for item in inventory.normalized_dependencies:
@@ -437,10 +601,38 @@ def build_public_threat_evidence_scope(
             key=lambda item: (item.package_name, item.version, item.purl),
         )
     )
+    # The inventory already guarantees exactly-once accounting of every PyPI-source
+    # record, so grouping the unsupported half here cannot invent or lose coverage.
+    unidentified_groups: dict[tuple[str, str, str], list[int]] = {}
+    for item in inventory.unsupported_normalization:
+        key = (
+            item.source_record.name_original,
+            item.source_record.version_original,
+            item.reason_code,
+        )
+        unidentified_groups.setdefault(key, []).append(item.record_index)
+
+    unidentified = tuple(
+        sorted(
+            (
+                PublicThreatUnidentifiedDependency(
+                    name_original=name_original,
+                    version_original=version_original,
+                    reason_code=reason_code,
+                    source_record_indexes=tuple(sorted(indexes)),
+                )
+                for (name_original, version_original, reason_code), indexes
+                in unidentified_groups.items()
+            ),
+            key=lambda item: (item.name_original, item.version_original, item.reason_code),
+        )
+    )
+
     return PublicThreatEvidenceScope(
         source_execution_id=execution.execution_id,
         source_evidence_sha256=execution.evidence_sha256,
         dependencies=dependencies,
+        unidentified=unidentified,
     )
 
 
@@ -478,6 +670,7 @@ __all__ = [
     "PublicThreatEvidenceRequest",
     "PublicThreatEvidenceScope",
     "PublicThreatSnapshotPolicy",
+    "PublicThreatUnidentifiedDependency",
     "build_public_threat_evidence_scope",
     "load_public_repository_threat_evidence",
 ]

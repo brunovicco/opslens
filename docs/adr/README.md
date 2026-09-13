@@ -91,3 +91,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0081](0081-installable-package-and-console-entry-points.md) | Ship the project as an installable package with console entry points paired to the repository scripts | Accepted |
 | [0082](0082-semantic-query-catalog-configuration.md) | Resolve the semantic-query data catalog from validated deployment configuration without making it request-time selectable | Accepted |
 | [0083](0083-verifier-classification-and-single-invariant-runner.md) | Classify every verifier as a standing invariant or an evidence admission tool and run the standing set from one place | Accepted |
+| [0084](0084-partial-scope-admission.md) | Admit a partially identified dependency scope and carry coverage inside the scope identity | Accepted |
