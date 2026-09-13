@@ -1,7 +1,5 @@
 """Tests for Gate 6.4 Bedrock runtime evidence contracts."""
 
-from __future__ import annotations
-
 import pytest
 
 from opslens.semantic_query.planner import (

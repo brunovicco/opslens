@@ -1,7 +1,5 @@
 """Regression tests for the Bedrock-supported Gate 11.4 output schema subset."""
 
-from __future__ import annotations
-
 import json
 from typing import cast
 

@@ -1,7 +1,5 @@
 """Acquire one allowlisted inert repository file at an exact immutable snapshot."""
 
-from __future__ import annotations
-
 from typing import Protocol
 
 from opslens.repository_intelligence.adapters.github_file import (

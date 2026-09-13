@@ -1,7 +1,5 @@
 """Deterministic application projection for canonical citations over synthesis context."""
 
-from __future__ import annotations
-
 from opslens.knowledge_retrieval.domain import AssembledContext
 from opslens.knowledge_retrieval.domain.citations import CitationCatalog
 

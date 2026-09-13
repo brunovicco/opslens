@@ -1,7 +1,5 @@
 """Strict loading and deterministic execution for the first real two-model corpus."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import cast

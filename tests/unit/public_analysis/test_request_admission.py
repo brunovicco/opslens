@@ -1,7 +1,5 @@
 """Unit tests for the Phase 9 public repository request boundary."""
 
-from __future__ import annotations
-
 import json
 
 import pytest

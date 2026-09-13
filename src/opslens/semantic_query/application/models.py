@@ -1,7 +1,5 @@
 """Application result models for bounded semantic-query execution."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from opslens.semantic_query.domain import SemanticQueryResultError

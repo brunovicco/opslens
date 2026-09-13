@@ -1,7 +1,5 @@
 """Compose concrete live-provider ports for the human-run Gate 19.2 workload."""
 
-from __future__ import annotations
-
 import time
 from dataclasses import dataclass
 

@@ -1,7 +1,5 @@
 """Tests for deterministic hash-only Gate 7.2 corpus manifests."""
 
-from __future__ import annotations
-
 import json
 from typing import cast
 

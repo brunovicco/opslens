@@ -1,7 +1,5 @@
 """Exact NVD and CVSS enrichment evidence for affected repository findings."""
 
-from __future__ import annotations
-
 import hashlib
 import json
 from dataclasses import dataclass

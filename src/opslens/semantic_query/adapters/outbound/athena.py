@@ -1,7 +1,5 @@
 """Bounded Amazon Athena adapter for compiler-owned semantic queries."""
 
-from __future__ import annotations
-
 import math
 import re
 import time

@@ -1,7 +1,5 @@
 """Deterministic Gate 8.5 comparison against the immutable Gate 8.4 baseline."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Final

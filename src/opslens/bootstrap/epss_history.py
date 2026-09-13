@@ -1,7 +1,5 @@
 """Deterministic Phase 2.5D historical EPSS bootstrap coordination."""
 
-from __future__ import annotations
-
 import hashlib
 import json
 import re

@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Launch the localhost-only OpsLens V1 visual demonstration."""
 
-from __future__ import annotations
-
 import argparse
 from collections.abc import Sequence
 from typing import cast

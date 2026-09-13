@@ -1,7 +1,5 @@
 """Trusted source-registry contracts for the Phase 7 canonical corpus."""
 
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass
 from typing import cast
@@ -89,7 +87,7 @@ def _require_source_type(value: object) -> KnowledgeSourceType:
     return value
 
 
-def _require_entries(value: object) -> tuple[KnowledgeSourceDescriptor, ...]:
+def _require_entries(value: object) -> "tuple[KnowledgeSourceDescriptor, ...]":
     if not isinstance(value, tuple):
         raise KnowledgeRetrievalValidationError("entries must be a tuple")
     items = cast(tuple[object, ...], value)

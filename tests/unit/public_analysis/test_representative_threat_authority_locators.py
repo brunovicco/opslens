@@ -1,7 +1,5 @@
 """Tests for Gate 19.2 exact threat-authority locator admission."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 
 import pytest

@@ -1,7 +1,5 @@
 """Role-specific worker Lambda composition for the bounded async public runtime."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 
 from aws_lambda_powertools.utilities.typing import LambdaContext

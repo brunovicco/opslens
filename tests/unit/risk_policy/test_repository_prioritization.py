@@ -1,7 +1,5 @@
 """Integration tests from validated Phase 4 evidence into Risk Policy v1."""
 
-from __future__ import annotations
-
 import gzip
 import hashlib
 import json

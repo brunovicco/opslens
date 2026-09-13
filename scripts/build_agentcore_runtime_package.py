@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Build the bounded AgentCore direct-code ZIP from the exact OpsLens lock."""
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json

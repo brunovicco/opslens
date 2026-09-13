@@ -1,7 +1,5 @@
 """Bounded Amazon Bedrock Converse adapter for hybrid synthesis."""
 
-from __future__ import annotations
-
 import re
 import time
 from collections.abc import Callable, Mapping, Sequence
@@ -76,7 +74,7 @@ def _admit_synthesis_result(value: object) -> HybridSynthesisResult:
 
 def _admit_invocation_evidence(
     value: object,
-) -> BedrockHybridSynthesisInvocationEvidence:
+) -> "BedrockHybridSynthesisInvocationEvidence":
     """Admit one runtime metadata record at the execution binding boundary."""
     if not isinstance(value, BedrockHybridSynthesisInvocationEvidence):
         raise TypeError("evidence must be BedrockHybridSynthesisInvocationEvidence.")

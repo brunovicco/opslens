@@ -1,7 +1,5 @@
 """Narrow DynamoDB and SQS adapters for the disabled Gate 19.4 async runtime."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import dataclass
 from typing import Protocol, cast

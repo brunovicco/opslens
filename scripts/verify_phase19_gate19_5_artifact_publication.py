@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Verify persisted Gate 19.5 immutable artifact publication evidence offline."""
 
-from __future__ import annotations
-
 import argparse
 import json
 from pathlib import Path

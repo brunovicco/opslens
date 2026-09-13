@@ -1,7 +1,5 @@
 """Tests for the offline-first Phase 7 knowledge-retrieval contracts."""
 
-from __future__ import annotations
-
 from dataclasses import replace
 from hashlib import sha256
 from typing import cast

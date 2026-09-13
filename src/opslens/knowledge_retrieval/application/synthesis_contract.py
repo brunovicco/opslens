@@ -1,7 +1,5 @@
 """Offline synthesis admission, prompt serialization, and output parsing."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass

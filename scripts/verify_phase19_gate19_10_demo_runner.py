@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Verify the deterministic offline Gate 19.10 demo runner contract."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import cast

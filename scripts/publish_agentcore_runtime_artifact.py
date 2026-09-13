@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Publish the bounded AgentCore direct-code ZIP under a content-addressed S3 key."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import sys
@@ -33,7 +31,7 @@ _DEFAULT_MANIFEST = _DEFAULT_OUTPUT_DIR / "opslens-agentcore-runtime-package.jso
 class _Boto3S3ClientFactory(Protocol):
     """Narrow boto3 to the only deployment service required by this script."""
 
-    def client(self, service_name: Literal["s3"]) -> S3Client:
+    def client(self, service_name: Literal["s3"]) -> "S3Client":
         """Create a typed S3 client."""
         ...
 

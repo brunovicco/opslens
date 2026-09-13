@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Verify repository-wide GitHub Actions and OIDC security invariants."""
 
-from __future__ import annotations
-
 import re
 from collections.abc import Callable
 from pathlib import Path

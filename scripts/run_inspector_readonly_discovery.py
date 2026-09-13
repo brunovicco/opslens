@@ -1,7 +1,5 @@
 """Run the bounded Gate 16.2 Amazon Inspector read-only discovery."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import sys

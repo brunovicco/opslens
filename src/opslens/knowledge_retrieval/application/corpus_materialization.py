@@ -1,7 +1,5 @@
 """Pure deterministic transformation from acquired source bytes to canonical corpus text."""
 
-from __future__ import annotations
-
 from opslens.knowledge_retrieval.adapters.http_source import AcquiredKnowledgeSource
 from opslens.knowledge_retrieval.domain import KnowledgeDocument
 from opslens.knowledge_retrieval.domain.corpus import (

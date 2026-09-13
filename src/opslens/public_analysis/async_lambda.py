@@ -6,8 +6,6 @@ build independently reviewable API and worker deployment artifacts without grant
 code presence the meaning of runtime authorization.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
@@ -28,9 +26,9 @@ if TYPE_CHECKING:
 def execute_api_lambda(
     event: Mapping[str, object],
     *,
-    settings: AsyncApiRuntimeSettings,
-    store: AsyncJobStore,
-    publisher: AsyncJobPublisher,
+    settings: "AsyncApiRuntimeSettings",
+    store: "AsyncJobStore",
+    publisher: "AsyncJobPublisher",
     now_epoch_seconds: int,
 ) -> dict[str, object]:
     """Delegate one already-composed API invocation to the API-only composition root."""
@@ -58,9 +56,9 @@ def api_lambda_handler(
 def execute_worker_lambda(
     event: Mapping[str, object],
     *,
-    settings: AsyncWorkerRuntimeSettings,
-    store: AsyncJobStore,
-    executor: AsyncAnalysisExecutor,
+    settings: "AsyncWorkerRuntimeSettings",
+    store: "AsyncJobStore",
+    executor: "AsyncAnalysisExecutor",
     now_epoch_seconds: int,
 ) -> dict[str, object]:
     """Delegate one already-composed worker invocation to the worker-only root."""

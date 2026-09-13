@@ -1,7 +1,5 @@
 """Bootstrap repository-local OpsLens imports for direct demo script execution."""
 
-from __future__ import annotations
-
 import sys
 from pathlib import Path
 

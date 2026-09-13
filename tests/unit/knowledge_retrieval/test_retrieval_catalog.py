@@ -1,7 +1,5 @@
 """Tests for deterministic Gate 7.4 checked-corpus retrieval lookup."""
 
-from __future__ import annotations
-
 import pytest
 
 from opslens.knowledge_retrieval.application.bedrock_publication import (

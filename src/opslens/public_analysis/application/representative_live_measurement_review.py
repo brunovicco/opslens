@@ -1,7 +1,5 @@
 """Deterministically review one persisted Gate 19.2 live-measurement artifact."""
 
-from __future__ import annotations
-
 import json
 import re
 from collections.abc import Mapping

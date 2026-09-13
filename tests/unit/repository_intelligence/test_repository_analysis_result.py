@@ -1,7 +1,5 @@
 """Tests for the final deterministic Phase 4 repository-analysis projection."""
 
-from __future__ import annotations
-
 import gzip
 import hashlib
 import json

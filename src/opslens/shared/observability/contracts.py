@@ -1,7 +1,5 @@
 """Provider-neutral operational telemetry contract for bounded public analysis."""
 
-from __future__ import annotations
-
 import json
 import math
 import re

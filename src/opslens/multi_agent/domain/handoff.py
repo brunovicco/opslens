@@ -1,7 +1,5 @@
 """Provider-neutral deterministic contracts for one bounded multi-agent handoff."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass

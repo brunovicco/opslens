@@ -1,7 +1,5 @@
 """Regression tests for content-minimized AWS Lambda Powertools telemetry."""
 
-from __future__ import annotations
-
 from unittest.mock import MagicMock
 
 from aws_lambda_powertools import Logger, Metrics, Tracer

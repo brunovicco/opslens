@@ -1,7 +1,5 @@
 """Validated invocation references admitted from the MCP protocol boundary."""
 
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass
 

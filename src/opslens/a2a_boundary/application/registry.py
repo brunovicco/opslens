@@ -1,7 +1,5 @@
 """Code-owned in-memory resolution for the bounded A2A reference experiment."""
 
-from __future__ import annotations
-
 from opslens.a2a_boundary.domain.errors import (
     A2ABoundaryValidationError,
     A2AReferenceNotFoundError,

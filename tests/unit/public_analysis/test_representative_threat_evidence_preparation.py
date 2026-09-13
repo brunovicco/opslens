@@ -1,7 +1,5 @@
 """Tests for bounded Gate 19.2 threat-evidence preparation summaries."""
 
-from __future__ import annotations
-
 from datetime import UTC, datetime
 
 import pytest

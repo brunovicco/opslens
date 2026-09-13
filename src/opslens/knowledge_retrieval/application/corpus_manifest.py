@@ -1,7 +1,5 @@
 """Build and verify deterministic hash-only manifests for the canonical corpus."""
 
-from __future__ import annotations
-
 import json
 
 from opslens.knowledge_retrieval.domain import (

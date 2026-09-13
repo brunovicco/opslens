@@ -1,7 +1,5 @@
 """Deterministic offline evaluation contracts for the Phase 11 single-agent baseline."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass
@@ -259,7 +257,7 @@ class AgentEvaluationCase:
         proposal: AgentActionProposal,
         execution_mode: AgentEvaluationExecutionMode,
         expectation: AgentEvaluationExpectation,
-    ) -> AgentEvaluationCase:
+    ) -> "AgentEvaluationCase":
         """Create one deterministic offline evaluation case."""
         case_key = _validate_case_key(case_key)
         if type(task) is not SingleAgentTask:
@@ -339,7 +337,7 @@ class AgentEvaluationDataset:
         _validate_sha256(self.corpus_sha256, label="corpus_sha256", expected=expected)
 
     @classmethod
-    def create(cls, *, cases: tuple[AgentEvaluationCase, ...]) -> AgentEvaluationDataset:
+    def create(cls, *, cases: tuple[AgentEvaluationCase, ...]) -> "AgentEvaluationDataset":
         """Create one canonical dataset from typed evaluation cases."""
         if type(cases) is not tuple:
             raise AgentEvaluationValidationError("cases must be a tuple")
@@ -510,7 +508,7 @@ class AgentEvaluationCaseResult:
         authorization_evidence_id: str | None,
         execution_id: str | None,
         execution_attempts: int,
-    ) -> AgentEvaluationCaseResult:
+    ) -> "AgentEvaluationCaseResult":
         """Score and content-address one observed replay result."""
         if type(case) is not AgentEvaluationCase:
             raise AgentEvaluationValidationError("case must be one AgentEvaluationCase")
@@ -717,7 +715,7 @@ class AgentEvaluationReport:
         *,
         dataset: AgentEvaluationDataset,
         results: tuple[AgentEvaluationCaseResult, ...],
-    ) -> AgentEvaluationReport:
+    ) -> "AgentEvaluationReport":
         """Create one deterministic report bound to one exact evaluation dataset."""
         if type(dataset) is not AgentEvaluationDataset:
             raise AgentEvaluationValidationError("dataset must be one AgentEvaluationDataset")

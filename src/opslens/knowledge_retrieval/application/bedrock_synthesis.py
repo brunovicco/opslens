@@ -1,7 +1,5 @@
 """Pure Amazon Bedrock Converse request contract for bounded knowledge synthesis."""
 
-from __future__ import annotations
-
 import json
 from typing import Final
 

@@ -1,7 +1,5 @@
 """Tests for the bounded Gate 7.4 real Retrieve CLI evidence boundary."""
 
-from __future__ import annotations
-
 import json
 from hashlib import sha256
 from typing import cast

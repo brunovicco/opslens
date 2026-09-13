@@ -1,7 +1,5 @@
 """Tests that the frozen Phase 3 PyPI corpus remains consumable by identity primitives."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import Any, cast

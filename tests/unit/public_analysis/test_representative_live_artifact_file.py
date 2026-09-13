@@ -1,7 +1,5 @@
 """Tests for atomic no-overwrite persistence of admitted Gate 19.2 evidence."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 import pytest

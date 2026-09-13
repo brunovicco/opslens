@@ -1,7 +1,5 @@
 """Tests for the bounded authenticated AgentCore Runtime replay contract."""
 
-from __future__ import annotations
-
 import json
 from collections.abc import Mapping
 from pathlib import Path

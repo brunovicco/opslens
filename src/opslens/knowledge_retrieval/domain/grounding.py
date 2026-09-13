@@ -1,7 +1,5 @@
 """Provider-independent claim/citation contracts for grounded knowledge synthesis."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass

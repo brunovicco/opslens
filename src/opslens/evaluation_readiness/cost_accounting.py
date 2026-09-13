@@ -1,7 +1,5 @@
 """Deterministic validation for Phase 18 cost accounting and budget envelopes."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import dataclass
 from enum import StrEnum

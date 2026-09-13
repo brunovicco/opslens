@@ -1,7 +1,5 @@
 """Evaluation result contracts for the first bounded hybrid synthesis baseline."""
 
-from __future__ import annotations
-
 import math
 import re
 from dataclasses import dataclass
@@ -61,7 +59,7 @@ def _normalize_string_tuple(value: object, label: str) -> tuple[str, ...]:
 
 def _normalize_case_results(
     value: object,
-) -> tuple[HybridSynthesisCaseEvaluation, ...]:
+) -> "tuple[HybridSynthesisCaseEvaluation, ...]":
     """Validate runtime case evaluations without weakening public annotations."""
     if not isinstance(value, tuple):
         raise HybridRetrievalValidationError("case_results must be a tuple.")

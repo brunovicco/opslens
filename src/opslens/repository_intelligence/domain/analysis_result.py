@@ -1,7 +1,5 @@
 """Final consumer-facing projection over the validated Phase 4 evidence chain."""
 
-from __future__ import annotations
-
 import hashlib
 import json
 from dataclasses import dataclass, field

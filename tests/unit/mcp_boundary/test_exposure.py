@@ -1,7 +1,5 @@
 """Tests for Phase 13 Gate 13.1 bounded MCP capability exposure."""
 
-from __future__ import annotations
-
 from datetime import date
 from typing import cast
 

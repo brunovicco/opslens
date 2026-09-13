@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Human-only create-only publication for admitted Gate 19.5 Lambda artifacts."""
 
-from __future__ import annotations
-
 import argparse
 import base64
 import hashlib

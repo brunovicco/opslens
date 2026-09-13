@@ -1,7 +1,5 @@
 """Tests for deterministic review of persisted Gate 19.2 live evidence."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import replace
 

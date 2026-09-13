@@ -1,7 +1,5 @@
 """Offline interoperability tests for the Phase 13 Gate 13.2 official MCP SDK adapter."""
 
-from __future__ import annotations
-
 from datetime import date
 
 import pytest

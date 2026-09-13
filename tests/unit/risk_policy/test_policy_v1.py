@@ -1,7 +1,5 @@
 """Unit tests for the pure deterministic OpsLens Risk Policy v1."""
 
-from __future__ import annotations
-
 import re
 
 import pytest

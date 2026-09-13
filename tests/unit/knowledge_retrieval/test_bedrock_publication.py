@@ -1,7 +1,5 @@
 """Tests for the deterministic Gate 7.3 Bedrock publication projection."""
 
-from __future__ import annotations
-
 import json
 from typing import cast
 

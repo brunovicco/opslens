@@ -1,7 +1,5 @@
 """Official MCP Python SDK adapters over frozen OpsLens authority boundaries."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from typing import TypedDict, cast
 

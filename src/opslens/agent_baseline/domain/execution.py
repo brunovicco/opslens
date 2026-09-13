@@ -1,7 +1,5 @@
 """Typed deterministic execution evidence for Phase 11 single-agent capabilities."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass
@@ -175,7 +173,7 @@ class StructuredSecurityQueryInvocation:
         *,
         action: AuthorizedAgentAction,
         query: SemanticQuery,
-    ) -> StructuredSecurityQueryInvocation:
+    ) -> "StructuredSecurityQueryInvocation":
         """Create one deterministic structured-security invocation."""
         admitted_action = _validate_action(action, AgentCapability.STRUCTURED_SECURITY_QUERY)
         if type(query) is not SemanticQuery:
@@ -219,7 +217,7 @@ class KnowledgeGuidanceInvocation:
         *,
         action: AuthorizedAgentAction,
         request: SynthesisRequest,
-    ) -> KnowledgeGuidanceInvocation:
+    ) -> "KnowledgeGuidanceInvocation":
         """Create one deterministic knowledge-guidance invocation."""
         admitted_action = _validate_action(action, AgentCapability.KNOWLEDGE_GUIDANCE)
         if type(request) is not SynthesisRequest:
@@ -265,7 +263,7 @@ class HybridSecurityAnswerInvocation:
         *,
         action: AuthorizedAgentAction,
         request: HybridSynthesisRequest,
-    ) -> HybridSecurityAnswerInvocation:
+    ) -> "HybridSecurityAnswerInvocation":
         """Create one deterministic hybrid-security invocation."""
         admitted_action = _validate_action(action, AgentCapability.HYBRID_SECURITY_ANSWER)
         if type(request) is not HybridSynthesisRequest:
@@ -316,7 +314,7 @@ class PublicRepositoryAnalysisInvocation:
         *,
         action: AuthorizedAgentAction,
         request: PublicAnalysisRequest,
-    ) -> PublicRepositoryAnalysisInvocation:
+    ) -> "PublicRepositoryAnalysisInvocation":
         """Create one deterministic public-repository invocation."""
         admitted_action = _validate_action(action, AgentCapability.PUBLIC_REPOSITORY_ANALYSIS)
         if type(request) is not PublicAnalysisRequest:
@@ -387,7 +385,7 @@ class StructuredSecurityQueryResultBinding:
         *,
         invocation: StructuredSecurityQueryInvocation,
         result: AthenaQueryResult,
-    ) -> StructuredSecurityQueryResultBinding:
+    ) -> "StructuredSecurityQueryResultBinding":
         """Create explicit query/result binding evidence after one executor call."""
         if type(invocation) is not StructuredSecurityQueryInvocation:
             raise AgentCapabilityExecutionValidationError(
@@ -483,7 +481,7 @@ class AgentCapabilityExecution:
         *,
         invocation: AgentCapabilityInvocation,
         downstream_result_sha256: str,
-    ) -> AgentCapabilityExecution:
+    ) -> "AgentCapabilityExecution":
         """Create execution identity from an exact invocation and admitted result hash."""
         capability = capability_for_invocation(invocation)
         action = action_for_invocation(invocation)

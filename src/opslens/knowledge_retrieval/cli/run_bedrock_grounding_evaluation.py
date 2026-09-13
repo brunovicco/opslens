@@ -1,7 +1,5 @@
 """Run the frozen Gate 7.7 grounded citation evaluation against Bedrock once."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import sys

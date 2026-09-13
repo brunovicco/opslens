@@ -1,7 +1,5 @@
 """Deterministic application policy for Phase 8 hybrid evidence routing."""
 
-from __future__ import annotations
-
 from opslens.hybrid_retrieval.domain.errors import HybridRetrievalValidationError
 from opslens.hybrid_retrieval.domain.models import (
     SEMANTIC_EVIDENCE_NEEDS,

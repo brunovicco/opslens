@@ -1,7 +1,5 @@
 """Bounded Bedrock Agent ingestion adapter for Gate 7.3 corpus indexing."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from typing import Protocol, cast
 

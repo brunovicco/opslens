@@ -1,7 +1,5 @@
 """Source-preserving evidence models for deterministic CVE alias reconciliation."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import StrEnum
 

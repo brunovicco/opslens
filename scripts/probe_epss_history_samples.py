@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Probe representative immutable EPSS history files without mutating AWS state."""
 
-from __future__ import annotations
-
 import argparse
 import gzip
 import hashlib

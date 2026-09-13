@@ -1,7 +1,5 @@
 """Provider-neutral MCP capability exposure and admission evidence."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass
@@ -175,7 +173,7 @@ class McpCapabilityExposure:
         *,
         tool_name: McpToolName,
         capability: AgentCapability,
-    ) -> McpCapabilityExposure:
+    ) -> "McpCapabilityExposure":
         """Create one deterministic code-owned MCP exposure."""
         if type(tool_name) is not McpToolName:
             raise McpBoundaryValidationError("tool_name must be McpToolName")
@@ -296,7 +294,7 @@ class McpToolCallAdmission:
         action_id: str,
         invocation_id: str,
         invocation_sha256: str,
-    ) -> McpToolCallAdmission:
+    ) -> "McpToolCallAdmission":
         """Create deterministic admission for an already-authorized typed invocation."""
         if type(tool_name) is not McpToolName:
             raise McpBoundaryValidationError("tool_name must be McpToolName")

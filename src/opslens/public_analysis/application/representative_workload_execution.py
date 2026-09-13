@@ -1,7 +1,5 @@
 """Compose and measure the complete non-public Gate 19.2 representative workload."""
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from dataclasses import dataclass, field
 

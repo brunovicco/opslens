@@ -1,7 +1,5 @@
 """Execute bounded hybrid synthesis for the representative non-public workload."""
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from dataclasses import dataclass
 

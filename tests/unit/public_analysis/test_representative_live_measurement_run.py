@@ -1,7 +1,5 @@
 """Tests for one-shot human live-measurement execution and artifact admission."""
 
-from __future__ import annotations
-
 from typing import cast
 
 import pytest

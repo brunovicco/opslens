@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Run read-only Phase 2.5D-5 historical EPSS post-backfill evidence verification."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import os

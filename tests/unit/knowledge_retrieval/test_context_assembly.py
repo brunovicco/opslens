@@ -1,7 +1,5 @@
 """Tests for Gate 7.6a deterministic retrieval-context assembly."""
 
-from __future__ import annotations
-
 from dataclasses import replace
 from hashlib import sha256
 from typing import cast

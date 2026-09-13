@@ -1,7 +1,5 @@
 """Shared A2A 1.0 constants, identities, and strict JSON helpers."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import dataclass
 from enum import StrEnum

@@ -1,7 +1,5 @@
 """Fail-closed tests for Gate 19.7 disabled materialization readiness."""
 
-from __future__ import annotations
-
 import hashlib
 import json
 import subprocess

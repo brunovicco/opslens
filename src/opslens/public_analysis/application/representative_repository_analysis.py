@@ -1,7 +1,5 @@
 """Compose retained deterministic repository-analysis stages for Gate 19.2."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from opslens.correlation.adapters.ghsa import GhsaPyPIVulnerabilityEvidence

@@ -1,7 +1,5 @@
 """Fail-closed tests for Gate 19.7 recovery-v2 plan admission evidence."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import cast

@@ -1,7 +1,5 @@
 """Unit tests for Phase 8 Gate 8.4 bounded hybrid synthesis."""
 
-from __future__ import annotations
-
 import json
 from collections.abc import Mapping
 from pathlib import Path

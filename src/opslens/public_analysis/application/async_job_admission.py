@@ -1,7 +1,5 @@
 """Provider-neutral async submission and duplicate-delivery admission decisions."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import StrEnum
 

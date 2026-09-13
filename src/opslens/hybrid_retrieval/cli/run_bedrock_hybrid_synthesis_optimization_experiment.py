@@ -1,7 +1,5 @@
 """Run the single versioned Gate 8.5 hybrid synthesis optimization experiment."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import sys

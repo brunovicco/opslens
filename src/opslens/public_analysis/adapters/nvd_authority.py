@@ -1,8 +1,6 @@
 # pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Resolve exact NVD authority through immutable Silver-to-Bronze lineage."""
 
-from __future__ import annotations
-
 import gzip
 import json
 from hashlib import sha256

@@ -1,7 +1,5 @@
 """Offline tests for the Phase 13 Gate 13.3 MCP capability execution bridge."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field, replace
 from datetime import date
 from typing import cast

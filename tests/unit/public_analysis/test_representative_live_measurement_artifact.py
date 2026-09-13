@@ -1,7 +1,5 @@
 """Tests for bounded Gate 19.2 live-measurement evidence artifacts."""
 
-from __future__ import annotations
-
 from dataclasses import replace
 
 import pytest

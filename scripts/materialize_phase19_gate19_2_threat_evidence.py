@@ -1,7 +1,5 @@
 """Materialize Gate 19.2 threat authority through an explicit human-run read-only boundary."""
 
-from __future__ import annotations
-
 import argparse
 import json
 from collections.abc import Mapping

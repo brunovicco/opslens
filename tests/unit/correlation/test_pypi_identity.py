@@ -1,7 +1,5 @@
 """Tests for the frozen Phase 3 PyPI package identity foundation."""
 
-from __future__ import annotations
-
 import pytest
 
 from opslens.correlation.domain.errors import (

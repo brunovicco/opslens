@@ -1,7 +1,5 @@
 """Deterministically assemble a bounded rank prefix for later LLM synthesis."""
 
-from __future__ import annotations
-
 from opslens.knowledge_retrieval.domain import (
     AssembledContext,
     ContextAssemblyLimits,

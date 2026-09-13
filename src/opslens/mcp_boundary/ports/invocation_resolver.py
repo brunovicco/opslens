@@ -1,7 +1,5 @@
 """Provider-neutral resolver contract for existing typed MCP invocation references."""
 
-from __future__ import annotations
-
 from typing import Protocol
 
 from opslens.agent_baseline.domain import AgentCapabilityInvocation

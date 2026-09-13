@@ -1,7 +1,5 @@
 """Verify Gate 19.2 live evidence and the evidence-backed async closeout."""
 
-from __future__ import annotations
-
 import json
 from hashlib import sha256
 from pathlib import Path

@@ -1,7 +1,5 @@
 """Tests for the strict offline A2A 1.0 JSON-RPC reference adapter."""
 
-from __future__ import annotations
-
 import json
 from typing import cast
 

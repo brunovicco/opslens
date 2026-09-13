@@ -1,7 +1,5 @@
 """Tests for exact-version S3 authority object reads used before Gate 19.2 measurement."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 
 import pytest

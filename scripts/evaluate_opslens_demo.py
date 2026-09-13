@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Evaluate the three canonical deterministic offline OpsLens V1 scenarios."""
 
-from __future__ import annotations
-
 import argparse
 import sys
 from collections.abc import Sequence

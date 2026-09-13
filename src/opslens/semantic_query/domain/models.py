@@ -1,7 +1,5 @@
 """Typed allowlisted contracts for the first OpsLens semantic-query slice."""
 
-from __future__ import annotations
-
 import math
 from dataclasses import dataclass
 from datetime import date

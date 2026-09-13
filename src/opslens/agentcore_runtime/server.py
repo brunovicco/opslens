@@ -1,7 +1,5 @@
 """Minimal stdlib HTTP server for the bounded AgentCore Runtime experiment."""
 
-from __future__ import annotations
-
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Final, cast
 

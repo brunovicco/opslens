@@ -1,7 +1,5 @@
 """Normalize canonical-PyPI lock records through the existing Phase 3 authority."""
 
-from __future__ import annotations
-
 from opslens.correlation.domain.errors import CorrelationContractError
 from opslens.correlation.domain.pypi import (
     build_pypi_purl,

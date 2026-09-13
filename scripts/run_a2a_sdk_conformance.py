@@ -1,7 +1,5 @@
 """Check the frozen OpsLens A2A profile against the official Python SDK."""
 
-from __future__ import annotations
-
 import importlib
 import json
 from importlib.metadata import version

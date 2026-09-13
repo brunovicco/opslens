@@ -1,7 +1,5 @@
 """Unit tests for the Phase 18 evidence-inventory validator."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import cast

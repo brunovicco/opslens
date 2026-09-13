@@ -1,7 +1,5 @@
 """Shared fixtures for the bounded A2A reference interoperability tests."""
 
-from __future__ import annotations
-
 import pytest
 
 from opslens.agent_baseline.domain.models import (

@@ -1,7 +1,5 @@
 """Provider-neutral port for one bounded multi-agent triage model invocation."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Protocol
 

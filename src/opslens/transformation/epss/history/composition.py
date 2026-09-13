@@ -1,7 +1,5 @@
 """Composition root for the dedicated historical EPSS transformer Lambda."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Literal, Protocol, cast
 
 import boto3
@@ -57,7 +55,7 @@ from opslens.transformation.epss.history.runtime import (
 class _Boto3S3ClientFactory(Protocol):
     """Narrow the runtime SDK factory to the only service required here."""
 
-    def client(self, service_name: Literal["s3"]) -> S3Client:
+    def client(self, service_name: Literal["s3"]) -> "S3Client":
         """Create a typed S3 client."""
         ...
 

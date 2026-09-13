@@ -1,7 +1,5 @@
 """Unit tests for deterministic citation projection over admitted synthesis context."""
 
-from __future__ import annotations
-
 from typing import cast
 
 import pytest

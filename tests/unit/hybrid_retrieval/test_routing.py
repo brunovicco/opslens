@@ -1,7 +1,5 @@
 """Unit tests for the deterministic Phase 8 Gate 8.1 routing policy."""
 
-from __future__ import annotations
-
 from typing import cast
 
 import pytest

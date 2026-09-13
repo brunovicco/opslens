@@ -1,7 +1,5 @@
 """Release pre-admitted threat evidence to the measured representative workload."""
 
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass
 

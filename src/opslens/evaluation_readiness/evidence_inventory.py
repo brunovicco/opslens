@@ -1,7 +1,5 @@
 """Deterministic validation for the Phase 18 cross-phase evidence inventory."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import dataclass
 from enum import StrEnum

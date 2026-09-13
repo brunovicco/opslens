@@ -1,7 +1,5 @@
 """Deterministic tests for the Gate 19.4 async job authority slice."""
 
-from __future__ import annotations
-
 import pytest
 
 from opslens.public_analysis.application.async_job_admission import (

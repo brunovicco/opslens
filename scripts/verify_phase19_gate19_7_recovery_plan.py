@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Admit a Gate 19.7 partial-materialization recovery plan offline."""
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json
