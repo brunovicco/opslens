@@ -4,7 +4,11 @@
 import argparse
 from pathlib import Path
 
-from opslens.public_analysis.application.representative_live_measurement_review import (
+from _bootstrap import ensure_repository_src_on_path
+
+ensure_repository_src_on_path()
+
+from opslens.public_analysis.application.representative_live_measurement_review import (  # noqa: E402
     RepresentativeLiveMeasurementReviewError,
     review_representative_live_measurement_artifact,
 )

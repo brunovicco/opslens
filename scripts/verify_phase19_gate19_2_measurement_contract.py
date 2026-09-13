@@ -6,7 +6,11 @@ import json
 from pathlib import Path
 from typing import cast
 
-from opslens.public_analysis.domain import (
+from _bootstrap import ensure_repository_src_on_path
+
+ensure_repository_src_on_path()
+
+from opslens.public_analysis.domain import (  # noqa: E402
     REPRESENTATIVE_PUBLIC_ANALYSIS_WORKLOAD_ID,
     REPRESENTATIVE_WORKLOAD_STAGE_ORDER,
 )

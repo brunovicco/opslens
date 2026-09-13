@@ -1,4 +1,10 @@
-"""Bootstrap repository-local OpsLens imports for direct demo script execution."""
+"""Bootstrap repository-local OpsLens imports for direct script execution.
+
+Every script under ``scripts/`` runs from a checkout rather than from an installed
+distribution, so ``src`` has to reach ``sys.path`` before the first ``opslens``
+import. Importing this helper and calling it keeps that explicit at each entry
+point instead of depending on the caller exporting ``PYTHONPATH=src``.
+"""
 
 import sys
 from pathlib import Path

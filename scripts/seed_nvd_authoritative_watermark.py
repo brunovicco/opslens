@@ -7,16 +7,19 @@ from contextlib import contextmanager
 from datetime import datetime
 from typing import cast
 
+from _bootstrap import ensure_repository_src_on_path
 from boto3.session import Session
 
-from opslens.ingestion.nvd.adapters.outbound.s3_authoritative_watermark import (
+ensure_repository_src_on_path()
+
+from opslens.ingestion.nvd.adapters.outbound.s3_authoritative_watermark import (  # noqa: E402
     S3NvdAuthoritativeWatermarkClient,
     S3NvdAuthoritativeWatermarkStore,
 )
-from opslens.ingestion.nvd.application.authoritative_watermark import (
+from opslens.ingestion.nvd.application.authoritative_watermark import (  # noqa: E402
     NvdWatermarkEvidenceObjectV1,
 )
-from opslens.ingestion.nvd.application.authoritative_watermark_seed import (
+from opslens.ingestion.nvd.application.authoritative_watermark_seed import (  # noqa: E402
     NvdBootstrapRecoverySeedEvidenceV1,
     SeedNvdAuthoritativeWatermarkV1,
 )

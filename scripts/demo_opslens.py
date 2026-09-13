@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the canonical deterministic offline OpsLens V1 demonstration."""
 
-from _demo_bootstrap import ensure_repository_src_on_path
+from _bootstrap import ensure_repository_src_on_path
 
 ensure_repository_src_on_path()
 

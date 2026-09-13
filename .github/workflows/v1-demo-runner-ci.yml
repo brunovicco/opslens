@@ -5,7 +5,7 @@ on:
     paths:
       - "src/opslens/demo/**"
       - "tests/unit/demo/**"
-      - "scripts/_demo_bootstrap.py"
+      - "scripts/_bootstrap.py"
       - "scripts/demo_opslens.py"
       - "scripts/evaluate_opslens_demo.py"
       - "scripts/demo_opslens_web.py"
@@ -66,7 +66,7 @@ jobs:
         run: >-
           uv run ruff check
           src/opslens/demo
-          scripts/_demo_bootstrap.py
+          scripts/_bootstrap.py
           scripts/demo_opslens.py
           scripts/evaluate_opslens_demo.py
           scripts/demo_opslens_web.py
@@ -79,7 +79,7 @@ jobs:
         run: >-
           uv run pyright
           src/opslens/demo
-          scripts/_demo_bootstrap.py
+          scripts/_bootstrap.py
           scripts/demo_opslens.py
           scripts/evaluate_opslens_demo.py
           scripts/demo_opslens_web.py

@@ -5,13 +5,17 @@ import json
 from pathlib import Path
 from typing import cast
 
-from opslens.demo import (
+from _bootstrap import ensure_repository_src_on_path
+
+ensure_repository_src_on_path()
+
+from opslens.demo import (  # noqa: E402
     DEMO_RESULT_CONTRACT_VERSION,
     MATERIAL_VULNERABILITY_SCENARIO_ID,
     DemoContractError,
     build_material_vulnerability_demo,
 )
-from opslens.demo.cli import render_demo, run_demo
+from opslens.demo.cli import render_demo, run_demo  # noqa: E402
 
 type JsonValue = str | int | float | bool | list[JsonValue] | dict[str, JsonValue] | None
 

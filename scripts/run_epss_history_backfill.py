@@ -7,6 +7,7 @@ import os
 from typing import Any, cast
 
 import boto3
+from _bootstrap import ensure_repository_src_on_path
 from run_epss_history_canary import (
     GitHubArchiveReader,
     GitHubArchiveSourceReader,
@@ -14,13 +15,15 @@ from run_epss_history_canary import (
     S3HistoricalBronzePublisher,
 )
 
-from opslens.bootstrap.epss_history_backfill import (
+ensure_repository_src_on_path()
+
+from opslens.bootstrap.epss_history_backfill import (  # noqa: E402
     BACKFILL_CONFIRMATION,
     ExecuteHistoricalEpssBackfillV1,
     HistoricalEpssBackfillItemResultV1,
     frozen_backfill_plan_summary,
 )
-from opslens.transformation.epss.history.runtime import (
+from opslens.transformation.epss.history.runtime import (  # noqa: E402
     HistoricalEpssForwardListClient,
     S3HistoricalEpssForwardBoundaryReader,
 )
