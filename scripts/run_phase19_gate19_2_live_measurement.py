@@ -2,6 +2,5 @@
 
 from opslens.public_analysis.cli.run_live_measurement import main
 
-
 if __name__ == "__main__":
     raise SystemExit(main())

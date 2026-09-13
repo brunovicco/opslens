@@ -8,6 +8,7 @@ from typing import Any, cast
 
 import boto3
 from botocore.exceptions import ClientError
+from run_epss_history_canary import GitHubArchiveReader
 
 from opslens.bootstrap.epss_history_evidence import (
     HistoricalEpssEvidenceObjectV1,
@@ -25,7 +26,6 @@ from opslens.transformation.epss.history.runtime import (
     HistoricalEpssForwardListClient,
     S3HistoricalEpssForwardBoundaryReader,
 )
-from run_epss_history_canary import GitHubArchiveReader
 
 
 def parse_args() -> argparse.Namespace:

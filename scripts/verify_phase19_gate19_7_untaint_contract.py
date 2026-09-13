@@ -87,9 +87,13 @@ def _verify_diagnosis() -> dict[str, object]:
     if aws_api.get("state") != "Active":
         raise Gate19_7UntaintContractError("remote API Lambda must remain Active")
     if aws_api.get("last_update_status") != "Successful":
-        raise Gate19_7UntaintContractError("remote API Lambda update status must remain Successful")
+        raise Gate19_7UntaintContractError(
+            "remote API Lambda update status must remain Successful"
+        )
     if aws_api.get("reserved_concurrency") is not None:
-        raise Gate19_7UntaintContractError("diagnosis must not invent positive API reserved concurrency")
+        raise Gate19_7UntaintContractError(
+            "diagnosis must not invent positive API reserved concurrency"
+        )
     if aws_api.get("reserved_concurrency_observation") != "NOT_CONFIGURED_OR_NOT_OBSERVED":
         raise Gate19_7UntaintContractError("reserved-concurrency observation semantics drifted")
 
@@ -121,7 +125,10 @@ def _verify_contract() -> None:
     if contract.get("diagnosis_source_head_sha") != _EXPECTED_DIAGNOSIS_HEAD:
         raise Gate19_7UntaintContractError("untaint contract diagnosis head drifted")
 
-    rejected = _object(contract.get("rejected_recovery_plan"), label="contract.rejected_recovery_plan")
+    rejected = _object(
+        contract.get("rejected_recovery_plan"),
+        label="contract.rejected_recovery_plan",
+    )
     if rejected.get("summary") != "6 to add, 0 to change, 1 to destroy":
         raise Gate19_7UntaintContractError("rejected recovery-plan summary drifted")
     if _strings(rejected.get("api_lambda_actions"), label="contract.api_lambda_actions") != [
@@ -133,7 +140,9 @@ def _verify_contract() -> None:
         raise Gate19_7UntaintContractError("contract replacement reason drifted")
     for field in ("admitted", "reusable", "apply_authorized"):
         if rejected.get(field) is not False:
-            raise Gate19_7UntaintContractError(f"contract rejected plan field {field} must remain false")
+            raise Gate19_7UntaintContractError(
+                f"contract rejected plan field {field} must remain false"
+            )
 
     target = _object(contract.get("untaint_target"), label="contract.untaint_target")
     expected_target: dict[str, object] = {
@@ -205,7 +214,10 @@ def _verify_contract() -> None:
         raise Gate19_7UntaintContractError("post-untaint update bound drifted")
     if post.get("fresh_recovery_plan_allowed_update") != _API_NORMALIZED:
         raise Gate19_7UntaintContractError("post-untaint allowed update drifted")
-    if post.get("fresh_recovery_plan_deletes") != 0 or post.get("fresh_recovery_plan_replacements") != 0:
+    if (
+        post.get("fresh_recovery_plan_deletes") != 0
+        or post.get("fresh_recovery_plan_replacements") != 0
+    ):
         raise Gate19_7UntaintContractError("post-untaint destructive actions must remain zero")
     if post.get("terraform_apply_authorized") is not False:
         raise Gate19_7UntaintContractError("post-untaint apply unexpectedly authorized")
@@ -242,7 +254,9 @@ def _verify_live_source() -> None:
         raise Gate19_7UntaintContractError("API Lambda Terraform segment is missing")
     api_segment = runtime_tf[start:end]
     if "reserved_concurrent_executions = 0" not in api_segment:
-        raise Gate19_7UntaintContractError("API Lambda must remain hard-disabled at concurrency zero")
+        raise Gate19_7UntaintContractError(
+            "API Lambda must remain hard-disabled at concurrency zero"
+        )
     if "reserved_concurrent_executions = 2" in api_segment:
         raise Gate19_7UntaintContractError("historical API concurrency leaked into live resource")
     if 'OPSLENS_ASYNC_SUBMIT_ENABLED           = "false"' not in api_segment:

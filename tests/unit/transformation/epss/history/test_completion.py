@@ -64,7 +64,9 @@ def _bronze() -> HistoricalEpssBronzeEvidenceV1:
 
 
 def _silver(
-    replay_status: HistoricalEpssSilverReplayStatus = HistoricalEpssSilverReplayStatus.REPLAY_VERIFIED,
+    replay_status: HistoricalEpssSilverReplayStatus = (
+        HistoricalEpssSilverReplayStatus.REPLAY_VERIFIED
+    ),
 ) -> HistoricalEpssSilverPersistenceResultV1:
     """Build exact persisted Silver evidence for completion tests."""
     return HistoricalEpssSilverPersistenceResultV1(

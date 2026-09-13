@@ -29,10 +29,12 @@ DATES = (date(2021, 4, 14), date(2022, 2, 4), date(2023, 3, 7))
 
 
 def _gzip(text: str) -> bytes:
+    """Encode deterministic gzip source bytes for tests."""
     return gzip.compress(text.encode(), mtime=0)
 
 
 def _source(snapshot_date: date) -> bytes:
+    """Build one valid source shape for each pinned snapshot coordinate."""
     if snapshot_date == date(2021, 4, 14):
         return _gzip("cve,epss\nCVE-2020-5902,0.65117\n")
     model = "v2022.01.01" if snapshot_date.year == 2022 else "v2023.03.01"
@@ -43,6 +45,7 @@ def _source(snapshot_date: date) -> bytes:
 
 
 def _git_blob_sha1(payload: bytes) -> str:
+    """Return Git blob identity for exact source bytes."""
     return hashlib.sha1(
         f"blob {len(payload)}\0".encode() + payload,
         usedforsecurity=False,
@@ -50,6 +53,7 @@ def _git_blob_sha1(payload: bytes) -> str:
 
 
 def _inventory() -> tuple[HistoricalEpssArchiveInventoryV1, dict[date, bytes]]:
+    """Build a pinned archive inventory and its matching payload mapping."""
     sources = {value: _source(value) for value in DATES}
     items = tuple(
         HistoricalEpssWorkItemV1(
@@ -75,6 +79,7 @@ def _inventory() -> tuple[HistoricalEpssArchiveInventoryV1, dict[date, bytes]]:
 
 
 def _authority(inventory: HistoricalEpssArchiveInventoryV1) -> HistoricalEpssBackfillAuthorityV1:
+    """Build the frozen bootstrap plan authority used by these tests."""
     plan = HistoricalEpssBootstrapPlanFactoryV1().build(
         inventory=inventory,
         first_forward_snapshot_date=BOUNDARY,
@@ -89,37 +94,52 @@ def _authority(inventory: HistoricalEpssArchiveInventoryV1) -> HistoricalEpssBac
 
 
 class BoundaryReader:
+    """Test double: boundary reader used by the historical EPSS tests."""
+
     def __init__(self, events: list[str], boundary: date = BOUNDARY) -> None:
+        """Store deterministic behavior for this test double."""
         self.events = events
         self.boundary = boundary
 
     def discover(self) -> date:
+        """Return the configured forward boundary and record the read."""
         self.events.append("boundary")
         return self.boundary
 
 
 class InventoryReader:
+    """Test double: inventory reader used by the historical EPSS tests."""
+
     def __init__(self, events: list[str], inventory: HistoricalEpssArchiveInventoryV1) -> None:
+        """Store deterministic behavior for this test double."""
         self.events = events
         self.inventory = inventory
 
     def read(self) -> HistoricalEpssArchiveInventoryV1:
+        """Return the configured evidence and record the read."""
         self.events.append("inventory")
         return self.inventory
 
 
 class SourceReader:
+    """Test double: source reader used by the historical EPSS tests."""
+
     def __init__(self, events: list[str], sources: dict[date, bytes]) -> None:
+        """Store deterministic behavior for this test double."""
         self.events = events
         self.sources = sources
 
     def read(self, work_item: HistoricalEpssWorkItemV1) -> bytes:
+        """Return the configured evidence and record the read."""
         self.events.append(f"source:{work_item.snapshot_date}")
         return self.sources[work_item.snapshot_date]
 
 
 class Publisher:
+    """Test double: publisher used by the historical EPSS tests."""
+
     def __init__(self, events: list[str]) -> None:
+        """Store deterministic behavior for this test double."""
         self.events = events
 
     def publish(
@@ -128,6 +148,7 @@ class Publisher:
         work_item: HistoricalEpssWorkItemV1,
         snapshot: HistoricalEpssSnapshot,
     ) -> HistoricalEpssBronzeInvocationCoordinateV1:
+        """Record the publication and return configured Bronze evidence."""
         assert snapshot.snapshot_date == work_item.snapshot_date
         self.events.append(f"publish:{work_item.snapshot_date}")
         return HistoricalEpssBronzeInvocationCoordinateV1(
@@ -138,6 +159,8 @@ class Publisher:
 
 
 class Invoker:
+    """Test double: invoker used by the historical EPSS tests."""
+
     def __init__(
         self,
         events: list[str],
@@ -145,6 +168,7 @@ class Invoker:
         fail_on: date | None = None,
         replay_dates: frozenset[date] = frozenset(),
     ) -> None:
+        """Store deterministic behavior for this test double."""
         self.events = events
         self.fail_on = fail_on
         self.replay_dates = replay_dates
@@ -153,6 +177,7 @@ class Invoker:
         self,
         coordinate: HistoricalEpssBronzeInvocationCoordinateV1,
     ) -> HistoricalEpssTransformerResultV1:
+        """Record the transformer invocation and return configured evidence."""
         snapshot_date = coordinate.snapshot_date
         self.events.append(f"invoke:{snapshot_date}")
         if snapshot_date == self.fail_on:
@@ -181,6 +206,7 @@ def _coordinator(
     boundary: date = BOUNDARY,
     invoker: Invoker | None = None,
 ) -> ExecuteHistoricalEpssBackfillV1:
+    """Return the configured coordinator evidence for tests."""
     return ExecuteHistoricalEpssBackfillV1(
         forward_boundary_reader=BoundaryReader(events, boundary),
         archive_inventory_reader=InventoryReader(events, inventory),
@@ -192,6 +218,7 @@ def _coordinator(
 
 
 def test_boundary_drift_fails_closed_before_source_or_write() -> None:
+    """Boundary drift fails closed before source or write."""
     inventory, sources = _inventory()
     events: list[str] = []
     coordinator = _coordinator(
@@ -208,6 +235,7 @@ def test_boundary_drift_fails_closed_before_source_or_write() -> None:
 
 
 def test_executor_api_has_no_subset_or_concurrency_controls() -> None:
+    """Executor api has no subset or concurrency controls."""
     init_parameters = inspect.signature(ExecuteHistoricalEpssBackfillV1.__init__).parameters
     execute_parameters = inspect.signature(ExecuteHistoricalEpssBackfillV1.execute).parameters
 
@@ -218,6 +246,7 @@ def test_executor_api_has_no_subset_or_concurrency_controls() -> None:
 
 
 def test_first_error_stops_before_later_snapshot() -> None:
+    """First error stops before later snapshot."""
     inventory, sources = _inventory()
     events: list[str] = []
     coordinator = _coordinator(
@@ -236,6 +265,7 @@ def test_first_error_stops_before_later_snapshot() -> None:
 
 
 def test_resume_replays_completed_items_then_continues_in_order() -> None:
+    """Resume replays completed items then continues in order."""
     inventory, sources = _inventory()
     events: list[str] = []
     coordinator = _coordinator(
