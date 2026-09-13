@@ -1,0 +1,42 @@
+version: 2
+
+# The repository argues that dependency risk should be evidence-backed. Not
+# watching its own dependencies would be the one place that argument does not
+# apply to itself.
+#
+# Grouped so a routine bump arrives as one reviewable pull request rather than
+# as a dozen that each re-run the full quality gate.
+
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      python-runtime:
+        applies-to: version-updates
+        patterns: ["*"]
+        exclude-patterns: ["pytest*", "ruff", "pyright", "boto3-stubs*"]
+      python-tooling:
+        applies-to: version-updates
+        patterns: ["pytest*", "ruff", "pyright", "boto3-stubs*"]
+      python-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci(deps)"
+    groups:
+      github-actions:
+        patterns: ["*"]
