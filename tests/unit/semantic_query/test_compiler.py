@@ -7,6 +7,12 @@ from typing import cast
 import pytest
 
 from opslens.semantic_query.application import compile_semantic_query
+from opslens.semantic_query.config import (
+    DEFAULT_ATHENA_DATABASE,
+    DEFAULT_ATHENA_WORKGROUP,
+    DEFAULT_EPSS_TABLE,
+    SemanticQueryCatalog,
+)
 from opslens.semantic_query.domain import (
     ALLOWED_DIMENSIONS,
     ALLOWED_METRICS,
@@ -20,6 +26,12 @@ from opslens.semantic_query.domain import (
     SemanticQueryValidationError,
     SortDirection,
     UnsupportedSemanticQueryError,
+)
+
+_CATALOG = SemanticQueryCatalog(
+    database=DEFAULT_ATHENA_DATABASE,
+    workgroup=DEFAULT_ATHENA_WORKGROUP,
+    epss_table=DEFAULT_EPSS_TABLE,
 )
 
 
@@ -51,7 +63,7 @@ def test_phase_6_1_allowlists_are_deliberately_narrow() -> None:
 
 def test_compiler_emits_only_owned_identifiers_and_positional_parameters() -> None:
     """The first factual question compiles to fixed SQL plus literal parameters."""
-    compiled = compile_semantic_query(_query())
+    compiled = compile_semantic_query(_query(), _CATALOG)
 
     assert compiled.sql == (
         'SELECT "cve", "epss"\n'
@@ -65,7 +77,7 @@ def test_compiler_emits_only_owned_identifiers_and_positional_parameters() -> No
 
 def test_minimum_score_is_optional_but_snapshot_date_is_always_present() -> None:
     """A bounded snapshot query may omit the threshold without implying latest data."""
-    compiled = compile_semantic_query(_query(minimum_score=None))
+    compiled = compile_semantic_query(_query(minimum_score=None), _CATALOG)
 
     assert compiled.sql == (
         'SELECT "cve", "epss"\n'
@@ -79,15 +91,15 @@ def test_minimum_score_is_optional_but_snapshot_date_is_always_present() -> None
 
 def test_same_semantic_query_always_compiles_to_same_output() -> None:
     """Compiler output is reproducible for identical typed evidence."""
-    first = compile_semantic_query(_query())
-    second = compile_semantic_query(_query())
+    first = compile_semantic_query(_query(), _CATALOG)
+    second = compile_semantic_query(_query(), _CATALOG)
 
     assert first == second
 
 
 def test_ascending_order_remains_allowlisted_and_has_stable_cve_tie_breaker() -> None:
     """Only the direction varies; the compiler still owns the order expression."""
-    compiled = compile_semantic_query(_query(order_direction=SortDirection.ASC))
+    compiled = compile_semantic_query(_query(order_direction=SortDirection.ASC), _CATALOG)
 
     assert 'ORDER BY "epss" ASC, "cve" ASC' in compiled.sql
 
@@ -160,7 +172,7 @@ def test_valid_but_unsupported_dimension_shape_fails_closed_in_compiler() -> Non
     )
 
     with pytest.raises(UnsupportedSemanticQueryError, match="cve dimension"):
-        compile_semantic_query(query)
+        compile_semantic_query(query, _CATALOG)
 
 
 def test_unknown_sort_direction_fails_before_sql_compilation() -> None:

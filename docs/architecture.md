@@ -213,6 +213,31 @@ natural-language fact question
 
 The model never receives unrestricted SQL authority.
 
+The data catalog the compiler and the Athena adapter address is a deployment
+coordinate, resolved once at composition and fixed for the process:
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `OPSLENS_ATHENA_DATABASE` | `opslens_dev` | Glue database holding the relations |
+| `OPSLENS_ATHENA_WORKGROUP` | `opslens-dev` | Athena workgroup queries are submitted to |
+| `OPSLENS_ATHENA_EPSS_TABLE` | `epss_scores` | Table backing the EPSS score slice |
+
+The defaults are the names the `dev` Terraform root creates, so an unconfigured
+deployment behaves exactly as before. Configuring them relaxes nothing:
+
+```text
+configurable at deployment != selectable at request time
+```
+
+Nothing reaching the compiler or the adapter at request time can choose a
+database, workgroup, table, column or SQL fragment. Each identifier is validated
+against a closed character set before it can reach a statement — the relation is
+interpolated into SQL text, so an unvalidated variable would turn a trusted
+constant into an injection vector — and the adapter refuses compiled SQL whose
+relation is not that of the catalog it was constructed with, so a compiler and an
+adapter wired to different catalogs fail closed instead of querying the wrong
+environment.
+
 ### Knowledge/remediation path
 
 ```text

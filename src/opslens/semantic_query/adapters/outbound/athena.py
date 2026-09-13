@@ -8,6 +8,7 @@ from datetime import date
 from typing import Protocol, cast
 
 from opslens.semantic_query.application.models import AthenaQueryResult
+from opslens.semantic_query.config import SemanticQueryCatalog
 from opslens.semantic_query.domain import (
     CompiledAthenaQuery,
     SemanticQueryExecutionError,
@@ -15,9 +16,6 @@ from opslens.semantic_query.domain import (
     SemanticQueryTimeoutError,
 )
 
-ATHENA_DATABASE = "opslens_dev"
-ATHENA_WORKGROUP = "opslens-dev"
-_EPSS_RELATION = '"opslens_dev"."epss_scores"'
 _TERMINAL_STATES = frozenset({"SUCCEEDED", "FAILED", "CANCELLED"})
 _ACTIVE_STATES = frozenset({"QUEUED", "RUNNING"})
 _SNAPSHOT_PARAMETER = re.compile(r"'(\d{4}-\d{2}-\d{2})'")
@@ -65,11 +63,12 @@ class AthenaQueryClient(Protocol):
 
 
 class AthenaQueryExecutor:
-    """Execute compiler-owned SELECT statements in the fixed OpsLens dev workgroup."""
+    """Execute compiler-owned SELECT statements against one fixed configured catalog."""
 
     def __init__(
         self,
         client: AthenaQueryClient,
+        catalog: SemanticQueryCatalog,
         *,
         poll_interval_seconds: float = 1.0,
         max_poll_attempts: int = 60,
@@ -79,9 +78,14 @@ class AthenaQueryExecutor:
 
         Args:
             client: Minimal Athena client implementation.
+            catalog: The one database, workgroup and relation this executor may
+                address. Resolved once at composition and fixed thereafter.
             poll_interval_seconds: Delay between non-terminal status checks.
             max_poll_attempts: Maximum status checks before cancellation.
             sleeper: Injected sleep function for deterministic tests.
+
+        Raises:
+            ValueError: If a polling bound is outside its permitted range.
         """
         if poll_interval_seconds < 0:
             raise ValueError("Athena poll interval cannot be negative.")
@@ -89,6 +93,7 @@ class AthenaQueryExecutor:
             raise ValueError("Athena max poll attempts must be at least 1.")
 
         self._client = client
+        self._catalog = catalog
         self._poll_interval_seconds = poll_interval_seconds
         self._max_poll_attempts = max_poll_attempts
         self._sleeper = sleeper
@@ -101,8 +106,22 @@ class AthenaQueryExecutor:
     ) -> AthenaQueryResult:
         """Run one bounded, compiler-owned query and return execution evidence.
 
-        The adapter fixes both the Glue database and Athena workgroup. It accepts no
-        user/model-selected database, workgroup, table, column, or SQL fragment.
+        The adapter addresses only the catalog it was constructed with. It accepts no
+        user/model-selected database, workgroup, table, column, or SQL fragment, and it
+        rejects compiled SQL whose relation is not that catalog's — so a compiler and an
+        executor wired to different catalogs fail closed instead of querying the wrong
+        environment.
+
+        Args:
+            query: The compiler-owned query to execute.
+            max_rows: The validated semantic row bound.
+
+        Returns:
+            Execution evidence for one bounded query.
+
+        Raises:
+            SemanticQueryExecutionError: If the bound or the SQL shape is not the
+                compiler-owned one, or the query does not succeed.
         """
         if type(max_rows) is not int or not 1 <= max_rows <= 100:
             raise SemanticQueryExecutionError(
@@ -112,8 +131,8 @@ class AthenaQueryExecutor:
 
         start_response = self._client.start_query_execution(
             QueryString=query.sql,
-            QueryExecutionContext={"Database": ATHENA_DATABASE},
-            WorkGroup=ATHENA_WORKGROUP,
+            QueryExecutionContext={"Database": self._catalog.database},
+            WorkGroup=self._catalog.workgroup,
             ExecutionParameters=list(query.execution_parameters),
         )
         query_execution_id = _required_string(
@@ -325,19 +344,28 @@ class AthenaQueryExecutor:
 
         return tuple(values)
 
-    @staticmethod
     def _assert_compiler_owned_shape(
+        self,
         query: CompiledAthenaQuery,
         *,
         max_rows: int,
     ) -> None:
-        """Accept only the exact Gate 6.1 compiler grammar and literal parameters."""
+        """Accept only the exact Gate 6.1 compiler grammar and literal parameters.
+
+        Args:
+            query: The compiled query to inspect.
+            max_rows: The validated semantic row bound the SQL limit must equal.
+
+        Raises:
+            SemanticQueryExecutionError: If any part of the statement is not the
+                compiler-owned shape over this executor's own catalog relation.
+        """
         lines = query.sql.strip().splitlines()
         if len(lines) != 5:
             raise SemanticQueryExecutionError(
                 "Athena executor accepts only the Gate 6.1 compiler SQL shape."
             )
-        if lines[0] != 'SELECT "cve", "epss"' or lines[1] != f"FROM {_EPSS_RELATION}":
+        if lines[0] != 'SELECT "cve", "epss"' or lines[1] != f"FROM {self._catalog.epss_relation}":
             raise SemanticQueryExecutionError(
                 "Athena executor accepts only the compiler-owned EPSS projection."
             )

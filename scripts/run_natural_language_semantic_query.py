@@ -23,6 +23,7 @@ from opslens.semantic_query.application import (  # noqa: E402
     ExecuteSemanticQuery,
     UnsupportedNaturalLanguageSemanticQuery,
 )
+from opslens.semantic_query.config import SemanticQueryCatalog  # noqa: E402
 from opslens.semantic_query.planner import (  # noqa: E402
     BEDROCK_PLANNER_REGION,
     SemanticPlannerRequest,
@@ -92,10 +93,11 @@ def main() -> int:
     session = Session(profile_name=args.profile)
     bedrock_client = _bedrock_client(session)
     athena_client = _athena_client(session, args.athena_region)
+    catalog = SemanticQueryCatalog.from_environment()
 
     use_case = ExecuteNaturalLanguageSemanticQuery(
         BedrockSemanticPlanner(bedrock_client),
-        ExecuteSemanticQuery(AthenaQueryExecutor(athena_client)),
+        ExecuteSemanticQuery(AthenaQueryExecutor(athena_client, catalog), catalog),
     )
     outcome = use_case.execute(request)
 
