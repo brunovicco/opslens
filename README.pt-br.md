@@ -79,6 +79,23 @@ uv run python scripts/demo_opslens.py \
 `--pretty` apenas reindenta os bytes canônicos. Nunca recalcula digest, então
 `projeção != identidade` vale na CLI exatamente como vale no visualizador.
 
+### Ou instale
+
+O projeto é um pacote instalável de verdade, então o caminho do revisor também
+existe como três comandos de console:
+
+```bash
+uv tool install git+https://github.com/brunovicco/opslens
+opslens-demo --scenario material-vulnerability --format text
+opslens-demo-evaluate --format text
+opslens-demo-web
+```
+
+`pip install .` funciona do mesmo jeito. Cada comando é exatamente o módulo para
+o qual o entry point correspondente em `scripts/` delega — um teste garante o
+pareamento — então o comando instalado e o comando documentado do checkout não
+podem divergir.
+
 Veja [Demo](docs/demo/README.md), [Cenários](docs/demo/SCENARIOS.md) e o [walkthrough de 3–5 minutos](docs/demo/WALKTHROUGH.md).
 
 ## Arquitetura em resumo

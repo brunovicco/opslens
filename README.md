@@ -79,6 +79,22 @@ uv run python scripts/demo_opslens.py \
 `--pretty` reindents the canonical bytes. It never recomputes a digest, so
 `projection != identity` holds in the CLI exactly as it does in the viewer.
 
+### Or install it
+
+The project is a real installable package, so the reviewer path also exists as
+three console commands:
+
+```bash
+uv tool install git+https://github.com/brunovicco/opslens
+opslens-demo --scenario material-vulnerability --format text
+opslens-demo-evaluate --format text
+opslens-demo-web
+```
+
+`pip install .` works the same way. Each command is the identical module the
+matching `scripts/` entry point delegates to — a test asserts the pairing — so the
+installed command and the documented checkout command cannot drift apart.
+
 See [Demo](docs/demo/README.md), [Scenarios](docs/demo/SCENARIOS.md), and the [3–5 minute walkthrough](docs/demo/WALKTHROUGH.md).
 
 ## Architecture at a glance

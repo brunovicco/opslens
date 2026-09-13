@@ -1,13 +1,56 @@
+# OpsLens is a demonstration architecture lab, not a production SaaS. The metadata
+# below says so, because published metadata is a claim like any other.
+[build-system]
+requires = ["uv_build>=0.12.3,<0.14"]
+build-backend = "uv_build"
+
 [project]
 name = "opslens"
 version = "0.1.0"
-description = "Operational intelligence platform for software delivery and cloud operations."
+description = "Deterministic software-supply-chain evidence lab: agents reason, code verifies evidence."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.13,<3.15"
+authors = [{ name = "Bruno Vicco" }]
+keywords = [
+    "sbom",
+    "software-supply-chain",
+    "vulnerability-management",
+    "evidence",
+    "determinism",
+    "hexagonal-architecture",
+    "bedrock",
+    "aws",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+    "Typing :: Typed",
+]
 dependencies = [
     "aws-lambda-powertools[tracer]>=3.34.0",
     "boto3>=1.43.72",
     "packaging>=26.3",
 ]
+
+[project.urls]
+Homepage = "https://github.com/brunovicco/opslens"
+Repository = "https://github.com/brunovicco/opslens"
+Documentation = "https://github.com/brunovicco/opslens/tree/main/docs"
+Changelog = "https://github.com/brunovicco/opslens/blob/main/docs/adr/README.md"
+
+# The reviewer path, as installed commands. Each target is the same module the
+# repository script delegates to, so `uv run python scripts/demo_opslens.py` and
+# `opslens-demo` cannot drift apart.
+[project.scripts]
+opslens-demo = "opslens.demo.cli:main"
+opslens-demo-evaluate = "opslens.demo.evaluation_cli:main"
+opslens-demo-web = "opslens.demo.web_cli:main"
 
 [dependency-groups]
 dev = [
