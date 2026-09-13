@@ -16,6 +16,7 @@ from opslens.semantic_query.adapters.outbound import (  # noqa: E402
     AthenaQueryExecutor,
 )
 from opslens.semantic_query.application import ExecuteSemanticQuery  # noqa: E402
+from opslens.semantic_query.config import SemanticQueryCatalog  # noqa: E402
 from opslens.semantic_query.domain import (  # noqa: E402
     EpssFilters,
     SemanticDimension,
@@ -86,7 +87,8 @@ def main() -> int:
 
     session = Session(profile_name=args.profile, region_name=args.region)
     client = _athena_client(session, args.region)
-    use_case = ExecuteSemanticQuery(AthenaQueryExecutor(client))
+    catalog = SemanticQueryCatalog.from_environment()
+    use_case = ExecuteSemanticQuery(AthenaQueryExecutor(client, catalog), catalog)
     result = use_case.execute(query)
 
     print(

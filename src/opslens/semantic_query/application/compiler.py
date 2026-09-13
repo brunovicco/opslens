@@ -1,5 +1,6 @@
 """Deterministic SQL compiler for allowlisted semantic queries."""
 
+from opslens.semantic_query.config import SemanticQueryCatalog
 from opslens.semantic_query.domain import (
     CompiledAthenaQuery,
     SemanticDimension,
@@ -10,16 +11,32 @@ from opslens.semantic_query.domain import (
     UnsupportedSemanticQueryError,
 )
 
-_EPSS_TABLE = '"opslens_dev"."epss_scores"'
 
-
-def compile_semantic_query(query: SemanticQuery) -> CompiledAthenaQuery:
+def compile_semantic_query(
+    query: SemanticQuery,
+    catalog: SemanticQueryCatalog,
+) -> CompiledAthenaQuery:
     """Compile one supported semantic query into compiler-owned Athena SQL.
 
     User/model output never supplies SQL identifiers or SQL fragments. The compiler
     owns the database, table, selected columns, predicates, ordering, and LIMIT shape.
     Only already-validated literal filter values become positional Athena execution
     parameters.
+
+    The catalog is a deployment coordinate resolved once at composition, never a
+    request-time choice: `configurable at deployment != selectable at request time`.
+    Its identifiers are validated by `SemanticQueryCatalog`, so no configured value
+    can leave its position in the statement.
+
+    Args:
+        query: The already-validated semantic query to compile.
+        catalog: The fixed data catalog this composition may address.
+
+    Returns:
+        The compiled Athena query and its positional execution parameters.
+
+    Raises:
+        UnsupportedSemanticQueryError: If the query falls outside the compiled slice.
     """
     if query.metric is not SemanticMetric.EPSS_SCORE:
         raise UnsupportedSemanticQueryError("Only the epss_score metric is supported.")
@@ -43,7 +60,7 @@ def compile_semantic_query(query: SemanticQuery) -> CompiledAthenaQuery:
     sql = "\n".join(
         [
             'SELECT "cve", "epss"',
-            f"FROM {_EPSS_TABLE}",
+            f"FROM {catalog.epss_relation}",
             f"WHERE {' AND '.join(predicates)}",
             f'ORDER BY "epss" {direction}, "cve" ASC',
             f"LIMIT {query.limit}",

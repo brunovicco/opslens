@@ -9,6 +9,12 @@ from opslens.semantic_query.application import (
     ExecuteSemanticQuery,
     UnsupportedNaturalLanguageSemanticQuery,
 )
+from opslens.semantic_query.config import (
+    DEFAULT_ATHENA_DATABASE,
+    DEFAULT_ATHENA_WORKGROUP,
+    DEFAULT_EPSS_TABLE,
+    SemanticQueryCatalog,
+)
 from opslens.semantic_query.domain import (
     CompiledAthenaQuery,
     EpssFilters,
@@ -77,6 +83,13 @@ def _evidence() -> BedrockPlannerInvocationEvidence:
     )
 
 
+_CATALOG = SemanticQueryCatalog(
+    database=DEFAULT_ATHENA_DATABASE,
+    workgroup=DEFAULT_ATHENA_WORKGROUP,
+    epss_table=DEFAULT_EPSS_TABLE,
+)
+
+
 def _query() -> SemanticQuery:
     """Return the first bounded EPSS semantic query."""
     return SemanticQuery(
@@ -109,7 +122,7 @@ def test_supported_natural_language_query_reenters_compiler_owned_execution() ->
     compiled_executor = _FakeCompiledExecutor(_athena_result())
     use_case = ExecuteNaturalLanguageSemanticQuery(
         planner,
-        ExecuteSemanticQuery(compiled_executor),
+        ExecuteSemanticQuery(compiled_executor, _CATALOG),
     )
     request = SemanticPlannerRequest(
         "Which CVEs have EPSS of at least 0.7 on 2026-09-03?"
@@ -151,7 +164,7 @@ def test_unsupported_natural_language_query_never_reaches_compiler_or_athena() -
     compiled_executor = _FakeCompiledExecutor(_athena_result())
     use_case = ExecuteNaturalLanguageSemanticQuery(
         planner,
-        ExecuteSemanticQuery(compiled_executor),
+        ExecuteSemanticQuery(compiled_executor, _CATALOG),
     )
     request = SemanticPlannerRequest("Which CVEs have EPSS of at least 0.7?")
 

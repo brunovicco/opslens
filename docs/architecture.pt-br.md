@@ -213,6 +213,31 @@ pergunta factual em linguagem natural
 
 O modelo não recebe autoridade de SQL irrestrito.
 
+O catálogo de dados que o compilador e o adaptador Athena endereçam é uma
+coordenada de deployment, resolvida uma vez na composição e fixa para o processo:
+
+| Variável | Padrão | Significado |
+| --- | --- | --- |
+| `OPSLENS_ATHENA_DATABASE` | `opslens_dev` | Database Glue que contém as relações |
+| `OPSLENS_ATHENA_WORKGROUP` | `opslens-dev` | Workgroup Athena onde as queries são submetidas |
+| `OPSLENS_ATHENA_EPSS_TABLE` | `epss_scores` | Tabela que sustenta o slice de score EPSS |
+
+Os padrões são os nomes que o root Terraform de `dev` cria, então um deployment
+não configurado se comporta exatamente como antes. Configurar não relaxa nada:
+
+```text
+configurable at deployment != selectable at request time
+```
+
+Nada que chegue ao compilador ou ao adaptador em tempo de request pode escolher
+database, workgroup, tabela, coluna ou fragmento de SQL. Cada identificador é
+validado contra um conjunto fechado de caracteres antes de alcançar uma
+statement — a relação é interpolada em texto SQL, então uma variável não validada
+transformaria uma constante confiável em vetor de injeção — e o adaptador recusa
+SQL compilado cuja relação não seja a do catálogo com que foi construído, de modo
+que compilador e adaptador ligados a catálogos diferentes falham fechado em vez de
+consultar o ambiente errado.
+
 ### Caminho de conhecimento/remediação
 
 ```text

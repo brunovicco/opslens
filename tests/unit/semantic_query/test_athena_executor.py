@@ -5,12 +5,14 @@ from datetime import date
 
 import pytest
 
-from opslens.semantic_query.adapters.outbound import (
-    ATHENA_DATABASE,
-    ATHENA_WORKGROUP,
-    AthenaQueryExecutor,
-)
+from opslens.semantic_query.adapters.outbound import AthenaQueryExecutor
 from opslens.semantic_query.application import ExecuteSemanticQuery
+from opslens.semantic_query.config import (
+    DEFAULT_ATHENA_DATABASE,
+    DEFAULT_ATHENA_WORKGROUP,
+    DEFAULT_EPSS_TABLE,
+    SemanticQueryCatalog,
+)
 from opslens.semantic_query.domain import (
     CompiledAthenaQuery,
     EpssFilters,
@@ -192,27 +194,43 @@ def _result_response(
     return response
 
 
+_CATALOG = SemanticQueryCatalog(
+    database=DEFAULT_ATHENA_DATABASE,
+    workgroup=DEFAULT_ATHENA_WORKGROUP,
+    epss_table=DEFAULT_EPSS_TABLE,
+)
+
+
 def _executor(client: _FakeAthenaClient, *, max_poll_attempts: int = 5) -> AthenaQueryExecutor:
     """Build an executor without real sleeping."""
     return AthenaQueryExecutor(
         client,
+        _CATALOG,
         poll_interval_seconds=0.0,
         max_poll_attempts=max_poll_attempts,
         sleeper=lambda _: None,
     )
 
 
+def _use_case(client: _FakeAthenaClient, *, max_poll_attempts: int = 5) -> ExecuteSemanticQuery:
+    """Compose the use case over one catalog, the way a composition root does."""
+    return ExecuteSemanticQuery(
+        _executor(client, max_poll_attempts=max_poll_attempts),
+        _CATALOG,
+    )
+
+
 def test_application_compiles_then_executes_in_fixed_dev_boundary() -> None:
     """The application never grants the caller arbitrary SQL/workgroup authority."""
     client = _FakeAthenaClient(states=("QUEUED", "RUNNING", "SUCCEEDED"))
-    use_case = ExecuteSemanticQuery(_executor(client))
+    use_case = _use_case(client)
 
     result = use_case.execute(_semantic_query())
 
     assert len(client.start_calls) == 1
     start = client.start_calls[0]
-    assert start["QueryExecutionContext"] == {"Database": ATHENA_DATABASE}
-    assert start["WorkGroup"] == ATHENA_WORKGROUP
+    assert start["QueryExecutionContext"] == {"Database": DEFAULT_ATHENA_DATABASE}
+    assert start["WorkGroup"] == DEFAULT_ATHENA_WORKGROUP
     assert start["ExecutionParameters"] == ["'2026-09-03'", "0.7"]
     assert start["QueryString"] == (
         'SELECT "cve", "epss"\n'
@@ -237,7 +255,7 @@ def test_application_compiles_then_executes_in_fixed_dev_boundary() -> None:
 def test_sql_limit_controls_get_query_results_page_bound() -> None:
     """Each API result page is bounded by the semantic query limit plus header."""
     client = _FakeAthenaClient()
-    use_case = ExecuteSemanticQuery(_executor(client))
+    use_case = _use_case(client)
 
     use_case.execute(_semantic_query(limit=100))
 
@@ -252,7 +270,7 @@ def test_failed_query_surfaces_state_reason_without_fetching_results() -> None:
     )
 
     with pytest.raises(SemanticQueryExecutionError, match="COLUMN_NOT_FOUND"):
-        ExecuteSemanticQuery(_executor(client)).execute(_semantic_query())
+        _use_case(client).execute(_semantic_query())
 
     assert client.result_calls == []
     assert client.stop_calls == []
@@ -263,7 +281,7 @@ def test_cancelled_query_fails_closed_without_fetching_results() -> None:
     client = _FakeAthenaClient(states=("CANCELLED",))
 
     with pytest.raises(SemanticQueryExecutionError, match="CANCELLED"):
-        ExecuteSemanticQuery(_executor(client)).execute(_semantic_query())
+        _use_case(client).execute(_semantic_query())
 
     assert client.result_calls == []
 
@@ -273,7 +291,7 @@ def test_poll_timeout_requests_cancellation() -> None:
     client = _FakeAthenaClient(states=("QUEUED", "RUNNING", "RUNNING"))
 
     with pytest.raises(SemanticQueryTimeoutError, match="polling bound"):
-        ExecuteSemanticQuery(_executor(client, max_poll_attempts=3)).execute(_semantic_query())
+        _use_case(client, max_poll_attempts=3).execute(_semantic_query())
 
     assert client.stop_calls == ["query-123"]
     assert client.result_calls == []
@@ -284,7 +302,7 @@ def test_unknown_athena_state_requests_cancellation_and_fails_closed() -> None:
     client = _FakeAthenaClient(states=("MYSTERY",))
 
     with pytest.raises(SemanticQueryExecutionError, match="unsupported query state"):
-        ExecuteSemanticQuery(_executor(client)).execute(_semantic_query())
+        _use_case(client).execute(_semantic_query())
 
     assert client.stop_calls == ["query-123"]
 
@@ -294,7 +312,7 @@ def test_missing_query_execution_id_is_rejected() -> None:
     client = _FakeAthenaClient(query_execution_id=None)
 
     with pytest.raises(SemanticQueryResultError, match="QueryExecutionId"):
-        ExecuteSemanticQuery(_executor(client)).execute(_semantic_query())
+        _use_case(client).execute(_semantic_query())
 
 
 def test_bounded_result_pagination_is_followed() -> None:
@@ -312,7 +330,7 @@ def test_bounded_result_pagination_is_followed() -> None:
         )
     )
 
-    result = ExecuteSemanticQuery(_executor(client)).execute(_semantic_query())
+    result = _use_case(client).execute(_semantic_query())
 
     assert result.rows == (
         ("CVE-2026-0001", "0.91"),
@@ -344,7 +362,7 @@ def test_paginated_rows_still_cannot_exceed_semantic_limit() -> None:
     )
 
     with pytest.raises(SemanticQueryResultError, match="more rows"):
-        ExecuteSemanticQuery(_executor(client)).execute(_semantic_query(limit=1))
+        _use_case(client).execute(_semantic_query(limit=1))
 
 
 def test_repeated_result_pagination_token_is_rejected() -> None:
@@ -360,7 +378,7 @@ def test_repeated_result_pagination_token_is_rejected() -> None:
     )
 
     with pytest.raises(SemanticQueryResultError, match="repeated"):
-        ExecuteSemanticQuery(_executor(client)).execute(_semantic_query())
+        _use_case(client).execute(_semantic_query())
 
 
 def test_result_row_width_must_match_metadata() -> None:
@@ -370,7 +388,7 @@ def test_result_row_width_must_match_metadata() -> None:
     )
 
     with pytest.raises(SemanticQueryResultError, match="row width"):
-        ExecuteSemanticQuery(_executor(client)).execute(_semantic_query())
+        _use_case(client).execute(_semantic_query())
 
 
 def test_null_result_value_is_preserved_explicitly() -> None:
@@ -381,7 +399,7 @@ def test_null_result_value_is_preserved_explicitly() -> None:
         )
     )
 
-    result = ExecuteSemanticQuery(_executor(client)).execute(_semantic_query())
+    result = _use_case(client).execute(_semantic_query())
 
     assert result.rows == (("CVE-2026-0001", None),)
 
@@ -487,6 +505,55 @@ def test_executor_configuration_must_be_bounded() -> None:
     client = _FakeAthenaClient()
 
     with pytest.raises(ValueError, match="poll interval"):
-        AthenaQueryExecutor(client, poll_interval_seconds=-0.1)
+        AthenaQueryExecutor(client, _CATALOG, poll_interval_seconds=-0.1)
     with pytest.raises(ValueError, match="max poll attempts"):
-        AthenaQueryExecutor(client, max_poll_attempts=0)
+        AthenaQueryExecutor(client, _CATALOG, max_poll_attempts=0)
+
+
+def test_a_configured_catalog_reaches_every_part_of_the_athena_call() -> None:
+    """No environment name is baked in: database, workgroup and SQL all follow the catalog."""
+    catalog = SemanticQueryCatalog(
+        database="opslens_prod",
+        workgroup="opslens-prod",
+        epss_table="epss_scores_v2",
+    )
+    client = _FakeAthenaClient()
+    use_case = ExecuteSemanticQuery(
+        AthenaQueryExecutor(
+            client,
+            catalog,
+            poll_interval_seconds=0.0,
+            max_poll_attempts=5,
+            sleeper=lambda _: None,
+        ),
+        catalog,
+    )
+
+    use_case.execute(_semantic_query())
+
+    start = client.start_calls[0]
+    assert start["QueryExecutionContext"] == {"Database": "opslens_prod"}
+    assert start["WorkGroup"] == "opslens-prod"
+    assert start["QueryString"] == (
+        'SELECT "cve", "epss"\n'
+        'FROM "opslens_prod"."epss_scores_v2"\n'
+        'WHERE "snapshot_date" = ? AND "epss" >= ?\n'
+        'ORDER BY "epss" DESC, "cve" ASC\n'
+        "LIMIT 20"
+    )
+
+
+def test_a_compiler_and_executor_wired_to_different_catalogs_fail_closed() -> None:
+    """Mismatched composition must never query the wrong environment silently."""
+    compiler_catalog = SemanticQueryCatalog(
+        database="opslens_prod",
+        workgroup="opslens-prod",
+        epss_table="epss_scores",
+    )
+    client = _FakeAthenaClient()
+    use_case = ExecuteSemanticQuery(_executor(client), compiler_catalog)
+
+    with pytest.raises(SemanticQueryExecutionError, match="compiler-owned EPSS projection"):
+        use_case.execute(_semantic_query())
+
+    assert client.start_calls == []
