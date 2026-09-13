@@ -12,6 +12,7 @@ from opslens.hybrid_retrieval.domain.synthesis import (
     MAX_HYBRID_SYNTHESIS_QUESTION_CHARS,
     HybridSynthesisRequest,
 )
+from opslens.shared.evidence import model_visible_json
 
 MAX_HYBRID_SYNTHESIS_EVIDENCE_BYTES = 24_576
 
@@ -73,13 +74,7 @@ class HybridSynthesisPromptError(ValueError):
 
 def _canonical_json(value: object) -> str:
     """Serialize deterministic model-visible evidence."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=False,
-        separators=(",", ":"),
-        sort_keys=True,
-    )
+    return model_visible_json(value)
 
 
 def _require_text(value: object, *, field: str) -> str:

@@ -1,9 +1,7 @@
 """Deterministic evaluation contracts for the first real two-model comparison."""
 
-import json
 import re
 from dataclasses import dataclass
-from hashlib import sha256
 from typing import cast
 
 from opslens.agent_baseline.domain.models import (
@@ -30,6 +28,7 @@ from opslens.multi_agent.domain.two_model_reasoning import (
     MultiAgentTwoModelOutcome,
     MultiAgentTwoModelReasoningResult,
 )
+from opslens.shared.evidence import canonical_sha256
 
 MULTI_AGENT_REAL_COMPARISON_CONTRACT_VERSION = "multi-agent-real-comparison:v1"
 MAX_MULTI_AGENT_REAL_COMPARISON_CASES = 32
@@ -61,14 +60,7 @@ _REPORT_ID_PATTERN = re.compile(
 
 
 def _canonical_sha256(value: object) -> str:
-    encoded = json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
-    return sha256(encoded).hexdigest()
+    return canonical_sha256(value)
 
 
 def _validate_digest(value: object, *, label: str, expected: str) -> None:

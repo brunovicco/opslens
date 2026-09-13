@@ -11,6 +11,7 @@ from opslens.a2a_boundary.domain.reference import (
     A2A_REFERENCE_INTEROPERABILITY_CONTRACT_VERSION,
     A2AReference,
 )
+from opslens.shared.evidence import canonical_json
 
 A2A_PROTOCOL_RELEASE = "1.0.0"
 A2A_PROTOCOL_VERSION = "1.0"
@@ -84,13 +85,7 @@ class AdmittedSendMessageRequest:
 
 def canonical_json_bytes(value: object) -> bytes:
     """Serialize one protocol object deterministically for byte accounting."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def correlation_id(*, kind: str, reference_sha256: str) -> str:

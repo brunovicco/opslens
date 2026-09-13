@@ -1,6 +1,5 @@
 """Deterministic final result contract for one representative public analysis."""
 
-import json
 from dataclasses import dataclass
 from hashlib import sha256
 
@@ -10,6 +9,7 @@ from opslens.hybrid_retrieval.domain.synthesis import (
 )
 from opslens.public_analysis.domain.errors import PublicAnalysisValidationError
 from opslens.public_analysis.domain.semantic_planning import PublicAnalysisAdmissionHandoff
+from opslens.shared.evidence import canonical_json
 
 PUBLIC_ANALYSIS_PRODUCT_RESULT_CONTRACT_VERSION = "public-analysis-product-result:v1"
 PUBLIC_ANALYSIS_SYNTHESIS_QUESTION = (
@@ -20,13 +20,7 @@ PUBLIC_ANALYSIS_SYNTHESIS_QUESTION = (
 
 def _canonical_json(payload: object) -> bytes:
     """Serialize one stable public-product response payload."""
-    return json.dumps(
-        payload,
-        allow_nan=False,
-        ensure_ascii=False,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(payload)
 
 
 @dataclass(frozen=True, slots=True)

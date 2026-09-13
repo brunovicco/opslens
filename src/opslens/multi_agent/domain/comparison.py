@@ -1,6 +1,5 @@
 """Deterministic provider-neutral contracts for multi-agent comparison evidence."""
 
-import json
 import re
 from dataclasses import dataclass
 from enum import StrEnum
@@ -16,6 +15,7 @@ from opslens.multi_agent.domain.handoff import (
     MultiAgentHandoffProposal,
     capabilities_for_specialization,
 )
+from opslens.shared.evidence import canonical_json
 
 MULTI_AGENT_COMPARISON_CONTRACT_VERSION = "multi-agent-comparison:v1"
 MAX_MULTI_AGENT_COMPARISON_CASES = 32
@@ -57,13 +57,7 @@ _REPORT_ID_PATTERN = re.compile(
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one comparison identity payload deterministically."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _canonical_sha256(value: object) -> str:

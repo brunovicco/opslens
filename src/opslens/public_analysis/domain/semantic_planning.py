@@ -1,6 +1,5 @@
 """Deterministic contracts for bounded public semantic-plan admission and handoff."""
 
-import json
 import re
 from dataclasses import dataclass
 from hashlib import sha256
@@ -17,6 +16,7 @@ from opslens.public_analysis.domain.errors import PublicAnalysisValidationError
 from opslens.public_analysis.domain.evidence_execution import (
     PublicRepositoryEvidenceExecution,
 )
+from opslens.shared.evidence import canonical_json
 
 PUBLIC_SEMANTIC_PLANNING_CONTRACT_VERSION = "public-semantic-planning:v1"
 PUBLIC_ANALYSIS_HANDOFF_CONTRACT_VERSION = "public-analysis-handoff:v1"
@@ -39,13 +39,7 @@ _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$", re.ASCII)
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one deterministic Phase 9 identity payload."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _validate_clean_text(value: object, *, field: str) -> str:

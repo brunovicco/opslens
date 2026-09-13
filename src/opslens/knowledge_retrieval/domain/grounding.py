@@ -1,6 +1,5 @@
 """Provider-independent claim/citation contracts for grounded knowledge synthesis."""
 
-import json
 import re
 from dataclasses import dataclass
 from hashlib import sha256
@@ -9,6 +8,7 @@ from typing import Self, cast
 from opslens.knowledge_retrieval.domain.citations import CitationCatalog
 from opslens.knowledge_retrieval.domain.errors import KnowledgeRetrievalValidationError
 from opslens.knowledge_retrieval.domain.synthesis import SynthesisDecision, SynthesisRequest
+from opslens.shared.evidence import canonical_json
 
 GROUNDED_SYNTHESIS_CONTRACT_ID = "knowledge-grounded-synthesis:v1"
 MAX_GROUNDED_CLAIMS = 16
@@ -45,12 +45,7 @@ def _validate_sha256(value: object, label: str) -> str:
 
 def _canonical_json_bytes(payload: object) -> bytes:
     """Serialize deterministic grounded-synthesis identity evidence."""
-    return json.dumps(
-        payload,
-        ensure_ascii=False,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(payload)
 
 
 def _grounded_request_payload(

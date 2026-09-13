@@ -18,6 +18,7 @@ from opslens.knowledge_retrieval.domain import (
     SynthesisResult,
 )
 from opslens.knowledge_retrieval.domain.errors import KnowledgeRetrievalValidationError
+from opslens.shared.evidence import model_visible_json
 
 MAX_SYNTHESIS_PROVIDER_RESPONSE_CHARS = 65_536
 
@@ -81,12 +82,7 @@ def _validate_sha256(value: object, label: str) -> str:
 
 def _canonical_json(value: object) -> str:
     """Serialize one deterministic JSON payload used by the provider-independent envelope."""
-    return json.dumps(
-        value,
-        ensure_ascii=False,
-        separators=(",", ":"),
-        sort_keys=True,
-    )
+    return model_visible_json(value)
 
 
 def _prompt_fingerprint_payload(

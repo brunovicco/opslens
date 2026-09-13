@@ -1,6 +1,5 @@
 """Deterministic non-public result admission for the Gate 19.2 representative workload."""
 
-import json
 from dataclasses import dataclass
 from hashlib import sha256
 
@@ -13,6 +12,7 @@ from opslens.public_analysis.domain.errors import PublicAnalysisValidationError
 from opslens.public_analysis.domain.semantic_planning import PublicAnalysisAdmissionHandoff
 from opslens.repository_intelligence.domain import RepositoryAnalysisResult
 from opslens.risk_policy.domain import RiskPrioritizationResult
+from opslens.shared.evidence import canonical_json
 
 REPRESENTATIVE_PUBLIC_RESULT_CONTRACT_VERSION = "representative-public-analysis-result:v1"
 MAX_REPRESENTATIVE_RESULT_FINDINGS = 8
@@ -20,13 +20,7 @@ MAX_REPRESENTATIVE_RESULT_FINDINGS = 8
 
 def _canonical_json(value: object) -> bytes:
     """Serialize the bounded representative result with stable identity."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 @dataclass(frozen=True, slots=True)

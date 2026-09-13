@@ -11,6 +11,7 @@ from opslens.agent_baseline.domain.reasoning_evaluation import (
     AgentReasoningEvaluationCase,
     AgentReasoningEvaluationDataset,
 )
+from opslens.shared.evidence import canonical_json
 
 AGENTCORE_RUNTIME_REPLAY_ARTIFACT_VERSION = "agentcore-runtime-replay:v1"
 PHASE11_REFERENCE_CORPUS_SHA256 = (
@@ -56,13 +57,7 @@ class AgentCoreRuntimeInvokeClient(Protocol):
 
 def _canonical_json(value: object) -> bytes:
     """Serialize one deterministic replay identity payload."""
-    return json.dumps(
-        value,
-        allow_nan=False,
-        ensure_ascii=True,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
+    return canonical_json(value)
 
 
 def _canonical_sha256(value: object) -> str:

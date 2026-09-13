@@ -27,6 +27,7 @@ from opslens.public_analysis.domain import (
     PublicAnalysisValidationError,
     PublicRepositoryEvidenceExecution,
 )
+from opslens.shared.evidence import canonical_json
 from opslens.transformation.nvd.domain.models import NvdCveCoreRecord
 
 PUBLIC_THREAT_EVIDENCE_SCOPE_CONTRACT_VERSION = "public-threat-evidence-scope:v1"
@@ -203,17 +204,11 @@ class PublicThreatEvidenceRequest:
     @property
     def canonical_json(self) -> bytes:
         """Bind the authority request to exact dependency scope and selection semantics."""
-        return json.dumps(
-            {
+        return canonical_json({
                 "contract_version": PUBLIC_THREAT_EVIDENCE_REQUEST_CONTRACT_VERSION,
                 "scope_id": self.scope.scope_id,
                 "snapshot_policy": self.snapshot_policy.value,
-            },
-            allow_nan=False,
-            ensure_ascii=True,
-            separators=(",", ":"),
-            sort_keys=True,
-        ).encode("utf-8")
+            })
 
     @property
     def request_id(self) -> str:
