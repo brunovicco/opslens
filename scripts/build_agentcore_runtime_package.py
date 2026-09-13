@@ -49,6 +49,11 @@ _RUNTIME_SOURCE_FILES = (
     "opslens/agentcore_runtime/domain.py",
     "opslens/agentcore_runtime/http_adapter.py",
     "opslens/agentcore_runtime/server.py",
+    # The canonical evidence serialization is a runtime dependency of the
+    # agent_baseline and agentcore_runtime domains, so it ships with them.
+    "opslens/shared/__init__.py",
+    "opslens/shared/evidence/__init__.py",
+    "opslens/shared/evidence/canonical.py",
 )
 _RUNTIME_EMPTY_PACKAGE_DIRS = (
     "opslens/agent_baseline/adapters",
