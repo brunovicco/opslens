@@ -29,8 +29,12 @@ _REPOSITORY_NAME = "fail-closed-incomplete-evidence-fixture"
 _REPOSITORY_ID = 19_110_003
 _COMMIT_SHA = "7" * 40
 _TREE_SHA = "8" * 40
+# Gate 20.0 admits a partially identified scope, so incomplete normalization alone no
+# longer rejects. What still rejects — and what this scenario demonstrates — is a lock
+# in which nothing at all can be identified.
 _EXPECTED_AUTHORITY_MESSAGE = (
-    "public threat scope refuses incomplete PyPI normalization evidence"
+    "public threat scope requires at least one identified dependency; "
+    "a lock whose records cannot be identified at all fails closed"
 )
 _EXPECTED_REASON_CODE = "invalid_version"
 
@@ -149,7 +153,7 @@ class FailClosedDemoResult:
             "outcome": {
                 "state": "REJECTED_INCOMPLETE_EVIDENCE",
                 "stage": "PUBLIC_THREAT_SCOPE_ADMISSION",
-                "reason_code": "INCOMPLETE_PYPI_NORMALIZATION",
+                "reason_code": "UNIDENTIFIABLE_PYPI_NORMALIZATION",
                 "authority_message": self.authority_message,
                 "analysis_performed": False,
                 "risk_prioritization_performed": False,

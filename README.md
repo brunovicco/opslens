@@ -267,6 +267,7 @@ The pending-measurement state is historical; later gates supplied the measuremen
 - [Architecture](docs/architecture.md)
 - [Portfolio Evidence](docs/portfolio-evidence.md)
 - [V1 Demonstration Scope](docs/v1-demonstration-scope.md)
+- [Post-V1 Online Analysis Plan](docs/post-v1-online-analysis.md)
 - [V1 Completion Checklist](docs/v1-completion-checklist.md)
 - [Demo Walkthrough](docs/demo/WALKTHROUGH.md)
 - [Portfolio Capture Guide](docs/demo/PORTFOLIO_CAPTURE.md)

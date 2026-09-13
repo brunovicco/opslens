@@ -187,7 +187,7 @@ jobs:
         run: >-
           /tmp/pkgcheck/bin/opslens-demo-evaluate --format text
           | grep -qF
-          'opslens-demo-suite-evaluation:v1@sha256:ed99f385a108ee8de4521ff8c338bc8d66b188a1311c30ba014ca329cee146d3'
+          'opslens-demo-suite-evaluation:v1@sha256:deac5a84623cbac84501c09022651386bf10e973a1cd9fa411d7693e1346d3a9'
 
   quickstart-smoke:
     name: README quickstart on a clean clone
@@ -221,4 +221,4 @@ jobs:
         run: >-
           uv run python scripts/evaluate_opslens_demo.py --format text
           | grep -qF
-          'opslens-demo-suite-evaluation:v1@sha256:ed99f385a108ee8de4521ff8c338bc8d66b188a1311c30ba014ca329cee146d3'
+          'opslens-demo-suite-evaluation:v1@sha256:deac5a84623cbac84501c09022651386bf10e973a1cd9fa411d7693e1346d3a9'

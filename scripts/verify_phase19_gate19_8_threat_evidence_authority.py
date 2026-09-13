@@ -1,5 +1,22 @@
 #!/usr/bin/env python3
-"""Verify the Gate 19.8 request-time threat-evidence contract without providers."""
+"""Verify the request-time threat-evidence contract without providers.
+
+Gate 19.8 froze the contract. Gate 20.0 deliberately superseded part of it: the scope
+now admits a partially identified lock, carrying unidentifiable records inside its own
+identity instead of refusing outright. See ADR 0084.
+
+Two kinds of assertion live here and they must not be confused. The retained evidence
+artifact is checked exactly as frozen — it recorded `public-threat-evidence-scope:v1`
+and that remains a true statement about Gate 19.8. The source markers are checked
+against what must be true *today*, so they follow the contract forward. Re-pinning them
+is a deliberate two-part change — new ADR plus moved markers — rather than a silent
+edit, which is the same discipline ADR 0079 established for retained artifacts.
+
+```text
+historical evidence != standing authority
+superseded contract != falsified record
+```
+"""
 
 import json
 from pathlib import Path
@@ -103,22 +120,28 @@ def _verify_contract(root: dict[str, object], source: str) -> None:
         raise Gate19_8VerificationError("Gate 19.8 unexpectedly grants model authority")
 
     for marker in (
-        'PUBLIC_THREAT_EVIDENCE_SCOPE_CONTRACT_VERSION = "public-threat-evidence-scope:v1"',
+        # Scope moved to v2 under ADR 0084. The request shape did not change, so it did
+        # not move. The retained artifact above still asserts v1, as it should.
+        'PUBLIC_THREAT_EVIDENCE_SCOPE_CONTRACT_VERSION = "public-threat-evidence-scope:v2"',
         'PUBLIC_THREAT_EVIDENCE_REQUEST_CONTRACT_VERSION = "public-threat-evidence-request:v1"',
         'LATEST_COMPLETE = "latest_complete"',
         "class PublicThreatDependencyScope",
         "class PublicThreatEvidenceScope",
+        "class PublicThreatUnidentifiedDependency",
         "class PublicThreatEvidenceRequest",
         "class PublicThreatEvidenceProvenance",
         "class PublicRepositoryThreatEvidence",
         "class PublicThreatEvidenceAuthority(Protocol)",
         "def build_public_threat_evidence_scope(",
         "def load_public_repository_threat_evidence(",
-        "public threat scope refuses incomplete PyPI normalization evidence",
+        "def coverage_complete(",
+        # Partial coverage is admissible; zero coverage and overstated coverage are not.
+        "public threat scope requires at least one identified dependency",
+        "a source record cannot be both identified and unidentified",
         "public GHSA evidence is outside the admitted dependency scope",
         "public NVD evidence is unrelated to admitted scoped GHSA evidence",
     ):
-        _require(source, marker, label="Gate 19.8 contract")
+        _require(source, marker, label="threat evidence contract")
 
     for forbidden in (
         "import boto3",

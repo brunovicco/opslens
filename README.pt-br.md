@@ -269,6 +269,7 @@ O estado de medição pendente é histórico; gates posteriores forneceram a med
 - [Arquitetura](docs/architecture.pt-br.md)
 - [Portfolio Evidence](docs/portfolio-evidence.md)
 - [Escopo de Demonstração V1](docs/v1-demonstration-scope.md)
+- [Plano de Análise Online Post-V1](docs/post-v1-online-analysis.md)
 - [Checklist de Fechamento V1](docs/v1-completion-checklist.md)
 - [Walkthrough da Demo](docs/demo/WALKTHROUGH.md)
 - [Guia de Captura de Portfólio](docs/demo/PORTFOLIO_CAPTURE.md)

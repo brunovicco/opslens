@@ -18,6 +18,7 @@ from opslens.public_analysis.application.threat_evidence_authority import (
     PublicThreatDependencyScope,
     PublicThreatEvidenceRequest,
     PublicThreatEvidenceScope,
+    PublicThreatUnidentifiedDependency,
     build_public_threat_evidence_scope,
     load_public_repository_threat_evidence,
 )
@@ -101,6 +102,30 @@ def _execution(*, version: str = "2.31.0"):
     )
 
 
+def _mixed_lock_content() -> bytes:
+    """One lock whose first record normalizes and whose second cannot."""
+    return (
+        b"version = 1\n"
+        b"revision = 3\n"
+        b'requires-python = ">=3.13"\n'
+        b"[[package]]\n"
+        b'name = "Requests"\n'
+        b'version = "2.31.0"\n'
+        b'source = { registry = "https://pypi.org/simple" }\n'
+        b"[[package]]\n"
+        b'name = "brokenpkg"\n'
+        b'version = "definitely-not-pep440"\n'
+        b'source = { registry = "https://pypi.org/simple" }\n'
+    )
+
+
+def _partial_execution():
+    return build_public_repository_evidence(
+        _request(),
+        _Source(content=_mixed_lock_content()),
+    )
+
+
 def _ghsa(
     *,
     package_name: str = "Requests",
@@ -170,7 +195,7 @@ def test_scope_is_bound_to_exact_repository_evidence_and_canonical_pypi_identity
     assert dependency.version == "2.31.0"
     assert dependency.purl == "pkg:pypi/requests@2.31.0"
     assert dependency.source_record_indexes == (0,)
-    assert scope.scope_id.startswith("public-threat-evidence-scope:v1@sha256:")
+    assert scope.scope_id.startswith("public-threat-evidence-scope:v2@sha256:")
 
 
 def test_query_package_names_collapse_package_lookup_without_losing_version_scope() -> None:
@@ -202,15 +227,137 @@ def test_query_package_names_collapse_package_lookup_without_losing_version_scop
     assert scope.dependencies[1].source_record_indexes == (4, 8)
 
 
-def test_scope_fails_closed_when_phase3_cannot_normalize_a_pypi_record() -> None:
-    """Fail closed when retained Phase 3 cannot normalize one PyPI dependency record."""
+def test_scope_fails_closed_when_no_record_can_be_identified_at_all() -> None:
+    """Partial coverage is admissible; zero coverage is still fatal.
+
+    A lock nothing can be identified in must not produce an empty scope that
+    correlates nothing and reports nothing.
+    """
     execution = _execution(version="definitely-not-pep440")
 
     with pytest.raises(
         PublicAnalysisValidationError,
-        match="refuses incomplete PyPI normalization evidence",
+        match="requires at least one identified dependency",
     ):
         build_public_threat_evidence_scope(execution)
+
+
+def test_scope_admits_partial_coverage_and_carries_what_it_could_not_identify() -> None:
+    """An unidentifiable record is accounted for, not dropped and not fatal."""
+    scope = build_public_threat_evidence_scope(_partial_execution())
+
+    assert scope.identified_dependency_count == 1
+    assert scope.query_package_names == ("requests",)
+    assert scope.unidentified_record_count == 1
+    assert scope.coverage_complete is False
+
+    unidentified = scope.unidentified[0]
+    assert unidentified.name_original == "brokenpkg"
+    assert unidentified.version_original == "definitely-not-pep440"
+    assert unidentified.reason_code
+    assert unidentified.source_record_indexes == (1,)
+
+
+def test_coverage_is_part_of_scope_identity_not_metadata_beside_it() -> None:
+    """Two locks differing only in coverage are different scopes."""
+    complete = build_public_threat_evidence_scope(_execution())
+    partial = build_public_threat_evidence_scope(_partial_execution())
+
+    assert complete.coverage_complete is True
+    assert partial.coverage_complete is False
+    assert complete.scope_sha256 != partial.scope_sha256
+    assert b'"complete":true' in complete.canonical_json
+    assert b'"complete":false' in partial.canonical_json
+    assert b"brokenpkg" in partial.canonical_json
+
+
+def test_partial_coverage_changes_the_authority_request_identity() -> None:
+    """A request cannot be answered from a cached result for a differently covered scope."""
+    complete = PublicThreatEvidenceRequest(scope=build_public_threat_evidence_scope(_execution()))
+    partial = PublicThreatEvidenceRequest(
+        scope=build_public_threat_evidence_scope(_partial_execution())
+    )
+
+    assert complete.request_id != partial.request_id
+
+
+def test_a_source_record_cannot_be_both_identified_and_unidentified() -> None:
+    """Coverage cannot be overstated by one index appearing in both halves."""
+    with pytest.raises(PublicAnalysisValidationError, match="both identified and unidentified"):
+        PublicThreatEvidenceScope(
+            source_execution_id="public-repository-evidence:v1@sha256:" + ("e" * 64),
+            source_evidence_sha256="e" * 64,
+            dependencies=(
+                PublicThreatDependencyScope(
+                    package_name="requests",
+                    version="2.31.0",
+                    purl="pkg:pypi/requests@2.31.0",
+                    source_record_indexes=(0,),
+                ),
+            ),
+            unidentified=(
+                PublicThreatUnidentifiedDependency(
+                    name_original="brokenpkg",
+                    version_original="nope",
+                    reason_code="unsupported_version",
+                    source_record_indexes=(0,),
+                ),
+            ),
+        )
+
+
+def test_unidentified_records_must_use_canonical_ordering() -> None:
+    """Scope identity cannot depend on the order the normalizer happened to reject in."""
+    identified = (
+        PublicThreatDependencyScope(
+            package_name="requests",
+            version="2.31.0",
+            purl="pkg:pypi/requests@2.31.0",
+            source_record_indexes=(0,),
+        ),
+    )
+    out_of_order = (
+        PublicThreatUnidentifiedDependency(
+            name_original="zeta",
+            version_original="nope",
+            reason_code="unsupported_version",
+            source_record_indexes=(2,),
+        ),
+        PublicThreatUnidentifiedDependency(
+            name_original="alpha",
+            version_original="nope",
+            reason_code="unsupported_version",
+            source_record_indexes=(1,),
+        ),
+    )
+
+    with pytest.raises(PublicAnalysisValidationError, match="canonical ordering"):
+        PublicThreatEvidenceScope(
+            source_execution_id="public-repository-evidence:v1@sha256:" + ("e" * 64),
+            source_evidence_sha256="e" * 64,
+            dependencies=identified,
+            unidentified=out_of_order,
+        )
+
+
+@pytest.mark.parametrize(
+    ("name", "version", "reason"),
+    [
+        ("", "nope", "unsupported_version"),
+        ("brokenpkg", " ", "unsupported_version"),
+        ("brokenpkg", "nope", ""),
+        (" brokenpkg", "nope", "unsupported_version"),
+    ],
+)
+def test_unidentified_records_require_clean_originals(name: str, version: str, reason: str) -> None:
+    """An unidentified record still carries exact strings, never blank or padded ones."""
+    with pytest.raises(PublicAnalysisValidationError):
+        PublicThreatUnidentifiedDependency(
+            name_original=name,
+            version_original=version,
+            reason_code=reason,
+            source_record_indexes=(1,),
+        )
 
 
 def test_typed_evidence_preserves_exact_snapshot_and_source_local_provenance() -> None:
