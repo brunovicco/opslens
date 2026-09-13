@@ -1,14 +1,45 @@
 #!/usr/bin/env python3
-"""Verify Gate 19.5 role artifacts by rebuilding twice without AWS access."""
+"""Verify Gate 19.5 role artifacts by rebuilding them from their pinned tree.
+
+The retained prepublication manifest pins two artifact digests that the Gate
+19.6 plan inputs and the Gate 19.7 materialization evidence both reference. The
+property this gate proves is therefore:
+
+    the retained artifact is deterministically reproducible from the tree that
+    produced it, using the builder that ships today
+
+and not "the current working tree reproduces the retained artifact". Rebuilding
+from HEAD asserts the second, which proves nothing about the retained evidence
+and turns every later change to packaged source into a false failure.
+
+So the rebuild runs inside a git worktree pinned at ``_PINNED_BUILD_COMMIT``.
+The builder is today's, not the pinned tree's: it is copied into the worktree
+before the rebuild, so the gate exercises current build tooling against the
+recorded source. A builder change that stops reproducing the retained digests
+fails here, while a change that does not affect packaging passes. Its safety
+controls are checked separately against the working tree.
+
+``source_main_sha`` in the manifest is the main commit the Gate 19.5 work
+branched from, not the tree that was packaged: ``src/`` changed between the two.
+The packaged tree is the commit that introduced the manifest, pinned below.
+
+```text
+retained artifact identity != current source identity
+historical evidence != standing authority
+```
+"""
 
 from __future__ import annotations
 
 import base64
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import tempfile
+from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import cast
 from zipfile import ZipFile
@@ -20,6 +51,10 @@ _CANONICAL_MANIFEST = (
     _REPO_ROOT / "labs" / "evidence" / "phase-19-gate-19-5-prepublication-v1.json"
 )
 _EXPECTED_SOURCE_MAIN = "a5067e05fda74aad4d95d7f1a875110fb676304a"
+# The commit whose tree produced the retained artifacts. Distinct from
+# _EXPECTED_SOURCE_MAIN above, which records only the main commit the Gate 19.5
+# work branched from. Re-freezing the manifest means moving this pin.
+_PINNED_BUILD_COMMIT = "61749bfac7b7bc9d032567e0b1870f8c1f7dedd4"
 _EXPECTED_BUCKET = "opslens-dev-artifacts-487757851499-us-east-1"
 _EXPECTED_ROLES = {"api", "worker"}
 _EXPECTED_ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
@@ -63,10 +98,79 @@ def _load_canonical_manifest() -> dict[str, object]:
     return _object(raw, label="canonical prepublication manifest")
 
 
-def _run_build(root: Path) -> tuple[dict[str, object], str]:
-    process = subprocess.run(
-        [sys.executable, str(_BUILDER), "--output-root", str(root)],
+def _git(*arguments: str) -> subprocess.CompletedProcess[str]:
+    """Run one git command in the repository and return the completed process."""
+    return subprocess.run(
+        ["git", *arguments],
         cwd=_REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+
+def _require_pinned_commit() -> None:
+    """Make the pinned build commit available, fetching it when the clone is shallow."""
+    probe = f"{_PINNED_BUILD_COMMIT}^{{commit}}"
+    if _git("cat-file", "-e", probe).returncode == 0:
+        return
+    fetched = _git("fetch", "--depth", "1", "origin", _PINNED_BUILD_COMMIT)
+    if fetched.returncode != 0 or _git("cat-file", "-e", probe).returncode != 0:
+        raise Gate19_5ArtifactBuildError(
+            "the pinned Gate 19.5 build commit is unavailable\n"
+            f"commit: {_PINNED_BUILD_COMMIT}\n"
+            f"stderr:\n{fetched.stderr}"
+        )
+
+
+@contextmanager
+def _pinned_source_tree() -> Generator[Path]:
+    """Materialize the exact tree the retained artifacts were built from."""
+    _require_pinned_commit()
+    with tempfile.TemporaryDirectory(prefix="opslens-gate19-5-src-") as directory:
+        worktree = Path(directory) / "source"
+        added = _git("worktree", "add", "--detach", str(worktree), _PINNED_BUILD_COMMIT)
+        if added.returncode != 0:
+            raise Gate19_5ArtifactBuildError(
+                f"could not materialize the pinned build commit\nstderr:\n{added.stderr}"
+            )
+        try:
+            yield worktree
+        finally:
+            _git("worktree", "remove", "--force", str(worktree))
+            _git("worktree", "prune")
+
+
+def _install_current_builder(source_root: Path) -> Path:
+    """Place today's builder inside the pinned tree and return its path.
+
+    The builder resolves every path from its own location, so running today's
+    builder from inside the pinned worktree packages the pinned source. That is
+    what makes the gate exercise the builder rather than merely compare its
+    text: if a builder change stops reproducing the retained digests, the
+    comparison against the frozen manifest fails.
+    """
+    pinned_builder = source_root / "scripts" / _BUILDER.name
+    if not pinned_builder.is_file():
+        raise Gate19_5ArtifactBuildError(
+            f"the pinned build commit has no artifact builder at {pinned_builder}"
+        )
+    pinned_builder.write_bytes(_BUILDER.read_bytes())
+    return pinned_builder
+
+
+def _run_build(root: Path, source_root: Path) -> tuple[dict[str, object], str]:
+    builder = source_root / "scripts" / _BUILDER.name
+    environment = dict(os.environ)
+    environment["PYTHONPATH"] = str(source_root / "src")
+    # The pinned tree carries its own [tool.uv] required-version. That setting
+    # never reaches a packaged artifact, so ignoring project configuration keeps
+    # the rebuild reproducible under whichever uv the caller has installed.
+    environment["UV_NO_CONFIG"] = "1"
+    process = subprocess.run(
+        [sys.executable, str(builder), "--output-root", str(root)],
+        cwd=source_root,
+        env=environment,
         check=False,
         capture_output=True,
         text=True,
@@ -269,13 +373,15 @@ def main() -> int:
     """Rebuild twice and admit only byte-identical role artifacts."""
     _verify_builder_source()
     with (
+        _pinned_source_tree() as pinned_source,
         tempfile.TemporaryDirectory(prefix="opslens-gate19-5-a-") as first_dir,
         tempfile.TemporaryDirectory(prefix="opslens-gate19-5-b-") as second_dir,
     ):
+        _install_current_builder(pinned_source)
         first_root = Path(first_dir)
         second_root = Path(second_dir)
-        first_manifest, _first_stdout = _run_build(first_root)
-        second_manifest, _second_stdout = _run_build(second_root)
+        first_manifest, _first_stdout = _run_build(first_root, pinned_source)
+        second_manifest, _second_stdout = _run_build(second_root, pinned_source)
         _verify_manifest_identity(first_manifest)
         _verify_manifest_identity(second_manifest)
         if first_manifest != second_manifest:
@@ -315,6 +421,7 @@ def main() -> int:
 
     print(
         "phase19_gate19_5_artifact_build=PASS "
+        f"rebuilt_from_pinned_tree={_PINNED_BUILD_COMMIT} "
         "canonical_prepublication_manifest=PASS "
         "publication_authority=HUMAN_ONLY_CREATE_ONLY "
         "terraform_apply_authorized=false "
