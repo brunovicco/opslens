@@ -1,11 +1,9 @@
 """Bounded Phase 2.5D-5 historical EPSS full-backfill coordination."""
 
-from __future__ import annotations
-
 import hashlib
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
-from typing import Callable
 from uuid import UUID, uuid4
 
 from opslens.bootstrap.epss_history import (
@@ -20,7 +18,10 @@ from opslens.bootstrap.epss_history import (
     HistoricalEpssTransformerResultV1,
     HistoricalEpssWorkItemV1,
 )
-from opslens.ingestion.epss.domain.history import HistoricalEpssSnapshot, HistoricalEpssSnapshotParser
+from opslens.ingestion.epss.domain.history import (
+    HistoricalEpssSnapshot,
+    HistoricalEpssSnapshotParser,
+)
 
 BACKFILL_CONFIRMATION = "EPSS-HISTORY-FULL-1939"
 FROZEN_FIRST_FORWARD_SNAPSHOT_DATE = date(2026, 8, 14)
@@ -87,7 +88,9 @@ class HistoricalEpssBackfillItemResultV1:
         if self.ordinal < 1 or self.total < 1 or self.ordinal > self.total:
             raise ValueError("Historical EPSS backfill ordinal is invalid.")
         if self.transformer.snapshot_date != self.work_item.snapshot_date:
-            raise ValueError("Historical EPSS backfill transformer snapshot does not match work item.")
+            raise ValueError(
+                "Historical EPSS backfill transformer snapshot does not match work item."
+            )
         if len(self.source_sha256) != 64:
             raise ValueError("Historical EPSS backfill source SHA-256 is invalid.")
         if not self.bronze_manifest_key.strip() or not self.bronze_manifest_version_id.strip():
@@ -219,7 +222,9 @@ class ExecuteHistoricalEpssBackfillV1:
             usedforsecurity=False,
         ).hexdigest()
         if git_blob_sha1 != work_item.archive_git_blob_sha1:
-            raise ValueError("Historical EPSS source Git blob identity does not match pinned metadata.")
+            raise ValueError(
+                "Historical EPSS source Git blob identity does not match pinned metadata."
+            )
         snapshot = self._snapshot_parser.parse(
             source_bytes,
             snapshot_date=work_item.snapshot_date,

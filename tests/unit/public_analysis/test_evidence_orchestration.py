@@ -1,7 +1,5 @@
 """Tests for deterministic Phase 9 public repository evidence orchestration."""
 
-from __future__ import annotations
-
 import base64
 from dataclasses import dataclass, field, replace
 

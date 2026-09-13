@@ -1,7 +1,5 @@
 """Gate 7.7 real-runtime orchestration over frozen groundedness cases."""
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from dataclasses import dataclass
 

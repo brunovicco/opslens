@@ -1,7 +1,5 @@
 """Application-owned bounded publication of canonical Bedrock source objects."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from hashlib import sha256
 from typing import Protocol, cast
@@ -53,7 +51,7 @@ def _require_bytes(value: object, *, field: str) -> bytes:
     return value
 
 
-def _require_payloads(value: object) -> tuple[PublicationPayload, ...]:
+def _require_payloads(value: object) -> "tuple[PublicationPayload, ...]":
     """Require one bounded tuple of publication payloads."""
     if not isinstance(value, tuple):
         raise S3PublicationValidationError("payloads must be a tuple")
@@ -69,7 +67,7 @@ def _require_payloads(value: object) -> tuple[PublicationPayload, ...]:
     return cast(tuple[PublicationPayload, ...], items)
 
 
-def _require_remote_objects(value: object) -> tuple[RemoteObjectEvidence, ...]:
+def _require_remote_objects(value: object) -> "tuple[RemoteObjectEvidence, ...]":
     """Require one bounded tuple of verified remote object evidence."""
     if not isinstance(value, tuple):
         raise S3PublicationValidationError("objects must be a tuple")

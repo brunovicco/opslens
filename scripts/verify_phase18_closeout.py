@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Verify the historical Phase 18 closeout artifact and current post-merge docs."""
 
-from __future__ import annotations
-
 import argparse
 import json
 from pathlib import Path

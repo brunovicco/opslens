@@ -1,7 +1,5 @@
 """Compose and measure one non-public representative public-analysis workload."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol

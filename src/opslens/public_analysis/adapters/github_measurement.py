@@ -1,7 +1,5 @@
 """Measure physical GitHub HTTPS requests without changing repository-read authority."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass
 

@@ -1,7 +1,5 @@
 """Tests that freeze the Gate 15.2 protocol fixture independently from implementation code."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import cast

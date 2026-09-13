@@ -1,7 +1,5 @@
 """Validated fail-closed runtime configuration for the Gate 19.4 async topology."""
 
-from __future__ import annotations
-
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -70,7 +68,7 @@ class AsyncApiRuntimeSettings:
     def from_environment(
         cls,
         environment: Mapping[str, str] | None = None,
-    ) -> AsyncApiRuntimeSettings:
+    ) -> "AsyncApiRuntimeSettings":
         """Load API settings with new-job admission disabled unless explicitly enabled."""
         source = os.environ if environment is None else environment
         return cls(
@@ -101,7 +99,7 @@ class AsyncWorkerRuntimeSettings:
     def from_environment(
         cls,
         environment: Mapping[str, str] | None = None,
-    ) -> AsyncWorkerRuntimeSettings:
+    ) -> "AsyncWorkerRuntimeSettings":
         """Load worker settings with provider-heavy execution disabled by default."""
         source = os.environ if environment is None else environment
         return cls(

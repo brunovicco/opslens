@@ -1,7 +1,5 @@
 """Tests for immutable inert `uv.lock` evidence at an exact repository snapshot."""
 
-from __future__ import annotations
-
 import base64
 import json
 from collections.abc import Mapping

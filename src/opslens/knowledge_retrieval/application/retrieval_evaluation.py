@@ -1,7 +1,5 @@
 """Deterministic Gate 7.5 golden retrieval evaluation contracts and metrics."""
 
-from __future__ import annotations
-
 import json
 import math
 from dataclasses import dataclass

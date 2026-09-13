@@ -1,7 +1,5 @@
 """Offline HTTP API tests for the Gate 19.4 asynchronous public control path."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import dataclass, field
 from typing import cast

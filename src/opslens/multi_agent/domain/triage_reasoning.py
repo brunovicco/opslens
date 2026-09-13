@@ -1,7 +1,5 @@
 """Provider-neutral evidence contracts for bounded multi-agent triage reasoning."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass
@@ -188,7 +186,7 @@ class MultiAgentTriageInvocationEvidence:
         provider_latency_ms: int,
         client_elapsed_ms: int,
         retry_attempts: int,
-    ) -> MultiAgentTriageInvocationEvidence:
+    ) -> "MultiAgentTriageInvocationEvidence":
         """Create immutable metadata-only triage invocation evidence."""
         payload: dict[str, object] = {
             "cache_read_input_tokens": cache_read_input_tokens,
@@ -292,7 +290,7 @@ class MultiAgentTriageReasoningResult:
         source_task: SingleAgentTask,
         proposal: MultiAgentHandoffProposal,
         invocation_evidence: MultiAgentTriageInvocationEvidence,
-    ) -> MultiAgentTriageReasoningResult:
+    ) -> "MultiAgentTriageReasoningResult":
         """Create a content-addressed triage result after deterministic parsing."""
         payload: dict[str, object] = {
             "contract_version": MULTI_AGENT_TRIAGE_REASONING_CONTRACT_VERSION,

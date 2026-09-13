@@ -1,7 +1,5 @@
 """Application service for bounded MCP protocol-reference admission."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from opslens.agent_baseline.domain import AgentCapabilityInvocation
@@ -30,7 +28,7 @@ class McpAdmissionProjection:
     admission_sha256: str
 
     @classmethod
-    def from_admission(cls, admission: McpToolCallAdmission) -> McpAdmissionProjection:
+    def from_admission(cls, admission: McpToolCallAdmission) -> "McpAdmissionProjection":
         """Project only deterministic admission identity fields onto the protocol."""
         if type(admission) is not McpToolCallAdmission:
             raise McpBoundaryValidationError(

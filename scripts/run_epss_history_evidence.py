@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Run read-only Phase 2.5D-5 historical EPSS post-backfill evidence verification."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import os
@@ -10,6 +8,7 @@ from typing import Any, cast
 
 import boto3
 from botocore.exceptions import ClientError
+from run_epss_history_canary import GitHubArchiveReader
 
 from opslens.bootstrap.epss_history_evidence import (
     HistoricalEpssEvidenceObjectV1,
@@ -27,7 +26,6 @@ from opslens.transformation.epss.history.runtime import (
     HistoricalEpssForwardListClient,
     S3HistoricalEpssForwardBoundaryReader,
 )
-from run_epss_history_canary import GitHubArchiveReader
 
 
 def parse_args() -> argparse.Namespace:

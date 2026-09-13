@@ -1,7 +1,5 @@
 """Tests for exact EPSS authority decoding."""
 
-from __future__ import annotations
-
 import gzip
 import hashlib
 from dataclasses import dataclass, field

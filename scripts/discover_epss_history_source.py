@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Inventory the public EPSS historical archive without downloading score files."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import os

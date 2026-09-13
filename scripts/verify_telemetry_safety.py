@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Verify retained Lambda telemetry content-minimization invariants."""
 
-from __future__ import annotations
-
 import ast
 from pathlib import Path
 
@@ -129,21 +127,21 @@ def _verify_exception_adapter() -> None:
             logger_calls.append(name)
             if name == "self._logger.exception":
                 raise TelemetrySafetyError(
-                    "PowertoolsTelemetry.exception must not serialize the active exception/traceback"
+                    "PowertoolsTelemetry.exception must not serialize the active"
+                    " exception/traceback"
                 )
             for keyword in node.keywords:
-                if keyword.arg in {"exc_info", "stack_info"}:
-                    if not (
-                        isinstance(keyword.value, ast.Constant)
-                        and keyword.value.value is False
-                    ):
-                        raise TelemetrySafetyError(
-                            "failure logging must not enable exc_info or stack_info"
-                        )
+                if keyword.arg in {"exc_info", "stack_info"} and not (
+                    isinstance(keyword.value, ast.Constant) and keyword.value.value is False
+                ):
+                    raise TelemetrySafetyError(
+                        "failure logging must not enable exc_info or stack_info"
+                    )
 
     if logger_calls != ["self._logger.error"]:
         raise TelemetrySafetyError(
-            "PowertoolsTelemetry.exception must emit exactly one content-minimized logger.error call"
+            "PowertoolsTelemetry.exception must emit exactly one"
+            " content-minimized logger.error call"
         )
 
 

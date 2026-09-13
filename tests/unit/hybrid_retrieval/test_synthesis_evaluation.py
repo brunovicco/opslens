@@ -1,7 +1,5 @@
 """Unit tests for Gate 8.4 runtime orchestration and independent synthesis metrics."""
 
-from __future__ import annotations
-
 import json
 from collections.abc import Mapping
 from pathlib import Path

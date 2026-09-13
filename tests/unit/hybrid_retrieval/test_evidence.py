@@ -1,7 +1,5 @@
 """Unit tests for the Phase 8 Gate 8.2 evidence domain contract."""
 
-from __future__ import annotations
-
 import math
 
 import pytest

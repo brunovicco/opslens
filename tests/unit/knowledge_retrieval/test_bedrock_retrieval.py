@@ -1,7 +1,5 @@
 """Tests for Gate 7.4 bounded Bedrock Knowledge Base Retrieve admission."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from hashlib import sha256
 from typing import cast

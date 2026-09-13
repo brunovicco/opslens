@@ -1,7 +1,5 @@
 """Regression tests for the Phase 10 operational telemetry contract."""
 
-from __future__ import annotations
-
 import json
 from typing import cast
 

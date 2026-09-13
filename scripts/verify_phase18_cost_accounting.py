@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Verify the frozen Phase 18 Gate 18.3 cost-accounting envelope."""
 
-from __future__ import annotations
-
 import argparse
 from pathlib import Path
 

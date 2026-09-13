@@ -1,7 +1,5 @@
 """Deterministic API Gateway HTTP API v2 admission for the async public surface."""
 
-from __future__ import annotations
-
 import base64
 import binascii
 import json

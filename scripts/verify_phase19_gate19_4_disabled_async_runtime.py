@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Verify the Gate 19.4 disabled async runtime without AWS or provider access."""
 
-from __future__ import annotations
-
 import json
 import re
 from pathlib import Path

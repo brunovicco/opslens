@@ -39,10 +39,12 @@ ABSENT_DATE = date(2021, 4, 22)
 
 
 def _gzip(text: str) -> bytes:
+    """Encode deterministic gzip source bytes for tests."""
     return gzip.compress(text.encode(), mtime=0)
 
 
 def _source(snapshot_date: date) -> bytes:
+    """Build one valid source shape for each pinned snapshot coordinate."""
     era = EpssModelEra.for_snapshot_date(snapshot_date)
     if era is EpssModelEra.V1:
         return _gzip("cve,epss\nCVE-2020-5902,0.65117\n")
@@ -55,6 +57,7 @@ def _source(snapshot_date: date) -> bytes:
 
 
 def _git_blob_sha1(payload: bytes) -> str:
+    """Return Git blob identity for exact source bytes."""
     return hashlib.sha1(
         f"blob {len(payload)}\0".encode() + payload,
         usedforsecurity=False,
@@ -62,6 +65,7 @@ def _git_blob_sha1(payload: bytes) -> str:
 
 
 def _inventory() -> tuple[HistoricalEpssArchiveInventoryV1, dict[date, bytes]]:
+    """Build a pinned archive inventory and its matching payload mapping."""
     sources = {snapshot_date: _source(snapshot_date) for snapshot_date in CANARY_DATES}
     items = tuple(
         HistoricalEpssWorkItemV1(
@@ -93,23 +97,34 @@ def _inventory() -> tuple[HistoricalEpssArchiveInventoryV1, dict[date, bytes]]:
 
 
 class BoundaryReader:
+    """Test double: boundary reader used by the historical EPSS tests."""
+
     def discover(self) -> date:
+        """Return the configured forward boundary and record the read."""
         return BOUNDARY
 
 
 class InventoryReader:
+    """Test double: inventory reader used by the historical EPSS tests."""
+
     def __init__(self, inventory: HistoricalEpssArchiveInventoryV1) -> None:
+        """Store deterministic behavior for this test double."""
         self.inventory = inventory
 
     def read(self) -> HistoricalEpssArchiveInventoryV1:
+        """Return the configured evidence and record the read."""
         return self.inventory
 
 
 class FakePreparer:
+    """Test double: fake preparer used by the historical EPSS tests."""
+
     def __init__(self) -> None:
+        """Store deterministic behavior for this test double."""
         self.key_factory = EpssSilverKeyFactory(prefix="silver/epss")
 
     def execute(self, evidence: HistoricalEpssBronzeEvidenceV1) -> HistoricalEpssPreparedSilverV1:
+        """Return the configured execute evidence for tests."""
         payload = (
             f"parquet:{evidence.manifest.snapshot_date.isoformat()}:"
             f"{evidence.manifest.source_sha256}"
@@ -125,12 +140,16 @@ class FakePreparer:
 
 
 class FakeEvidenceStore:
+    """Test double: fake evidence store used by the historical EPSS tests."""
+
     def __init__(self) -> None:
+        """Store deterministic behavior for this test double."""
         self.current_versions: dict[str, str] = {}
         self.objects: dict[tuple[str, str], bytes] = {}
         self.versions: dict[str, list[HistoricalEpssEvidenceVersionV1]] = {}
 
     def add_current(self, *, key: str, version_id: str, raw_bytes: bytes) -> None:
+        """Return the configured add current evidence for tests."""
         previous = self.current_versions.get(key)
         if previous is not None:
             for index, version in enumerate(self.versions[key]):
@@ -151,6 +170,7 @@ class FakeEvidenceStore:
         )
 
     def add_old_version(self, *, key: str, version_id: str, raw_bytes: bytes) -> None:
+        """Return the configured add old version evidence for tests."""
         self.objects[(key, version_id)] = raw_bytes
         self.versions.setdefault(key, []).append(
             HistoricalEpssEvidenceVersionV1(
@@ -161,22 +181,27 @@ class FakeEvidenceStore:
         )
 
     def replace_current_bytes(self, *, key: str, raw_bytes: bytes) -> None:
+        """Return the configured replace current bytes evidence for tests."""
         version_id = self.current_versions[key]
         self.objects[(key, version_id)] = raw_bytes
 
     def delete_current(self, *, key: str) -> None:
+        """Return the configured delete current evidence for tests."""
         del self.current_versions[key]
 
     def list_current_keys(self, *, prefix: str) -> tuple[str, ...]:
+        """Return the configured list current keys evidence for tests."""
         return tuple(sorted(key for key in self.current_versions if key.startswith(prefix)))
 
     def read_current(self, *, key: str) -> HistoricalEpssEvidenceObjectV1:
+        """Return the configured read current evidence for tests."""
         version_id = self.current_versions.get(key)
         if version_id is None:
             raise KeyError(key)
         return self.read_version(key=key, version_id=version_id)
 
     def read_version(self, *, key: str, version_id: str) -> HistoricalEpssEvidenceObjectV1:
+        """Return the configured read version evidence for tests."""
         raw_bytes = self.objects.get((key, version_id))
         if raw_bytes is None:
             raise KeyError(f"{key}@{version_id}")
@@ -187,10 +212,12 @@ class FakeEvidenceStore:
         )
 
     def list_versions(self, *, key: str) -> tuple[HistoricalEpssEvidenceVersionV1, ...]:
+        """Return the configured list versions evidence for tests."""
         return tuple(self.versions.get(key, []))
 
 
 def _keys(snapshot_date: date) -> dict[str, str]:
+    """Return the configured keys evidence for tests."""
     value = snapshot_date.isoformat()
     bronze_prefix = (
         "bronze/epss-history/schema_version=1/"
@@ -213,6 +240,7 @@ def _manifest_bytes(
     source_bytes: bytes,
     source_version_id: str,
 ) -> bytes:
+    """Return the configured manifest bytes evidence for tests."""
     snapshot = HistoricalEpssSnapshotParser().parse(
         source_bytes,
         snapshot_date=work_item.snapshot_date,
@@ -245,6 +273,7 @@ def _manifest_bytes(
 
 
 def _authority(inventory: HistoricalEpssArchiveInventoryV1) -> HistoricalEpssBackfillAuthorityV1:
+    """Build the frozen bootstrap plan authority used by these tests."""
     plan = HistoricalEpssBootstrapPlanFactoryV1().build(
         inventory=inventory,
         first_forward_snapshot_date=BOUNDARY,
@@ -264,6 +293,7 @@ def _fixture() -> tuple[
     FakePreparer,
     HistoricalEpssBackfillAuthorityV1,
 ]:
+    """Return the configured fixture evidence for tests."""
     inventory, sources = _inventory()
     store = FakeEvidenceStore()
     preparer = FakePreparer()
@@ -345,6 +375,7 @@ def _verifier(
     preparer: FakePreparer,
     authority: HistoricalEpssBackfillAuthorityV1,
 ) -> VerifyHistoricalEpssBackfillEvidenceV1:
+    """Return the configured verifier evidence for tests."""
     return VerifyHistoricalEpssBackfillEvidenceV1(
         forward_boundary_reader=BoundaryReader(),
         archive_inventory_reader=InventoryReader(inventory),
@@ -356,6 +387,7 @@ def _verifier(
 
 
 def test_complete_exact_evidence_passes() -> None:
+    """Complete exact evidence passes."""
     inventory, store, preparer, authority = _fixture()
 
     summary = _verifier(
@@ -383,6 +415,7 @@ def test_complete_exact_evidence_passes() -> None:
 
 
 def test_missing_expected_completion_fails() -> None:
+    """Missing expected completion fails."""
     inventory, store, preparer, authority = _fixture()
     store.delete_current(key=_keys(CANARY_DATES[0])["completion"])
 
@@ -399,6 +432,7 @@ def test_missing_expected_completion_fails() -> None:
 
 
 def test_source_hash_divergence_fails() -> None:
+    """Source hash divergence fails."""
     inventory, store, preparer, authority = _fixture()
     key = _keys(CANARY_DATES[0])["source"]
     store.replace_current_bytes(
@@ -418,6 +452,7 @@ def test_source_hash_divergence_fails() -> None:
 
 
 def test_completion_authority_divergence_fails() -> None:
+    """Completion authority divergence fails."""
     inventory, store, preparer, authority = _fixture()
     store.replace_current_bytes(
         key=_keys(CANARY_DATES[0])["completion"],
@@ -436,6 +471,7 @@ def test_completion_authority_divergence_fails() -> None:
 
 
 def test_historical_boundary_overlap_is_rejected() -> None:
+    """Historical boundary overlap is rejected."""
     inventory, store, preparer, authority = _fixture()
     key = (
         "bronze/epss-history/schema_version=1/"
@@ -457,6 +493,7 @@ def test_historical_boundary_overlap_is_rejected() -> None:
 
 
 def test_source_absent_date_artifact_is_rejected() -> None:
+    """Source absent date artifact is rejected."""
     inventory, store, preparer, authority = _fixture()
     key = f"silver/epss/snapshot_date={ABSENT_DATE.isoformat()}/part-00000.parquet"
     store.add_current(key=key, version_id="absent-silver", raw_bytes=b"unexpected")
@@ -475,6 +512,7 @@ def test_source_absent_date_artifact_is_rejected() -> None:
 
 
 def test_canary_divergent_version_is_rejected() -> None:
+    """Canary divergent version is rejected."""
     inventory, store, preparer, authority = _fixture()
     key = _keys(CANARY_DATES[0])["silver"]
     store.add_old_version(
@@ -495,6 +533,7 @@ def test_canary_divergent_version_is_rejected() -> None:
 
 
 def test_source_current_version_must_match_manifest_authority() -> None:
+    """Source current version must match manifest authority."""
     inventory, store, preparer, authority = _fixture()
     key = _keys(CANARY_DATES[0])["source"]
     current = store.read_current(key=key)

@@ -1,7 +1,5 @@
 """Deterministically parse verified inert `uv.lock` bytes into typed package evidence."""
 
-from __future__ import annotations
-
 import tomllib
 from typing import cast
 

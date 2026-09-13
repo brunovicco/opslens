@@ -1,7 +1,5 @@
 """Run the frozen Gate 12.2 multi-agent comparison fixture without model calls."""
 
-from __future__ import annotations
-
 import argparse
 import json
 from pathlib import Path

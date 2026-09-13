@@ -1,7 +1,5 @@
 """Deterministic canonical-corpus contracts for Phase 7 knowledge retrieval."""
 
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass
 from hashlib import sha256
@@ -53,7 +51,7 @@ def _require_text_tuple(value: object, *, field: str) -> tuple[str, ...]:
     return normalized
 
 
-def _require_selection_specs(value: object) -> tuple[ChunkSelectionSpec, ...]:
+def _require_selection_specs(value: object) -> "tuple[ChunkSelectionSpec, ...]":
     """Require a non-empty tuple of typed chunk selectors."""
     if not isinstance(value, tuple):
         raise KnowledgeRetrievalValidationError("selections must be a tuple")
@@ -67,7 +65,7 @@ def _require_selection_specs(value: object) -> tuple[ChunkSelectionSpec, ...]:
     return cast(tuple[ChunkSelectionSpec, ...], items)
 
 
-def _require_document_specs(value: object) -> tuple[DocumentMaterializationSpec, ...]:
+def _require_document_specs(value: object) -> "tuple[DocumentMaterializationSpec, ...]":
     """Require a non-empty tuple of typed document materialization specs."""
     if not isinstance(value, tuple):
         raise KnowledgeRetrievalValidationError("documents must be a tuple")
@@ -98,7 +96,7 @@ def _require_document(value: object) -> KnowledgeDocument:
     return value
 
 
-def _require_chunks(value: object) -> tuple[CanonicalKnowledgeChunk, ...]:
+def _require_chunks(value: object) -> "tuple[CanonicalKnowledgeChunk, ...]":
     """Require one non-empty tuple of canonical chunks."""
     if not isinstance(value, tuple):
         raise KnowledgeRetrievalValidationError("chunks must be a tuple")

@@ -1,7 +1,5 @@
 """Fail-closed tests for the Gate 19.7 controlled Terraform-state untaint boundary."""
 
-from __future__ import annotations
-
 import json
 import subprocess
 import sys

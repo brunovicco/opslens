@@ -1,7 +1,5 @@
 """Deterministic admission for one bounded triage-to-specialist handoff."""
 
-from __future__ import annotations
-
 from opslens.agent_baseline.domain.models import create_single_agent_task
 from opslens.multi_agent.domain.errors import (
     MultiAgentHandoffAuthorizationError,

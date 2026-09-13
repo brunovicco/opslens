@@ -1,7 +1,5 @@
 """Bounded Amazon Bedrock Converse adapter for the semantic-query planner."""
 
-from __future__ import annotations
-
 import time
 from collections.abc import Callable, Mapping, Sequence
 from typing import Protocol, cast

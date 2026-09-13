@@ -1,7 +1,5 @@
 """Summarize admitted representative threat evidence without retaining raw payloads."""
 
-from __future__ import annotations
-
 import re
 from dataclasses import asdict, dataclass
 

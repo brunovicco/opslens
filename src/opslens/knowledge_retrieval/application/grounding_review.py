@@ -1,7 +1,5 @@
 """Metadata-only evaluation of the preserved Gate 7.7 grounded-synthesis run."""
 
-from __future__ import annotations
-
 import math
 from dataclasses import dataclass
 from hashlib import sha256

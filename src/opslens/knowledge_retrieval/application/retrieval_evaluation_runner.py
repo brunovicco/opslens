@@ -1,7 +1,5 @@
 """Bounded Gate 7.5 orchestration over the already-admitted Gate 7.4 runtime."""
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from dataclasses import dataclass
 

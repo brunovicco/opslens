@@ -1,7 +1,5 @@
 """Application bridge from Phase 4 evidence into deterministic Risk Policy v1."""
 
-from __future__ import annotations
-
 from opslens.repository_intelligence.domain.analysis_result import (
     RepositoryAnalysisFinding,
     RepositoryAnalysisResult,

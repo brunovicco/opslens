@@ -1,7 +1,5 @@
 """Discover real AWS coordinates for the Phase 2.4F cross-source proof."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import os

@@ -1,7 +1,5 @@
 """Read one explicitly versioned S3 authority object without mutable discovery."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Protocol, TypedDict, cast

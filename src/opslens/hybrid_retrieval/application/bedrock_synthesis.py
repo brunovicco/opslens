@@ -1,7 +1,5 @@
 """Pure Bedrock Converse request builder for bounded hybrid synthesis."""
 
-from __future__ import annotations
-
 import json
 from typing import Final
 

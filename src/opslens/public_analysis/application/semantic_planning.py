@@ -1,7 +1,5 @@
 """Bounded semantic planning proposal boundary for the fixed public analysis operation."""
 
-from __future__ import annotations
-
 import json
 from typing import Protocol, cast
 

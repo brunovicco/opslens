@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Probe exact historical EPSS archive formats without executing third-party code."""
 
-from __future__ import annotations
-
 import argparse
 import csv
 import gzip

@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Offline verifier for the Gate 19.7 disabled-materialization authority contract."""
 
-from __future__ import annotations
-
 import json
 import subprocess
 import sys

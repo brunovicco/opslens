@@ -1,7 +1,5 @@
 """Unit tests for bounded natural-language semantic-query composition."""
 
-from __future__ import annotations
-
 from datetime import date
 
 from opslens.semantic_query.application import (

@@ -1,7 +1,5 @@
 """Deterministic evidence binding MCP admission to one typed capability execution."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass
@@ -235,7 +233,7 @@ class McpCapabilityExecutionBridge:
         admission: McpToolCallAdmission,
         invocation: AgentCapabilityInvocation,
         execution: AgentCapabilityExecution,
-    ) -> McpCapabilityExecutionBridge:
+    ) -> "McpCapabilityExecutionBridge":
         """Bind one exact MCP admission to one exact existing typed execution."""
         if type(admission) is not McpToolCallAdmission:
             raise McpBoundaryValidationError("MCP execution bridge requires one admission")

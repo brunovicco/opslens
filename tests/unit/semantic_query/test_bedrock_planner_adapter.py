@@ -1,7 +1,5 @@
 """Unit tests for the bounded Amazon Bedrock semantic planner adapter."""
 
-from __future__ import annotations
-
 import json
 from collections.abc import Callable, Mapping
 from datetime import date

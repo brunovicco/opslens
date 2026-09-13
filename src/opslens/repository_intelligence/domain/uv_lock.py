@@ -1,7 +1,5 @@
 """Typed deterministic inventory evidence extracted from verified `uv.lock` bytes."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import StrEnum
 

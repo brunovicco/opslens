@@ -1,7 +1,5 @@
 """Tests for deterministic parsing of integrity-verified inert `uv.lock` evidence."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 import pytest

@@ -1,7 +1,5 @@
 """Offline tests for the Gate 19.12 localhost visual demonstration."""
 
-from __future__ import annotations
-
 from opslens.demo.visual import (
     DemoVisualProjection,
     VisualFact,

@@ -1,7 +1,5 @@
 """Provider-neutral result evidence for one bounded triage-to-specialist reasoning path."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass
@@ -221,7 +219,7 @@ class MultiAgentTwoModelReasoningResult:
         specialist_task_id: str | None,
         specialist_result: AgentReasoningResult | None,
         model_invocation_count: int,
-    ) -> MultiAgentTwoModelReasoningResult:
+    ) -> "MultiAgentTwoModelReasoningResult":
         """Create one content-addressed terminal result before capability execution."""
         payload: dict[str, object] = {
             "capability_executions": MAX_MULTI_AGENT_CAPABILITY_EXECUTIONS,

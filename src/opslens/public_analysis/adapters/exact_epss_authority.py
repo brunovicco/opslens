@@ -1,7 +1,5 @@
 """Decode one complete EPSS authority snapshot from exact immutable S3 evidence."""
 
-from __future__ import annotations
-
 import re
 from collections.abc import Mapping
 from datetime import datetime

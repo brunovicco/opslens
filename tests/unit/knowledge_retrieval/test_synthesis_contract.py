@@ -1,7 +1,5 @@
 """Tests for Gate 7.6b provider-independent synthesis contracts."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import replace
 

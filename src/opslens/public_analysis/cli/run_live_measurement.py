@@ -1,7 +1,5 @@
 """Human-run composition root for one Gate 19.2 representative live measurement."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import os

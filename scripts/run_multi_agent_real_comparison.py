@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Run the frozen Gate 12.3 two-model corpus through Amazon Bedrock."""
 
-from __future__ import annotations
-
 import argparse
 import json
 from dataclasses import asdict

@@ -71,11 +71,15 @@ select = [
     "I",
     "RUF",
     "SIM",
+    "TID",
     "UP",
 ]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"__future__.annotations" = { msg = "Annotations are evaluated at runtime in this codebase; quote forward references instead." }
 
 [tool.pyright]
 include = [

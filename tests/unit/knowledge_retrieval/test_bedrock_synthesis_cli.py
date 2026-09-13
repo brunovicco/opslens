@@ -1,7 +1,5 @@
 """Unit tests for the bounded Gate 7.6e retrieval-to-synthesis lab runner."""
 
-from __future__ import annotations
-
 import json
 
 import pytest

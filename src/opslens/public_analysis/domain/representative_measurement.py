@@ -1,7 +1,5 @@
 """Domain contracts for non-public representative workload measurement."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -195,7 +193,7 @@ class ProviderResourceUsage:
             ProviderResourceMetric.THROTTLE_COUNT: self.throttle_count,
         }[metric]
 
-    def add(self, other: ProviderResourceUsage) -> ProviderResourceUsage:
+    def add(self, other: "ProviderResourceUsage") -> "ProviderResourceUsage":
         """Add numeric counters without inventing their evidence classification."""
         if type(other) is not ProviderResourceUsage:
             raise PublicAnalysisValidationError("provider usage must use the frozen contract")

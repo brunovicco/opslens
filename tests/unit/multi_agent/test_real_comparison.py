@@ -1,7 +1,5 @@
 """Tests for the frozen Gate 12.3 real two-model comparison contract."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import cast

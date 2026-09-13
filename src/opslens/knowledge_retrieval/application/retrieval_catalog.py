@@ -1,7 +1,5 @@
 """Deterministic checked-corpus lookup for Bedrock retrieval admission."""
 
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass
 from typing import cast
@@ -32,7 +30,7 @@ def _require_nonblank(value: object, *, field: str) -> str:
     return value
 
 
-def _require_catalog_chunks(value: object) -> tuple[CanonicalRetrievalChunk, ...]:
+def _require_catalog_chunks(value: object) -> "tuple[CanonicalRetrievalChunk, ...]":
     """Validate one untrusted runtime tuple of canonical retrieval chunks."""
     if not isinstance(value, tuple) or not value:
         raise RetrievalCatalogError("chunks must be one non-empty tuple")

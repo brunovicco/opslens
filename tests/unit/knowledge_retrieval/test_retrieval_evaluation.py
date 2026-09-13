@@ -1,7 +1,5 @@
 """Tests for the deterministic Gate 7.5 retrieval evaluation core."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import replace
 from pathlib import Path

@@ -1,7 +1,5 @@
 """Tests for the Gate 7.6c pure Bedrock synthesis request contract."""
 
-from __future__ import annotations
-
 import json
 from typing import cast
 

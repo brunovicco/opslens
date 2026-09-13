@@ -1,7 +1,5 @@
 """Admit bounded evidence for one successful Gate 19.2 representative live run."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass

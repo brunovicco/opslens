@@ -85,3 +85,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0075](0075-phase18-evaluation-cost-portfolio-closeout.md) | Close Phase 18 at the evidence-backed evaluation, cost, and portfolio boundary without pre-authorizing the next implementation phase | Accepted |
 | [0076](0076-bounded-public-runtime-hypothesis-and-launch-contract.md) | Freeze an evidence-backed public workload and defer runtime topology until representative measurement | Accepted for Gate 19.1 |
 | [0077](0077-phase19-v1-demonstration-boundary.md) | Close OpsLens V1 as a demonstration architecture lab rather than require production SaaS operations | Accepted for Gate 19.9 |
+| [0079](0079-retained-artifact-reproducibility.md) | Rebuild retained artifacts from the tree that produced them instead of from HEAD | Accepted |

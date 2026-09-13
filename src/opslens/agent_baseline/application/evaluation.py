@@ -1,7 +1,5 @@
 """Offline deterministic replay and scoring for the Phase 11 single-agent baseline."""
 
-from __future__ import annotations
-
 from typing import Protocol
 
 from opslens.agent_baseline.application.authorization import authorize_agent_action

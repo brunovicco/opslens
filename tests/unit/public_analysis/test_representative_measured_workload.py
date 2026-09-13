@@ -1,7 +1,5 @@
 """Tests for inert measured representative-workload dependency composition."""
 
-from __future__ import annotations
-
 import pytest
 
 from opslens.hybrid_retrieval.adapters.bedrock_synthesis import (

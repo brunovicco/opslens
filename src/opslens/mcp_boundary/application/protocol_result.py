@@ -1,7 +1,5 @@
 """Application service for bounded structured-security MCP result projection."""
 
-from __future__ import annotations
-
 from opslens.agent_baseline.application import AgentCapabilityExecutors
 from opslens.agent_baseline.domain import (
     StructuredSecurityQueryInvocation,

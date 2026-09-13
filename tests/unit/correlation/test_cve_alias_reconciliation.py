@@ -1,7 +1,5 @@
 """Tests for deterministic source-preserving CVE/GHSA alias reconciliation."""
 
-from __future__ import annotations
-
 from datetime import UTC, datetime
 
 import pytest

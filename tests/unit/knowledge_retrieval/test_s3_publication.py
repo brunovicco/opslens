@@ -1,7 +1,5 @@
 """Tests for bounded checksummed Gate 7.3 S3 publication and verification."""
 
-from __future__ import annotations
-
 import base64
 from hashlib import sha256
 from typing import cast

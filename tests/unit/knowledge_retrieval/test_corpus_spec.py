@@ -1,7 +1,5 @@
 """Tests for the frozen Gate 7.2 canonical corpus specification."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import cast

@@ -1,7 +1,5 @@
 """HTTP transport adapter for the bounded AgentCore Runtime experiment."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import dataclass
 

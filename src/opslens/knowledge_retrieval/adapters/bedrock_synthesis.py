@@ -1,7 +1,5 @@
 """Bounded Amazon Bedrock Converse adapter for knowledge synthesis."""
 
-from __future__ import annotations
-
 import re
 import time
 from collections.abc import Callable, Mapping, Sequence

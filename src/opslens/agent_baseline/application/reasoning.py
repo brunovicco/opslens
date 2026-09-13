@@ -1,7 +1,5 @@
 """Bounded single-agent reasoning orchestration over deterministic authorization."""
 
-from __future__ import annotations
-
 import json
 from collections.abc import Mapping
 from typing import cast

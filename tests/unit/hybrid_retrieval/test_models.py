@@ -1,7 +1,5 @@
 """Unit tests for the provider-independent Gate 8.1 domain contract."""
 
-from __future__ import annotations
-
 from typing import cast
 
 import pytest

@@ -1,7 +1,5 @@
 """Tests for bounded Gate 7.3 Bedrock ingestion orchestration and adapter."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import dataclass, field
 

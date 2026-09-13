@@ -1,7 +1,5 @@
 """Build deterministic Gate 19.5 API and worker Lambda deployment artifacts."""
 
-from __future__ import annotations
-
 import argparse
 import base64
 import csv

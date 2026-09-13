@@ -1,7 +1,5 @@
 """Typed contracts for the bounded Phase 6 semantic-query planner."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import StrEnum
 

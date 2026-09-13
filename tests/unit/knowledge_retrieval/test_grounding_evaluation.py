@@ -1,7 +1,5 @@
 """Unit tests for Gate 7.7 frozen citation/groundedness evaluation semantics."""
 
-from __future__ import annotations
-
 import json
 from hashlib import sha256
 from pathlib import Path

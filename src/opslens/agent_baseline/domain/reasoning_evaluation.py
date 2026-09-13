@@ -1,7 +1,5 @@
 """Deterministic evaluation contracts for bounded single-agent model reasoning."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass
@@ -124,7 +122,7 @@ class AgentReasoningEvaluationCase:
         case_key: str,
         task: SingleAgentTask,
         expectation: AgentReasoningExpectation,
-    ) -> AgentReasoningEvaluationCase:
+    ) -> "AgentReasoningEvaluationCase":
         """Create one deterministic reasoning-quality case."""
         case_key = _validate_case_key(case_key)
         if type(task) is not SingleAgentTask:
@@ -198,7 +196,7 @@ class AgentReasoningEvaluationDataset:
         cls,
         *,
         cases: tuple[AgentReasoningEvaluationCase, ...],
-    ) -> AgentReasoningEvaluationDataset:
+    ) -> "AgentReasoningEvaluationDataset":
         """Create one canonical ordered reasoning corpus."""
         if type(cases) is not tuple:
             raise AgentEvaluationValidationError("reasoning cases must be a tuple")
@@ -264,7 +262,7 @@ class AgentReasoningCaseScore:
         *,
         case: AgentReasoningEvaluationCase,
         result: AgentReasoningResult,
-    ) -> AgentReasoningCaseScore:
+    ) -> "AgentReasoningCaseScore":
         """Score one admitted result against one exact golden case."""
         if type(case) is not AgentReasoningEvaluationCase:
             raise AgentEvaluationValidationError("case must be AgentReasoningEvaluationCase")
@@ -407,7 +405,7 @@ class AgentReasoningEvaluationReport:
         *,
         dataset: AgentReasoningEvaluationDataset,
         scores: tuple[AgentReasoningCaseScore, ...],
-    ) -> AgentReasoningEvaluationReport:
+    ) -> "AgentReasoningEvaluationReport":
         """Create one deterministic report over the exact frozen corpus."""
         if type(dataset) is not AgentReasoningEvaluationDataset:
             raise AgentEvaluationValidationError("dataset must be reasoning evaluation dataset")

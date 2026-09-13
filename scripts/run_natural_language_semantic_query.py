@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Run one bounded natural-language semantic query through Bedrock and Athena dev."""
 
-from __future__ import annotations
-
 import argparse
 import json
 from dataclasses import asdict

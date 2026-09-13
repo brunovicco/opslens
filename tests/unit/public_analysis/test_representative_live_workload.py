@@ -1,7 +1,5 @@
 """Tests for inert human-run live-provider composition at Gate 19.2."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 
 import pytest

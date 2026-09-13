@@ -1,7 +1,5 @@
 """Offline tests for Phase 13 Gate 13.4 bounded MCP business-result transport."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field, replace
 from datetime import date
 

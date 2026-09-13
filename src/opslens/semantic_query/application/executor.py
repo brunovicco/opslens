@@ -1,7 +1,5 @@
 """Application service that preserves compiler ownership before Athena execution."""
 
-from __future__ import annotations
-
 from typing import Protocol
 
 from opslens.semantic_query.application.compiler import compile_semantic_query

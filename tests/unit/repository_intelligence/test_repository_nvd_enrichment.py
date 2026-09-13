@@ -1,7 +1,5 @@
 """Tests for exact CVE/NVD/CVSS enrichment of affected repository findings."""
 
-from __future__ import annotations
-
 from dataclasses import replace
 
 import pytest

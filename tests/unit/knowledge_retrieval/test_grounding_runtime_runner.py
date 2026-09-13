@@ -1,7 +1,5 @@
 """Tests for the frozen Gate 7.7 real-runtime orchestration."""
 
-from __future__ import annotations
-
 import json
 from hashlib import sha256
 from pathlib import Path

@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Plan or execute the frozen seven-snapshot historical EPSS canary."""
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json

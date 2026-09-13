@@ -1,7 +1,5 @@
 """Deterministic final result contract for one representative public analysis."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import dataclass
 from hashlib import sha256

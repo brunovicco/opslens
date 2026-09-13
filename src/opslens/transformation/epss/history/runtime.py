@@ -1,7 +1,5 @@
 """Runtime configuration and forward-authority discovery for historical EPSS."""
 
-from __future__ import annotations
-
 import os
 import re
 from dataclasses import dataclass
@@ -22,7 +20,7 @@ class HistoricalEpssRuntimeSettings:
     approved_archive_commit: str
 
     @classmethod
-    def from_environment(cls) -> HistoricalEpssRuntimeSettings:
+    def from_environment(cls) -> "HistoricalEpssRuntimeSettings":
         """Load strict runtime settings from Lambda environment variables."""
         data_bucket = os.environ.get("EPSS_DATA_BUCKET", "").strip()
         approved_archive_commit = os.environ.get("EPSS_HISTORY_ARCHIVE_COMMIT", "").strip()

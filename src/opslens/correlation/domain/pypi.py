@@ -1,7 +1,5 @@
 """PyPI package identity, PEP 440 version, and purl semantics for Phase 3."""
 
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass, field
 from enum import StrEnum

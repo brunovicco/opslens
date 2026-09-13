@@ -1,7 +1,5 @@
 """Bridge normalized GHSA Silver package evidence into deterministic PyPI correlation."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from opslens.correlation.domain.errors import (

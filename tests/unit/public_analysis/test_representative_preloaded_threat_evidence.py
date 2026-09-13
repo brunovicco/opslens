@@ -1,7 +1,5 @@
 """Tests for the Gate 19.2 preloaded threat-evidence measurement boundary."""
 
-from __future__ import annotations
-
 import base64
 from typing import cast
 

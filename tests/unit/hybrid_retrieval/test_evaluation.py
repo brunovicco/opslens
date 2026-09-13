@@ -1,7 +1,5 @@
 """Unit tests for the frozen Phase 8 hybrid evaluation contract."""
 
-from __future__ import annotations
-
 import re
 from pathlib import Path
 

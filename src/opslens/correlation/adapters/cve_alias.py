@@ -1,7 +1,5 @@
 """Reconcile GitHub CVE assertions against exact NVD evidence without merging sources."""
 
-from __future__ import annotations
-
 from opslens.correlation.adapters.ghsa import GhsaPyPIVulnerabilityEvidence
 from opslens.correlation.domain.aliases import (
     CveAliasLinkState,

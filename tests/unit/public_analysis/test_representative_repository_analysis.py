@@ -1,7 +1,5 @@
 """Tests for deterministic repository-analysis composition used by Gate 19.2."""
 
-from __future__ import annotations
-
 import base64
 import gzip
 import hashlib

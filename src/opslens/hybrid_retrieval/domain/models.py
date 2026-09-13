@@ -1,7 +1,5 @@
 """Typed contracts for provider-independent hybrid evidence routing."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import dataclass
 from enum import StrEnum

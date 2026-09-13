@@ -1,7 +1,5 @@
 """Provider-neutral non-public harness for representative workload measurement."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Protocol
 

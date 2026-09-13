@@ -1,7 +1,5 @@
 """Compose exact threat-source authority outside the measured representative workload."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass
 

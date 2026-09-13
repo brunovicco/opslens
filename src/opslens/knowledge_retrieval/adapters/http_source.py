@@ -1,7 +1,5 @@
 """Bounded HTTPS acquisition for pinned knowledge-corpus source files."""
 
-from __future__ import annotations
-
 import hashlib
 import math
 import re
@@ -183,7 +181,7 @@ class AcquiredKnowledgeSource:
         descriptor: KnowledgeSourceDescriptor,
         body: bytes,
         content_type: str,
-    ) -> AcquiredKnowledgeSource:
+    ) -> "AcquiredKnowledgeSource":
         """Derive immutable raw-byte identity from one admitted HTTPS body."""
         return cls(
             descriptor=descriptor,

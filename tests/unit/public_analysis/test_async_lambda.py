@@ -1,7 +1,5 @@
 """Unit tests for the thin fail-closed Gate 19.4 Lambda composition wrappers."""
 
-from __future__ import annotations
-
 from typing import cast
 
 import pytest

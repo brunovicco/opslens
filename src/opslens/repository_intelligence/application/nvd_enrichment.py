@@ -1,7 +1,5 @@
 """Enrich affected repository findings with exact CVE/NVD/CVSS evidence."""
 
-from __future__ import annotations
-
 from collections.abc import Iterable
 
 from opslens.correlation.adapters.cve_alias import reconcile_github_cve_with_nvd

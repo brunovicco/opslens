@@ -1,7 +1,5 @@
 """Tests for linking GHSA Silver evidence to deterministic PyPI applicability."""
 
-from __future__ import annotations
-
 import pytest
 
 from opslens.correlation.adapters.ghsa import (

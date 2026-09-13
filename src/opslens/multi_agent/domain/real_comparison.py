@@ -1,7 +1,5 @@
 """Deterministic evaluation contracts for the first real two-model comparison."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass
@@ -293,7 +291,7 @@ class MultiAgentRealComparisonCase:
         case_key: str,
         task: SingleAgentTask,
         expected: MultiAgentRealComparisonExpectation,
-    ) -> MultiAgentRealComparisonCase:
+    ) -> "MultiAgentRealComparisonCase":
         """Create one canonical real-comparison case."""
         key = _validate_case_key(case_key)
         digest = _case_digest(case_key=key, task=task, expected=expected)
@@ -373,7 +371,7 @@ class MultiAgentRealComparisonDataset:
         cls,
         *,
         cases: tuple[MultiAgentRealComparisonCase, ...],
-    ) -> MultiAgentRealComparisonDataset:
+    ) -> "MultiAgentRealComparisonDataset":
         """Create the canonical real-comparison dataset with frozen references."""
         if type(cases) is not tuple:
             raise MultiAgentRealComparisonValidationError("cases must be a tuple")
@@ -514,7 +512,7 @@ class MultiAgentRealComparisonCaseScore:
         *,
         case: MultiAgentRealComparisonCase,
         result: MultiAgentTwoModelReasoningResult,
-    ) -> MultiAgentRealComparisonCaseScore:
+    ) -> "MultiAgentRealComparisonCaseScore":
         """Create one decomposed score from one observed two-model result."""
         if result.source_task.task_id != case.task.task_id:
             raise MultiAgentRealComparisonValidationError(
@@ -954,7 +952,7 @@ class MultiAgentRealComparisonReport:
         *,
         dataset: MultiAgentRealComparisonDataset,
         scores: tuple[MultiAgentRealComparisonCaseScore, ...],
-    ) -> MultiAgentRealComparisonReport:
+    ) -> "MultiAgentRealComparisonReport":
         """Create one content-addressed real-comparison report."""
         if len(scores) != len(dataset.cases):
             raise MultiAgentRealComparisonValidationError(

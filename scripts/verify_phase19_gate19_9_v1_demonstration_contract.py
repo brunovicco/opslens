@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Verify the offline Gate 19.9 V1 demonstration contract."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import cast

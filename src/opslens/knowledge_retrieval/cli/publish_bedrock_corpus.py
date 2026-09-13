@@ -1,7 +1,5 @@
 """Publish the frozen Phase 7 corpus to the bounded Bedrock S3 source prefix."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import sys

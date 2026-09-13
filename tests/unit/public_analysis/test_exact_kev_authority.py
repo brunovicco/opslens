@@ -1,7 +1,5 @@
 """Tests for exact KEV source-authority decoding before Gate 19.2 measurement."""
 
-from __future__ import annotations
-
 import hashlib
 from dataclasses import dataclass, field
 

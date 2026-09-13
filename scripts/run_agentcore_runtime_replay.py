@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Replay the frozen Phase 11 corpus through one authenticated AgentCore Runtime."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import os

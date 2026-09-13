@@ -1,26 +1,16 @@
 name: Python CI
 
+# Fast per-slice feedback. The repository-wide gate lives in quality-gate.yml
+# and carries no `paths` filter, so a module missing from this matrix is still
+# linted, typed and tested on every pull request.
+
 on:
   pull_request:
     paths:
-      - "src/opslens/correlation/**/*.py"
-      - "tests/unit/correlation/**/*.py"
-      - "tests/fixtures/correlation/**"
-      - "src/opslens/repository_intelligence/**/*.py"
-      - "tests/unit/repository_intelligence/**/*.py"
-      - "src/opslens/risk_policy/**/*.py"
-      - "tests/unit/risk_policy/**/*.py"
-      - "src/opslens/semantic_query/**/*.py"
-      - "tests/unit/semantic_query/**/*.py"
-      - "src/opslens/knowledge_retrieval/**/*.py"
-      - "tests/unit/knowledge_retrieval/**/*.py"
-      - "tests/fixtures/knowledge_retrieval/**"
+      - "src/opslens/**/*.py"
+      - "tests/unit/**/*.py"
+      - "tests/fixtures/**"
       - "knowledge/corpus/**"
-      - "src/opslens/hybrid_retrieval/**/*.py"
-      - "tests/unit/hybrid_retrieval/**/*.py"
-      - "tests/fixtures/hybrid_retrieval/**"
-      - "src/opslens/public_analysis/**/*.py"
-      - "tests/unit/public_analysis/**/*.py"
       - "pyproject.toml"
       - "uv.lock"
       - ".github/workflows/python-ci.yml"
@@ -30,9 +20,21 @@ permissions:
   contents: read
 
 jobs:
-  correlation-quality:
-    name: Correlation quality gates
+  slice-quality:
+    name: ${{ matrix.slice }} quality gates
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        slice:
+          - correlation
+          - repository_intelligence
+          - risk_policy
+          - semantic_query
+          - knowledge_retrieval
+          - hybrid_retrieval
+          - public_analysis
 
     steps:
       - name: Checkout repository
@@ -56,221 +58,11 @@ jobs:
       - name: Sync locked dependencies
         run: uv sync --frozen
 
-      - name: Ruff correlation slice
-        run: uv run ruff check src/opslens/correlation tests/unit/correlation
+      - name: Ruff ${{ matrix.slice }} slice
+        run: uv run ruff check src/opslens/${{ matrix.slice }} tests/unit/${{ matrix.slice }}
 
-      - name: Pyright strict correlation slice
-        run: uv run pyright src/opslens/correlation tests/unit/correlation
+      - name: Pyright strict ${{ matrix.slice }} slice
+        run: uv run pyright src/opslens/${{ matrix.slice }} tests/unit/${{ matrix.slice }}
 
-      - name: Pytest correlation slice
-        run: uv run pytest tests/unit/correlation
-
-  repository-intelligence-quality:
-    name: Repository intelligence quality gates
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          persist-credentials: false
-
-      - name: Setup Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        with:
-          python-version: "3.13"
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
-        with:
-          enable-cache: true
-
-      - name: Verify lockfile is current
-        run: uv lock --check
-
-      - name: Sync locked dependencies
-        run: uv sync --frozen
-
-      - name: Ruff repository intelligence slice
-        run: uv run ruff check src/opslens/repository_intelligence tests/unit/repository_intelligence
-
-      - name: Pyright strict repository intelligence slice
-        run: uv run pyright src/opslens/repository_intelligence tests/unit/repository_intelligence
-
-      - name: Pytest repository intelligence slice
-        run: uv run pytest tests/unit/repository_intelligence
-
-  risk-policy-quality:
-    name: Risk policy quality gates
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          persist-credentials: false
-
-      - name: Setup Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        with:
-          python-version: "3.13"
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
-        with:
-          enable-cache: true
-
-      - name: Verify lockfile is current
-        run: uv lock --check
-
-      - name: Sync locked dependencies
-        run: uv sync --frozen
-
-      - name: Ruff risk policy slice
-        run: uv run ruff check src/opslens/risk_policy tests/unit/risk_policy
-
-      - name: Pyright strict risk policy slice
-        run: uv run pyright src/opslens/risk_policy tests/unit/risk_policy
-
-      - name: Pytest risk policy slice
-        run: uv run pytest tests/unit/risk_policy
-
-  semantic-query-quality:
-    name: Semantic query quality gates
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          persist-credentials: false
-
-      - name: Setup Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        with:
-          python-version: "3.13"
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
-        with:
-          enable-cache: true
-
-      - name: Verify lockfile is current
-        run: uv lock --check
-
-      - name: Sync locked dependencies
-        run: uv sync --frozen
-
-      - name: Ruff semantic query slice
-        run: uv run ruff check src/opslens/semantic_query tests/unit/semantic_query
-
-      - name: Pyright strict semantic query slice
-        run: uv run pyright src/opslens/semantic_query tests/unit/semantic_query
-
-      - name: Pytest semantic query slice
-        run: uv run pytest tests/unit/semantic_query
-
-  knowledge-retrieval-quality:
-    name: Knowledge retrieval quality gates
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          persist-credentials: false
-
-      - name: Setup Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        with:
-          python-version: "3.13"
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
-        with:
-          enable-cache: true
-
-      - name: Verify lockfile is current
-        run: uv lock --check
-
-      - name: Sync locked dependencies
-        run: uv sync --frozen
-
-      - name: Ruff knowledge retrieval slice
-        run: uv run ruff check src/opslens/knowledge_retrieval tests/unit/knowledge_retrieval
-
-      - name: Pyright strict knowledge retrieval slice
-        run: uv run pyright src/opslens/knowledge_retrieval tests/unit/knowledge_retrieval
-
-      - name: Pytest knowledge retrieval slice
-        run: uv run pytest tests/unit/knowledge_retrieval
-
-  hybrid-retrieval-quality:
-    name: Hybrid retrieval quality gates
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          persist-credentials: false
-
-      - name: Setup Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        with:
-          python-version: "3.13"
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
-        with:
-          enable-cache: true
-
-      - name: Verify lockfile is current
-        run: uv lock --check
-
-      - name: Sync locked dependencies
-        run: uv sync --frozen
-
-      - name: Ruff hybrid retrieval slice
-        run: uv run ruff check src/opslens/hybrid_retrieval tests/unit/hybrid_retrieval
-
-      - name: Pyright strict hybrid retrieval slice
-        run: uv run pyright src/opslens/hybrid_retrieval tests/unit/hybrid_retrieval
-
-      - name: Pytest hybrid retrieval slice
-        run: uv run pytest tests/unit/hybrid_retrieval
-
-  public-analysis-quality:
-    name: Public analysis quality gates
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          persist-credentials: false
-
-      - name: Setup Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        with:
-          python-version: "3.13"
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
-        with:
-          enable-cache: true
-
-      - name: Verify lockfile is current
-        run: uv lock --check
-
-      - name: Sync locked dependencies
-        run: uv sync --frozen
-
-      - name: Ruff public analysis slice
-        run: uv run ruff check src/opslens/public_analysis tests/unit/public_analysis
-
-      - name: Pyright strict public analysis slice
-        run: uv run pyright src/opslens/public_analysis tests/unit/public_analysis
-
-      - name: Pytest public analysis slice
-        run: uv run pytest tests/unit/public_analysis
+      - name: Pytest ${{ matrix.slice }} slice
+        run: uv run pytest tests/unit/${{ matrix.slice }}

@@ -1,7 +1,5 @@
 """Tests for the bounded AgentCore Runtime invocation contract."""
 
-from __future__ import annotations
-
 import json
 from typing import cast
 

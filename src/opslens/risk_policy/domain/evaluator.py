@@ -1,7 +1,5 @@
 """Pure deterministic evaluator for OpsLens Risk Policy v1."""
 
-from __future__ import annotations
-
 from opslens.risk_policy.domain.models import (
     RISK_POLICY_V1,
     RiskEpssState,

@@ -1,7 +1,5 @@
 """Provider-neutral evidence contracts for bounded single-agent model reasoning."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass
@@ -189,7 +187,7 @@ class AgentReasoningInvocationEvidence:
         provider_latency_ms: int,
         client_elapsed_ms: int,
         retry_attempts: int,
-    ) -> AgentReasoningInvocationEvidence:
+    ) -> "AgentReasoningInvocationEvidence":
         """Create immutable metadata-only evidence for one provider invocation."""
         provisional = cls.__new__(cls)
         object.__setattr__(provisional, "task_id", task_id)
@@ -344,7 +342,7 @@ class AgentReasoningResult:
         authorization_outcome: AgentReasoningAuthorizationOutcome,
         authorization_evidence_id: str | None,
         failure_category: AgentReasoningFailureCategory | None,
-    ) -> AgentReasoningResult:
+    ) -> "AgentReasoningResult":
         """Create one content-addressed result after deterministic authorization."""
         payload = {
             "authorization_evidence_id": authorization_evidence_id,

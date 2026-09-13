@@ -1,7 +1,5 @@
 """Offline A2A peer/replay guard and local exchange evidence."""
 
-from __future__ import annotations
-
 from dataclasses import asdict
 from time import perf_counter_ns
 from typing import cast

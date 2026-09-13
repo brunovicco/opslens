@@ -1,7 +1,5 @@
 """Tests for the Phase 12 bounded specialization handoff contract."""
 
-from __future__ import annotations
-
 from typing import cast
 
 import pytest

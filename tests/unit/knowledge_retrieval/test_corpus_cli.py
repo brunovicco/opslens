@@ -1,7 +1,5 @@
 """Tests for the Gate 7.2 materialize-or-check CLI without network access."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 

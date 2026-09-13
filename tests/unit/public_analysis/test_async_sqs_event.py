@@ -1,7 +1,5 @@
 """Offline SQS worker tests for the Gate 19.4 asynchronous execution boundary."""
 
-from __future__ import annotations
-
 import json
 from dataclasses import dataclass, field
 

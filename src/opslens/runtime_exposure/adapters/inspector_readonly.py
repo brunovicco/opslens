@@ -1,7 +1,5 @@
 """Bounded read-only Amazon Inspector discovery with content-minimized evidence."""
 
-from __future__ import annotations
-
 import json
 from collections import Counter
 from collections.abc import Mapping

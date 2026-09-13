@@ -1,7 +1,5 @@
 """Application-owned bounded admission for Bedrock Knowledge Base Retrieve evidence."""
 
-from __future__ import annotations
-
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -85,7 +83,7 @@ def _require_metadata(value: object) -> Mapping[str, object]:
     return cast(Mapping[str, object], raw)
 
 
-def _require_candidates(value: object) -> tuple[BedrockRetrievalCandidate, ...]:
+def _require_candidates(value: object) -> "tuple[BedrockRetrievalCandidate, ...]":
     """Validate one runtime tuple of provider-neutral retrieval candidates."""
     if not isinstance(value, tuple):
         raise BedrockRetrievalValidationError("candidates must be a tuple")

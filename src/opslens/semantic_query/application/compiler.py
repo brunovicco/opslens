@@ -1,7 +1,5 @@
 """Deterministic SQL compiler for allowlisted semantic queries."""
 
-from __future__ import annotations
-
 from opslens.semantic_query.domain import (
     CompiledAthenaQuery,
     SemanticDimension,

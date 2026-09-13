@@ -1,7 +1,5 @@
 """Tests for the Phase 4 public GitHub immutable snapshot contract."""
 
-from __future__ import annotations
-
 from dataclasses import replace
 from typing import cast
 

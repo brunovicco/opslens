@@ -1,7 +1,5 @@
 """Role-specific API Lambda composition for the bounded async public runtime."""
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from time import time
 from typing import Literal, Protocol, cast

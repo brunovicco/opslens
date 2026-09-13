@@ -1,7 +1,5 @@
 """Deterministic public repository-analysis request identity."""
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass
@@ -29,7 +27,7 @@ def _canonical_json(value: object) -> bytes:
     ).encode("utf-8")
 
 
-def _request_identity_payload(target: PublicRepositoryTarget) -> dict[str, object]:
+def _request_identity_payload(target: "PublicRepositoryTarget") -> dict[str, object]:
     """Return the normalized semantics that own public request identity."""
     return {
         "contract_version": PUBLIC_ANALYSIS_REQUEST_CONTRACT_VERSION,

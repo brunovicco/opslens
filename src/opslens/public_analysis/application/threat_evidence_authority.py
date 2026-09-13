@@ -5,8 +5,6 @@ evidence and the structured threat sources required by Phase 3/4 correlation. Th
 module intentionally performs no provider I/O and grants no runtime enablement.
 """
 
-from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass

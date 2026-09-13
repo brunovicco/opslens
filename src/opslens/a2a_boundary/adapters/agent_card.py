@@ -1,7 +1,5 @@
 """Minimal A2A 1.0 Agent Card projection and strict admission."""
 
-from __future__ import annotations
-
 from typing import cast
 
 from opslens.a2a_boundary.adapters._contract import (

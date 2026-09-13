@@ -1,7 +1,5 @@
 """Resolve immutable GitHub snapshots through a narrow read-only source contract."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Protocol
 

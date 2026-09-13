@@ -1,7 +1,5 @@
 """Tests for Phase 9 bounded semantic planning proposal and admission handoff."""
 
-from __future__ import annotations
-
 import base64
 import json
 from dataclasses import dataclass, field
