@@ -1,0 +1,167 @@
+name: Supply Chain
+
+# OpsLens argues that dependency risk should be evidence-backed and that missing
+# evidence is not benign evidence. This workflow applies that to the repository
+# itself: audit the locked dependencies, emit a reproducible SBOM, and derive
+# deterministic identity for its own lock.
+#
+# The three jobs answer different questions and none of them substitutes for
+# another:
+#
+#   dependency-audit   are the locked dependencies known-vulnerable today?
+#   sbom               what exactly ships, as a reproducible artifact?
+#   self-identity      does the deterministic identity layer hold on a real lock?
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    # Known-vulnerable is a moving claim: the lock does not change, the advisory
+    # database does. A weekly run keeps the answer current.
+    - cron: "23 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-audit:
+    name: Audit locked dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+        with:
+          enable-cache: true
+
+      - name: Verify lockfile is current
+        run: uv lock --check
+
+      - name: Export the exact locked dependency set
+        run: >-
+          uv export --frozen --no-emit-project --format requirements-txt
+          > locked-requirements.txt
+
+      - name: Report what is being audited
+        run: |
+          printf 'locked packages: %s\n' \
+            "$(grep -c '^[a-zA-Z0-9]' locked-requirements.txt)"
+          printf 'pinned hashes: %s\n' \
+            "$(grep -c 'hash=sha256' locked-requirements.txt)"
+
+      - name: Audit the locked set against OSV and PyPI advisories
+        # --strict fails on an audit error rather than reporting an incomplete
+        # result as a clean one: missing evidence != benign evidence.
+        run: >-
+          uvx --from pip-audit pip-audit
+          --requirement locked-requirements.txt
+          --disable-pip
+          --strict
+
+  sbom:
+    name: Reproducible SBOM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+        with:
+          enable-cache: true
+
+      - name: Export the exact locked dependency set
+        run: >-
+          uv export --frozen --no-emit-project --format requirements-txt
+          > locked-requirements.txt
+
+      - name: Build the SBOM twice
+        # --output-reproducible drops the serial number and timestamp, which are
+        # the only non-deterministic fields. An SBOM that cannot be rebuilt to
+        # the same bytes cannot carry a content-addressed identity.
+        run: |
+          uvx --from cyclonedx-bom cyclonedx-py requirements \
+            locked-requirements.txt --output-reproducible --of JSON -o sbom-a.json
+          uvx --from cyclonedx-bom cyclonedx-py requirements \
+            locked-requirements.txt --output-reproducible --of JSON -o sbom-b.json
+
+      - name: Require the SBOM to be byte reproducible
+        run: |
+          if ! cmp -s sbom-a.json sbom-b.json; then
+            echo "SBOM is not byte reproducible" >&2
+            diff <(head -c 4000 sbom-a.json) <(head -c 4000 sbom-b.json) | head -40 >&2
+            exit 1
+          fi
+          cp sbom-a.json opslens-sbom.cdx.json
+          printf 'sbom_sha256=%s\n' "$(sha256sum opslens-sbom.cdx.json | cut -d' ' -f1)"
+          printf 'components=%s\n' \
+            "$(python -c "import json,sys;print(len(json.load(open('opslens-sbom.cdx.json'))['components']))")"
+
+      - name: Publish the SBOM
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: opslens-sbom-cyclonedx
+          path: opslens-sbom.cdx.json
+          if-no-files-found: error
+
+  self-identity:
+    name: Deterministic identity over its own lock
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          # The evidence binds to the commit and the uv.lock blob sha, so the
+          # git object must be the real one, not a synthetic merge commit.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6
+        with:
+          enable-cache: true
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen
+
+      - name: Derive deterministic dependency identity
+        run: uv run python scripts/self_dependency_evidence.py
+
+      - name: Require the derivation to be deterministic
+        run: |
+          uv run python scripts/self_dependency_evidence.py --format json > first.json
+          uv run python scripts/self_dependency_evidence.py --format json > second.json
+          if ! cmp -s first.json second.json; then
+            echo "self dependency evidence is not deterministic" >&2
+            diff first.json second.json | head -40 >&2
+            exit 1
+          fi
+          printf 'evidence=%s\n' \
+            "$(python -c "import json;print(json.load(open('first.json'))['evidence_id'])")"

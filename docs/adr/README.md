@@ -87,3 +87,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0077](0077-phase19-v1-demonstration-boundary.md) | Close OpsLens V1 as a demonstration architecture lab rather than require production SaaS operations | Accepted for Gate 19.9 |
 | [0078](0078-canonical-evidence-serialization.md) | Own JSON canonicalization in one module so evidence identity cannot diverge by encoding | Accepted |
 | [0079](0079-retained-artifact-reproducibility.md) | Rebuild retained artifacts from the tree that produced them instead of from HEAD | Accepted |
+| [0080](0080-self-applied-supply-chain-evidence.md) | Apply the supply-chain argument to this repository as identity, scanning and watching, without claiming a vulnerability verdict | Accepted |

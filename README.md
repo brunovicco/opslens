@@ -176,6 +176,42 @@ materialized != enabled
 demonstration readiness != production readiness
 ```
 
+## This repository's own supply chain
+
+The deterministic identity layer is pointed at the checkout it runs from, so it is
+exercised against a real lock rather than only against fixtures:
+
+```bash
+uv run python scripts/self_dependency_evidence.py
+```
+
+```text
+OpsLens deterministic dependency identity over its own lock
+lock: uv.lock@<blob sha>
+locked packages: 55
+normalized PyPI dependencies: 54
+unsupported packages: 1
+evidence: opslens-self-dependency-evidence:v1@sha256:<digest>
+```
+
+The evidence is bound to git's immutable coordinates — commit, tree, and the blob
+sha of `uv.lock` — and the run is refused when the working-tree lock differs from
+the committed blob. Two runs at the same commit are byte identical. The digest
+therefore moves with every commit by design: what is asserted is determinism at a
+given checkout, not one fixed number.
+
+**This is dependency identity, not a vulnerability claim.** Correlating these
+packages against GHSA, NVD, KEV and EPSS needs the request-time threat evidence
+authority, whose only V1 implementation is fixture-backed. Conventional scanning
+runs separately in the `supply-chain` workflow — `pip-audit` over the exported
+requirements, plus a byte-reproducible CycloneDX SBOM built twice and compared —
+and reports that half.
+
+```text
+dependency identity != vulnerability finding
+deterministic identity != standing safety claim
+```
+
 ## V1 status and scope
 
 **Phases 0–18 are complete.** Phase 19 is the final V1 closeout phase. The canonical CLI, three deterministic scenarios, regression evaluator, and localhost visual demo are complete; final portfolio/release closeout remains.
