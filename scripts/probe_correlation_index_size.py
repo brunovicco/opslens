@@ -69,6 +69,14 @@ class ProbeError(RuntimeError):
     """Raised when the probe cannot complete a measurement it was asked for."""
 
 
+class _StsClient(Protocol):
+    """Only the STS operation this probe needs."""
+
+    def get_caller_identity(self) -> Mapping[str, object]:
+        """Return the calling identity."""
+        ...
+
+
 class _GlueClient(Protocol):
     """Only the Glue operation this probe needs."""
 
@@ -180,6 +188,65 @@ class QueryMeasurement:
         if not self.succeeded or column not in self.columns:
             return None
         return self.row[self.columns.index(column)]
+
+
+@dataclass(frozen=True, slots=True)
+class CallerIdentity:
+    """Who took the measurement, without carrying a personal session name.
+
+    Attributes:
+        account_id: The AWS account the measurement was taken in.
+        role: The assumed role name, with any session name deliberately dropped.
+    """
+
+    account_id: str
+    role: str
+
+
+def _caller_identity(session: Session, region: str, profile: str | None) -> CallerIdentity:
+    """Confirm credentials before any measurement, and record who is measuring.
+
+    Failing here rather than inside the first Glue call turns "Unable to locate
+    credentials" into an instruction.
+
+    Args:
+        session: boto3 session to check.
+        region: AWS Region for the STS client.
+        profile: The profile the operator asked for, for the error message.
+
+    Returns:
+        The account and role taking the measurement.
+
+    Raises:
+        ProbeError: If no usable credentials are available.
+    """
+    client = cast(
+        _StsClient,
+        session.client("sts", region_name=region),  # pyright: ignore[reportUnknownMemberType]
+    )
+    try:
+        identity = client.get_caller_identity()
+    except Exception as exc:
+        named = profile or "<none supplied>"
+        raise ProbeError(
+            f"no usable AWS credentials (profile: {named}): {exc}\n"
+            "This repository authenticates through IAM Identity Center. Try:\n"
+            "  aws sso login --profile opslens-bootstrap\n"
+            "  aws sts get-caller-identity --profile opslens-bootstrap\n"
+            "then re-run with --profile opslens-bootstrap "
+            "(or export AWS_PROFILE=opslens-bootstrap)."
+        ) from exc
+
+    account = identity.get("Account")
+    arn = identity.get("Arn")
+    if not isinstance(account, str) or not isinstance(arn, str):
+        raise ProbeError("STS returned no usable caller identity")
+    # arn:aws:sts::<account>:assumed-role/<role>/<session name>. The session name is
+    # frequently the operator's email address, and this evidence may be committed, so
+    # only the role is kept.
+    parts = arn.split("/")
+    role = parts[1] if len(parts) >= 2 else arn.rsplit(":", 1)[-1]
+    return CallerIdentity(account_id=account, role=role)
 
 
 @dataclass(slots=True)
@@ -548,6 +615,7 @@ def _payload(
     region: str,
     ghsa_table: str,
     nvd_table: str,
+    identity: CallerIdentity,
 ) -> dict[str, object]:
     """Project the run as a content-addressable payload."""
     payload: dict[str, object] = {
@@ -557,6 +625,10 @@ def _payload(
             "creates_infrastructure": False,
             "workgroup_scan_cutoff_bytes": _WORKGROUP_SCAN_CUTOFF_BYTES,
             "workgroup_configuration_enforced": True,
+        },
+        "measured_by": {
+            "account_id": identity.account_id,
+            "role": identity.role,
         },
         "target": {
             "region": region,
@@ -597,10 +669,12 @@ def _payload(
 def _render_text(payload: dict[str, object]) -> str:
     """Render one reviewer-facing summary."""
     target = cast(Mapping[str, object], payload["target"])
+    measured = cast(Mapping[str, object], payload["measured_by"])
     lines = [
         "OpsLens correlation index sizing probe",
         f"region: {target['region']}  database: {target['database']}  "
         f"workgroup: {target['workgroup']}",
+        f"measured by: account {measured['account_id']} as {measured['role']}",
         f"measured at: {datetime.now(UTC).isoformat(timespec='seconds')}",
         "",
         "storage (free, immune to the workgroup scan cutoff)",
@@ -663,10 +737,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             sys.stdout.write(f"-- {label}\n{sql}\n\n")
         return 0
 
-    session = Session(profile_name=cast(str | None, namespace.profile))
+    profile = cast(str | None, namespace.profile)
+    session = Session(profile_name=profile)
     run = ProbeRun()
 
     try:
+        identity = _caller_identity(session, region, profile)
         for table in (ghsa_table, nvd_table):
             location = _glue_table_location(session, region, catalog.database, table)
             run.storage.append(_measure_storage(session, region, table, location))
@@ -690,6 +766,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         region=region,
         ghsa_table=ghsa_table,
         nvd_table=nvd_table,
+        identity=identity,
     )
 
     output = cast(str | None, namespace.output)
