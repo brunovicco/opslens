@@ -1,4 +1,22 @@
-"""Compose GHSA Silver records from verified Bronze advisory occurrences."""
+"""Compose GHSA Silver records from verified Bronze advisory occurrences.
+
+One malformed advisory used to abort the whole manifest, so a single upstream record
+the V1 validators did not anticipate discarded every other advisory promoted with it.
+Real GHSA data contains such records, and a discarded advisory becomes a silent
+absence downstream — which becomes "no known vulnerability". Excessive strictness
+reaches the same wrong answer as laxity.
+
+So a page is composed with partial admission and exact accounting: every occurrence
+ends up either admitted or rejected with a reason, never dropped. The invariant that
+matters is preserved and in fact strengthened — admitted plus rejected must equal the
+Bronze manifest's own item count. See ADR 0085.
+
+```text
+admitted + rejected == total_items
+rejected advisory != absent advisory
+excessive strictness != safety
+```
+"""
 
 import json
 from dataclasses import dataclass
@@ -16,6 +34,49 @@ from opslens.transformation.ghsa.runtime.provenance import (
 from opslens.transformation.ghsa.serialization.models import (
     GhsaSilverRecordV1,
 )
+
+
+@dataclass(frozen=True, slots=True)
+class GhsaSilverRejectedAdvisoryV1:
+    """One verified Bronze occurrence the Silver transformers could not normalize.
+
+    Attributes:
+        observed_advisory_version_id: The exact Bronze content identity.
+        reason: The transformer's own message, preserved rather than reworded.
+    """
+
+    observed_advisory_version_id: str
+    reason: str
+
+    def __post_init__(self) -> None:
+        """Require an identity and a stated reason.
+
+        Raises:
+            ValueError: If either field is blank, since a rejection with no reason is
+                indistinguishable from a dropped record.
+        """
+        if not self.observed_advisory_version_id.strip():
+            raise ValueError("a rejected GHSA advisory must carry its content identity")
+        if not self.reason.strip():
+            raise ValueError("a rejected GHSA advisory must carry a stated reason")
+
+
+@dataclass(frozen=True, slots=True)
+class GhsaSilverPageCompositionV1:
+    """Complete accounting for one composed page: what was admitted, what was not.
+
+    Attributes:
+        records: Admitted occurrence/record bindings, in source order.
+        rejected: Occurrences no transformer could normalize, in source order.
+    """
+
+    records: tuple["GhsaSilverOccurrenceRecordV1", ...]
+    rejected: tuple[GhsaSilverRejectedAdvisoryV1, ...]
+
+    @property
+    def accounted_count(self) -> int:
+        """Return how many source occurrences this page accounted for."""
+        return len(self.records) + len(self.rejected)
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,11 +117,41 @@ class GhsaSilverRecordProcessorV1:
     def process_page(
         self,
         verified_page: GhsaVerifiedBronzePageV1,
-    ) -> tuple[GhsaSilverOccurrenceRecordV1, ...]:
-        """Compose Silver records from every verified occurrence in source order."""
-        return tuple(
-            self._compose_occurrence(occurrence)
-            for occurrence in verified_page.occurrences
+    ) -> GhsaSilverPageCompositionV1:
+        """Compose Silver records from every verified occurrence, accounting for each.
+
+        A record the transformers refuse is recorded with its reason rather than
+        aborting the page, so one unanticipated upstream advisory cannot discard every
+        advisory promoted alongside it.
+
+        Args:
+            verified_page: One verified Bronze page.
+
+        Returns:
+            The admitted bindings and the rejected occurrences, both in source order.
+        """
+        records: list[GhsaSilverOccurrenceRecordV1] = []
+        rejected: list[GhsaSilverRejectedAdvisoryV1] = []
+
+        for occurrence in verified_page.occurrences:
+            try:
+                records.append(self._compose_occurrence(occurrence))
+            except ValueError as exc:
+                # ValueError is the base of every transformer and domain rejection
+                # here. An unexpected error type still propagates, because only a
+                # stated domain refusal is safe to account for and continue past.
+                rejected.append(
+                    GhsaSilverRejectedAdvisoryV1(
+                        observed_advisory_version_id=(
+                            occurrence.observed_advisory_version_id
+                        ),
+                        reason=str(exc),
+                    )
+                )
+
+        return GhsaSilverPageCompositionV1(
+            records=tuple(records),
+            rejected=tuple(rejected),
         )
 
     def _compose_occurrence(
