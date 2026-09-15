@@ -77,13 +77,20 @@ class GhsaAdvisoryCoreTransformer:
                 severity=severity,
                 url=self._required_text(source_advisory, "url"),
                 html_url=self._required_text(source_advisory, "html_url"),
+                # GitHub returns "" for these two when it has none, so empty and
+                # absent mean the same thing upstream. They are pure passthrough
+                # links carrying no identity, applicability or severity, so
+                # rejecting a whole advisory over one would discard the package and
+                # range that correlation needs. See ADR 0085.
                 repository_advisory_url=self._optional_text(
                     source_advisory,
                     "repository_advisory_url",
+                    empty_means_absent=True,
                 ),
                 source_code_location=self._optional_text(
                     source_advisory,
                     "source_code_location",
+                    empty_means_absent=True,
                 ),
                 summary=self._required_text(source_advisory, "summary"),
                 description=self._required_text(source_advisory, "description"),
@@ -131,8 +138,26 @@ class GhsaAdvisoryCoreTransformer:
     def _optional_text(
         source_advisory: dict[str, object],
         field_name: str,
+        *,
+        empty_means_absent: bool = False,
     ) -> str | None:
-        """Read one nullable source string without rewriting it."""
+        """Read one nullable source string without rewriting it.
+
+        Args:
+            source_advisory: The verified canonical advisory object.
+            field_name: Field to read.
+            empty_means_absent: Whether upstream's empty string means "not supplied"
+                for this field. True only for pure passthrough links, never for a
+                field carrying identity: reading `""` as absent is safe when nothing
+                depends on the value, and a silent loss of meaning when something does.
+
+        Returns:
+            The string, or None when upstream supplied nothing.
+
+        Raises:
+            InvalidGhsaAdvisoryCoreRecordError: If the value is neither a string nor
+                null, or is empty for a field where empty is not a legitimate absence.
+        """
         value = source_advisory[field_name]
 
         if value is None:
@@ -144,6 +169,8 @@ class GhsaAdvisoryCoreTransformer:
             )
 
         if not value.strip():
+            if empty_means_absent:
+                return None
             raise InvalidGhsaAdvisoryCoreRecordError(
                 f"GitHub advisory field {field_name!r} cannot be empty when present."
             )

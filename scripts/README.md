@@ -42,12 +42,13 @@ change, with no paths filter.
 | --- | ---: | --- |
 | `verify_*` | 28 | Assert an invariant, or admit supplied evidence — see above |
 | `build_*` | 15 | Build a deployable artifact (Lambda packages, AgentCore runtime) |
-| `run_*` | 14 | Run a bounded experiment, query, replay or the invariant set |
+| `run_*` | 15 | Run a bounded experiment, query, replay, corpus load or the invariant set |
 | `publish_*` | 3 | Publish a built artifact. Human-authorized, create-only |
 | `demo_*`, `evaluate_*` | 3 | The offline reviewer path, also installed as console commands |
-| `probe_*`, `discover_*`, `select_*` | 5 | One-off source investigation retained as provenance |
+| `probe_*`, `discover_*`, `select_*` | 6 | One-off source investigation retained as provenance |
 | `materialize_*`, `seed_*` | 2 | Write a specific piece of retained state, deliberately manual |
 | `self_dependency_evidence.py` | 1 | Derive this repository's own dependency identity (ADR 0080) |
+| `run_repository_invariants.py` | 1 | Run the standing verifier set — see above |
 
 A `publish_*` or `materialize_*` script never runs from CI. Publication
 authority is human-only and create-only by design, which several retained

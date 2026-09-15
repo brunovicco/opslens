@@ -145,7 +145,7 @@ def _bindings() -> tuple[GhsaSilverOccurrenceRecordV1, ...]:
         evidence=evidence,
         page_bytes=page_bytes,
     )
-    return _record_processor().process_page(verified)
+    return _record_processor().process_page(verified).records
 
 
 def _context() -> GhsaSilverAttemptContextV1:

@@ -34,6 +34,7 @@ from opslens.transformation.ghsa.runtime.page_processor import (
 from opslens.transformation.ghsa.runtime.record_processor import (
     GhsaSilverOccurrenceRecordV1,
     GhsaSilverRecordProcessorV1,
+    GhsaSilverRejectedAdvisoryV1,
 )
 
 
@@ -142,13 +143,15 @@ class GhsaSilverRuntimeServiceV1:
                 "the exact persisted page evidence."
             )
 
-        bindings = self._compose_bindings(
+        bindings, rejected = self._compose_bindings(
             verified_pages=tuple(verified_pages),
         )
 
-        if len(bindings) != authorized.manifest.total_items:
+        # Exactly-once accounting, not "everything succeeded". A rejected advisory is
+        # still accounted for; an unaccounted one is the defect this guards. See ADR 0085.
+        if len(bindings) + len(rejected) != authorized.manifest.total_items:
             raise ValueError(
-                "GHSA Silver bound record count does not match "
+                "GHSA Silver accounted record count does not match "
                 "the COMPLETE Bronze manifest total_items."
             )
 
@@ -249,18 +252,27 @@ class GhsaSilverRuntimeServiceV1:
         self,
         *,
         verified_pages: tuple[GhsaVerifiedBronzePageV1, ...],
-    ) -> tuple[GhsaSilverOccurrenceRecordV1, ...]:
-        """Normalize verified pages into one ordered Silver binding sequence."""
+    ) -> tuple[
+        tuple[GhsaSilverOccurrenceRecordV1, ...],
+        tuple[GhsaSilverRejectedAdvisoryV1, ...],
+    ]:
+        """Normalize verified pages, keeping both halves of the accounting.
+
+        Args:
+            verified_pages: Verified Bronze pages in manifest order.
+
+        Returns:
+            The admitted bindings and the rejected occurrences, both in source order.
+        """
         bindings: list[GhsaSilverOccurrenceRecordV1] = []
+        rejected: list[GhsaSilverRejectedAdvisoryV1] = []
 
         for verified_page in verified_pages:
-            bindings.extend(
-                self._record_processor.process_page(
-                    verified_page
-                )
-            )
+            composition = self._record_processor.process_page(verified_page)
+            bindings.extend(composition.records)
+            rejected.extend(composition.rejected)
 
-        return tuple(bindings)
+        return tuple(bindings), tuple(rejected)
 
     @staticmethod
     def _window(
