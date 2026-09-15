@@ -63,6 +63,10 @@ _TERMINAL_STATES: Final = frozenset({"SUCCEEDED", "FAILED", "CANCELLED"})
 _POLL_SECONDS: Final = 2.0
 _MAX_POLLS: Final = 90
 _EMPTY_MAPPING: Final[Mapping[str, object]] = {}
+_MAX_RESULT_ROWS: Final = 25
+# Below this many PyPI index rows the GHSA corpus is fixture or partial-ingestion
+# scale, not a real advisory corpus. A heuristic, reported as one.
+_PLAUSIBLE_GHSA_INDEX_ROWS: Final = 100
 
 
 class ProbeError(RuntimeError):
@@ -159,7 +163,7 @@ class QueryMeasurement:
         scanned_bytes: Bytes Athena reported scanning.
         elapsed_ms: Engine execution time, when Athena reported it.
         columns: Result column names, empty when the query did not succeed.
-        row: The single result row, empty when the query did not succeed.
+        rows: Result rows, empty when the query did not succeed.
         detail: Athena's state-change reason, when it supplied one.
     """
 
@@ -168,7 +172,7 @@ class QueryMeasurement:
     scanned_bytes: int
     elapsed_ms: int | None
     columns: tuple[str, ...] = ()
-    row: tuple[str | None, ...] = ()
+    rows: tuple[tuple[str | None, ...], ...] = ()
     detail: str | None = None
 
     @property
@@ -177,7 +181,7 @@ class QueryMeasurement:
         return self.state == "SUCCEEDED"
 
     def value(self, column: str) -> str | None:
-        """Return one named result value, or None when unavailable.
+        """Return one named value from the first result row, or None when unavailable.
 
         Args:
             column: Result column name.
@@ -185,9 +189,19 @@ class QueryMeasurement:
         Returns:
             The value, or None when the query did not succeed or lacks the column.
         """
-        if not self.succeeded or column not in self.columns:
+        if not self.succeeded or column not in self.columns or not self.rows:
             return None
-        return self.row[self.columns.index(column)]
+        return self.rows[0][self.columns.index(column)]
+
+    def integer(self, column: str) -> int | None:
+        """Return one named value parsed as an integer, or None when unusable."""
+        raw = self.value(column)
+        if raw is None:
+            return None
+        try:
+            return int(raw)
+        except ValueError:
+            return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -437,29 +451,34 @@ def _run_query(
                 detail=detail,
             )
 
-        page = client.get_query_results(QueryExecutionId=execution_id, MaxResults=2)
-        columns, row = _parse_single_row(page)
+        page = client.get_query_results(
+            QueryExecutionId=execution_id,
+            MaxResults=_MAX_RESULT_ROWS + 1,
+        )
+        columns, rows = _parse_rows(page)
         return QueryMeasurement(
             label=label,
             state="SUCCEEDED",
             scanned_bytes=scanned if isinstance(scanned, int) else 0,
             elapsed_ms=elapsed if isinstance(elapsed, int) else None,
             columns=columns,
-            row=row,
+            rows=rows,
             detail=None,
         )
 
     raise ProbeError(f"{label} did not reach a terminal state within the polling bound")
 
 
-def _parse_single_row(page: Mapping[str, object]) -> tuple[tuple[str, ...], tuple[str | None, ...]]:
-    """Read one aggregate result row and its column names.
+def _parse_rows(
+    page: Mapping[str, object],
+) -> tuple[tuple[str, ...], tuple[tuple[str | None, ...], ...]]:
+    """Read the bounded result rows and their column names.
 
     Args:
         page: One `GetQueryResults` response.
 
     Returns:
-        The column names and the single data row.
+        The column names and every data row after the header row.
     """
     result_set = page.get("ResultSet")
     if not isinstance(result_set, Mapping):
@@ -475,21 +494,23 @@ def _parse_single_row(page: Mapping[str, object]) -> tuple[tuple[str, ...], tupl
                 for item in cast(list[object], column_info)
                 if isinstance(item, Mapping)
             )
-    rows = result_map.get("Rows")
-    if not isinstance(rows, list) or len(cast(list[object], rows)) < 2:
+    raw_rows = result_map.get("Rows")
+    if not isinstance(raw_rows, list) or len(cast(list[object], raw_rows)) < 2:
         return columns, ()
-    data_row = cast(list[Mapping[str, object]], rows)[1]
-    data = data_row.get("Data")
-    if not isinstance(data, list):
-        return columns, ()
-    values: list[str | None] = []
-    for datum in cast(list[object], data):
-        if not isinstance(datum, Mapping):
-            values.append(None)
+    parsed: list[tuple[str | None, ...]] = []
+    for data_row in cast(list[Mapping[str, object]], raw_rows)[1:]:
+        data = data_row.get("Data")
+        if not isinstance(data, list):
             continue
-        raw = cast(Mapping[str, object], datum).get("VarCharValue")
-        values.append(raw if isinstance(raw, str) else None)
-    return columns, tuple(values)
+        values: list[str | None] = []
+        for datum in cast(list[object], data):
+            if not isinstance(datum, Mapping):
+                values.append(None)
+                continue
+            raw = cast(Mapping[str, object], datum).get("VarCharValue")
+            values.append(raw if isinstance(raw, str) else None)
+        parsed.append(tuple(values))
+    return columns, tuple(parsed)
 
 
 def _ghsa_shape_sql(database: str, table: str) -> str:
@@ -556,6 +577,50 @@ FROM per_package
 '''.strip()
 
 
+def _ghsa_census_sql(database: str, table: str) -> str:
+    """Build the GHSA corpus census.
+
+    Sizing is meaningless if the source is empty, so this asks what is actually in the
+    table before anything asks how to store a projection of it.
+    """
+    return f'''
+SELECT
+  count(*) AS row_count,
+  count(DISTINCT ghsa_id) AS distinct_advisories,
+  sum(CASE WHEN is_withdrawn THEN 1 ELSE 0 END) AS withdrawn_rows,
+  sum(vulnerability_entry_count) AS vulnerability_entries
+FROM "{database}"."{table}"
+'''.strip()
+
+
+def _ghsa_ecosystem_sql(database: str, table: str) -> str:
+    """Break the GHSA corpus down by ecosystem.
+
+    Distinguishes "no PyPI advisories ingested" from "the pip filter is wrong", which
+    look identical in the shape query.
+    """
+    return f'''
+SELECT v.ecosystem AS ecosystem, count(*) AS entries
+FROM "{database}"."{table}" r
+CROSS JOIN UNNEST(r.vulnerabilities) AS t (v)
+GROUP BY v.ecosystem
+ORDER BY entries DESC
+'''.strip()
+
+
+def _nvd_partition_sql(database: str, table: str) -> str:
+    """Count distinct CVEs per NVD source partition.
+
+    Shows whether the NVD corpus is a complete load or a bootstrap subset.
+    """
+    return f'''
+SELECT source_kind_partition AS source_kind, count(DISTINCT cve_id) AS distinct_cves
+FROM "{database}"."{table}"
+GROUP BY source_kind_partition
+ORDER BY distinct_cves DESC
+'''.strip()
+
+
 def _nvd_shape_sql(database: str, table: str) -> str:
     """Build the NVD index-shape query.
 
@@ -576,6 +641,62 @@ SELECT
 FROM ranked
 WHERE rn = 1
 '''.strip()
+
+
+def _measurements(
+    database: str,
+    ghsa_table: str,
+    nvd_table: str,
+) -> tuple[tuple[str, str], ...]:
+    """Return every measurement, census first.
+
+    Census before shape is deliberate: a store decision taken from a shape query over
+    an empty table is a decision taken from nothing.
+    """
+    return (
+        ("ghsa_census", _ghsa_census_sql(database, ghsa_table)),
+        ("ghsa_ecosystems", _ghsa_ecosystem_sql(database, ghsa_table)),
+        ("ghsa_shape", _ghsa_shape_sql(database, ghsa_table)),
+        ("ghsa_hot_key", _ghsa_hot_key_sql(database, ghsa_table)),
+        ("nvd_partitions", _nvd_partition_sql(database, nvd_table)),
+        ("nvd_shape", _nvd_shape_sql(database, nvd_table)),
+    )
+
+
+def _assess(run: ProbeRun) -> dict[str, object]:
+    """Say plainly whether these measurements can support a store decision.
+
+    A sizing probe that reports two rows without flagging that two is implausible for
+    a real GHSA PyPI corpus is a probe that lets someone build on sand.
+    """
+    by_label = {item.label: item for item in run.queries}
+    shape = by_label.get("ghsa_shape")
+    index_rows = shape.integer("index_rows") if shape is not None else None
+
+    if index_rows is None:
+        return {
+            "ghsa_corpus_sufficient_for_sizing": False,
+            "reason": "the GHSA shape measurement did not complete",
+            "ghsa_index_rows": None,
+        }
+    if index_rows < _PLAUSIBLE_GHSA_INDEX_ROWS:
+        return {
+            "ghsa_corpus_sufficient_for_sizing": False,
+            "reason": (
+                f"{index_rows} PyPI index rows is fixture or partial-ingestion scale, "
+                "not a real GHSA advisory corpus; a store decision taken from this "
+                "number would be a decision taken from nothing, and an endpoint "
+                "correlating against it would report no known vulnerabilities for "
+                "almost every real repository"
+            ),
+            "ghsa_index_rows": index_rows,
+            "heuristic_threshold": _PLAUSIBLE_GHSA_INDEX_ROWS,
+        }
+    return {
+        "ghsa_corpus_sufficient_for_sizing": True,
+        "reason": "the GHSA PyPI corpus is large enough for the numbers to mean something",
+        "ghsa_index_rows": index_rows,
+    }
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -654,12 +775,15 @@ def _payload(
                 "state": item.state,
                 "scanned_bytes": item.scanned_bytes,
                 "elapsed_ms": item.elapsed_ms,
-                "result": dict(zip(item.columns, item.row, strict=False)),
+                "rows": [
+                    dict(zip(item.columns, row, strict=False)) for row in item.rows
+                ],
                 "detail": item.detail,
             }
             for item in run.queries
         ],
     }
+    payload["assessment"] = _assess(run)
     payload["probe_id"] = (
         f"{CORRELATION_INDEX_PROBE_CONTRACT_VERSION}@sha256:{canonical_sha256(payload)}"
     )
@@ -696,14 +820,20 @@ def _render_text(payload: dict[str, object]) -> str:
                 f"  {item['label']:<28} {item['state']:<16} "
                 f"scanned {scanned / 1_048_576:>8.2f} MiB"
             )
-            result = cast(Mapping[str, object], item["result"])
-            for key, value in sorted(result.items()):
-                lines.append(f"      {key} = {value}")
+            for row in cast(list[Mapping[str, object]], item["rows"]):
+                rendered = "  ".join(f"{key}={value}" for key, value in sorted(row.items()))
+                lines.append(f"      {rendered}")
             detail = item.get("detail")
             if detail:
                 lines.append(f"      detail: {detail}")
 
+    assessment = cast(Mapping[str, object], payload["assessment"])
+    sufficient = bool(assessment["ghsa_corpus_sufficient_for_sizing"])
     lines.extend((
+        "",
+        "assessment",
+        f"  GHSA corpus sufficient for a store decision: {'yes' if sufficient else 'NO'}",
+        f"  {assessment['reason']}",
         "",
         f"probe: {payload['probe_id']}",
         "authority: read-only measurement; creates no table, workgroup or object",
@@ -729,11 +859,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     region = cast(str, namespace.region)
 
     if cast(bool, namespace.print_sql):
-        for label, sql in (
-            ("ghsa_shape", _ghsa_shape_sql(catalog.database, ghsa_table)),
-            ("ghsa_hot_key", _ghsa_hot_key_sql(catalog.database, ghsa_table)),
-            ("nvd_shape", _nvd_shape_sql(catalog.database, nvd_table)),
-        ):
+        for label, sql in _measurements(catalog.database, ghsa_table, nvd_table):
             sys.stdout.write(f"-- {label}\n{sql}\n\n")
         return 0
 
@@ -748,11 +874,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             run.storage.append(_measure_storage(session, region, table, location))
 
         if not cast(bool, namespace.storage_only):
-            for label, sql in (
-                ("ghsa_shape", _ghsa_shape_sql(catalog.database, ghsa_table)),
-                ("ghsa_hot_key", _ghsa_hot_key_sql(catalog.database, ghsa_table)),
-                ("nvd_shape", _nvd_shape_sql(catalog.database, nvd_table)),
-            ):
+            for label, sql in _measurements(catalog.database, ghsa_table, nvd_table):
                 run.queries.append(
                     _run_query(session, region, catalog, label=label, sql=sql)
                 )
