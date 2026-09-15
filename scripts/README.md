@@ -42,7 +42,7 @@ change, with no paths filter.
 | --- | ---: | --- |
 | `verify_*` | 28 | Assert an invariant, or admit supplied evidence — see above |
 | `build_*` | 15 | Build a deployable artifact (Lambda packages, AgentCore runtime) |
-| `run_*` | 14 | Run a bounded experiment, query, replay or the invariant set |
+| `run_*` | 15 | Run a bounded experiment, query, replay, corpus load or the invariant set |
 | `publish_*` | 3 | Publish a built artifact. Human-authorized, create-only |
 | `demo_*`, `evaluate_*` | 3 | The offline reviewer path, also installed as console commands |
 | `probe_*`, `discover_*`, `select_*` | 6 | One-off source investigation retained as provenance |
