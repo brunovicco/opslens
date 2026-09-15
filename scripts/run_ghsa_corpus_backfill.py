@@ -50,7 +50,7 @@ import sys
 import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final, Protocol, cast
 
@@ -59,6 +59,13 @@ from boto3.session import Session
 
 ensure_repository_src_on_path()
 
+from opslens.ingestion.ghsa.application.backfill_planning import (  # noqa: E402
+    BackfillPlanError,
+    build_bronze_invocation,
+    build_silver_invocation,
+    invocation_timestamp,
+    plan_sync_windows,
+)
 from opslens.ingestion.ghsa.domain.sync import GhsaSyncMode, GhsaSyncWindow  # noqa: E402
 from opslens.shared.evidence import canonical_json, canonical_sha256  # noqa: E402
 
@@ -68,11 +75,7 @@ _DEFAULT_REGION: Final = "us-east-1"
 _DEFAULT_BRONZE_FUNCTION: Final = "opslens-dev-ghsa-bronze"
 _DEFAULT_SILVER_FUNCTION: Final = "opslens-dev-ghsa-silver"
 _DEFAULT_LEDGER: Final = ".tmp/ghsa-backfill-ledger.json"
-# One day under the domain's own 31-day ceiling, so a window can never be rejected
-# by rounding at a month boundary.
-_WINDOW_DAYS: Final = 30
 _DEFAULT_PAUSE_SECONDS: Final = 2.0
-_INVOCATION_SCHEMA_VERSION: Final = 1
 
 
 class BackfillError(RuntimeError):
@@ -137,35 +140,32 @@ class WindowOutcome:
     silver_keys: tuple[str, ...]
 
 
-def _plan_windows(start: datetime, end: datetime, mode: GhsaSyncMode) -> tuple[WindowPlan, ...]:
-    """Split a date range into windows the domain will accept.
+def _plan_windows(
+    start: datetime,
+    end: datetime,
+    mode: GhsaSyncMode,
+) -> tuple[WindowPlan, ...]:
+    """Pair each planned window with its ledger key.
+
+    The cover itself is the package's business; this only attaches the `sync_id` the
+    ledger resumes on.
 
     Args:
         start: Inclusive UTC start.
         end: Exclusive UTC end.
-        mode: Synchronization mode the lambda will filter by.
+        mode: Synchronization mode.
 
     Returns:
-        Windows covering the range, oldest first.
+        Windows with their ledger keys, oldest first.
 
     Raises:
-        BackfillError: If the range is empty or inverted.
+        BackfillError: If the range cannot produce windows.
     """
-    if end <= start:
-        raise BackfillError("the backfill range must end after it starts")
-
-    plans: list[WindowPlan] = []
-    cursor = start
-    while cursor < end:
-        boundary = min(cursor + timedelta(days=_WINDOW_DAYS), end)
-        window = GhsaSyncWindow(mode=mode, start_at=cursor, end_at=boundary)
-        plans.append(WindowPlan(window=window, sync_id=window.sync_id))
-        # GhsaSyncWindow.filter_expression is a CLOSED GitHub search range, so
-        # abutting windows would both claim an advisory published exactly on the
-        # boundary second. The domain works at second precision, so one second is
-        # the smallest gap that makes the cover disjoint.
-        cursor = boundary + timedelta(seconds=1)
-    return tuple(plans)
+    try:
+        windows = plan_sync_windows(start, end, mode)
+    except BackfillPlanError as exc:
+        raise BackfillError(str(exc)) from exc
+    return tuple(WindowPlan(window=window, sync_id=window.sync_id) for window in windows)
 
 
 def _invoke(
@@ -253,16 +253,7 @@ def _run_window(
         BackfillError: If Bronze or any Silver promotion fails, or Bronze returns a
             leaf without the exact coordinate Silver requires.
     """
-    bronze = _invoke(
-        client,
-        bronze_function,
-        {
-            "schema_version": _INVOCATION_SCHEMA_VERSION,
-            "mode": plan.window.mode.value,
-            "start_at": plan.window.canonical_start_at,
-            "end_at": plan.window.canonical_end_at,
-        },
-    )
+    bronze = _invoke(client, bronze_function, build_bronze_invocation(plan.window))
 
     leaves = bronze.get("leaves")
     if not isinstance(leaves, list):
@@ -284,11 +275,7 @@ def _run_window(
         silver = _invoke(
             client,
             silver_function,
-            {
-                "schema_version": _INVOCATION_SCHEMA_VERSION,
-                "manifest_key": manifest_key,
-                "manifest_version_id": manifest_version_id,
-            },
+            build_silver_invocation(manifest_key, manifest_version_id),
         )
         complete_key = silver.get("silver_complete_key")
         if not isinstance(complete_key, str):
@@ -419,9 +406,12 @@ def main(argv: Sequence[str] | None = None) -> int:
           f"{len(pending)} to run")
 
     if not cast(bool, namespace.apply):
+        # Print the envelope form, so the plan is a faithful preview of what will be
+        # sent. Printing the hashing form is what hid this mismatch until a live
+        # invocation rejected it.
         for plan in pending[:12]:
-            print(f"  would run  {plan.window.canonical_start_at} .. "
-                  f"{plan.window.canonical_end_at}")
+            print(f"  would run  {invocation_timestamp(plan.window.start_at)} .. "
+                  f"{invocation_timestamp(plan.window.end_at)}")
         if len(pending) > 12:
             print(f"  ... and {len(pending) - 12} more")
         print("\nplan only. Re-run with --apply to invoke.")
@@ -440,8 +430,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     pause = cast(float, namespace.pause_seconds)
     try:
         for index, plan in enumerate(pending, start=1):
-            print(f"[{index}/{len(pending)}] {plan.window.canonical_start_at} "
-                  f".. {plan.window.canonical_end_at}", flush=True)
+            print(f"[{index}/{len(pending)}] {invocation_timestamp(plan.window.start_at)} "
+                  f".. {invocation_timestamp(plan.window.end_at)}", flush=True)
             outcome = _run_window(
                 client,
                 plan,
