@@ -56,6 +56,7 @@ from typing import Final, Protocol, cast
 
 from _bootstrap import ensure_repository_src_on_path
 from boto3.session import Session
+from botocore.config import Config
 
 ensure_repository_src_on_path()
 
@@ -76,6 +77,21 @@ _DEFAULT_BRONZE_FUNCTION: Final = "opslens-dev-ghsa-bronze"
 _DEFAULT_SILVER_FUNCTION: Final = "opslens-dev-ghsa-silver"
 _DEFAULT_LEDGER: Final = ".tmp/ghsa-backfill-ledger.json"
 _DEFAULT_PAUSE_SECONDS: Final = 2.0
+
+# Both lambdas are configured with a 900 second timeout, and a large advisory window
+# genuinely uses it. botocore defaults to a 60 second read timeout, so a window that the
+# lambda completes successfully can still be recorded here as a failure: the work lands
+# in S3 and the ledger does not know. The client must therefore outwait the function it
+# invokes, with a margin for the response body.
+#
+#     client timeout < function timeout == a completed window recorded as failed
+#
+# Retries are disabled for the same reason. A retried invoke would run a second full
+# window against the GitHub rate limit to produce evidence the first attempt already
+# wrote; the writes are content-addressed and idempotent, so the duplicate buys nothing.
+_LAMBDA_TIMEOUT_SECONDS: Final = 900
+_INVOKE_READ_TIMEOUT_SECONDS: Final = _LAMBDA_TIMEOUT_SECONDS + 60
+_INVOKE_CONNECT_TIMEOUT_SECONDS: Final = 10
 
 
 class BackfillError(RuntimeError):
@@ -423,6 +439,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         session.client(  # pyright: ignore[reportUnknownMemberType]
             "lambda",
             region_name=cast(str, namespace.region),
+            config=Config(
+                read_timeout=_INVOKE_READ_TIMEOUT_SECONDS,
+                connect_timeout=_INVOKE_CONNECT_TIMEOUT_SECONDS,
+                retries={"max_attempts": 1, "mode": "standard"},
+            ),
         ),
     )
 
