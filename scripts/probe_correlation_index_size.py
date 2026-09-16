@@ -634,6 +634,50 @@ FROM per_package
 '''.strip()
 
 
+def _ghsa_hot_key_identity_sql(database: str, table: str) -> str:
+    """Name the packages behind the per-package distribution.
+
+    `ghsa_hot_key` reports a maximum without saying which package carries it, and a
+    skew that extreme has two very different explanations. A package with a genuinely
+    long advisory history is a schema constraint: one DynamoDB item per package would
+    exceed the 400 KB item limit, forcing an item per (package, advisory) pair. An
+    empty or absent `package_name` collapsing every such entry onto one normalized key
+    is a measurement artifact, and designing a limit around it would bound the request
+    path against a package that does not exist.
+
+    ```text
+    a maximum != the thing carrying it
+    ```
+
+    The same filters as `ghsa_hot_key` and `ghsa_shape`, so the counts are comparable
+    rather than merely similar. Empty names are deliberately not filtered out: whether
+    they exist is the question.
+    """
+    return f'''
+WITH ranked AS (
+  SELECT ghsa_id, is_withdrawn, vulnerabilities,
+         ROW_NUMBER() OVER (PARTITION BY ghsa_id ORDER BY updated_at DESC) AS rn
+  FROM "{database}"."{table}"
+),
+pairs AS (
+  SELECT
+    lower(regexp_replace(coalesce(v.package_name, ''), '[-_.]+', '-')) AS package,
+    length(coalesce(v.package_name, '')) AS name_length
+  FROM ranked r
+  CROSS JOIN UNNEST(r.vulnerabilities) AS t (v)
+  WHERE r.rn = 1 AND NOT r.is_withdrawn AND v.ecosystem = 'pip'
+)
+SELECT
+  CASE WHEN package = '' THEN '(empty package name)' ELSE package END AS package,
+  cast(count(*) AS varchar) AS advisories,
+  cast(min(name_length) AS varchar) AS shortest_source_name
+FROM pairs
+GROUP BY package
+ORDER BY count(*) DESC
+LIMIT 6
+'''.strip()
+
+
 def _ghsa_census_sql(database: str, table: str) -> str:
     """Build the GHSA corpus census.
 
@@ -715,6 +759,7 @@ def _measurements(
         ("ghsa_ecosystems", _ghsa_ecosystem_sql(database, ghsa_table)),
         ("ghsa_shape", _ghsa_shape_sql(database, ghsa_table)),
         ("ghsa_hot_key", _ghsa_hot_key_sql(database, ghsa_table)),
+        ("ghsa_hot_key_identity", _ghsa_hot_key_identity_sql(database, ghsa_table)),
         ("nvd_partitions", _nvd_partition_sql(database, nvd_table)),
         ("nvd_shape", _nvd_shape_sql(database, nvd_table)),
     )
