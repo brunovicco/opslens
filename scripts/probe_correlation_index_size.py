@@ -39,7 +39,7 @@ import argparse
 import sys
 import time
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final, Protocol, cast
@@ -57,7 +57,11 @@ CORRELATION_INDEX_PROBE_CONTRACT_VERSION: Final = "opslens-correlation-index-pro
 _DEFAULT_REGION: Final = "us-east-1"
 _DEFAULT_GHSA_TABLE: Final = "ghsa_advisory_versions"
 _DEFAULT_NVD_TABLE: Final = "nvd_cve_versions"
-_WORKGROUP_SCAN_CUTOFF_BYTES: Final = 10_485_760
+# The cutoff is read from the workgroup rather than written down here. A probe that
+# asserts a number the workgroup no longer carries reports a bound that is not the one
+# in force, which is the same failure as measuring nothing and calling it zero.
+#
+#     declared constant != configuration in force
 
 _TERMINAL_STATES: Final = frozenset({"SUCCEEDED", "FAILED", "CANCELLED"})
 _POLL_SECONDS: Final = 2.0
@@ -120,6 +124,10 @@ class _AthenaClient(Protocol):
 
     def get_query_execution(self, *, QueryExecutionId: str) -> Mapping[str, object]:
         """Return status and statistics for one execution."""
+        ...
+
+    def get_work_group(self, *, WorkGroup: str) -> Mapping[str, object]:
+        """Return the workgroup's own configuration."""
         ...
 
     def get_query_results(
@@ -369,6 +377,55 @@ def _measure_storage(
         compressed_bytes=compressed_bytes,
         largest_object_bytes=largest,
         distinct_partition_prefixes=len(partition_prefixes),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class WorkgroupBound:
+    """What the workgroup actually enforces, read rather than assumed.
+
+    Attributes:
+        name: The workgroup addressed.
+        scan_cutoff_bytes: Its per-query scan ceiling, or None when it sets none.
+        configuration_enforced: Whether a client may override that ceiling.
+    """
+
+    name: str
+    scan_cutoff_bytes: int | None
+    configuration_enforced: bool
+
+
+def read_workgroup_bound(client: _AthenaClient, workgroup: str) -> WorkgroupBound:
+    """Read the scan ceiling the workgroup enforces.
+
+    Args:
+        client: The Athena client.
+        workgroup: The workgroup to describe.
+
+    Returns:
+        What that workgroup enforces.
+
+    Raises:
+        ProbeError: If the workgroup cannot be described.
+    """
+    try:
+        described = client.get_work_group(WorkGroup=workgroup)
+    except Exception as exc:
+        raise ProbeError(f"could not describe workgroup {workgroup}: {exc}") from exc
+
+    group = described.get("WorkGroup")
+    configuration: Mapping[str, object] = {}
+    if isinstance(group, dict):
+        candidate = cast(Mapping[str, object], group).get("Configuration")
+        if isinstance(candidate, dict):
+            configuration = cast(Mapping[str, object], candidate)
+
+    cutoff = configuration.get("BytesScannedCutoffPerQuery")
+    enforced = configuration.get("EnforceWorkGroupConfiguration")
+    return WorkgroupBound(
+        name=workgroup,
+        scan_cutoff_bytes=cutoff if type(cutoff) is int else None,
+        configuration_enforced=enforced is True,
     )
 
 
@@ -725,6 +782,14 @@ def _parser() -> argparse.ArgumentParser:
         "--format", dest="output_format", choices=("text", "json"), default="text",
         help="reviewer output projection",
     )
+    parser.add_argument(
+        "--workgroup", default=None,
+        help=(
+            "Athena workgroup to measure in; defaults to the configured one. The "
+            "projection workgroup is bounded well above the request path, because a "
+            "projection is built from a full corpus scan by design."
+        ),
+    )
     parser.add_argument("--output", default=None, help="also write canonical JSON evidence here")
     return parser
 
@@ -737,6 +802,7 @@ def _payload(
     ghsa_table: str,
     nvd_table: str,
     identity: CallerIdentity,
+    bound: WorkgroupBound,
 ) -> dict[str, object]:
     """Project the run as a content-addressable payload."""
     payload: dict[str, object] = {
@@ -744,8 +810,8 @@ def _payload(
         "authority": {
             "read_only": True,
             "creates_infrastructure": False,
-            "workgroup_scan_cutoff_bytes": _WORKGROUP_SCAN_CUTOFF_BYTES,
-            "workgroup_configuration_enforced": True,
+            "workgroup_scan_cutoff_bytes": bound.scan_cutoff_bytes,
+            "workgroup_configuration_enforced": bound.configuration_enforced,
         },
         "measured_by": {
             "account_id": identity.account_id,
@@ -790,16 +856,27 @@ def _payload(
     return payload
 
 
+def _render_cutoff(authority: Mapping[str, object]) -> str:
+    """Render the scan ceiling the workgroup reported, without inventing one."""
+    cutoff = authority.get("workgroup_scan_cutoff_bytes")
+    enforced = "enforced" if authority.get("workgroup_configuration_enforced") else "overridable"
+    if type(cutoff) is not int:
+        return f"none declared ({enforced})"
+    return f"{cutoff / (1024 * 1024):.0f} MiB ({enforced})"
+
+
 def _render_text(payload: dict[str, object]) -> str:
     """Render one reviewer-facing summary."""
     target = cast(Mapping[str, object], payload["target"])
     measured = cast(Mapping[str, object], payload["measured_by"])
+    authority = cast(Mapping[str, object], payload["authority"])
     lines = [
         "OpsLens correlation index sizing probe",
         f"region: {target['region']}  database: {target['database']}  "
         f"workgroup: {target['workgroup']}",
         f"measured by: account {measured['account_id']} as {measured['role']}",
         f"measured at: {datetime.now(UTC).isoformat(timespec='seconds')}",
+        f"scan cutoff in force: {_render_cutoff(authority)}",
         "",
         "storage (free, immune to the workgroup scan cutoff)",
     ]
@@ -854,6 +931,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     """
     namespace = _parser().parse_args(list(argv) if argv is not None else None)
     catalog = SemanticQueryCatalog.from_environment()
+    workgroup_override = cast(str | None, namespace.workgroup)
+    if workgroup_override is not None:
+        catalog = replace(catalog, workgroup=workgroup_override)
     ghsa_table = cast(str, namespace.ghsa_table)
     nvd_table = cast(str, namespace.nvd_table)
     region = cast(str, namespace.region)
@@ -869,6 +949,13 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     try:
         identity = _caller_identity(session, region, profile)
+        bound = read_workgroup_bound(
+            cast(
+                _AthenaClient,
+                session.client("athena", region_name=region),  # pyright: ignore[reportUnknownMemberType]
+            ),
+            catalog.workgroup,
+        )
         for table in (ghsa_table, nvd_table):
             location = _glue_table_location(session, region, catalog.database, table)
             run.storage.append(_measure_storage(session, region, table, location))
@@ -889,6 +976,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         ghsa_table=ghsa_table,
         nvd_table=nvd_table,
         identity=identity,
+        bound=bound,
     )
 
     output = cast(str | None, namespace.output)
