@@ -104,6 +104,28 @@ def _require_sha256(value: str, *, field: str) -> None:
 
 
 @dataclass(frozen=True, slots=True)
+class ProjectedSourceIdentifier:
+    """One advisory identifier exactly as GitHub emitted it.
+
+    Attributes:
+        identifier_type: The kind GitHub assigned, such as `GHSA` or `CVE`.
+        value: The identifier itself.
+    """
+
+    identifier_type: str
+    value: str
+
+    def __post_init__(self) -> None:
+        """Reject an identifier that carries no authority.
+
+        Raises:
+            CorrelationIndexContractError: If either field is empty or padded.
+        """
+        _require_text(self.identifier_type, field="identifier_type")
+        _require_text(self.value, field="value")
+
+
+@dataclass(frozen=True, slots=True)
 class ProjectedGhsaIndexRow:
     """One GHSA occurrence, keyed by the package a request asks about.
 
@@ -118,6 +140,7 @@ class ProjectedGhsaIndexRow:
         source_entry_sha256: Digest of this vulnerability entry within it.
         ghsa_id: The advisory identifier.
         github_cve_id: The CVE the advisory names, when it names one.
+        github_identifiers: Every identifier the advisory carries, in source order.
         vulnerability_entry_id: Source-local identity of the entry.
         source_index: Position of the entry within the advisory.
         ecosystem_original: Ecosystem exactly as the source wrote it.
@@ -132,6 +155,7 @@ class ProjectedGhsaIndexRow:
     source_entry_sha256: str
     ghsa_id: str
     github_cve_id: str | None
+    github_identifiers: tuple[ProjectedSourceIdentifier, ...]
     vulnerability_entry_id: str
     source_index: int
     ecosystem_original: str
@@ -170,6 +194,11 @@ class ProjectedGhsaIndexRow:
             raise CorrelationIndexContractError(
                 f"source_index must be between 0 and {_MAX_SOURCE_INDEX}"
             )
+
+        if type(self.github_identifiers) is not tuple or any(
+            type(item) is not ProjectedSourceIdentifier for item in self.github_identifiers
+        ):
+            raise CorrelationIndexContractError("github_identifiers must be a typed tuple")
 
         if self.github_cve_id is not None and _CVE_RE.fullmatch(self.github_cve_id) is None:
             raise CorrelationIndexContractError(
