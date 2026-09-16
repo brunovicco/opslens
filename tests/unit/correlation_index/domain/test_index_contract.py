@@ -23,6 +23,7 @@ from opslens.correlation_index.domain.index_contract import (
     CorrelationIndexContractError,
     ProjectedGhsaIndexRow,
     ProjectedNvdIndexRow,
+    ProjectedSourceIdentifier,
     SourceWatermark,
     build_manifest,
     index_timestamp,
@@ -43,6 +44,9 @@ def _ghsa_row(**overrides: object) -> ProjectedGhsaIndexRow:
         "source_entry_sha256": _ENTRY_DIGEST,
         "ghsa_id": _GHSA_ID,
         "github_cve_id": "CVE-2026-1234",
+        "github_identifiers": (
+            ProjectedSourceIdentifier(identifier_type="GHSA", value=_GHSA_ID),
+        ),
         "vulnerability_entry_id": "entry-0",
         "source_index": 0,
         "ecosystem_original": "PIP",
@@ -113,6 +117,15 @@ class TestGhsaRowRefusesWhatTheRequestPathWouldRefuse:
         """A CVE that cannot be matched against NVD must not enter the index."""
         with pytest.raises(CorrelationIndexContractError):
             _ghsa_row(github_cve_id="CVE-26-1")
+
+    def test_untyped_identifiers_are_refused(self) -> None:
+        """Identifiers rebuild into a typed tuple; anything else cannot."""
+        with pytest.raises(CorrelationIndexContractError):
+            _ghsa_row(github_identifiers=({"type": "CVE", "value": "CVE-2026-1234"},))
+
+    def test_an_advisory_with_no_identifiers_is_allowed(self) -> None:
+        """Sparse is not invalid, the same reading ADR 0085 took for empty links."""
+        assert _ghsa_row(github_identifiers=()).github_identifiers == ()
 
     def test_an_absent_cve_is_allowed(self) -> None:
         """Most GHSA advisories name no CVE, and that is not a defect."""
