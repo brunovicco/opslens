@@ -23,53 +23,12 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.13"
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v6
-        with:
-          enable-cache: true
-
-      - name: Build EPSS Lambda package
-        working-directory: ${{ github.workspace }}
-        run: uv run python scripts/build_lambda_package.py
-
-      - name: Build EPSS history transformer Lambda package
-        working-directory: ${{ github.workspace }}
-        run: uv run python scripts/build_epss_history_transformer_lambda_package.py
-
-      - name: Build KEV Lambda package
-        working-directory: ${{ github.workspace }}
-        run: uv run python scripts/build_kev_lambda_package.py
-
-      - name: Build NVD Bootstrap Lambda package
-        working-directory: ${{ github.workspace }}
-        run: uv run python scripts/build_nvd_lambda_package.py
-
-      - name: Build NVD Incremental Lambda package
-        working-directory: ${{ github.workspace }}
-        run: uv run python scripts/build_nvd_incremental_lambda_package.py
-
-      - name: Build NVD Analytics Projector Lambda package
-        working-directory: ${{ github.workspace }}
-        run: uv run python scripts/build_nvd_analytics_projector_lambda_package.py
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
         with:
           role-to-assume: arn:aws:iam::487757851499:role/OpsLensGitHubDeployRole
           aws-region: us-east-1
           allowed-account-ids: 487757851499
-
-      - name: Publish EPSS history transformer artifact create-only
-        working-directory: ${{ github.workspace }}
-        run: |
-          uv run python scripts/publish_lambda_artifact.py \
-            --target epss-history-transformer \
-            --bucket opslens-dev-artifacts-487757851499-us-east-1
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1

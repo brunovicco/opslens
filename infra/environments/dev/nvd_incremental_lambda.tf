@@ -1,6 +1,23 @@
+# Delivered from the versioned artifacts bucket rather than uploaded from `dist/` at
+# apply time. `filename` made the deployed code whatever the operator had built locally,
+# with nothing recording which bytes those were; a content-addressed key plus an exact
+# version id is a pin a reader can verify. Use scripts/publish_lambda_artifact.py to
+# move these.
 locals {
-  nvd_incremental_lambda_artifact_path = (
-    "${path.module}/../../../dist/opslens-nvd-incremental.zip"
+  nvd_incremental_lambda_artifact_sha256 = (
+    "bb26b929b55867c9309d61e9db2f0d6ef5232317e565cad52d4ad61ecd1fd7e7"
+  )
+
+  nvd_incremental_lambda_artifact_sha256_base64 = (
+    "uya5KbVYZ8kwnWHp2y8NbvUjIxflZcrVLUrWHs0f1+c="
+  )
+
+  nvd_incremental_lambda_artifact_version = (
+    "lBSr1KxYcxyKu.gBLFiHQkSwHUNwVW_k"
+  )
+
+  nvd_incremental_lambda_artifact_key = (
+    "lambda/nvd-incremental/${local.nvd_incremental_lambda_artifact_sha256}.zip"
   )
 }
 
@@ -26,13 +43,11 @@ resource "aws_lambda_function" "nvd_incremental" {
     "opslens.ingestion.nvd.incremental_lambda_handler.lambda_handler"
   )
 
-  filename = (
-    local.nvd_incremental_lambda_artifact_path
-  )
+  s3_bucket         = aws_s3_bucket.deployment_artifacts.bucket
+  s3_key            = local.nvd_incremental_lambda_artifact_key
+  s3_object_version = local.nvd_incremental_lambda_artifact_version
 
-  source_code_hash = filebase64sha256(
-    local.nvd_incremental_lambda_artifact_path
-  )
+  source_code_hash = local.nvd_incremental_lambda_artifact_sha256_base64
 
   memory_size = 1024
   timeout     = 300
