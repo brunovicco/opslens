@@ -57,15 +57,25 @@ from typing import Final, Protocol, cast
 from _bootstrap import ensure_repository_src_on_path
 from boto3.session import Session
 from botocore.config import Config
+from botocore.exceptions import (
+    ConnectionClosedError,
+    ConnectTimeoutError,
+    EndpointConnectionError,
+    ReadTimeoutError,
+)
 
 ensure_repository_src_on_path()
 
 from opslens.ingestion.ghsa.application.backfill_planning import (  # noqa: E402
     BackfillPlanError,
+    SilverCompletionStore,
     build_bronze_invocation,
     build_silver_invocation,
+    completion_settles_window,
     invocation_timestamp,
     plan_sync_windows,
+    read_silver_completion,
+    silver_completion_key,
 )
 from opslens.ingestion.ghsa.domain.sync import GhsaSyncMode, GhsaSyncWindow  # noqa: E402
 from opslens.shared.evidence import canonical_json, canonical_sha256  # noqa: E402
@@ -93,9 +103,29 @@ _LAMBDA_TIMEOUT_SECONDS: Final = 900
 _INVOKE_READ_TIMEOUT_SECONDS: Final = _LAMBDA_TIMEOUT_SECONDS + 60
 _INVOKE_CONNECT_TIMEOUT_SECONDS: Final = 10
 
+# A Silver invocation for a dense window runs for ten minutes or more, during which the
+# HTTP connection carries no bytes at all. Measured: the function reported
+# durationMs 630754 and status success while the client raised a read timeout on the
+# same call. A longer client timeout cannot fix that, because the socket does not
+# survive the wait; keepalive is what holds it open.
+#
+#     no response != no result
+#
+# So the client stops being the authority. Silver writes a content-addressed COMPLETE
+# manifest whose key is derivable from the Bronze leaf coordinate, and that object is
+# what says whether the window happened. On a transport failure the run consults it
+# instead of inventing a verdict from silence.
+_COMPLETION_POLL_SECONDS: Final = 20
+_COMPLETION_WAIT_SECONDS: Final = _LAMBDA_TIMEOUT_SECONDS + 120
+_DATA_BUCKET_TEMPLATE: Final = "opslens-{environment}-data-{account_id}-{region}"
+
 
 class BackfillError(RuntimeError):
     """Raised when the backfill cannot proceed without inventing a result."""
+
+
+class BackfillTransportError(BackfillError):
+    """Raised when the invocation never returned, which is not the same as failing."""
 
 
 class _PayloadStream(Protocol):
@@ -209,6 +239,15 @@ def _invoke(
             InvocationType="RequestResponse",
             Payload=json.dumps(payload).encode("utf-8"),
         )
+    except (
+        ConnectionClosedError,
+        ConnectTimeoutError,
+        EndpointConnectionError,
+        ReadTimeoutError,
+    ) as exc:
+        raise BackfillTransportError(
+            f"no response from {function}: {exc}"
+        ) from exc
     except Exception as exc:
         raise BackfillError(f"could not invoke {function}: {exc}") from exc
 
@@ -245,10 +284,37 @@ def _read_payload(response: Mapping[str, object], function: str) -> bytes:
     return cast(_PayloadStream, body).read()
 
 
+def _await_silver_completion(
+    store: SilverCompletionStore, *, bucket: str, key: str, deadline: float
+) -> None:
+    """Wait for the COMPLETE manifest that settles an unanswered Silver invocation.
+
+    The function may still be running when the connection dies, so this polls rather
+    than reading once.
+
+    Args:
+        store: The object store.
+        bucket: The bucket holding Silver evidence.
+        key: The exact completion manifest key.
+        deadline: Monotonic clock value after which to give up.
+
+    Raises:
+        BackfillError: If no complete manifest appears before the deadline.
+    """
+    while True:
+        if completion_settles_window(read_silver_completion(store, bucket=bucket, key=key)):
+            return
+        if time.monotonic() >= deadline:
+            raise BackfillError(f"no response from Silver and no COMPLETE manifest at {key}")
+        time.sleep(_COMPLETION_POLL_SECONDS)
+
+
 def _run_window(
     client: _LambdaClient,
     plan: WindowPlan,
     *,
+    s3: SilverCompletionStore,
+    data_bucket: str,
     bronze_function: str,
     silver_function: str,
     pause_seconds: float,
@@ -258,6 +324,8 @@ def _run_window(
     Args:
         client: The Lambda client.
         plan: The window to request.
+        s3: The S3 client used to settle an unanswered Silver invocation.
+        data_bucket: The bucket holding Silver evidence.
         bronze_function: Bronze function name.
         silver_function: Silver function name.
         pause_seconds: Delay between invocations, to respect GitHub rate limits.
@@ -288,15 +356,30 @@ def _run_window(
             )
 
         time.sleep(pause_seconds)
-        silver = _invoke(
-            client,
-            silver_function,
-            build_silver_invocation(manifest_key, manifest_version_id),
-        )
+        expected_key = silver_completion_key(manifest_key)
+        deadline = time.monotonic() + _COMPLETION_WAIT_SECONDS
+        try:
+            silver = _invoke(
+                client,
+                silver_function,
+                build_silver_invocation(manifest_key, manifest_version_id),
+            )
+        except BackfillTransportError as exc:
+            print(f"    {exc}; consulting the COMPLETE manifest", flush=True)
+            _await_silver_completion(
+                s3, bucket=data_bucket, key=expected_key, deadline=deadline
+            )
+            silver_keys.append(expected_key)
+            continue
+
         complete_key = silver.get("silver_complete_key")
         if not isinstance(complete_key, str):
             raise BackfillError(
                 f"Silver did not report a completion key for {manifest_key}"
+            )
+        if complete_key != expected_key:
+            raise BackfillError(
+                f"Silver reported {complete_key}, derived {expected_key}"
             )
         silver_keys.append(complete_key)
 
@@ -355,6 +438,14 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--pause-seconds", type=float, default=_DEFAULT_PAUSE_SECONDS,
         help=f"delay between invocations (default: {_DEFAULT_PAUSE_SECONDS})",
+    )
+    parser.add_argument(
+        "--data-bucket", default=None,
+        help="bucket holding Silver evidence; derived from the caller account if omitted",
+    )
+    parser.add_argument(
+        "--environment", default="dev",
+        help="environment segment of the derived data bucket name",
     )
     parser.add_argument("--ledger", default=_DEFAULT_LEDGER, help="resume ledger path")
     parser.add_argument("--region", default=_DEFAULT_REGION, help="AWS Region")
@@ -442,10 +533,35 @@ def main(argv: Sequence[str] | None = None) -> int:
             config=Config(
                 read_timeout=_INVOKE_READ_TIMEOUT_SECONDS,
                 connect_timeout=_INVOKE_CONNECT_TIMEOUT_SECONDS,
+                tcp_keepalive=True,
                 retries={"max_attempts": 1, "mode": "standard"},
             ),
         ),
     )
+    s3 = cast(
+        SilverCompletionStore,
+        session.client(  # pyright: ignore[reportUnknownMemberType]
+            "s3",
+            region_name=cast(str, namespace.region),
+        ),
+    )
+
+    data_bucket = cast(str | None, namespace.data_bucket)
+    if data_bucket is None:
+        identity = cast(
+            Mapping[str, object],
+            session.client(  # pyright: ignore[reportUnknownMemberType]
+                "sts", region_name=cast(str, namespace.region)
+            ).get_caller_identity(),
+        )
+        account_id = identity.get("Account")
+        if not isinstance(account_id, str):
+            raise BackfillError("could not read the caller account to derive the data bucket")
+        data_bucket = _DATA_BUCKET_TEMPLATE.format(
+            environment=cast(str, namespace.environment),
+            account_id=account_id,
+            region=cast(str, namespace.region),
+        )
 
     outcomes: list[WindowOutcome] = []
     pause = cast(float, namespace.pause_seconds)
@@ -456,6 +572,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             outcome = _run_window(
                 client,
                 plan,
+                s3=s3,
+                data_bucket=data_bucket,
                 bronze_function=cast(str, namespace.bronze_function),
                 silver_function=cast(str, namespace.silver_function),
                 pause_seconds=pause,

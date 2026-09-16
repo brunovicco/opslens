@@ -27,9 +27,10 @@ Bronze envelope != Silver envelope
 ```
 """
 
+import json
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
-from typing import Final
+from typing import Final, Protocol, cast
 
 from opslens.ingestion.ghsa.domain.sync import GhsaSyncMode, GhsaSyncWindow
 
@@ -42,6 +43,23 @@ SILVER_INVOCATION_SCHEMA_VERSION: Final = "1"
 # One day under the domain's own 31-day ceiling, so no window can be rejected by
 # rounding at a month boundary.
 WINDOW_DAYS: Final = 30
+
+# A Silver invocation for a dense window keeps the function busy for ten minutes or
+# more while the HTTP connection carries no bytes, and the connection does not always
+# survive that. Measured against the live function: the platform report said
+# durationMs 630754 and status success while the client raised a read timeout on the
+# same call. Raising the client timeout cannot fix a connection that dies mid-wait.
+#
+#     no response != no result
+#
+# Both objects below are content-addressed on the same pair, so the Silver coordinate
+# is derivable from the Bronze one, and the COMPLETE manifest — not the response — is
+# what says whether a window happened.
+_BRONZE_MANIFEST_PREFIX: Final = "bronze/ghsa/advisories/mode="
+_SILVER_COMPLETION_TEMPLATE: Final = (
+    "silver/ghsa/completions/schema_version=1/sync_id={sync_id}"
+    "/attempt_id={attempt_id}/manifest.json"
+)
 
 
 class BackfillPlanError(ValueError):
@@ -149,3 +167,96 @@ __all__ = [
     "invocation_timestamp",
     "plan_sync_windows",
 ]
+
+
+class SilverCompletionStore(Protocol):
+    """Only the read needed to settle a Silver invocation that never answered."""
+
+    def get_object(self, *, Bucket: str, Key: str) -> Mapping[str, object]:
+        """Read one exact object."""
+        ...
+
+
+class _ObjectBody(Protocol):
+    """The streaming body an object read carries."""
+
+    def read(self) -> bytes:
+        """Read the whole body."""
+        ...
+
+
+def silver_completion_key(bronze_manifest_key: str) -> str:
+    """Derive the Silver COMPLETE key that answers one Bronze leaf.
+
+    Args:
+        bronze_manifest_key: The exact Bronze leaf manifest key.
+
+    Returns:
+        The Silver completion manifest key for that leaf.
+
+    Raises:
+        BackfillPlanError: If the key is not a GHSA Bronze manifest key, or carries no
+            complete coordinate.
+    """
+    if not bronze_manifest_key.startswith(_BRONZE_MANIFEST_PREFIX):
+        raise BackfillPlanError(f"unrecognized Bronze manifest key: {bronze_manifest_key}")
+
+    parts = {
+        segment.split("=", 1)[0]: segment.split("=", 1)[1]
+        for segment in bronze_manifest_key.split("/")
+        if "=" in segment
+    }
+    sync_id = parts.get("sync_id")
+    attempt_id = parts.get("attempt_id")
+    if not sync_id or not attempt_id:
+        raise BackfillPlanError(
+            f"Bronze manifest key carries no coordinate: {bronze_manifest_key}"
+        )
+
+    return _SILVER_COMPLETION_TEMPLATE.format(sync_id=sync_id, attempt_id=attempt_id)
+
+
+def read_silver_completion(
+    store: SilverCompletionStore, *, bucket: str, key: str
+) -> Mapping[str, object] | None:
+    """Read one Silver COMPLETE manifest, treating every absence as not yet written.
+
+    Args:
+        store: The object store.
+        bucket: The bucket holding Silver evidence.
+        key: The exact completion manifest key.
+
+    Returns:
+        The manifest, or None when it is missing, unreadable or not a JSON object.
+    """
+    try:
+        response = store.get_object(Bucket=bucket, Key=key)
+    except Exception:
+        return None
+
+    body = response.get("Body")
+    if body is None:
+        return None
+    try:
+        raw = cast(_ObjectBody, body).read()
+        decoded = cast(object, json.loads(raw.decode("utf-8")))
+    except (AttributeError, UnicodeDecodeError, json.JSONDecodeError, OSError):
+        return None
+    return cast(Mapping[str, object], decoded) if isinstance(decoded, dict) else None
+
+
+def completion_settles_window(manifest: Mapping[str, object] | None) -> bool:
+    """Decide whether a manifest closes a window.
+
+    Only a manifest that says complete counts. A partial, malformed or absent object
+    leaves the window unrecorded, because a ledger that over-records is worse than one
+    that under-records: the first skips work that never happened, while the second
+    repeats work that is idempotent anyway.
+
+    Args:
+        manifest: The manifest read back, if any.
+
+    Returns:
+        Whether the window may be recorded as done.
+    """
+    return manifest is not None and manifest.get("completion_status") == "complete"
