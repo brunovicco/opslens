@@ -94,3 +94,4 @@ ADRs are added only for decisions with meaningful architectural trade-offs.
 | [0084](0084-partial-scope-admission.md) | Admit a partially identified dependency scope and carry coverage inside the scope identity | Accepted |
 | [0085](0085-partial-silver-admission-and-passthrough-emptiness.md) | Admit a GHSA Silver page partially and read an empty passthrough link as absent | Accepted |
 | [0086](0086-projection-scan-budget.md) | Bound the projection build in its own workgroup, so the request path keeps its floor | Accepted |
+| [0087](0087-correlation-index-store.md) | Store the correlation index in DynamoDB, one item per (package, advisory) | Accepted |
