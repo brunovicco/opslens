@@ -1,14 +1,14 @@
 locals {
   ghsa_silver_lambda_artifact_sha256 = (
-    "242e6fe88efd09514fe70e4b1dd3ec3a4335884b6a80d4f8b943c5fa3f0ae27e"
+    "f5c492ee31261bb3de53fad353738ee71fa18cb488d4d0382b79ecc8b0f61577"
   )
 
   ghsa_silver_lambda_artifact_sha256_base64 = (
-    "JC5v6I79CVFP5w5LHdPsOkM1iEtqgNT4uUPF+j8K4n4="
+    "9cSS7jEmG7PeU/rTU3OO5x+hjLSI1NA4K3nsyLD2FXc="
   )
 
   ghsa_silver_lambda_artifact_version = (
-    "Bb6ludDG1hI4ztxoK2xxQa9zxmLfqwde"
+    "oMs9fDsFdLUNaNT2IQXFgMzzFrOZGfJq"
   )
 
   ghsa_silver_lambda_artifact_key = (
