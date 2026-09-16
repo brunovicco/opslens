@@ -1,10 +1,20 @@
+# Pinned by published digest rather than by hashing a local file. `dist/` is gitignored,
+# so `filesha256` made every plan depend on whatever happened to be on the operator's
+# disk: a clean clone could not plan at all, and a rebuilt artifact proposed a change
+# nobody asked for. Use scripts/publish_lambda_artifact.py to move these.
 locals {
-  epss_history_transformer_artifact_path = (
-    "${path.module}/../../../dist/opslens-epss-history-transformer.zip"
+  epss_history_transformer_artifact_sha256 = (
+    "704b13ff50b9dc98ee6d4c0ed191a39fd44c425d9065a6d903cc58dfe285243c"
   )
-  epss_history_transformer_artifact_sha256 = filesha256(
-    local.epss_history_transformer_artifact_path
+
+  epss_history_transformer_artifact_sha256_base64 = (
+    "cEsT/1C53JjubUwO0ZGjn9RMQl2QZabZA8xY3+KFJDw="
   )
+
+  epss_history_transformer_artifact_version = (
+    "_VaetMIG3JtkLvZATBgr34KeMJ6O4eS0"
+  )
+
   epss_history_transformer_artifact_key = (
     "lambda/epss-history-transformer/${local.epss_history_transformer_artifact_sha256}.zip"
   )
@@ -26,10 +36,11 @@ resource "aws_lambda_function" "epss_history_transformer" {
   architectures = ["x86_64"]
   handler       = "opslens.transformation.epss.history.lambda_handler.lambda_handler"
 
-  s3_bucket = aws_s3_bucket.deployment_artifacts.bucket
-  s3_key    = local.epss_history_transformer_artifact_key
+  s3_bucket         = aws_s3_bucket.deployment_artifacts.bucket
+  s3_key            = local.epss_history_transformer_artifact_key
+  s3_object_version = local.epss_history_transformer_artifact_version
 
-  source_code_hash = filebase64sha256(local.epss_history_transformer_artifact_path)
+  source_code_hash = local.epss_history_transformer_artifact_sha256_base64
 
   memory_size = 1024
   timeout     = 120

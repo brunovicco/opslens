@@ -7,12 +7,6 @@ on:
       - "infra/**/.terraform.lock.hcl"
       - ".tflint.hcl"
       - ".github/workflows/terraform-ci.yml"
-      - "scripts/build_lambda_package.py"
-      - "scripts/build_kev_lambda_package.py"
-      - "scripts/build_nvd_lambda_package.py"
-      - "scripts/build_nvd_incremental_lambda_package.py"
-      - "scripts/build_nvd_analytics_projector_lambda_package.py"
-      - "scripts/build_epss_history_transformer_lambda_package.py"
       - "pyproject.toml"
       - "uv.lock"
   workflow_dispatch:
@@ -36,34 +30,6 @@ jobs:
         with:
           terraform_version: 1.15.8
           terraform_wrapper: false
-
-      - name: Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.13"
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v6
-        with:
-          enable-cache: true
-
-      - name: Build EPSS Lambda package
-        run: uv run python scripts/build_lambda_package.py
-
-      - name: Build EPSS history transformer Lambda package
-        run: uv run python scripts/build_epss_history_transformer_lambda_package.py
-
-      - name: Build KEV Lambda package
-        run: uv run python scripts/build_kev_lambda_package.py
-
-      - name: Build NVD Bootstrap Lambda package
-        run: uv run python scripts/build_nvd_lambda_package.py
-
-      - name: Build NVD Incremental Lambda package
-        run: uv run python scripts/build_nvd_incremental_lambda_package.py
-
-      - name: Build NVD Analytics Projector Lambda package
-        run: uv run python scripts/build_nvd_analytics_projector_lambda_package.py
 
       - name: Check Terraform formatting
         run: terraform fmt -diff -check -recursive infra
