@@ -100,12 +100,12 @@ The only phase that adds a capability. Nothing is exposed publicly until it is f
 Everything V1 deliberately deferred. Reject, never truncate: a bound that silently trims
 input produces a benign-looking answer from partial evidence.
 
-| Gate | What it is |
-| --- | --- |
-| 21.1 | Request bounds — maximum lock size, package count, repository size, one file read, hard timeout. Every breach is an explicit rejection with a reason code |
-| 21.2 | Abuse and cost ceiling — API Gateway throttling and usage plan, per-caller rate limits, reserved concurrency on both Lambdas, and an AWS Budgets action that disables the stage at a hard monthly ceiling. The kill switch is what makes "public" a promise that can be kept rather than a bill to discover |
-| 21.3 | Content-addressed result cache keyed on `(commit sha, index manifest identity)`. A repeat request returns retained evidence instead of re-analysing |
-| 21.4 | Two input shapes. A single dependency (`name==version`) is a direct lookup needing none of the repository machinery. A repository (`owner/repo[@ref]`) runs snapshot → lock → inventory → correlation |
+| Gate | State | What it is |
+| --- | --- | --- |
+| 21.1 | New | Request bounds — maximum lock size, package count, repository size, one file read, hard timeout. Every breach is an explicit rejection with a reason code |
+| 21.2 | New | Abuse and cost ceiling — API Gateway throttling and usage plan, per-caller rate limits, reserved concurrency on both Lambdas, and an AWS Budgets action that disables the stage at a hard monthly ceiling. The kill switch is what makes "public" a promise that can be kept rather than a bill to discover |
+| 21.3 | New | Content-addressed result cache keyed on `(commit sha, index manifest identity)`. A repeat request returns retained evidence instead of re-analysing |
+| 21.4 | **Done** | Two input shapes. A single dependency (`name==version`) is a direct lookup needing none of the repository machinery, and answers with its own envelope because its warrant is the caller's assertion rather than evidence OpsLens observed. A repository (`owner/repo[@ref]`) runs snapshot → lock → inventory → correlation |
 
 ## Phase 22 — Enable, deliberately
 
