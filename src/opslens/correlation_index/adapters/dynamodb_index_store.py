@@ -43,12 +43,14 @@ from opslens.correlation_index.application.index_reading import (
     LiveIndexGeneration,
     collect_pages,
     ghsa_rows,
+    manifest_from_document,
     nvd_rows,
     read_pointer,
 )
 from opslens.correlation_index.config import CorrelationIndexCatalog
 from opslens.correlation_index.domain.index_contract import (
     CorrelationIndexContractError,
+    CorrelationIndexManifest,
     ProjectedGhsaIndexRow,
     ProjectedNvdIndexRow,
 )
@@ -134,28 +136,66 @@ class DynamoDbCorrelationIndexStore:
             IndexStoreError: If the pointer cannot be read or parsed.
             IndexReadError: If the pointer is malformed or internally inconsistent.
         """
+        return read_pointer(self._json_object(self._catalog.pointer_key, what="pointer"))
+
+    def read_manifest(self, live: LiveIndexGeneration) -> CorrelationIndexManifest:
+        """Read the manifest for the generation this request resolved.
+
+        The manifest is what makes emptiness meaningful. A pointer to a generation whose
+        rows were never written, or have expired, answers every query with nothing, and
+        nothing reads as a clean repository. The manifest states how many rows that build
+        wrote, and re-derives its own content-addressed identity, so it cannot be a
+        leftover from another build.
+
+        ```text
+        empty key space != no advisories
+        ```
+
+        Args:
+            live: The generation this request resolved.
+
+        Returns:
+            The typed manifest for that generation.
+
+        Raises:
+            IndexStoreError: If the object cannot be read or parsed.
+            IndexReadError: If the manifest describes another build.
+        """
+        key = self._catalog.manifest_key(live.index_id)
+        return manifest_from_document(self._json_object(key, what="manifest"), live=live)
+
+    def _json_object(self, key: str, *, what: str) -> Mapping[str, object]:
+        """Read one JSON object out of the evidence bucket.
+
+        Args:
+            key: The object key.
+            what: The thing being read, for the message.
+
+        Returns:
+            The parsed object.
+
+        Raises:
+            IndexStoreError: If the object cannot be read or is not a JSON object.
+        """
         try:
             response = self._pointer_client.get_object(
-                Bucket=self._catalog.evidence_bucket, Key=self._catalog.pointer_key
+                Bucket=self._catalog.evidence_bucket, Key=key
             )
         except Exception as exc:
-            raise IndexStoreError(
-                f"index pointer {self._catalog.pointer_key} could not be read: {exc}"
-            ) from exc
+            raise IndexStoreError(f"index {what} {key} could not be read: {exc}") from exc
 
         body = response.get("Body")
         if body is None:
-            raise IndexStoreError("index pointer response carried no body")
+            raise IndexStoreError(f"index {what} response carried no body")
         payload = cast(PointerObjectBody, body).read()
 
         try:
             document = cast(object, json.loads(payload.decode("utf-8")))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise IndexStoreError("index pointer is not valid UTF-8 JSON") from exc
+            raise IndexStoreError(f"index {what} is not valid UTF-8 JSON") from exc
         if not isinstance(document, dict):
-            raise IndexStoreError("index pointer is not a JSON object")
-
-        return read_pointer(cast(Mapping[str, object], document))
+            raise IndexStoreError(f"index {what} is not a JSON object")
+        return cast(Mapping[str, object], document)
 
     def ghsa_for_package(
         self, package_name_canonical: str, *, live: LiveIndexGeneration
