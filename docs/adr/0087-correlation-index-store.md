@@ -2,8 +2,12 @@
 
 ## Status
 
-Accepted. Resolves the store question left open in `docs/post-v1-online-analysis.md`
-for Gate 20.1.
+Accepted, with one measurement corrected after the index was built. Resolves the store
+question left open in `docs/post-v1-online-analysis.md` for Gate 20.1.
+
+The decision below is unchanged. Two numbers it cited are wrong and are corrected in
+**Correction (2026-09-17)** at the end. Read that section before using any byte figure
+from this ADR to size anything.
 
 ## Context
 
@@ -28,6 +32,9 @@ NVD by CVE        60,259 CVEs                        6,658,712 bytes
                                                      ─────────────
                                                      10.4 MiB
 ```
+
+Both figures are projected source bytes, and both are wrong as index sizes. See
+**Correction (2026-09-17)**.
 
 Ten megabytes is below the point where storage cost is an argument. Parquet on S3 is
 cheaper at rest and the difference is cents per year. So the choice falls entirely to
@@ -64,7 +71,9 @@ package.
 
 The pair shape is forced, not preferred. At the measured 426 bytes for the largest
 projected row, an item holding all of `tensorflow`'s advisories would be roughly 564 KB,
-against DynamoDB's 400 KB item limit. A per-package item would work for the median
+against DynamoDB's 400 KB item limit. The real stored figure is 1.4 MB, so the conclusion
+holds by a wider margin than the number that produced it — see
+**Correction (2026-09-17)**. A per-package item would work for the median
 package — which carries exactly one advisory — and fail for the one a Python developer
 is most likely to have in their lock file.
 
@@ -78,8 +87,9 @@ under a latency budget, at a size where nothing else argues.
 ## Consequences
 
 **Phase 21 gains a bound it can compute rather than guess.** A lock file naming
-`tensorflow` produces a query returning 1,323 items, about 564 KB, for **one** package.
-DynamoDB pages queries at 1 MB, so two or three such packages exhaust a page. The
+`tensorflow` produces a query returning 1,323 items for **one** package. DynamoDB pages
+queries at 1 MB, so a single package exhausts a page and spills into a second — not
+"two or three packages", as first written here; see **Correction (2026-09-17)**. The
 request bound therefore cannot be expressed in packages alone; it must also bound rows
 returned, and — per the project's central invariant — a bound that is reached must
 produce an explicit rejection rather than a short answer.
@@ -112,6 +122,74 @@ grows with corpus rather than with request.
 answer these questions scanned 71–82 MiB each. An anonymous caller must not be able to
 trigger that, which is why the request path keeps the 10 MiB workgroup and the
 projection has its own.
+
+## Correction (2026-09-17)
+
+The index was built and applied on 2026-09-17. Reading it back corrected two numbers
+this ADR asserted. Evidence:
+`labs/evidence/correlation-index-stored-item-size-v1.json`.
+
+### The row size was understated by 2.8x
+
+The probe reported 385 bytes per row on average and 426 for the largest. Those are the
+bytes of the *projected source fields*. The request path does not read projected source
+fields; it reads a stored DynamoDB item, which additionally carries every attribute
+name, three full sha-256 digests, the sort key, the `github_identifiers` list as nested
+maps, and an 89-byte `index_id` repeated on every one of the 11,081 items.
+
+```text
+projected bytes != stored bytes
+```
+
+Measured by issuing one unpaginated `Query` against the heaviest partition key and
+dividing the page limit by the items that fit:
+
+```text
+1,048,576 / 973 items = 1,078 bytes per stored item
+```
+
+| | ADR as written | measured |
+| --- | --- | --- |
+| bytes per GHSA item | 385 | **1,078** |
+| GHSA index at rest | 4.27 MB | **11.9 MB** |
+| `tensorflow` (1,323 rows) | 564 KB, under one page | **1.43 MB, two pages** |
+| `tensorflow` + `-gpu` + `-cpu` | 1.5 MB | **4.25 MB, six pages across three queries** |
+
+Nothing about the store decision changes. 11.9 MB is as far below the point where
+storage cost argues as 4.27 MB was, and the per-package item the ADR rejected would have
+been 1.4 MB against a 400 KB limit rather than 564 KB — the rejection was right for a
+larger reason than the one given.
+
+What changes is the request bound. **973 rows fill a page.** Gate 21.1 must bound rows
+against that measured figure, not against the projected one.
+
+### The NVD side of the index is 1,642 rows, not 60,259
+
+The size table above counts every CVE in NVD Silver. The projector does not store every
+CVE: `nvd_projection_sql` scopes the NVD query to the CVEs the admitted GHSA rows name,
+because `PublicRepositoryThreatEvidence` refuses NVD records unrelated to scoped GHSA
+evidence. Of the 5,685 CVEs named by the 11,081 admitted rows, **1,642 were found** in
+NVD Silver — 28.9%, because NVD Silver holds 60,259 of roughly 300,000 published CVEs
+and was never backfilled past its yearly-feed bootstrap.
+
+```text
+CVE absent from the corpus != CVE without a record
+```
+
+That is a coverage fact the response envelope in Gate 20.4 has to declare. If the
+endpoint returns GHSA evidence with no NVD record and says nothing, a caller reasonably
+reads the absence as "no NVD severity exists" for seven CVEs in ten.
+
+The NVD table takes one item per partition key by construction — the projection keeps
+only the latest observed version of each CVE — so an NVD lookup returns exactly one item
+and can never approach the page limit. Its item size is therefore not a request bound
+and was not measured.
+
+### What remains unmeasured
+
+The size of a rebuilt evidence item in an API response. It is neither the projected row
+nor the stored item, and this correction exists because those two were conflated once
+already. Gate 21.1 measures it rather than deriving it from either.
 
 ## Related
 
