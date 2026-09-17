@@ -12,6 +12,16 @@ built at != current through
 Two tiny queries, deliberately separate from the projection itself. Folding a `max()`
 into the projection would make every row carry a column the index does not store, and a
 column nothing stores is a column nobody notices going wrong.
+
+Both source columns are Glue `timestamp`, and Athena refuses to `coalesce` a timestamp
+with a string. The cast is therefore explicit rather than left to coercion, and asserted
+by a test, because the first version of these queries failed against the live table with
+`TYPE_MISMATCH` after passing every offline check — the statements were only ever
+compared against a shape, never against the schema they run on.
+
+```text
+statement builds != statement runs
+```
 """
 
 from typing import Final
@@ -32,7 +42,7 @@ def ghsa_watermark_sql(database: str, table: str) -> str:
     """
     return f'''
 SELECT
-  coalesce(max(updated_at), '') AS {GHSA_WATERMARK_COLUMN},
+  coalesce(cast(max(updated_at) AS varchar), '') AS {GHSA_WATERMARK_COLUMN},
   cast(count(*) AS varchar) AS record_count
 FROM "{database}"."{table}"
 '''.strip()
@@ -50,7 +60,7 @@ def nvd_watermark_sql(database: str, table: str) -> str:
     """
     return f'''
 SELECT
-  coalesce(max(last_modified_at), '') AS {NVD_WATERMARK_COLUMN},
+  coalesce(cast(max(last_modified_at) AS varchar), '') AS {NVD_WATERMARK_COLUMN},
   cast(count(*) AS varchar) AS record_count
 FROM "{database}"."{table}"
 '''.strip()
