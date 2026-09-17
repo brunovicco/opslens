@@ -191,6 +191,31 @@ The size of a rebuilt evidence item in an API response. It is neither the projec
 nor the stored item, and this correction exists because those two were conflated once
 already. Gate 21.1 measures it rather than deriving it from either.
 
+**Measured 2026-09-17**, by `scripts/measure_response_item_size.py`, retained in
+`labs/evidence/response-item-size-v1.json`:
+
+```text
+projected source row      385 B
+stored index item       1,078 B     2.80x the projected row
+final finding            3,267 B     3.03x the stored item, 8.49x the projected row
+```
+
+```text
+projected bytes != stored bytes != response bytes
+```
+
+Three quantities, three multipliers, and a bound taken from the wrong one is wrong by up
+to 8.5x. The consequence for Gate 21.1: **the response binds before the read does.** One
+1 MB index page holds 973 rows, and one MiB of response holds 320 findings, so a request
+that reads a single page can still produce a response no caller should receive.
+
+```text
+rows read != findings emitted != response bytes
+```
+
+The HTTP wire format is still unmeasured, because it does not exist. That script is what
+re-measures when it lands.
+
 ## Related
 
 - ADR 0084 — partial scope admission

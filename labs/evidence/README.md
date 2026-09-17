@@ -47,3 +47,18 @@ whether ties were the only source of non-determinism.
 
 Read-only; no write was performed.
 
+## Response item size
+
+`response-item-size-v1.json` measures what one finding costs in a response, the number
+ADR 0087's correction named as deliberately unmeasured.
+
+It completes a chain of three quantities that were once conflated, each with its own
+multiplier: the projected source row is 385 bytes, the stored DynamoDB item 1,078, and
+the final finding projection 3,267 — 8.5x the figure the original sizing used. The
+measurement runs the real chain from lock to analysis over an in-memory index, so it is
+offline and deterministic and no AWS is involved.
+
+`scripts/measure_response_item_size.py` regenerates it. The HTTP wire format does not
+exist yet and is recorded as still unmeasured; that script is what re-measures when it
+lands, rather than a new estimate.
+
