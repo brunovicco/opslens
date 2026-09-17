@@ -51,11 +51,99 @@ _TIMESTAMP_FORMAT: Final = "%Y-%m-%dT%H:%M:%SZ"
 # pair `PublicRepositoryThreatEvidence` refuses to see twice. Zero-padding keeps the
 # sort key ordered as text, which is the only ordering a key-value store gives.
 _SOURCE_INDEX_WIDTH: Final = 6
+# ADR 0088: the build generation prefixes every partition key, so a build writes into a
+# key space nothing is reading. 16 hex characters of the manifest digest: long enough
+# that two live generations cannot collide, short enough to stay cheap on every key.
+_GENERATION_WIDTH: Final = 16
+# `#` cannot appear in a canonical PyPI name or a CVE identifier, so it cannot be
+# smuggled in to address another generation's key space.
+_KEY_SEPARATOR: Final = "#"
 _MAX_SOURCE_INDEX: Final = 10**_SOURCE_INDEX_WIDTH - 1
 
 
 class CorrelationIndexContractError(ValueError):
     """Raised when a projected row or manifest would not survive the request path."""
+
+
+def index_generation(index_id: str) -> str:
+    """Derive the key-space generation one build writes into.
+
+    ADR 0088 puts the generation in the partition key so a build writes where nothing
+    is reading. It is the manifest digest truncated, not a counter: two builds of
+    identical content land in the same key space, so a re-run is idempotent instead of
+    producing a second generation of the same thing.
+
+    Args:
+        index_id: The manifest identity, `<contract>@sha256:<digest>`.
+
+    Returns:
+        The generation prefix.
+
+    Raises:
+        CorrelationIndexContractError: If the identity carries no sha-256 digest.
+    """
+    _, separator, digest = index_id.partition("@sha256:")
+    if not separator or _SHA256_RE.fullmatch(digest) is None:
+        raise CorrelationIndexContractError(
+            f"{index_id!r} is not a content-addressed index identity"
+        )
+    return digest[:_GENERATION_WIDTH]
+
+
+def ghsa_partition_key(generation: str, package_name_canonical: str) -> str:
+    """Build the GHSA partition key for one generation and package.
+
+    Args:
+        generation: The build generation.
+        package_name_canonical: The canonical package name the request asks about.
+
+    Returns:
+        The partition key.
+
+    Raises:
+        CorrelationIndexContractError: If either part is malformed.
+    """
+    _require_generation(generation)
+    _require_text(package_name_canonical, field="package_name_canonical")
+    return f"{generation}{_KEY_SEPARATOR}{package_name_canonical}"
+
+
+def nvd_partition_key(generation: str, cve_id: str) -> str:
+    """Build the NVD partition key for one generation and CVE.
+
+    Args:
+        generation: The build generation.
+        cve_id: The CVE the scoped advisories name.
+
+    Returns:
+        The partition key.
+
+    Raises:
+        CorrelationIndexContractError: If either part is malformed.
+    """
+    _require_generation(generation)
+    if _CVE_RE.fullmatch(cve_id) is None:
+        raise CorrelationIndexContractError(f"{cve_id} is not a CVE identifier")
+    return f"{generation}{_KEY_SEPARATOR}{cve_id}"
+
+
+def _require_generation(value: str) -> None:
+    """Reject a generation that could address another build's key space.
+
+    Args:
+        value: The generation to check.
+
+    Raises:
+        CorrelationIndexContractError: If it is not a digest prefix of the right width.
+    """
+    if (
+        type(value) is not str
+        or len(value) != _GENERATION_WIDTH
+        or any(character not in "0123456789abcdef" for character in value)
+    ):
+        raise CorrelationIndexContractError(
+            f"a generation is {_GENERATION_WIDTH} lowercase hex characters"
+        )
 
 
 def index_timestamp(value: datetime) -> str:
@@ -215,7 +303,7 @@ class ProjectedGhsaIndexRow:
         """Return the sort key identifying this occurrence within its package."""
         return (
             f"{self.observed_advisory_version_id}"
-            f"#{self.source_index:0{_SOURCE_INDEX_WIDTH}d}"
+            f"{_KEY_SEPARATOR}{self.source_index:0{_SOURCE_INDEX_WIDTH}d}"
         )
 
 
