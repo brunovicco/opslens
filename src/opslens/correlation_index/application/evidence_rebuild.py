@@ -15,6 +15,19 @@ evidence type now fails a test instead of producing an index that cannot feed it
 preserved enough != preserved everything
 a claim about coverage != a check of coverage
 ```
+
+There is no `rebuild_nvd_evidence`, and its absence is deliberate. `NvdCveCoreRecord`
+carries an `ObservedCveVersion` that validates against the complete canonical JSON of
+the source CVE, and `derive_repository_nvd_cvss_evidence` re-runs the CVSS transformer
+over those same bytes at request time. The index stores the digest and seven scalars.
+
+```text
+the digest of the content != the content
+```
+
+ADR 0089 records why that is deferred rather than solved, and the tests for this module
+enforce the deferral: adding a rebuild without first giving the index the CVE body fails
+there rather than producing a record nothing can validate.
 """
 
 from opslens.correlation.adapters.ghsa import (
