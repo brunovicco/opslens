@@ -102,7 +102,7 @@ input produces a benign-looking answer from partial evidence.
 
 | Gate | State | What it is |
 | --- | --- | --- |
-| 21.1 | New | Request bounds — maximum lock size, package count, repository size, one file read, hard timeout. Every breach is an explicit rejection with a reason code |
+| 21.1 | **Partly done** | Request bounds — lock size, lock records, scoped packages, index rows read and findings emitted, each an explicit rejection with a reason code, sized from `labs/evidence/response-item-size-v1.json`. The hard timeout is not here: it is enforced by the platform, and Gate 21.2 both sets it and verifies the platform assumptions this bound set declares rather than asserts |
 | 21.2 | New | Abuse and cost ceiling — API Gateway throttling and usage plan, per-caller rate limits, reserved concurrency on both Lambdas, and an AWS Budgets action that disables the stage at a hard monthly ceiling. The kill switch is what makes "public" a promise that can be kept rather than a bill to discover |
 | 21.3 | New | Content-addressed result cache keyed on `(commit sha, index manifest identity)`. A repeat request returns retained evidence instead of re-analysing |
 | 21.4 | **Done** | Two input shapes. A single dependency (`name==version`) is a direct lookup needing none of the repository machinery, and answers with its own envelope because its warrant is the caller's assertion rather than evidence OpsLens observed. A repository (`owner/repo[@ref]`) runs snapshot → lock → inventory → correlation |
