@@ -55,14 +55,24 @@ def _result(**overrides: str) -> dict[str, str]:
 
 
 def _nvd_result(**overrides: str) -> dict[str, str]:
-    """Build one NVD query result row."""
+    """Build one NVD query result row, rendered the way Athena actually renders it.
+
+    This fixture previously carried `2026-01-02T03:04:05Z`. Athena renders a Glue
+    `timestamp` column as `2026-01-02 03:04:05.000` — space, milliseconds, no zone — and
+    the fixture being tidier than the source is why the first live index stored a
+    timestamp form nothing else in the system uses.
+
+    ```text
+    a fixture's rendering != the source's rendering
+    ```
+    """
     row = {
         "cve_id": "CVE-2026-1234",
         "observed_cve_version_id": f"CVE-2026-1234@sha256:{_CVE_DIGEST}",
         "source_cve_sha256": _CVE_DIGEST,
         "source_identifier": "cve@mitre.org",
-        "published_at": "2026-01-02T03:04:05Z",
-        "last_modified_at": "2026-02-03T04:05:06Z",
+        "published_at": "2026-01-02 03:04:05.000",
+        "last_modified_at": "2026-02-03 04:05:06.527",
         "vuln_status": "Analyzed",
     }
     row.update(overrides)
@@ -211,3 +221,18 @@ class TestNvdMapping:
         """Nothing about NVD makes a row legitimately unstorable."""
         with pytest.raises(ProjectionMappingError):
             project_nvd_rows([_nvd_result(source_cve_sha256="short")])
+
+    def test_both_instants_are_rendered_in_the_index_form(self) -> None:
+        """The stored row is what the response envelope will quote, so it is pinned.
+
+        The first live index stored `2026-07-22 15:17:17.527` while its own manifest
+        used `2026-09-17T03:40:55Z`. One build, two renderings of an instant.
+        """
+        row = project_nvd_rows([_nvd_result()])[0]
+        assert row.published_at == "2026-01-02T03:04:05Z"
+        assert row.last_modified_at == "2026-02-03T04:05:06Z"
+
+    def test_an_unreadable_instant_raises_rather_than_storing_it(self) -> None:
+        """A column Athena rendered as something else must not reach DynamoDB."""
+        with pytest.raises(ProjectionMappingError):
+            project_nvd_rows([_nvd_result(published_at="not a timestamp")])

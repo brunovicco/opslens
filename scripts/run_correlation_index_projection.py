@@ -73,12 +73,13 @@ from opslens.correlation_index.config import (  # noqa: E402
     CorrelationIndexCatalog,
 )
 from opslens.correlation_index.domain.index_contract import (  # noqa: E402
+    CorrelationIndexContractError,
     CorrelationIndexManifest,
     ProjectedNvdIndexRow,
     SourceWatermark,
     build_manifest,
     index_generation,
-    index_timestamp,
+    source_instant,
 )
 from opslens.shared.evidence import canonical_json  # noqa: E402
 
@@ -396,7 +397,11 @@ def _watermark(
 
 
 def _as_index_instant(value: str, *, source: str) -> str:
-    """Render a source timestamp in the index's single form.
+    """Render a source watermark in the index's single form.
+
+    The rendering itself belongs to the contract, not to this script: the row path needs
+    exactly the same conversion, and two copies of it would be two places for the index
+    to grow a second timestamp format.
 
     Args:
         value: The source's own rendering.
@@ -408,19 +413,10 @@ def _as_index_instant(value: str, *, source: str) -> str:
     Raises:
         ProjectionRunError: If the instant cannot be read.
     """
-    text = value.strip().replace(" ", "T")
-    for suffix in ("Z", "+00:00"):
-        if text.endswith(suffix):
-            text = text[: -len(suffix)]
-            break
-    text = text.split(".", 1)[0]
     try:
-        parsed = datetime.strptime(text, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=UTC)
-    except ValueError as exc:
-        raise ProjectionRunError(
-            f"{source} watermark {value!r} is not an instant this index can render"
-        ) from exc
-    return index_timestamp(parsed)
+        return source_instant(value, field=f"{source} watermark")
+    except CorrelationIndexContractError as exc:
+        raise ProjectionRunError(str(exc)) from exc
 
 
 def build(

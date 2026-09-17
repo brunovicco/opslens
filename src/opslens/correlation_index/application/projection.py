@@ -42,6 +42,7 @@ from opslens.correlation_index.domain.index_contract import (
     ProjectedGhsaIndexRow,
     ProjectedNvdIndexRow,
     ProjectedSourceIdentifier,
+    source_instant,
 )
 
 GHSA_PROJECTION_COLUMNS: Final = (
@@ -370,8 +371,12 @@ def project_nvd_rows(
                     observed_cve_version_id=_text(result, "observed_cve_version_id"),
                     source_cve_sha256=_text(result, "source_cve_sha256"),
                     source_identifier=_text(result, "source_identifier"),
-                    published_at=_text(result, "published_at"),
-                    last_modified_at=_text(result, "last_modified_at"),
+                    published_at=source_instant(
+                        _text(result, "published_at"), field="published_at"
+                    ),
+                    last_modified_at=source_instant(
+                        _text(result, "last_modified_at"), field="last_modified_at"
+                    ),
                     vuln_status=_text(result, "vuln_status"),
                 )
             )

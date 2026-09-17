@@ -27,6 +27,7 @@ from opslens.correlation_index.domain.index_contract import (
     SourceWatermark,
     build_manifest,
     index_timestamp,
+    source_instant,
 )
 
 _ADVISORY_DIGEST = "6872a46115d1775d1eac3f5ba734e73ec98a9f78487d178e38e13163c69d7dbf"
@@ -186,6 +187,63 @@ class TestNvdRow:
         """A row nothing can look up by CVE has no place in a CVE-keyed index."""
         with pytest.raises(CorrelationIndexContractError):
             _nvd_row(cve_id="CVE-bad")
+
+    def test_an_athena_timestamp_rendering_is_refused(self) -> None:
+        """This is exactly what the first live build stored, for both instant fields.
+
+        Athena renders a Glue `timestamp` as `2026-07-22 15:17:17.527`. The first index
+        carried that string into DynamoDB unchanged while its own manifest used
+        `YYYY-MM-DDTHH:MM:SSZ`, so one build emitted two renderings of the same kind of
+        thing. The row type is where that stops.
+        """
+        for field in ("published_at", "last_modified_at"):
+            with pytest.raises(CorrelationIndexContractError):
+                _nvd_row(**{field: "2026-07-22 15:17:17.527"})
+
+    def test_an_offset_rendering_is_refused(self) -> None:
+        """`+00:00` is the same instant and a different string; one form only."""
+        with pytest.raises(CorrelationIndexContractError):
+            _nvd_row(published_at="2026-01-02T03:04:05+00:00")
+
+
+class TestSourceInstant:
+    """The one place a foreign timestamp rendering is accepted."""
+
+    def test_an_athena_rendering_becomes_the_index_form(self) -> None:
+        """The case the live index actually produced."""
+        assert (
+            source_instant("2026-07-22 15:17:17.527", field="last_modified_at")
+            == "2026-07-22T15:17:17Z"
+        )
+
+    def test_sub_second_precision_is_dropped_not_rounded(self) -> None:
+        """The index states freshness to the second and must not imply more."""
+        assert (
+            source_instant("2026-07-22 15:17:17.999", field="published_at")
+            == "2026-07-22T15:17:17Z"
+        )
+
+    def test_the_index_form_survives_a_round_trip(self) -> None:
+        """Reading an already-canonical instant must not change it."""
+        assert (
+            source_instant("2026-07-22T15:17:17Z", field="published_at")
+            == "2026-07-22T15:17:17Z"
+        )
+
+    def test_what_it_produces_is_what_a_row_accepts(self) -> None:
+        """The reader and the validator have to agree, or nothing can be built."""
+        rendered = source_instant("2026-07-22 15:17:17.527", field="published_at")
+        assert _nvd_row(published_at=rendered).published_at == rendered
+
+    def test_a_value_that_is_not_an_instant_is_refused(self) -> None:
+        """A date with no time cannot state freshness to the second."""
+        with pytest.raises(CorrelationIndexContractError):
+            source_instant("2026-07-22", field="published_at")
+
+    def test_an_empty_value_is_refused(self) -> None:
+        """A NULL rendered as empty text must not become an instant."""
+        with pytest.raises(CorrelationIndexContractError):
+            source_instant("", field="published_at")
 
 
 class TestWatermark:
