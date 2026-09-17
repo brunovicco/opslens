@@ -1,0 +1,102 @@
+{
+  "assessment": {
+    "adr_0087_row_size_is_wrong": true,
+    "measured_stored_bytes_per_ghsa_item": 1078,
+    "probe_projected_bytes_per_ghsa_row": 385,
+    "reason": "the probe measured projected source fields; the request path reads stored items",
+    "understatement_factor": 2.8
+  },
+  "authority": {
+    "creates_infrastructure": false,
+    "read_only": true,
+    "writes_performed": 0
+  },
+  "contract_version": "opslens-correlation-index-stored-item-size:v1",
+  "derived": {
+    "ghsa_index_rows": 11081,
+    "ghsa_index_stored_bytes": 11945318,
+    "ghsa_items_per_1mb_page": 973,
+    "hot_key_pages": {
+      "note": "a Query addresses one partition key, so three packages are three queries that paginate independently",
+      "tensorflow": 2,
+      "tensorflow_cpu": 2,
+      "tensorflow_family_total": 6,
+      "tensorflow_gpu": 2
+    },
+    "hot_key_stored_bytes": {
+      "tensorflow": 1426194,
+      "tensorflow_cpu": 1408946,
+      "tensorflow_family_total": 4248398,
+      "tensorflow_gpu": 1413258
+    },
+    "nvd_index_rows": 1642
+  },
+  "index_under_measurement": {
+    "built_at": "2026-09-17T03:40:55Z",
+    "generation": "ee5826ced8931fb4",
+    "index_id": "opslens-correlation-index:v1@sha256:ee5826ced8931fb4e41a6728052d6b4905a3773832ba45cf71e4b47463cf0423",
+    "pointer_key": "index/correlation/current.json"
+  },
+  "measured_by": {
+    "account_id": "487757851499",
+    "role": "AWSReservedSSO_OpsLensBootstrapAdmin_3f7923e7ec0bf43c"
+  },
+  "measured_on": "2026-09-17",
+  "method": {
+    "derivation": "bytes_per_item = 1048576 / first_page_item_count",
+    "note": "a single unpaginated Query whose result fills a page reads exactly the 1 MB page limit, so the item count of that page divides into a per-item size without estimating anything",
+    "why_not_consumed_capacity": "the AWS CLI paginates Query and Scan automatically and sums Count and ScannedCount, but reports ConsumedCapacity for one page only; a full-table Scan of 11081 items and a single-partition Query of 1323 items both reported 128.5 capacity units, which cannot be a total for both"
+  },
+  "observations": [
+    {
+      "consumed_capacity_units": 128.5,
+      "count": 973,
+      "interpretation": "one full 1 MB page holds 973 GHSA items",
+      "label": "ghsa_hot_key_first_page",
+      "last_evaluated_key_present": true,
+      "paginated_by_client": false,
+      "partition_key": "ee5826ced8931fb4#tensorflow",
+      "table": "opslens-dev-correlation-index-ghsa"
+    },
+    {
+      "consumed_capacity_units": 128.5,
+      "count": 1323,
+      "interpretation": "every projected tensorflow row is readable; the count matches the probe's max_advisories_per_package exactly",
+      "label": "ghsa_hot_key_complete",
+      "paginated_by_client": true,
+      "partition_key": "ee5826ced8931fb4#tensorflow",
+      "table": "opslens-dev-correlation-index-ghsa"
+    },
+    {
+      "consumed_capacity_units": null,
+      "count": 8,
+      "interpretation": "a cold key reads back",
+      "label": "ghsa_cold_key",
+      "paginated_by_client": true,
+      "partition_key": "ee5826ced8931fb4#requests",
+      "table": "opslens-dev-correlation-index-ghsa"
+    },
+    {
+      "consumed_capacity_units": 128.5,
+      "count": 11081,
+      "interpretation": "every admitted row is readable, not merely written; matches the manifest count exactly",
+      "label": "ghsa_generation_complete",
+      "paginated_by_client": true,
+      "partition_key_prefix": "ee5826ced8931fb4#",
+      "table": "opslens-dev-correlation-index-ghsa"
+    },
+    {
+      "consumed_capacity_units": null,
+      "count": 1,
+      "interpretation": "the NVD side is one item per partition key by construction, so no NVD query can approach the page limit and its item size is not a request bound",
+      "label": "nvd_point_lookup",
+      "paginated_by_client": true,
+      "partition_key": "ee5826ced8931fb4#CVE-2026-47399",
+      "table": "opslens-dev-correlation-index-nvd"
+    }
+  ],
+  "unmeasured": [
+    "the byte size of a rebuilt evidence item in an API response, which is not the stored item and must not be inferred from it",
+    "whether the stored overhead can be reduced; index_id alone is 89 bytes on every one of 11081 items"
+  ]
+}

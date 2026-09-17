@@ -17,3 +17,18 @@ The raw real-run JSON was inspected from the operator's preserved local output a
 The artifact is tied to source head `626139690d61c20583e8cc51c1dfecf80b8789d3` and preserves only admitted proposal/authorization outcomes, content-addressed reasoning identities, Bedrock request metadata, token/latency/retry observations, aggregate measurements, and the pricing inputs used for the experiment-time cost derivation. Raw model output and credentials are intentionally absent.
 
 The six-case run completed with `6/6` decision, capability, authorization, and bounds matches, zero SDK retries, zero capability executions, 3,291 input tokens, 104 output tokens, and a derived USD 0.0041921 inference cost using the contemporaneously verified US geographic cross-Region Claude Haiku 4.5 rates.
+
+## Correlation index stored item size
+
+`correlation-index-stored-item-size-v1.json` records what the built correlation index
+actually costs to read, measured against the live tables after the first apply
+(generation `ee5826ced8931fb4`, built 2026-09-17T03:40:55Z).
+
+It exists because the ADR 0087 sizing was taken from projected source bytes and
+understated the stored item by 2.8x. The measurement method is recorded alongside the
+result: the AWS CLI paginates `Query` and `Scan` and reports `ConsumedCapacity` for a
+single page, so a per-item size is derived from the item count of one unpaginated full
+page rather than from reported capacity. The artifact also records what was deliberately
+not measured, including the size of a rebuilt evidence item in an API response.
+
+All observations are read-only; no write was performed against the index.
