@@ -47,6 +47,9 @@ _SHA256_RE: Final = re.compile(r"[0-9a-f]{64}")
 _CVE_RE: Final = re.compile(r"CVE-[0-9]{4}-[0-9]{4,}")
 _GHSA_RE: Final = re.compile(r"GHSA(?:-[23456789cfghjmpqrvwx]{4}){3}")
 _TIMESTAMP_FORMAT: Final = "%Y-%m-%dT%H:%M:%SZ"
+_INSTANT_RE: Final = re.compile(
+    r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z"
+)
 # One occurrence is identified by (observed advisory version, source index), the same
 # pair `PublicRepositoryThreatEvidence` refuses to see twice. Zero-padding keeps the
 # sort key ordered as text, which is the only ordering a key-value store gives.
@@ -161,6 +164,64 @@ def index_timestamp(value: datetime) -> str:
     if value.tzinfo is None:
         raise CorrelationIndexContractError("an index timestamp must be timezone-aware")
     return value.astimezone(UTC).strftime(_TIMESTAMP_FORMAT)
+
+
+def source_instant(value: str, *, field: str) -> str:
+    """Read a source's own rendering of an instant into the index's single form.
+
+    Athena renders a Glue `timestamp` column as `2026-07-22 15:17:17.527` — a space
+    instead of `T`, milliseconds, no zone. Stored unchanged, that string becomes part of
+    the response envelope, and the index then emits two renderings of the same kind of
+    thing: `index_timestamp` for its own instants and the source's for everything else.
+
+    ```text
+    a source rendering != the index's rendering
+    ```
+
+    This is the only place a foreign rendering is accepted, so there is one form to
+    depend on downstream. Sub-second precision is dropped rather than rounded: the index
+    states freshness to the second and must not imply more.
+
+    Args:
+        value: The instant as the source wrote it.
+        field: The field being read, for the message.
+
+    Returns:
+        The instant as `YYYY-MM-DDTHH:MM:SSZ`.
+
+    Raises:
+        CorrelationIndexContractError: If the value is not an instant.
+    """
+    text = value.strip().replace(" ", "T")
+    for suffix in ("Z", "+00:00"):
+        if text.endswith(suffix):
+            text = text[: -len(suffix)]
+            break
+    text = text.split(".", 1)[0]
+    try:
+        parsed = datetime.strptime(text, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=UTC)
+    except ValueError as exc:
+        raise CorrelationIndexContractError(
+            f"{field} {value!r} is not an instant this index can render"
+        ) from exc
+    return index_timestamp(parsed)
+
+
+def _require_instant(value: str, *, field: str) -> None:
+    """Reject an instant that is not already in the index's single form.
+
+    Args:
+        value: The candidate instant.
+        field: The field being checked, for the message.
+
+    Raises:
+        CorrelationIndexContractError: If the value is not `YYYY-MM-DDTHH:MM:SSZ`.
+    """
+    if _INSTANT_RE.fullmatch(value) is None:
+        raise CorrelationIndexContractError(
+            f"{field} {value!r} is not rendered as YYYY-MM-DDTHH:MM:SSZ; "
+            "read it through source_instant before building a row"
+        )
 
 
 def _require_text(value: str, *, field: str) -> None:
@@ -346,6 +407,12 @@ class ProjectedNvdIndexRow:
             ("vuln_status", self.vuln_status),
         ):
             _require_text(value, field=field)
+
+        for field, value in (
+            ("published_at", self.published_at),
+            ("last_modified_at", self.last_modified_at),
+        ):
+            _require_instant(value, field=field)
 
         expected = f"{self.cve_id}@sha256:{self.source_cve_sha256}"
         if self.observed_cve_version_id != expected:
