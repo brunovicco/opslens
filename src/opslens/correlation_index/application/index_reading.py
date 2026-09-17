@@ -213,6 +213,7 @@ def manifest_from_document(
     try:
         manifest = CorrelationIndexManifest(
             built_at=_text(document, "built_at"),
+            content_digest=_text(document, "content_digest"),
             ghsa_row_count=_integer(counts_map, "ghsa_rows"),
             nvd_row_count=_integer(counts_map, "nvd_rows"),
             distinct_package_count=_integer(counts_map, "distinct_packages"),

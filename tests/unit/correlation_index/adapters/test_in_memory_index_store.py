@@ -239,7 +239,7 @@ class TestItAgreesWithTheLiveStore:
                         pointer_document(manifest.index_id, manifest.built_at)
                     ).encode(),
                     catalog.manifest_key(manifest.index_id): json.dumps(
-                        manifest.canonical_payload
+                        manifest.stored_document
                     ).encode(),
                 }
             ),
@@ -277,7 +277,7 @@ class TestItAgreesWithTheLiveStore:
                         pointer_document(manifest.index_id, manifest.built_at)
                     ).encode(),
                     catalog.manifest_key(manifest.index_id): json.dumps(
-                        manifest.canonical_payload
+                        manifest.stored_document
                     ).encode(),
                 }
             ),

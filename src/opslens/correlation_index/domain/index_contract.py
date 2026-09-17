@@ -39,9 +39,15 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Final
 
-from opslens.shared.evidence import canonical_json, evidence_id
+from opslens.shared.evidence import canonical_json, evidence_id, sha256_hex
 
-CORRELATION_INDEX_CONTRACT_VERSION: Final = "opslens-correlation-index:v1"
+# v1 took the index identity over counts, watermarks and `built_at`. Counts do not
+# distinguish content — two indexes holding entirely different rows in the same quantity
+# derived the same identity, and therefore the same key space — while `built_at` made
+# every re-run of identical content a new generation. v2 digests the rows and drops
+# `built_at` from the identity, which makes both halves of ADR 0088 true. A v1 digest
+# must never silently match a v2 manifest, so the version moves.
+CORRELATION_INDEX_CONTRACT_VERSION: Final = "opslens-correlation-index:v2"
 
 _SHA256_RE: Final = re.compile(r"[0-9a-f]{64}")
 _CVE_RE: Final = re.compile(r"CVE-[0-9]{4}-[0-9]{4,}")
@@ -367,6 +373,34 @@ class ProjectedGhsaIndexRow:
             f"{_KEY_SEPARATOR}{self.source_index:0{_SOURCE_INDEX_WIDTH}d}"
         )
 
+    @property
+    def canonical_payload(self) -> Mapping[str, object]:
+        """Project every field this row carries, for the index content digest.
+
+        Every field, not the keys: an index whose digest covered only the keys would be
+        unchanged by an advisory whose range or patched version moved, which is the
+        change most worth noticing. A test drives this from `dataclasses.fields`, so a
+        new field fails until it is digested.
+        """
+        return {
+            "ecosystem_original": self.ecosystem_original,
+            "first_patched_version_original": self.first_patched_version_original,
+            "ghsa_id": self.ghsa_id,
+            "github_cve_id": self.github_cve_id,
+            "github_identifiers": [
+                {"identifier_type": item.identifier_type, "value": item.value}
+                for item in self.github_identifiers
+            ],
+            "observed_advisory_version_id": self.observed_advisory_version_id,
+            "package_name_canonical": self.package_name_canonical,
+            "package_name_original": self.package_name_original,
+            "source_advisory_sha256": self.source_advisory_sha256,
+            "source_entry_sha256": self.source_entry_sha256,
+            "source_index": self.source_index,
+            "vulnerability_entry_id": self.vulnerability_entry_id,
+            "vulnerable_range_original": self.vulnerable_range_original,
+        }
+
 
 @dataclass(frozen=True, slots=True)
 class ProjectedNvdIndexRow:
@@ -420,6 +454,64 @@ class ProjectedNvdIndexRow:
                 "observed CVE version identity contradicts the content digest"
             )
 
+    @property
+    def canonical_payload(self) -> Mapping[str, object]:
+        """Project every field this row carries, for the index content digest."""
+        return {
+            "cve_id": self.cve_id,
+            "last_modified_at": self.last_modified_at,
+            "observed_cve_version_id": self.observed_cve_version_id,
+            "published_at": self.published_at,
+            "source_cve_sha256": self.source_cve_sha256,
+            "source_identifier": self.source_identifier,
+            "vuln_status": self.vuln_status,
+        }
+
+
+def index_content_digest(
+    ghsa_rows: Sequence[ProjectedGhsaIndexRow],
+    nvd_rows: Sequence[ProjectedNvdIndexRow],
+) -> str:
+    """Digest exactly what one build holds, independent of the order it was produced in.
+
+    This is what makes an index identity an identity. Before it existed, the manifest was
+    digested over counts and watermarks, so two indexes holding entirely different rows
+    in the same quantity derived the same identity, and therefore the same key space.
+
+    ```text
+    identity of the description != identity of the content
+    ```
+
+    Rows are sorted by their store keys rather than trusted in query order, so a build
+    that reads the same corpus through a differently ordered query produces the same
+    digest. That is what makes a re-run idempotent, which is what ADR 0088 said the
+    generation was for.
+
+    Args:
+        ghsa_rows: Every GHSA row the build holds.
+        nvd_rows: Every NVD row the build holds.
+
+    Returns:
+        A lowercase sha-256 hex digest over the whole content.
+    """
+    return sha256_hex(
+        canonical_json(
+            {
+                "ghsa": [
+                    row.canonical_payload
+                    for row in sorted(
+                        ghsa_rows,
+                        key=lambda item: (item.package_name_canonical, item.occurrence_key),
+                    )
+                ],
+                "nvd": [
+                    row.canonical_payload
+                    for row in sorted(nvd_rows, key=lambda item: item.cve_id)
+                ],
+            }
+        )
+    )
+
 
 @dataclass(frozen=True, slots=True)
 class SourceWatermark:
@@ -457,8 +549,20 @@ class SourceWatermark:
 class CorrelationIndexManifest:
     """What one build of the index is, so a response can name what answered it.
 
+    The identity is taken over the content and the freshness, and deliberately not over
+    `built_at`. Two builds of identical content from identically fresh sources are the
+    same index, whenever they ran, and reusing their generation is what ADR 0088 meant by
+    an idempotent re-run. `built_at` is still carried, still stored, and still reported —
+    it is provenance, not identity.
+
+    ```text
+    what is stored != what is digested
+    when it was built != what was built
+    ```
+
     Attributes:
-        built_at: When the build ran, as `YYYY-MM-DDTHH:MM:SSZ`.
+        built_at: When the build ran, as `YYYY-MM-DDTHH:MM:SSZ`. Not part of the identity.
+        content_digest: sha-256 over every row the build holds.
         ghsa_row_count: Rows written to the GHSA-by-package index.
         nvd_row_count: Rows written to the NVD-by-CVE index.
         distinct_package_count: Distinct normalized packages covered.
@@ -466,6 +570,7 @@ class CorrelationIndexManifest:
     """
 
     built_at: str
+    content_digest: str
     ghsa_row_count: int
     nvd_row_count: int
     distinct_package_count: int
@@ -485,6 +590,8 @@ class CorrelationIndexManifest:
             raise CorrelationIndexContractError(
                 f"built_at must use {_TIMESTAMP_FORMAT}"
             ) from exc
+
+        _require_sha256(self.content_digest, field="content_digest")
 
         for field, value in (
             ("ghsa_row_count", self.ghsa_row_count),
@@ -516,9 +623,14 @@ class CorrelationIndexManifest:
 
     @property
     def canonical_payload(self) -> Mapping[str, object]:
-        """Project the manifest as the payload its identity is taken over."""
+        """Project the payload the index identity is taken over.
+
+        `built_at` is absent on purpose. Counts are present and prove nothing on their
+        own — `content_digest` is what makes two indexes with the same shape and
+        different rows different indexes.
+        """
         return {
-            "built_at": self.built_at,
+            "content_digest": self.content_digest,
             "contract_version": CORRELATION_INDEX_CONTRACT_VERSION,
             "counts": {
                 "distinct_packages": self.distinct_package_count,
@@ -536,13 +648,32 @@ class CorrelationIndexManifest:
         }
 
     @property
+    def stored_document(self) -> Mapping[str, object]:
+        """Project everything the retained manifest object holds.
+
+        The identity payload plus the provenance that is not part of it. A reader
+        rebuilds the typed manifest from this and re-derives the identity, which is how a
+        manifest certifies that it describes the generation the pointer names.
+
+        ```text
+        what is stored != what is digested
+        ```
+        """
+        return {**self.canonical_payload, "built_at": self.built_at}
+
+    @property
     def canonical_json(self) -> bytes:
         """Return the exact bytes the index identity is taken over."""
         return canonical_json(self.canonical_payload)
 
     @property
+    def stored_json(self) -> bytes:
+        """Return the exact bytes the retained manifest object holds."""
+        return canonical_json(self.stored_document)
+
+    @property
     def index_id(self) -> str:
-        """Return `opslens-correlation-index:v1@sha256:<digest>` for this build."""
+        """Return `<contract version>@sha256:<digest>` for this build."""
         return evidence_id(CORRELATION_INDEX_CONTRACT_VERSION, self.canonical_payload)
 
 
@@ -573,6 +704,7 @@ def build_manifest(
     """
     return CorrelationIndexManifest(
         built_at=index_timestamp(built_at),
+        content_digest=index_content_digest(ghsa_rows, nvd_rows),
         ghsa_row_count=len(ghsa_rows),
         nvd_row_count=len(nvd_rows),
         distinct_package_count=len({row.package_name_canonical for row in ghsa_rows}),

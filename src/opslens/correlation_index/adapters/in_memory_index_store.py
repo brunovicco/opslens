@@ -75,7 +75,7 @@ class InMemoryCorrelationIndexStore:
         manifest = build_manifest(
             built_at=built_at, ghsa_rows=ghsa, nvd_rows=nvd, watermarks=watermarks
         )
-        self._manifest_payload = manifest.canonical_payload
+        self._manifest_document = manifest.stored_document
         self._index_id = manifest.index_id
         self._pointer = pointer_document(self._index_id, manifest.built_at)
 
@@ -117,7 +117,7 @@ class InMemoryCorrelationIndexStore:
         Raises:
             IndexReadError: If the manifest describes another build.
         """
-        return manifest_from_document(self._manifest_payload, live=live)
+        return manifest_from_document(self._manifest_document, live=live)
 
     def ghsa_for_package(
         self, package_name_canonical: str, *, live: LiveIndexGeneration
