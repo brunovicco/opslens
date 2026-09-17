@@ -149,6 +149,39 @@ manifest — the same reasoning that moved `public-threat-evidence-scope` to `v2
 20.0. The next projection run writes a `v2` generation; the `v1` generation expires under
 its existing TTL.
 
+### What the correction exposed
+
+Applying `v2` produced a different identity from the plan run 165 seconds earlier, over
+an unchanged corpus: same 11,081 GHSA rows, same 1,642 NVD rows, same watermarks,
+different `content_digest`.
+
+The projection was not deterministic. Both statements kept the latest observed version
+of each source record with `ROW_NUMBER() ... rn = 1`, ordered on a key that is not
+unique, and Presto is free to resolve that differently between runs. Measured:
+
+```text
+GHSA advisories with two observed versions at the same updated_at        7  of 35,577
+NVD CVEs with two observed versions at the same last_modified_at         0  of 60,259
+```
+
+```text
+same query != same result
+```
+
+The defect predates this ADR's correction and was invisible while `built_at` sat inside
+the identity, because every build differed anyway. Removing `built_at` did not create it;
+it turned a silent defect into a loud one. Both statements now break ties on the content
+identity, which is a total order. Evidence:
+`labs/evidence/correlation-index-version-selection-ties-v1.json`.
+
+The tiebreak is stable, not right. When two observed versions share an `updated_at`, the
+source is stating they are equally recent and nothing downstream knows which is current.
+The projection stops flipping between them; it does not learn the answer.
+
+```text
+stable != correct
+```
+
 ## Related
 
 - ADR 0086 — two scan budgets

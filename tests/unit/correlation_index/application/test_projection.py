@@ -17,6 +17,8 @@ unmatched key != absent vulnerability
 So the mapper canonicalizes in Python, and what it cannot key it counts.
 """
 
+import re
+
 import pytest
 
 from opslens.correlation_index.application.projection import (
@@ -190,6 +192,49 @@ class TestSql:
         """A withdrawn advisory no longer applies and must not reach the index."""
         sql = ghsa_projection_sql("opslens_dev", "ghsa_advisory_versions")
         assert "NOT r.is_withdrawn" in sql
+
+    def test_the_ghsa_version_selection_orders_totally(self) -> None:
+        """Without the tiebreak the same corpus produced two different indexes.
+
+        Measured on 2026-09-17: 7 of 35,577 advisories carry two observed versions
+        sharing an `updated_at`, so `ROW_NUMBER` picked between them arbitrarily and
+        Presto resolved it differently between runs.
+
+        ```text
+        same query != same result
+        ```
+        """
+        sql = ghsa_projection_sql("opslens_dev", "ghsa_advisory_versions")
+        assert "ORDER BY updated_at DESC, observed_advisory_version_id DESC" in sql
+
+    def test_the_nvd_version_selection_orders_totally(self) -> None:
+        """The NVD corpus carries no ties today, which is a fact about the data.
+
+        Zero ties is a property of what has been ingested, not of the query. The
+        statement carries the tiebreak so tomorrow's corpus cannot introduce the defect
+        silently.
+        """
+        sql = nvd_projection_sql("opslens_dev", "nvd_cve_versions", ["CVE-2026-1"])
+        assert "ORDER BY last_modified_at DESC, observed_cve_version_id DESC" in sql
+
+    def test_every_row_number_in_the_projection_breaks_ties(self) -> None:
+        """A third statement added later must not reintroduce the defect.
+
+        Asserted structurally rather than statement by statement: every window that
+        selects one row per group has to name a second, unique ordering column.
+        """
+        statements = (
+            ghsa_projection_sql("opslens_dev", "ghsa_advisory_versions"),
+            nvd_projection_sql("opslens_dev", "nvd_cve_versions", ["CVE-2026-1"]),
+        )
+        for sql in statements:
+            windows = re.findall(r"ROW_NUMBER\(\)\s*OVER\s*\((.*?)\)", sql, re.DOTALL)
+            assert windows, "a projection statement stopped selecting one row per group"
+            for window in windows:
+                order_by = window.split("ORDER BY", 1)[1]
+                assert order_by.count(",") >= 1, (
+                    "ROW_NUMBER orders on one column; ties resolve arbitrarily"
+                )
 
     def test_the_nvd_query_is_scoped_to_the_cves_ghsa_named(self) -> None:
         """The authority refuses NVD records unrelated to scoped GHSA evidence."""
