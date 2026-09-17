@@ -37,6 +37,20 @@ Gate 21.2 configures the gateway and the reserved concurrency. It has to verify 
 assumptions against what is actually deployed rather than trusting this file, and the
 assumption fields exist so that verification has something to compare against.
 
+That verification found the first one wrong. The timeout shipped here as 29 seconds, the
+classic REST API Gateway ceiling; the deployed HTTP API integration is configured at 10.
+`tests/unit/public_analysis/test_platform_assumptions.py` now reads it out of the
+Terraform, so the number cannot drift back into being guessed.
+
+```text
+a named assumption != a checked assumption
+```
+
+The response ceiling stays unverified, because it is AWS's number and nothing in this
+repository can read it. What protects that one is margin rather than a check: the budget
+projects about a megabyte, so the assumption would have to be wrong by more than six
+times before it binds.
+
 **Policy.** The package and lock bounds are choices about what this endpoint is for, not
 derivations. A lock with more than a thousand identified packages is a monorepo, and an
 endpoint that answers for strangers can decline to be a monorepo scanner without
@@ -260,7 +274,11 @@ PUBLIC_REQUEST_BOUNDS: Final = PublicRequestBounds(
     max_index_rows_read=5_000,
     max_findings_emitted=RESPONSE_BUDGET_BYTES // FINDING_RESPONSE_BYTES,
     assumed_platform_response_bytes=6 * 1024 * 1024,
-    assumed_platform_timeout_seconds=29,
+    # Read out of infra/environments/dev/public_async_runtime.tf, not assumed from the
+    # service's documented maximum. The bound set first shipped with 29 — the classic
+    # REST API Gateway ceiling — and the deployed HTTP API integration is configured at
+    # 10 seconds. A standing test compares the two so this cannot drift back.
+    assumed_platform_timeout_seconds=10,
 )
 
 
