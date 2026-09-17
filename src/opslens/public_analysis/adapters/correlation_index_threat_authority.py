@@ -41,17 +41,24 @@ states their dates, so the age is declared rather than hidden.
 
 **It performs no correlation.** Gate 20.3 wires `evaluate_pypi_correlation` to what this
 returns. This module loads evidence and nothing else.
+
+It reads through `CorrelationIndexStore` rather than a concrete store, so the offline
+path is this authority over an in-memory index rather than a second authority returning
+canned evidence. Every rule above then runs offline too, which is where a broken rule is
+easiest to miss.
+
+```text
+a fixture that bypasses the logic != a fixture of the logic
+```
 """
 
 from collections.abc import Sequence
 from dataclasses import dataclass
 
 from opslens.correlation.adapters.ghsa import GhsaPyPIVulnerabilityEvidence
-from opslens.correlation_index.adapters.dynamodb_index_store import (
-    DynamoDbCorrelationIndexStore,
-)
 from opslens.correlation_index.application.evidence_rebuild import rebuild_ghsa_evidence
 from opslens.correlation_index.application.index_reading import LiveIndexGeneration
+from opslens.correlation_index.application.index_store import CorrelationIndexStore
 from opslens.correlation_index.domain.index_contract import CorrelationIndexManifest
 from opslens.ingestion.epss.domain.history import HistoricalEpssSnapshot
 from opslens.ingestion.epss.domain.models import EpssSnapshot
@@ -126,7 +133,7 @@ class CorrelationIndexThreatEvidenceAuthority:
     def __init__(
         self,
         *,
-        store: DynamoDbCorrelationIndexStore,
+        store: CorrelationIndexStore,
         snapshots: ThreatSnapshotSet,
     ) -> None:
         """Bind the index store and the worker's snapshots.
