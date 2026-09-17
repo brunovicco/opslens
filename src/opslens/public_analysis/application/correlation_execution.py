@@ -46,6 +46,10 @@ from opslens.public_analysis.domain import (
     PublicAnalysisValidationError,
     PublicRepositoryEvidenceExecution,
 )
+from opslens.public_analysis.domain.request_bounds import (
+    PUBLIC_REQUEST_BOUNDS,
+    PublicRequestBounds,
+)
 from opslens.repository_intelligence.application.vulnerability_findings import (
     build_repository_pypi_vulnerability_scan,
 )
@@ -138,6 +142,8 @@ class PublicCorrelationOutcome:
 def correlate_public_repository(
     execution: PublicRepositoryEvidenceExecution,
     evidence: PublicRepositoryThreatEvidence,
+    *,
+    bounds: PublicRequestBounds = PUBLIC_REQUEST_BOUNDS,
 ) -> PublicCorrelationOutcome:
     """Correlate admitted lock evidence against admitted threat evidence.
 
@@ -146,17 +152,27 @@ def correlate_public_repository(
     from the scope alone would evaluate only what could be identified and report a
     verdict with no way to say what it skipped.
 
+    The finding bound is applied after the scan rather than during it. A finding is only
+    known to exist once its candidate pair has been evaluated, and evaluating is cheap
+    next to emitting: the response is what the bound protects.
+
+    ```text
+    rows read != findings emitted != response bytes
+    ```
+
     Args:
         execution: Admitted deterministic repository evidence.
         evidence: Threat evidence loaded for the scope derived from that execution.
+        bounds: What one response is allowed to carry.
 
     Returns:
         The scan and its coverage.
 
     Raises:
         PublicAnalysisValidationError: If the evidence was not loaded for this execution.
+        PublicRequestBoundError: If the response would carry too many findings.
         InvalidRepositoryVulnerabilityScanError: If the GHSA evidence is inconsistent.
-        RepositoryVulnerabilityScanLimitError: If a bound is exceeded.
+        RepositoryVulnerabilityScanLimitError: If an internal bound is exceeded.
     """
     if type(execution) is not PublicRepositoryEvidenceExecution:
         raise PublicAnalysisValidationError(
@@ -176,6 +192,7 @@ def correlate_public_repository(
     scan = build_repository_pypi_vulnerability_scan(
         inventory, evidence.ghsa_vulnerabilities
     )
+    bounds.admit_findings(len(scan.findings))
 
     tally = dict.fromkeys(CorrelationResult, 0)
     for assessment in scan.assessments:

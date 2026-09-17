@@ -39,6 +39,11 @@ about invalidation and staleness that a value built at composition time does not
 snapshots do age over a warm worker's lifetime, and the provenance the evidence carries
 states their dates, so the age is declared rather than hidden.
 
+**It refuses a request that would cost too much, rather than answering it smaller.**
+The package bound is checked before the first query; the row bound as rows arrive, because
+how many rows a package carries is unknowable until it is read. Both raise with a reason
+code (Gate 21.1).
+
 **It performs no correlation.** Gate 20.3 wires `evaluate_pypi_correlation` to what this
 returns. This module loads evidence and nothing else.
 
@@ -69,6 +74,10 @@ from opslens.public_analysis.application.threat_evidence_authority import (
     SupportedEpssSnapshot,
 )
 from opslens.public_analysis.domain import PublicAnalysisValidationError
+from opslens.public_analysis.domain.request_bounds import (
+    PUBLIC_REQUEST_BOUNDS,
+    PublicRequestBounds,
+)
 
 
 class CorrelationIndexAuthorityError(RuntimeError):
@@ -135,15 +144,18 @@ class CorrelationIndexThreatEvidenceAuthority:
         *,
         store: CorrelationIndexStore,
         snapshots: ThreatSnapshotSet,
+        bounds: PublicRequestBounds = PUBLIC_REQUEST_BOUNDS,
     ) -> None:
-        """Bind the index store and the worker's snapshots.
+        """Bind the index store, the worker's snapshots, and what a request may cost.
 
         Args:
             store: Read access to the live index.
             snapshots: The complete snapshots this worker holds.
+            bounds: What one request is allowed to read.
         """
         self._store = store
         self._snapshots = snapshots
+        self._bounds = bounds
 
     def load(self, request: PublicThreatEvidenceRequest) -> PublicRepositoryThreatEvidence:
         """Return evidence bound to the exact request.
@@ -202,8 +214,21 @@ class CorrelationIndexThreatEvidenceAuthority:
 
         One query per package. The index keys by package precisely so this is a bounded
         set of point queries rather than a scan, and the scope already deduplicates
-        names. No bound on the total rows is applied here: Gate 21.1 sets that from a
-        measured figure and must reject rather than trim.
+        names.
+
+        Two bounds apply, and they are checked at different moments for a reason. The
+        package count is refused before the first query, because that is the cheapest
+        point at which the request is already known to be too large. The row count is
+        checked as rows arrive, because how many rows a package carries is not knowable
+        until it is read — `tensorflow` alone carries 1,323.
+
+        Neither truncates. A request that reaches a bound is refused with a reason code,
+        because a short answer from a public endpoint is indistinguishable from a clean
+        one.
+
+        ```text
+        a bound reached != a smaller answer
+        ```
 
         Args:
             package_names: The unique canonical names the scope asks about.
@@ -213,13 +238,19 @@ class CorrelationIndexThreatEvidenceAuthority:
             The rebuilt evidence, in package order then stored order.
 
         Raises:
+            PublicRequestBoundError: If the request scopes or reads too much.
             IndexStoreError: If the store cannot be read.
             IndexReadError: If a read is incomplete or crosses generations.
         """
+        self._bounds.admit_scoped_packages(len(package_names))
+
         rebuilt: list[GhsaPyPIVulnerabilityEvidence] = []
+        rows_read = 0
         for name in package_names:
-            for row in self._store.ghsa_for_package(name, live=live):
-                rebuilt.append(rebuild_ghsa_evidence(row))
+            rows = self._store.ghsa_for_package(name, live=live)
+            rows_read += len(rows)
+            self._bounds.admit_rows_read(rows_read)
+            rebuilt.extend(rebuild_ghsa_evidence(row) for row in rows)
         return tuple(rebuilt)
 
 
