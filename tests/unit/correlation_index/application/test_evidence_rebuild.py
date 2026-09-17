@@ -23,7 +23,12 @@ from opslens.correlation.adapters.ghsa import GhsaPyPIVulnerabilityEvidence
 from opslens.correlation_index.application.evidence_rebuild import rebuild_ghsa_evidence
 from opslens.correlation_index.domain.index_contract import (
     ProjectedGhsaIndexRow,
+    ProjectedNvdIndexRow,
     ProjectedSourceIdentifier,
+)
+from opslens.transformation.nvd.domain.models import (
+    NvdCveCoreRecord,
+    ObservedCveVersion,
 )
 
 _ADVISORY_DIGEST = "6872a46115d1775d1eac3f5ba734e73ec98a9f78487d178e38e13163c69d7dbf"
@@ -113,3 +118,51 @@ def test_an_advisory_with_no_identifiers_still_rebuilds() -> None:
         first_patched_version_original=None,
     )
     assert rebuild_ghsa_evidence(row).github_identifiers == ()
+
+
+class TestNvdRowCannotRebuildTheRecord:
+    """The other half, named by a check instead of by a document.
+
+    There is deliberately no `rebuild_nvd_evidence`. `NvdCveCoreRecord` carries an
+    `ObservedCveVersion`, whose validation requires the complete canonical JSON of the
+    source CVE — it verifies the digest against it and re-canonicalizes it — and
+    `derive_repository_nvd_cvss_evidence` re-runs the CVSS transformer over those same
+    bytes on every request. The index stores the digest and seven scalars.
+
+    ```text
+    the digest of the content != the content
+    ```
+
+    ADR 0089 records why that is deferred rather than solved. These tests exist so the
+    deferral is enforced: adding a rebuild without also giving the index the CVE body
+    fails here rather than producing a record that cannot be validated.
+    """
+
+    def test_no_nvd_rebuild_is_exported(self) -> None:
+        """A rebuild that cannot produce a valid record must not exist to be called."""
+        import opslens.correlation_index.application.evidence_rebuild as module
+
+        assert not hasattr(module, "rebuild_nvd_evidence"), (
+            "an NVD rebuild exists; ADR 0089 requires the CVE body in the index first"
+        )
+
+    def test_the_row_covers_every_scalar_the_record_needs(self) -> None:
+        """What the index does carry is exactly the record's scalar surface."""
+        record_fields = {item.name for item in fields(NvdCveCoreRecord)}
+        row_fields = {item.name for item in fields(ProjectedNvdIndexRow)}
+        assert record_fields - {"observed_version"} <= row_fields
+
+    def test_the_row_does_not_carry_the_canonical_content(self) -> None:
+        """The one field that blocks the rebuild, asserted rather than assumed.
+
+        If a future change adds the CVE body to the index row, this test fails and the
+        next reader is sent to ADR 0089 to decide whether the deferral is over.
+        """
+        row_fields = {item.name for item in fields(ProjectedNvdIndexRow)}
+        assert "canonical_json" not in row_fields
+        assert "observed_version" not in row_fields
+
+    def test_the_record_still_demands_that_content(self) -> None:
+        """The blocker is in the consumer's type, so the consumer is what is checked."""
+        observed_fields = {item.name for item in fields(ObservedCveVersion)}
+        assert "canonical_json" in observed_fields

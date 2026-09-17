@@ -90,10 +90,10 @@ The only phase that adds a capability. Nothing is exposed publicly until it is f
 | Gate | State | What it is |
 | --- | --- | --- |
 | 20.0 | **Done** — ADR 0084 | Admit partial coverage, with coverage inside the scope identity |
-| 20.1 | New | GHSA-by-package and NVD-by-CVE projection, with a content-addressed manifest carrying `built_at`, per-source watermarks and record counts, preserving enough of each source record to rebuild the typed evidence the port demands — including the exact source hashes its validator cross-checks |
-| 20.2 | New | The first `PublicThreatEvidenceAuthority` implementation: scoped GHSA and NVD from the projection, complete KEV and EPSS snapshots loaded once per worker and digest-verified. A fixture implementation lands alongside it so the offline demo keeps working with no network and no AWS |
+| 20.1 | **Done** — ADRs 0086–0088 | GHSA-by-package and NVD-by-CVE projection, with a content-addressed manifest carrying `built_at`, per-source watermarks and record counts, preserving enough of each source record to rebuild the typed evidence the port demands — including the exact source hashes its validator cross-checks |
+| 20.2 | New — **GHSA only**, ADR 0089 | The first `PublicThreatEvidenceAuthority` implementation: scoped GHSA from the projection, complete KEV and EPSS snapshots loaded once per worker and digest-verified. A fixture implementation lands alongside it so the offline demo keeps working with no network and no AWS. NVD records are returned empty: the index stores the CVE digest, and `NvdCveCoreRecord` requires the canonical CVE body that nothing in the lake holds per CVE |
 | 20.3 | Exists | No new logic. Wire `evaluate_pypi_correlation` to the loaded evidence and make sure every `UNSUPPORTED` outcome is counted into the response rather than dropped |
-| 20.4 | New | The request-time response envelope: verdict, Risk Policy score, index manifest identity, snapshot provenance, and explicit accounting of what could not be evaluated. Content-addressed, so the same repository at the same commit against the same index is byte-reproducible |
+| 20.4 | New | The request-time response envelope: verdict, Risk Policy score, index manifest identity, snapshot provenance, and explicit accounting of what could not be evaluated — including NVD, declared as not covered rather than omitted (ADR 0089). Content-addressed, so the same repository at the same commit against the same index is byte-reproducible |
 
 ## Phase 21 — Make it safe to point at strangers
 
