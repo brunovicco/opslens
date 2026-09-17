@@ -25,12 +25,15 @@ the live generation at read != the live generation at request
 
 **An empty key space is not an absence.** A pointer naming a generation whose rows were
 never written, or expired, reads as "no known vulnerabilities" — the most dangerous
-wrong answer this system can give. A pointer is only usable if its own generation agrees
-with the digest it names, and the caller is expected to cross-check the manifest counts
-before trusting emptiness.
+wrong answer this system can give. Two checks stand against it. A pointer is usable only
+if its own generation agrees with the digest it names. And the manifest is re-derived
+rather than trusted: rebuilding it from its stored payload reproduces a content-addressed
+identity, which must equal the one the pointer named, so a manifest that was truncated,
+edited or left over from another build cannot certify a key space.
 
 ```text
 empty key space != no advisories
+a manifest that parses != the manifest the pointer names
 ```
 
 This module decodes and refuses. It issues no query and knows no table.
@@ -46,9 +49,11 @@ from typing import Final, cast
 
 from opslens.correlation_index.domain.index_contract import (
     CorrelationIndexContractError,
+    CorrelationIndexManifest,
     ProjectedGhsaIndexRow,
     ProjectedNvdIndexRow,
     ProjectedSourceIdentifier,
+    SourceWatermark,
     ghsa_partition_key,
     index_generation,
     nvd_partition_key,
@@ -157,6 +162,71 @@ def read_pointer(document: Mapping[str, object]) -> LiveIndexGeneration:
         generation=values["generation"],
         built_at=values["built_at"],
     )
+
+
+def manifest_from_document(
+    document: Mapping[str, object], *, live: LiveIndexGeneration
+) -> CorrelationIndexManifest:
+    """Rebuild the manifest for one generation and prove it is that generation's.
+
+    The manifest is content-addressed, so it can certify itself: rebuilding the typed
+    manifest from the stored payload and re-deriving its identity must reproduce exactly
+    the identity the pointer named. A manifest that merely parses proves nothing — it
+    could be truncated, hand-edited, or left over from another build, and a response
+    citing it would name counts and watermarks belonging to an index nobody read.
+
+    Args:
+        document: The parsed manifest object.
+        live: The generation this request resolved.
+
+    Returns:
+        The typed manifest for that generation.
+
+    Raises:
+        IndexReadError: If the manifest is malformed, or describes another build.
+    """
+    counts = document.get("counts")
+    if not isinstance(counts, Mapping):
+        raise IndexReadError("index manifest carries no counts")
+    counts_map = cast(Mapping[str, object], counts)
+
+    raw_watermarks = document.get("watermarks")
+    if not isinstance(raw_watermarks, (list, tuple)):
+        raise IndexReadError("index manifest carries no watermarks")
+
+    watermarks: list[SourceWatermark] = []
+    for entry in cast(Sequence[object], raw_watermarks):
+        if not isinstance(entry, Mapping):
+            raise IndexReadError("index manifest watermark is not a mapping")
+        entry_map = cast(Mapping[str, object], entry)
+        try:
+            watermarks.append(
+                SourceWatermark(
+                    source=_text(entry_map, "source"),
+                    observed_through=_text(entry_map, "observed_through"),
+                    record_count=_integer(entry_map, "record_count"),
+                )
+            )
+        except CorrelationIndexContractError as exc:
+            raise IndexReadError(f"index manifest watermark is not valid: {exc}") from exc
+
+    try:
+        manifest = CorrelationIndexManifest(
+            built_at=_text(document, "built_at"),
+            ghsa_row_count=_integer(counts_map, "ghsa_rows"),
+            nvd_row_count=_integer(counts_map, "nvd_rows"),
+            distinct_package_count=_integer(counts_map, "distinct_packages"),
+            watermarks=tuple(watermarks),
+        )
+    except CorrelationIndexContractError as exc:
+        raise IndexReadError(f"index manifest is not valid: {exc}") from exc
+
+    if manifest.index_id != live.index_id:
+        raise IndexReadError(
+            "index manifest re-derives a different identity than the pointer names; "
+            "it does not describe the generation this request is reading"
+        )
+    return manifest
 
 
 def collect_pages(pages: Iterable[IndexQueryPage]) -> tuple[Mapping[str, object], ...]:
