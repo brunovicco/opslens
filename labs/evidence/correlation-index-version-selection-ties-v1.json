@@ -1,0 +1,49 @@
+{
+  "assessment": {
+    "ghsa_advisories_tied_at_max_updated_at": 7,
+    "nvd_cves_tied_at_max_last_modified_at": 0,
+    "projection_was_non_deterministic": true,
+    "reason": "ROW_NUMBER ordered on a non-unique key, so Presto resolved ties differently between runs"
+  },
+  "authority": {
+    "creates_infrastructure": false,
+    "read_only": true,
+    "workgroup": "opslens-dev-projection"
+  },
+  "contract_version": "opslens-correlation-index-version-selection-ties:v1",
+  "how_it_surfaced": {
+    "detail": "Two projection runs 165 seconds apart over an unchanged corpus produced different index identities. GHSA admitted 11081 and NVD 1642 in both, and both watermarks were identical, so the counts could not explain it.",
+    "first_run": {
+      "built_at": "2026-09-17T04:58:11Z",
+      "index_id": "opslens-correlation-index:v2@sha256:e2c98db25934f3b2b19793b34b674d03ef73a5de4e18a94d693e81dc3109cf71"
+    },
+    "note": "Under v1 the identity carried built_at, so every build differed anyway and this defect was invisible. Removing built_at from the identity did not create it; it exposed it.",
+    "second_run": {
+      "built_at": "2026-09-17T05:00:56Z",
+      "index_id": "opslens-correlation-index:v2@sha256:b800bbfea9aec4cc1b3e208c19ef69386ebba4683914b2c7f067dbca832954ba"
+    }
+  },
+  "measured_by": {
+    "account_id": "487757851499",
+    "role": "AWSReservedSSO_OpsLensBootstrapAdmin_3f7923e7ec0bf43c"
+  },
+  "measured_on": "2026-09-17",
+  "method": {
+    "note": "RANK assigns the same value to tied rows, so counting groups with more than one rank-1 row counts exactly the groups where the projection's ROW_NUMBER was choosing without a criterion.",
+    "queries": [
+      "WITH r AS (SELECT ghsa_id, RANK() OVER (PARTITION BY ghsa_id ORDER BY updated_at DESC) rk FROM \"opslens_dev\".\"ghsa_advisory_versions\") SELECT count(*) FROM (SELECT ghsa_id FROM r WHERE rk = 1 GROUP BY ghsa_id HAVING count(*) > 1)",
+      "WITH r AS (SELECT cve_id, RANK() OVER (PARTITION BY cve_id ORDER BY last_modified_at DESC) rk FROM \"opslens_dev\".\"nvd_cve_versions\") SELECT count(*) FROM (SELECT cve_id FROM r WHERE rk = 1 GROUP BY cve_id HAVING count(*) > 1)"
+    ]
+  },
+  "corpus_context": {
+    "ghsa_distinct_advisories": 35577,
+    "ghsa_row_count": 35584,
+    "note": "The census difference of 7 is exactly the tied set: every GHSA advisory carrying more than one observed version carries them at the same updated_at.",
+    "nvd_distinct_cves": 60259,
+    "nvd_row_count": 86273
+  },
+  "unresolved": [
+    "Which of the 7 advisories reach the PyPI index, and whether their tied versions differ in a field the projection carries. The tiebreak makes the choice repeatable either way; it does not make it correct, because the source states both versions are equally recent.",
+    "Whether ties were the only source of non-determinism. The falsifying test is two consecutive plan runs over an unchanged corpus producing one identity."
+  ]
+}

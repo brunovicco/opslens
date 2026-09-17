@@ -25,6 +25,33 @@ Names that fail the grammar are rejected and counted rather than dropped, the ac
 ADR 0085 established: `admitted + rejected == total`. A projection that quietly discards
 what it cannot key would under-report by exactly the amount nobody measured.
 
+**Every version selection breaks ties on the content identity.** Both statements keep
+the latest observed version of each source record with `ROW_NUMBER() ... rn = 1`. An
+ordering key that is not unique makes that arbitrary, and Presto is free to resolve it
+differently between runs as the work distributes: the same corpus then produces a
+different index, and the index identity moves with no source having changed.
+
+This is not hypothetical. Measured on 2026-09-17, 7 of the 35,577 GHSA advisories carry
+two observed versions sharing the same `updated_at`, and the NVD corpus carries none —
+today. Zero ties is a property of the data, not of the query, so both statements carry
+the tiebreak.
+
+```text
+same query != same result
+```
+
+Adding `observed_advisory_version_id` and `observed_cve_version_id` makes the order
+total: those identities are content digests, so two rows a query can distinguish never
+compare equal, and two rows it cannot are identical in every projected field.
+
+The tiebreak is stable, not right. When two observed versions share an `updated_at`, the
+source is stating that both are equally recent, and nothing here knows which is current.
+The projection stops flipping between them; it does not learn the answer.
+
+```text
+stable != correct
+```
+
 This module maps and rejects. It runs no query and writes no row.
 """
 
@@ -126,7 +153,10 @@ def ghsa_projection_sql(database: str, table: str) -> str:
 WITH ranked AS (
   SELECT ghsa_id, observed_advisory_version_id, source_advisory_sha256, cve_id,
          identifiers, is_withdrawn, vulnerabilities,
-         ROW_NUMBER() OVER (PARTITION BY ghsa_id ORDER BY updated_at DESC) AS rn
+         ROW_NUMBER() OVER (
+           PARTITION BY ghsa_id
+           ORDER BY updated_at DESC, observed_advisory_version_id DESC
+         ) AS rn
   FROM "{database}"."{table}"
 )
 SELECT
@@ -183,7 +213,10 @@ def nvd_projection_sql(database: str, table: str, cve_ids: Sequence[str]) -> str
 WITH ranked AS (
   SELECT cve_id, observed_cve_version_id, source_cve_sha256, source_identifier,
          published_at, last_modified_at, vuln_status,
-         ROW_NUMBER() OVER (PARTITION BY cve_id ORDER BY last_modified_at DESC) AS rn
+         ROW_NUMBER() OVER (
+           PARTITION BY cve_id
+           ORDER BY last_modified_at DESC, observed_cve_version_id DESC
+         ) AS rn
   FROM "{database}"."{table}"
   WHERE cve_id IN ({wanted})
 )

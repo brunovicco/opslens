@@ -32,3 +32,18 @@ page rather than from reported capacity. The artifact also records what was deli
 not measured, including the size of a rebuilt evidence item in an API response.
 
 All observations are read-only; no write was performed against the index.
+
+## Correlation index version-selection ties
+
+`correlation-index-version-selection-ties-v1.json` records why two projection runs over
+an unchanged corpus produced different indexes, and how large the exposure was.
+
+Both projection statements selected the latest observed version of each source record
+with `ROW_NUMBER` ordered on a non-unique key. Seven GHSA advisories carry two observed
+versions at the same `updated_at`; the NVD corpus carries none today, which is a property
+of the data rather than of the query. The artifact keeps the two diverging index
+identities, the counting method, and what it deliberately leaves unresolved — including
+whether ties were the only source of non-determinism.
+
+Read-only; no write was performed.
+
