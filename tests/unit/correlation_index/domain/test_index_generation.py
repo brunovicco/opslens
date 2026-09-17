@@ -63,7 +63,7 @@ class TestGeneration:
 
     def test_it_is_the_manifest_digest_prefix(self) -> None:
         """Tying the key space to the digest lets a row prove which manifest made it."""
-        assert index_generation(f"opslens-correlation-index:v1@sha256:{_DIGEST}") == (
+        assert index_generation(f"opslens-correlation-index:v2@sha256:{_DIGEST}") == (
             _GENERATION
         )
 
@@ -74,10 +74,73 @@ class TestGeneration:
         second = _manifest(moment)
         assert index_generation(first.index_id) == index_generation(second.index_id)
 
-    def test_a_later_build_gets_a_different_generation(self) -> None:
-        """Otherwise a new build would write over the one currently answering."""
+    def test_a_later_build_of_the_same_content_keeps_the_generation(self) -> None:
+        """A re-run writes the rows it already wrote, into the space they are already in.
+
+        This reads backwards until the alternative is spelled out: a clock-dependent
+        generation would send an unchanged corpus to a fresh key space every night,
+        leaving the previous generation live until the pointer flipped and doubling the
+        stored rows for nothing.
+
+        ```text
+        when it was built != what was built
+        ```
+        """
         first = _manifest(datetime(2026, 9, 16, 21, 20, 51, tzinfo=UTC))
         second = _manifest(datetime(2026, 9, 17, 21, 20, 51, tzinfo=UTC))
+        assert index_generation(first.index_id) == index_generation(second.index_id)
+
+    def test_a_build_of_different_content_gets_a_different_generation(self) -> None:
+        """What a new generation is actually for: not overwriting what is answering."""
+        moment = datetime(2026, 9, 16, 21, 20, 51, tzinfo=UTC)
+        first = _manifest(moment)
+        second = build_manifest(
+            built_at=moment,
+            ghsa_rows=[],
+            nvd_rows=[
+                ProjectedNvdIndexRow(
+                    cve_id="CVE-2026-9999",
+                    observed_cve_version_id=f"CVE-2026-9999@sha256:{_DIGEST}",
+                    source_cve_sha256=_DIGEST,
+                    source_identifier="cve@mitre.org",
+                    published_at="2026-01-02T03:04:05Z",
+                    last_modified_at="2026-02-03T04:05:06Z",
+                    vuln_status="Analyzed",
+                )
+            ],
+            watermarks=[
+                SourceWatermark(
+                    source="nvd", observed_through="2026-09-16T21:20:51Z", record_count=1
+                )
+            ],
+        )
+        assert index_generation(first.index_id) != index_generation(second.index_id)
+
+    def test_fresher_sources_over_the_same_rows_get_a_different_generation(self) -> None:
+        """Freshness is part of the identity, because a response cites it as its own."""
+        moment = datetime(2026, 9, 16, 21, 20, 51, tzinfo=UTC)
+        first = _manifest(moment)
+        second = build_manifest(
+            built_at=moment,
+            ghsa_rows=[],
+            nvd_rows=[
+                ProjectedNvdIndexRow(
+                    cve_id="CVE-2026-1234",
+                    observed_cve_version_id=f"CVE-2026-1234@sha256:{_DIGEST}",
+                    source_cve_sha256=_DIGEST,
+                    source_identifier="cve@mitre.org",
+                    published_at="2026-01-02T03:04:05Z",
+                    last_modified_at="2026-02-03T04:05:06Z",
+                    vuln_status="Analyzed",
+                )
+            ],
+            watermarks=[
+                SourceWatermark(
+                    source="nvd", observed_through="2026-09-17T09:00:00Z", record_count=2
+                )
+            ],
+        )
+        assert first.content_digest == second.content_digest
         assert index_generation(first.index_id) != index_generation(second.index_id)
 
     @pytest.mark.parametrize(

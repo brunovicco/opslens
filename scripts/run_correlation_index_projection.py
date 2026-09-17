@@ -572,7 +572,7 @@ def apply_build(
         s3.put_object(
             Bucket=catalog.evidence_bucket,
             Key=manifest_key,
-            Body=outcome.manifest.canonical_json,
+            Body=outcome.manifest.stored_json,
             ContentType="application/json",
             IfNoneMatch="*",
         )
@@ -613,7 +613,7 @@ def _payload(outcome: BuildOutcome, catalog: CorrelationIndexCatalog) -> dict[st
             "index_id": outcome.manifest.index_id,
             "manifest_key": catalog.manifest_key(outcome.manifest.index_id),
         },
-        "manifest": json.loads(outcome.manifest.canonical_json),
+        "manifest": json.loads(outcome.manifest.stored_json),
         "rejected": [
             {
                 "ghsa_id": item.ghsa_id,

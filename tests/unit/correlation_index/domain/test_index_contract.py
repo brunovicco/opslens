@@ -14,6 +14,7 @@ is not an identity. Watermarks arriving in a different order must produce the sa
 index id, and a real change must move it.
 """
 
+from dataclasses import fields
 from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
@@ -301,8 +302,18 @@ class TestManifest:
         )
         assert first.index_id == second.index_id
 
-    def test_a_later_build_has_a_different_identity(self) -> None:
-        """Two builds of the same corpus at different times are different answers."""
+    def test_a_later_build_of_the_same_content_reuses_the_identity(self) -> None:
+        """This is what ADR 0088 meant by an idempotent re-run, and v1 did not do it.
+
+        Same rows, same watermarks, later clock. `built_at` is provenance and is carried
+        in the stored manifest, but it is not part of the identity, so the re-run lands
+        in the generation that already holds exactly these rows instead of writing a
+        second copy of them somewhere else.
+
+        ```text
+        when it was built != what was built
+        ```
+        """
         moment = datetime(2026, 9, 16, 21, 20, 51, tzinfo=UTC)
         first = build_manifest(
             built_at=moment,
@@ -311,12 +322,83 @@ class TestManifest:
             watermarks=[_watermark()],
         )
         second = build_manifest(
-            built_at=moment + timedelta(seconds=1),
+            built_at=moment + timedelta(hours=6),
             ghsa_rows=[_ghsa_row()],
             nvd_rows=[_nvd_row()],
             watermarks=[_watermark()],
         )
+        assert first.index_id == second.index_id
+        assert first.built_at != second.built_at
+        assert first.stored_document != second.stored_document
+
+    def test_two_indexes_of_the_same_shape_and_different_rows_differ(self) -> None:
+        """The v1 defect, pinned.
+
+        Under v1 the identity was taken over counts and watermarks, so these two — one
+        row each, one package each, identical watermarks and clock, and not a single
+        field in common — derived the same identity and therefore the same key space.
+        """
+        moment = datetime(2026, 9, 16, 21, 20, 51, tzinfo=UTC)
+        other_digest = "a" * 64
+        first = build_manifest(
+            built_at=moment,
+            ghsa_rows=[_ghsa_row()],
+            nvd_rows=[],
+            watermarks=[_watermark()],
+        )
+        second = build_manifest(
+            built_at=moment,
+            ghsa_rows=[
+                _ghsa_row(
+                    package_name_canonical="requests",
+                    package_name_original="requests",
+                    observed_advisory_version_id=f"{_GHSA_ID}@sha256:{other_digest}",
+                    source_advisory_sha256=other_digest,
+                )
+            ],
+            nvd_rows=[],
+            watermarks=[_watermark()],
+        )
+        assert first.ghsa_row_count == second.ghsa_row_count
+        assert first.distinct_package_count == second.distinct_package_count
         assert first.index_id != second.index_id
+
+    def test_a_field_change_inside_one_row_moves_the_identity(self) -> None:
+        """A digest over keys alone would miss the change most worth noticing."""
+        moment = datetime(2026, 9, 16, 21, 20, 51, tzinfo=UTC)
+        first = build_manifest(
+            built_at=moment, ghsa_rows=[_ghsa_row()], nvd_rows=[], watermarks=[_watermark()]
+        )
+        second = build_manifest(
+            built_at=moment,
+            ghsa_rows=[_ghsa_row(first_patched_version_original="99.0.0")],
+            nvd_rows=[],
+            watermarks=[_watermark()],
+        )
+        assert first.index_id != second.index_id
+
+    def test_row_order_does_not_move_the_identity(self) -> None:
+        """A differently ordered query over the same corpus is the same index."""
+        moment = datetime(2026, 9, 16, 21, 20, 51, tzinfo=UTC)
+        rows = [
+            _ghsa_row(),
+            _ghsa_row(
+                package_name_canonical="urllib3",
+                package_name_original="urllib3",
+                vulnerability_entry_id="entry-1",
+                source_index=1,
+            ),
+        ]
+        forward = build_manifest(
+            built_at=moment, ghsa_rows=rows, nvd_rows=[], watermarks=[_watermark()]
+        )
+        reversed_rows = build_manifest(
+            built_at=moment,
+            ghsa_rows=list(reversed(rows)),
+            nvd_rows=[],
+            watermarks=[_watermark()],
+        )
+        assert forward.index_id == reversed_rows.index_id
 
     def test_the_identity_names_the_contract(self) -> None:
         """A response cites the contract, not only the digest."""
@@ -363,3 +445,40 @@ class TestIndexTimestamp:
         assert index_timestamp(datetime(2026, 9, 16, 18, 20, 51, tzinfo=offset)) == (
             "2026-09-16T21:20:51Z"
         )
+
+
+class TestRowCanonicalPayloadCoverage:
+    """The content digest is only an identity if it covers the content.
+
+    A payload written by hand drifts from the dataclass the moment a field is added, and
+    the drift is invisible: the digest keeps computing, the index keeps building, and two
+    builds differing only in the new field share a generation. So coverage is asserted
+    from `dataclasses.fields` rather than from a list someone maintains — the same check
+    that caught the missing `github_identifiers` in the projection.
+
+    ```text
+    a claim about coverage != a check of coverage
+    ```
+    """
+
+    def test_every_ghsa_row_field_is_digested(self) -> None:
+        """Adding a field to the row fails here until the digest carries it."""
+        declared = {item.name for item in fields(ProjectedGhsaIndexRow)}
+        assert declared == set(_ghsa_row().canonical_payload)
+
+    def test_every_nvd_row_field_is_digested(self) -> None:
+        """The same, for the CVE spine."""
+        declared = {item.name for item in fields(ProjectedNvdIndexRow)}
+        assert declared == set(_nvd_row().canonical_payload)
+
+    def test_the_manifest_identity_payload_excludes_built_at(self) -> None:
+        """Stated as a check, because the whole correction turns on it."""
+        manifest = build_manifest(
+            built_at=datetime(2026, 9, 16, 21, 20, 51, tzinfo=UTC),
+            ghsa_rows=[_ghsa_row()],
+            nvd_rows=[],
+            watermarks=[_watermark()],
+        )
+        assert "built_at" not in manifest.canonical_payload
+        assert "content_digest" in manifest.canonical_payload
+        assert manifest.stored_document["built_at"] == manifest.built_at

@@ -259,7 +259,7 @@ def _authority(
             catalog.pointer_key: json.dumps(
                 pointer_document(index_id, manifest.built_at)
             ).encode(),
-            catalog.manifest_key(index_id): json.dumps(manifest.canonical_payload).encode(),
+            catalog.manifest_key(index_id): json.dumps(manifest.stored_document).encode(),
         }
     )
     generation = index_id.partition("@sha256:")[2][:16]
@@ -369,7 +369,7 @@ class TestIndexCertification:
                     pointer_document(real.index_id, real.built_at)
                 ).encode(),
                 catalog.manifest_key(real.index_id): json.dumps(
-                    other.canonical_payload
+                    other.stored_document
                 ).encode(),
             }
         )

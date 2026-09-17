@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted. Gate 20.1.
+Accepted, with the generation derivation corrected on 2026-09-17. Gate 20.1.
+
+The build-and-swap design is unchanged. The claim about what the generation is derived
+from was false in both directions and is corrected in **Correction (2026-09-17)** at the
+end. The index contract version moved to `v2` with the fix.
 
 ## Context
 
@@ -50,7 +54,9 @@ the new rows are unreachable; after it, the old ones are.
 
 The generation is the manifest's own content-addressed digest, truncated. It is not a
 counter, so two builds of identical content land in the same key space and a
-re-run is idempotent rather than a new generation of the same thing.
+re-run is idempotent rather than a new generation of the same thing. That was the
+intent; under `v1` the derivation did not deliver it. See
+**Correction (2026-09-17)**.
 
 ```text
 written != readable
@@ -79,6 +85,69 @@ and saying so is more useful than pretending it was weighed.
 started under it. The cadence is daily and requests are bounded in seconds, so the floor
 is far below the cadence — but a future move to continuous rebuilds would have to
 revisit it, and that is named here rather than discovered then.
+
+## Correction (2026-09-17)
+
+The sentence above — the generation is content-addressed, so a re-run of identical
+content is idempotent — was wrong in both directions under `v1`. Writing the offline
+index fixture surfaced the second half; the first had been noted and left.
+
+### The identity did not distinguish content
+
+`v1` took the manifest identity over `built_at`, the counts and the watermarks. The rows
+were not in it. Two indexes holding entirely different rows in the same quantity, with
+the same watermarks and the same clock, derived the same identity — and therefore the
+same generation, and the same key space:
+
+```text
+index A   one row:  requests    GHSA-fq2j-3j99-rx65
+index B   one row:  tensorflow  GHSA-pmpr-55fj-r229, different digest
+
+both      opslens-correlation-index:v1@sha256:08902acd55fd8af3…
+```
+
+Nothing about those two indexes is the same except their shape.
+
+```text
+identity of the description != identity of the content
+```
+
+In practice `built_at` hid this, because it moves every second and the projection takes
+about a minute. But what protected the key space was an accident of the clock, not the
+rule this ADR says is in force — and the same `built_at` was breaking the other half.
+
+### The identity distinguished time, which is not content
+
+Because `built_at` was inside the identity, a nightly rebuild of an unchanged corpus
+produced a new generation every night: the same rows written to a fresh key space, the
+previous generation still resident until its TTL, the stored rows doubled for nothing.
+That is exactly the counter-like behaviour the paragraph above says the design avoids.
+
+### The fix
+
+`v2` takes the identity over `(contract_version, content_digest, counts, watermarks)`.
+
+- `content_digest` is a sha-256 over every field of every row, sorted by store key so a
+  differently ordered query over the same corpus produces the same digest. Coverage is
+  asserted from `dataclasses.fields`, so a new row field fails a test until the digest
+  carries it.
+- `built_at` leaves the identity and stays in the stored manifest. It is provenance: a
+  response still reports when the index was built, and two builds of identical content
+  from identically fresh sources are the same index whenever they ran.
+
+```text
+what is stored != what is digested
+when it was built != what was built
+```
+
+Watermarks remain in the identity. Two builds over the same rows from sources at
+different freshness are different answers, because a response cites that freshness as
+its own.
+
+The contract version moves to `v2` so a `v1` digest can never silently match a `v2`
+manifest — the same reasoning that moved `public-threat-evidence-scope` to `v2` in Gate
+20.0. The next projection run writes a `v2` generation; the `v1` generation expires under
+its existing TTL.
 
 ## Related
 

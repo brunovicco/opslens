@@ -38,7 +38,7 @@ _ADVISORY_DIGEST = "6872a46115d1775d1eac3f5ba734e73ec98a9f78487d178e38e13163c69d
 _ENTRY_DIGEST = "f086757888580ceef4a1f94c58aacb2c28ae445a18fecdac07c6561ff0519f6d"
 _CVE_DIGEST = "3e8f5bff0551f7533a34c40a9a944832e9a01d258049d908e179b24da872431c"
 _GHSA_ID = "GHSA-fq2j-3j99-rx65"
-_INDEX_ID = f"opslens-correlation-index:v1@sha256:{_CVE_DIGEST}"
+_INDEX_ID = f"opslens-correlation-index:v2@sha256:{_CVE_DIGEST}"
 _BUILT_AT = datetime(2026, 9, 16, 21, 20, 51, tzinfo=UTC)
 
 
